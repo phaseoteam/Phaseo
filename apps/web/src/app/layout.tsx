@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Montserrat } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
-import { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
 	METADATA_BASE,
 	PREFERRED_SITE_NAME,
@@ -23,6 +23,7 @@ import ThemeAwareFavicon from "@/components/ThemeAwareFavicon";
 import { Suspense } from "react";
 import { PublicSWRProvider } from "@/components/providers/PublicSWRProvider";
 import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
+import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -34,7 +35,21 @@ export const metadata: Metadata = {
 	description:
 		"Discover and compare the world's most comprehensive AI model database and gateway. Browse benchmarks, features, pricing, and access state-of-the-art AI models.",
 	applicationName: PREFERRED_SITE_NAME,
+	appleWebApp: {
+		capable: true,
+		statusBarStyle: "default",
+		title: PREFERRED_SITE_NAME,
+	},
 	authors: [{ name: SITE_NAME }],
+	icons: {
+		apple: [
+			{
+				url: "/png_logo_dark.png",
+				sizes: "1024x1024",
+				type: "image/png",
+			},
+		],
+	},
 	other: {
 		"google-adsense-account": "ca-pub-5904826500425921",
 	},
@@ -67,6 +82,13 @@ export const metadata: Metadata = {
 	},
 };
 
+export const viewport: Viewport = {
+	themeColor: [
+		{ media: "(prefers-color-scheme: light)", color: "#ffffff" },
+		{ media: "(prefers-color-scheme: dark)", color: "#171717" },
+	],
+};
+
 export default function RootLayout({
 	children,
 }: {
@@ -90,6 +112,7 @@ export default function RootLayout({
 					"min-h-screen h-full bg-background antialiased"
 				)}
 			>
+				<ServiceWorkerRegistration />
 				<CookieConsentManager gaMeasurementId={GA_MEASUREMENT_ID} />
 				<ConsoleEasterEgg />
 				<ThemeProvider
