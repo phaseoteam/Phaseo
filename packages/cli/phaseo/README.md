@@ -106,6 +106,38 @@ phaseo webhooks create --url https://example.com/phaseo-events --events batch.co
 phaseo api get /v1/models
 ```
 
+## Coding-agent integrations
+
+Detect and configure supported coding agents to use the Phaseo gateway:
+
+```bash
+phaseo integrations list
+phaseo integrations status codex
+phaseo integrations setup codex --model openai/gpt-5.6-terra --dry-run
+phaseo integrations setup codex --model openai/gpt-5.6-terra
+phaseo integrations setup claude-code
+```
+
+Codex receives a dedicated `phaseo` profile at `~/.codex/phaseo.config.toml`, leaving the default profile unchanged:
+
+```bash
+codex --profile phaseo
+```
+
+Claude Code is configured through `~/.claude/settings.json` with gateway model discovery and a Phaseo credential helper. The helper reads `PHASEO_API_KEY` at request time, so the key is never written into either application configuration:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+claude
+```
+
+Every setup operation supports `--dry-run` and creates a timestamped backup before replacing an existing file. Remove only Phaseo-owned values with:
+
+```bash
+phaseo integrations remove codex
+phaseo integrations remove claude-code
+```
+
 ## Local comparison runs
 
 The CLI can execute a small model-and-case matrix from a local JSON file:
