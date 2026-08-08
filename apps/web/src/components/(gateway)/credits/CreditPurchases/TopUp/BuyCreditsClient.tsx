@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, Ticket } from "lucide-react";
 
 interface Props {
+	declaredCountryCode?: string | null;
 	wallet?: any;
 	stripeInfo?: any;
 	tierInfo?: any;
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function BuyCreditsClient({
+	declaredCountryCode,
 	wallet,
 	stripeInfo,
 	tierInfo,
@@ -83,6 +85,7 @@ export default function BuyCreditsClient({
 					)}
 				</div>
 				<CreditsPurchaseDialog
+					declaredCountryCode={declaredCountryCode}
 					open={open}
 					onClose={() => setOpen(false)}
 					wallet={wallet}
@@ -115,6 +118,7 @@ export default function BuyCreditsClient({
 					</Link>
 				</Button>
 				<CreditsPurchaseDialog
+					declaredCountryCode={declaredCountryCode}
 					open={open}
 					onClose={() => setOpen(false)}
 					wallet={wallet}

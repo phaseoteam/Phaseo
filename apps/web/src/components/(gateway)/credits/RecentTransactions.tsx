@@ -615,7 +615,7 @@ export default function RecentTransactions({
 												{createdAtDate && Number.isFinite(createdAtDate.getTime()) ? (
 													<HoverCard>
 														<HoverCardTrigger asChild>
-															<span className="cursor-help underline decoration-dotted underline-offset-2">
+																	<span className="cursor-help underline decoration-dotted underline-offset-2">
 																{createdAtDate.toLocaleString()}
 															</span>
 														</HoverCardTrigger>
@@ -724,7 +724,7 @@ export default function RecentTransactions({
 														<Button
 															size="sm"
 															variant="link"
-															className="h-auto p-0 text-xs"
+																	className="h-auto p-0 text-xs text-foreground underline underline-offset-2 hover:text-foreground"
 															disabled={busy}
 															onClick={() => openDocument(t)}
 														>
@@ -733,7 +733,7 @@ export default function RecentTransactions({
 														<Button
 															size="sm"
 															variant="link"
-															className="h-auto p-0 text-xs"
+																	className="h-auto p-0 text-xs text-foreground underline underline-offset-2 hover:text-foreground"
 															disabled={busy || !refundEligibility.ok}
 															title={
 																refundEligibility.ok

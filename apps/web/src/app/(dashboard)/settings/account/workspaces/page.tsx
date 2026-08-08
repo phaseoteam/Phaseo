@@ -14,17 +14,31 @@ export const metadata = {
 export default async function AccountWorkspacesPage() {
 	const data = await fetchSettingsTeamsInitialData();
 	const manageable = new Set(data.manageableTeamIds);
+	const activeWorkspace = data.teams.find(
+		(workspace) => workspace.id === data.initialTeamId,
+	);
+	const orderedWorkspaces = activeWorkspace
+		? [
+				activeWorkspace,
+				...data.teams.filter((workspace) => workspace.id !== activeWorkspace.id),
+			]
+		: data.teams;
 
 	return (
 		<div className="space-y-6">
-			<SettingsPageHeader
-				title="Workspaces"
-				description="Create workspaces and choose which ones you want to manage."
-				actions={<CreateTeamDialog currentUserId={data.currentUserId ?? undefined} />}
-			/>
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+				<SettingsPageHeader
+					title="Workspaces"
+					description="Create workspaces and choose which ones you want to manage."
+					className="min-w-0 flex-1"
+				/>
+				<div className="shrink-0 sm:pt-1">
+					<CreateTeamDialog currentUserId={data.currentUserId ?? undefined} />
+				</div>
+			</div>
 
 			<div className="divide-y border-y">
-				{data.teams.map((workspace) => {
+				{orderedWorkspaces.map((workspace) => {
 					const memberCount = data.membersByTeam[workspace.id]?.length ?? 0;
 					const membership = (data.membersByTeam[workspace.id] ?? []).find(
 						(member) => member.user_id === data.currentUserId,
@@ -49,7 +63,7 @@ export default async function AccountWorkspacesPage() {
 							</div>
 							<Button asChild variant="outline" size="sm">
 								<Link href={`/settings/workspaces/${manageable.has(workspace.id) ? "settings" : "members"}?workspaceId=${encodeURIComponent(workspace.id)}`}>
-									{manageable.has(workspace.id) ? "Open settings" : "View members"}
+									{manageable.has(workspace.id) ? "Open Settings" : "View members"}
 									<ArrowUpRight className="size-3.5" />
 								</Link>
 							</Button>

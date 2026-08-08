@@ -452,6 +452,29 @@ export async function guardAllFailed(
     const providerEnablement = (ctx as any)?.providerEnablementDiagnostics ?? null;
     const candidateBuild = (ctx as any)?.providerCandidateBuildDiagnostics ?? null;
     const providerFailureDiagnostics = classifyProviderFailureDiagnostics(attemptErrors);
+    const geographicAvailabilityStage = Array.isArray(routingDiagnostics?.filterStages)
+        ? routingDiagnostics.filterStages.find((stage: any) =>
+            stage?.stage === "geographic_availability_gate" &&
+            Number(stage?.beforeCount ?? 0) > 0 &&
+            Number(stage?.afterCount ?? 0) === 0
+        )
+        : null;
+    if (geographicAvailabilityStage) {
+        captureTimingSnapshot(ctx, timing);
+        return {
+            ok: false,
+            response: err("model_region_unavailable", {
+                reason: "all_routes_unavailable_in_request_country",
+                description: "This model is not available from the request's geographic location.",
+                model: ctx.model,
+                endpoint: ctx.endpoint,
+                request_id: ctx.requestId,
+                request_country: ctx.meta?.edgeCountry ?? null,
+                request_subdivision: ctx.meta?.edgeRegionCode ?? null,
+                routing_diagnostics: routingDiagnostics,
+            }),
+        };
+    }
     const hasUpstreamPaymentRequired = failedStatuses.includes(402);
     const paymentRequiredProvider = hasUpstreamPaymentRequired
         ? (attemptErrors.find((entry) => Number(entry?.status ?? NaN) === 402)?.provider ?? null)

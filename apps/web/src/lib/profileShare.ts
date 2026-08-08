@@ -1,12 +1,13 @@
 import type { ProfileSnapshot } from "./fetchers/profile/types"
 import { absoluteUrl } from "./seo"
 
-export const PROFILE_SHARE_CARD_VERSION = "20260512b"
+export const PROFILE_SHARE_CARD_VERSION = "20260808b"
 
 export type ProfileShareCardPayload = {
 	displayName: string
 	workspaceName: string | null
 	memberSinceLabel: string
+	periodLabel: string
 	totalRequests: number
 	totalTokens: number
 	longestStreak: number
@@ -17,6 +18,7 @@ type ProfileShareCardTokenPayload = {
 	n: string
 	w?: string
 	j: string
+	p?: string
 	r: number
 	t: number
 	s: number
@@ -34,6 +36,7 @@ function toTokenPayload(payload: ProfileShareCardPayload): ProfileShareCardToken
 			? { w: clampText(payload.workspaceName, 48) }
 			: {}),
 		j: clampText(payload.memberSinceLabel, 24) || "Recently",
+		p: clampText(payload.periodLabel, 24) || "All Time",
 		r: Math.max(0, Math.round(payload.totalRequests)),
 		t: Math.max(0, Math.round(payload.totalTokens)),
 		s: Math.max(0, Math.round(payload.longestStreak)),
@@ -46,6 +49,7 @@ function fromTokenPayload(payload: Partial<ProfileShareCardTokenPayload>): Profi
 		displayName: clampText(payload.n ?? "Phaseo User", 80) || "Phaseo User",
 		workspaceName: clampText(payload.w ?? "", 48) || null,
 		memberSinceLabel: clampText(payload.j ?? "Recently", 24) || "Recently",
+		periodLabel: clampText(payload.p ?? "All Time", 24) || "All Time",
 		totalRequests: Math.max(0, Math.round(Number(payload.r ?? 0) || 0)),
 		totalTokens: Math.max(0, Math.round(Number(payload.t ?? 0) || 0)),
 		longestStreak: Math.max(0, Math.round(Number(payload.s ?? 0) || 0)),
@@ -81,6 +85,9 @@ function decodeBase64UrlUtf8(value: string): string {
 
 export function buildProfileShareCardPayload(
 	profile: ProfileSnapshot,
+	summary?: Partial<Pick<ProfileShareCardPayload,
+		"periodLabel" | "totalRequests" | "totalTokens" | "longestStreak" | "avgPerWeek"
+	>>,
 ): ProfileShareCardPayload {
 	return {
 		displayName: profile.displayName,
@@ -89,10 +96,11 @@ export function buildProfileShareCardPayload(
 			month: "short",
 			year: "numeric",
 		}),
-		totalRequests: profile.totalRequests,
-		totalTokens: profile.totalTokens,
-		longestStreak: profile.longestStreak,
-		avgPerWeek: profile.avgPerWeek,
+		periodLabel: summary?.periodLabel ?? "All Time",
+		totalRequests: summary?.totalRequests ?? profile.totalRequests,
+		totalTokens: summary?.totalTokens ?? profile.totalTokens,
+		longestStreak: summary?.longestStreak ?? profile.longestStreak,
+		avgPerWeek: summary?.avgPerWeek ?? profile.avgPerWeek,
 	}
 }
 

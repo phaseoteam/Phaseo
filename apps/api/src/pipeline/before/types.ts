@@ -155,6 +155,8 @@ export type RoutingStatus =
 
 export type CapabilityRoutingStatus = RoutingStatus | "internal_testing" | "coming_soon";
 
+export type RouteAvailabilityPolicy = import("@/lib/config/routeAvailability").RouteAvailabilityPolicy;
+
 /**
  * Snapshot of a provider's configuration and capabilities
  * Returned from the RPC call for gateway context
@@ -204,6 +206,7 @@ export type GatewayProviderSnapshot = {
     streamCancellationUsageRecovery?: "authoritative" | "unknown" | null;
     streamCancellationEvidenceKind?: "provider" | "aggregator" | "none" | null;
     streamCancellationSourceUrl?: string | null;
+    availabilityPolicy?: RouteAvailabilityPolicy | null;
     supportsEndpoint: boolean;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
@@ -360,6 +363,7 @@ export type ProviderCandidate = {
     streamCancellationUsageRecovery?: "authoritative" | "unknown" | null;
     streamCancellationEvidenceKind?: "provider" | "aggregator" | "none" | null;
     streamCancellationSourceUrl?: string | null;
+    availabilityPolicy?: RouteAvailabilityPolicy | null;
     adapter: ProviderAdapter;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];

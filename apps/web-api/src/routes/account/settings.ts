@@ -10,6 +10,7 @@ import { accountSettingsUsageRouter } from "./settings-usage";
 import { accountSettingsUsageActionsRouter } from "./settings-usage-actions";
 import { accountSettingsTeamsRouter } from "./settings-teams";
 import { accountSettingsProfileRouter } from "./settings-profile";
+import { accountSettingsProfileAvatarRouter, ownedProfileAvatarKey } from "./settings-profile-avatar";
 import { accountSettingsKeysRouter } from "./settings-keys";
 import { accountSettingsOAuthRouter } from "./settings-oauth";
 import { accountSettingsByokRouter } from "./settings-byok";
@@ -86,6 +87,7 @@ accountSettingsRouter.route("/", accountSettingsUsageRouter);
 accountSettingsRouter.route("/", accountSettingsUsageActionsRouter);
 accountSettingsRouter.route("/", accountSettingsTeamsRouter);
 accountSettingsRouter.route("/", accountSettingsProfileRouter);
+accountSettingsRouter.route("/", accountSettingsProfileAvatarRouter);
 accountSettingsRouter.route("/", accountSettingsKeysRouter);
 accountSettingsRouter.route("/", accountSettingsOAuthRouter);
 accountSettingsRouter.route("/", accountSettingsByokRouter);
@@ -296,6 +298,12 @@ accountSettingsRouter.delete("/account", async (c) => {
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const { error } = await getDataClient(c.env).auth.admin.deleteUser(user.id);
 	if (error) return c.json({ error: "account_delete_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const avatarKey = ownedProfileAvatarKey(c.env, c.req.raw, user.userMetadata.avatar_url, user.id);
+	if (avatarKey && c.env.PROFILE_AVATARS_BUCKET) {
+		await c.env.PROFILE_AVATARS_BUCKET.delete(avatarKey).catch((avatarError) => {
+			console.error("account_avatar_delete_failed", { userId: user.id, error: String(avatarError) });
+		});
+	}
 	c.executionCtx.waitUntil(notifyAccountDeleted(c.env, { id: user.id, email: user.email }).catch((notificationError) => console.error("account_delete_notification_failed", { userId: user.id, error: String(notificationError) })));
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
@@ -951,10 +959,13 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 accountSettingsRouter.get("/credits", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
 	if (!workspaceId) return c.json({
+		declaredCountryCode: null,
 		initialBalance: 0,
 		latestPaymentSuccessAt: null,
+		autoTopUpFailureEmailEnabled: true,
 		lowBalanceEmailEnabled: false,
 		lowBalanceEmailThresholdUsd: null,
+		paymentMethodExpiringEmailEnabled: true,
 		obfuscateInfo: false,
 		stripeInfo: {
 			customer: { id: null, email: null },
@@ -971,13 +982,13 @@ accountSettingsRouter.get("/credits", async (c) => {
 			.select("workspace_id,stripe_customer_id,balance_nanos,reserved_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id")
 			.eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("workspace_settings")
-			.select("low_balance_email_enabled,low_balance_email_threshold_nanos")
+			.select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled")
 			.eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("credit_ledger").select("event_time,status,amount_nanos")
 			.eq("workspace_id", workspaceId).eq("ref_type", "Stripe_Payment_Intent")
 			.or("status.ilike.paid,status.ilike.succeeded").gt("amount_nanos", 0)
 			.order("event_time", { ascending: false }).limit(1).maybeSingle(),
-		context.client.from("users").select("obfuscate_info").eq("user_id", context.user.id).maybeSingle(),
+		context.client.from("users").select("obfuscate_info,declared_country_code").eq("user_id", context.user.id).maybeSingle(),
 	]);
 	let settingsResult = initialSettingsResult;
 	if (settingsResult.error?.code === "42703") {
@@ -991,10 +1002,13 @@ accountSettingsRouter.get("/credits", async (c) => {
 	const thresholdNanos = Number(settingsResult.data?.low_balance_email_threshold_nanos ?? 0);
 	const cookieOverride = c.req.query("obfuscateInfo");
 	return c.json({
+		declaredCountryCode: userResult.data?.declared_country_code ?? null,
 		initialBalance: Number(walletResult.data?.balance_nanos ?? 0) / 1_000_000_000,
 		latestPaymentSuccessAt: latestPaymentResult.data?.event_time ?? null,
+		autoTopUpFailureEmailEnabled: settingsResult.data?.auto_top_up_failure_email_enabled !== false,
 		lowBalanceEmailEnabled: Boolean(settingsResult.data?.low_balance_email_enabled),
 		lowBalanceEmailThresholdUsd: thresholdNanos > 0 ? Number((thresholdNanos / 1_000_000_000).toFixed(2)) : null,
+		paymentMethodExpiringEmailEnabled: settingsResult.data?.payment_method_expiring_email_enabled !== false,
 		obfuscateInfo: cookieOverride === "1" ? true : cookieOverride === "0" ? false : Boolean(userResult.data?.obfuscate_info),
 		stripeInfo: {
 			customer: { id: null, email: null },

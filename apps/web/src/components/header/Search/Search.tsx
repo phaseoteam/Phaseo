@@ -402,8 +402,8 @@ function SearchBrowseRow({
 			data-search-row-key={rowKey}
 			onMouseEnter={onActive}
 			className={cn(
-				"group/search-row relative flex h-8 w-full items-center rounded-lg text-sm transition-colors hover:bg-muted",
-				active && "bg-muted text-foreground",
+				"group/search-row relative flex h-8 w-full items-center rounded-lg text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+				active && "bg-accent text-accent-foreground",
 			)}
 		>
 			<button
@@ -414,11 +414,11 @@ function SearchBrowseRow({
 			>
 				<SearchBrowseIcon item={item} type={type} />
 				<div className="min-w-0 flex flex-1 items-baseline gap-2">
-					<span className="truncate font-medium text-zinc-900 dark:text-zinc-50">
+					<span className="truncate font-medium text-foreground">
 						{item.title}
 					</span>
 					{showSubtitle && item.subtitle ? (
-						<span className="min-w-0 truncate text-xs text-zinc-500 dark:text-zinc-400">
+						<span className="min-w-0 truncate text-xs text-muted-foreground">
 							{item.subtitle}
 						</span>
 					) : null}
@@ -434,9 +434,9 @@ function SearchBrowseRow({
 				) : null}
 				{onTogglePin ? <span aria-hidden="true" className="size-6 shrink-0" /> : null}
 				{item.external ? (
-					<ExternalLink className="size-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
+					<ExternalLink className="size-3.5 shrink-0 text-muted-foreground/70" />
 				) : (
-					<ArrowUpRight className="size-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
+					<ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground/70" />
 				)}
 			</button>
 			{onTogglePin ? (
@@ -445,8 +445,8 @@ function SearchBrowseRow({
 					onClick={() => onTogglePin(item)}
 					aria-label={isPinned ? `Unpin ${item.title}` : `Pin ${item.title}`}
 					className={cn(
-						"absolute right-7 top-1/2 z-10 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-zinc-400 opacity-0 outline-hidden transition hover:bg-background hover:text-zinc-700 focus-visible:opacity-100 group-hover/search-row:opacity-100 dark:hover:text-zinc-200",
-						isPinned && "opacity-100 text-zinc-700 dark:text-zinc-200",
+						"absolute right-7 top-1/2 z-10 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 outline-hidden transition hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/search-row:opacity-100",
+						isPinned && "opacity-100 text-foreground",
 					)}
 				>
 					{isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
@@ -464,7 +464,7 @@ function SearchFooter({
 	label: string;
 }) {
 	return (
-		<div className="-mx-2 -mb-2 mt-1 flex h-8 items-center justify-between rounded-b-[1.35rem] border-t border-border/60 bg-background px-3 text-[11px] text-muted-foreground">
+		<div className="-mx-2 -mb-2 mt-1 flex h-8 items-center justify-between rounded-b-[1.35rem] border-t border-border/60 bg-popover px-3 text-[11px] text-muted-foreground">
 			<div className="flex min-w-0 items-center gap-2">
 				<span className="inline-flex items-center gap-1">
 					<Kbd className="size-4 rounded p-0">
@@ -509,7 +509,7 @@ function SearchBrowseIcon({
 
 	if (effectiveType === "action" || effectiveType === "context") {
 		return (
-			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
 				{effectiveType === "context" ? <Sparkles className="size-3" /> : <Bolt className="size-3" />}
 			</div>
 		);
@@ -517,7 +517,7 @@ function SearchBrowseIcon({
 
 	if (effectiveType === "resource") {
 		return (
-			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
 				<ExternalLink className="size-3" />
 			</div>
 		);
@@ -525,7 +525,7 @@ function SearchBrowseIcon({
 
 	if (effectiveType === "navigation") {
 		return (
-			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
 				<Compass className="size-3" />
 			</div>
 		);
@@ -533,7 +533,7 @@ function SearchBrowseIcon({
 
 	if (effectiveType === "workspace") {
 		return (
-			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
 				<Building2 className="size-3" />
 			</div>
 		);
@@ -541,7 +541,7 @@ function SearchBrowseIcon({
 
 	if (effectiveType === "benchmark") {
 		return (
-			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
 				<Trophy className="size-3" />
 			</div>
 		);
@@ -549,7 +549,7 @@ function SearchBrowseIcon({
 
 	if (item.flagIso) {
 		return (
-			<div className="relative aspect-4/3 h-5 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
+			<div className="relative aspect-4/3 h-5 overflow-hidden rounded-md border border-border">
 				<img
 					src={`/flags/${item.flagIso}.svg`}
 					alt={item.title}
@@ -561,7 +561,7 @@ function SearchBrowseIcon({
 
 	if (item.logoId) {
 		return (
-			<div className="relative flex size-5 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800">
+			<div className="relative flex size-5 items-center justify-center rounded-md border border-border bg-background">
 				<div className="relative size-3.5">
 					<Logo id={item.logoId} alt={item.title} className="object-contain" fill />
 				</div>
@@ -569,7 +569,7 @@ function SearchBrowseIcon({
 		);
 	}
 
-	return <div className="size-5 shrink-0 rounded-md bg-zinc-200 dark:bg-zinc-700" />;
+	return <div className="size-5 shrink-0 rounded-md bg-muted" />;
 }
 
 function SearchEmptyState({
@@ -581,34 +581,34 @@ function SearchEmptyState({
 }) {
 	return (
 		<div className="flex flex-col items-center gap-3 py-12">
-			<div className="flex size-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-				<SearchIcon className="size-6 text-zinc-400" />
+			<div className="flex size-12 items-center justify-center rounded-lg bg-muted">
+				<SearchIcon className="size-6 text-muted-foreground" />
 			</div>
 			<div className="text-center">
 				{isLoading ? (
 					<>
-						<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+						<p className="text-sm font-medium text-foreground">
 							Loading search index...
 						</p>
-						<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+						<p className="mt-1 text-xs text-muted-foreground">
 							This only loads once per session.
 						</p>
 					</>
 				) : error ? (
 					<>
-						<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+						<p className="text-sm font-medium text-foreground">
 							{error}
 						</p>
-						<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+						<p className="mt-1 text-xs text-muted-foreground">
 							Close and reopen search to retry.
 						</p>
 					</>
 				) : (
 					<>
-						<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+						<p className="text-sm font-medium text-foreground">
 							No results found
 						</p>
-						<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+						<p className="mt-1 text-xs text-muted-foreground">
 							Try different keywords or check your spelling.
 						</p>
 					</>
@@ -1228,15 +1228,15 @@ export default function Search({ className, mobileGhost = false }: Props) {
 				type="button"
 				onClick={() => setOpen(true)}
 				className={cn(
-					"relative flex size-9 items-center justify-center rounded-lg border border-zinc-200/80 bg-white px-0 text-left text-sm text-zinc-500 shadow-none transition-[border-color,color,background-color] hover:border-zinc-300 hover:text-zinc-700 xl:w-full xl:justify-start xl:pl-9 xl:pr-12 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200",
+					"relative flex size-9 items-center justify-center rounded-lg border border-border bg-background px-0 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground xl:w-full xl:justify-start xl:pl-9 xl:pr-12",
 					mobileGhost &&
-						"border-transparent bg-transparent hover:border-transparent hover:bg-zinc-100/70 lg:border-zinc-200/80 lg:bg-white lg:hover:border-zinc-300 dark:border-transparent dark:bg-transparent dark:hover:border-transparent dark:hover:bg-zinc-900/60 lg:dark:border-zinc-800 lg:dark:bg-zinc-950 lg:dark:hover:border-zinc-700",
+						"border-transparent bg-transparent hover:border-transparent hover:bg-accent lg:border-border lg:bg-background lg:hover:border-border",
 				)}
 				aria-label="Open command palette"
 			>
-				<SearchIcon className="pointer-events-none absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 text-zinc-400 xl:left-3 xl:translate-x-0 dark:text-zinc-500" />
+				<SearchIcon className="pointer-events-none absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground xl:left-3 xl:translate-x-0" />
 				<span className="hidden truncate font-medium xl:inline">Search</span>
-				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-zinc-200 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 xl:inline-flex dark:border-zinc-800 dark:text-zinc-400">
+				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground xl:inline-flex">
 					Ctrl K
 				</span>
 			</button>
@@ -1247,11 +1247,11 @@ export default function Search({ className, mobileGhost = false }: Props) {
 			>
 				<DialogContent
 					showCloseButton={false}
-					className="top-1/2 flex w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)]! -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-3xl! p-2 sm:top-1/2 sm:w-[34rem] sm:max-w-[34rem]!"
+					className="top-1/2 flex w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)]! -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-3xl! border-border bg-popover p-2 text-popover-foreground sm:top-1/2 sm:w-[34rem] sm:max-w-[34rem]!"
 				>
 					<DialogTitle className="sr-only">Search</DialogTitle>
 					<div className="mb-1">
-						<InputGroup className="h-9! bg-input/50">
+						<InputGroup className="h-9! border-border bg-muted/50">
 							<InputGroupAddon>
 								<SearchIcon className="size-4 shrink-0 opacity-50" />
 							</InputGroupAddon>

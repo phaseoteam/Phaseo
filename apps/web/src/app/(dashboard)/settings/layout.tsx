@@ -1,6 +1,5 @@
 import SettingsPageSkeleton from "@/components/(gateway)/settings/SettingsPageSkeleton";
 import SettingsSidebar from "@/components/(gateway)/settings/Sidebar";
-import SettingsTopTabsClientOnly from "@/components/(gateway)/settings/SettingsTopTabsClientOnly";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { fetchSettingsLayoutInitialData } from "@/lib/fetchers/internal/fetchSettingsLayoutInitialData";
@@ -9,10 +8,10 @@ import {
 	SidebarInset,
 	SidebarProvider,
 } from "@/components/ui/sidebar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Suspense } from "react";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
 import { batchApiFlag } from "@/lib/flags";
+import { connection } from "next/server";
 
 export const metadata = {
 	title: "Settings",
@@ -27,6 +26,7 @@ export default async function SettingsLayout({
 }: {
 	children: React.ReactNode;
 }) {
+	await connection();
 	const initialData = await fetchSettingsLayoutInitialData();
 	if (!initialData.signedIn) {
 		const headerStore = await headers();
@@ -41,14 +41,13 @@ export default async function SettingsLayout({
 	}
 	const showBroadcast = initialData.showBroadcast;
 	let showWebhooks = false;
-	const isEnterpriseInvoiceMode = initialData.isEnterpriseInvoiceMode;
 	showWebhooks = await batchApiFlag();
 
 	return (
 		<>
 			<NoFooterStyle />
 
-			<SidebarProvider defaultOpen className="fixed inset-x-0 bottom-0 top-[calc(var(--site-header-height,3.75rem)+var(--site-notice-height,0px))] flex min-h-0 overflow-hidden [&_button:not([data-settings-segment])]:!rounded-lg [&_[data-slot=button]]:!rounded-lg">
+			<SidebarProvider defaultOpen className="flex min-h-[calc(100dvh-var(--site-header-height,3.75rem)-var(--site-notice-height,0px))] overflow-visible [&_button:not([data-settings-segment]):not([data-activity-cell])]:!rounded-lg [&_input]:!rounded-lg [&_[data-slot=button]]:!rounded-lg">
 				<Sidebar
 					collapsible="icon"
 					desktopClassName="hidden lg:block"
@@ -57,23 +56,13 @@ export default async function SettingsLayout({
 				>
 					<SettingsSidebar showBroadcast={showBroadcast} showWebhooks={showWebhooks} workspaceName={initialData.workspaceName} />
 				</Sidebar>
-				<SidebarInset className="flex w-0 min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-950">
-					<div className="container mx-auto flex h-full min-h-0 w-full flex-col px-4 pt-0 sm:px-5 lg:px-6 xl:px-8">
-						<div className="relative z-20 shrink-0 bg-background">
-							<SettingsTopTabsClientOnly
-								isEnterpriseInvoiceMode={isEnterpriseInvoiceMode}
-								showBroadcast={showBroadcast}
-								showWebhooks={showWebhooks}
-							/>
-						</div>
-						<ScrollArea
-							className="min-h-0 w-full flex-1 overscroll-y-contain"
-							viewportClassName="pb-4 pt-3"
-						>
+				<SidebarInset className="flex w-0 min-w-0 flex-1 flex-col overflow-visible bg-white dark:bg-zinc-950">
+					<div className="container mx-auto flex min-h-full w-full flex-col px-4 sm:px-5 lg:px-6 xl:px-8">
+						<div className="w-full flex-1 pb-4 pt-5">
 							<Suspense fallback={<SettingsPageSkeleton />}>
 								{children}
 							</Suspense>
-						</ScrollArea>
+						</div>
 					</div>
 				</SidebarInset>
 			</SidebarProvider>

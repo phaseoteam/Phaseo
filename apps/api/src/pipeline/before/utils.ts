@@ -77,6 +77,7 @@ export function buildProviderCandidatesWithDiagnostics(
             streamCancellationEvidenceKind:
                 provider.streamCancellationEvidenceKind ?? "none",
             streamCancellationSourceUrl: provider.streamCancellationSourceUrl ?? null,
+            availabilityPolicy: provider.availabilityPolicy ?? null,
             adapter,
             baseWeight: provider.baseWeight > 0 ? provider.baseWeight : 1,
             byokMeta: provider.byokMeta,

@@ -4,6 +4,7 @@ import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/servic
 import type { PriceCard } from "../pricing/types";
 import { ROUTABLE_CAPABILITY_STATUSES, isWithinEffectiveWindow } from "./context.shared";
 import type { ProviderCandidate } from "./types";
+import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 
 type ServiceTierPlan = "standard" | "priority" | "batch" | "flex";
 
@@ -32,6 +33,7 @@ type TierSiblingProviderRow = {
     routing_enabled?: boolean | null;
     effective_from: string | null;
     effective_to: string | null;
+    metadata?: Record<string, unknown> | null;
 };
 
 type TierSiblingCapabilityRow = {
@@ -169,7 +171,7 @@ async function remapToTierSibling(
     const supabase = getSupabaseAdmin();
     const { data: providerRows, error: providerError } = await supabase
         .from("v2_model_provider_routes")
-        .select("provider_model_id,provider_model_slug,routing_enabled,effective_from,effective_to")
+        .select("provider_model_id,provider_model_slug,routing_enabled,effective_from,effective_to,metadata")
         .eq("provider_slug", candidate.providerId)
         .or(`model_slug.eq.${siblingApiModelId},provider_model_slug.eq.${siblingApiModelId}`)
         .in("status", ["active", "degraded"])
@@ -240,6 +242,7 @@ async function remapToTierSibling(
         apiModelId: siblingApiModelId,
         pricingKey: `${candidate.providerId}:${siblingApiModelId}`,
         providerModelSlug: matchedProviderRow.provider_model_slug ?? candidate.providerModelSlug,
+        availabilityPolicy: parseRouteAvailabilityPolicy(matchedProviderRow.metadata?.availability),
         pricingCard: siblingPricingCard,
         capabilityParams:
             siblingCapability?.params && typeof siblingCapability.params === "object"
@@ -272,7 +275,7 @@ async function remapToHiddenTierSibling(
     const supabase = getSupabaseAdmin();
     const { data: providerRows, error: providerError } = await supabase
         .from("v2_model_provider_routes")
-        .select("provider_model_id,provider_model_slug,routing_enabled,effective_from,effective_to")
+        .select("provider_model_id,provider_model_slug,routing_enabled,effective_from,effective_to,metadata")
         .eq("provider_slug", candidate.providerId)
         .or(`model_slug.eq.${siblingLookupApiModelId},provider_model_slug.eq.${siblingLookupApiModelId}`)
         .eq("routing_enabled", false);
@@ -332,6 +335,7 @@ async function remapToHiddenTierSibling(
     return {
         ...candidate,
         providerModelSlug: matchedProviderRow.provider_model_slug ?? candidate.providerModelSlug,
+        availabilityPolicy: parseRouteAvailabilityPolicy(matchedProviderRow.metadata?.availability),
         capabilityParams:
             siblingCapability?.params && typeof siblingCapability.params === "object"
                 ? siblingCapability.params

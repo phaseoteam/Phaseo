@@ -672,6 +672,7 @@ export function makeMeta(input: {
         edgeColo: edge.colo ?? null,
         edgeCity: edge.city ?? null,
         edgeCountry: edge.country ?? null,
+        edgeRegionCode: edge.regionCode ?? null,
         edgeContinent: edge.continent ?? null,
         edgeAsn: edge.asn ?? null,
         returnMeta: input.returnMeta ?? false,

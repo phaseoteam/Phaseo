@@ -42,6 +42,7 @@ vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
 		RESEND_API_KEY: "resend_key",
 		RESEND_FROM_EMAIL: "Phaseo <noreply@example.com>",
+		RESEND_TEMPLATE_LOW_BALANCE_ID: "low_balance_template",
 	}),
 }));
 
@@ -55,6 +56,101 @@ describe("email outbox", () => {
 		state.updateCalls.length = 0;
 		state.sendEmail.mockClear();
 		vi.resetModules();
+	});
+
+	it("sends low-balance rows through the configured Resend template", async () => {
+		state.rows.push({
+			id: "email_low_balance",
+			created_at: "2026-08-07T12:00:00Z",
+			kind: "low_balance",
+			template: "low_balance",
+			to_email: "owner@example.com",
+			subject: "Low balance alert",
+			workspace_id: "ws_1",
+			user_id: null,
+			payload: {
+				user_first_name: "Ada",
+				team_name: "Research",
+				balance_usd: 8.5,
+				threshold_usd: 10,
+			},
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		const summary = await drainEmailOutbox(10);
+
+		expect(summary).toEqual({ processed: 1, sent: 1, failed: 0 });
+		expect(state.sendEmail).toHaveBeenCalledWith({
+			to: "owner@example.com",
+			subject: "Low balance alert",
+			template: {
+				id: "low_balance_template",
+				variables: {
+					USER_FIRST_NAME: "Ada",
+					BALANCE_REMAINING: 8.5,
+					LOW_BALANCE_THRESHOLD: 10,
+					WORKSPACE_NAME: "Research",
+				},
+			},
+		});
+	});
+
+	it("renders billing alerts and passes their deduplication key to Resend", async () => {
+		state.rows.push({
+			id: "email_auto_top_up_failed",
+			created_at: "2026-08-07T12:00:00Z",
+			kind: "auto_top_up_failed",
+			template: "auto_top_up_failed",
+			to_email: "owner@example.com",
+			subject: "Auto Top-Up failed",
+			workspace_id: "ws_1",
+			user_id: "user_1",
+			dedupe_key: "auto_top_up_failed:pi_123",
+			payload: { workspace_name: "Research", reason: "Card declined" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await drainEmailOutbox(10);
+
+		expect(state.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+			to: "owner@example.com",
+			subject: "Auto Top-Up failed",
+			html: expect.stringContaining("Card declined"),
+			idempotencyKey: "auto_top_up_failed:pi_123",
+	}));
+	});
+
+	it("renders expiring payment method details", async () => {
+		state.rows.push({
+			id: "email_card_expiry",
+			created_at: "2026-08-07T12:00:00Z",
+			kind: "payment_method_expiring",
+			template: "payment_method_expiring",
+			to_email: "owner@example.com",
+			subject: "Payment method expiring soon",
+			workspace_id: "ws_1",
+			user_id: "user_1",
+			dedupe_key: "payment_method_expiring:ws_1:pm_123:2026-8",
+			payload: { workspace_name: "Research", brand: "visa", last4: "4242", expiry: "08/2026" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await drainEmailOutbox(10);
+
+		expect(state.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+			html: expect.stringContaining("Visa ending in 4242"),
+			text: expect.stringContaining("08/2026"),
+			idempotencyKey: "payment_method_expiring:ws_1:pm_123:2026-8",
+		}));
 	});
 
 	it("sends security leaked key notifications without a template id", async () => {

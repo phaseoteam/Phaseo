@@ -8,15 +8,52 @@ import {
 	resolveRedeemMessage,
 } from "@/lib/credits/promoCodes";
 import "server-only";
-import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { fetchAccountWebApi, fetchPublicWebApi } from "@/lib/web-api/client";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import {
 	requireAuthenticatedUser,
 	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { normaliseCountryCode } from "@/lib/countryCodes";
+
+type PurchaseLocationPreview = {
+	countryCode: string;
+	restrictedModels: Array<{ id: string; name: string; logoId: string | null; organisationName: string }>;
+	regionRestrictedModels: Array<{ id: string; name: string; logoId: string | null; organisationName: string }>;
+};
 
 export async function RefreshCredits() {
     revalidatePath("/settings/credits");
+}
+
+export async function ReviewPurchaseLocation(args: {
+	countryCode: string;
+	workspaceId?: string | null;
+}) {
+	const countryCode = normaliseCountryCode(args.countryCode);
+	if (!countryCode) throw new Error("Select a valid country or region");
+	const { supabase, user } = await requireAuthenticatedUser();
+	const workspaceId = args.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
+
+	const admin = createAdminClient();
+	const confirmedAt = new Date().toISOString();
+	const countryUpdate = await admin
+		.from("users")
+		.update({ declared_country_code: countryCode, country_declared_at: confirmedAt })
+		.eq("user_id", user.id);
+	if (countryUpdate.error) throw new Error("Could not save your country");
+
+	const preview = await fetchPublicWebApi<PurchaseLocationPreview>(
+		`/api/_web/credits/model-availability?country=${encodeURIComponent(countryCode)}`,
+	);
+
+	return {
+		confirmedAt,
+		workspaceId,
+		...preview,
+	};
 }
 
 async function resolveWorkspaceIdFromActiveCookie(): Promise<string> {
@@ -78,12 +115,29 @@ export async function setLowBalanceEmailAlert(args: SetLowBalanceEmailAlertArgs)
 	if (!context.accessToken) throw new Error("Unauthorized");
 
 	if (enabled) {
-		if (thresholdUsd == null || !Number.isFinite(thresholdUsd) || thresholdUsd <= 0) {
-			throw new Error("Threshold must be greater than $0");
+		if (thresholdUsd == null || !Number.isFinite(thresholdUsd) || thresholdUsd < 0) {
+			throw new Error("Threshold cannot be negative");
 		}
 	}
 
 	await fetchAccountWebApi("/api/account/credits/low-balance-alert", context.accessToken, { method: "PUT", body: JSON.stringify({ workspaceId, enabled, thresholdUsd }) });
+
+	revalidatePath("/settings/credits");
+	return { ok: true };
+}
+
+export async function setBillingNotificationPreference(args: {
+	preference: "autoTopUpFailure" | "paymentMethodExpiring";
+	enabled: boolean;
+}) {
+	const context = await getServerAccountContext();
+	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
+	if (!context.accessToken) throw new Error("Unauthorized");
+
+	await fetchAccountWebApi("/api/account/credits/notification-preferences", context.accessToken, {
+		method: "PUT",
+		body: JSON.stringify({ workspaceId, [args.preference]: args.enabled }),
+	});
 
 	revalidatePath("/settings/credits");
 	return { ok: true };
@@ -95,8 +149,9 @@ type ChargeSavedPaymentArgs = {
     currency?: string;
     event_type?: string;
     paymentMethodId?: string | null;
-    payment_method_id?: string | null;
-    workspace_id?: string | null;
+	payment_method_id?: string | null;
+	workspace_id?: string | null;
+	country_code: string;
 };
 
 function resolveInternalBaseUrl(): string {
@@ -116,6 +171,13 @@ export async function ChargeSavedPayment(args: ChargeSavedPaymentArgs) {
 	const { supabase, user } = await requireAuthenticatedUser();
 	const workspaceId = args.workspace_id ?? (await resolveWorkspaceIdFromActiveCookie());
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
+	const countryCode = normaliseCountryCode(args.country_code);
+	if (!countryCode) throw new Error("Country is required before purchasing credits");
+	const { error: countryError } = await createAdminClient()
+		.from("users")
+		.update({ declared_country_code: countryCode, country_declared_at: new Date().toISOString() })
+		.eq("user_id", user.id);
+	if (countryError) throw new Error("Could not confirm purchase location");
 
 	const token = process.env.INTERNAL_PAYMENTS_TOKEN ?? process.env.INTERNAL_API_TOKEN;
 	if (!token) throw new Error("Internal payments token not configured");
@@ -126,7 +188,7 @@ export async function ChargeSavedPayment(args: ChargeSavedPaymentArgs) {
 			"Content-Type": "application/json",
 			[INTERNAL_HEADER]: token,
 		},
-		body: JSON.stringify({ ...args, workspace_id: workspaceId }),
+		body: JSON.stringify({ ...args, country_code: countryCode, workspace_id: workspaceId }),
 		cache: "no-store",
 	});
 

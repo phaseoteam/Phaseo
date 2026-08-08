@@ -2,6 +2,14 @@
   "api_provider_id": "openai",
   "api_provider_name": "OpenAI",
   "provider_family_id": "openai",
+  "availability": {
+    "mode": "allowlist",
+    "countries": ["AL","DZ","AF","AD","AO","AG","AR","AM","AU","AT","AZ","BS","BH","BD","BB","BE","BZ","BJ","BT","BO","BA","BW","BR","BN","BG","BF","BI","CV","KH","CM","CA","CF","TD","CL","CO","KM","CG","CD","CR","CI","HR","CY","CZ","DK","DJ","DM","DO","EC","EG","SV","GQ","ER","EE","SZ","ET","FJ","FI","FR","GA","GM","GE","DE","GH","GR","GD","GT","GN","GW","GY","HT","VA","HN","HU","IS","IN","ID","IQ","IE","IL","IT","JM","JP","JO","KZ","KE","KI","KW","KG","LA","LV","LB","LS","LR","LY","LI","LT","LU","MG","MW","MY","MV","ML","MT","MH","MR","MU","MX","FM","MD","MC","MN","ME","MA","MZ","MM","NA","NR","NP","NL","NZ","NI","NE","NG","MK","NO","OM","PK","PW","PS","PA","PG","PY","PE","PH","PL","PT","QA","RO","RW","KN","LC","VC","WS","SM","ST","SA","SN","RS","SC","SL","SG","SK","SI","SB","SO","ZA","KR","SS","ES","LK","SR","SE","CH","SD","TW","TJ","TZ","TH","TL","TG","TO","TT","TN","TR","TM","TV","UG","AE","GB","US","UY","UZ","VU","VN","YE","ZM","ZW"],
+    "country_source": "request_origin",
+    "unknown_country": "deny",
+    "reason": "OpenAI only supports API access, including access offered through API clients, from its published supported countries and territories. Ukraine is temporarily fail-closed because OpenAI's public list does not identify its stated regional exceptions.",
+    "source_url": "https://help.openai.com/en/articles/5347006-openai-api-supported-countries-and-territories"
+  },
   "offer_scope": "global",
   "description": null,
   "link": "https://platform.openai.com/docs/overview",

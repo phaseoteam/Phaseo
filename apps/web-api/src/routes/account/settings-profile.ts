@@ -157,6 +157,7 @@ function emptyProfileUsage(workspaceCount = 0) {
 		longestStreak: 0,
 		activeDays: 0,
 		topModels: [],
+		modelActivity: [],
 		heatmapDays: heatmap(totals),
 		creditsUsage: { today: "$0.0000", week: "$0.0000", month: "$0.0000" },
 		byokUsage: { today: "$0.0000", week: "$0.0000", month: "$0.0000" },
@@ -172,6 +173,7 @@ async function buildProfileUsage(
 	const rows = await usageAggregateRows(client, workspaceIds);
 	const totals = new Map<string, Omit<DailyActivityPoint, "date">>();
 	const models = new Map<string, { requests: number; tokens: number; spendNanos: number }>();
+	const modelActivity = new Map<string, { date: string; id: string; requests: number; tokens: number; spendNanos: number }>();
 	let totalRequests = 0;
 	let totalTokens = 0;
 
@@ -194,6 +196,18 @@ async function buildProfileUsage(
 		model.tokens += tokens;
 		model.spendNanos += spendNanos;
 		models.set(modelId, model);
+		const modelDayKey = `${key}:${modelId}`;
+		const modelDay = modelActivity.get(modelDayKey) ?? {
+			date: key,
+			id: modelId,
+			requests: 0,
+			tokens: 0,
+			spendNanos: 0,
+		};
+		modelDay.requests += requests;
+		modelDay.tokens += tokens;
+		modelDay.spendNanos += spendNanos;
+		modelActivity.set(modelDayKey, modelDay);
 	}
 
 	const modelIds = [...models.keys()].filter((id) => id !== "unknown");
@@ -224,6 +238,9 @@ async function buildProfileUsage(
 		topModels: [...models.entries()]
 			.map(([id, value]) => ({ id, name: modelNames.get(id) ?? id, ...value }))
 			.sort((left, right) => right.tokens - left.tokens || right.requests - left.requests || right.spendNanos - left.spendNanos),
+		modelActivity: [...modelActivity.values()]
+			.map((entry) => ({ ...entry, name: modelNames.get(entry.id) ?? entry.id }))
+			.sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id)),
 		heatmapDays: heatmap(totals),
 		creditsUsage: {
 			today: usd(series30.slice(-1).reduce((sum, item) => sum + item.spendNanos, 0)),

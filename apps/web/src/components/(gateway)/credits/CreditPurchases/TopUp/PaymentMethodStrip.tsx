@@ -1,45 +1,39 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ShieldCheck, CreditCard, Check } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { formatCardBrand } from "./cardBrand";
 
 function Tile({
     active,
-    isDefault,
     children,
     onClick,
     ariaLabel,
 }: {
     active?: boolean;
-    isDefault?: boolean;
     children: React.ReactNode;
     onClick?: () => void;
     ariaLabel?: string;
 }) {
     return (
-        <Card
+        <button
+            type="button"
+            role="radio"
+            aria-checked={Boolean(active)}
+            aria-label={ariaLabel}
+            onClick={onClick}
             className={cn(
-                "rounded-2xl p-3 text-left transition-all w-full",
+                "w-full rounded-lg border p-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
                 active
-                    ? "border-indigo-600 shadow-md"
-                    : "border border-zinc-200 hover:shadow-sm hover:translate-y-[-1px] hover:scale-[1.001] hover:bg-white",
-                isDefault ? "ring-1 ring-indigo-50" : "bg-white"
+                    ? "border-primary/55 bg-primary/8 ring-1 ring-primary/20"
+                    : "border-border bg-muted/20 hover:border-foreground/20 hover:bg-muted/45"
             )}
         >
-            <button
-                type="button"
-                role="radio"
-                aria-checked={!!active}
-                aria-label={ariaLabel}
-                onClick={onClick}
-                className="w-full text-left p-0"
-            >
-                {children}
-            </button>
-        </Card>
+            {children}
+        </button>
     );
 }
 
@@ -52,11 +46,7 @@ export default function PaymentMethodStrip({
     value: string | "new" | null;
     onChange: (v: string | "new") => void;
 }) {
-    const [selected, setSelected] = useState<string | "new" | null>(value);
-    useEffect(() => {
-        setSelected(value);
-    }, [value]);
-
+	const router = useRouter();
     const methods: Array<{
         id: string;
         card?: {
@@ -78,15 +68,21 @@ export default function PaymentMethodStrip({
         <div className="space-y-3">
             <div className="flex items-center justify-between">
                 <div className="text-sm font-medium">Payment method</div>
-                <Link href="/settings/payment-methods" className="text-xs underline">
+                <Link
+					href="/settings/payment-methods"
+					prefetch
+					onFocus={() => router.prefetch("/settings/payment-methods")}
+					onPointerEnter={() => router.prefetch("/settings/payment-methods")}
+					className="text-xs text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+				>
                     Manage
                 </Link>
             </div>
 
             <div role="radiogroup" aria-label="Select payment method" className="grid grid-cols-1 items-start gap-3">
                 {sortedMethods.map((pm: any) => {
-                    const active = selected === pm.id;
-                    const brand = pm.card?.brand ?? "Card";
+                    const active = value === pm.id;
+                    const brand = formatCardBrand(pm.card?.brand);
                     const last4 = pm.card?.last4 ?? "****";
                     const isDefault = defaultId === pm.id;
 
@@ -94,24 +90,20 @@ export default function PaymentMethodStrip({
                         <Tile
                             key={pm.id}
                             active={active}
-                            isDefault={isDefault}
-                            onClick={() => {
-                                onChange(pm.id);
-                                setSelected(pm.id);
-                            }}
+                            onClick={() => onChange(pm.id)}
                             ariaLabel={`${brand} ending ${last4}`}
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-zinc-50 p-2 flex items-center justify-center shadow-sm">
-                                        <CreditCard className="h-5 w-5 text-zinc-700" />
+                                    <div className="flex items-center justify-center rounded-md border bg-background p-2 text-muted-foreground shadow-sm">
+                                        <CreditCard className="size-5" />
                                     </div>
 
                                     <div className="leading-tight">
-                                        <div className="text-sm text-zinc-800 font-medium capitalize">
+                                        <div className="text-sm font-medium capitalize text-foreground">
                                             <span data-pii="true">****{last4}</span>
                                         </div>
-                                        <div className="text-xs text-zinc-500 capitalize">
+                                        <div className="text-xs text-muted-foreground">
                                             {brand}
                                             {pm.card?.exp_month && pm.card?.exp_year
                                                 ? (
@@ -129,18 +121,18 @@ export default function PaymentMethodStrip({
 
                                 <div className="flex items-center gap-2">
                                     {isDefault && (
-                                        <span className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 font-medium">
+                                        <span className="rounded-md border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
                                             Default
                                         </span>
                                     )}
 
                                     {active ? (
-                                        <span className="inline-flex items-center rounded-full bg-indigo-600 p-1">
-                                            <Check className="h-3 w-3 text-white" />
+                                        <span className="inline-flex items-center rounded-full bg-primary p-1 text-primary-foreground">
+                                            <Check className="size-3" />
                                         </span>
                                     ) : (
-                                        <span className="inline-flex items-center rounded-full bg-zinc-100 p-1">
-                                            <Check className="h-3 w-3 text-transparent" />
+                                        <span className="inline-flex items-center rounded-full border border-border bg-muted p-1">
+                                            <Check className="size-3 text-transparent" />
                                         </span>
                                     )}
                                 </div>
@@ -150,33 +142,30 @@ export default function PaymentMethodStrip({
                 })}
 
                 <Tile
-                    active={selected === "new"}
-                    onClick={() => {
-                        onChange("new");
-                        setSelected("new");
-                    }}
+                    active={value === "new"}
+                    onClick={() => onChange("new")}
                     ariaLabel="Use a new card"
                 >
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                            <div className="rounded-lg bg-zinc-50 p-2 flex items-center justify-center shadow-sm">
-                                <ShieldCheck className="h-5 w-5 text-zinc-700" />
+                            <div className="flex items-center justify-center rounded-md border bg-background p-2 text-muted-foreground shadow-sm">
+                                <ShieldCheck className="size-5" />
                             </div>
 
                             <div className="leading-tight">
-                                <div className="text-sm text-zinc-800 font-medium">Use a new card</div>
-                                <div className="text-xs text-zinc-500">Pay with a new card at checkout</div>
+                                <div className="text-sm font-medium text-foreground">Use a new card</div>
+                                <div className="text-xs text-muted-foreground">Pay with a new card at checkout</div>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {selected === "new" ? (
-                                <span className="inline-flex items-center rounded-full bg-indigo-600 p-1">
-                                    <Check className="h-3 w-3 text-white" />
+                            {value === "new" ? (
+                                <span className="inline-flex items-center rounded-full bg-primary p-1 text-primary-foreground">
+                                    <Check className="size-3" />
                                 </span>
                             ) : (
-                                <span className="inline-flex items-center rounded-full bg-zinc-100 p-1">
-                                    <Check className="h-3 w-3 text-transparent" />
+                                <span className="inline-flex items-center rounded-full border border-border bg-muted p-1">
+                                    <Check className="size-3 text-transparent" />
                                 </span>
                             )}
                         </div>

@@ -6,6 +6,7 @@ import Stripe from "stripe";
 import { invalidateGatewayCreditCache } from "../../core/gateway-credit-cache";
 import { getSupabaseAdmin, ensureRuntimeForBackground } from "../../runtime/env";
 import { enqueueLowBalanceEmail } from "../notifications/low-balance";
+import { enqueueAutoTopUpFailedEmail } from "../notifications/billing-alerts";
 
 export type ChargeRpcResult = {
     status: string;
@@ -216,14 +217,43 @@ export async function recordUsageAndCharge(args: {
                 return chargeResult;
             }
             const amount_cents = Math.round(chargeResult.auto_top_up_amount_nanos / 10_000_000); // since 1 cent = 10,000,000 nanos
-            const paymentMethod =
-                chargeResult.auto_top_up_account_id ??
-                (chargeResult.stripe_customer_id
-                    ? await resolveDefaultPaymentMethod(stripe, chargeResult.stripe_customer_id)
-                    : null);
+            let paymentMethod: string | null;
+            try {
+                paymentMethod =
+                    chargeResult.auto_top_up_account_id ??
+                    (chargeResult.stripe_customer_id
+                        ? await resolveDefaultPaymentMethod(stripe, chargeResult.stripe_customer_id)
+                        : null);
+            } catch (error) {
+                await enqueueAutoTopUpFailedEmail({
+                    workspaceId: args.workspaceId,
+                    dedupeId: `payment_method_lookup:${args.requestId}`,
+                    reason: "The saved payment method could not be loaded for Auto Top-Up.",
+                }).catch((enqueueError) => {
+                    console.error("[auto-recharge] Failed to enqueue failure notification", {
+                        workspaceId: args.workspaceId,
+                        error: enqueueError instanceof Error ? enqueueError.message : String(enqueueError),
+                    });
+                });
+                console.error("[auto-recharge] Failed to resolve payment method", {
+                    workspaceId: args.workspaceId,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+                return chargeResult;
+            }
             if (!paymentMethod) {
                 console.error("[auto-recharge] Skipped: no payment method available", {
                     workspaceId: args.workspaceId,
+                });
+                await enqueueAutoTopUpFailedEmail({
+                    workspaceId: args.workspaceId,
+                    dedupeId: `no_payment_method:${args.requestId}`,
+                    reason: "No saved payment method is available for Auto Top-Up.",
+                }).catch((error) => {
+                    console.error("[auto-recharge] Failed to enqueue failure notification", {
+                        workspaceId: args.workspaceId,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
                 });
                 return chargeResult;
             }
@@ -236,23 +266,48 @@ export async function recordUsageAndCharge(args: {
                 auto_top_up_payment_method_id: paymentMethod,
             };
 
-            const paymentIntent = await stripe.paymentIntents.create(
-                {
-                    amount: amount_cents,
-                    currency: "usd",
-                    customer: chargeResult.stripe_customer_id ?? undefined,
-                    payment_method: paymentMethod,
-                    off_session: true,
-                    confirm: true,
-                    metadata: topUpMetadata,
-                },
-                {
-                    idempotencyKey: buildAutoTopUpIdempotencyKey({
+            let paymentIntent: Stripe.PaymentIntent;
+            try {
+                paymentIntent = await stripe.paymentIntents.create(
+                    {
+                        amount: amount_cents,
+                        currency: "usd",
+                        customer: chargeResult.stripe_customer_id ?? undefined,
+                        payment_method: paymentMethod,
+                        off_session: true,
+                        confirm: true,
+                        metadata: topUpMetadata,
+                    },
+                    {
+                        idempotencyKey: buildAutoTopUpIdempotencyKey({
+                            workspaceId: args.workspaceId,
+                            requestId: args.requestId,
+                        }),
+                    }
+                );
+            } catch (error) {
+                const stripeError = error as Stripe.errors.StripeError & {
+                    payment_intent?: Stripe.PaymentIntent;
+                    raw?: { payment_intent?: Stripe.PaymentIntent };
+                };
+                const failedIntent = stripeError.payment_intent ?? stripeError.raw?.payment_intent;
+                await enqueueAutoTopUpFailedEmail({
+                    workspaceId: args.workspaceId,
+                    dedupeId: failedIntent?.id ?? `request:${args.requestId}`,
+                    reason: stripeError.message || "The saved payment method could not be charged.",
+                }).catch((enqueueError) => {
+                    console.error("[auto-recharge] Failed to enqueue failure notification", {
                         workspaceId: args.workspaceId,
-                        requestId: args.requestId,
-                    }),
-                }
-            );
+                        error: enqueueError instanceof Error ? enqueueError.message : String(enqueueError),
+                    });
+                });
+                console.error("[auto-recharge] Payment failed", {
+                    workspaceId: args.workspaceId,
+                    paymentIntentId: failedIntent?.id ?? null,
+                    error: stripeError.message || String(error),
+                });
+                return chargeResult;
+            }
 
             // Log success or handle failure
             console.log(`[auto-recharge] Initiated for team ${args.workspaceId}, payment intent ${paymentIntent.id}, amount: $${(amount_cents / 100).toFixed(2)}`);

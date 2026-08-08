@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { KeyRound, Loader2, LogIn, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, LogIn, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
 	deletePasskeyAction,
@@ -37,6 +38,7 @@ type PendingPasskeyAction =
 	| { passkeyId: string; type: "remove" };
 
 export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
+	const router = useRouter();
 	const [passkeys, setPasskeys] = React.useState<Passkey[]>([]);
 	const [loading, setLoading] = React.useState(true);
 	const [pending, setPending] = React.useState(false);
@@ -164,31 +166,74 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		try {
 			await createClient().auth.signOut();
 		} finally {
-			window.location.assign(
+			router.push(
 				`/sign-in?returnUrl=${encodeURIComponent("/settings/account/mfa")}`,
 			);
+			router.refresh();
 		}
 	}
 
 	return (
-		<div className="rounded-lg border bg-background p-4 sm:p-5 space-y-4">
-			<div className="flex items-start justify-between gap-4">
-				<div>
-					<h3 className="flex items-center gap-2 text-sm font-medium"><KeyRound className="h-4 w-4" />Passkeys</h3>
-					<p className="mt-1 text-sm text-muted-foreground">Sign in with your device biometrics, PIN, or security key.</p>
+		<>
+			<section aria-labelledby="passkeys-title" className="space-y-3">
+				<h2 id="passkeys-title" className="font-heading text-base font-medium">
+					Passkeys
+				</h2>
+				<div className="overflow-hidden rounded-xl border bg-background/40">
+					<div className="px-4 py-4">
+						<div className="flex items-start justify-between gap-4">
+							<div className="min-w-0">
+								<h3 className="text-sm font-medium">Device Passkeys</h3>
+								<p className="mt-0.5 text-sm text-muted-foreground">
+									Sign in with your device biometrics, PIN, or security key.
+								</p>
+							</div>
+							<Button
+								onClick={() => requestAction({ type: "register" })}
+								disabled={pending}
+							>
+								{pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+								Add Passkey
+							</Button>
+						</div>
+
+						<div className="pt-3 pl-3 sm:pl-4">
+							{loading ? (
+								<p className="text-xs text-muted-foreground">Loading passkeys...</p>
+							) : null}
+							{!loading && passkeys.length === 0 ? (
+								<p className="text-xs text-muted-foreground">No passkeys added yet.</p>
+							) : null}
+							{passkeys.map((passkey, index) => (
+								<div
+									key={passkey.id}
+									className={index === 0 ? "flex items-center justify-between gap-3" : "mt-2 flex items-center justify-between gap-3 border-t pt-2"}
+								>
+									<div className="min-w-0">
+										<p className="truncate text-xs font-medium">
+											{passkey.friendly_name || "Passkey"}
+										</p>
+										<p className="mt-0.5 text-xs text-muted-foreground">
+											Added {new Date(passkey.created_at).toLocaleDateString()}
+										</p>
+									</div>
+									<Button
+										variant="ghost"
+										size="icon"
+										aria-label="Remove passkey"
+										onClick={() =>
+											requestAction({ type: "remove", passkeyId: passkey.id })
+										}
+										disabled={pending}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</div>
+							))}
+						</div>
+					</div>
 				</div>
-				<Button onClick={() => requestAction({ type: "register" })} disabled={pending}>
-					{pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Add passkey
-				</Button>
-			</div>
-			{loading ? <p className="text-sm text-muted-foreground">Loading passkeys...</p> : null}
-			{!loading && passkeys.length === 0 ? <p className="text-sm text-muted-foreground">No passkeys added yet.</p> : null}
-			{passkeys.map((passkey) => (
-				<div key={passkey.id} className="flex items-center justify-between gap-3 border-t pt-3">
-					<div className="min-w-0 text-sm"><p className="truncate font-medium">{passkey.friendly_name || "Passkey"}</p><p className="text-muted-foreground">Added {new Date(passkey.created_at).toLocaleDateString()}</p></div>
-					<Button variant="ghost" size="icon" aria-label="Remove passkey" onClick={() => requestAction({ type: "remove", passkeyId: passkey.id })} disabled={pending}><Trash2 className="h-4 w-4" /></Button>
-				</div>
-			))}
+			</section>
 
 			<Dialog
 				open={reauthOpen}
@@ -270,6 +315,6 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 					)}
 				</DialogContent>
 			</Dialog>
-		</div>
+		</>
 	);
 }

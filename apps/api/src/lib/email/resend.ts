@@ -10,6 +10,7 @@ type SendEmailArgs = {
 		variables?: Record<string, string | number>;
 	};
 	from?: string;
+	idempotencyKey?: string;
 };
 
 export async function sendEmail(args: SendEmailArgs): Promise<void> {
@@ -30,6 +31,7 @@ export async function sendEmail(args: SendEmailArgs): Promise<void> {
 			headers: {
 				Authorization: `Bearer ${apiKey}`,
 				"Content-Type": "application/json",
+				...(args.idempotencyKey ? { "Idempotency-Key": args.idempotencyKey } : {}),
 			},
 			body: JSON.stringify({
 				from,
@@ -63,6 +65,7 @@ export async function sendEmail(args: SendEmailArgs): Promise<void> {
 		headers: {
 			Authorization: `Bearer ${apiKey}`,
 			"Content-Type": "application/json",
+			...(args.idempotencyKey ? { "Idempotency-Key": args.idempotencyKey } : {}),
 		},
 		body: JSON.stringify({
 			from,

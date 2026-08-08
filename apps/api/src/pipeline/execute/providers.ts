@@ -37,6 +37,8 @@ export async function rankProviders(
         providerCapabilitiesBeta: ctx.providerCapabilitiesBeta ?? false,
         testingMode: ctx.testingMode ?? false,
         requestId: ctx.requestId ?? null,
+        requestCountry: ctx.meta?.edgeCountry ?? null,
+        requestRegionCode: ctx.meta?.edgeRegionCode ?? null,
         cacheAwareRouting: resolveCacheAwareRoutingFlag(ctx),
 		collectDetailedDiagnostics: Boolean(
 			ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics,

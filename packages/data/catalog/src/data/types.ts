@@ -61,6 +61,18 @@ export interface APIProvider {
     description: string | null;
     link: string | null;
     provider_family_id?: string | null;
+    availability?: {
+        mode: "allowlist" | "blocklist";
+        countries: string[];
+        country_source: "request_origin";
+        unknown_country: "allow" | "deny";
+        blocked_subdivisions?: string[];
+        unknown_subdivision?: "allow" | "deny";
+        reason?: string | null;
+        source_url?: string | null;
+        effective_from?: string | null;
+        effective_to?: string | null;
+    } | null;
     offer_label?: string | null;
     offer_scope?: "global" | "regional" | "specialized" | null;
     data_policy_variant?: "standard" | "zdr" | null;

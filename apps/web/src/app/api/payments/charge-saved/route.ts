@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     try {
         // Accept both camelCase and snake_case keys from client for robustness
         const body = await req.json();
-        const { customerId, amount_pence, currency = "usd", event_type } = body as any;
+        const { customerId, amount_pence, currency = "usd", event_type, country_code } = body as any;
         const normalizedPurpose =
             typeof event_type === "string" && TOP_UP_PURPOSES.has(event_type) ? event_type : "auto_top_up";
         // support paymentMethodId (camelCase) and payment_method_id (snake_case)
@@ -37,6 +37,12 @@ export async function POST(req: NextRequest) {
         const workspaceId = (body.workspace_id ?? body.workspaceId) as string | undefined;
         if (!customerId) return NextResponse.json({ error: "Missing customerId" }, { status: 400 });
         if (!amount_pence || amount_pence < 50) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+        const purchaseCountry = typeof country_code === "string" && /^[A-Z]{2}$/.test(country_code)
+            ? country_code
+            : null;
+        if (["top_up", "top_up_one_off"].includes(normalizedPurpose) && !purchaseCountry) {
+            return NextResponse.json({ error: "Missing country" }, { status: 400 });
+        }
 
         const stripe = getStripe();
 
@@ -51,6 +57,7 @@ export async function POST(req: NextRequest) {
             confirm: true,
             metadata: {
                 purpose: normalizedPurpose,
+                ...(purchaseCountry ? { country_code: purchaseCountry } : {}),
                 ...(workspaceId ? { workspace_id: workspaceId } : {}),
             },
         });

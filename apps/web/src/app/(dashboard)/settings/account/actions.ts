@@ -574,13 +574,14 @@ export async function verifyMFAEnrollmentAction(
                 .map(f => supabase.auth.mfa.unenroll({ factorId: f.id }))
             await Promise.all(cleanupPromises)
         }
-    } catch (err) {
+    } catch {
         // Ignore cleanup errors - non-critical
     }
 
-    revalidatePath('/settings/account')
+	revalidatePath('/settings/account')
+	revalidatePath('/settings/account/mfa')
 
-    return {
+	return {
         success: true,
     }
 }
@@ -615,8 +616,9 @@ export async function unenrollMFAAction(
         throw new Error('Failed to disable MFA')
     }
 
-    revalidatePath('/settings/account')
-    return { success: true }
+	revalidatePath('/settings/account')
+	revalidatePath('/settings/account/mfa')
+	return { success: true }
 }
 /**
  * Cleans up any unverified MFA factors for the current user.

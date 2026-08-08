@@ -257,10 +257,13 @@ export type SettingsCreditsTransactionsInitialData = {
 };
 
 export type SettingsCreditsInitialData = {
+	declaredCountryCode: string | null;
 	initialBalance: number;
 	latestPaymentSuccessAt: string | null;
+	autoTopUpFailureEmailEnabled: boolean;
 	lowBalanceEmailEnabled: boolean;
 	lowBalanceEmailThresholdUsd: number | null;
+	paymentMethodExpiringEmailEnabled: boolean;
 	obfuscateInfo: boolean;
 	stripeInfo: {
 		customer: { email: string | null; id: string | null };

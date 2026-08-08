@@ -1,15 +1,21 @@
 "use client"
 
-import { useMemo, useState, type ReactNode } from "react"
+import { useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react"
 import Link from "next/link"
-import { Camera, ExternalLink, Flame } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Camera, ExternalLink, Flame, LoaderCircle } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { toast } from "sonner"
 
 import type { ProfileSnapshot } from "@/lib/fetchers/profile/types"
 import { formatCompactNumber, formatUsdFromNanos } from "@/lib/profile"
+import { buildProfileShareCardPayload } from "@/lib/profileShare"
+import { getModelDetailsHref } from "@/lib/models/modelHref"
+import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/Logo"
+import ProfileShareControls from "@/components/(gateway)/settings/profile/ProfileShareControls"
 import {
 	ChartContainer,
 	ChartTooltip,
@@ -21,6 +27,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 } from "@/components/ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 type Props = {
@@ -40,15 +47,19 @@ const RANGE_LABELS: Record<TimeRange, string> = {
 	all: "All Time",
 }
 
-const HEATMAP_LEVEL_CLASSES = [
-	"bg-muted",
-	"bg-primary/15",
-	"bg-primary/30",
-	"bg-primary/55",
-	"bg-primary",
-]
+const METRIC_HSL: Record<Metric, string> = {
+	tokens: "199 89% 48%",
+	requests: "350 68% 48%",
+	spend: "262 83% 58%",
+}
 
-const WEEKDAY_LABELS = ["M", "", "W", "", "F", "", ""]
+const HEATMAP_LEVEL_OPACITIES = [0, 0.16, 0.32, 0.58, 1]
+
+const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"]
+
+function getMetricColor(metric: Metric, opacity = 1): string {
+	return `hsl(${METRIC_HSL[metric]} / ${opacity})`
+}
 
 function getInitials(name: string): string {
 	return name
@@ -110,6 +121,43 @@ function getMetricValue(
 	return point.tokens
 }
 
+function getModelsForRange(
+	profile: ProfileSnapshot,
+	range: TimeRange,
+): ProfileSnapshot["topModels"] {
+	const dates = new Set(getSeriesForRange(profile, range).map((point) => point.date))
+	const models = new Map<string, ProfileSnapshot["topModels"][number]>()
+	const modelActivity = profile.modelActivity
+	if (!modelActivity) return [...profile.topModels]
+
+	for (const entry of modelActivity) {
+		if (!dates.has(entry.date)) continue
+		const model = models.get(entry.id) ?? {
+			id: entry.id,
+			name: entry.name,
+			requests: 0,
+			tokens: 0,
+			spendNanos: 0,
+		}
+		model.requests += entry.requests
+		model.tokens += entry.tokens
+		model.spendNanos += entry.spendNanos
+		models.set(entry.id, model)
+	}
+
+	return [...models.values()]
+}
+
+function getLongestStreak(points: ProfileSnapshot["activitySeries30"]): number {
+	let longest = 0
+	let current = 0
+	for (const point of points) {
+		current = point.requests > 0 ? current + 1 : 0
+		longest = Math.max(longest, current)
+	}
+	return longest
+}
+
 function formatMetricValue(metric: Metric, value: number, compact = true): string {
 	if (metric === "spend") {
 		return new Intl.NumberFormat("en-US", {
@@ -155,7 +203,7 @@ function formatProviderName(provider: string): string {
 
 function ProviderMark({ provider, label }: { provider: string; label: string }) {
 	return (
-		<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-background p-1">
+		<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border bg-background p-1">
 			<Logo
 				id={provider}
 				alt={`${label} logo`}
@@ -228,7 +276,7 @@ function ActivityHeatmap({
 		.filter(Boolean) as Array<{ index: number; label: string }>
 
 	return (
-		<section className="min-w-0 overflow-hidden border-t border-border pt-6">
+		<section className="min-w-0 border-t border-border pt-6">
 			<div className="mb-4 flex items-start justify-between gap-4">
 				<div>
 					<h2 className="text-lg font-semibold text-foreground">Activity</h2>
@@ -238,8 +286,8 @@ function ActivityHeatmap({
 				</div>
 			</div>
 
-			<div className="mb-5 grid max-w-3xl grid-cols-4 divide-x divide-border text-sm">
-				<div className="pr-6">
+			<div className="mb-5 grid max-w-3xl grid-cols-2 gap-y-5 text-sm sm:grid-cols-4 sm:divide-x sm:divide-border">
+				<div className="pr-4 sm:pr-6">
 					<div className="flex items-center gap-1.5 text-muted-foreground">
 						<Flame className="h-3.5 w-3.5" />
 						<span>Streak</span>
@@ -251,19 +299,19 @@ function ActivityHeatmap({
 						Best {profile.longestStreak.toLocaleString()}
 					</div>
 				</div>
-				<div className="px-6">
+				<div className="pl-4 sm:px-6">
 						<div className="text-muted-foreground">Avg / day</div>
 						<div className="mt-1 text-base font-semibold text-foreground">
 							{formatMetricValue(metric, avgDay)}
 						</div>
 				</div>
-				<div className="px-6">
+				<div className="pr-4 sm:px-6">
 					<div className="text-muted-foreground">Avg / week</div>
 					<div className="mt-1 text-base font-semibold text-foreground">
 						{formatMetricValue(metric, avgWeek)}
 					</div>
 				</div>
-				<div className="pl-6">
+				<div className="pl-4 sm:pl-6">
 					<div className="text-muted-foreground">Total</div>
 					<div className="mt-1 text-base font-semibold text-foreground">
 						{formatMetricValue(metric, total)}
@@ -271,8 +319,13 @@ function ActivityHeatmap({
 				</div>
 			</div>
 
-			<div className="w-full max-w-full overflow-hidden pb-1">
-				<div className="w-full">
+			<ScrollArea
+				scrollBarOrientation="horizontal"
+				keepScrollbarMounted
+				className="w-full max-w-full"
+				viewportClassName="pb-3"
+			>
+				<div className="min-w-[44rem]">
 					<div className="ml-5 grid grid-cols-[repeat(53,1fr)] gap-1 text-[10px] text-muted-foreground/70">
 						{Array.from({ length: 53 }).map((_, weekIndex) => {
 							const label =
@@ -301,9 +354,11 @@ function ActivityHeatmap({
 										<TooltipTrigger asChild>
 											<button
 												type="button"
-												className={`aspect-square w-full min-w-0 rounded-[4px] ${HEATMAP_LEVEL_CLASSES[level]} ${
+												data-activity-cell
+												className={`aspect-square w-full min-w-0 rounded-xs ${level === 0 ? "bg-muted" : ""} ${
 													day.isFuture ? "opacity-40" : ""
 												}`}
+												style={level === 0 ? undefined : { backgroundColor: getMetricColor(metric, HEATMAP_LEVEL_OPACITIES[level]) }}
 												aria-label={`${formatLongDate(day.date)} ${formatMetricValue(metric, value)}`}
 											/>
 										</TooltipTrigger>
@@ -319,15 +374,16 @@ function ActivityHeatmap({
 						</div>
 					</div>
 				</div>
-			</div>
+			</ScrollArea>
 
 			<div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
 				<span>Less</span>
 				<div className="flex items-center gap-1">
-					{HEATMAP_LEVEL_CLASSES.map((levelClass, index) => (
+					{HEATMAP_LEVEL_OPACITIES.map((opacity, index) => (
 						<div
-							key={levelClass}
-							className={`h-2.5 w-2.5 rounded-[3px] ${levelClass}`}
+							key={opacity}
+							className={`h-2.5 w-2.5 rounded-xs ${index === 0 ? "bg-muted" : ""}`}
+							style={index === 0 ? undefined : { backgroundColor: getMetricColor(metric, opacity) }}
 							aria-label={`Activity level ${index}`}
 						/>
 					))}
@@ -337,7 +393,7 @@ function ActivityHeatmap({
 
 			<div className="mt-8 grid gap-10 lg:grid-cols-2">
 				<div>
-					<h3 className="text-sm font-semibold text-foreground">Activity insights</h3>
+					<h3 className="text-sm font-semibold text-foreground">Activity Insights</h3>
 					<div className="mt-3 space-y-3 text-sm">
 						<div className="flex items-center justify-between gap-6">
 							<span className="text-muted-foreground">Biggest day</span>
@@ -370,7 +426,7 @@ function ActivityHeatmap({
 				</div>
 
 				<div>
-					<h3 className="text-sm font-semibold text-foreground">Usage notes</h3>
+					<h3 className="text-sm font-semibold text-foreground">Usage Notes</h3>
 					<div className="mt-3 space-y-3 text-sm">
 						<div className="flex items-center justify-between gap-6">
 							<span className="text-muted-foreground">Most used model</span>
@@ -402,30 +458,96 @@ export default function ProfileDashboard({
 	publicView = false,
 	actions,
 }: Props) {
-	const [range, setRange] = useState<TimeRange>("all")
+	const router = useRouter()
+	const avatarInputRef = useRef<HTMLInputElement>(null)
+	const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl)
+	const [avatarUploading, setAvatarUploading] = useState(false)
+	const [range, setRange] = useState<TimeRange>("30d")
 	const [metric, setMetric] = useState<Metric>("tokens")
 
+	async function updateProfilePhoto(event: ChangeEvent<HTMLInputElement>) {
+		const file = event.target.files?.[0]
+		if (!file) return
+		if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+			toast.error("Choose a JPG, PNG, or WebP image.")
+			event.target.value = ""
+			return
+		}
+		if (file.size > 5 * 1024 * 1024) {
+			toast.error("Profile photos must be 5 MB or smaller.")
+			event.target.value = ""
+			return
+		}
+
+		setAvatarUploading(true)
+		try {
+			const accessToken = await getBrowserAccessToken()
+			const response = await fetch("/api/account/settings/profile/avatar", {
+				method: "POST",
+				body: file,
+				headers: {
+					Accept: "application/json",
+					"Content-Type": file.type,
+					...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+				},
+			})
+			const payload = (await response.json().catch(() => ({}))) as {
+				avatarUrl?: string
+				error?: string
+			}
+			if (!response.ok || !payload.avatarUrl) {
+				const message = payload.error === "profile_photo_too_large"
+					? "Profile photos must be 5 MB or smaller."
+					: ["invalid_profile_photo", "unsupported_profile_photo", "empty_profile_photo"].includes(payload.error ?? "")
+						? "Choose a valid JPG, PNG, or WebP image."
+						: "Could not update profile photo"
+				throw new Error(message)
+			}
+			const nextAvatarUrl = payload.avatarUrl
+
+			setAvatarUrl(nextAvatarUrl)
+			toast.success("Profile photo updated")
+			router.refresh()
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : "Could not update profile photo")
+		} finally {
+			setAvatarUploading(false)
+			event.target.value = ""
+		}
+	}
+
+	const selectedSeries = useMemo(() => getSeriesForRange(profile, range), [profile, range])
 	const chartPoints = useMemo(() => {
-		const points = getSeriesForRange(profile, range)
-		return points.map((point) => ({
+		return selectedSeries.map((point) => ({
 			date: point.date,
 			value: getMetricValue(point, metric),
 			raw: point,
 		}))
-	}, [profile, range, metric])
+	}, [selectedSeries, metric])
+	const sharePayload = useMemo(() => {
+		const totalRequests = selectedSeries.reduce((sum, point) => sum + point.requests, 0)
+		const totalTokens = selectedSeries.reduce((sum, point) => sum + point.tokens, 0)
+		return buildProfileShareCardPayload(profile, {
+			periodLabel: RANGE_LABELS[range],
+			totalRequests,
+			totalTokens,
+			longestStreak: getLongestStreak(selectedSeries),
+			avgPerWeek: totalRequests / Math.max(1, selectedSeries.length / 7),
+		})
+	}, [profile, range, selectedSeries])
 
 	const total = chartPoints.reduce((sum, point) => sum + point.value, 0)
 	const previous =
 		metric === "tokens" ? profile.tokenChange : metric === "requests" ? profile.requestChange : null
 	const topModels = useMemo(() => {
-		return [...profile.topModels]
+		return getModelsForRange(profile, range)
 			.sort((left, right) => {
 				if (metric === "spend") return right.spendNanos - left.spendNanos
 				if (metric === "requests") return right.requests - left.requests
 				return right.tokens - left.tokens
 			})
 			.slice(0, 5)
-	}, [profile.topModels, metric])
+	}, [profile, range, metric])
 	const topModelMax = Math.max(
 		1,
 		...topModels.map((model) =>
@@ -440,11 +562,11 @@ export default function ProfileDashboard({
 	return (
 		<div className="space-y-6 px-4 pb-8 sm:px-6 lg:px-8">
 			<header className="flex items-start justify-between gap-4">
-				<div className="flex items-center gap-3">
+				<div className="flex min-w-0 items-center gap-3">
 					<div className="relative">
 						<Avatar className="h-14 w-14 border border-border bg-muted">
-							{profile.avatarUrl ? (
-								<AvatarImage src={profile.avatarUrl} alt={profile.displayName} />
+							{avatarUrl ? (
+								<AvatarImage src={avatarUrl} alt={profile.displayName} />
 							) : null}
 							<AvatarFallback className="bg-muted font-semibold text-muted-foreground">
 								{getInitials(profile.displayName)}
@@ -453,63 +575,67 @@ export default function ProfileDashboard({
 						{publicView ? null : (
 							<button
 								type="button"
-								className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:text-foreground"
-								aria-label="Change profile photo"
+								className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:cursor-wait disabled:opacity-70"
+								aria-label={avatarUploading ? "Uploading profile photo" : "Change profile photo"}
+								disabled={avatarUploading}
+								onClick={() => avatarInputRef.current?.click()}
 							>
-								<Camera className="h-3 w-3" />
+								{avatarUploading ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
 							</button>
 						)}
+						{publicView ? null : (
+							<input
+								ref={avatarInputRef}
+								type="file"
+								accept="image/jpeg,image/png,image/webp"
+								className="sr-only"
+								onChange={updateProfilePhoto}
+							/>
+						)}
 					</div>
-					<div>
+					<div className="min-w-0">
 						<h1 className="text-base font-semibold text-foreground">
 							{profile.displayName}
 						</h1>
 						{publicView ? (
 							<p className="text-sm text-muted-foreground">/{profile.publicProfileSlug}</p>
 						) : profile.email ? (
-							<p className="text-sm text-muted-foreground" data-pii="true">
+							<p className="truncate text-sm text-muted-foreground" data-pii="true">
 								{profile.email}
 							</p>
 						) : null}
 					</div>
 				</div>
-				{actions}
+				{publicView ? actions : <ProfileShareControls payload={sharePayload} />}
 			</header>
 
 			<section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
 				<div className="min-w-0">
-					<div className="mb-4 flex flex-wrap items-center gap-3">
+					<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
 						<h2 className="mr-2 text-lg font-semibold text-foreground">
-							Usage summary
+							Usage Summary
 						</h2>
-						{publicView ? null : (
-							<Badge variant="outline" className="h-7 px-2.5 text-xs font-medium">
-								All workspaces
-								<span className="ml-1 text-muted-foreground">
-									({profile.usageWorkspaceCount})
-								</span>
-							</Badge>
-						)}
-						<Select value={range} onValueChange={(value) => setRange(value as TimeRange)}>
-							<SelectTrigger className="h-8 w-36 rounded-lg border-border bg-input/50 text-xs text-foreground shadow-none">
-								<span data-slot="select-value">{RANGE_LABELS[range]}</span>
-							</SelectTrigger>
-							<SelectContent>
-								{Object.entries(RANGE_LABELS).map(([value, label]) => (
-									<SelectItem key={value} value={value}>
-										{label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<div className="inline-flex rounded-lg bg-muted/70 p-1">
+						<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+							<Select value={range} onValueChange={(value) => setRange(value as TimeRange)}>
+								<SelectTrigger className="h-8 w-full rounded-lg border-border bg-input/50 text-xs text-foreground shadow-none sm:w-36">
+									<span data-slot="select-value">{RANGE_LABELS[range]}</span>
+								</SelectTrigger>
+								<SelectContent>
+									{Object.entries(RANGE_LABELS).map(([value, label]) => (
+										<SelectItem key={value} value={value}>
+											{label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<div className="grid h-8 grid-cols-3 rounded-lg bg-muted/70 p-0.5 sm:inline-flex">
 							{(["tokens", "spend", "requests"] as const).map((nextMetric) => (
 								<button
 									key={nextMetric}
 									type="button"
 									onClick={() => setMetric(nextMetric)}
 									className={[
-										"h-7 rounded-md px-4 text-xs font-medium transition-colors",
+										"h-7 rounded-md px-3 text-xs font-medium transition-colors sm:px-4",
 										metric === nextMetric
 											? "bg-background text-foreground shadow-sm"
 											: "text-muted-foreground hover:text-foreground",
@@ -522,6 +648,7 @@ export default function ProfileDashboard({
 											: "Requests"}
 								</button>
 							))}
+							</div>
 						</div>
 					</div>
 
@@ -550,7 +677,7 @@ export default function ProfileDashboard({
 											: metric === "spend"
 												? "Spend"
 												: "Requests",
-									color: "#8b5cf6",
+									color: getMetricColor(metric),
 								},
 							}}
 							className="h-[18rem] min-w-0 w-full"
@@ -591,22 +718,21 @@ export default function ProfileDashboard({
 					</div>
 				</div>
 
-				<aside className="min-w-0 border-l border-border pl-5">
-					<div className="mb-5 flex items-center justify-between">
-						<div className="flex items-baseline gap-2">
-							<h2 className="text-lg font-semibold text-foreground">Top models</h2>
-							<span className="text-sm text-muted-foreground">
-								by {metric === "tokens" ? "tokens" : metric === "spend" ? "spend" : "requests"}
-							</span>
+				<aside className="min-w-0 border-t border-border pt-5 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-5">
+					<div className="mb-5 min-w-0">
+						<div className="flex items-center justify-between gap-4">
+							<h2 className="text-lg font-semibold text-foreground">Top Models</h2>
+							{publicView ? null : (
+								<Button asChild variant="ghost" size="xs" className="-mr-2 rounded-lg text-muted-foreground">
+									<Link href="/settings/usage/overview">
+										Open workspace usage <ExternalLink className="h-3 w-3" />
+									</Link>
+								</Button>
+							)}
 						</div>
-						{publicView ? null : (
-							<Link
-								href="/settings/usage/overview"
-								className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-							>
-								Open workspace usage <ExternalLink className="ml-1 inline h-3 w-3" />
-							</Link>
-						)}
+						<div className="mt-0.5 text-sm text-muted-foreground">
+							by {metric === "tokens" ? "tokens" : metric === "spend" ? "spend" : "requests"}
+						</div>
 					</div>
 
 					<div className="space-y-4">
@@ -624,29 +750,34 @@ export default function ProfileDashboard({
 											: model.tokens
 								const provider = getProviderFromModelId(model.id)
 								const providerName = formatProviderName(provider)
-								return (
-									<div key={model.id} className="space-y-2">
-										<div className="flex items-center gap-3">
-											<ProviderMark provider={provider} label={providerName} />
-											<div className="min-w-0 flex-1">
-												<div className="truncate text-sm font-medium text-foreground">
-													{model.name}
-												</div>
-												<div className="truncate text-xs text-muted-foreground">
-													{providerName}
-												</div>
+								const modelHref = getModelDetailsHref(null, model.id)
+								const modelSummary = (
+									<div className="flex items-center gap-3">
+										<ProviderMark provider={provider} label={providerName} />
+										<div className="min-w-0 flex-1">
+											<div className="truncate text-sm font-medium text-foreground group-hover/model:underline">
+												{model.name}
 											</div>
-											<div className="text-sm font-semibold tabular-nums text-foreground">
-												{metric === "spend"
-													? formatUsdFromNanos(model.spendNanos)
-													: formatCompactNumber(value)}
+											<div className="truncate text-xs text-muted-foreground">
+												{providerName}
 											</div>
 										</div>
+										<div className="text-sm font-semibold tabular-nums text-foreground">
+											{metric === "spend"
+												? formatUsdFromNanos(model.spendNanos)
+												: formatCompactNumber(value)}
+										</div>
+									</div>
+								)
+								return (
+									<div key={model.id} className="space-y-2">
+										{modelHref ? <Link href={modelHref} className="group/model block rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/30">{modelSummary}</Link> : modelSummary}
 										<div className="h-1.5 overflow-hidden rounded-full bg-muted">
 											<div
-												className="h-full rounded-full bg-foreground"
-												style={{
-													width: `${Math.max(3, (value / topModelMax) * 100)}%`,
+										className="h-full rounded-full"
+										style={{
+											width: `${Math.max(3, (value / topModelMax) * 100)}%`,
+											backgroundColor: getMetricColor(metric),
 												}}
 											/>
 										</div>

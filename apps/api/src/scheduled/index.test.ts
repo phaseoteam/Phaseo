@@ -11,6 +11,7 @@ const runModelDiscoveryJobMock = vi.fn();
 const oauthCleanupRpcMock = vi.fn();
 const runGatewayIoRetentionBillingJobMock = vi.fn();
 const pruneExpiredDataContributionsMock = vi.fn();
+const runPaymentMethodExpiryNotificationJobMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	clearRuntime: (...args: unknown[]) => clearRuntimeMock(...args),
@@ -36,6 +37,11 @@ vi.mock("@/pipeline/video-reconciliation", () => ({
 
 vi.mock("@/pipeline/notifications/email-outbox", () => ({
 	drainEmailOutbox: (...args: unknown[]) => drainEmailOutboxMock(...args),
+}));
+
+vi.mock("@/pipeline/notifications/billing-alerts", () => ({
+	runPaymentMethodExpiryNotificationJob: (...args: unknown[]) =>
+		runPaymentMethodExpiryNotificationJobMock(...args),
 }));
 
 vi.mock("@/pipeline/model-discovery", () => ({
@@ -78,6 +84,7 @@ describe("handleScheduledEvent", () => {
 		oauthCleanupRpcMock.mockReset();
 		runGatewayIoRetentionBillingJobMock.mockReset();
 		pruneExpiredDataContributionsMock.mockReset();
+		runPaymentMethodExpiryNotificationJobMock.mockReset();
 		oauthCleanupRpcMock.mockResolvedValue({ error: null });
 		runAsyncWebhookRetriesJobMock.mockResolvedValue({
 			startedAt: "2026-06-10T00:05:00.000Z",
@@ -104,6 +111,7 @@ describe("handleScheduledEvent", () => {
 			failed: 0,
 		});
 		pruneExpiredDataContributionsMock.mockResolvedValue({ deleted: 0, failed: 0 });
+		runPaymentMethodExpiryNotificationJobMock.mockResolvedValue({ checked: 0, enqueued: 0, failed: 0 });
 	});
 
 	it("runs async webhook retries on five-minute core job ticks by default", async () => {
@@ -180,5 +188,13 @@ describe("handleScheduledEvent", () => {
 			pricePerMillionUnitsNanos: 7000000000,
 			pruneLimit: 44,
 		});
+	});
+
+	it("checks saved payment methods for expiry once per day", async () => {
+		const env = { STRIPE_SECRET_KEY: "sk_test_example" } as any;
+
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:20:00.000Z"), env);
+
+		expect(runPaymentMethodExpiryNotificationJobMock).toHaveBeenCalledTimes(1);
 	});
 });

@@ -13,6 +13,7 @@ import {
 	KeyRound,
 	ShieldCheck,
 	User,
+	UserCog,
 	Waypoints,
 	Workflow,
 } from "lucide-react";
@@ -21,6 +22,7 @@ export type NavItem = {
     href: string;
     label: string;
 	icon?: LucideIcon;
+	children?: NavChildItem[];
     badge?: string;
     disabled?: boolean;
     external?: boolean; // when true, opens in new tab and shows a link icon
@@ -30,6 +32,14 @@ export type NavItem = {
 	 * multiple subpages rendered as tabs.
 	 */
 	match?: string[];
+};
+
+export type NavChildItem = {
+	href: string;
+	label: string;
+	exactOnly?: boolean;
+	match?: string[];
+	view?: "logs" | "upstream" | "jobs" | "sessions";
 };
 
 export type NavGroup = {
@@ -59,8 +69,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 			{
 				href: "/settings/account",
 				label: "Account",
-				icon: User,
+				icon: UserCog,
 				match: ["/settings/account"],
+				children: [
+					{ href: "/settings/account/details", label: "Details" },
+					{ href: "/settings/account/mfa", label: "MFA" },
+					{ href: "/settings/account/danger", label: "Danger Zone" },
+				],
 			},
 			{
 				href: "/settings/account/workspaces",
@@ -78,6 +93,11 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/credits/transactions",
 					"/settings/payment-methods",
 					"/settings/tiers",
+				],
+				children: [
+					{ href: "/settings/credits", label: "Credits", exactOnly: true },
+					{ href: "/settings/credits/transactions", label: "Transactions" },
+					{ href: "/settings/payment-methods", label: "Payment Methods" },
 				],
 			},
 			{
@@ -105,6 +125,11 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/teams/access",
 					"/settings/teams/settings",
 				],
+				children: [
+					{ href: "/settings/workspaces/settings", label: "General" },
+					{ href: "/settings/workspaces/members", label: "Members" },
+					{ href: "/settings/workspaces/access", label: "Access" },
+				],
 			},
 		],
 	},
@@ -123,12 +148,24 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/usage/guardrails",
 					"/settings/usage/alerts",
 				],
+				children: [
+					{ href: "/settings/usage/overview", label: "Overview" },
+					{ href: "/settings/usage/trends", label: "Trends" },
+					{ href: "/settings/usage/explore", label: "Explore" },
+					{ href: "/settings/usage/alerts", label: "Alerts" },
+				],
 			},
 			{
 				href: "/settings/usage/logs",
 				label: "Logs",
 				icon: FileText,
 				match: ["/settings/usage/logs"],
+				children: [
+					{ href: "/settings/usage/logs?view=logs", label: "Requests", view: "logs" },
+					{ href: "/settings/usage/logs?view=upstream", label: "Upstream Requests", view: "upstream" },
+					{ href: "/settings/usage/logs?view=jobs", label: "Jobs", view: "jobs" },
+					{ href: "/settings/usage/logs?view=sessions", label: "Sessions", view: "sessions" },
+				],
 			},
 		],
 	},
@@ -153,6 +190,11 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				label: "Routing",
 				icon: Waypoints,
 				match: ["/settings/routing"],
+				children: [
+					{ href: "/settings/routing", label: "Routing", exactOnly: true },
+					{ href: "/settings/routing/dynamic", label: "Dynamic Routes", match: ["/settings/routing/demo"] },
+					{ href: "/settings/routing/insights", label: "Insights" },
+				],
 			},
 			{
 				href: "/settings/byok",
@@ -172,6 +214,10 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				label: "Safety & privacy",
 				icon: ShieldCheck,
 				match: ["/settings/guardrails", "/settings/privacy"],
+				children: [
+					{ href: "/settings/guardrails", label: "Guardrails" },
+					{ href: "/settings/privacy", label: "Data Controls" },
+				],
 			},
 		],
 	},
@@ -193,6 +239,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/webhooks",
 					"/settings/sdk",
 				],
+				children: [
+					{ href: "/settings/management-api-keys", label: "Management Keys", match: ["/settings/provisioning-keys"] },
+					{ href: "/settings/oauth-apps", label: "OAuth Apps", match: ["/settings/authorized-apps"] },
+					{ href: "/settings/webhooks", label: "Webhooks" },
+					{ href: "/settings/broadcast", label: "Broadcast", match: ["/settings/observability"] },
+					{ href: "/settings/sdk", label: "SDKs" },
+				],
 			},
 		],
 	},
@@ -209,11 +262,38 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 	const showWebhooks = options?.showWebhooks ?? true;
 	return BASE_SETTINGS_SIDEBAR.map((group) => ({
 		...group,
-		items: group.items.filter((item) =>
-			(showBroadcast ? true : item.href !== "/settings/broadcast") &&
-			(showWebhooks ? true : item.href !== "/settings/webhooks"),
-		),
+		items: group.items
+			.filter((item) =>
+				(showBroadcast ? true : item.href !== "/settings/broadcast") &&
+				(showWebhooks ? true : item.href !== "/settings/webhooks"),
+			)
+			.map((item) => ({
+				...item,
+				children: item.children?.filter((child) =>
+					(showBroadcast ? true : !child.href.startsWith("/settings/broadcast")) &&
+					(showWebhooks ? true : !child.href.startsWith("/settings/webhooks")),
+				),
+			})),
 	})).filter((group) => group.items.length > 0);
+}
+
+export function isSettingsNavChildActive(
+	pathname: string,
+	view: string | null,
+	child: NavChildItem,
+): boolean {
+	if (child.view) {
+		return (
+			pathname.startsWith("/settings/usage/logs") &&
+			child.view === (view ?? "logs")
+		);
+	}
+	const childPath = child.href.split("?")[0] ?? child.href;
+	if (pathname === childPath) return true;
+	if (!child.exactOnly && pathname.startsWith(childPath + "/")) return true;
+	return (child.match ?? []).some(
+		(prefix) => pathname === prefix || pathname.startsWith(prefix + "/"),
+	);
 }
 
 export function getActiveSettingsNav(

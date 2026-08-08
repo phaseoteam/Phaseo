@@ -8,6 +8,8 @@ import { sendBillingDiscordWebhook } from "@/lib/automations/billingDiscord";
 import { buildStripeCheckoutRedirectUrls } from "@/lib/stripeCheckoutRedirects";
 import { getStripe } from "@/lib/stripe";
 import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStripe";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { normaliseCountryCode } from "@/lib/countryCodes";
 
 type CheckoutKind = "oneoff" | "pay_and_save" | "save_only";
 type CheckoutStartedNotificationKind =
@@ -16,6 +18,7 @@ type CheckoutStartedNotificationKind =
 type CreateStripeCheckoutResponseArgs = {
 	amountPence?: number;
 	currency?: string;
+	countryCode?: string;
 	kind: CheckoutKind;
 	notificationCheckoutKind?: CheckoutStartedNotificationKind;
 	originHeader: string | null;
@@ -71,6 +74,7 @@ export async function createStripeCheckoutResponse(
 	const {
 		amountPence,
 		currency = "usd",
+		countryCode: countryValue,
 		kind,
 		notificationCheckoutKind,
 		originHeader,
@@ -87,9 +91,22 @@ export async function createStripeCheckoutResponse(
 		createIfMissing: true,
 	});
 	const firstName = deriveFirstName(userDisplayName);
+	const countryCode = normaliseCountryCode(countryValue);
+	if (kind !== "save_only" && !countryCode) {
+		return NextResponse.json({ error: "Country is required before purchasing credits" }, { status: 400 });
+	}
 
 	if (requestedWorkspaceId && requestedWorkspaceId !== workspaceId) {
 		return NextResponse.json({ error: "Workspace mismatch" }, { status: 403 });
+	}
+	if (countryCode) {
+		const { error } = await createAdminClient()
+			.from("users")
+			.update({ declared_country_code: countryCode, country_declared_at: new Date().toISOString() })
+			.eq("user_id", userId);
+		if (error) {
+			return NextResponse.json({ error: "Could not confirm purchase location" }, { status: 503 });
+		}
 	}
 
 	const { successUrl, cancelUrl } = buildStripeCheckoutRedirectUrls({
@@ -137,15 +154,18 @@ export async function createStripeCheckoutResponse(
 			payment_intent_data: {
 				metadata: {
 					purpose: "top_up_one_off",
+					country_code: countryCode!,
 					...(workspaceId ? { workspace_id: workspaceId } : {}),
 				},
 			},
 			success_url: paymentSuccessUrl,
 			cancel_url: cancelUrl,
 			allow_promotion_codes: false,
-			billing_address_collection: "auto",
+			billing_address_collection: "required",
+			customer_update: { address: "auto", name: "auto" },
 			metadata: {
 				purpose: "top_up_one_off",
+				country_code: countryCode!,
 				...(workspaceId ? { workspace_id: workspaceId } : {}),
 			},
 		});
@@ -213,11 +233,19 @@ export async function createStripeCheckoutResponse(
 				setup_future_usage: "off_session",
 				metadata: {
 					purpose: "top_up",
+					country_code: countryCode!,
 					...(workspaceId ? { workspace_id: workspaceId } : {}),
 				},
 			},
 			success_url: paymentSuccessUrl,
 			cancel_url: cancelUrl,
+			billing_address_collection: "required",
+			customer_update: { address: "auto", name: "auto" },
+			metadata: {
+				purpose: "top_up",
+				country_code: countryCode!,
+				...(workspaceId ? { workspace_id: workspaceId } : {}),
+			},
 		});
 
 		const startedAtIso = new Date().toISOString();

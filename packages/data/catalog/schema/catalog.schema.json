@@ -169,6 +169,32 @@
         "provider_family_id": { "type": ["string", "null"] },
         "status": { "type": ["string", "null"] },
         "country_code": { "type": ["string", "null"] },
+        "availability": {
+          "type": ["object", "null"],
+          "required": ["mode", "countries", "country_source", "unknown_country"],
+          "properties": {
+            "mode": { "type": "string", "enum": ["allowlist", "blocklist"] },
+            "countries": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^[A-Z]{2}$" }
+            },
+            "country_source": { "const": "request_origin" },
+            "unknown_country": { "type": "string", "enum": ["allow", "deny"] },
+            "blocked_subdivisions": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$" }
+            },
+            "unknown_subdivision": { "type": "string", "enum": ["allow", "deny"] },
+            "reason": { "type": ["string", "null"] },
+            "source_url": { "type": ["string", "null"], "format": "uri" },
+            "effective_from": { "type": ["string", "null"], "format": "date-time" },
+            "effective_to": { "type": ["string", "null"], "format": "date-time" }
+          },
+          "additionalProperties": false
+        },
         "link": { "type": ["string", "null"], "format": "uri" },
         "default_execution_regions": { "type": ["array", "null"], "items": { "type": "string" } },
         "default_data_regions": { "type": ["array", "null"], "items": { "type": "string" } },
@@ -231,6 +257,32 @@
           "enum": [null, "active", "degraded", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled", "retired"]
         },
         "routable": { "type": ["boolean", "null"] },
+        "availability": {
+          "type": ["object", "null"],
+          "required": ["mode", "countries", "country_source", "unknown_country"],
+          "properties": {
+            "mode": { "type": "string", "enum": ["allowlist", "blocklist"] },
+            "countries": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^[A-Z]{2}$" }
+            },
+            "country_source": { "const": "request_origin" },
+            "unknown_country": { "type": "string", "enum": ["allow", "deny"] },
+            "blocked_subdivisions": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$" }
+            },
+            "unknown_subdivision": { "type": "string", "enum": ["allow", "deny"] },
+            "reason": { "type": ["string", "null"] },
+            "source_url": { "type": ["string", "null"], "format": "uri" },
+            "effective_from": { "type": ["string", "null"], "format": "date-time" },
+            "effective_to": { "type": ["string", "null"], "format": "date-time" }
+          },
+          "additionalProperties": false
+        },
         "regions": {
           "type": ["object", "null"],
           "properties": {

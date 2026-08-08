@@ -18,6 +18,7 @@ import {
     normalizeRoutingStatus as normalizeSharedRoutingStatus,
 } from "../before/context.shared";
 import { providerMeetsResidencyRequirement } from "@/lib/config/providerResidency";
+import { routeMeetsAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { readHealthManyOptimistic, ProviderHealth } from "./health";
 import { stripPrioritySuffix } from "./utils";
 import { normalizeProviderList } from "@/lib/config/providerAliases";
@@ -566,7 +567,7 @@ export type RoutedCandidate = {
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "residency_gate" | "pricing_cap_gate" | "health_breaker";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "geographic_availability_gate" | "residency_gate" | "pricing_cap_gate" | "health_breaker";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
@@ -796,6 +797,8 @@ export async function routeProviders(
         providerCapabilitiesBeta?: boolean;
         testingMode?: boolean;
         requestId?: string | null;
+        requestCountry?: string | null;
+        requestRegionCode?: string | null;
         cacheAwareRouting?: boolean;
 		collectDetailedDiagnostics?: boolean;
         meta?: {
@@ -1125,6 +1128,25 @@ export async function routeProviders(
         if (offerScope === "specialized") return "specialized_offer_requires_explicit_opt_in";
         return "non_global_offer_requires_explicit_opt_in";
     });
+
+    const beforeGeographicAvailabilityGate = poolCandidates;
+	poolCandidates = filterStable(poolCandidates, (candidate) =>
+		routeMeetsAvailabilityPolicy(
+			candidate.availabilityPolicy,
+			ctx.requestCountry,
+			ctx.requestRegionCode,
+		).ok,
+	);
+    pushStage(
+		"geographic_availability_gate",
+		beforeGeographicAvailabilityGate,
+		poolCandidates,
+		(candidate) => routeMeetsAvailabilityPolicy(
+			candidate.availabilityPolicy,
+			ctx.requestCountry,
+			ctx.requestRegionCode,
+		).reason ?? "geographic_availability_requirement_failed",
+	);
 
     const beforeResidencyGate = poolCandidates;
 	poolCandidates = filterStable(poolCandidates, (candidate) => {

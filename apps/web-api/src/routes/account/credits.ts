@@ -6,6 +6,14 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 
 const EMPTY_TIER_SUMMARY = { lastMonthCents: 0, mtdCents: 0, teamTier: "basic" as const };
 
+export function parseLowBalanceThresholdNanos(value: unknown): number | null {
+	const thresholdUsd = Number(value);
+	const thresholdNanos = Math.round(thresholdUsd * 1_000_000_000);
+	const hasAtMostTwoDecimalPlaces = Math.abs(thresholdUsd * 100 - Math.round(thresholdUsd * 100)) < 1e-8;
+	if (!Number.isFinite(thresholdUsd) || thresholdUsd < 0 || !hasAtMostTwoDecimalPlaces || !Number.isSafeInteger(thresholdNanos)) return null;
+	return thresholdNanos;
+}
+
 function nanosToCredits(value: unknown): number | null {
 	const nanos = Number(value ?? 0);
 	return Number.isFinite(nanos) ? nanos / 1_000_000_000 : null;
@@ -218,9 +226,25 @@ creditsRouter.put("/low-balance-alert", async (c) => {
 	const membership = await context.client.from("workspace_members").select("role").eq("workspace_id", workspaceId).eq("user_id", context.user.id).maybeSingle();
 	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const enabled = body.enabled === true;
-	const thresholdUsd = Number(body.thresholdUsd ?? 0);
-	if (enabled && (!Number.isFinite(thresholdUsd) || thresholdUsd <= 0)) return c.json({ error: "invalid_threshold" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.from("workspace_settings").upsert({ workspace_id: workspaceId, low_balance_email_enabled: enabled, low_balance_email_threshold_nanos: enabled ? Math.round(thresholdUsd * 1_000_000_000) : 0, updated_at: new Date().toISOString() }, { onConflict: "workspace_id" });
+	const thresholdNanos = parseLowBalanceThresholdNanos(body.thresholdUsd);
+	if (enabled && thresholdNanos == null) return c.json({ error: "invalid_threshold" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await context.client.from("workspace_settings").upsert({ workspace_id: workspaceId, low_balance_email_enabled: enabled, low_balance_email_threshold_nanos: enabled ? thresholdNanos : 0, updated_at: new Date().toISOString() }, { onConflict: "workspace_id" });
+	if (result.error) return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+creditsRouter.put("/notification-preferences", async (c) => {
+	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	const workspaceId = String(body.workspaceId ?? "").trim();
+	const context = await requireWorkspace({ req: { raw: c.req.raw, query: (key) => key === "workspaceId" ? workspaceId : undefined }, env: c.env });
+	if (!context) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const membership = await context.client.from("workspace_members").select("role").eq("workspace_id", workspaceId).eq("user_id", context.user.id).maybeSingle();
+	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const update: Record<string, unknown> = { workspace_id: workspaceId, updated_at: new Date().toISOString() };
+	if (typeof body.autoTopUpFailure === "boolean") update.auto_top_up_failure_email_enabled = body.autoTopUpFailure;
+	if (typeof body.paymentMethodExpiring === "boolean") update.payment_method_expiring_email_enabled = body.paymentMethodExpiring;
+	if (!("auto_top_up_failure_email_enabled" in update) && !("payment_method_expiring_email_enabled" in update)) return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await context.client.from("workspace_settings").upsert(update, { onConflict: "workspace_id" });
 	if (result.error) return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });

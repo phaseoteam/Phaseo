@@ -14,6 +14,14 @@ export type ProfileUsageSummary = {
 	longestStreak: number;
 	activeDays: number;
 	topModels: Array<{ id: string; name: string; requests: number; tokens: number; spendNanos: number }>;
+	modelActivity: Array<{
+		date: string;
+		id: string;
+		name: string;
+		requests: number;
+		tokens: number;
+		spendNanos: number;
+	}>;
 	heatmapDays: HeatmapDay[];
 	creditsUsage: { today: string; week: string; month: string };
 	byokUsage: { today: string; week: string; month: string };

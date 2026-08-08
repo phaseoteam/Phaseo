@@ -372,4 +372,34 @@ describe("guardAllFailed", () => {
 		expect(String(payload.description)).toContain("No per-attempt diagnostics were captured.");
 		expect(String(payload.description)).not.toContain("failure_sample");
 	});
+
+	it("returns a 403 when geographic availability removes every route", async () => {
+		const ctx: any = {
+			model: "openai/gpt-4.1-mini",
+			endpoint: "responses",
+			requestId: "req_region_blocked",
+			meta: { edgeCountry: "CN" },
+			attemptErrors: [],
+			routingDiagnostics: {
+				filterStages: [{
+					stage: "geographic_availability_gate",
+					beforeCount: 1,
+					afterCount: 0,
+					droppedProviders: [{ providerId: "openai", reason: "request_country_not_allowed" }],
+				}],
+			},
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+
+		expect(result.response.status).toBe(403);
+		const payload = await result.response.json();
+		expect(payload).toMatchObject({
+			error: "model_region_unavailable",
+			reason: "all_routes_unavailable_in_request_country",
+			request_country: "CN",
+		});
+	});
 });

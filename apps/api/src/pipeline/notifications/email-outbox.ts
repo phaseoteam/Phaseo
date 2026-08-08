@@ -5,6 +5,7 @@ import { getBindings } from "@/runtime/env";
 type OutboxRow = {
 	id: string;
 	created_at: string;
+	dedupe_key: string | null;
 	kind: string;
 	template: string;
 	to_email: string;
@@ -134,6 +135,30 @@ function renderSecurityLeakedKeyEmail(payload: Record<string, unknown> | null): 
 		]
 			.filter(Boolean)
 			.join("\n"),
+	};
+}
+
+function renderBillingAlertEmail(payload: Record<string, unknown> | null, kind: "auto_top_up_failed" | "payment_method_expiring") {
+	const workspaceName = typeof payload?.workspace_name === "string" && payload.workspace_name.trim() ? payload.workspace_name.trim() : "your workspace";
+	const settingsUrl = "https://phaseo.app/settings/credits";
+	if (kind === "auto_top_up_failed") {
+		const reason = typeof payload?.reason === "string" && payload.reason.trim() ? payload.reason.trim() : "The saved payment method could not be charged.";
+		const subject = "Auto Top-Up failed";
+		return {
+			subject,
+			html: `<div style="font-family: ui-sans-serif, system-ui; line-height: 1.5;"><h2 style="margin:0 0 12px;">${subject}</h2><p style="margin:0 0 12px;">Phaseo could not automatically add credits to ${escapeHtml(workspaceName)}.</p><p style="margin:0 0 12px;">${escapeHtml(reason)}</p><p style="margin:0;"><a href="${settingsUrl}">Review credits and payment methods</a>.</p></div>`,
+			text: `${subject}\n\nPhaseo could not automatically add credits to ${workspaceName}.\n${reason}\n\nReview credits and payment methods: ${settingsUrl}`,
+		};
+	}
+	const rawBrand = typeof payload?.brand === "string" && payload.brand.trim() ? payload.brand.trim() : "card";
+	const brand = `${rawBrand.charAt(0).toUpperCase()}${rawBrand.slice(1)}`;
+	const last4 = typeof payload?.last4 === "string" && payload.last4.trim() ? payload.last4.trim() : "unknown";
+	const expiry = typeof payload?.expiry === "string" && payload.expiry.trim() ? payload.expiry.trim() : "soon";
+	const subject = "Payment method expiring soon";
+	return {
+		subject,
+		html: `<div style="font-family: ui-sans-serif, system-ui; line-height: 1.5;"><h2 style="margin:0 0 12px;">${subject}</h2><p style="margin:0 0 12px;">The ${escapeHtml(brand)} ending in ${escapeHtml(last4)} for ${escapeHtml(workspaceName)} expires ${escapeHtml(expiry)}.</p><p style="margin:0;"><a href="${settingsUrl}">Update your payment method</a> to avoid interrupted Auto Top-Ups.</p></div>`,
+		text: `${subject}\n\nThe ${brand} ending in ${last4} for ${workspaceName} expires ${expiry}.\n\nUpdate your payment method to avoid interrupted Auto Top-Ups: ${settingsUrl}`,
 	};
 }
 
@@ -274,6 +299,14 @@ function renderEmailForRow(row: OutboxRow): {
 			text: rendered.text,
 		};
 	}
+	if (row.template === "auto_top_up_failed" || row.kind === "auto_top_up_failed") {
+		const rendered = renderBillingAlertEmail(row.payload ?? {}, "auto_top_up_failed");
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
+	if (row.template === "payment_method_expiring" || row.kind === "payment_method_expiring") {
+		const rendered = renderBillingAlertEmail(row.payload ?? {}, "payment_method_expiring");
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
 	if (row.template === "io_retention_grace" || row.kind === "io_retention_grace") {
 		const rendered = renderIoRetentionEmail(row.payload ?? {}, "grace");
 		return {
@@ -304,7 +337,7 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 	const { data, error } = await supabase
 		.from("email_outbox")
 		.select(
-			"id,created_at,kind,template,to_email,subject,workspace_id,user_id,payload,attempts,last_error,sent_at",
+			"id,created_at,dedupe_key,kind,template,to_email,subject,workspace_id,user_id,payload,attempts,last_error,sent_at",
 		)
 		.is("sent_at", null)
 		.lt("attempts", 5)
@@ -357,6 +390,7 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 					to: row.to_email,
 					subject: rendered.subject,
 					template: { id: rendered.templateId, variables: rendered.variables },
+					...(row.dedupe_key ? { idempotencyKey: row.dedupe_key } : {}),
 				});
 			} else {
 				await sendEmail({
@@ -364,6 +398,7 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 					subject: rendered.subject,
 					html: rendered.html,
 					text: rendered.text,
+					...(row.dedupe_key ? { idempotencyKey: row.dedupe_key } : {}),
 				});
 			}
 

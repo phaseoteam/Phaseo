@@ -13,6 +13,12 @@ enabled = true
 [vars]
 ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
+PROFILE_AVATARS_PUBLIC_BASE_URL = "https://avatars.phaseo.app"
+
+[[r2_buckets]]
+binding = "PROFILE_AVATARS_BUCKET"
+bucket_name = "phaseo-profile-avatars"
+preview_bucket_name = "phaseo-profile-avatars-preview"
 
 # PR previews deploy this separately named Worker to the account's workers.dev
 # subdomain. It deliberately has no phaseo.app route, so it cannot intercept
@@ -25,6 +31,10 @@ routes = []
 [env.staging.vars]
 ENV = "staging"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
+
+[[env.staging.r2_buckets]]
+binding = "PROFILE_AVATARS_BUCKET"
+bucket_name = "phaseo-profile-avatars-preview"
 
 # Cloudflare owns the explicit application API namespaces below. Vercel owns
 # page rendering and normal web assets, but no application API handlers.

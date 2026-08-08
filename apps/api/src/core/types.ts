@@ -64,6 +64,7 @@ export type RequestMeta = {
     edgeColo?: string | null;
     edgeCity?: string | null;
     edgeCountry?: string | null;
+    edgeRegionCode?: string | null;
     edgeContinent?: string | null;
     edgeAsn?: number | null;
     requestId: string;

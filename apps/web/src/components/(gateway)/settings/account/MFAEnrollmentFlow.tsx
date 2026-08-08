@@ -46,26 +46,19 @@ export function MFAEnrollmentFlow({
 
     // Reset state when dialog closes
     React.useEffect(() => {
-        if (!open) {
-            setTimeout(() => {
-                setStep('qr-code')
-                setQrCode(null)
-                setSecret(null)
-                setFactorId(null)
-                setVerificationCode('')
-                setSecretCopied(false)
-            }, 300)
-        }
+		if (open) return
+		const timeout = window.setTimeout(() => {
+			setStep('qr-code')
+			setQrCode(null)
+			setSecret(null)
+			setFactorId(null)
+			setVerificationCode('')
+			setSecretCopied(false)
+		}, 300)
+		return () => window.clearTimeout(timeout)
     }, [open])
 
-    // Start enrollment when dialog opens
-    React.useEffect(() => {
-        if (open && step === 'qr-code' && !qrCode && !loading) {
-            startEnrollment()
-        }
-    }, [open, step, qrCode, loading])
-
-    const startEnrollment = async () => {
+    const startEnrollment = React.useCallback(async () => {
         setLoading(true)
         try {
             const result = await enrollMFAAction()
@@ -78,7 +71,19 @@ export function MFAEnrollmentFlow({
         } finally {
             setLoading(false)
         }
-    }
+    }, [onOpenChange])
+
+    // Start enrollment when dialog opens
+    React.useEffect(() => {
+        if (!open || step !== 'qr-code' || qrCode || loading) return
+        let cancelled = false
+        queueMicrotask(() => {
+            if (!cancelled) void startEnrollment()
+        })
+        return () => {
+            cancelled = true
+        }
+    }, [loading, open, qrCode, startEnrollment, step])
 
     const copySecret = async () => {
         if (!secret) return
@@ -87,7 +92,7 @@ export function MFAEnrollmentFlow({
             setSecretCopied(true)
             toast.success('Secret copied to clipboard')
             setTimeout(() => setSecretCopied(false), 2000)
-        } catch (err) {
+        } catch {
             toast.error('Failed to copy secret')
         }
     }
@@ -100,12 +105,11 @@ export function MFAEnrollmentFlow({
 
         setLoading(true)
         try {
-            const result = await verifyMFAEnrollmentAction(
+            await verifyMFAEnrollmentAction(
                 factorId,
                 verificationCode
             )
             setStep('success')
-            toast.success('Two-factor authentication enabled!')
         } catch (error: any) {
             toast.error(error.message || 'Invalid code. Please try again.')
             setVerificationCode('')
@@ -162,7 +166,7 @@ export function MFAEnrollmentFlow({
                                 {secret && (
                                     <div className="space-y-2">
                                         <Label className="text-xs text-muted-foreground">
-                                            Can't scan? Enter this code
+											Can&apos;t scan? Enter this code
                                             manually:
                                         </Label>
                                         <div className="flex items-center gap-2">
@@ -284,7 +288,7 @@ export function MFAEnrollmentFlow({
                         <div className="space-y-4 py-4">
                             <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900/50 dark:bg-green-900/10">
                                 <p className="text-sm text-green-900 dark:text-green-200">
-                                    You'll need your authenticator app to sign
+									You&apos;ll need your authenticator app to sign
                                     in from now on. Keep a secure backup of the
                                     authenticator configuration before changing devices.
                                 </p>

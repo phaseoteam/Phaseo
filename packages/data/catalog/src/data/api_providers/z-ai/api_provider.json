@@ -1,6 +1,16 @@
 {
   "api_provider_id": "z-ai",
   "api_provider_name": "z.AI",
+  "availability": {
+    "mode": "blocklist",
+    "countries": ["IR","KP","CU"],
+    "country_source": "request_origin",
+    "unknown_country": "deny",
+    "blocked_subdivisions": ["UA-43","UA-14","UA-23"],
+    "unknown_subdivision": "deny",
+    "reason": "Z.AI prohibits use for the benefit of, export to, or transfer to Iran, North Korea, Cuba, Crimea, Donetsk, or Zaporizhzhia.",
+    "source_url": "https://docs.z.ai/legal-agreement/terms-of-use"
+  },
   "description": null,
   "link": "https://docs.z.ai/guides/overview/quick-start",
   "country_code": "CN",

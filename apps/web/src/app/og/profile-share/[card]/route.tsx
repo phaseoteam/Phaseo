@@ -21,7 +21,7 @@ const montserratBoldPromise = readFile(
 	new URL("../assets/Montserrat-Bold.ttf", import.meta.url),
 )
 const wordmarkDataUrlPromise = readFile(
-	new URL("../assets/wordmark_light.svg", import.meta.url),
+	new URL("../../../../../public/wordmark_light.svg", import.meta.url),
 	"utf8",
 ).then(
 	(svg) => `data:image/svg+xml;base64,${Buffer.from(svg, "utf8").toString("base64")}`,
@@ -97,6 +97,19 @@ export async function GET(_request: NextRequest, { params }: RouteProps) {
 								{payload.displayName}
 							</div>
 						</div>
+						<div
+							style={{
+								display: "flex",
+								padding: "12px 18px",
+								borderRadius: 999,
+								background: "#f1f5f9",
+								color: "#475569",
+								fontSize: 18,
+								fontWeight: 600,
+							}}
+						>
+							{payload.periodLabel}
+						</div>
 					</div>
 
 					<div
@@ -108,11 +121,11 @@ export async function GET(_request: NextRequest, { params }: RouteProps) {
 					>
 						{[
 							{
-								label: "Total Requests",
+								label: "Requests",
 								value: payload.totalRequests.toLocaleString(),
 							},
 							{
-								label: "Total Tokens",
+								label: "Tokens",
 								value: payload.totalTokens.toLocaleString(),
 							},
 							{

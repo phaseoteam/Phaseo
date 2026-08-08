@@ -6,6 +6,7 @@ export type EdgeMeta = {
     colo: string | null;
     city: string | null;
     country: string | null;
+    regionCode: string | null;
     continent: string | null;
     asn: number | null;
 };
@@ -22,6 +23,7 @@ export function getEdgeMeta(req: Request): EdgeMeta {
         colo: typeof cf?.colo === "string" ? cf.colo : null,
         city: typeof cf?.city === "string" ? cf.city : null,
         country: typeof cf?.country === "string" ? cf.country : null,
+        regionCode: typeof cf?.regionCode === "string" ? cf.regionCode : null,
         continent: typeof cf?.continent === "string" ? cf.continent : null,
         asn,
     };

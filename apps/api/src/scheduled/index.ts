@@ -14,6 +14,7 @@ import {
 import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
+import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/billing-alerts";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
 import { runBatchProviderWebhookReplayJob } from "@/routes/internal/batch-webhooks.helpers";
@@ -108,6 +109,11 @@ function isModelDiscoveryTick(event: ScheduledController): boolean {
 function isDailyRetentionBillingTick(event: ScheduledController): boolean {
 	const scheduledAt = new Date(event.scheduledTime);
 	return scheduledAt.getUTCHours() === 0 && scheduledAt.getUTCMinutes() === 10;
+}
+
+function isDailyPaymentMethodExpiryTick(event: ScheduledController): boolean {
+	const scheduledAt = new Date(event.scheduledTime);
+	return scheduledAt.getUTCHours() === 0 && scheduledAt.getUTCMinutes() === 20;
 }
 
 function getModelDiscoveryExecutionIndex(event: ScheduledController): number {
@@ -280,6 +286,19 @@ async function handleEmailOutboxScheduledEvent(_event: ScheduledController, env:
 	}
 }
 
+async function handlePaymentMethodExpiryScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (!env.STRIPE_SECRET_KEY?.trim() && !env.TEST_STRIPE_SECRET_KEY?.trim()) return;
+	configureRuntime(env);
+	try {
+		const summary = await runPaymentMethodExpiryNotificationJob();
+		if (summary.checked > 0 || summary.enqueued > 0 || summary.failed > 0) {
+			console.log("payment_method_expiry_notifications_completed", summary);
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleGatewayIoRetentionBillingScheduledEvent(
 	event: ScheduledController,
 	env: GatewayBindings,
@@ -382,6 +401,13 @@ async function handleDataContributionRetentionScheduledEvent(env: GatewayBinding
 }
 
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (isDailyPaymentMethodExpiryTick(event)) {
+		try {
+			await handlePaymentMethodExpiryScheduledEvent(env);
+		} catch (error) {
+			console.error("payment_method_expiry_notifications_scheduled_failed", serializeError(error));
+		}
+	}
 	if (isDailyRetentionBillingTick(event)) {
 		try {
 			await handleGatewayIoRetentionBillingScheduledEvent(event, env);

@@ -32,7 +32,11 @@ and verification. Provider-model entries carry `provider_status` for upstream
 offer availability, `phaseo_status` for Phaseo integration readiness,
 `access_scope` for public versus internal-only use, and a separate
 `routing_status` for routing health, plus execution/data regions,
-service tiers, API invocation metadata, and capability evidence. Only
+service tiers, API invocation metadata, and capability evidence. The optional
+provider or route-level `availability` policy uses ISO country and subdivision
+codes with request-origin geolocation; provider-family defaults are inherited
+unless a route overrides them. It is deliberately separate from execution and data residency.
+Only
 `phaseo_status: "enabled"` can become publicly routable. See
 [`docs/architecture/catalogue-status-model.md`](../../../../docs/architecture/catalogue-status-model.md)
 for the canonical vocabularies and compatibility mappings.

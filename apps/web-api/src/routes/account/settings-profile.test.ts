@@ -102,6 +102,10 @@ describe("account profile settings route", () => {
 					{ id: "anthropic/claude-test", name: "Claude Test", requests: 3, tokens: 25 },
 					{ id: "openai/gpt-test", name: "GPT Test", requests: 2, tokens: 15 },
 				],
+				modelActivity: expect.arrayContaining([
+					expect.objectContaining({ id: "anthropic/claude-test", name: "Claude Test", requests: 3, tokens: 25 }),
+					expect.objectContaining({ id: "openai/gpt-test", name: "GPT Test", requests: 2, tokens: 15 }),
+				]),
 			},
 		});
 		expect(requestedUrls.find((url) => url.includes("workspace_members"))).toContain("limit=100");

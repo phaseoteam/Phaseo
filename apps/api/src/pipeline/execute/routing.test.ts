@@ -77,6 +77,7 @@ function candidate(args: {
 	executionRegions?: string[] | null;
 	dataRegions?: string[] | null;
 	zeroDataRetention?: "unknown" | "unsupported" | "optional" | "default" | null;
+	availabilityPolicy?: any;
 	pricingCard?: any;
 }) {
 	return {
@@ -93,6 +94,7 @@ function candidate(args: {
 		executionRegions: args.executionRegions ?? null,
 		dataRegions: args.dataRegions ?? null,
 		zeroDataRetention: args.zeroDataRetention ?? "unknown",
+		availabilityPolicy: args.availabilityPolicy ?? null,
 		apiModelId: args.apiModelId ?? null,
 		adapter: { name: args.providerId } as any,
 		baseWeight: 1,
@@ -1188,6 +1190,60 @@ describe("routeProviders testing mode", () => {
 				reason: "breaker_open_deranked",
 			},
 		]);
+	});
+
+	it("filters unavailable routes while retaining an eligible fallback", async () => {
+		const policy = {
+			mode: "allowlist" as const,
+			countries: ["US"],
+			countrySource: "request_origin" as const,
+			unknownCountry: "deny" as const,
+		};
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai", availabilityPolicy: policy }),
+				candidate({ providerId: "anthropic" }),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				requestCountry: "CN",
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["anthropic"]);
+		expect(result.diagnostics.filterStages.find(
+			(stage) => stage.stage === "geographic_availability_gate",
+		)?.droppedProviders).toEqual([
+			expect.objectContaining({ providerId: "openai", reason: "request_country_not_allowed" }),
+		]);
+	});
+
+	it("does not let provider.only bypass geographic availability", async () => {
+		const result = await routeProviders(
+			[candidate({
+				providerId: "openai",
+				availabilityPolicy: {
+					mode: "blocklist",
+					countries: ["CN"],
+					countrySource: "request_origin",
+					unknownCountry: "deny",
+				},
+			})],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				requestCountry: "CN",
+				body: { provider: { only: ["openai"] } },
+			},
+		);
+
+		expect(result.ranked).toEqual([]);
+		expect(result.diagnostics.filterStages.find(
+			(stage) => stage.stage === "geographic_availability_gate",
+		)?.afterCount).toBe(0);
 	});
 });
 

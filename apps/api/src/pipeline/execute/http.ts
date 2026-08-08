@@ -8,6 +8,7 @@ export type ExecuteErrorCode =
     | "unsupported_modalities"
     | "pricing_not_configured"
     | "provider_payment_required"
+    | "model_region_unavailable"
     | "upstream_error";
 
 export function json(data: unknown, status = 200) {
@@ -22,6 +23,7 @@ const STATUS: Record<ExecuteErrorCode, number> = {
     unsupported_modalities: 400,
     pricing_not_configured: 402,
     provider_payment_required: 502,
+    model_region_unavailable: 403,
     upstream_error: 502,
 };
 

@@ -311,7 +311,7 @@ export default function AutoTopUpClient({
 				</Badge>
 			</CardHeader>
 
-			<Separator className={embedded ? "" : "my-4"} />
+			{embedded ? null : <Separator className="my-4" />}
 
 			<CardContent className={cn("space-y-3", embedded && "p-0")}>
 				<Dialog open={open} onOpenChange={setOpen}>

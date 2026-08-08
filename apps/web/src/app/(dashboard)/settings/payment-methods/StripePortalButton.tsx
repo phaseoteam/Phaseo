@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { ArrowUpRight } from "lucide-react";
 
 type Props = {
 	customerId: string;
@@ -15,13 +17,14 @@ export function StripePortalButton({
 	customerId,
 	returnUrl,
 	className,
-	label = "Open Stripe Customer Portal",
+	label = "Customer Portal",
 }: Props) {
 	const [loading, setLoading] = useState(false);
 
 	return (
 		<Button
 			type="button"
+			variant="outline"
 			disabled={loading}
 			className={cn("gap-2", className)}
 			onClick={async () => {
@@ -40,14 +43,17 @@ export function StripePortalButton({
 					if (data?.url) {
 						window.location.href = data.url;
 					}
-				} catch (err) {
-					console.error("Failed to open billing portal", err);
+				} catch {
+					toast.error("Could not open the Stripe portal", {
+						description: "Please try again.",
+					});
 				} finally {
 					setLoading(false);
 				}
 			}}
 		>
 			{loading ? "Opening portal…" : label}
+			<ArrowUpRight className="size-4" />
 		</Button>
 	);
 }

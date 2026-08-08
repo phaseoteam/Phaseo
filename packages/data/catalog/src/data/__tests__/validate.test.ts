@@ -535,4 +535,40 @@ describe('api provider model safety checks', () => {
             ])
         );
     });
+
+    test('accepts a valid route geographic availability policy', () => {
+        const row = {
+            provider_api_model_id: 'provider:model',
+            api_model_id: 'lab/model',
+            provider_model_slug: 'model',
+            availability: {
+                mode: 'allowlist',
+                countries: ['GB', 'US'],
+                country_source: 'request_origin',
+                unknown_country: 'deny',
+                source_url: 'https://example.com/supported-countries',
+            },
+        };
+        expect(checkApiProviderModelEntrySafety(row, { providerId: 'provider' }).errors).toEqual([]);
+    });
+
+    test('rejects malformed route geographic availability policies', () => {
+        const row = {
+            provider_api_model_id: 'provider:model',
+            api_model_id: 'lab/model',
+            provider_model_slug: 'model',
+            availability: {
+                mode: 'allowlist',
+                countries: ['gb', 'gb'],
+                country_source: 'billing_country',
+                unknown_country: 'maybe',
+            },
+        };
+        const errors = checkApiProviderModelEntrySafety(row, { providerId: 'provider' }).errors;
+        expect(errors).toEqual(expect.arrayContaining([
+            expect.stringContaining('availability.country_source'),
+            expect.stringContaining('availability.unknown_country'),
+            expect.stringContaining('uppercase ISO 3166-1 alpha-2'),
+        ]));
+    });
 });

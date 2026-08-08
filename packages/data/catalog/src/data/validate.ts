@@ -308,6 +308,66 @@ export function checkApiProviderModelEntrySafety(
         errors.push(`API provider model ${rowLabel} missing provider_model_slug`);
     }
 
+    if (row?.availability !== undefined && row?.availability !== null) {
+        const availability = row.availability;
+        if (!isPlainObject(availability)) {
+            errors.push(`API provider model ${rowLabel} availability must be an object`);
+        } else {
+            if (availability.mode !== 'allowlist' && availability.mode !== 'blocklist') {
+                errors.push(`API provider model ${rowLabel} availability.mode must be allowlist or blocklist`);
+            }
+            if (availability.country_source !== 'request_origin') {
+                errors.push(`API provider model ${rowLabel} availability.country_source must be request_origin`);
+            }
+            if (availability.unknown_country !== 'allow' && availability.unknown_country !== 'deny') {
+                errors.push(`API provider model ${rowLabel} availability.unknown_country must be allow or deny`);
+            }
+            if (availability.blocked_subdivisions !== undefined) {
+                const subdivisions = Array.isArray(availability.blocked_subdivisions)
+                    ? availability.blocked_subdivisions
+                    : [];
+                if (!Array.isArray(availability.blocked_subdivisions) || subdivisions.some(
+                    (subdivision) => typeof subdivision !== 'string' || !/^[A-Z]{2}-[A-Z0-9]{1,3}$/.test(subdivision)
+                )) {
+                    errors.push(`API provider model ${rowLabel} availability.blocked_subdivisions must use ISO 3166-2 codes`);
+                }
+            }
+            if (
+                availability.unknown_subdivision !== undefined &&
+                availability.unknown_subdivision !== 'allow' &&
+                availability.unknown_subdivision !== 'deny'
+            ) {
+                errors.push(`API provider model ${rowLabel} availability.unknown_subdivision must be allow or deny`);
+            }
+            const countries = Array.isArray(availability.countries) ? availability.countries : [];
+            if (countries.length === 0) {
+                errors.push(`API provider model ${rowLabel} availability.countries must not be empty`);
+            } else if (countries.some((country) => typeof country !== 'string' || !/^[A-Z]{2}$/.test(country))) {
+                errors.push(`API provider model ${rowLabel} availability.countries must use uppercase ISO 3166-1 alpha-2 codes`);
+            } else if (new Set(countries).size !== countries.length) {
+                errors.push(`API provider model ${rowLabel} availability.countries must not contain duplicates`);
+            }
+            if (availability.source_url !== undefined && availability.source_url !== null) {
+                try {
+                    new URL(String(availability.source_url));
+                } catch {
+                    errors.push(`API provider model ${rowLabel} availability.source_url must be a valid URL`);
+                }
+            }
+            const effectiveFrom = availability.effective_from == null ? null : Date.parse(String(availability.effective_from));
+            const effectiveTo = availability.effective_to == null ? null : Date.parse(String(availability.effective_to));
+            if (effectiveFrom !== null && !Number.isFinite(effectiveFrom)) {
+                errors.push(`API provider model ${rowLabel} availability.effective_from must be a valid timestamp`);
+            }
+            if (effectiveTo !== null && !Number.isFinite(effectiveTo)) {
+                errors.push(`API provider model ${rowLabel} availability.effective_to must be a valid timestamp`);
+            }
+            if (Number.isFinite(effectiveFrom) && Number.isFinite(effectiveTo) && Number(effectiveTo) <= Number(effectiveFrom)) {
+                errors.push(`API provider model ${rowLabel} availability.effective_to must be after effective_from`);
+            }
+        }
+    }
+
     const configuredCapabilities = Array.isArray(row?.capabilities)
         ? row.capabilities.filter(
               (capability) =>
@@ -949,6 +1009,13 @@ function checkApiProviders(state: ValidationState): string[] {
         if (!providerId) {
             errors.push(`API provider ${provider} missing api_provider_id`);
             continue;
+        }
+        if (data.availability !== undefined && data.availability !== null) {
+            const availabilityChecks = checkApiProviderModelEntrySafety({
+                provider_model_slug: providerId,
+                availability: data.availability,
+            }, { providerId });
+            errors.push(...availabilityChecks.errors);
         }
         if (
             data.provider_family_id !== undefined &&

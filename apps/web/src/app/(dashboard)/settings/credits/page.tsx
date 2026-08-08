@@ -4,6 +4,7 @@ import BuyCreditsClient from "@/components/(gateway)/credits/CreditPurchases/Top
 import AutoTopUpClient from "@/components/(gateway)/credits/CreditPurchases/AutoTopUp/AutoTopUpClient";
 import LowBalanceEmailAlertsClient from "@/components/(gateway)/credits/LowBalanceEmailAlertsClient";
 import { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
@@ -29,6 +30,7 @@ export default function Page(props: {
 async function CreditsSettingsContent(props: {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+	await connection();
 	const searchParams = await props.searchParams;
 	const params = new URLSearchParams();
 	if (searchParams) {
@@ -66,6 +68,7 @@ async function CreditsSettingsContent(props: {
 						<div className="grid grid-cols-1 md:grid-cols-2">
 							<div className="p-4 md:p-5">
 								<BuyCreditsClient
+									declaredCountryCode={initialData.declaredCountryCode}
 									wallet={initialData.wallet}
 									stripeInfo={initialData.stripeInfo}
 									embedded
@@ -81,9 +84,11 @@ async function CreditsSettingsContent(props: {
 						</div>
 					</CardContent>
 				</Card>
-				<div>
+				<div className="border-t pt-5">
 					<LowBalanceEmailAlertsClient
+						autoTopUpFailureEmailEnabled={initialData.autoTopUpFailureEmailEnabled}
 						enabled={initialData.lowBalanceEmailEnabled}
+						paymentMethodExpiringEmailEnabled={initialData.paymentMethodExpiringEmailEnabled}
 						thresholdUsd={initialData.lowBalanceEmailThresholdUsd}
 					/>
 				</div>

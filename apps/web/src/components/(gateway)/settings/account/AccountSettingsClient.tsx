@@ -12,7 +12,12 @@ import {
 	readAnalyticsConsent,
 	type AnalyticsConsent,
 } from "@/lib/cookieConsent";
-import { STORAGE_KEYS } from "@/components/(chat)/playground/chat-playground-core";
+import {
+	chatCompletionNotificationsEnabled,
+	chatCompletionNotificationsSupported,
+	disableChatCompletionNotifications,
+	enableChatCompletionNotifications,
+} from "@/lib/chat/completionNotifications";
 import {
 	OBFUSCATE_INFO_COOKIE,
 	serializeObfuscateInfo,
@@ -33,7 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, User, Lock, Mail } from "lucide-react";
+import { Loader2, Lock, Mail } from "lucide-react";
 
 export type UserPayload = {
 	id: string;
@@ -132,6 +137,10 @@ export default function AccountSettingsClient({
 	>(null);
 	const [chatNotifyOnComplete, setChatNotifyOnComplete] =
 		React.useState<boolean>(false);
+	const [chatNotificationsSupported, setChatNotificationsSupported] =
+		React.useState(true);
+	const [updatingChatNotifications, setUpdatingChatNotifications] =
+		React.useState(false);
 	const applyObfuscationMode = React.useCallback((next: boolean) => {
 		if (typeof document === "undefined") return;
 		const serialized = serializeObfuscateInfo(next);
@@ -159,15 +168,8 @@ export default function AccountSettingsClient({
 		setAnalyticsConsent(readAnalyticsConsent());
 		applyObfuscationMode(Boolean(user.obfuscateInfo));
 
-		try {
-			const storedNotify =
-				window.localStorage.getItem(STORAGE_KEYS.notifyOnComplete) ?? "";
-			if (storedNotify === "true") {
-				setChatNotifyOnComplete(true);
-			}
-		} catch {
-			// Ignore storage access errors.
-		}
+		setChatNotificationsSupported(chatCompletionNotificationsSupported());
+		setChatNotifyOnComplete(chatCompletionNotificationsEnabled());
 	}, [applyObfuscationMode, user.obfuscateInfo]);
 
 	const analyticsEnabled = analyticsConsent === "accepted";
@@ -217,6 +219,32 @@ export default function AccountSettingsClient({
 			void e;
 		} finally {
 			setSaving(false);
+		}
+	}
+
+	async function handleChatNotificationsChange(checked: boolean) {
+		setUpdatingChatNotifications(true);
+		try {
+			if (!checked) {
+				disableChatCompletionNotifications();
+				setChatNotifyOnComplete(false);
+				return;
+			}
+
+			const result = await enableChatCompletionNotifications();
+			if (!result.enabled) {
+				setChatNotifyOnComplete(false);
+				toast.error(
+					result.reason === "unsupported"
+						? "Browser notifications are not supported here."
+						: "Allow notifications in your browser to enable chat alerts.",
+				);
+				return;
+			}
+			setChatNotifyOnComplete(true);
+			toast.success("Chat completion notifications enabled");
+		} finally {
+			setUpdatingChatNotifications(false);
 		}
 	}
 
@@ -367,32 +395,21 @@ export default function AccountSettingsClient({
 
 	return (
 		<div className="space-y-8">
-			<section className="space-y-3">
-				<div className="flex items-start justify-between gap-4">
-					<div className="min-w-0">
-						<h3 className="text-sm font-medium flex items-center gap-2">
-							<User className="h-4 w-4" />
-							Account
-						</h3>
-						<p className="text-xs text-muted-foreground mt-0.5">
-							Edit the basics of your profile. Member since{" "}
-							{new Date(user.createdAt).toLocaleDateString()}.
-						</p>
-					</div>
-					{hasChanges ? (
-						<Badge variant="secondary">Unsaved changes</Badge>
-					) : (
-						<Badge variant="outline">Up to date</Badge>
-					)}
-				</div>
-
-				<form onSubmit={handleSave} className="mt-3">
-					<div className="grid gap-4">
-						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
-							<Label htmlFor="displayName" className="text-sm font-medium sm:pt-2">
-								Display name
+			<section aria-label="Account details">
+				<form
+					onSubmit={handleSave}
+					className="overflow-hidden rounded-xl border bg-background/40"
+				>
+					<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+						<div className="min-w-0">
+							<Label htmlFor="displayName" className="text-sm font-medium">
+								Display Name
 							</Label>
-							<div className="grid max-w-2xl gap-1.5">
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								This is how your name appears to other people.
+							</p>
+						</div>
+						<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
 								<Input
 									id="displayName"
 									value={displayName ?? ""}
@@ -402,47 +419,54 @@ export default function AccountSettingsClient({
 										setDisplayName(e.target.value ? e.target.value : null)
 									}
 								/>
-								<p className="text-xs text-muted-foreground">
-									This is how your name appears to other people.
+						</div>
+					</div>
+
+					{user.email ? (
+						<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+							<div className="min-w-0">
+								<Label className="text-sm font-medium">Email</Label>
+								<p className="mt-0.5 text-sm text-muted-foreground">
+									Contact support to change your sign-in email.
 								</p>
 							</div>
-						</div>
-
-						{user.email ? (
-							<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
-								<Label className="text-sm font-medium sm:pt-2">Email</Label>
-								<div className="grid max-w-2xl gap-1.5">
+							<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
 									<Input value={user.email} readOnly data-pii="true" />
-									<p className="text-xs text-muted-foreground">
-										Contact support to change your sign-in email.
-									</p>
-								</div>
 							</div>
+						</div>
 						) : null}
 
-						{user.countryStorageAvailable !== false ? (
-							<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
-								<Label htmlFor="account-country" className="text-sm font-medium sm:pt-2">
+					{user.countryStorageAvailable !== false ? (
+						<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+							<div className="min-w-0">
+								<Label htmlFor="account-country" className="text-sm font-medium">
 									Country
 								</Label>
-								<div className="grid max-w-2xl gap-1.5">
+								<p className="mt-0.5 text-sm text-muted-foreground">
+									Used to determine provider and service availability. Billing addresses are managed separately.
+								</p>
+							</div>
+							<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
 									<CountryCombobox
 										id="account-country"
 										value={declaredCountryCode}
 										onValueChange={setDeclaredCountryCode}
+										className="h-8 rounded-md"
 									/>
-									<p className="text-xs text-muted-foreground">
-										Your account country helps determine provider and service availability. Billing addresses are managed separately.
-									</p>
-								</div>
 							</div>
+						</div>
 						) : null}
 
-						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
-							<Label htmlFor="defaultTeam" className="text-sm font-medium sm:pt-2">
-								Default workspace
+					<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+						<div className="min-w-0">
+							<Label htmlFor="defaultTeam" className="text-sm font-medium">
+								Default Workspace
 							</Label>
-							<div className="grid max-w-2xl gap-1.5">
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								Set the workspace shown by default.
+							</p>
+						</div>
+						<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
 								{teams && teams.length > 0 ? (
 									<Select
 										value={defaultWorkspaceId ?? ""}
@@ -463,43 +487,16 @@ export default function AccountSettingsClient({
 								) : (
 									<Input id="defaultTeam" value={"Personal"} readOnly disabled />
 								)}
-								<p className="text-xs text-muted-foreground">
-									Set the project that is shown by default.
-								</p>
-							</div>
 						</div>
+					</div>
 
-						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
-							<Label className="text-sm font-medium sm:pt-2">Chat notifications</Label>
-							<div className="flex max-w-2xl items-center justify-between gap-4 rounded-md bg-muted/25 px-3 py-2">
-								<p className="text-xs text-muted-foreground">
-									Notify when chat responses finish (only when this tab is
-									unfocused).
-								</p>
-								<Switch
-									checked={chatNotifyOnComplete}
-									onCheckedChange={(checked) => {
-										setChatNotifyOnComplete(checked);
-										try {
-											window.localStorage.setItem(
-												STORAGE_KEYS.notifyOnComplete,
-												checked ? "true" : "false",
-											);
-										} catch {
-											// Ignore storage access errors.
-										}
-									}}
-									aria-label="Toggle chat completion notifications"
-								/>
-							</div>
+					<div className="flex items-center justify-between gap-4 border-t px-4 py-3.5">
+						<div className="min-w-0">
+							<Label className="text-sm font-medium">Analytics Cookies</Label>
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								Allow analytics cookies to improve the product.
+							</p>
 						</div>
-
-						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
-							<Label className="text-sm font-medium sm:pt-2">Analytics cookies</Label>
-							<div className="flex max-w-2xl items-center justify-between gap-4 rounded-md bg-muted/25 px-3 py-2">
-								<p className="text-xs text-muted-foreground">
-									Allow analytics cookies to improve the product.
-								</p>
 								<Switch
 									checked={analyticsEnabled}
 									onCheckedChange={(checked) => {
@@ -511,51 +508,83 @@ export default function AccountSettingsClient({
 									}}
 									aria-label="Toggle analytics cookies"
 								/>
-							</div>
 						</div>
 
-						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
-							<Label className="text-sm font-medium sm:pt-2">Obfuscate info</Label>
-							<div className="flex max-w-2xl items-center justify-between gap-4 rounded-md bg-muted/25 px-3 py-2">
-								<p className="text-xs text-muted-foreground">
-									Blur sensitive information across the website (emails, card
-									details, and payment info).
-								</p>
+					<div className="flex items-center justify-between gap-4 border-t px-4 py-3.5">
+						<div className="min-w-0">
+							<Label className="text-sm font-medium">Obfuscate Info</Label>
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								Blur sensitive information across the website.
+							</p>
+						</div>
 								<Switch
 									checked={obfuscateInfo}
 									onCheckedChange={setObfuscateInfo}
 									aria-label="Toggle obfuscation"
 								/>
-							</div>
-						</div>
 					</div>
 
-					<div className="mt-4 flex items-center justify-end gap-2 border-t border-border/60 pt-4">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => {
-								setDisplayName(initial.display_name);
-								setDefaultTeamId(initialDefaultTeam);
-								setDeclaredCountryCode(initial.declared_country_code ?? "");
-								setObfuscateInfo(initial.obfuscate_info);
-							}}
-							disabled={!hasChanges || saving}
-						>
-							Reset
-						</Button>
-						<Button type="submit" disabled={!hasChanges || saving}>
-							{saving ? (
-								<>
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Saving...
-								</>
-							) : (
-								"Save changes"
-							)}
-						</Button>
+					<div className="flex flex-col gap-3 border-t bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+						<div className="flex min-w-0 items-center gap-2">
+							<p className="text-xs text-muted-foreground">
+								Member since {new Date(user.createdAt).toLocaleDateString()}.
+							</p>
+							{hasChanges ? <Badge variant="secondary">Unsaved changes</Badge> : null}
+						</div>
+						<div className="flex items-center justify-end gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => {
+									setDisplayName(initial.display_name);
+									setDefaultTeamId(initialDefaultTeam);
+									setDeclaredCountryCode(initial.declared_country_code ?? "");
+									setObfuscateInfo(initial.obfuscate_info);
+								}}
+								disabled={!hasChanges || saving}
+							>
+								Reset
+							</Button>
+							<Button type="submit" disabled={!hasChanges || saving}>
+								{saving ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Saving...
+									</>
+								) : (
+									"Save changes"
+								)}
+							</Button>
+						</div>
 					</div>
 				</form>
+			</section>
+
+			<section aria-labelledby="account-notifications-title" className="space-y-3 border-t border-border/60 pt-6">
+				<h3
+					id="account-notifications-title"
+					className="font-heading text-base font-medium"
+				>
+					Notifications
+				</h3>
+				<div className="overflow-hidden rounded-xl border bg-background/40">
+					<div className="flex items-center justify-between gap-4 px-4 py-3.5">
+						<div className="min-w-0">
+							<h4 className="text-sm font-medium">Chat Completion</h4>
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								{chatNotificationsSupported
+									? "Show a browser notification when a text chat response finishes while this tab is unfocused."
+									: "Browser notifications are not supported in this browser."}
+							</p>
+						</div>
+						<Switch
+							checked={chatNotifyOnComplete}
+							disabled={!chatNotificationsSupported || updatingChatNotifications}
+							onCheckedChange={(checked) => void handleChatNotificationsChange(Boolean(checked))}
+							aria-label="Enable chat completion browser notifications"
+						/>
+					</div>
+				</div>
 			</section>
 
 			{hasPassword && (

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Info } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,20 +14,20 @@ import {
 	DialogDescription,
 	DialogClose,
 } from "@/components/ui/dialog";
-import {
-	Tooltip,
-	TooltipTrigger,
-	TooltipContent,
-} from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import PaymentMethodStrip from "@/components/(gateway)/credits/CreditPurchases/TopUp/PaymentMethodStrip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import { Spinner } from "@/components/ui/spinner";
-import { ChargeSavedPayment } from "@/app/(dashboard)/settings/credits/actions";
+import { ChargeSavedPayment, ReviewPurchaseLocation } from "@/app/(dashboard)/settings/credits/actions";
 import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { COUNTRY_OPTIONS } from "@/lib/countryCodes";
+import { PurchaseLocationStep, type LocationPreview } from "./PurchaseLocationStep";
+import { cn } from "@/lib/utils";
+import { formatCardBrand } from "./cardBrand";
 
 /* Helpers */
 const formatUSD = (v: number) =>
@@ -38,6 +39,20 @@ const formatUSD = (v: number) =>
 function clamp(n: number, min: number, max: number) {
 	return Math.max(min, Math.min(max, n));
 }
+
+const CHECKOUT_STEP_VARIANTS: Variants = {
+	initial: (direction: number) => ({
+		opacity: direction === 0 ? 1 : 0,
+		x: direction * 42,
+	}),
+	animate: { opacity: 1, x: 0 },
+	exit: (direction: number) => ({
+		opacity: direction === 0 ? 1 : 0,
+		x: direction * -28,
+	}),
+};
+
+const QUICK_PICKS = [5, 10, 25, 50, 100, 250, 500, 1_000];
 
 function trackFirstPaymentSaveCardClick(payload: {
 	creditsAmountUsd: number;
@@ -58,12 +73,14 @@ function trackFirstPaymentSaveCardClick(payload: {
 }
 
 export default function CreditsPurchaseDialog({
+	declaredCountryCode,
 	open,
 	onClose,
 	wallet,
 	stripeInfo,
 	tierInfo,
 }: {
+	declaredCountryCode?: string | null;
 	open: boolean;
 	onClose: () => void;
 	wallet?: any;
@@ -72,6 +89,13 @@ export default function CreditsPurchaseDialog({
 }) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const shouldReduceMotion = useReducedMotion();
+	const [step, setStep] = useState<"location" | "payment">("location");
+	const [countryCode, setCountryCode] = useState(declaredCountryCode ?? "");
+	const [locationPreview, setLocationPreview] = useState<LocationPreview | null>(null);
+	const [isLocationAcknowledged, setIsLocationAcknowledged] = useState(false);
+	const [isReviewingLocation, setIsReviewingLocation] = useState(false);
+	const [locationError, setLocationError] = useState<string | null>(null);
 	// CONFIG
 	// Allow freeform typing. Require a minimum of $5 and a maximum of $1,000,000
 	// before enabling the pay button.
@@ -94,6 +118,8 @@ export default function CreditsPurchaseDialog({
 	// characters (empty string, partial decimals, etc.). Parse it into a
 	// number when needed for validation and calculations.
 	const [rawAmount, setRawAmount] = useState<string>("25");
+	const quickPickScrollerRef = useRef<HTMLDivElement>(null);
+	const quickPickRefs = useRef(new Map<number, HTMLButtonElement>());
 	const parsed = useMemo(() => {
 		const n = parseFloat(rawAmount as any);
 		return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
@@ -148,7 +174,31 @@ export default function CreditsPurchaseDialog({
 		? "--"
 		: formatUSD(total);
 
-	const quickPicks = [25, 100, 250, 500];
+	useEffect(() => {
+		if (step !== "payment") return;
+		let frame = 0;
+		const centerSelectedAmount = () => {
+			window.cancelAnimationFrame(frame);
+			frame = window.requestAnimationFrame(() => {
+				const scroller = quickPickScrollerRef.current;
+				const selectedValue = QUICK_PICKS.find((value) => Math.abs(value - amount) < 0.001) ?? 25;
+				const selected = quickPickRefs.current.get(selectedValue);
+				if (!scroller || !selected) return;
+				const scrollerRect = scroller.getBoundingClientRect();
+				const selectedRect = selected.getBoundingClientRect();
+				const selectedOffset = selectedRect.left - scrollerRect.left + scroller.scrollLeft;
+				scroller.scrollLeft = selectedOffset - (scroller.clientWidth - selectedRect.width) / 2;
+			});
+		};
+		const scroller = quickPickScrollerRef.current;
+		centerSelectedAmount();
+		const resizeObserver = scroller ? new ResizeObserver(centerSelectedAmount) : null;
+		if (scroller) resizeObserver?.observe(scroller);
+		return () => {
+			window.cancelAnimationFrame(frame);
+			resizeObserver?.disconnect();
+		};
+	}, [amount, step]);
 
 	// Default selection: only auto-select the Stripe default payment method.
 	const [selectedPm, setSelectedPm] = useState<string | "new" | null>(() => {
@@ -182,8 +232,44 @@ export default function CreditsPurchaseDialog({
 		}
 	}, [selectedPm, stripeInfo]);
 
+	async function reviewPurchaseLocation() {
+		const workspaceId = String(wallet?.workspace_id ?? "").trim();
+		if (!countryCode) {
+			setLocationError("Select a country or region");
+			return;
+		}
+		setIsReviewingLocation(true);
+		setIsLocationAcknowledged(false);
+		setLocationError(null);
+		try {
+			const data = await ReviewPurchaseLocation({
+				countryCode,
+				workspaceId: workspaceId || null,
+			});
+			setLocationPreview(data as LocationPreview);
+			captureProductEvent("credits_purchase_location_reviewed", {
+				country_code: countryCode,
+				restricted_model_count: data.restrictedModels?.length ?? 0,
+				region_restricted_model_count: data.regionRestrictedModels?.length ?? 0,
+			});
+		} catch (error) {
+			setLocationError(error instanceof Error ? error.message : "Could not review model availability");
+		} finally {
+			setIsReviewingLocation(false);
+		}
+	}
+
+	function closeDialog() {
+		setStep("location");
+		setCountryCode(declaredCountryCode ?? "");
+		setLocationPreview(null);
+		setIsLocationAcknowledged(false);
+		setLocationError(null);
+		onClose();
+	}
+
 	async function handlePay() {
-		if (disabled) return;
+		if (disabled || !locationPreview || locationPreview.countryCode !== countryCode) return;
 		setErr(null);
 		setIsLoading(true);
 
@@ -206,6 +292,7 @@ export default function CreditsPurchaseDialog({
 			currency: "usd",
 			mode,
 			payment_method: selectedPm === "new" ? "new" : "saved",
+			country_code: countryCode,
 		});
 
 		// Update URL to indicate a payment attempt is in progress so the
@@ -237,6 +324,7 @@ export default function CreditsPurchaseDialog({
 					user_id: clientUserId ?? null,
 					event_type: "top_up",
 					workspace_id: workspaceId,
+					country_code: countryCode,
 				} as any);
 
 				const { data, status, ok } = response;
@@ -267,7 +355,7 @@ export default function CreditsPurchaseDialog({
 						toast.success("Authenticated", {
 							description: "Finishing your payment...",
 						});
-						onClose();
+						closeDialog();
 						return; // don't fall through
 					}
 					// If we got 402 but no client secret, treat as a decline
@@ -291,7 +379,7 @@ export default function CreditsPurchaseDialog({
 							payment_method: "saved",
 						});
 						toast.success("Payment successful");
-						onClose();
+						closeDialog();
 						return; // don't fall through
 					}
 					if (
@@ -301,11 +389,11 @@ export default function CreditsPurchaseDialog({
 						toast.message("Payment processing", {
 							description: "We'll update your balance shortly.",
 						});
-						onClose();
+						closeDialog();
 						return; // don't fall through
 					}
 					// Unexpected ok status - treat as success-ish and let the webhook settle it
-					onClose();
+					closeDialog();
 					return; // don't fall through
 				}
 
@@ -329,6 +417,7 @@ export default function CreditsPurchaseDialog({
 					customerId,
 					user_id: clientUserId ?? null,
 					workspace_id: workspaceId,
+					country_code: countryCode,
 				}),
 			});
 
@@ -345,27 +434,103 @@ export default function CreditsPurchaseDialog({
 			setIsLoading(false);
 		}
 	}
+	const selectedCountryName = COUNTRY_OPTIONS.find((country) => country.code === countryCode)?.name ?? countryCode;
 
 	return (
-		<Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+		<Dialog
+			open={open}
+			onOpenChange={(value) => {
+				if (value) return;
+				closeDialog();
+			}}
+		>
 			<DialogContent className="sm:max-w-lg p-0 overflow-hidden">
 				{/* Remove number input spinners for the amount input */}
 				<style>{`#amount::-webkit-outer-spin-button, #amount::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } #amount { -moz-appearance: textfield; }`}</style>
+				<DialogTitle className="sr-only">
+					{step === "location" ? "Confirm your location" : "Top Up Credits"}
+				</DialogTitle>
+				<DialogDescription className="sr-only">
+					{step === "location"
+						? "Provider rules mean some models are unavailable in certain countries or regions. Review what applies before purchasing credits."
+						: "Pick a card, choose an amount, and confirm. A small top-up fee applies."}
+				</DialogDescription>
+				<motion.div
+					className="w-full min-w-0"
+					layout="size"
+					transition={shouldReduceMotion
+						? { duration: 0 }
+						: { layout: { duration: 0.26, ease: [0.65, 0, 0.35, 1] } }}
+				>
+					<AnimatePresence
+						initial={false}
+						mode="popLayout"
+						custom={shouldReduceMotion ? 0 : step === "payment" ? 1 : -1}
+					>
+						<motion.div
+							key={step}
+							className="w-full min-w-0"
+							custom={shouldReduceMotion ? 0 : step === "payment" ? 1 : -1}
+							variants={CHECKOUT_STEP_VARIANTS}
+							initial="initial"
+							animate="animate"
+							exit="exit"
+							transition={shouldReduceMotion
+								? { duration: 0 }
+								: { duration: 0.22, ease: [0.33, 1, 0.68, 1] }}
+						>
+				{step === "location" ? (
+					<PurchaseLocationStep
+						countryCode={countryCode}
+						countryName={selectedCountryName}
+						error={locationError}
+						isAcknowledged={isLocationAcknowledged}
+						isReviewing={isReviewingLocation}
+						onAcknowledgedChange={setIsLocationAcknowledged}
+						onContinue={() => {
+							if (!isLocationAcknowledged) return;
+							captureProductEvent("credits_purchase_location_acknowledged", {
+								country_code: countryCode,
+								restricted_model_count: locationPreview?.restrictedModels.length ?? 0,
+								region_restricted_model_count: locationPreview?.regionRestrictedModels.length ?? 0,
+							});
+							setStep("payment");
+						}}
+						onCountryChange={(value) => {
+							setCountryCode(value);
+							setLocationPreview(null);
+							setIsLocationAcknowledged(false);
+							setLocationError(null);
+						}}
+						onReview={reviewPurchaseLocation}
+						preview={locationPreview}
+					/>
+				) : (
+					<>
 				{/* Header */}
 				<div className="px-6 pt-6">
 					<DialogHeader className="space-y-1">
-						<DialogTitle className="text-xl">
-							Top up credits
-						</DialogTitle>
-						<DialogDescription>
-							Pick a card, choose an amount, and confirm. A small
-							top-up fee applies.
-						</DialogDescription>
+						<div className="flex items-center gap-2">
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								className="-ml-2 rounded-md text-muted-foreground hover:text-foreground"
+								onClick={() => setStep("location")}
+								aria-label="Back to location"
+							>
+								<ArrowLeft className="size-4" />
+							</Button>
+							<h2 aria-hidden="true" className="font-heading text-xl leading-none font-medium">Top Up Credits</h2>
+						</div>
+						<p aria-hidden="true" className="text-sm text-muted-foreground">
+							Pick a card, choose an amount, and confirm. A small top-up fee applies.
+						</p>
 					</DialogHeader>
 				</div>
 
 				{/* Body - single column */}
-				<div className="px-6 space-y-4">
+				<div className="min-w-0 space-y-4 px-6 pb-5">
 					{/* 1. Payment method */}
 					<PaymentMethodStrip
 						stripeInfo={stripeInfo}
@@ -385,7 +550,7 @@ export default function CreditsPurchaseDialog({
 										Payment type
 									</div>
 									<div className="flex items-center gap-3">
-										<div className="text-xs text-zinc-600">
+									<div className="text-xs text-muted-foreground">
 											Use one-off
 										</div>
 										<Switch
@@ -401,7 +566,7 @@ export default function CreditsPurchaseDialog({
 										/>
 									</div>
 								</div>
-								<p className="text-xs text-zinc-600">
+								<p className="text-xs text-muted-foreground">
 									{mode === "pay_and_save"
 										? "Your card will be saved for faster top-ups next time."
 										: "We'll process a one-off payment for this top-up only."}
@@ -414,31 +579,40 @@ export default function CreditsPurchaseDialog({
 
 					{/* 3. Amount */}
 					<section className="space-y-4" aria-label="Choose amount">
-						<div className="grid grid-cols-4 gap-2">
-							{quickPicks.map((v) => (
+						<div
+							ref={quickPickScrollerRef}
+							className="no-scrollbar grid w-full min-w-0 grid-flow-col auto-cols-[calc((100%-1.5rem)/4)] gap-2 overflow-x-auto pb-1 overscroll-x-contain [scrollbar-width:none]"
+						>
+							{QUICK_PICKS.map((v) => (
 								<Button
 									key={v}
+									ref={(node) => {
+										if (node) quickPickRefs.current.set(v, node);
+										else quickPickRefs.current.delete(v);
+									}}
 									type="button"
-									variant={
-										!Number.isNaN(amount) &&
-										Math.abs(amount - v) < 0.001
-											? "default"
-											: "outline"
-									}
+									variant="outline"
 									size="sm"
-									className="rounded-full w-full"
-									onClick={() => setRawAmount(String(v))}
+									className={cn(
+										"w-full rounded-md bg-muted/20 px-1 text-xs sm:text-sm",
+										!Number.isNaN(amount) && Math.abs(amount - v) < 0.001
+											? "border-foreground !bg-foreground !text-background hover:!bg-foreground/90 hover:!text-background"
+											: "border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+									)}
+									onClick={() => {
+										setRawAmount(String(v));
+									}}
 								>
-									{formatUSD(v)}
+									${v.toLocaleString("en-US")}
 								</Button>
 							))}
 						</div>
 
 						<div className="flex items-center">
 							{/* Seamless amount control: joined buttons + input (full width) with rounded focus ring */}
-							<div className="inline-flex items-center rounded-full border border-zinc-200 overflow-hidden w-full focus-within:ring-2 focus-within:ring-indigo-400 focus-within:ring-offset-1">
+							<div className="inline-flex w-full items-center overflow-hidden rounded-lg border border-border bg-muted/20 transition-shadow focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30">
 								{/* Dollar badge in place of left button */}
-								<div className="h-10 w-10 flex items-center justify-center text-zinc-600 text-sm font-medium border-r border-zinc-200">
+								<div className="flex h-10 w-10 items-center justify-center border-r border-border text-sm font-medium text-muted-foreground">
 									$
 								</div>
 
@@ -454,7 +628,7 @@ export default function CreditsPurchaseDialog({
 										min={MIN}
 										max={MAX}
 										step={STEP}
-										className="pl-4 pr-6 text-right text-lg rounded-none border-0 w-full focus:outline-none focus-visible:ring-0 dark:focus-visible:ring-0"
+										className="w-full rounded-none border-0 bg-transparent pl-4 pr-6 text-right text-lg focus:outline-none focus-visible:ring-0 dark:focus-visible:ring-0"
 										// Keep the input freeform as a string so the user
 										// can delete everything. Parse later for validation.
 										value={rawAmount}
@@ -490,7 +664,7 @@ export default function CreditsPurchaseDialog({
 								fees)
 							</div>
 						) : !Number.isNaN(parsed) &&
-						  parsed + fee > TOTAL_CAP ? (
+							parsed + fee > TOTAL_CAP ? (
 							<div className="text-sm text-red-600">
 								Total including fee must not exceed $999,999
 							</div>
@@ -505,25 +679,25 @@ export default function CreditsPurchaseDialog({
 								</span>
 							</div>
 							<div className="flex items-center gap-2">
-								<span className="text-zinc-600">
+								<span className="text-muted-foreground">
 									Top-Up Fee
 								</span>
-								<Tooltip>
-									<TooltipTrigger asChild>
+								<Popover>
+									<PopoverTrigger asChild>
 										<Button
 											type="button"
 											variant="ghost"
 											size="icon"
 											aria-label="Service fee info"
-											className="h-6 w-6 p-0 text-zinc-500 hover:text-zinc-700"
+									className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
 										>
-											<Info className="h-4 w-4 text-zinc-400" />
+											<Info className="size-4" />
 										</Button>
-									</TooltipTrigger>
-									<TooltipContent
+									</PopoverTrigger>
+									<PopoverContent
 										side="top"
 										sideOffset={6}
-										className="max-w-xs text-left leading-relaxed"
+										className="w-72 gap-0 rounded-lg p-3 text-left text-xs leading-relaxed"
 									>
 										We charge{" "}
 										{(FEE_RATE * 100)
@@ -531,8 +705,8 @@ export default function CreditsPurchaseDialog({
 											.replace(/\.?0+$/, "")}
 										% of the top-up as a fee, with a
 										minimum fee of $1.
-									</TooltipContent>
-								</Tooltip>
+									</PopoverContent>
+								</Popover>
 								<span className="font-medium">
 									{feeDisplay}
 								</span>
@@ -541,17 +715,17 @@ export default function CreditsPurchaseDialog({
 					</section>
 
 					{err && (
-						<div className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+					<div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-sm text-destructive">
 							{err}
 						</div>
 					)}
 				</div>
 
 				{/* Sticky footer (review & pay) */}
-				<div className="sticky bottom-0 w-full border-t bg-white/70 backdrop-blur supports-backdrop-filter:bg-white/60">
+				<div className="sticky bottom-0 w-full border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/90">
 					<div className="px-6 py-3 flex items-center justify-between gap-3">
 						<div className="text-sm">
-							<div className="text-zinc-600">Total</div>
+							<div className="text-muted-foreground">Total</div>
 							<div className="text-base font-semibold">
 								{totalDisplay}
 							</div>
@@ -559,11 +733,11 @@ export default function CreditsPurchaseDialog({
 
 						<div className="flex items-center gap-2">
 							<DialogClose asChild>
-								<Button variant="secondary">Cancel</Button>
+								<Button className="rounded-md" variant="secondary">Cancel</Button>
 							</DialogClose>
 
 							<Button
-								className="min-w-48"
+								className="min-w-48 rounded-md bg-foreground text-background hover:bg-foreground/90 hover:text-background"
 								disabled={disabled}
 								onClick={handlePay}
 							>
@@ -577,8 +751,7 @@ export default function CreditsPurchaseDialog({
 										const sel = (
 											stripeInfo?.paymentMethods ?? []
 										).find((p: any) => p.id === selectedPm);
-										const brand =
-											sel?.card?.brand ?? "Card";
+										const brand = formatCardBrand(sel?.card?.brand);
 										const last4 =
 											sel?.card?.last4 ?? "****";
 										return (
@@ -597,6 +770,11 @@ export default function CreditsPurchaseDialog({
 						</div>
 					</div>
 				</div>
+					</>
+				)}
+						</motion.div>
+					</AnimatePresence>
+				</motion.div>
 			</DialogContent>
 		</Dialog>
 	);

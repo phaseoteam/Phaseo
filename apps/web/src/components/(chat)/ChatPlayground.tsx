@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/sidebar";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { fetchChatWebApi } from "@/lib/web-api/client";
+import { showChatCompletionNotification } from "@/lib/chat/completionNotifications";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type {
 	ChatMessage,
@@ -2577,6 +2578,7 @@ function ChatPlaygroundContent({
 				);
 
 				await updateThreadState(latestThread, !temporaryMode);
+				showChatCompletionNotification();
 				markChatPerformance(performanceRunId, "stream-complete");
 			} catch (err) {
 				markChatPerformance(performanceRunId, "request-error");

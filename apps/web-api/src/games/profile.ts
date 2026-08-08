@@ -12,10 +12,10 @@ export type GameResultRow = {
 
 const LABELS: Record<GameKey, string> = {
   modele: "Modele",
-  timeline: "Thenodel Timeline",
+  timeline: "Model Timeline",
   pricele: "Pricele",
-  "head-to-head": "Head to Head",
-  sprint: "Sprint",
+  "head-to-head": "Head-to-Head",
+  sprint: "Model Sprint",
 };
 
 export function buildGameProfileSummary(rows: GameResultRow[]) {

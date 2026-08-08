@@ -24,15 +24,8 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-	Empty,
-	EmptyContent,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyTitle,
-} from "@/components/ui/empty";
-import { Loader2, Shield, ShieldCheck } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Loader2 } from "lucide-react";
 
 export default function AccountMFAClient({
 	hasPassword,
@@ -87,89 +80,82 @@ export default function AccountMFAClient({
 	}
 
 	return (
-		<div className="space-y-4">
-			{!mfaEnabled ? (
-				<Empty className="rounded-lg border p-8">
-					<EmptyHeader>
-						<EmptyMedia variant="icon">
-							<Shield className="h-5 w-5" />
-						</EmptyMedia>
-						<EmptyTitle>Two-factor authentication is disabled</EmptyTitle>
-						<EmptyDescription>
-							Require a code from your authenticator app when signing in.
-						</EmptyDescription>
-					</EmptyHeader>
-					<EmptyContent>
-						<Badge variant="outline">Disabled</Badge>
-						<Button onClick={() => setMfaDialogOpen(true)}>Enable MFA</Button>
-					</EmptyContent>
-				</Empty>
-			) : (
-				<div className="rounded-lg border bg-background p-4 sm:p-5 space-y-4">
+		<div className="space-y-6">
+			<section aria-labelledby="authenticator-app-title" className="space-y-3">
+				<h2
+					id="authenticator-app-title"
+					className="font-heading text-base font-medium"
+				>
+					Authenticator App
+				</h2>
+				<div className="overflow-hidden rounded-xl border bg-background/40">
+					<div className="px-4 py-4">
 					<div className="flex items-start justify-between gap-4">
 						<div className="min-w-0">
-							<h3 className="text-sm font-medium flex items-center gap-2">
-								<ShieldCheck className="h-4 w-4 text-green-600" />
-								Two-factor authentication
-							</h3>
-							<p className="text-sm text-muted-foreground mt-1">
+							<h3 className="text-sm font-medium">Two-Factor Authentication</h3>
+							<p className="mt-0.5 text-sm text-muted-foreground">
 								Require a code from your authenticator app when signing in.
 							</p>
 						</div>
-						<Badge variant="default" className="bg-green-600">
-							Enabled
-						</Badge>
+						{mfaEnabled ? (
+							<Badge variant="secondary">Enabled</Badge>
+						) : (
+							<Button onClick={() => setMfaDialogOpen(true)}>Enable MFA</Button>
+						)}
 					</div>
 
-					<div className="flex items-center justify-between gap-4">
-						<div>
-							<p className="text-sm font-medium">Disable MFA</p>
-							<p className="text-sm text-muted-foreground">
-								Remove two-factor authentication from your account.
-							</p>
+					{mfaEnabled ? (
+						<div className="flex flex-col gap-3 pt-3 pl-3 sm:flex-row sm:items-center sm:justify-between sm:pl-4">
+							<div className="min-w-0">
+								<p className="text-xs font-medium">Disable Two-Factor Authentication</p>
+								<p className="mt-0.5 text-xs text-muted-foreground">
+									Remove the additional sign-in verification from your account.
+								</p>
+							</div>
+							<AlertDialog>
+								<AlertDialogTrigger asChild>
+									<Button variant="outline">Disable</Button>
+								</AlertDialogTrigger>
+								<AlertDialogContent>
+									<AlertDialogHeader>
+										<AlertDialogTitle>Disable MFA?</AlertDialogTitle>
+										<AlertDialogDescription>
+											This will remove the extra security layer from your account.
+										</AlertDialogDescription>
+									</AlertDialogHeader>
+									<AlertDialogFooter>
+										<AlertDialogCancel disabled={disablingMFA}>
+											Cancel
+										</AlertDialogCancel>
+										<Button
+											variant="destructive"
+											onClick={handleDisableMFA}
+											disabled={disablingMFA}
+										>
+											{disablingMFA ? (
+												<>
+													<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+													Disabling...
+												</>
+											) : (
+												"Disable MFA"
+											)}
+										</Button>
+									</AlertDialogFooter>
+								</AlertDialogContent>
+							</AlertDialog>
 						</div>
-						<AlertDialog>
-							<AlertDialogTrigger asChild>
-								<Button variant="outline">Disable</Button>
-							</AlertDialogTrigger>
-							<AlertDialogContent>
-								<AlertDialogHeader>
-									<AlertDialogTitle>Disable MFA?</AlertDialogTitle>
-									<AlertDialogDescription>
-										This will remove the extra security layer from your account.
-									</AlertDialogDescription>
-								</AlertDialogHeader>
-
-								<AlertDialogFooter>
-									<AlertDialogCancel disabled={disablingMFA}>
-										Cancel
-									</AlertDialogCancel>
-									<Button
-										variant="destructive"
-										onClick={handleDisableMFA}
-										disabled={disablingMFA}
-									>
-										{disablingMFA ? (
-											<>
-												<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-												Disabling...
-											</>
-										) : (
-											"Disable MFA"
-										)}
-									</Button>
-								</AlertDialogFooter>
-							</AlertDialogContent>
-						</AlertDialog>
+					) : null}
 					</div>
 				</div>
-			)}
+			</section>
 
 			<MFAEnrollmentFlow
 				open={mfaDialogOpen}
 				onOpenChange={handleMFADialogClose}
 				onSuccess={handleMFASuccess}
 			/>
+			<Separator />
 			<PasskeyManager hasPassword={hasPassword} />
 		</div>
 	);

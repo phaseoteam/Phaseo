@@ -3,7 +3,7 @@ import { createStripeCheckoutResponse } from "@/lib/server/createStripeCheckoutR
 
 export async function POST(req: NextRequest) {
 	try {
-		const { kind, amount_pence, currency = "usd", workspace_id } =
+		const { kind, amount_pence, currency = "usd", workspace_id, country_code } =
 			await req.json();
 		const requestedWorkspaceId =
 			typeof workspace_id === "string" && workspace_id.trim().length > 0
@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
 			amountPence:
 				typeof amount_pence === "number" ? amount_pence : Number(amount_pence),
 			currency,
+			countryCode: country_code,
 			kind,
 			originHeader: req.headers.get("origin"),
 			refererHeader: req.headers.get("referer"),

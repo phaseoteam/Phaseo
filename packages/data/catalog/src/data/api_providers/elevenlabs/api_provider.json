@@ -1,6 +1,16 @@
 {
   "api_provider_id": "elevenlabs",
   "api_provider_name": "ElevenLabs",
+  "availability": {
+    "mode": "blocklist",
+    "countries": ["BY","CU","IR","KP","RU","SY"],
+    "country_source": "request_origin",
+    "unknown_country": "deny",
+    "blocked_subdivisions": ["UA-43","UA-14","UA-09"],
+    "unknown_subdivision": "deny",
+    "reason": "ElevenLabs blocks Belarus, Cuba, Iran, North Korea, Russia, Syria, Crimea, Donetsk, and Luhansk.",
+    "source_url": "https://elevenlabs.io/docs/help-center/legal/do-you-restrict-access-to-the-service-and-platform-for-any-specific-countries"
+  },
   "description": null,
   "link": "https://elevenlabs.io/docs/",
   "pricing_source_url": "https://elevenlabs.io/pricing/api",

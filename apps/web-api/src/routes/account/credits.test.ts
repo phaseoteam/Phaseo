@@ -1,9 +1,24 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "@/index";
+import { parseLowBalanceThresholdNanos } from "./credits";
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account credit routes", () => {
+	it("accepts non-negative low-balance thresholds with up to two decimal places", () => {
+		expect(parseLowBalanceThresholdNanos(0)).toBe(0);
+		expect(parseLowBalanceThresholdNanos(12)).toBe(12_000_000_000);
+		expect(parseLowBalanceThresholdNanos(12.3)).toBe(12_300_000_000);
+		expect(parseLowBalanceThresholdNanos(12.34)).toBe(12_340_000_000);
+		expect(parseLowBalanceThresholdNanos(0.01)).toBe(10_000_000);
+	});
+
+	it("rejects invalid or over-precise low-balance thresholds", () => {
+		expect(parseLowBalanceThresholdNanos(-1)).toBeNull();
+		expect(parseLowBalanceThresholdNanos(12.345)).toBeNull();
+		expect(parseLowBalanceThresholdNanos("not-a-number")).toBeNull();
+	});
+
 	it("rejects unauthenticated balance reads and marks them private", async () => {
 		const response = await app.request("https://phaseo.app/api/account/credits/balance?workspaceId=workspace-1", {}, { ENV: "development" });
 		expect(response.status).toBe(401);

@@ -1,12 +1,5 @@
 import { Suspense } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { connection } from "next/server";
 import { StripePortalButton } from "./StripePortalButton";
 import { PaymentMethodsManager } from "./PaymentMethodsManager";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
@@ -22,7 +15,7 @@ export default function Page() {
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold">Payment Methods</h1>
         <p className="text-sm text-muted-foreground">
-          Review saved cards and identify the default payment method used for auto top-ups and invoices.
+          Manage the cards used for credits, auto top-ups, and invoices.
         </p>
       </div>
       <Suspense fallback={<SettingsSectionFallback />}>
@@ -33,6 +26,7 @@ export default function Page() {
 }
 
 async function PaymentMethodsContent() {
+	await connection();
   const { customerId, initialData, obfuscateInfo } =
     await fetchSettingsPaymentMethodsInitialData();
 
@@ -41,30 +35,16 @@ async function PaymentMethodsContent() {
       data-obfuscate-pii={obfuscateInfo ? "true" : "false"}
       data-obfuscation-sync="true"
     >
-      <Card>
-        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <CardTitle>Saved payment methods</CardTitle>
-            <CardDescription>
-              Review cards and identify the default payment method used for auto top-ups and invoices.
-            </CardDescription>
-          </div>
-          {customerId ? (
-            <StripePortalButton customerId={customerId} />
-          ) : null}
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!customerId ? (
-            <p className="text-sm text-muted-foreground">
-              Add a payment method on the Credits page to link this workspace to a Stripe customer.
-            </p>
-          ) : (
-            <PaymentMethodsManager initialData={initialData} />
-          )}
-
-          {customerId && <Separator className="my-4" />}
-        </CardContent>
-      </Card>
+      {!customerId ? (
+        <p className="py-3 text-sm text-muted-foreground">
+          Add a payment method from Credits to connect this workspace to Stripe.
+        </p>
+      ) : (
+        <PaymentMethodsManager
+          initialData={initialData}
+          customerPortal={<StripePortalButton customerId={customerId} label="Customer Portal" />}
+        />
+      )}
     </div>
   );
 }

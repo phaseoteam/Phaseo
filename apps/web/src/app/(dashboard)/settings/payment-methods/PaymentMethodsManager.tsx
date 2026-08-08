@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Loader2, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
     Dialog,
     DialogContent,
@@ -63,8 +62,10 @@ async function readJsonSafe(response: Response) {
 
 export function PaymentMethodsManager({
     initialData,
+	customerPortal,
 }: {
     initialData: PaymentMethodsPayload;
+	customerPortal?: ReactNode;
 }) {
     const [data, setData] = useState<PaymentMethodsPayload>(initialData);
     const [refreshing, setRefreshing] = useState(false);
@@ -172,108 +173,79 @@ export function PaymentMethodsManager({
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-                <Button type="button" className="gap-2" onClick={addCard} disabled={adding}>
-                    {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                    Add Card
-                </Button>
-                <Button type="button" variant="outline" className="gap-2" onClick={refresh} disabled={refreshing}>
-                    {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
-                    Refresh
-                </Button>
+			<div className="grid grid-cols-2 items-center gap-2 border-b pb-4 sm:flex sm:flex-wrap">
+				<Button type="button" className="w-full gap-2 sm:w-auto" onClick={addCard} disabled={adding}>
+					{adding ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+					Add Card
+				</Button>
+				<Button type="button" variant="outline" className="w-full gap-2 sm:w-auto" onClick={refresh} disabled={refreshing}>
+					{refreshing ? <Loader2 className="size-4 animate-spin" /> : <RefreshCcw className="size-4" />}
+					Refresh
+				</Button>
+				{customerPortal ? <div className="col-span-2 [&_button]:w-full sm:col-span-1 sm:ml-auto sm:[&_button]:w-auto">{customerPortal}</div> : null}
             </div>
 
             {paymentMethods.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                    No card payment methods found yet. Add one here and it will be available for credits and auto top-ups.
+                <p className="py-4 text-sm text-muted-foreground">
+                    No cards yet. Add one to use it for credits and auto top-ups.
                 </p>
             ) : (
-                <div className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {paymentMethods.map((pm) => {
                         const isDefault = pm.id === data.defaultPaymentMethodId;
                         const settingDefault = defaultPendingId === pm.id;
                         const removing = removePendingId === pm.id;
                         const busy = settingDefault || removing;
                         return (
-                            <div
+                            <article
                                 key={pm.id}
-                                className="flex flex-col gap-3 rounded-lg border border-border bg-background/60 p-4 md:flex-row md:items-center md:justify-between"
+                                className="relative isolate aspect-[1.586] w-full max-w-xs overflow-hidden rounded-xl border bg-gradient-to-br from-muted/80 via-background to-muted/40 p-4 shadow-sm"
                             >
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium text-foreground">
-                                            {formatCardBrand(pm.brand)} ending{" "}
-                                            <span data-pii="true">
-                                                {pm.last4 ?? "****"}
-                                            </span>
-                                        </span>
-                                        {isDefault ? (
-                                            <Badge variant="secondary" className="text-[11px]">
-                                                Default
-                                            </Badge>
-                                        ) : null}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        Expires{" "}
-                                        <span data-pii="true">
-                                            {formatExpiry(pm.expMonth, pm.expYear)}
-                                        </span>
-                                    </div>
-                                    {pm.funding ? (
-                                        <div className="text-xs text-muted-foreground uppercase">{pm.funding}</div>
-                                    ) : null}
-                                    <div className="text-xs text-muted-foreground">Added {formatDate(pm.created)}</div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    {!isDefault ? (
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={busy}
-                                            onClick={() => setDefault(pm.id)}
-                                        >
-                                            {settingDefault ? (
-                                                <span className="inline-flex items-center gap-2">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                    Setting...
-                                                </span>
-                                            ) : (
-                                                "Set Default"
-                                            )}
-                                        </Button>
-                                    ) : null}
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={busy}
-                                        className="text-red-600 hover:text-red-700"
-                                        onClick={() => setConfirmRemoveId(pm.id)}
-                                    >
-                                        {removing ? (
-                                            <span className="inline-flex items-center gap-2">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                Removing...
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1.5">
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                                Remove
-                                            </span>
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
+								<div className="flex items-start justify-between gap-3">
+										<div>
+											<div className="font-heading text-sm font-medium">{formatCardBrand(pm.brand)}</div>
+											<div className="mt-0.5 text-[10px] text-muted-foreground">Added {formatDate(pm.created)}</div>
+										</div>
+									{isDefault ? <Badge variant="secondary" className="border bg-background/70 text-[11px]">Default</Badge> : null}
+								</div>
+								<div className="mt-5 whitespace-nowrap font-mono text-base tracking-[0.12em] text-foreground sm:text-lg" data-pii="true">
+									•••• •••• •••• {pm.last4 ?? "••••"}
+								</div>
+								<div className="absolute inset-x-4 bottom-3.5 flex items-end justify-between gap-3">
+									<div className="flex gap-5 text-xs text-muted-foreground">
+										<div>
+											<div>Expires</div>
+											<div className="mt-0.5 text-xs font-medium text-foreground" data-pii="true">{formatExpiry(pm.expMonth, pm.expYear)}</div>
+										</div>
+										{pm.funding ? <div><div>Card type</div><div className="mt-0.5 text-xs font-medium capitalize text-foreground">{pm.funding}</div></div> : null}
+									</div>
+									<div className="flex items-center gap-1.5">
+										{!isDefault ? (
+											<Button type="button" variant="secondary" size="xs" disabled={busy} onClick={() => setDefault(pm.id)}>
+												{settingDefault ? <Loader2 className="size-3.5 animate-spin" /> : "Set default"}
+											</Button>
+										) : null}
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon-xs"
+											disabled={busy}
+											className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+											onClick={() => setConfirmRemoveId(pm.id)}
+											aria-label={`Remove ${formatCardBrand(pm.brand)} ending ${pm.last4 ?? "unknown"}`}
+										>
+											{removing ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+										</Button>
+									</div>
+								</div>
+                            </article>
                         );
                     })}
                 </div>
             )}
 
-            <Separator className="my-4" />
-            <p className="text-xs text-muted-foreground">
-                You can add cards, set defaults, and remove cards directly here. Use Stripe Portal only for advanced billing/profile changes.
+            <p className="text-xs leading-5 text-muted-foreground">
+                Cards are stored securely by Stripe. Use Customer Portal for billing details and other advanced changes.
             </p>
 
             <Dialog
