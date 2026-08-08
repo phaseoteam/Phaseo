@@ -1,5 +1,17 @@
 # @phaseo/data-catalog
 
+## 0.0.3
+
+### Patch Changes
+
+- [#1315](https://github.com/phaseoteam/Phaseo/pull/1315) [`57c16c3`](https://github.com/phaseoteam/Phaseo/commit/57c16c37abb38be1d7cdb821775e8b0f056bc1dd) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Move Amazon Bedrock text inference onto Mantle Responses, Chat Completions, and Anthropic Messages, and correct catalog reference validation so supported legacy identities and API-model aliases resolve without warnings.
+
+- [#1497](https://github.com/phaseoteam/Phaseo/pull/1497) [`0d9465a`](https://github.com/phaseoteam/Phaseo/commit/0d9465af733b9b8e49385fce716456c05a3585cb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Disable the region-restricted Meta Muse Spark 1.2 Contributor route, document its availability limits, and normalize Fish Audio voice-design request pricing so catalog imports remain valid.
+
+- [#1501](https://github.com/phaseoteam/Phaseo/pull/1501) [`4e6efde`](https://github.com/phaseoteam/Phaseo/commit/4e6efde552704926ba8fc09285afbeaa5c9fb978) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Novita routes and pricing for Ling 3.0 Tiny, Macaron V1 Tall, and Nemotron 3 Nano 30B A3B. Move Ling 3.0 Flash from its expired free route to current paid pricing, and correct Novita's DeepSeek V4 Flash 0731 route metadata.
+
+- [#1503](https://github.com/phaseoteam/Phaseo/pull/1503) [`868c9af`](https://github.com/phaseoteam/Phaseo/commit/868c9afb54f0507fc40fd84464fdc9d396803e70) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add direct Upstage routes and pricing for Solar Pro 4, Solar Pro 3, Solar Pro 2, and Solar Mini, including Solar Pro 4's dated launch promotion. Add Solar Open 100B and Solar Open 2 250B metadata, and correct existing Solar model specifications and lineage.
+
 ## 0.0.2
 
 ### Patch Changes

@@ -1,5 +1,59 @@
 # @phaseo/gateway-api
 
+## 1.3.0
+
+### Minor Changes
+
+- [#1314](https://github.com/phaseoteam/Phaseo/pull/1314) [`7a37f89`](https://github.com/phaseoteam/Phaseo/commit/7a37f8956c26affcaa792ecfbac445bf0c90f218) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add key-scoped dynamic routing flows, searchable model selection with ordered model and provider fallbacks, provider-health suggestions, and 15-minute cache-aware plus session-aware provider affinity.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add per-model endpoint capability discovery, public model-filter aliases, and a capability-backed endpoint catalogue across the API, documentation, and generated SDKs.
+
+- [#1369](https://github.com/phaseoteam/Phaseo/pull/1369) [`3fa9feb`](https://github.com/phaseoteam/Phaseo/commit/3fa9febba8782b0f37baf7d913ad52051273507f) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add provider-qualified model identifiers for exact provider-model routing while preserving canonical model suffixes and existing workspace routing safeguards.
+
+- [#1311](https://github.com/phaseoteam/Phaseo/pull/1311) [`1c19590`](https://github.com/phaseoteam/Phaseo/commit/1c1959073bd258debda77cc73590bd43e320eecc) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Harden Batch and Video request validation, billing, managed webhooks, media fetching, bounded streaming, and asynchronous settlement. Video webhook configuration now requires a managed endpoint ID, output counts are capped and fully billed, and raw provider request overrides are rejected.
+
+- [#1447](https://github.com/phaseoteam/Phaseo/pull/1447) [`2280801`](https://github.com/phaseoteam/Phaseo/commit/2280801bd70f0ade92f30c728a61fc04b0f0808c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add first-class Subagent, Fusion, and model-catalogue search server tools, strengthen server-tool limits and usage reporting, and standardize Phaseo tool naming.
+
+### Patch Changes
+
+- [#1315](https://github.com/phaseoteam/Phaseo/pull/1315) [`57c16c3`](https://github.com/phaseoteam/Phaseo/commit/57c16c37abb38be1d7cdb821775e8b0f056bc1dd) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Move Amazon Bedrock text inference onto Mantle Responses, Chat Completions, and Anthropic Messages, and correct catalog reference validation so supported legacy identities and API-model aliases resolve without warnings.
+
+- [#1480](https://github.com/phaseoteam/Phaseo/pull/1480) [`6ccb2a3`](https://github.com/phaseoteam/Phaseo/commit/6ccb2a3efd8e9c8bd218f565ed8daefee123efce) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bound BYOK key hydration and upstream credential attempts for each gateway request.
+
+- [#1346](https://github.com/phaseoteam/Phaseo/pull/1346) [`2732b7e`](https://github.com/phaseoteam/Phaseo/commit/2732b7e485de44d51e74a49301fb74ec2ccd9450) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Refresh Morph inference routing and pricing for Kimi K3, GLM-5.2, MiniMax M3, Qwen 3.5, Qwen 3.6, DeepSeek V4 Flash, and Gemma 4.
+
+- [#1299](https://github.com/phaseoteam/Phaseo/pull/1299) [`b8c68b2`](https://github.com/phaseoteam/Phaseo/commit/b8c68b2e65bc6ed4be6cfae14e65a80cd852e1c3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Increase the monthly BYOK allowance to one million requests and reduce the service fee after the allowance to 2.5%.
+
+- [#1286](https://github.com/phaseoteam/Phaseo/pull/1286) [`7be11cd`](https://github.com/phaseoteam/Phaseo/commit/7be11cd461a2cb5243c8e5c3db376cdee879a113) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add explicit discounted data contribution with up to 100% redacted prompt/response retention, independently sampled upstream classification, private R2 storage, persistent task rollups, audited consent controls, and matching CLI and web management surfaces. The feature ships fail-closed behind an admin-only Statsig preview gate. Failed, incomplete, and empty upstream generations are not billed.
+
+- [#1386](https://github.com/phaseoteam/Phaseo/pull/1386) [`6844207`](https://github.com/phaseoteam/Phaseo/commit/6844207e1d784289fb85150bca0b7557fec248e6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add the complete official DeepSeek V4 Flash 0731 agent benchmark set and expose the newly catalogued benchmark identifiers through the API and generated SDKs.
+
+- [#1379](https://github.com/phaseoteam/Phaseo/pull/1379) [`cc07f80`](https://github.com/phaseoteam/Phaseo/commit/cc07f808d2bc79305ad06ba2d0a982ddb01d0379) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Model DeepSeek V4 Flash 0731 as a separate catalogue and callable model, preserve the original V4 Flash and its third-party deployments, and move only DeepSeek's current direct route and pricing to the 0731 revision.
+
+- [#1373](https://github.com/phaseoteam/Phaseo/pull/1373) [`ae8874c`](https://github.com/phaseoteam/Phaseo/commit/ae8874cc0c9cba19c774b63aa15cb35d788dfa77) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Route official DeepSeek V4 Flash requests through DeepSeek's native Responses API, keep V4 Pro on Chat Completions, refresh V4 Flash metadata and pricing verification, and retire the discontinued direct DeepSeek legacy aliases.
+
+- [#1350](https://github.com/phaseoteam/Phaseo/pull/1350) [`36d540f`](https://github.com/phaseoteam/Phaseo/commit/36d540f9acea4ab024560569e40abd3039256b1d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Prevent Phaseo-only Poolside model suffixes from being sent to the upstream API when a provider-model mapping is missing or stale.
+
+- [#1497](https://github.com/phaseoteam/Phaseo/pull/1497) [`0d9465a`](https://github.com/phaseoteam/Phaseo/commit/0d9465af733b9b8e49385fce716456c05a3585cb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Disable the region-restricted Meta Muse Spark 1.2 Contributor route, document its availability limits, and normalize Fish Audio voice-design request pricing so catalog imports remain valid.
+
+- [#1340](https://github.com/phaseoteam/Phaseo/pull/1340) [`8bd2813`](https://github.com/phaseoteam/Phaseo/commit/8bd2813d7e0acb4a4fd2335511532efe54102987) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Wafer standard and priority Kimi K3 routing plus CrofAI standard and flex Eco routing with provider-specific pricing.
+
+- [#1501](https://github.com/phaseoteam/Phaseo/pull/1501) [`4e6efde`](https://github.com/phaseoteam/Phaseo/commit/4e6efde552704926ba8fc09285afbeaa5c9fb978) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Novita routes and pricing for Ling 3.0 Tiny, Macaron V1 Tall, and Nemotron 3 Nano 30B A3B. Move Ling 3.0 Flash from its expired free route to current paid pricing, and correct Novita's DeepSeek V4 Flash 0731 route metadata.
+
+- [#1451](https://github.com/phaseoteam/Phaseo/pull/1451) [`62a1456`](https://github.com/phaseoteam/Phaseo/commit/62a1456b5ec517fba206eff5ca865764aa0016b5) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add current OpenAI diarized transcription controls and reject unsupported transcription and translation parameter combinations before sending them upstream.
+
+- [#1478](https://github.com/phaseoteam/Phaseo/pull/1478) [`62a6496`](https://github.com/phaseoteam/Phaseo/commit/62a649678b3cec07193d8df4ff13ca99e69c55a2) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bound raw analytics fact scans and ask callers to select a single date when a range is too large.
+
+- [#937](https://github.com/phaseoteam/Phaseo/pull/937) [`390a840`](https://github.com/phaseoteam/Phaseo/commit/390a8405b3c560fc2f3f4210e42bbb2e86b2430d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add BytePlus Seedream 5.0 Pro catalog, pricing, and gateway image generation/edit support.
+
+- [#1479](https://github.com/phaseoteam/Phaseo/pull/1479) [`d41cb96`](https://github.com/phaseoteam/Phaseo/commit/d41cb96c599b4441666f7a2aeb433df76765b16e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Validate realtime relay credentials and rate-limit unauthenticated relay admission before Durable Object and database work.
+
+- [#1486](https://github.com/phaseoteam/Phaseo/pull/1486) [`de52182`](https://github.com/phaseoteam/Phaseo/commit/de521823fed38c17d99f35ad576f4810b45b68bf) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Invalidate cached gateway contexts immediately when response-healing workspace policy changes.
+
+- [#1503](https://github.com/phaseoteam/Phaseo/pull/1503) [`868c9af`](https://github.com/phaseoteam/Phaseo/commit/868c9afb54f0507fc40fd84464fdc9d396803e70) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add direct Upstage routes and pricing for Solar Pro 4, Solar Pro 3, Solar Pro 2, and Solar Mini, including Solar Pro 4's dated launch promotion. Add Solar Open 100B and Solar Open 2 250B metadata, and correct existing Solar model specifications and lineage.
+
+- [#1482](https://github.com/phaseoteam/Phaseo/pull/1482) [`f899e80`](https://github.com/phaseoteam/Phaseo/commit/f899e803a0fdeab51086e6f78cb1f37ea21b42a2) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Preserve usage and billing for successful Google Vertex responses that contain no generated output.
+
 ## 1.2.1
 
 ### Patch Changes

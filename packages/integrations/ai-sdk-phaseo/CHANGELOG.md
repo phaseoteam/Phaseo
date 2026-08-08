@@ -1,5 +1,15 @@
 # @phaseo/ai-sdk-provider
 
+## 2.0.0
+
+### Major Changes
+
+- [#1336](https://github.com/phaseoteam/Phaseo/pull/1336) [`cdead00`](https://github.com/phaseoteam/Phaseo/commit/cdead00aa8fbac04b3e6f9008afb6260a41cfb91) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Migrate the default Phaseo provider to AI SDK 7's native Provider v4 contracts for language, embeddings, images, transcription, and speech. Forward AI SDK 7 reasoning settings and support its tagged file-data inputs. AI SDK 6 remains available on the Phaseo provider 1.x maintenance line.
+
+### Patch Changes
+
+- [#1488](https://github.com/phaseoteam/Phaseo/pull/1488) [`884620f`](https://github.com/phaseoteam/Phaseo/commit/884620fb27d03addda84aa76d67d8752b67d255f) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Align the AI SDK provider Node requirement with AI SDK 7, harden malformed catalogue 404 paths, and correct catalogue manifest and importer-state validation gaps.
+
 ## 1.0.1
 
 ### Patch Changes

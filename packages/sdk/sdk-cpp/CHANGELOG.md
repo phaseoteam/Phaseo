@@ -1,5 +1,11 @@
 # @phaseo/cpp-sdk
 
+## 1.1.0
+
+### Minor Changes
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add per-model endpoint capability discovery, public model-filter aliases, and a capability-backed endpoint catalogue across the API, documentation, and generated SDKs.
+
 ## 1.0.2
 
 ### Patch Changes
