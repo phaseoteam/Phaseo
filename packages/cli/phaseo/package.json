@@ -31,7 +31,7 @@
 		"yaml": "^2.9.0"
 	},
 	"devDependencies": {
-		"@types/node": "^25.6.0",
+		"@types/node": "^26.1.2",
 		"tsx": "^4.21.0",
 		"typescript": "^6.0.3"
 	},

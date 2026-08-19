@@ -45,7 +45,7 @@
     "@ai-sdk/provider-utils": "^5.0.14"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
+    "@types/node": "^26.1.2",
     "@vitest/coverage-v8": "^4.1.10",
     "ai": "^7.0.41",
     "rimraf": "^6.0.1",

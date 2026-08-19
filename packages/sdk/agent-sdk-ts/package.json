@@ -33,7 +33,7 @@
     "@phaseo/sdk": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
+    "@types/node": "^26.1.2",
     "rimraf": "^6.0.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.7"
