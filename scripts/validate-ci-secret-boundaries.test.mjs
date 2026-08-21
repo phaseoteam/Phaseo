@@ -205,7 +205,20 @@ test("issue triage bounds its paginated snapshot at the trigger comment", () => 
 		issueTriageWorkflow,
 		/allComments\.slice\(0, triggerIndex \+ 1\)/,
 	);
-	assert.match(issueTriageWorkflow, /\.opencode-issue-context\.md/);
+	assert.match(issueTriageWorkflow, /opencode-issue-context\.md/);
+});
+
+test("issue triage keeps its snapshot outside the repository checkout", () => {
+	assert.match(issueTriageWorkflow, /process\.env\.RUNNER_TEMP/);
+	assert.match(
+		issueTriageWorkflow,
+		/\$\{\{ runner\.temp \}\}\/opencode-issue-context\.md/,
+	);
+	assert.match(issueTriageWorkflow, /git status --porcelain/);
+	assert.doesNotMatch(
+		issueTriageWorkflow,
+		/fs\.writeFileSync\(\s*"\.opencode-issue-context\.md"/,
+	);
 });
 
 test("issue triage treats the frozen thread as authoritative untrusted data", () => {
