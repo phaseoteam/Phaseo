@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
-import { Logo } from "@/components/Logo";
 import ByokProviderKeys, { type ByokKeyEntry } from "@/components/(gateway)/settings/byok/ByokProviderKeys";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { Button } from "@/components/ui/button";
 import { fetchFrontendAPIProviderHeader } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { fetchFrontendAPIProviderModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { fetchSettingsByokInitialData } from "@/lib/fetchers/internal/fetchSettingsByokInitialData";
@@ -59,26 +60,26 @@ export default async function ByokProviderPage({ params, searchParams }: { param
 						BYOK
 					</Link>
 				</nav>
-				<div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<div className="flex items-start gap-3">
-						<Logo id={provider.logoId} alt="" width={40} height={40} className="h-10 w-10 shrink-0 object-contain" />
-						<h1 className="text-2xl font-semibold tracking-tight">{provider.name}</h1>
-					</div>
-					<Link
-						href={`/api-providers/${encodeURIComponent(provider.id)}`}
-						className="inline-flex h-9 w-fit items-center gap-1.5 rounded-lg border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-					>
-						View Supported Models
-						<ExternalLink className="h-3.5 w-3.5" />
-					</Link>
-				</div>
+				<SettingsPageHeader
+					className="mt-5"
+					title={`${provider.name} provider keys`}
+					description={`Manage the upstream credentials Phaseo may use for ${provider.name} and control their failover order.`}
+					actions={
+						<Button asChild variant="outline" className="w-full sm:w-auto">
+							<Link href={`/api-providers/${encodeURIComponent(provider.id)}`}>
+								View provider models
+								<ExternalLink className="h-3.5 w-3.5" />
+							</Link>
+						</Button>
+					}
+				/>
 			</div>
 
 			<section className="space-y-6">
 				<div>
 					<h2 className="text-base font-semibold">Provider Keys</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Manage the credentials Phaseo may use for this provider and control their failover order.
+						Prioritize credentials or keep them as fallbacks for provider requests.
 					</p>
 				</div>
 				<ByokProviderKeys provider={provider} entries={providerEntries} modelOptions={modelOptions} apiKeyOptions={apiKeyOptions} />
