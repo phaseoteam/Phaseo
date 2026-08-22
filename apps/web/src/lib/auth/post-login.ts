@@ -459,6 +459,25 @@ export async function finalizePostLogin(
 	const workspaceId = provisionedTeam.workspaceId;
 	await setActiveWorkspaceCookie(workspaceId);
 
+	if (directoryLink) {
+		const { error: usageError } = await supabaseAdmin.rpc(
+			"record_workspace_sso_active_user",
+			{
+				p_workspace_id: workspaceId,
+				p_auth_user_id: user.id,
+				p_seen_at: new Date().toISOString(),
+			},
+		);
+		if (usageError) {
+			console.error("Failed to record workspace SSO active user", {
+				source: input.source,
+				workspaceId,
+				userId: user.id,
+				error: usageError.message,
+			});
+		}
+	}
+
 	try {
 		await ensureWalletRow(
 			workspaceId,

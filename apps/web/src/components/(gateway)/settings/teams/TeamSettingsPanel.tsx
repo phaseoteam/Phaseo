@@ -23,7 +23,7 @@ import {
 	deleteTeamAction,
 	updateWorkspacePublisherHandleAction,
 } from "@/app/(dashboard)/settings/teams/actions";
-import WorkspaceSamlSettingsCard from "./WorkspaceSamlSettingsCard";
+import WorkspaceIdentitySettings from "./WorkspaceIdentitySettings";
 import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 
 type Team = { id: string; name: string; publisherHandle?: string | null };
@@ -257,7 +257,7 @@ export default function TeamSettingsPanel({
 			</form>
 
 			{samlSsoEnabled && !isPersonalTeam ? (
-				<WorkspaceSamlSettingsCard
+				<WorkspaceIdentitySettings
 					key={fallbackTeamId}
 					workspaceId={fallbackTeamId}
 					initialSettings={teamSsoSettingsByTeam?.[fallbackTeamId]}

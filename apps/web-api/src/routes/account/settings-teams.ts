@@ -4,6 +4,7 @@ import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
+import { workspaceHasAddon } from "@/billing/workspaceAddons";
 
 const emptyTeams = {
 	teams: [], membersByTeam: {}, invitesByTeam: {}, requestsByTeam: {},
@@ -360,6 +361,9 @@ accountSettingsTeamsRouter.put("/teams/:workspaceId/sso", async (c) => {
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
 	const normalized = normalizeWorkspaceSsoUpdate(body);
 	if ("error" in normalized) return c.json({ error: normalized.error }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (normalized.value.sso_enabled && !(await workspaceHasAddon(context.client, context.workspaceId, "identity"))) {
+		return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
+	}
 	const payload = { workspace_id: context.workspaceId, ...normalized.value, updated_at: new Date().toISOString() };
 	const result = await context.client.from("workspace_settings").upsert(payload, { onConflict: "workspace_id" });
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);

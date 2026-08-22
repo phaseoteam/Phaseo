@@ -52,7 +52,7 @@ export function PricingComparisonShell({ children }: { children: ReactNode }) {
 				viewportClassName="pb-2"
 				className={cn(
 					"w-full rounded-xl border border-zinc-200/70 bg-white/75 [&>[data-orientation=horizontal]]:opacity-100 [&>[data-orientation=horizontal]]:transition-none dark:border-zinc-800/70 dark:bg-zinc-950/60",
-					compare && "[&_.best-cell]:bg-zinc-50/45 [&_.competitor-cell]:table-cell [&_.competitor-col]:table-column [&_.feature-column]:w-[20%] [&_.free-column]:hidden [&_.phaseo-column]:w-[16%] [&_.phaseo-default]:hidden [&_.phaseo-compare]:inline [&_table]:min-w-[1480px] dark:[&_.best-cell]:bg-white/[0.012]",
+					compare && "[&_.best-cell]:bg-zinc-50/45 [&_.competitor-cell]:table-cell [&_.competitor-col]:table-column [&_.enterprise-column]:hidden [&_.feature-column]:w-[20%] [&_.free-column]:hidden [&_.phaseo-column]:w-[16%] [&_.phaseo-default]:hidden [&_.phaseo-compare]:inline [&_table]:min-w-[1480px] dark:[&_.best-cell]:bg-white/[0.012]",
 				)}
 			>
 				{children}

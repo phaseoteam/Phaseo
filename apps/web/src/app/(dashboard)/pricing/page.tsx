@@ -6,14 +6,13 @@ import { Fragment } from "react";
 import {
 	ArrowRight,
 	Calculator,
-	CalendarOff,
 	Check,
 	Coins,
 	ExternalLink,
-	FileX2,
 	KeyRound,
 	Minus,
 	ReceiptText,
+	ShieldCheck,
 	WalletCards,
 	X,
 } from "lucide-react";
@@ -30,11 +29,12 @@ import {
 } from "@/components/ui/accordion";
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import { PricingComparisonShell } from "./PricingComparisonShell";
+import { EnterprisePricingSection } from "./EnterprisePricingSection";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Pricing",
 	description:
-		"Simple pay-as-you-go AI gateway pricing with no enterprise plan, contracts, subscriptions, or monthly commitments.",
+		"Simple pay-as-you-go AI gateway pricing with optional self-serve Enterprise identity, governance, and included-payment plans.",
 	path: "/pricing",
 	keywords: [
 		"AI gateway pricing",
@@ -56,6 +56,7 @@ type MatrixRow = {
 	featureHref?: string;
 	free: Cell;
 	payg: Cell;
+	enterprise?: Cell;
 };
 
 type MatrixSection = {
@@ -442,6 +443,7 @@ const MATRIX_SECTIONS: MatrixSection[] = [
 				feature: "Credit purchase fee",
 				free: { type: "not_applicable", inlineText: "No top-up required" },
 				payg: { type: "text", value: `${basicTier.feePct.toFixed(0)}% ($1 minimum) when credits are purchased` },
+				enterprise: { type: "text", value: "Core: 5%. Included Payments: fee-free allowance" },
 			},
 			{
 				feature: "Models",
@@ -554,16 +556,19 @@ const MATRIX_SECTIONS: MatrixSection[] = [
 				feature: "Team workspaces",
 				free: { type: "text", value: "Single team" },
 				payg: { type: "included", inlineText: "Multi-team" },
+				enterprise: { type: "included", inlineText: "Managed workspace controls" },
 			},
 			{
 				feature: "Payment method",
 				free: { type: "not_applicable", inlineText: "None required" },
 				payg: { type: "text", value: "Credit or debit card" },
+				enterprise: { type: "text", value: "Card and supported USD bank transfer" },
 			},
 			{
 				feature: "Billing method",
 				free: { type: "text", value: "No charge" },
 				payg: { type: "text", value: "Prepaid credits" },
+				enterprise: { type: "text", value: "Monthly subscription + prepaid credits" },
 			},
 			{
 				feature: "Bring your own provider keys",
@@ -597,7 +602,19 @@ const MATRIX_SECTIONS: MatrixSection[] = [
 				feature: "Support",
 				free: { type: "included", inlineText: "Docs" },
 				payg: { type: "included", inlineText: "Included" },
+				enterprise: { type: "included", inlineText: "Priority support" },
 			},
+		],
+	},
+	{
+		id: "enterprise-controls",
+		title: "Enterprise identity and governance",
+		rows: [
+			{ feature: "SAML single sign-on", free: { type: "excluded" }, payg: { type: "excluded" }, enterprise: included("Configure a workspace identity provider without a sales-led setup.") },
+			{ feature: "SCIM users, groups, and bulk operations", free: { type: "excluded" }, payg: { type: "excluded" }, enterprise: included("Provision users and organisational groups from a compatible identity provider.") },
+			{ feature: "Departments and workspace roles", free: { type: "excluded" }, payg: { type: "excluded" }, enterprise: included("Keep member permissions separate from department structure.") },
+			{ feature: "Enterprise audit and governance controls", free: { type: "excluded" }, payg: { type: "excluded" }, enterprise: included() },
+			{ feature: "Included payment benefits", free: { type: "not_applicable" }, payg: { type: "excluded" }, enterprise: { type: "text", value: "Available with Included Payments" } },
 		],
 	},
 	{
@@ -760,7 +777,7 @@ const FAQ_SECTIONS: FAQSection[] = [
 				id: "how-is-billing-structured",
 				question: "How is billing structured?",
 				answer:
-					"Free access includes supported free models in the API and chat, the public model catalog, rankings, benchmarks, calculators, SDKs, and integrations. For paid model usage, purchase credits and draw down that balance as you make requests. There is no subscription tier to select and no recurring commitment.",
+					"Free access includes supported free models, public data, SDKs, and integrations. Paid model usage draws down prepaid credits. Teams that need SSO, SCIM, governance, or included payment benefits can add a separate monthly Enterprise subscription without changing how model usage is metered.",
 			},
 			{
 				id: "are-sdks-priced-separately",
@@ -772,13 +789,13 @@ const FAQ_SECTIONS: FAQSection[] = [
 				id: "enterprise-plan",
 				question: "Do you offer an enterprise plan?",
 				answer:
-					"No. Phaseo does not sell an enterprise plan or require an enterprise contract. Teams of every size use the same pay-as-you-go offering and receive the same core product capabilities.",
+					"Yes. Enterprise Core and Included Payments are self-serve monthly workspace subscriptions with public seat-band pricing. Core includes identity and governance with the standard credit fee. Included Payments adds a monthly fee-free card allowance and no Phaseo surcharge on supported USD bank transfers.",
 			},
 			{
 				id: "contracts-commitments",
 				question: "Do I need a contract or monthly commitment?",
 				answer:
-					"No. There are no contracts, subscriptions, minimum monthly spends, or annual commitments. Some optional features may have separate transparent pricing in the future, but they will not require an enterprise agreement.",
+					"Pay As You Go has no contract, subscription, or minimum monthly spend. Enterprise is an optional monthly subscription that can be activated self-serve; it does not require a negotiated enterprise agreement.",
 			},
 			{
 				id: "are-failed-or-fallback-attempts-billed",
@@ -802,7 +819,7 @@ const FAQ_SECTIONS: FAQSection[] = [
 				id: "payment-methods",
 				question: "What payment methods do you accept?",
 				answer:
-					"Phaseo currently accepts credit and debit cards for credit top-ups. Cryptocurrency payments are not currently available. Credits are the billing balance used for managed model usage, not a separate payment method.",
+					"Phaseo accepts credit and debit cards for credit top-ups. Supported Enterprise Included Payments workspaces can also fund credits by USD bank transfer as that payment method is enabled for their Stripe customer. Credits remain the billing balance used for managed model usage.",
 			},
 			{
 				id: "refunds",
@@ -970,10 +987,10 @@ export default function PricingPage() {
 			<div className="container mx-auto max-w-7xl px-4 py-12 sm:py-16">
 				<section className="space-y-7">
 					<h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-						One pay-as-you-go offering. Every team, every size.
+						Pay as you go by default. Add Enterprise when your team needs it.
 					</h1>
 					<p className="max-w-3xl text-base leading-7 text-muted-foreground">
-						Buy credits when you need them and pay for what you use. There is no enterprise plan, no contract, and no monthly or annual commitment. For model-level cost estimates, use the{" "}
+						Buy credits when you need them and pay for what you use. Enterprise identity and payment benefits are optional, priced openly, and activated without a sales call. For model-level cost estimates, use the{" "}
 						<Link className="underline underline-offset-4" href="/tools/pricing-calculator">
 							Pricing Calculator
 						</Link>
@@ -1014,14 +1031,14 @@ export default function PricingPage() {
 								body: "Top up credits only when you need them.",
 							},
 							{
-								icon: FileX2,
-								title: "No enterprise plan",
-								body: "The same core product is available to every team.",
+								icon: ShieldCheck,
+								title: "Enterprise is optional",
+								body: "Add SSO, SCIM and governance without changing usage pricing.",
 							},
 							{
-								icon: CalendarOff,
-								title: "No commitments",
-								body: "No contracts, subscriptions, or minimum spend.",
+								icon: ReceiptText,
+								title: "Prices stay public",
+								body: "Answer a short questionnaire and subscribe immediately.",
 							},
 						].map((item) => {
 							const Icon = item.icon;
@@ -1078,8 +1095,10 @@ export default function PricingPage() {
 									<Icon className="mt-0.5 h-5 w-5 shrink-0 text-foreground" aria-hidden="true" />
 									<div>
 										<dt className="text-sm font-semibold text-foreground">{item.term}</dt>
-										<dd className="mt-1 text-base font-semibold text-foreground">{item.value}</dd>
-										<p className="mt-2 text-sm leading-5 text-muted-foreground">{item.detail}</p>
+										<dd className="mt-2 text-sm leading-6 text-muted-foreground">
+											<span className="font-medium text-foreground">{item.value}.</span>{" "}
+											{item.detail}
+										</dd>
 									</div>
 								</div>
 							);
@@ -1093,11 +1112,12 @@ export default function PricingPage() {
 
 				<section className="space-y-6">
 					<PricingComparisonShell>
-						<table className="w-full min-w-[760px] table-fixed text-left text-sm">
+						<table className="w-full min-w-[940px] table-fixed text-left text-sm">
 							<colgroup>
-								<col className="feature-column w-[36%]" />
-								<col className="free-column w-[32%]" />
-								<col className="phaseo-column w-[32%]" />
+								<col className="feature-column w-[28%]" />
+								<col className="free-column w-[24%]" />
+								<col className="phaseo-column w-[24%]" />
+								<col className="enterprise-column w-[24%]" />
 								{COMPETITORS.map((competitor) => <col key={competitor.key} className="competitor-col hidden w-[16%]" />)}
 							</colgroup>
 							<thead className="border-b border-zinc-200/70 bg-zinc-50/80 dark:border-zinc-800/70 dark:bg-zinc-900/60">
@@ -1114,6 +1134,7 @@ export default function PricingPage() {
 											</span>
 										</span>
 									</th>
+									<th className="enterprise-column px-4 py-3 text-center font-bold text-foreground">Enterprise</th>
 									{COMPETITORS.map((competitor) => (
 										<th key={competitor.key} className="competitor-cell hidden px-4 py-3 text-center font-semibold text-foreground">
 											<a href={competitor.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 underline decoration-transparent underline-offset-4 hover:decoration-current">
@@ -1132,7 +1153,7 @@ export default function PricingPage() {
 											className="bg-zinc-50/70 dark:bg-zinc-900/40"
 										>
 											<td
-												colSpan={3 + COMPETITORS.length}
+												colSpan={4 + COMPETITORS.length}
 												className="px-4 py-3 text-base font-semibold text-foreground"
 											>
 												{section.title}
@@ -1156,6 +1177,9 @@ export default function PricingPage() {
 										<td className={`${isBestChoice(row.feature, "phaseo", row.payg) ? "best-cell " : ""}px-4 py-3 align-middle text-center`}>
 											<PlanCell cell={row.payg} label={`${row.feature}, Pay As You Go`} />
 										</td>
+										<td className="enterprise-column px-4 py-3 align-middle text-center">
+											<PlanCell cell={row.enterprise ?? row.payg} label={`${row.feature}, Enterprise`} />
+										</td>
 										{COMPETITORS.map((competitor) => (
 											<td key={competitor.key} className={`${isBestChoice(row.feature, competitor.key, getCompetitorCell(row.feature, competitor.key)) ? "best-cell " : ""}competitor-cell hidden px-4 py-3 align-middle text-center`}>
 												<PlanCell cell={getCompetitorCell(row.feature, competitor.key)} label={`${row.feature}, ${competitor.name}`} />
@@ -1169,6 +1193,12 @@ export default function PricingPage() {
 						</table>
 					</PricingComparisonShell>
 				</section>
+
+				<div className="my-10 sm:my-12">
+					<Separator className="bg-zinc-200/70 dark:bg-zinc-800/70" />
+				</div>
+
+				<EnterprisePricingSection />
 
 				<section className="space-y-6 py-10 sm:py-12">
 					<div className="space-y-2">
