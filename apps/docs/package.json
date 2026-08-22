@@ -1,6 +1,6 @@
 {
 	"name": "@phaseo/docs",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"private": true,
 	"scripts": {
 		"dev": "mintlify dev --port 3101 --no-open",
