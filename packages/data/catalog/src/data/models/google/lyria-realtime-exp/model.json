@@ -2,7 +2,7 @@
   "model_id": "google/lyria-realtime-exp",
   "organisation_id": "google",
   "name": "Lyria RealTime Experimental",
-  "status": "Preview",
+  "status": "Available",
   "previous_model_id": null,
   "description": "Google's real-time streaming music generation model with interactive creative controls.",
   "announced_date": "2025-05-20T00:00:00Z",
@@ -14,19 +14,63 @@
   "output_types": "audio",
   "api_model_id": "google/lyria-realtime-exp",
   "family_id": null,
-  "links": [{"title":"Models","kind":"api_reference","url":"https://ai.google.dev/gemini-api/docs/models"}],
-  "details": [{"name":"provider_model_slug","value":"lyria-realtime-exp"}],
+  "links": [
+    {
+      "title": "Models",
+      "kind": "api_reference",
+      "url": "https://ai.google.dev/gemini-api/docs/models"
+    }
+  ],
+  "details": [
+    {
+      "name": "provider_model_slug",
+      "value": "lyria-realtime-exp"
+    }
+  ],
   "benchmarks": [],
   "page_notice": null,
   "model_type": "audio",
   "knowledge_cutoff": null,
-  "limits": {"context":null,"input":null,"output":null},
-  "modalities": {"input":["text","audio/*"],"output":["audio/*"]},
-  "reasoning": {"supported":false,"options":[]},
-  "capabilities": {"attachment":true,"tool_call":false,"structured_output":false,"temperature":null,"streaming":true,"web_search":false},
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "audio/*"
+    ],
+    "output": [
+      "audio/*"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": null,
+    "streaming": true,
+    "web_search": false
+  },
   "open_weights": false,
-  "sources": [{"kind":"api_reference","url":"https://ai.google.dev/gemini-api/docs/models","accessed_at":"2026-08-20T00:00:00Z","notes":"Official music generation model table and deprecation schedule."}],
-  "verification": {"status":"verified","checked_at":"2026-08-20T00:00:00Z","notes":"Provider inventory only; gateway routing is intentionally disabled."},
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://ai.google.dev/gemini-api/docs/models",
+      "accessed_at": "2026-08-20T00:00:00Z",
+      "notes": "Official music generation model table and deprecation schedule."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-20T00:00:00Z",
+    "notes": "Provider inventory only; gateway routing is intentionally disabled."
+  },
   "last_updated": "2026-08-20T00:00:00Z",
   "removal_date": null,
   "replacement_model_id": null,
