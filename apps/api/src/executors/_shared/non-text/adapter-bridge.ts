@@ -55,6 +55,7 @@ import * as xiaomiAudioTranscription from "@providers/xiaomi/endpoints/audio-tra
 import * as xAiAudioSpeech from "@providers/x-ai/endpoints/audio-speech";
 import * as xAiAudioTranscription from "@providers/x-ai/endpoints/audio-transcription";
 import * as xAiImagesEdit from "@providers/x-ai/endpoints/images-edit";
+import * as metaAudioTranscription from "@providers/meta/endpoints/audio-transcription";
 
 type NonTextEndpoint =
 	| "images.generations"
@@ -644,6 +645,9 @@ async function executeProviderEndpoint(
 			}
 			return openaiAudioSpeech.exec(providerArgs);
 		case "audio.transcription":
+			if (providerId === "meta") {
+				return metaAudioTranscription.exec(providerArgs);
+			}
 			if (providerId === "xiaomi") {
 				return xiaomiAudioTranscription.exec(providerArgs);
 			}

@@ -1608,6 +1608,7 @@ export const AudioTranscriptionSchema = z.object({
     const isDiarize = model === "gpt-4o-transcribe-diarize";
     const isMorpheusTranscription = body.model.toLowerCase().startsWith("morpheus/");
 	const isXAiTranscription = model === "grok-transcribe";
+	const isMetaTranscription = model === "muse-voice-transcribe-1.0";
 	const isElevenLabsTranscription = body.model.toLowerCase().startsWith("eleven-labs/") || model.startsWith("scribe-");
     const sources = [body.file, body.file_url, body.s3_presigned_url, body.file_id].filter(Boolean);
     if (isMistralTranscription && sources.length !== 1) {
@@ -1620,9 +1621,9 @@ export const AudioTranscriptionSchema = z.object({
 		ctx.addIssue({ code: "custom", path: ["file"], message: "Morpheus transcription requires exactly one of file, file_url, or s3_presigned_url" });
     }
 	const isOvhWhisper = model === "whisper-large-v3" || model === "whisper-large-v3-turbo";
-	const maxFileBytes = isElevenLabsTranscription ? 5 * 1024 * 1024 * 1024 : isXAiTranscription ? 500 * 1024 * 1024 : isOvhWhisper ? 2048 * 1024 * 1024 : 25 * 1024 * 1024;
+	const maxFileBytes = isElevenLabsTranscription ? 5 * 1024 * 1024 * 1024 : isXAiTranscription ? 500 * 1024 * 1024 : isMetaTranscription ? 32 * 1024 * 1024 : isOvhWhisper ? 2048 * 1024 * 1024 : 25 * 1024 * 1024;
     if (!isMistralTranscription && body.file && body.file.size > maxFileBytes) {
-		ctx.addIssue({ code: "custom", path: ["file"], message: `Transcription files must be ${isElevenLabsTranscription ? "5 GB" : isXAiTranscription ? "500 MB" : isOvhWhisper ? "2048 MB" : "25 MB"} or smaller` });
+		ctx.addIssue({ code: "custom", path: ["file"], message: `Transcription files must be ${isElevenLabsTranscription ? "5 GB" : isXAiTranscription ? "500 MB" : isMetaTranscription ? "32 MB" : isOvhWhisper ? "2048 MB" : "25 MB"} or smaller` });
     }
     const file = body.file;
     const filename = file && typeof File !== "undefined" && file instanceof File ? file.name.toLowerCase() : "";
@@ -1645,7 +1646,7 @@ export const AudioTranscriptionSchema = z.object({
     if (body.languages && !isGptTranscribe) {
         ctx.addIssue({ code: "custom", path: ["languages"], message: "languages is only supported by gpt-transcribe" });
     }
-	if (body.keywords && !isGptTranscribe && !isXAiTranscription && !isElevenLabsTranscription) {
+	if (body.keywords && !isGptTranscribe && !isXAiTranscription && !isElevenLabsTranscription && !isMetaTranscription) {
         ctx.addIssue({ code: "custom", path: ["keywords"], message: "keywords is only supported by gpt-transcribe" });
     }
     if (body.language && body.languages) {

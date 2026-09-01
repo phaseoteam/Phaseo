@@ -415,6 +415,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"text.generate": metaText,
 		"image.generate": nonTextAdapterExecutor,
 		"image.edit": nonTextAdapterExecutor,
+		"audio.transcription": nonTextAdapterExecutor,
 	},
 	ovhcloud: {
 		"text.generate": ovhcloudText,

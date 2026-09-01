@@ -475,5 +475,52 @@
         "tokens_per_minute": 2100000
       }
     ]
+  },
+  {
+    "api_model_id": "meta/muse-voice-transcribe-1.0",
+    "canonical_model_id": "meta/muse-voice-transcribe-1.0",
+    "provider_api_model_id": "meta:meta/muse-voice-transcribe-1.0",
+    "provider_model_slug": "muse-voice-transcribe-1.0",
+    "internal_model_id": "meta/muse-voice-transcribe-1.0",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "audio",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-09-01T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.transcription",
+        "status": "active",
+        "params": [
+          { "param_id": "file", "type": "file", "max_bytes": 33554432, "source_url": "https://dev.meta.ai/docs/speech-to-text" },
+          { "param_id": "language", "type": "string", "maps_to": "languageBias", "source_url": "https://dev.meta.ai/docs/speech-to-text" },
+          { "param_id": "keywords", "type": "array", "source_url": "https://dev.meta.ai/docs/speech-to-text" },
+          { "param_id": "diarize", "type": "boolean", "maps_to": "mode=DIARIZATION", "source_url": "https://dev.meta.ai/docs/speech-to-text" },
+          { "param_id": "session_id", "type": "string", "maps_to": "sessionId", "source_url": "https://dev.meta.ai/docs/speech-to-text" }
+        ],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": false,
+        "temperature": false,
+        "attachment": true,
+        "input_modalities": ["audio"],
+        "output_modalities": ["text"],
+        "modes": ["batch", "diarization"]
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": { "execution": null, "data": null },
+    "service_tiers": ["standard"],
+    "api": { "formats": ["meta.asr"], "endpoint": "/v1/asr/transcribe", "deployment": null },
+    "sources": [
+      { "kind": "announcement", "url": "https://research.meta.ai/blog/introducing-muse-voice-transcribe", "accessed_at": "2026-09-01T00:00:00Z" },
+      { "kind": "documentation", "url": "https://github.com/meta-models/meta-model-cookbook/tree/main/06_muse_voice/01_voice_api_fundamentals", "accessed_at": "2026-09-01T00:00:00Z" }
+    ],
+    "verification": { "status": "verified", "checked_at": "2026-09-01T00:00:00Z", "notes": "One-shot Meta ASR route and model slug verified against Meta's official cookbook." },
+    "rate_limits": []
   }
 ]
