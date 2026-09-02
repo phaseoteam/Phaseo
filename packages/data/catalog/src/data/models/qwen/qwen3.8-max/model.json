@@ -1,7 +1,7 @@
 {
   "model_id": "qwen/qwen3.8-max",
   "organisation_id": "qwen",
-  "name": "Qwen 3.8 Max",
+  "name": "Qwen 3.8 Max 0803",
   "status": "Available",
   "previous_model_id": "qwen/qwen3.8-max-preview",
   "description": "Qwen 3.8 Max is Qwen Cloud's managed multimodal flagship for complex reasoning, coding and professional work. It is based on Qwen3.8-2.4T-A95B but is a distinct API model with native text, image and video understanding, non-thinking support, a default 1M-token context window, function calling, structured outputs, caching, batches and built-in tools.",

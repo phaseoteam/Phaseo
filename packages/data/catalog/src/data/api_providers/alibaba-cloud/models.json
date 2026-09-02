@@ -4712,6 +4712,199 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "qwen/qwen3.8-max-0902",
+    "provider_api_model_id": "alibaba-cloud:qwen/qwen3.8-max-0902",
+    "provider_model_slug": "qwen3.8-max-0902",
+    "internal_model_id": "qwen/qwen3.8-max-0902",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-09-02T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "auto",
+            "notes": "Thinking mode cannot force a specific tool."
+          },
+          {
+            "param_id": "parallel_tool_calls",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": false,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": 0,
+            "provider_max": 2,
+            "provider_default": null,
+            "notes": "Qwen Cloud documents the range as [0, 2)."
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": 1,
+            "provider_max": 131072,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": 0,
+            "provider_max": 1,
+            "provider_default": null,
+            "notes": "Qwen Cloud documents the range as (0, 1]."
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": 0,
+            "provider_max": null,
+            "provider_default": 20,
+            "notes": null
+          },
+          {
+            "param_id": "seed",
+            "provider_min": 0,
+            "provider_max": 2147483647,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": -2,
+            "provider_max": 2,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": 0,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "text",
+            "notes": "Supports text, json_object and json_schema."
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": 0,
+            "provider_max": 262144,
+            "provider_default": null,
+            "notes": "The model page lists a maximum reasoning budget of 262K tokens."
+          },
+          {
+            "param_id": "reasoning_effort",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "xhigh",
+            "notes": "Supported values: low, medium, xhigh."
+          },
+          {
+            "param_id": "web_search_options",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": {
+          "style": "tokens",
+          "maxReasoningTokens": 262144
+        },
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": "text,image,video",
+        "output_modalities": "text",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai",
+        "dashscope"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "release",
+        "url": "https://www.qwencloud.com/models/qwen3.8-max-0902",
+        "accessed_at": "2026-09-02T00:00:00Z",
+        "notes": "Official model availability, aliases, modalities, limits and features."
+      },
+      {
+        "kind": "release",
+        "url": "https://x.com/Alibaba_Qwen/status/2094968708288680276",
+        "accessed_at": "2026-09-02T00:00:00Z",
+        "notes": "Official launch announcement."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.qwencloud.com/api-reference/chat/dashscope",
+        "accessed_at": "2026-09-02T00:00:00Z",
+        "notes": "Official API parameter reference."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-02T00:00:00Z",
+      "notes": "Production API model qwen3.8-max-0902 verified on Qwen Cloud. The provider also documents qwen3.8-max-2026-09-02 as an alias."
+    },
+    "rate_limits": [
+      {
+        "requests_per_minute": 15000,
+        "tokens_per_minute": 1000000
+      }
+    ]
+  },
+  {
     "api_model_id": "qwen/qwen3.8-max",
     "provider_api_model_id": "alibaba-cloud:qwen/qwen3.8-max",
     "provider_model_slug": "qwen3.8-max",

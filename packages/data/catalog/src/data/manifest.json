@@ -1169,7 +1169,8 @@
       "qwen/qwen3.6-flash",
       "qwen/qwen3.8-flash",
       "qwen/wan3.0-video",
-      "qwen/wan3.0-video-prime"
+      "qwen/wan3.0-video-prime",
+      "qwen/qwen3.8-max-0902"
     ],
     "relace": [
       "relace/relace-apply-3",
