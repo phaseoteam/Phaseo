@@ -1,30 +1,32 @@
 {
   "api_provider_id": "lmstudio",
-  "data_policy_tier": "unknown",
-  "data_policy_confidence": "unknown",
+  "api_provider_name": "LM Studio",
+  "data_policy_tier": "private",
+  "data_policy_confidence": "confirmed",
   "data_policy_contract_mode": "none",
-  "api_provider_name": "LMStudio",
   "provider_family_id": null,
   "offer_label": null,
   "offer_scope": "specialized",
-  "description": null,
-  "link": "https://lmstudio.ai/models",
-  "residency_mode": null,
+  "description": "A self-hosted local inference runtime with native, OpenAI-compatible, and Anthropic-compatible APIs. Available model IDs and limits depend on the models installed and loaded on the user's machine.",
+  "link": "https://lmstudio.ai/docs/developer",
+  "residency_mode": "customer_selectable",
   "default_execution_regions": null,
   "default_data_regions": null,
-  "zero_data_retention": false,
-  "residency_source_url": null,
-  "prompt_training_policy": null,
-  "prompt_training_notes": null,
-  "prompt_training_source_url": null,
-  "user_identifier_policy": null,
-  "user_identifier_notes": null,
-  "privacy_policy_url": null,
-  "terms_of_service_url": null,
-  "regional_pricing_mode": null,
+  "zero_data_retention": true,
+  "data_retention_days": 0,
+  "residency_source_url": "https://lmstudio.ai/docs/app/offline",
+  "residency_notes": "For this self-hosted API offer, inference runs on the machine or network host chosen by the customer. Downloaded-model inference, chat, documents, and the local server can operate offline; model search, downloads, updates, and separately selected cloud features can require network access.",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Prompts, chat histories, and documents processed by downloaded local models remain on the user's device. This metadata describes the local API, not separately selected LM Studio cloud models or web search.",
+  "prompt_training_source_url": "https://lmstudio.ai/app-privacy",
+  "user_identifier_policy": "not_sent",
+  "user_identifier_notes": "The local inference API does not send a Phaseo-style end-user identifier to LM Studio; authentication, when enabled by the operator, uses a local API token.",
+  "privacy_policy_url": "https://lmstudio.ai/app-privacy",
+  "terms_of_service_url": "https://lmstudio.ai/app-terms",
+  "regional_pricing_mode": "offer_specific",
   "regional_pricing_uplift_percent": null,
-  "pricing_source_url": null,
-  "regional_pricing_notes": null,
+  "pricing_source_url": "https://lmstudio.ai/pricing",
+  "regional_pricing_notes": "Local inference is $0 from LM Studio and consumes the customer's own compute. Paid LM Studio cloud inference is a separate Bionic feature with its own US-based, per-model token pricing and is not represented by this localhost API offer.",
   "country_code": "US",
   "status": "Active",
   "colour": null,
@@ -33,29 +35,60 @@
   "routing_enabled": false,
   "sdk_package": "@ai-sdk/openai-compatible",
   "api_base_url": "http://127.0.0.1:1234/v1",
-  "docs_url": "https://lmstudio.ai/models",
+  "docs_url": "https://lmstudio.ai/docs/developer",
   "auth_env": [
     "LMSTUDIO_API_KEY"
   ],
-  "api_formats": [],
+  "api_formats": [
+    "lmstudio.rest.v1",
+    "openai.responses",
+    "openai.chat.completions",
+    "openai.completions",
+    "openai.embeddings",
+    "anthropic.messages"
+  ],
   "service_tiers": [],
   "sources": [
     {
       "kind": "official_privacy_notice",
-      "url": "https://lmstudio.ai/privacy",
-      "accessed_at": "2026-08-09T00:00:00Z",
-      "notes": "LM Studio's official privacy policy identifies Element Labs, Inc. as a Delaware corporation."
+      "url": "https://lmstudio.ai/app-privacy",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Local prompts, chat histories, and documents remain on-device; separately selected cloud services are processed under zero-data-retention terms."
     },
     {
-      "kind": "models.dev",
-      "url": "https://models.dev/api.json",
-      "accessed_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider metadata and model support enrichment; not a Phaseo-routable offer."
+      "kind": "api_reference",
+      "url": "https://lmstudio.ai/docs/developer/rest",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Native v1 API for local inference and runtime model management."
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://lmstudio.ai/docs/developer/openai-compat",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "OpenAI-compatible models, Responses, Chat Completions, Embeddings, and legacy Completions endpoints."
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://lmstudio.ai/docs/developer/anthropic-compat",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Anthropic-compatible Messages endpoint."
+    },
+    {
+      "kind": "pricing",
+      "url": "https://lmstudio.ai/pricing",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Local inference is free; cloud inference is a separate paid Bionic feature."
+    },
+    {
+      "kind": "terms",
+      "url": "https://lmstudio.ai/app-terms",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Desktop app terms allow personal and internal business use and make third-party model licensing the customer's responsibility."
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-07-23T09:08:52.190Z",
-    "notes": "Imported from the public models.dev provider registry."
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Verified as a self-hosted local API against LM Studio's developer docs, privacy policy, app terms, and pricing page. Model availability is installation-dependent, so imported example IDs are not treated as a fixed hosted catalogue."
   }
 }
