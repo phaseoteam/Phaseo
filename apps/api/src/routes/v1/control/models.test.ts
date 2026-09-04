@@ -25,6 +25,7 @@ function buildCatalogueModel(overrides: Record<string, unknown> = {}) {
         base_model_id: "openai/gpt-4o-mini",
         variant_kind: "standard",
         previous_model_id: null,
+        replacement_model_id: null,
         name: "GPT-4o Mini",
         description: "A compact model for fast text generation.",
         release_date: "2026-01-01",
@@ -191,6 +192,19 @@ describe("handleModels", () => {
                 },
             ],
         });
+    });
+
+    it("prefers an explicit recommended successor over inferred lineage", async () => {
+        fetchCatalogueMock.mockResolvedValue([
+            buildCatalogueModel({ model_id: "openai/gpt-old", replacement_model_id: "openai/gpt-alternate" }),
+            buildCatalogueModel({ model_id: "openai/gpt-next", previous_model_id: "openai/gpt-old" }),
+        ]);
+
+        const response = await handleModels(new Request("https://api.example.com/"));
+
+        expect(response.status).toBe(200);
+        const body = await response.json() as { models: Array<{ id: string; lifecycle: { replacement_id: string | null } }> };
+        expect(body.models.find((model) => model.id === "openai/gpt-old")?.lifecycle.replacement_id).toBe("openai/gpt-alternate");
     });
 
     it("returns context limits from canonical model details", async () => {

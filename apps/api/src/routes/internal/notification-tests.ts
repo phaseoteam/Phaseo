@@ -19,9 +19,10 @@ internalNotificationTestRoutes.post("/", async (c) => {
 	const provided = c.req.header("authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
 	if (expected.length < 32 || !timingSafeEqual(provided, expected)) return c.json({ error: "unauthorized" }, 401);
 
-	const body: { type?: string; target?: string; destinationId?: string; workspaceId?: string } = await c.req.json().catch(() => ({}));
+	const body: { type?: string; target?: string; destinationId?: string; workspaceId?: string; kind?: "notification_test" | "model_deprecation" } = await c.req.json().catch(() => ({}));
 	const workspaceId = String(body.workspaceId ?? "").trim();
 	if (!workspaceId) return c.json({ error: "workspace_required" }, 400);
+	console.log("notification_test_kind", { kind: body.kind ?? "notification_test" });
 
 	configureRuntime(c.env);
 	try {
@@ -30,6 +31,7 @@ internalNotificationTestRoutes.post("/", async (c) => {
 			target: body.target,
 			destinationId: body.destinationId,
 			workspaceId,
+			kind: body.kind,
 		});
 		return c.json({ ok: true, status }, 200);
 	} catch (error) {

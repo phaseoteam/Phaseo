@@ -13,6 +13,7 @@ export interface CreateModelInput {
 	hidden?: boolean;
 	inputTypes?: string[];
 	outputTypes?: string[];
+	replacementModelId?: string | null;
 }
 
 export async function createModel(input: CreateModelInput): Promise<{ success: boolean; error?: string }> {
@@ -36,6 +37,7 @@ export interface UpdateModelInput {
 	license?: string | null;
 	familyId?: string | null;
 	previousModelId?: string | null;
+	replacementModelId?: string | null;
 	inputTypes?: string[];
 	outputTypes?: string[];
 }

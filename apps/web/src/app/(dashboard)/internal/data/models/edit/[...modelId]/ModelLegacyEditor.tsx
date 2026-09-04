@@ -33,6 +33,7 @@ type ModelData = {
 	input_types: string | null;
 	output_types: string | null;
 	previous_model_id: string | null;
+	replacement_model_id: string | null;
 	family_id: string | null;
 };
 
@@ -198,6 +199,7 @@ export default function ModelLegacyEditor({
 					input_types: model.input_types,
 					output_types: model.output_types,
 					previous_model_id: model.previous_model_id,
+					replacement_model_id: model.replacement_model_id,
 					family_id: model.family_id,
 					subscription_plan_models: subscriptionPlanRows ?? undefined,
 				});

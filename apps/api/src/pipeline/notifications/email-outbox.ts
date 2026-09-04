@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from "@/runtime/env";
 import { sendEmail } from "@/lib/email/resend";
 import { getBindings } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
+import { getModelDeprecationTemplateVariables, renderModelDeprecationEmail } from "@/pipeline/notifications/model-deprecation";
 
 type OutboxRow = {
 	id: string;
@@ -280,12 +281,16 @@ function renderEmailForRow(row: OutboxRow): {
 		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
 	}
 	if (row.template === "model_deprecation" || row.kind === "model_deprecation") {
-		const payload = row.payload ?? {};
-		const modelName = String(payload.model_name ?? payload.model_id ?? "A model used by your workspace");
-		const retirement = payload.retirement_date ? ` It is scheduled to retire on ${String(payload.retirement_date)}.` : "";
-		const subject = row.subject ?? `${modelName} has been deprecated`;
-		const message = `${modelName} has been deprecated.${retirement}`;
-		return { subject, html: `<div style="font-family:ui-sans-serif,system-ui;line-height:1.5"><h2>${escapeHtml(subject)}</h2><p>${escapeHtml(message)}</p><p><a href="https://phaseo.app/settings/notifications">Manage notifications</a></p></div>`, text: `${subject}\n\n${message}\n\nManage notifications: https://phaseo.app/settings/notifications` };
+		const rendered = renderModelDeprecationEmail(row.payload ?? {});
+		const templateId = bindings.RESEND_TEMPLATE_MODEL_DEPRECATION_ID?.trim() || "";
+		if (templateId) {
+			return {
+				subject: row.subject ?? rendered.subject,
+				templateId,
+				variables: getModelDeprecationTemplateVariables(row.payload ?? {}),
+			};
+		}
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
 	}
 	if (row.template === "io_retention_grace" || row.kind === "io_retention_grace") {
 		const rendered = renderIoRetentionEmail(row.payload ?? {}, "grace");
@@ -328,7 +333,10 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 		throw new Error(`email_outbox_fetch_error:${error.message ?? "unknown"}`);
 	}
 
-	const rows = ((data ?? []) as unknown as OutboxRow[]).filter((row) => row.kind !== "notification_test");
+	// Routed notifications have their own destination snapshot and delivery job.
+	// Keep them out of the legacy owner-email drain so a model deprecation cannot
+	// be sent twice (or bypass the per-alert route entirely).
+	const rows = ((data ?? []) as unknown as OutboxRow[]).filter((row) => row.kind !== "notification_test" && row.kind !== "model_deprecation" && row.template !== "model_deprecation");
 	let sent = 0;
 	let failed = 0;
 

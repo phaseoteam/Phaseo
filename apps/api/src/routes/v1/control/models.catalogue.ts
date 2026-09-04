@@ -249,6 +249,7 @@ export type CatalogueModel = {
     base_model_id: string;
     variant_kind: string;
     previous_model_id: string | null;
+    replacement_model_id: string | null;
     name: string | null;
     description: string | null;
     release_date: string | null;
@@ -1099,7 +1100,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const modelQuery = supabase
         .from("v2_models")
         .select(
-            "model_id:model_slug, base_model_id:base_model_slug, variant_kind, previous_model_id:previous_model_slug, name, description, release_date:released_at, deprecation_date:deprecated_at, retirement_date:retired_at, status, organisation_id:lab_slug, input_types:input_modalities, output_types:output_modalities, organisation:v2_labs(lab_slug, name, country_code, metadata)"
+            "model_id:model_slug, base_model_id:base_model_slug, variant_kind, previous_model_id:previous_model_slug, replacement_model_id:replacement_model_slug, name, description, release_date:released_at, deprecation_date:deprecated_at, retirement_date:retired_at, status, organisation_id:lab_slug, input_types:input_modalities, output_types:output_modalities, organisation:v2_labs(lab_slug, name, country_code, metadata)"
         )
         .eq("hidden", false);
     const { data: modelRows, error: modelError } = await modelQuery;
@@ -1114,6 +1115,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             base_model_id: string;
             variant_kind: string;
             previous_model_id: string | null;
+            replacement_model_id: string | null;
             name: string | null;
             description: string | null;
             release_date: string | null;
@@ -1135,6 +1137,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             base_model_id: model.base_model_id ?? model.model_id,
             variant_kind: model.variant_kind ?? "standard",
             previous_model_id: model.previous_model_id ?? null,
+            replacement_model_id: model.replacement_model_id ?? null,
             name: model.name ?? null,
             description: model.description ?? null,
             release_date: model.release_date ?? null,
@@ -1806,6 +1809,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             base_model_id: info.base_model_id,
             variant_kind: info.variant_kind,
             previous_model_id: info.previous_model_id,
+            replacement_model_id: info.replacement_model_id,
             name: info.name,
             description: info.description,
             release_date: info.release_date,
