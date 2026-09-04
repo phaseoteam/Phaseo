@@ -77,11 +77,34 @@ const providerRouteSchema = z.object({
 	provider_slug: z.string().trim().min(1),
 	provider_model_slug: z.string().trim().min(1),
 	status: z.enum(["active", "degraded", "disabled", "retired"]).default("active"),
+	provider_availability_status: z.enum(["unknown", "coming_soon", "preview", "available", "limited_access", "deprecated", "removed"]).optional(),
+	phaseo_status: z.enum(["unsupported", "planned", "implementing", "testing", "enabled", "disabled", "blocked"]).optional(),
+	access_scope: z.enum(["public", "internal"]).optional(),
 	routing_enabled: z.boolean().default(false),
 	input_modalities: z.array(z.string()).default([]), output_modalities: z.array(z.string()).default([]), regions: z.array(z.string()).default([]),
 	context_length: z.number().int().positive().nullable().optional(), max_output_tokens: z.number().int().positive().nullable().optional(),
 	effective_from: z.iso.datetime({ offset: true }).nullable().optional(), effective_to: z.iso.datetime({ offset: true }).nullable().optional(),
+	metadata: z.record(z.string(), z.unknown()).default({}),
+}).superRefine((route, context) => {
+	if (!route.routing_enabled) return;
+	if (route.phaseo_status !== "enabled") context.addIssue({ code: "custom", path: ["phaseo_status"], message: "Routing requires an enabled Phaseo integration" });
+	if (route.access_scope !== "public") context.addIssue({ code: "custom", path: ["access_scope"], message: "Routing requires public access" });
+	if (!route.provider_availability_status || !["available", "preview", "limited_access"].includes(route.provider_availability_status)) context.addIssue({ code: "custom", path: ["provider_availability_status"], message: "Routing requires an available provider model" });
 });
+
+const modelNoticeSchema = z.object({
+	tone: z.enum(["info", "warning", "critical"]),
+	markdown: z.string().max(20_000),
+});
+
+const modelAliasesSchema = z.array(z.object({
+	alias_slug: z.string().trim().min(1).max(240).regex(/^[a-z0-9][a-z0-9._:/+@-]*$/),
+	alias_type: z.string().trim().min(1).max(80).default("public"),
+	enabled: z.boolean().default(true),
+	effective_from: z.iso.datetime({ offset: true }).nullable().optional(),
+	effective_to: z.iso.datetime({ offset: true }).nullable().optional(),
+	metadata: z.record(z.string(), z.unknown()).default({}),
+}));
 
 async function requireAdmin(request: Request, env: Env) {
 	const user = await requireUser(request, env);
@@ -203,6 +226,26 @@ accountModelsRouter.get("/catalog/counts", async (c) => {
 	return c.json({ models: models.count ?? 0, organisations: organisations.count ?? 0, providers: providers.count ?? 0, benchmarks: benchmarks.count ?? 0 }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+accountModelsRouter.get("/catalog/overview", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const client = await requireAdmin(c.req.raw, c.env);
+	if (!client) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const [hiddenModels, modelsWithoutLab, routes, routableRoutes, recentChanges] = await Promise.all([
+		client.from("v2_models").select("*", { count: "exact", head: true }).eq("hidden", true),
+		client.from("v2_models").select("*", { count: "exact", head: true }).is("lab_slug", null),
+		client.from("v2_model_provider_routes").select("*", { count: "exact", head: true }),
+		client.from("v2_model_provider_routes").select("*", { count: "exact", head: true }).eq("routing_enabled", true),
+		client.from("v2_catalogue_admin_changes").select("change_id,resource_type,resource_id,action,created_at").order("created_at", { ascending: false }).limit(8),
+	]);
+	if ([hiddenModels, modelsWithoutLab, routes, routableRoutes, recentChanges].some((result) => result.error)) return c.json({ error: "admin_catalog_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({
+		attention: { hiddenModels: hiddenModels.count ?? 0, modelsWithoutLab: modelsWithoutLab.count ?? 0 },
+		routes: { total: routes.count ?? 0, routable: routableRoutes.count ?? 0 },
+		recentChanges: recentChanges.data ?? [],
+	}, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
 accountModelsRouter.get("/catalog/list", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
@@ -293,16 +336,24 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 		const alias = await client.from("v2_model_aliases").select("model_slug").eq("alias_slug", requestedModelId).eq("enabled", true).maybeSingle();
 		if (alias.error) throw alias.error;
 		const modelId = alias.data?.model_slug ?? requestedModelId;
-		const [model, links, details, pricingSource, plans] = await Promise.all([
+		const [model, links, details, notice, aliases, successors, history, pricingSource, plans] = await Promise.all([
 			client.from("v2_models").select("*,lab:v2_labs(*)").eq("model_slug", modelId).maybeSingle(),
 			client.from("v2_model_links").select("link_kind,title,url,metadata").eq("model_slug", modelId),
 			client.from("v2_model_details").select("detail_name,detail_value,detail_order").eq("model_slug", modelId).order("detail_order"),
+			client.from("v2_model_page_notices").select("tone,markdown").eq("model_slug", modelId).maybeSingle(),
+			client.from("v2_model_aliases").select("alias_slug,alias_type,enabled,effective_from,effective_to,metadata").eq("model_slug", modelId).order("alias_slug"),
+			client.from("v2_models").select("model_slug,name,status").contains("metadata", { previous_model_id: modelId }).order("model_slug"),
+			client.from("v2_catalogue_admin_changes").select("change_id,resource_type,action,before_state,after_state,created_at").eq("resource_id", modelId).order("created_at", { ascending: false }).limit(100),
 			fetchModelPricingSources(c.env, [modelId], true),
 			client.rpc("get_v2_model_subscription_plans", { p_model_slug: modelId }),
 		]);
 		if (model.error) throw model.error;
 		if (links.error) throw links.error;
 		if (details.error) throw details.error;
+		if (notice.error) throw notice.error;
+		if (aliases.error) throw aliases.error;
+		if (successors.error) throw successors.error;
+		if (history.error) throw history.error;
 		if (plans.error) throw plans.error;
 		const rawModel = model.data as Record<string, any> | null;
 		const editorModel = rawModel ? {
@@ -319,7 +370,7 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 			license: rawModel.metadata?.license ?? null,
 			previous_model_id: rawModel.metadata?.previous_model_id ?? null,
 		} : null;
-		return c.json({ source: { requestedModelId, canonicalApiId: modelId, internalModelId: modelId, model: editorModel, links: links.data ?? [], details: details.data ?? [], providerRows: pricingSource.providerRows, pricingRules: pricingSource.pricingRows, subscriptionPlans: plans.data ?? [] } }, 200, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ source: { requestedModelId, canonicalApiId: modelId, internalModelId: modelId, model: editorModel, links: links.data ?? [], details: details.data ?? [], notice: notice.data ?? null, aliases: aliases.data ?? [], successors: successors.data ?? [], history: history.data ?? [], providerRows: pricingSource.providerRows, pricingRules: pricingSource.pricingRows, subscriptionPlans: plans.data ?? [] } }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		console.error("[web-api/account/models] source failed", { requestedModelId, error });
 		return c.json({ error: "admin_model_source_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -373,7 +424,7 @@ accountModelsRouter.get("/:modelId/pricing-editor", async (c) => {
 
 		const routes = await client
 			.from("v2_model_provider_routes")
-			.select("provider_model_id,provider_slug,provider_model_slug,status,routing_enabled,input_modalities,output_modalities,regions,context_length,max_output_tokens,effective_from,effective_to")
+			.select("provider_model_id,provider_slug,provider_model_slug,status,provider_availability_status,phaseo_status,access_scope,routing_enabled,input_modalities,output_modalities,regions,context_length,max_output_tokens,effective_from,effective_to,metadata")
 			.eq("model_slug", modelId)
 			.order("provider_slug", { ascending: true });
 		if (routes.error) throw routes.error;
@@ -426,6 +477,27 @@ accountModelsRouter.put("/:modelId/provider-routes", async (c) => {
 	const result = await admin.context.client.rpc("mutate_v2_admin_provider_route", { p_actor_user_id: admin.context.user.id, p_model_slug: c.req.param("modelId"), p_route: parsed.data });
 	if (result.error) return c.json({ error: "admin_provider_route_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ route: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountModelsRouter.put("/:modelId/notice", async (c) => {
+	const admin = await requireAdminContext(c.req.raw, c.env);
+	if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+	const body = await c.req.json().catch(() => null);
+	const parsed = body === null ? { success: true as const, data: null } : modelNoticeSchema.safeParse(body);
+	if (!parsed.success) return c.json({ error: "invalid_model_notice", issues: parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await admin.context.client.rpc("mutate_v2_admin_model_notice", { p_actor_user_id: admin.context.user.id, p_model_slug: c.req.param("modelId"), p_notice: parsed.data });
+	if (result.error) return c.json({ error: "admin_model_notice_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ notice: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountModelsRouter.put("/:modelId/aliases", async (c) => {
+	const admin = await requireAdminContext(c.req.raw, c.env);
+	if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+	const parsed = modelAliasesSchema.safeParse(await c.req.json().catch(() => null));
+	if (!parsed.success) return c.json({ error: "invalid_model_aliases", issues: parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await admin.context.client.rpc("mutate_v2_admin_model_aliases", { p_actor_user_id: admin.context.user.id, p_model_slug: c.req.param("modelId"), p_aliases: parsed.data });
+	if (result.error) return c.json({ error: "admin_model_aliases_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ aliases: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.put("/:modelId/pricing-editor", async (c) => {

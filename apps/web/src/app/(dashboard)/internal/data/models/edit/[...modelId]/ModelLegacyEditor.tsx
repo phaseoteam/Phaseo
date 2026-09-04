@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient";
+import { fetchAdminModelEditorSource, fetchAdminModelFormOptions, saveAdminModelAliases, saveAdminModelNotice } from "@/lib/fetchers/internal/adminModelEditorClient";
 import BasicTab from "@/components/(data)/model/edit/tabs/BasicTab";
 import DetailsTab from "@/components/(data)/model/edit/tabs/DetailsTab";
 import BenchmarksTab from "@/components/(data)/model/edit/tabs/BenchmarksTab";
@@ -17,6 +19,7 @@ import ProvidersTab, {
 	type ProviderModelRow,
 } from "@/components/(data)/model/edit/tabs/ProvidersTab";
 import { updateModel } from "@/app/(dashboard)/models/actions";
+import { revalidateSingleModelDataAction } from "@/app/(dashboard)/internal/data/actions";
 import V2PricingEditor from "./V2PricingEditor";
 
 type ModelData = {
@@ -38,7 +41,9 @@ type ModelData = {
 
 const SECTION_ORDER = [
 	"basic",
+	"identity",
 	"details",
+	"notice",
 	"benchmarks",
 	"plans",
 	"providers",
@@ -56,10 +61,20 @@ const SECTION_META: Record<
 		description: "Edit core model fields and lifecycle metadata.",
 		saveLabel: "Save Basic",
 	},
+	identity: {
+		label: "Identity",
+		description: "Manage stable aliases and inspect model lineage.",
+		saveLabel: "Save Identity",
+	},
 	details: {
 		label: "Details",
 		description: "Edit detail rows and model links.",
 		saveLabel: "Save Details",
+	},
+	notice: {
+		label: "Notice",
+		description: "Publish an informational, warning, or critical notice on the model page.",
+		saveLabel: "Save Notice",
 	},
 	benchmarks: {
 		label: "Benchmarks",
@@ -89,12 +104,17 @@ function normalizeSection(value: string | undefined): EditorSection {
 
 	const map: Record<string, EditorSection> = {
 		overview: "basic",
+		identity: "identity",
+		aliases: "identity",
+		lineage: "identity",
 		family: "basic",
 		timeline: "basic",
 		quickstart: "providers",
 		performance: "providers",
 		basic: "basic",
 		details: "details",
+		notice: "notice",
+		notices: "notice",
 		benchmarks: "benchmarks",
 		plans: "plans",
 		providers: "providers",
@@ -128,6 +148,11 @@ type BenchmarkRow = {
 	variant: string | null;
 };
 
+type ModelNotice = { tone: "info" | "warning" | "critical"; markdown: string };
+type ModelAlias = { alias_slug: string; alias_type: string; enabled: boolean; effective_from: string | null; effective_to: string | null; metadata: Record<string, unknown> };
+type ModelSuccessor = { model_slug: string; name: string | null; status: string };
+type ModelHistoryEntry = { change_id: string; resource_type: string; action: string; created_at: string; before_state: unknown; after_state: unknown };
+
 export default function ModelLegacyEditor({
 	modelId,
 	initialTab,
@@ -145,6 +170,10 @@ export default function ModelLegacyEditor({
 	const [providers, setProviders] = useState<Array<{ id: string; name: string }>>([]);
 	const [detailRows, setDetailRows] = useState<DetailsRow[] | null>(null);
 	const [linkRows, setLinkRows] = useState<LinkRow[] | null>(null);
+	const [notice, setNotice] = useState<ModelNotice>({ tone: "info", markdown: "" });
+	const [aliases, setAliases] = useState<ModelAlias[]>([]);
+	const [successors, setSuccessors] = useState<ModelSuccessor[]>([]);
+	const [history, setHistory] = useState<ModelHistoryEntry[]>([]);
 	const [benchmarkRows, setBenchmarkRows] = useState<BenchmarkRow[] | null>(null);
 	const [subscriptionPlanRows, setSubscriptionPlanRows] = useState<
 		SubscriptionPlanModelPayload[] | null
@@ -161,6 +190,10 @@ export default function ModelLegacyEditor({
 	const fetchBasicData = useCallback(async () => {
 		const [source, options] = await Promise.all([fetchAdminModelEditorSource(modelId), fetchAdminModelFormOptions()]);
 		setModel(source.model as ModelData);
+		setNotice((source.notice as ModelNotice | null) ?? { tone: "info", markdown: "" });
+		setAliases((source.aliases as ModelAlias[] | null) ?? []);
+		setSuccessors((source.successors as ModelSuccessor[] | null) ?? []);
+		setHistory((source.history as ModelHistoryEntry[] | null) ?? []);
 		if (options.providers) {
 			setProviders(
 				options.providers.map((provider: any) => ({
@@ -201,6 +234,9 @@ export default function ModelLegacyEditor({
 					family_id: model.family_id,
 					subscription_plan_models: subscriptionPlanRows ?? undefined,
 				});
+			} else if (activeSection === "identity") {
+				await saveAdminModelAliases(modelId, aliases.map((alias) => ({ ...alias, alias_slug: alias.alias_slug.trim().toLowerCase() })).filter((alias) => alias.alias_slug));
+				await revalidateSingleModelDataAction(modelId);
 			} else if (activeSection === "details") {
 				if (detailRows === null || linkRows === null) {
 					throw new Error("Details are still loading. Please wait a moment and retry.");
@@ -236,6 +272,9 @@ export default function ModelLegacyEditor({
 							url: row.url,
 						})),
 				});
+			} else if (activeSection === "notice") {
+				await saveAdminModelNotice(modelId, notice.markdown.trim() ? { ...notice, markdown: notice.markdown.trim() } : null);
+				await revalidateSingleModelDataAction(modelId);
 			} else if (activeSection === "benchmarks") {
 				if (benchmarkRows === null) {
 					throw new Error("Benchmarks are still loading. Please wait a moment and retry.");
@@ -388,6 +427,14 @@ export default function ModelLegacyEditor({
 						onModelChange={(next) => setModel(next as ModelData)}
 					/>
 				) : null}
+				{activeSection === "identity" ? (
+					<div className="space-y-5">
+						<section className="rounded-lg border p-4"><div className="text-sm font-semibold">Canonical identity</div><div className="mt-3 font-mono text-sm">{modelId}</div><p className="mt-1 text-xs text-muted-foreground">The canonical ID is immutable in-place. Add an alias for a new public ID; destructive renames require a migration.</p></section>
+						<section className="rounded-lg border p-4"><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-semibold">Aliases</div><p className="text-xs text-muted-foreground">Alternative IDs resolve to this canonical model.</p></div><Button type="button" size="sm" variant="outline" onClick={() => setAliases((rows) => [...rows, { alias_slug: "", alias_type: "public", enabled: true, effective_from: null, effective_to: null, metadata: {} }])}><Plus className="mr-1 h-4 w-4" />Add alias</Button></div><div className="mt-3 space-y-2">{aliases.map((alias, index) => <div key={`${alias.alias_slug}-${index}`} className="grid gap-2 rounded-md border p-3 sm:grid-cols-[minmax(0,1fr)_160px_auto_auto]"><Input aria-label="Alias ID" className="font-mono" value={alias.alias_slug} placeholder="openai/model-latest" onChange={(event) => setAliases((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, alias_slug: event.target.value } : row))} /><Input aria-label="Alias type" value={alias.alias_type} placeholder="public" onChange={(event) => setAliases((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, alias_type: event.target.value } : row))} /><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={alias.enabled} onChange={(event) => setAliases((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, enabled: event.target.checked } : row))} />Enabled</label><Button aria-label="Remove alias" type="button" variant="ghost" size="icon" onClick={() => setAliases((rows) => rows.filter((_, rowIndex) => rowIndex !== index))}><Trash2 className="h-4 w-4" /></Button></div>)}{!aliases.length ? <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">No aliases</div> : null}</div></section>
+						<section className="rounded-lg border p-4"><div className="text-sm font-semibold">Lineage</div><div className="mt-3 grid gap-3 sm:grid-cols-2"><div><div className="text-xs text-muted-foreground">Previous model</div><div className="mt-1 font-mono text-sm">{model.previous_model_id || "None"}</div></div><div><div className="text-xs text-muted-foreground">Successors</div><div className="mt-1 space-y-1">{successors.map((successor) => <Link className="block font-mono text-sm text-primary hover:underline" key={successor.model_slug} href={`/internal/data/models/edit/${successor.model_slug}?tab=identity`}>{successor.model_slug}</Link>)}{!successors.length ? <span className="text-sm text-muted-foreground">None</span> : null}</div></div></div></section>
+						<section className="rounded-lg border p-4"><div className="text-sm font-semibold">Recent changes</div><div className="mt-3 divide-y rounded-md border">{history.map((entry) => <details key={entry.change_id} className="p-3"><summary className="cursor-pointer text-sm"><span className="font-medium">{entry.action}</span> · {entry.resource_type} <span className="text-muted-foreground">{new Date(entry.created_at).toLocaleString()}</span></summary><pre className="mt-3 max-h-72 overflow-auto rounded bg-muted p-3 text-xs">{JSON.stringify({ before: entry.before_state, after: entry.after_state }, null, 2)}</pre></details>)}{!history.length ? <div className="p-4 text-center text-xs text-muted-foreground">No recorded changes</div> : null}</div></section>
+					</div>
+				) : null}
 				{activeSection === "details" ? (
 					<DetailsTab
 						modelId={modelId}
@@ -396,6 +443,21 @@ export default function ModelLegacyEditor({
 						onDetailsChange={(rows) => setDetailRows(rows)}
 						onLinksChange={(rows) => setLinkRows(rows)}
 					/>
+				) : null}
+				{activeSection === "notice" ? (
+					<div className="space-y-4">
+						<label className="block text-sm font-medium">Tone
+							<select className="mt-1 block h-10 w-full rounded-md border bg-background px-3 text-sm sm:max-w-xs" value={notice.tone} onChange={(event) => setNotice((current) => ({ ...current, tone: event.target.value as ModelNotice["tone"] }))}>
+								<option value="info">Information</option>
+								<option value="warning">Warning</option>
+								<option value="critical">Critical</option>
+							</select>
+						</label>
+						<label className="block text-sm font-medium">Notice markdown
+							<Textarea className="mt-1 min-h-48 font-mono text-sm" value={notice.markdown} onChange={(event) => setNotice((current) => ({ ...current, markdown: event.target.value }))} placeholder="Leave empty to remove the model-page notice." />
+						</label>
+						<div className="rounded-md border bg-muted/20 p-3 text-sm"><div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Preview</div><div className="whitespace-pre-wrap">{notice.markdown || "No notice will be shown."}</div></div>
+					</div>
 				) : null}
 				{activeSection === "benchmarks" ? (
 					<BenchmarksTab

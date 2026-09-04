@@ -22,6 +22,7 @@
 		"catalog:sync:official-pricing": "tsx scripts/catalogue/sync-official-pricing.ts",
 		"catalog:sync:models-dev-pricing": "tsx scripts/catalogue/sync-models-dev-pricing.ts",
 		"catalog:sync:provider-discovery": "tsx scripts/catalogue/sync-provider-discovery.ts",
+		"catalog:export:database": "tsx scripts/catalogue/export-database-snapshot.ts",
 		"recompute-benchmark-ranks": "tsx scripts/importer/recompute-benchmark-ranks.ts",
 		"db:recompute-benchmark-ranks": "tsx scripts/importer/recompute-benchmark-ranks-db.ts",
 		"catalog:recompute-benchmark-ranks": "tsx scripts/importer/recompute-benchmark-ranks.ts",

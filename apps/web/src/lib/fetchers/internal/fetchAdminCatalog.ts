@@ -11,6 +11,16 @@ export function fetchAdminCatalogCounts() {
 	return fetchAdminCatalogPath<{ models: number; organisations: number; providers: number; benchmarks: number }>("/api/account/models/catalog/counts");
 }
 
+export type AdminCatalogOverview = {
+	attention: { hiddenModels: number; modelsWithoutLab: number };
+	routes: { total: number; routable: number };
+	recentChanges: Array<{ change_id: string; resource_type: string; resource_id: string; action: string; created_at: string }>;
+};
+
+export function fetchAdminCatalogOverview() {
+	return fetchAdminCatalogPath<AdminCatalogOverview>("/api/account/models/catalog/overview");
+}
+
 export function fetchAdminCatalogList(resource: "models" | "organisations" | "providers" | "benchmarks", args: { q?: string; page?: number; pageSize?: number } = {}) {
 	const query = new URLSearchParams({ resource, page: String(args.page ?? 1), pageSize: String(args.pageSize ?? 100) });
 	if (args.q) query.set("q", args.q);

@@ -47,6 +47,9 @@ export type AdminPricingEditorSource = {
 		provider_slug: string;
 		provider_model_slug: string;
 		status: string;
+		provider_availability_status: "unknown" | "coming_soon" | "preview" | "available" | "limited_access" | "deprecated" | "removed";
+		phaseo_status: "unsupported" | "planned" | "implementing" | "testing" | "enabled" | "disabled" | "blocked";
+		access_scope: "public" | "internal";
 		routing_enabled: boolean;
 		regions: string[];
 		input_modalities: string[];
@@ -55,6 +58,7 @@ export type AdminPricingEditorSource = {
 		max_output_tokens: number | null;
 		effective_from: string | null;
 		effective_to: string | null;
+		metadata: Record<string, unknown>;
 	}>;
 	skus: Array<Record<string, any> & { sku_id: string; provider_model_id: string }>;
 	meters: Array<Record<string, any> & { sku_id: string; meter_key: string }>;
@@ -83,6 +87,22 @@ export async function saveAdminProviderRoute(modelId: string, route: Record<stri
 		`/api/account/models/${encodeURIComponent(modelId)}/provider-routes`,
 		await getBrowserAccessToken(),
 		{ method: "PUT", body: JSON.stringify(route) },
+	);
+}
+
+export async function saveAdminModelNotice(modelId: string, notice: { tone: "info" | "warning" | "critical"; markdown: string } | null) {
+	return fetchAccountWebApi<{ notice: { tone: string; markdown: string } | null }>(
+		`/api/account/models/${encodeURIComponent(modelId)}/notice`,
+		await getBrowserAccessToken(),
+		{ method: "PUT", body: JSON.stringify(notice) },
+	);
+}
+
+export async function saveAdminModelAliases(modelId: string, aliases: Array<Record<string, unknown>>) {
+	return fetchAccountWebApi<{ aliases: Array<Record<string, unknown>> }>(
+		`/api/account/models/${encodeURIComponent(modelId)}/aliases`,
+		await getBrowserAccessToken(),
+		{ method: "PUT", body: JSON.stringify(aliases) },
 	);
 }
 

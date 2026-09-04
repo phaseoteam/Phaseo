@@ -7,6 +7,7 @@ describe("account model source routes", () => {
 	it.each([
 		"/api/account/models/audit/source",
 		"/api/account/models/provider-audit/source",
+		"/api/account/models/catalog/overview",
 		"/api/account/models/openai%2Fgpt-test/source",
 		"/api/account/models/openai%2Fgpt-test/pricing-editor",
 	])("rejects unauthenticated access to %s with private cache headers", async (path) => {
@@ -18,6 +19,7 @@ describe("account model source routes", () => {
 
 	it.each([
 		"/api/account/models/audit/source",
+		"/api/account/models/catalog/overview",
 		"/api/account/models/openai%2Fgpt-test/pricing-editor",
 	])("rejects authenticated non-admin access to %s", async (path) => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
@@ -120,7 +122,7 @@ describe("account model source routes", () => {
 		expect(response.status).toBe(200);
 		const routeQuery = requests.find((url) => url.includes("/rest/v1/v2_model_provider_routes"));
 		expect(routeQuery).toBeDefined();
-		for (const field of ["input_modalities", "output_modalities", "context_length", "max_output_tokens", "effective_from", "effective_to"]) {
+		for (const field of ["provider_availability_status", "phaseo_status", "access_scope", "routing_enabled", "input_modalities", "output_modalities", "context_length", "max_output_tokens", "effective_from", "effective_to", "metadata"]) {
 			expect(routeQuery).toContain(field);
 		}
 	});

@@ -1,0 +1,87 @@
+name: Catalog Database Snapshot
+
+on:
+    workflow_dispatch:
+    schedule:
+        - cron: "17 3 * * *"
+
+concurrency:
+    group: catalog-database-snapshot
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+
+jobs:
+    export:
+        name: Export production catalog
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - name: Create GitHub App token
+              id: app-token
+              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+              with:
+                  client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
+                  private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
+                  permission-contents: write
+                  permission-pull-requests: write
+
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+              with:
+                  ref: main
+                  fetch-depth: 0
+                  token: ${{ steps.app-token.outputs.token }}
+
+            - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              with:
+                  version: 10.33.0
+                  run_install: false
+
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - run: pnpm install --frozen-lockfile
+
+            - name: Export deterministic JSON snapshot
+              env:
+                  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+              run: pnpm --filter @phaseo/web catalog:export:database
+
+            - name: Resolve snapshot branch
+              id: snapshot-branch
+              env:
+                  GH_TOKEN: ${{ steps.app-token.outputs.token }}
+              shell: bash
+              run: |
+                  branch="$(gh pr list --state open --base main --json headRefName --jq '.[] | select(.headRefName | startswith("automation/catalog-database-snapshot-")) | .headRefName' | head -n 1)"
+                  if [[ -z "$branch" ]]; then
+                    branch="automation/catalog-database-snapshot-$GITHUB_RUN_ID"
+                  fi
+                  echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+            - name: Open or update snapshot pull request
+              uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
+              with:
+                  token: ${{ steps.app-token.outputs.token }}
+                  branch: ${{ steps.snapshot-branch.outputs.branch }}
+                  base: main
+                  delete-branch: true
+                  add-paths: packages/data/catalog/generated/database-v2/**
+                  commit-message: "chore(data): snapshot database catalog"
+                  title: "Snapshot database catalog"
+                  body: |
+                      Daily deterministic JSON snapshot of the production v2 catalogue.
+
+                      The database remains authoritative; this PR provides review, history, and recovery data.
+
+                      Commands run:
+                      - `pnpm install --frozen-lockfile`
+                      - `pnpm --filter @phaseo/web catalog:export:database`
+
+                      Linked issues: none
+
+                      Created with Codex
