@@ -34,7 +34,9 @@
       "accessed_at": "2026-08-09T00:00:00Z",
       "notes": "Fish Audio's official privacy notice identifies Shanghai Qita Dynamic Technology Co., Ltd. as the operating company and gives a registered address in Shanghai, China."
     },
-    { "kind": "documentation", "url": "https://docs.fish.audio/developer-guide/models-pricing/models-overview", "accessed_at": "2026-08-01T00:00:00Z", "notes": null }
+    { "kind": "documentation", "url": "https://docs.fish.audio/developer-guide/models-pricing/models-overview", "accessed_at": "2026-08-24T00:00:00Z", "notes": null },
+    { "kind": "documentation", "url": "https://docs.fish.audio/developer-guide/models-pricing/deprecations", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Lifecycle source for retired Speech 1.5 and Speech 1.6 routes." },
+    { "kind": "api_reference", "url": "https://api.fish.audio/openapi.json", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Canonical REST contract for TTS, ASR, and Voice Design endpoints." }
   ],
-  "verification": { "status": "verified", "checked_at": "2026-08-01T00:00:00Z", "notes": "Current models and prices verified from official Fish Audio documentation." }
+  "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Current and retired models, endpoints, prices, limits, and data constraints verified from official Fish Audio documentation and API schema." }
 }

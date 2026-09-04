@@ -34,5 +34,17 @@
     "is_active_gateway": false, "quantization_scheme": null, "input_modalities": "text", "output_modalities": "audio_tts", "context_length": null, "max_output_tokens": null, "effective_from": null, "effective_to": null,
     "capabilities": [{ "capability_id": "voice.design", "status": "active", "params": [], "reasoning": null, "tool_call": null, "structured_output": null, "temperature": null, "attachment": null, "input_modalities": null, "output_modalities": null, "modes": [] }],
     "routing_status": null, "routable": false, "regions": { "execution": null, "data": null }, "service_tiers": ["standard"], "api": { "formats": [], "endpoint": "/v1/voice-design", "deployment": null }, "sources": [], "verification": { "status": "verified", "checked_at": "2026-08-01T00:00:00Z", "notes": null }, "rate_limits": []
+  },
+  {
+    "api_model_id": "fish-audio/speech-1.6", "provider_api_model_id": "fish-audio:fish-audio/speech-1.6", "provider_model_slug": "speech-1.6", "internal_model_id": "fish-audio/speech-1.6",
+    "is_active_gateway": false, "quantization_scheme": null, "input_modalities": "text", "output_modalities": "audio_tts", "context_length": null, "max_output_tokens": null, "effective_from": null, "effective_to": "2026-02-28T00:00:00",
+    "capabilities": [{ "capability_id": "audio.speech", "status": "disabled", "params": [], "reasoning": null, "tool_call": null, "structured_output": null, "temperature": null, "attachment": null, "input_modalities": null, "output_modalities": null, "modes": [] }],
+    "routing_status": "disabled", "routable": false, "regions": { "execution": null, "data": null }, "service_tiers": [], "api": { "formats": [], "endpoint": "/v1/tts", "deployment": null }, "sources": [{ "kind": "documentation", "url": "https://docs.fish.audio/developer-guide/models-pricing/deprecations", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Official lifecycle documentation records deprecation on 28 February 2026." }], "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Historical route retained as disabled." }, "rate_limits": []
+  },
+  {
+    "api_model_id": "fish-audio/speech-1.5", "provider_api_model_id": "fish-audio:fish-audio/speech-1.5", "provider_model_slug": "speech-1.5", "internal_model_id": "fish-audio/speech-1.5",
+    "is_active_gateway": false, "quantization_scheme": null, "input_modalities": "text", "output_modalities": "audio_tts", "context_length": null, "max_output_tokens": null, "effective_from": null, "effective_to": "2026-02-28T00:00:00",
+    "capabilities": [{ "capability_id": "audio.speech", "status": "disabled", "params": [], "reasoning": null, "tool_call": null, "structured_output": null, "temperature": null, "attachment": null, "input_modalities": null, "output_modalities": null, "modes": [] }],
+    "routing_status": "disabled", "routable": false, "regions": { "execution": null, "data": null }, "service_tiers": [], "api": { "formats": [], "endpoint": "/v1/tts", "deployment": null }, "sources": [{ "kind": "documentation", "url": "https://docs.fish.audio/developer-guide/models-pricing/deprecations", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Official lifecycle documentation records deprecation on 28 February 2026." }], "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Historical route retained as disabled." }, "rate_limits": []
   }
 ]
