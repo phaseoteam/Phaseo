@@ -38,13 +38,15 @@
   "service_tiers": [],
   "sources": [
     { "kind": "provider_docs", "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/", "accessed_at": "2026-08-26T00:00:00Z", "notes": "Scaleway Generative APIs documentation states default zero data retention and no collection, reuse, or training on request content; anonymized usage data may still be collected." },
-    { "kind": "provider_docs", "url": "https://www.scaleway.com/en/developers/api/generative-apis", "accessed_at": "2026-08-12T00:00:00Z", "notes": "Official serverless host, region, endpoints and compatibility limitations." },
-    { "kind": "provider_models", "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/", "accessed_at": "2026-08-12T00:00:00Z", "notes": "Current serverless models, modalities, context, output and lifecycle." },
-    { "kind": "pricing", "url": "https://www.scaleway.com/en/pricing/model-as-a-service/", "accessed_at": "2026-08-12T00:00:00Z", "notes": "Current serverless token/audio pricing and 50% Batch discount." }
+    { "kind": "provider_docs", "url": "https://www.scaleway.com/en/developers/api/generative-apis", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Official serverless host, endpoints, OpenAI compatibility and limitations." },
+    { "kind": "provider_models", "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/supported-models/", "accessed_at": "2026-08-24T00:00:00Z", "notes": "August 14, 2026 serverless availability, modalities, context, output and lifecycle ledger." },
+    { "kind": "pricing", "url": "https://www.scaleway.com/en/pricing/model-as-a-service/", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Live serverless EUR pricing, free tier and 50% Batch discount." },
+    { "kind": "privacy", "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Default zero-data-retention and no training/reuse of prompt or output content; rare abuse/error payload retention up to two weeks." },
+    { "kind": "provider_docs", "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/rate-limits/", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Organization-scoped RPM, TPM and concurrency quotas; exact values depend on payment and identity verification." }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-12T00:00:00Z",
-    "notes": "Paris host, Bearer authentication, Chat/Responses contracts and adjacent endpoints verified from first-party references."
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Paris-only serverless execution, Bearer authentication, data policy, lifecycle, pricing and endpoint contracts verified from current first-party references."
   }
 }
