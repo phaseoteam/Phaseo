@@ -7,7 +7,7 @@
   "provider_family_id": null,
   "offer_label": null,
   "offer_scope": "specialized",
-  "description": "GitHub Models is a catalogue/gateway service from GitHub, whose headquarters are in San Francisco, California.",
+  "description": "GitHub Models was a catalogue and inference gateway from GitHub. GitHub fully retired the service on July 30, 2026.",
   "link": "https://docs.github.com/en/github-models",
   "residency_mode": null,
   "default_execution_regions": null,
@@ -63,6 +63,12 @@
       "url": "https://github.com/about/press",
       "accessed_at": "2026-08-09T00:00:00Z",
       "notes": "GitHub's official press page identifies its headquarters as San Francisco."
+    },
+    {
+      "kind": "official_documentation",
+      "url": "https://docs.github.com/en/github-models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "GitHub states that GitHub Models was fully retired on July 30, 2026. The playground, model catalog, inference API, and BYOK are no longer available to any customer."
     }
   ],
   "verification": {
