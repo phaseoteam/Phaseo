@@ -1,0 +1,82 @@
+{
+  "model_id": "qwen/qwen-image-3.0",
+  "organisation_id": "qwen",
+  "name": "Qwen-Image 3.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Qwen-Image-3.0 是阿里巴巴 2026 年 8 月正式发布的生图模型, 支持文生图与参考图输入, 可精准渲染小至 10px 的文字与细节, 在图文一致性、复杂结构与画面质感上较前代全面提升。",
+  "announced_date": null,
+  "release_date": "2026-08-05T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "qwen/qwen-image-3.0",
+  "family_id": null,
+  "links": [
+    {
+      "title": "OfoxAI model catalogue",
+      "kind": "documentation",
+      "url": "https://ofox.ai/models/bailian"
+    }
+  ],
+  "details": [
+    {
+      "name": "ofox_provider_slug",
+      "value": "bailian/qwen-image-3.0"
+    },
+    {
+      "name": "ofox_supported_endpoints",
+      "value": "/v1/images/generations"
+    }
+  ],
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 100000,
+    "input": null,
+    "output": 100000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live model catalogue, exact model IDs, endpoints, modalities, limits, parameters, lifecycle and pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Canonical identity and OfoxAI availability verified from the live catalogue."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

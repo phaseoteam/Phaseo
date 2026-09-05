@@ -1,0 +1,78 @@
+{
+  "model_id": "microsoft/mai-image-2.5-pro",
+  "organisation_id": "microsoft",
+  "name": "Microsoft: MAI Image 2.5 Pro",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "MAI-Image-2.5-Pro is the flagship of Microsoft's MAI image family, designed for complex compositions with strong object and character consistency, accurate material properties and coherent spatial reasoning. Best suited for photorealistic scenes, rich documentary-style imagery and demanding creative work. Supports text-to-image generation and image-to-image editing.",
+  "announced_date": null,
+  "release_date": "2026-06-19T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "microsoft/mai-image-2.5-pro",
+  "family_id": null,
+  "links": [
+    {
+      "title": "OfoxAI model catalogue",
+      "kind": "documentation",
+      "url": "https://ofox.ai/models/microsoft"
+    }
+  ],
+  "details": [
+    {
+      "name": "ofox_supported_endpoints",
+      "value": "/v1/images/generations"
+    }
+  ],
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 4100,
+    "input": null,
+    "output": 1000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live model catalogue, exact model IDs, endpoints, modalities, limits, parameters, lifecycle and pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Exact model identity and availability verified from OfoxAI live catalogue."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

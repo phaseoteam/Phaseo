@@ -1,0 +1,82 @@
+{
+  "model_id": "bytedance/doubao-seedream-5.0-pro",
+  "organisation_id": "bytedance",
+  "name": "Doubao Seedream 5.0 Pro",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Doubao-Seedream-5.0-pro是字节跳动2026年7月发布的图像创作旗舰模型。相比前代在图文匹配、结构合理性、文字渲染与画面美感等基础能力上全面提升，具备四大突破：复杂信息可视化、交互式精准编辑（点选/圈选/草图渲染/图层分离/多图融合）、真实影像与人像质感、原生多语种（十余种语言）输入生成。支持文生图、图生图、参考图一致性编辑，面向企业级专业视觉创作。",
+  "announced_date": null,
+  "release_date": "2026-07-08T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "bytedance/doubao-seedream-5.0-pro",
+  "family_id": null,
+  "links": [
+    {
+      "title": "OfoxAI model catalogue",
+      "kind": "documentation",
+      "url": "https://ofox.ai/models/volcengine"
+    }
+  ],
+  "details": [
+    {
+      "name": "ofox_provider_slug",
+      "value": "volcengine/doubao-seedream-5.0-pro"
+    },
+    {
+      "name": "ofox_supported_endpoints",
+      "value": "/v1/images/generations"
+    }
+  ],
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 100000,
+    "input": null,
+    "output": 100000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live model catalogue, exact model IDs, endpoints, modalities, limits, parameters, lifecycle and pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Canonical identity and OfoxAI availability verified from the live catalogue."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
