@@ -1,0 +1,41 @@
+{
+  "key": "vercel:google/gemini-3.5-transcribe-live:audio.transcribe",
+  "api_provider_id": "vercel",
+  "provider_slug": "vercel",
+  "api_model_id": "google/gemini-3.5-transcribe-live",
+  "capability_id": "audio.transcribe",
+  "rules": [
+    {
+      "meter": "input_audio_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.00015,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Vercel AI Gateway list price per input audio second.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://ai-gateway.vercel.sh/v1/models",
+      "accessed_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Provider model and pricing metadata."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-05T21:08:43.298Z",
+    "notes": "Pricing synchronized from the provider models API."
+  }
+}

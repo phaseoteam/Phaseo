@@ -1,0 +1,71 @@
+{
+  "key": "gmicloud:anthropic/claude-opus-4.7:text.generate",
+  "api_provider_id": "gmicloud",
+  "provider_slug": "gmicloud",
+  "api_model_id": "anthropic/claude-opus-4.7",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.45,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 22.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "models.dev",
+      "url": "https://models.dev/api.json",
+      "accessed_at": "2026-09-05T21:08:40.934Z",
+      "notes": "Provider pricing catalogue fallback; direct provider feeds take precedence."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-05T21:08:40.934Z",
+    "notes": "Pricing filled from the provider-specific models.dev catalogue because no direct local pricing record existed."
+  }
+}

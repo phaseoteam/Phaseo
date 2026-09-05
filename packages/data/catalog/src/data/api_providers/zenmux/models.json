@@ -181,6 +181,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "anthropic/claude-fable-5.1",
+    "provider_api_model_id": "zenmux:anthropic/claude-fable-5.1",
+    "provider_model_slug": "anthropic/claude-fable-5.1",
+    "internal_model_id": "anthropic/claude-fable-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "zenmux:anthropic/claude-haiku-4.5",
     "provider_model_slug": "anthropic/claude-haiku-4.5",
@@ -2949,6 +3008,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "google/gemini-3.8-flash",
+    "provider_api_model_id": "zenmux:google/gemini-3.8-flash",
+    "provider_model_slug": "google/gemini-3.8-flash",
+    "internal_model_id": "google/gemini-3.8-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,file,image,audio,video",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "google/gemini-embedding-2",
     "provider_api_model_id": "zenmux:google/gemini-embedding-2",
     "provider_model_slug": "google/gemini-embedding-2",
@@ -3894,6 +4012,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "meta/muse-image-1.0",
+    "provider_api_model_id": "zenmux:meta/muse-image-1.0",
+    "provider_model_slug": "meta/muse-image-1.0",
+    "internal_model_id": "meta/muse-image-1.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": 66000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "meta/muse-spark-1.1",
     "provider_api_model_id": "zenmux:meta/muse-spark-1.1",
     "provider_model_slug": "meta/muse-spark-1.1",
@@ -4016,6 +4193,124 @@
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
       "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "meta/muse-spark-1.3",
+    "provider_api_model_id": "zenmux:meta/muse-spark-1.3",
+    "provider_model_slug": "meta/muse-spark-1.3",
+    "internal_model_id": "meta/muse-spark-1.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,file,audio,video",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "meta/muse-spark-1.3-contributor",
+    "provider_api_model_id": "zenmux:meta/muse-spark-1.3-contributor",
+    "provider_model_slug": "meta/muse-spark-1.3-contributor",
+    "internal_model_id": "meta/muse-spark-1.3-contributor",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,file,audio,video",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -7103,6 +7398,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "openai/gpt-6-astra",
+    "provider_api_model_id": "zenmux:openai/gpt-6-astra",
+    "provider_model_slug": "openai/gpt-6-astra",
+    "internal_model_id": "openai/gpt-6-astra",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,file",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "openai/gpt-image-1.5",
     "provider_api_model_id": "zenmux:openai/gpt-image-1.5",
     "provider_model_slug": "openai/gpt-image-1.5",
@@ -8489,6 +8843,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "qwen/qwen3.8-2.4t-a95b",
+    "provider_api_model_id": "zenmux:qwen/qwen3.8-2.4t-a95b",
+    "provider_model_slug": "qwen/qwen3.8-2.4t-a95b",
+    "internal_model_id": "qwen/qwen3.8-2.4t-a95b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "qwen/qwen3.8-27b",
     "provider_api_model_id": "zenmux:qwen/qwen3.8-27b",
     "provider_model_slug": "qwen/qwen3.8-27b",
@@ -8552,6 +8965,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "qwen/qwen3.8-flash",
+    "provider_api_model_id": "zenmux:qwen/qwen3.8-flash",
+    "provider_model_slug": "qwen/qwen3.8-flash",
+    "internal_model_id": "qwen/qwen3.8-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "qwen/qwen3.8-max",
     "provider_api_model_id": "zenmux:qwen/qwen3.8-max",
     "provider_model_slug": "qwen/qwen3.8-max",
@@ -8611,6 +9083,65 @@
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
       "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.8-max-0902",
+    "provider_api_model_id": "zenmux:qwen/qwen3.8-max-0902",
+    "provider_model_slug": "qwen/qwen3.8-max-0902",
+    "internal_model_id": "qwen/qwen3.8-max-0902",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -8763,258 +9294,6 @@
         "structured_output": null,
         "temperature": null,
         "attachment": true,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "disabled",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "SG"
-      ]
-    },
-    "service_tiers": [
-      "standard"
-    ],
-    "api": {
-      "formats": [
-        "openai.chat.completions"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://zenmux.ai/api/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Official live ZenMux model, modality, context, capability, publication, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "stepfun/step-3.5-flash",
-    "provider_api_model_id": "zenmux:stepfun/step-3.5-flash",
-    "provider_model_slug": "stepfun/step-3.5-flash",
-    "internal_model_id": "stepfun/step-3.5-flash",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 256000,
-    "max_output_tokens": 64000,
-    "effective_from": "2026-02-02T00:00:00Z",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": true,
-        "tool_call": true,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": false,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "disabled",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "SG"
-      ]
-    },
-    "service_tiers": [
-      "standard"
-    ],
-    "api": {
-      "formats": [
-        "openai.chat.completions"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://zenmux.ai/api/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Official live ZenMux model, modality, context, capability, publication, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "stepfun/step-3.7-flash",
-    "provider_api_model_id": "zenmux:stepfun/step-3.7-flash",
-    "provider_model_slug": "stepfun/step-3.7-flash",
-    "internal_model_id": "stepfun/step-3.7-flash",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,video",
-    "output_modalities": "text",
-    "context_length": 256000,
-    "max_output_tokens": 256000,
-    "effective_from": "2026-05-29T00:00:00Z",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": true,
-        "tool_call": true,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": true,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "disabled",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "SG"
-      ]
-    },
-    "service_tiers": [
-      "standard"
-    ],
-    "api": {
-      "formats": [
-        "openai.chat.completions"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://zenmux.ai/api/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Official live ZenMux model, modality, context, capability, publication, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "tencent/hy3",
-    "provider_api_model_id": "zenmux:tencent/hy3",
-    "provider_model_slug": "tencent/hy3",
-    "internal_model_id": "tencent/hy3",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": null,
-    "effective_from": "2026-07-06T00:00:00Z",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": true,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": false,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "disabled",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "SG"
-      ]
-    },
-    "service_tiers": [
-      "standard"
-    ],
-    "api": {
-      "formats": [
-        "openai.chat.completions"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://zenmux.ai/api/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Official live ZenMux model, modality, context, capability, publication, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "tencent/hy3-preview",
-    "provider_api_model_id": "zenmux:tencent/hy3-preview",
-    "provider_model_slug": "tencent/hy3-preview",
-    "internal_model_id": "tencent/hy3-preview",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 64000,
-    "effective_from": "2026-04-23T00:00:00Z",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": true,
-        "tool_call": true,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -9393,6 +9672,317 @@
         "structured_output": null,
         "temperature": null,
         "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "SG"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official live ZenMux model, modality, context, capability, publication, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-imagine-image-2.0",
+    "provider_api_model_id": "zenmux:spacex-ai/grok-imagine-image-2.0",
+    "provider_model_slug": "x-ai/grok-imagine-image-2.0",
+    "internal_model_id": "spacex-ai/grok-imagine-image-2.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": 66000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "stepfun/step-3.5-flash",
+    "provider_api_model_id": "zenmux:stepfun/step-3.5-flash",
+    "provider_model_slug": "stepfun/step-3.5-flash",
+    "internal_model_id": "stepfun/step-3.5-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 64000,
+    "effective_from": "2026-02-02T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "SG"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official live ZenMux model, modality, context, capability, publication, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "stepfun/step-3.7-flash",
+    "provider_api_model_id": "zenmux:stepfun/step-3.7-flash",
+    "provider_model_slug": "stepfun/step-3.7-flash",
+    "internal_model_id": "stepfun/step-3.7-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 256000,
+    "effective_from": "2026-05-29T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "SG"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official live ZenMux model, modality, context, capability, publication, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "tencent/hy3",
+    "provider_api_model_id": "zenmux:tencent/hy3",
+    "provider_model_slug": "tencent/hy3",
+    "internal_model_id": "tencent/hy3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-06T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "SG"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official live ZenMux model, modality, context, capability, publication, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "tencent/hy3-preview",
+    "provider_api_model_id": "zenmux:tencent/hy3-preview",
+    "provider_model_slug": "tencent/hy3-preview",
+    "internal_model_id": "tencent/hy3-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 64000,
+    "effective_from": "2026-04-23T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -10615,6 +11205,65 @@
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
       "notes": "Confirmed present in the unauthenticated official ZenMux models API; Phaseo gateway routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.3-flash",
+    "provider_api_model_id": "zenmux:z-ai/glm-5.3-flash",
+    "provider_model_slug": "z-ai/glm-5.3-flash",
+    "internal_model_id": "z-ai/glm-5.3-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://zenmux.ai/api/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.299Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.299Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },

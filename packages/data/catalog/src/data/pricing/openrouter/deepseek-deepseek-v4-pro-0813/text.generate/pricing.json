@@ -9,7 +9,7 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.0374,
+      "price_per_unit": 0.019316,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -24,7 +24,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 1.122,
+      "price_per_unit": 0.57948,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -39,7 +39,7 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 3.366,
+      "price_per_unit": 1.73844,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -65,7 +65,7 @@
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T02:52:18.467Z",
+    "checked_at": "2026-09-05T21:08:43.295Z",
     "notes": "Pricing synchronized from the provider models API."
   }
 }

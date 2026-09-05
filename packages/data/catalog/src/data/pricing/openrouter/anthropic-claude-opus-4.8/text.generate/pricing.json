@@ -80,7 +80,7 @@
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T02:54:39.587Z",
+    "checked_at": "2026-09-05T21:08:43.295Z",
     "notes": "Pricing synchronized from the provider models API."
   }
 }

@@ -1,0 +1,71 @@
+{
+  "key": "vercel:meta/muse-spark-1.3-contributor:text.generate",
+  "api_provider_id": "vercel",
+  "provider_slug": "vercel",
+  "api_model_id": "meta/muse-spark-1.3-contributor",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.002,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://ai-gateway.vercel.sh/v1/models",
+      "accessed_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Provider model and pricing metadata."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-05T21:08:43.298Z",
+    "notes": "Pricing synchronized from the provider models API."
+  }
+}

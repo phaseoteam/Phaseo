@@ -195,6 +195,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "anthropic/claude-fable-5.1",
+    "provider_api_model_id": "vercel:anthropic/claude-fable-5.1",
+    "provider_model_slug": "anthropic/claude-fable-5.1",
+    "internal_model_id": "anthropic/claude-fable-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "vercel:anthropic/claude-haiku-4.5",
     "provider_model_slug": "anthropic/claude-haiku-4.5",
@@ -770,6 +829,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "anthropic/claude-opus-5-fast",
+    "provider_api_model_id": "vercel:anthropic/claude-opus-5-fast",
+    "provider_model_slug": "anthropic/claude-opus-5-fast",
+    "internal_model_id": "anthropic/claude-opus-5-fast",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "anthropic/claude-sonnet-4",
     "provider_api_model_id": "vercel:anthropic/claude-sonnet-4",
     "provider_model_slug": "anthropic/claude-sonnet-4",
@@ -1160,6 +1278,301 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "black-forest-labs/flux-2-flex",
+    "provider_api_model_id": "vercel:black-forest-labs/flux-2-flex",
+    "provider_model_slug": "bfl/flux-2-flex",
+    "internal_model_id": "black-forest-labs/flux-2-flex",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-klein-4b",
+    "provider_api_model_id": "vercel:black-forest-labs/flux-2-klein-4b",
+    "provider_model_slug": "bfl/flux-2-klein-4b",
+    "internal_model_id": "black-forest-labs/flux-2-klein-4b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-klein-9b",
+    "provider_api_model_id": "vercel:black-forest-labs/flux-2-klein-9b",
+    "provider_model_slug": "bfl/flux-2-klein-9b",
+    "internal_model_id": "black-forest-labs/flux-2-klein-9b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-max",
+    "provider_api_model_id": "vercel:black-forest-labs/flux-2-max",
+    "provider_model_slug": "bfl/flux-2-max",
+    "internal_model_id": "black-forest-labs/flux-2-max",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 67300,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-pro",
+    "provider_api_model_id": "vercel:black-forest-labs/flux-2-pro",
+    "provider_model_slug": "bfl/flux-2-pro",
+    "internal_model_id": "black-forest-labs/flux-2-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 67300,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "black-forest-labs/flux-3-video",
     "provider_api_model_id": "vercel:bfl/flux-3-video",
     "provider_model_slug": "bfl/flux-3-video",
@@ -1215,6 +1628,65 @@
       "status": "verified",
       "checked_at": "2026-08-10T00:00:00Z",
       "notes": "Provider identity, release date, and text-to-video modality verified against Vercel's live registry; catalogue-only and not Phaseo-routable."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance-seed/seed-1.6",
+    "provider_api_model_id": "vercel:bytedance-seed/seed-1.6",
+    "provider_model_slug": "bytedance/seed-1.6",
+    "internal_model_id": "bytedance-seed/seed-1.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -1414,6 +1886,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "bytedance/seedance-2.0-mini",
+    "provider_api_model_id": "vercel:bytedance/seedance-2.0-mini",
+    "provider_model_slug": "bytedance/seedance-2.0-mini",
+    "internal_model_id": "bytedance/seedance-2.0-mini",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "bytedance/seedance-2.5",
     "provider_api_model_id": "vercel:bytedance/seedance-2.5",
     "provider_model_slug": "bytedance/seedance-2.5",
@@ -1609,8 +2140,8 @@
     "internal_model_id": "bytedance/seedream-5.0-pro",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2253,8 +2784,8 @@
     "internal_model_id": "deepseek/deepseek-v4-flash-0731",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2301,6 +2832,65 @@
     "verification": {
       "status": "partial",
       "checked_at": "2026-08-11T03:45:57.738+00:00",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4-flash-vision-exp",
+    "provider_api_model_id": "vercel:deepseek/deepseek-v4-flash-vision-exp",
+    "provider_model_slug": "deepseek/deepseek-v4-flash-vision-exp",
+    "internal_model_id": "deepseek/deepseek-v4-flash-vision-exp",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
       "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
@@ -2371,14 +2961,73 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "deepseek/deepseek-v4-pro-0813",
+    "provider_api_model_id": "vercel:deepseek/deepseek-v4-pro-0813",
+    "provider_model_slug": "deepseek/deepseek-v4-pro-0813",
+    "internal_model_id": "deepseek/deepseek-v4-pro-0813",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "fish-audio/s1",
     "provider_api_model_id": "vercel:fish-audio/s1",
     "provider_model_slug": "fish-audio/s1",
     "internal_model_id": "fish-audio/s1",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2436,8 +3085,8 @@
     "internal_model_id": "fish-audio/s2-pro",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2495,8 +3144,8 @@
     "internal_model_id": "fish-audio/s2.1-pro",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2554,8 +3203,8 @@
     "internal_model_id": "fish-audio/transcribe-1",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2863,6 +3512,65 @@
       "status": "partial",
       "checked_at": "2026-07-23T09:08:52.190Z",
       "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3-flash",
+    "provider_api_model_id": "vercel:google/gemini-3-flash",
+    "provider_model_slug": "google/gemini-3-flash",
+    "internal_model_id": "google/gemini-3-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -3505,6 +4213,124 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "google/gemini-3.5-transcribe",
+    "provider_api_model_id": "vercel:google/gemini-3.5-transcribe",
+    "provider_model_slug": "google/gemini-3.5-transcribe",
+    "internal_model_id": "google/gemini-3.5-transcribe",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.transcribe",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3.5-transcribe-live",
+    "provider_api_model_id": "vercel:google/gemini-3.5-transcribe-live",
+    "provider_model_slug": "google/gemini-3.5-transcribe-live",
+    "internal_model_id": "google/gemini-3.5-transcribe-live",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.transcribe",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "google/gemini-3.6-flash",
     "provider_api_model_id": "vercel:google/gemini-3.6-flash",
     "provider_model_slug": "google/gemini-3.6-flash",
@@ -3566,6 +4392,124 @@
       "status": "partial",
       "checked_at": "2026-07-23T09:08:52.190Z",
       "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3.7-flash",
+    "provider_api_model_id": "vercel:google/gemini-3.7-flash",
+    "provider_model_slug": "google/gemini-3.7-flash",
+    "internal_model_id": "google/gemini-3.7-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3.8-flash",
+    "provider_api_model_id": "vercel:google/gemini-3.8-flash",
+    "provider_model_slug": "google/gemini-3.8-flash",
+    "internal_model_id": "google/gemini-3.8-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -3761,6 +4705,124 @@
       "status": "partial",
       "checked_at": "2026-07-23T09:08:52.190Z",
       "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemma-4-26b-a4b-it",
+    "provider_api_model_id": "vercel:google/gemma-4-26b-a4b-it",
+    "provider_model_slug": "google/gemma-4-26b-a4b-it",
+    "internal_model_id": "google/gemma-4-26b-a4b-it",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemma-4-31b-it",
+    "provider_api_model_id": "vercel:google/gemma-4-31b-it",
+    "provider_model_slug": "google/gemma-4-31b-it",
+    "internal_model_id": "google/gemma-4-31b-it",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -4161,8 +5223,8 @@
     "internal_model_id": "inclusionai/ling-3.0-flash",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 256000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -4209,6 +5271,124 @@
     "verification": {
       "status": "partial",
       "checked_at": "2026-08-11T03:45:57.738+00:00",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "inclusionai/ling-3.0-flash-fin",
+    "provider_api_model_id": "vercel:inclusionai/ling-3.0-flash-fin",
+    "provider_model_slug": "inclusionai/ling-3.0-flash-fin",
+    "internal_model_id": "inclusionai/ling-3.0-flash-fin",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "inclusionai/ling-3.0-flash-sante",
+    "provider_api_model_id": "vercel:inclusionai/ling-3.0-flash-sante",
+    "provider_model_slug": "inclusionai/ling-3.0-flash-sante",
+    "internal_model_id": "inclusionai/ling-3.0-flash-sante",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
       "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
@@ -4805,8 +5985,8 @@
     "internal_model_id": "meta/muse-glimmer-30b",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 131072,
     "max_output_tokens": null,
     "effective_from": null,
@@ -4842,10 +6022,76 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
     "verification": {
       "status": "partial",
       "checked_at": "2026-08-11T03:45:57.738+00:00",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "meta/muse-image-1.0",
+    "provider_api_model_id": "vercel:meta/muse-image-1.0",
+    "provider_model_slug": "meta/muse-image-1.0",
+    "internal_model_id": "meta/muse-image-1.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
       "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
@@ -4922,8 +6168,8 @@
     "internal_model_id": "meta/muse-spark-1.2",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1048576,
     "max_output_tokens": null,
     "effective_from": null,
@@ -4981,8 +6227,8 @@
     "internal_model_id": "meta/muse-spark-1.2-contributor",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1048576,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5029,6 +6275,183 @@
     "verification": {
       "status": "partial",
       "checked_at": "2026-08-11T03:45:57.738+00:00",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "meta/muse-spark-1.3",
+    "provider_api_model_id": "vercel:meta/muse-spark-1.3",
+    "provider_model_slug": "meta/muse-spark-1.3",
+    "internal_model_id": "meta/muse-spark-1.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "meta/muse-spark-1.3-contributor",
+    "provider_api_model_id": "vercel:meta/muse-spark-1.3-contributor",
+    "provider_model_slug": "meta/muse-spark-1.3-contributor",
+    "internal_model_id": "meta/muse-spark-1.3-contributor",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "minimax/minimax-h3",
+    "provider_api_model_id": "vercel:minimax/minimax-h3",
+    "provider_model_slug": "minimax/minimax-h3",
+    "internal_model_id": "minimax/minimax-h3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
       "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
@@ -5554,6 +6977,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "mistral/ministral-14b",
+    "provider_api_model_id": "vercel:mistral/ministral-14b",
+    "provider_model_slug": "mistral/ministral-14b",
+    "internal_model_id": "mistral/ministral-14b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "mistral/ministral-3b",
     "provider_api_model_id": "vercel:mistral/ministral-3b",
     "provider_model_slug": "mistral/ministral-3b",
@@ -5820,8 +7302,8 @@
     "internal_model_id": "mistral/mistral-nemo",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 128000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -6263,6 +7745,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "moonshotai/kimi-k2.7-code-highspeed",
+    "provider_api_model_id": "vercel:moonshotai/kimi-k2.7-code-highspeed",
+    "provider_model_slug": "moonshotai/kimi-k2.7-code-highspeed",
+    "internal_model_id": "moonshotai/kimi-k2.7-code-highspeed",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "moonshotai/kimi-k3",
     "provider_api_model_id": "vercel:moonshotai/kimi-k3",
     "provider_model_slug": "moonshotai/kimi-k3",
@@ -6324,6 +7865,65 @@
       "status": "partial",
       "checked_at": "2026-07-23T09:08:52.190Z",
       "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k3-fast",
+    "provider_api_model_id": "vercel:moonshotai/kimi-k3-fast",
+    "provider_model_slug": "moonshotai/kimi-k3-fast",
+    "internal_model_id": "moonshotai/kimi-k3-fast",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -6653,6 +8253,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "nvidia/nemotron-3.5-lightning",
+    "provider_api_model_id": "vercel:nvidia/nemotron-3.5-lightning",
+    "provider_model_slug": "nvidia/nemotron-3.5-lightning",
+    "internal_model_id": "nvidia/nemotron-3.5-lightning",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "nvidia/nemotron-nano-12b-v2-vl",
     "provider_api_model_id": "vercel:nvidia/nemotron-nano-12b-v2-vl",
     "provider_model_slug": "nvidia/nemotron-nano-12b-v2-vl",
@@ -6779,6 +8438,65 @@
       "status": "partial",
       "checked_at": "2026-07-23T09:08:52.190Z",
       "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-3.5-turbo",
+    "provider_api_model_id": "vercel:openai/gpt-3.5-turbo",
+    "provider_model_slug": "openai/gpt-3.5-turbo",
+    "internal_model_id": "openai/gpt-3.5-turbo",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 16385,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -8916,6 +10634,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "openai/gpt-6-astra",
+    "provider_api_model_id": "vercel:openai/gpt-6-astra",
+    "provider_model_slug": "openai/gpt-6-astra",
+    "internal_model_id": "openai/gpt-6-astra",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "openai/gpt-image-1",
     "provider_api_model_id": "vercel:openai/gpt-image-1",
     "provider_model_slug": "openai/gpt-image-1",
@@ -9302,6 +11079,65 @@
       "status": "partial",
       "checked_at": "2026-07-23T09:08:52.190Z",
       "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-oss-safeguard-120b",
+    "provider_api_model_id": "vercel:openai/gpt-oss-safeguard-120b",
+    "provider_model_slug": "openai/gpt-oss-safeguard-120b",
+    "internal_model_id": "openai/gpt-oss-safeguard-120b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -10476,6 +12312,301 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "perplexity/pplx-embed-v1-0.6b",
+    "provider_api_model_id": "vercel:perplexity/pplx-embed-v1-0.6b",
+    "provider_model_slug": "perplexity/pplx-embed-v1-0.6b",
+    "internal_model_id": "perplexity/pplx-embed-v1-0.6b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "perplexity/pplx-embed-v1-4b",
+    "provider_api_model_id": "vercel:perplexity/pplx-embed-v1-4b",
+    "provider_model_slug": "perplexity/pplx-embed-v1-4b",
+    "internal_model_id": "perplexity/pplx-embed-v1-4b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "perplexity/sonar",
+    "provider_api_model_id": "vercel:perplexity/sonar",
+    "provider_model_slug": "perplexity/sonar",
+    "internal_model_id": "perplexity/sonar",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 127000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "perplexity/sonar-pro",
+    "provider_api_model_id": "vercel:perplexity/sonar-pro",
+    "provider_model_slug": "perplexity/sonar-pro",
+    "internal_model_id": "perplexity/sonar-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "perplexity/sonar-reasoning-pro",
+    "provider_api_model_id": "vercel:perplexity/sonar-reasoning-pro",
+    "provider_model_slug": "perplexity/sonar-reasoning-pro",
+    "internal_model_id": "perplexity/sonar-reasoning-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 127000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "poolside/laguna-s-2.1",
     "provider_api_model_id": "vercel:poolside/laguna-s-2.1",
     "provider_model_slug": "poolside/laguna-s-2.1",
@@ -10541,6 +12672,1776 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "qwen/qwen3-14b",
+    "provider_api_model_id": "vercel:qwen/qwen3-14b",
+    "provider_model_slug": "alibaba/qwen-3-14b",
+    "internal_model_id": "qwen/qwen3-14b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 40960,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-30b",
+    "provider_api_model_id": "vercel:qwen/qwen3-30b",
+    "provider_model_slug": "alibaba/qwen-3-30b",
+    "internal_model_id": "qwen/qwen3-30b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 40960,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-32b",
+    "provider_api_model_id": "vercel:qwen/qwen3-32b",
+    "provider_model_slug": "alibaba/qwen-3-32b",
+    "internal_model_id": "qwen/qwen3-32b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder",
+    "provider_api_model_id": "vercel:qwen/qwen3-coder",
+    "provider_model_slug": "alibaba/qwen3-coder",
+    "internal_model_id": "qwen/qwen3-coder",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-30b-a3b",
+    "provider_api_model_id": "vercel:qwen/qwen3-coder-30b-a3b",
+    "provider_model_slug": "alibaba/qwen3-coder-30b-a3b",
+    "internal_model_id": "qwen/qwen3-coder-30b-a3b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-next",
+    "provider_api_model_id": "vercel:qwen/qwen3-coder-next",
+    "provider_model_slug": "alibaba/qwen3-coder-next",
+    "internal_model_id": "qwen/qwen3-coder-next",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-plus",
+    "provider_api_model_id": "vercel:qwen/qwen3-coder-plus",
+    "provider_model_slug": "alibaba/qwen3-coder-plus",
+    "internal_model_id": "qwen/qwen3-coder-plus",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-embedding-0.6b",
+    "provider_api_model_id": "vercel:qwen/qwen3-embedding-0.6b",
+    "provider_model_slug": "alibaba/qwen3-embedding-0.6b",
+    "internal_model_id": "qwen/qwen3-embedding-0.6b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-embedding-4b",
+    "provider_api_model_id": "vercel:qwen/qwen3-embedding-4b",
+    "provider_model_slug": "alibaba/qwen3-embedding-4b",
+    "internal_model_id": "qwen/qwen3-embedding-4b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-embedding-8b",
+    "provider_api_model_id": "vercel:qwen/qwen3-embedding-8b",
+    "provider_model_slug": "alibaba/qwen3-embedding-8b",
+    "internal_model_id": "qwen/qwen3-embedding-8b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-max",
+    "provider_api_model_id": "vercel:qwen/qwen3-max",
+    "provider_model_slug": "alibaba/qwen3-max",
+    "internal_model_id": "qwen/qwen3-max",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-max-preview",
+    "provider_api_model_id": "vercel:qwen/qwen3-max-preview",
+    "provider_model_slug": "alibaba/qwen3-max-preview",
+    "internal_model_id": "qwen/qwen3-max-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-max-thinking",
+    "provider_api_model_id": "vercel:qwen/qwen3-max-thinking",
+    "provider_model_slug": "alibaba/qwen3-max-thinking",
+    "internal_model_id": "qwen/qwen3-max-thinking",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "provider_api_model_id": "vercel:qwen/qwen3-next-80b-a3b-instruct",
+    "provider_model_slug": "alibaba/qwen3-next-80b-a3b-instruct",
+    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-next-80b-a3b-thinking",
+    "provider_api_model_id": "vercel:qwen/qwen3-next-80b-a3b-thinking",
+    "provider_model_slug": "alibaba/qwen3-next-80b-a3b-thinking",
+    "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
+    "provider_api_model_id": "vercel:qwen/qwen3-vl-235b-a22b-instruct",
+    "provider_model_slug": "alibaba/qwen3-vl-235b-a22b-instruct",
+    "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-flash",
+    "provider_api_model_id": "vercel:qwen/qwen3.5-flash",
+    "provider_model_slug": "alibaba/qwen3.5-flash",
+    "internal_model_id": "qwen/qwen3.5-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-plus",
+    "provider_api_model_id": "vercel:qwen/qwen3.5-plus",
+    "provider_model_slug": "alibaba/qwen3.5-plus",
+    "internal_model_id": "qwen/qwen3.5-plus",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-27b",
+    "provider_api_model_id": "vercel:qwen/qwen3.6-27b",
+    "provider_model_slug": "alibaba/qwen3.6-27b",
+    "internal_model_id": "qwen/qwen3.6-27b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-max-preview",
+    "provider_api_model_id": "vercel:qwen/qwen3.6-max-preview",
+    "provider_model_slug": "alibaba/qwen-3.6-max-preview",
+    "internal_model_id": "qwen/qwen3.6-max-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 240000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-plus",
+    "provider_api_model_id": "vercel:qwen/qwen3.6-plus",
+    "provider_model_slug": "alibaba/qwen3.6-plus",
+    "internal_model_id": "qwen/qwen3.6-plus",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.7-flash",
+    "provider_api_model_id": "vercel:qwen/qwen3.7-flash",
+    "provider_model_slug": "alibaba/qwen3.7-flash",
+    "internal_model_id": "qwen/qwen3.7-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 991000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.7-max",
+    "provider_api_model_id": "vercel:qwen/qwen3.7-max",
+    "provider_model_slug": "alibaba/qwen3.7-max",
+    "internal_model_id": "qwen/qwen3.7-max",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 991000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.7-plus",
+    "provider_api_model_id": "vercel:qwen/qwen3.7-plus",
+    "provider_model_slug": "alibaba/qwen3.7-plus",
+    "internal_model_id": "qwen/qwen3.7-plus",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.8-2.4t-a95b",
+    "provider_api_model_id": "vercel:qwen/qwen3.8-2.4t-a95b",
+    "provider_model_slug": "alibaba/qwen3.8-2.4t-a95b",
+    "internal_model_id": "qwen/qwen3.8-2.4t-a95b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.8-27b",
+    "provider_api_model_id": "vercel:qwen/qwen3.8-27b",
+    "provider_model_slug": "alibaba/qwen3.8-27b",
+    "internal_model_id": "qwen/qwen3.8-27b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.8-flash",
+    "provider_api_model_id": "vercel:qwen/qwen3.8-flash",
+    "provider_model_slug": "alibaba/qwen3.8-flash",
+    "internal_model_id": "qwen/qwen3.8-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 991000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.8-flash-next",
+    "provider_api_model_id": "vercel:qwen/qwen3.8-flash-next",
+    "provider_model_slug": "alibaba/qwen3.8-flash-next",
+    "internal_model_id": "qwen/qwen3.8-flash-next",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.8-max",
+    "provider_api_model_id": "vercel:qwen/qwen3.8-max",
+    "provider_model_slug": "alibaba/qwen3.8-max",
+    "internal_model_id": "qwen/qwen3.8-max",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.8-max-0902",
+    "provider_api_model_id": "vercel:qwen/qwen3.8-max-0902",
+    "provider_model_slug": "alibaba/qwen3.8-max-0902",
+    "internal_model_id": "qwen/qwen3.8-max-0902",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 991000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "sakana/fugu-ultra",
     "provider_api_model_id": "vercel:sakana/fugu-ultra",
     "provider_model_slug": "sakana/fugu-ultra",
@@ -10602,6 +14503,891 @@
       "status": "partial",
       "checked_at": "2026-07-23T09:08:52.190Z",
       "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "sakana/namazu",
+    "provider_api_model_id": "vercel:sakana/namazu",
+    "provider_model_slug": "sakana/namazu",
+    "internal_model_id": "sakana/namazu",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-4-1-fast-non-reasoning",
+    "provider_api_model_id": "vercel:spacex-ai/grok-4-1-fast-non-reasoning",
+    "provider_model_slug": "spacexai/grok-4.1-fast-non-reasoning",
+    "internal_model_id": "spacex-ai/grok-4-1-fast-non-reasoning",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-4-1-fast-reasoning",
+    "provider_api_model_id": "vercel:spacex-ai/grok-4-1-fast-reasoning",
+    "provider_model_slug": "spacexai/grok-4.1-fast-reasoning",
+    "internal_model_id": "spacex-ai/grok-4-1-fast-reasoning",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-4.20-multi-agent-beta",
+    "provider_api_model_id": "vercel:spacex-ai/grok-4.20-multi-agent-beta",
+    "provider_model_slug": "spacexai/grok-4.20-multi-agent-beta",
+    "internal_model_id": "spacex-ai/grok-4.20-multi-agent-beta",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 2000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-4.3",
+    "provider_api_model_id": "vercel:spacex-ai/grok-4.3",
+    "provider_model_slug": "spacexai/grok-4.3",
+    "internal_model_id": "spacex-ai/grok-4.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-4.5",
+    "provider_api_model_id": "vercel:spacex-ai/grok-4.5",
+    "provider_model_slug": "spacexai/grok-4.5",
+    "internal_model_id": "spacex-ai/grok-4.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 500000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-4.6",
+    "provider_api_model_id": "vercel:spacex-ai/grok-4.6",
+    "provider_model_slug": "spacexai/grok-4.6",
+    "internal_model_id": "spacex-ai/grok-4.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 500000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-build-0.1",
+    "provider_api_model_id": "vercel:spacex-ai/grok-build-0.1",
+    "provider_model_slug": "spacexai/grok-build-0.1",
+    "internal_model_id": "spacex-ai/grok-build-0.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-imagine-image",
+    "provider_api_model_id": "vercel:spacex-ai/grok-imagine-image",
+    "provider_model_slug": "spacexai/grok-imagine-image",
+    "internal_model_id": "spacex-ai/grok-imagine-image",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-imagine-image-2.0",
+    "provider_api_model_id": "vercel:spacex-ai/grok-imagine-image-2.0",
+    "provider_model_slug": "spacexai/grok-imagine-image-2.0",
+    "internal_model_id": "spacex-ai/grok-imagine-image-2.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-imagine-video",
+    "provider_api_model_id": "vercel:spacex-ai/grok-imagine-video",
+    "provider_model_slug": "spacexai/grok-imagine-video",
+    "internal_model_id": "spacex-ai/grok-imagine-video",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-imagine-video-1.5",
+    "provider_api_model_id": "vercel:spacex-ai/grok-imagine-video-1.5",
+    "provider_model_slug": "spacexai/grok-imagine-video-1.5",
+    "internal_model_id": "spacex-ai/grok-imagine-video-1.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-imagine-video-1.5-preview",
+    "provider_api_model_id": "vercel:spacex-ai/grok-imagine-video-1.5-preview",
+    "provider_model_slug": "spacexai/grok-imagine-video-1.5-preview",
+    "internal_model_id": "spacex-ai/grok-imagine-video-1.5-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-tts",
+    "provider_api_model_id": "vercel:spacex-ai/grok-tts",
+    "provider_model_slug": "spacexai/grok-tts",
+    "internal_model_id": "spacex-ai/grok-tts",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-voice-think-fast-2.0",
+    "provider_api_model_id": "vercel:spacex-ai/grok-voice-think-fast-2.0",
+    "provider_model_slug": "spacexai/grok-voice-think-fast-2.0",
+    "internal_model_id": "spacex-ai/grok-voice-think-fast-2.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.realtime",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -10736,6 +15522,183 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "tencent/hy-mt2-lite",
+    "provider_api_model_id": "vercel:tencent/hy-mt2-lite",
+    "provider_model_slug": "tencent/hy-mt2-lite",
+    "internal_model_id": "tencent/hy-mt2-lite",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 8000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "tencent/hy-mt2-plus",
+    "provider_api_model_id": "vercel:tencent/hy-mt2-plus",
+    "provider_model_slug": "tencent/hy-mt2-plus",
+    "internal_model_id": "tencent/hy-mt2-plus",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 8000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "tencent/hy-mt2-pro",
+    "provider_api_model_id": "vercel:tencent/hy-mt2-pro",
+    "provider_model_slug": "tencent/hy-mt2-pro",
+    "internal_model_id": "tencent/hy-mt2-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 8000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "tencent/hy3",
     "provider_api_model_id": "vercel:tencent/hy3",
     "provider_model_slug": "tencent/hy3",
@@ -10797,6 +15760,301 @@
       "status": "partial",
       "checked_at": "2026-07-23T09:08:52.190Z",
       "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "tencent/hy4-preview",
+    "provider_api_model_id": "vercel:tencent/hy4-preview",
+    "provider_model_slug": "tencent/hy4-preview",
+    "internal_model_id": "tencent/hy4-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1024000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "thinking-machines/inkling",
+    "provider_api_model_id": "vercel:thinking-machines/inkling",
+    "provider_model_slug": "thinkingmachines/inkling",
+    "internal_model_id": "thinking-machines/inkling",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "thinking-machines/inkling-small",
+    "provider_api_model_id": "vercel:thinking-machines/inkling-small",
+    "provider_model_slug": "thinkingmachines/inkling-small",
+    "internal_model_id": "thinking-machines/inkling-small",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "voyage/rerank-2.5",
+    "provider_api_model_id": "vercel:voyage/rerank-2.5",
+    "provider_model_slug": "voyage/rerank-2.5",
+    "internal_model_id": "voyage/rerank-2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.rerank",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "voyage/rerank-2.5-lite",
+    "provider_api_model_id": "vercel:voyage/rerank-2.5-lite",
+    "provider_model_slug": "voyage/rerank-2.5-lite",
+    "internal_model_id": "voyage/rerank-2.5-lite",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.rerank",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -11636,6 +16894,950 @@
       "status": "partial",
       "checked_at": "2026-07-23T09:08:52.190Z",
       "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2.5-pro-ultraspeed",
+    "provider_api_model_id": "vercel:xiaomi/mimo-v2.5-pro-ultraspeed",
+    "provider_model_slug": "xiaomi/mimo-v2.5-pro-ultraspeed",
+    "internal_model_id": "xiaomi/mimo-v2.5-pro-ultraspeed",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.5",
+    "provider_api_model_id": "vercel:z-ai/glm-4.5",
+    "provider_model_slug": "zai/glm-4.5",
+    "internal_model_id": "z-ai/glm-4.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.5-air",
+    "provider_api_model_id": "vercel:z-ai/glm-4.5-air",
+    "provider_model_slug": "zai/glm-4.5-air",
+    "internal_model_id": "z-ai/glm-4.5-air",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.5v",
+    "provider_api_model_id": "vercel:z-ai/glm-4.5v",
+    "provider_model_slug": "zai/glm-4.5v",
+    "internal_model_id": "z-ai/glm-4.5v",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 66000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.6",
+    "provider_api_model_id": "vercel:z-ai/glm-4.6",
+    "provider_model_slug": "zai/glm-4.6",
+    "internal_model_id": "z-ai/glm-4.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.7",
+    "provider_api_model_id": "vercel:z-ai/glm-4.7",
+    "provider_model_slug": "zai/glm-4.7",
+    "internal_model_id": "z-ai/glm-4.7",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.7-flash",
+    "provider_api_model_id": "vercel:z-ai/glm-4.7-flash",
+    "provider_model_slug": "zai/glm-4.7-flash",
+    "internal_model_id": "z-ai/glm-4.7-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.7-flashx",
+    "provider_api_model_id": "vercel:z-ai/glm-4.7-flashx",
+    "provider_model_slug": "zai/glm-4.7-flashx",
+    "internal_model_id": "z-ai/glm-4.7-flashx",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5",
+    "provider_api_model_id": "vercel:z-ai/glm-5",
+    "provider_model_slug": "zai/glm-5",
+    "internal_model_id": "z-ai/glm-5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202800,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5-turbo",
+    "provider_api_model_id": "vercel:z-ai/glm-5-turbo",
+    "provider_model_slug": "zai/glm-5-turbo",
+    "internal_model_id": "z-ai/glm-5-turbo",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202800,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "vercel:z-ai/glm-5.1",
+    "provider_model_slug": "zai/glm-5.1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202800,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "vercel:z-ai/glm-5.2",
+    "provider_model_slug": "zai/glm-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2-fast",
+    "provider_api_model_id": "vercel:z-ai/glm-5.2-fast",
+    "provider_model_slug": "zai/glm-5.2-fast",
+    "internal_model_id": "z-ai/glm-5.2-fast",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.3",
+    "provider_api_model_id": "vercel:z-ai/glm-5.3",
+    "provider_model_slug": "zai/glm-5.3",
+    "internal_model_id": "z-ai/glm-5.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.3-flash",
+    "provider_api_model_id": "vercel:z-ai/glm-5.3-flash",
+    "provider_model_slug": "zai/glm-5.3-flash",
+    "internal_model_id": "z-ai/glm-5.3-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5v-turbo",
+    "provider_api_model_id": "vercel:z-ai/glm-5v-turbo",
+    "provider_model_slug": "zai/glm-5v-turbo",
+    "internal_model_id": "z-ai/glm-5v-turbo",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://ai-gateway.vercel.sh/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.298Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   }

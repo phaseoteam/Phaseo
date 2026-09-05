@@ -62,6 +62,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "anthropic/claude-fable-5.1",
+    "provider_api_model_id": "orcarouter:anthropic/claude-fable-5.1",
+    "provider_model_slug": "anthropic/claude-fable-5.1",
+    "internal_model_id": "anthropic/claude-fable-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,file",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.295Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.295Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "orcarouter:anthropic/claude-haiku-4.5",
     "provider_model_slug": "anthropic/claude-haiku-4.5",
@@ -800,65 +859,6 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "openai/codex-auto-review",
-    "provider_api_model_id": "orcarouter:codex-auto-review",
-    "provider_model_slug": "codex-auto-review",
-    "internal_model_id": "openai/codex-auto-review",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": false,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://api.orcarouter.ai/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
     "api_model_id": "deepseek/deepseek-chat",
     "provider_api_model_id": "orcarouter:deepseek/deepseek-chat",
     "provider_model_slug": "deepseek/deepseek-chat",
@@ -927,7 +927,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 1048576,
     "max_output_tokens": 384000,
     "effective_from": null,
@@ -988,7 +988,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 1048576,
     "max_output_tokens": 384000,
     "effective_from": null,
@@ -1112,8 +1112,8 @@
     "internal_model_id": "deepseek/deepseek-v4-flash-free",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -1235,7 +1235,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 1048576,
     "max_output_tokens": 384000,
     "effective_from": null,
@@ -1843,6 +1843,68 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "google/gemini-3-flash-preview",
+    "provider_api_model_id": "orcarouter:google/gemini-3-flash-preview",
+    "provider_model_slug": "google/gemini-flash-latest",
+    "internal_model_id": "google/gemini-3-flash-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio,video,pdf",
+    "output_modalities": "text",
+    "context_length": 0,
+    "max_output_tokens": 65536,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": "text,image,audio,video,pdf",
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai-chat-completions",
+        "google-gemini"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "google/gemini-3-pro-image-preview",
     "provider_api_model_id": "orcarouter:google/gemini-3-pro-image-preview",
     "provider_model_slug": "google/gemini-3-pro-image-preview",
@@ -2030,8 +2092,8 @@
     "internal_model_id": "google/gemini-3.1-flash-lite",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2064,6 +2126,68 @@
     "service_tiers": [],
     "api": {
       "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3.1-flash-lite",
+    "provider_api_model_id": "orcarouter:google/gemini-3.1-flash-lite",
+    "provider_model_slug": "google/gemini-flash-lite-latest",
+    "internal_model_id": "google/gemini-3.1-flash-lite",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio,video,pdf",
+    "output_modalities": "text",
+    "context_length": 0,
+    "max_output_tokens": 65536,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": "text,image,audio,video,pdf",
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai-chat-completions",
+        "google-gemini"
+      ],
       "endpoint": null,
       "deployment": null
     },
@@ -2230,6 +2354,68 @@
         "attachment": true,
         "input_modalities": "audio,pdf,image,text,video",
         "output_modalities": "text",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai-chat-completions",
+        "google-gemini"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemini-3.1-pro-preview",
+    "provider_api_model_id": "orcarouter:google/gemini-3.1-pro-preview",
+    "provider_model_slug": "google/gemini-pro-latest",
+    "internal_model_id": "google/gemini-3.1-pro-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio,video,pdf",
+    "output_modalities": "text",
+    "context_length": 0,
+    "max_output_tokens": 65536,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": "text,image,audio,video,pdf",
+        "output_modalities": null,
         "modes": []
       }
     ],
@@ -2516,6 +2702,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "google/gemini-3.8-flash",
+    "provider_api_model_id": "orcarouter:google/gemini-3.8-flash",
+    "provider_model_slug": "google/gemini-3.8-flash",
+    "internal_model_id": "google/gemini-3.8-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,file,audio",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 65536,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.295Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.295Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "google/gemini-embedding-001",
     "provider_api_model_id": "orcarouter:google/gemini-embedding-001",
     "provider_model_slug": "google/gemini-embedding-001",
@@ -2523,7 +2768,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2584,7 +2829,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image,audio,video,pdf",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2638,192 +2883,6 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "google/gemini-3-flash-preview",
-    "provider_api_model_id": "orcarouter:google/gemini-3-flash-preview",
-    "provider_model_slug": "google/gemini-flash-latest",
-    "internal_model_id": "google/gemini-3-flash-preview",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,audio,video,pdf",
-    "output_modalities": null,
-    "context_length": 0,
-    "max_output_tokens": 65536,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": true,
-        "tool_call": true,
-        "structured_output": true,
-        "temperature": null,
-        "attachment": true,
-        "input_modalities": "text,image,audio,video,pdf",
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [
-        "openai-chat-completions",
-        "google-gemini"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://api.orcarouter.ai/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "google/gemini-3.1-flash-lite",
-    "provider_api_model_id": "orcarouter:google/gemini-3.1-flash-lite",
-    "provider_model_slug": "google/gemini-flash-lite-latest",
-    "internal_model_id": "google/gemini-3.1-flash-lite",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,audio,video,pdf",
-    "output_modalities": null,
-    "context_length": 0,
-    "max_output_tokens": 65536,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": true,
-        "tool_call": true,
-        "structured_output": true,
-        "temperature": null,
-        "attachment": true,
-        "input_modalities": "text,image,audio,video,pdf",
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [
-        "openai-chat-completions",
-        "google-gemini"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://api.orcarouter.ai/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "google/gemini-3.1-pro-preview",
-    "provider_api_model_id": "orcarouter:google/gemini-3.1-pro-preview",
-    "provider_model_slug": "google/gemini-pro-latest",
-    "internal_model_id": "google/gemini-3.1-pro-preview",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,audio,video,pdf",
-    "output_modalities": null,
-    "context_length": 0,
-    "max_output_tokens": 65536,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": true,
-        "input_modalities": "text,image,audio,video,pdf",
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [
-        "openai-chat-completions",
-        "google-gemini"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://api.orcarouter.ai/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
     "api_model_id": "google/gemini-robotics-er-1.6-preview",
     "provider_api_model_id": "orcarouter:google/gemini-robotics-er-1.6-preview",
     "provider_model_slug": "google/gemini-robotics-er-1.6-preview",
@@ -2831,7 +2890,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image,video,audio",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 65536,
     "effective_from": null,
@@ -2953,8 +3012,8 @@
     "internal_model_id": "google/gemma-4-31b-it",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -3169,315 +3228,6 @@
     "api": {
       "formats": [
         "image-generation"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://api.orcarouter.ai/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "openai/gpt-5.6-luna",
-    "provider_api_model_id": "orcarouter:openai/gpt-5.6-luna",
-    "provider_model_slug": "gpt-5.6-luna",
-    "internal_model_id": "openai/gpt-5.6-luna",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,pdf",
-    "output_modalities": "text",
-    "context_length": 1050000,
-    "max_output_tokens": 128000,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": true,
-        "input_modalities": "text,image,pdf",
-        "output_modalities": "text",
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [
-        "openai-chat-completions",
-        "openai-responses"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://api.orcarouter.ai/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "spacex-ai/grok-4.3",
-    "provider_api_model_id": "orcarouter:spacex-ai/grok-4.3",
-    "provider_model_slug": "grok/grok-4.3",
-    "internal_model_id": "spacex-ai/grok-4.3",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 1000000,
-    "max_output_tokens": 0,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": true,
-        "input_modalities": "text,image",
-        "output_modalities": "text",
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [
-        "openai-chat-completions",
-        "openai-responses"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://api.orcarouter.ai/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "spacex-ai/grok-4.5",
-    "provider_api_model_id": "orcarouter:spacex-ai/grok-4.5",
-    "provider_model_slug": "grok/grok-4.5",
-    "internal_model_id": "spacex-ai/grok-4.5",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,pdf",
-    "output_modalities": "text",
-    "context_length": 500000,
-    "max_output_tokens": 0,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": true,
-        "input_modalities": "text,image,pdf",
-        "output_modalities": "text",
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [
-        "openai-chat-completions",
-        "openai-responses"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://api.orcarouter.ai/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "spacex-ai/grok-4.6",
-    "provider_api_model_id": "orcarouter:spacex-ai/grok-4.6",
-    "provider_model_slug": "grok/grok-4.6",
-    "internal_model_id": "spacex-ai/grok-4.6",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,pdf",
-    "output_modalities": "text",
-    "context_length": 500000,
-    "max_output_tokens": 0,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": true,
-        "input_modalities": "text,image,pdf",
-        "output_modalities": "text",
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [
-        "openai-chat-completions",
-        "openai-responses"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "provider_models",
-        "url": "https://api.orcarouter.ai/v1/models",
-        "accessed_at": "2026-08-24T00:00:00Z",
-        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "spacex-ai/grok-imagine-image",
-    "provider_api_model_id": "orcarouter:spacex-ai/grok-imagine-image",
-    "provider_model_slug": "grok/grok-imagine-image",
-    "internal_model_id": "spacex-ai/grok-imagine-image",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "image",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "image.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": true,
-        "input_modalities": "text,image",
-        "output_modalities": "image",
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [
-        "google-gemini"
       ],
       "endpoint": null,
       "deployment": null
@@ -3754,7 +3504,7 @@
     "canonical_model_id": "kling/kling-3-turbo",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
+    "input_modalities": "text",
     "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
@@ -3814,7 +3564,7 @@
     "canonical_model_id": "kling/kling-v2-1-master",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
+    "input_modalities": "text",
     "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
@@ -3876,7 +3626,7 @@
     "canonical_model_id": "kling/kling-v2-5-turbo",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
+    "input_modalities": "text",
     "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
@@ -3938,7 +3688,7 @@
     "canonical_model_id": "kling/kling-v2-6",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
+    "input_modalities": "text",
     "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
@@ -4000,7 +3750,7 @@
     "canonical_model_id": "kling/kling-v2-master",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
+    "input_modalities": "text",
     "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
@@ -4062,7 +3812,7 @@
     "canonical_model_id": "kling/kling-v3",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
+    "input_modalities": "text",
     "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
@@ -4124,7 +3874,7 @@
     "canonical_model_id": "kling/kling-v3-omni",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
+    "input_modalities": "text",
     "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
@@ -4186,7 +3936,7 @@
     "canonical_model_id": "kling/kling-video-o1",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
+    "input_modalities": "text",
     "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
@@ -4918,6 +4668,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "openai/codex-auto-review",
+    "provider_api_model_id": "orcarouter:codex-auto-review",
+    "provider_model_slug": "codex-auto-review",
+    "internal_model_id": "openai/codex-auto-review",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "openai/gpt-3.5-turbo",
     "provider_api_model_id": "orcarouter:openai/gpt-3.5-turbo",
     "provider_model_slug": "openai/gpt-3.5-turbo",
@@ -4986,7 +4795,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 4096,
     "effective_from": null,
@@ -5047,7 +4856,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 4096,
     "effective_from": null,
@@ -5230,7 +5039,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 8192,
     "effective_from": null,
@@ -6582,7 +6391,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 100000,
     "effective_from": null,
@@ -7080,7 +6889,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 128000,
     "effective_from": null,
@@ -7141,7 +6950,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 128000,
     "effective_from": null,
@@ -7326,7 +7135,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 16384,
     "effective_from": null,
@@ -7694,7 +7503,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 16384,
     "effective_from": null,
@@ -8189,7 +7998,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "pdf,image,text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 128000,
     "effective_from": null,
@@ -8313,7 +8122,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "pdf,image,text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 128000,
     "effective_from": null,
@@ -8499,7 +8308,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "pdf,image,text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 128000,
     "effective_from": null,
@@ -8561,7 +8370,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "pdf,image,text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 128000,
     "effective_from": null,
@@ -8623,7 +8432,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "pdf,image,text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 100000,
     "effective_from": null,
@@ -8685,7 +8494,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "pdf,image,text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": 0,
     "max_output_tokens": 100000,
     "effective_from": null,
@@ -8702,6 +8511,68 @@
         "attachment": true,
         "input_modalities": "pdf,image,text",
         "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai-chat-completions",
+        "openai-responses"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-5.6-luna",
+    "provider_api_model_id": "orcarouter:openai/gpt-5.6-luna",
+    "provider_model_slug": "gpt-5.6-luna",
+    "internal_model_id": "openai/gpt-5.6-luna",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,pdf",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": "text,image,pdf",
+        "output_modalities": "text",
         "modes": []
       }
     ],
@@ -8926,6 +8797,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "openai/gpt-6-astra",
+    "provider_api_model_id": "orcarouter:openai/gpt-6-astra",
+    "provider_model_slug": "openai/gpt-6-astra",
+    "internal_model_id": "openai/gpt-6-astra",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,file",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.295Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.295Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "openai/gpt-image-1",
     "provider_api_model_id": "orcarouter:openai/gpt-image-1",
     "provider_model_slug": "openai/gpt-image-1",
@@ -8933,7 +8863,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -8994,7 +8924,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -9055,7 +8985,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -9115,8 +9045,8 @@
     "internal_model_id": "openai/gpt-image-2",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -9234,7 +9164,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -9295,7 +9225,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -9356,7 +9286,7 @@
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": null,
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -9720,8 +9650,8 @@
     "internal_model_id": "orcarouter/free",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -9906,8 +9836,8 @@
     "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -11308,6 +11238,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "qwen/qwen3.8-flash",
+    "provider_api_model_id": "orcarouter:qwen/qwen3.8-flash",
+    "provider_model_slug": "qwen/qwen3.8-flash",
+    "internal_model_id": "qwen/qwen3.8-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 131072,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.295Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.295Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "qwen/qwen3.8-max",
     "provider_api_model_id": "orcarouter:qwen/qwen3.8-max",
     "provider_model_slug": "qwen/qwen3.8-max",
@@ -11351,6 +11340,312 @@
         "openai-chat-completions",
         "anthropic-messages",
         "openai-responses"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.8-max-0902",
+    "provider_api_model_id": "orcarouter:qwen/qwen3.8-max-0902",
+    "provider_model_slug": "qwen/qwen3.8-max-0902",
+    "internal_model_id": "qwen/qwen3.8-max-0902",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 131072,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.295Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.295Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-4.3",
+    "provider_api_model_id": "orcarouter:spacex-ai/grok-4.3",
+    "provider_model_slug": "grok/grok-4.3",
+    "internal_model_id": "spacex-ai/grok-4.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 0,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": "text,image",
+        "output_modalities": "text",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai-chat-completions",
+        "openai-responses"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-4.5",
+    "provider_api_model_id": "orcarouter:spacex-ai/grok-4.5",
+    "provider_model_slug": "grok/grok-4.5",
+    "internal_model_id": "spacex-ai/grok-4.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,pdf",
+    "output_modalities": "text",
+    "context_length": 500000,
+    "max_output_tokens": 0,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": "text,image,pdf",
+        "output_modalities": "text",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai-chat-completions",
+        "openai-responses"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-4.6",
+    "provider_api_model_id": "orcarouter:spacex-ai/grok-4.6",
+    "provider_model_slug": "grok/grok-4.6",
+    "internal_model_id": "spacex-ai/grok-4.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,pdf",
+    "output_modalities": "text",
+    "context_length": 500000,
+    "max_output_tokens": 0,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": "text,image,pdf",
+        "output_modalities": "text",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai-chat-completions",
+        "openai-responses"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live official model ID, availability, endpoint formats, modalities, limits, and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "spacex-ai/grok-imagine-image",
+    "provider_api_model_id": "orcarouter:spacex-ai/grok-imagine-image",
+    "provider_model_slug": "grok/grok-imagine-image",
+    "internal_model_id": "spacex-ai/grok-imagine-image",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": "text,image",
+        "output_modalities": "image",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "google-gemini"
       ],
       "endpoint": null,
       "deployment": null
@@ -11438,8 +11733,8 @@
     "internal_model_id": "tencent/hy3-free",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -11976,6 +12271,65 @@
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
       "notes": "Reconciled against OrcaRouter's live official /v1/models catalog; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.3-flash",
+    "provider_api_model_id": "orcarouter:z-ai/glm-5.3-flash",
+    "provider_model_slug": "z-ai/glm-5.3-flash",
+    "internal_model_id": "z-ai/glm-5.3-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.orcarouter.ai/v1/models",
+        "accessed_at": "2026-09-05T21:08:43.295Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.295Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   }
