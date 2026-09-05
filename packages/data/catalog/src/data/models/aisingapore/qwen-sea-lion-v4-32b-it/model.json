@@ -1,0 +1,82 @@
+{
+  "model_id": "aisingapore/qwen-sea-lion-v4-32b-it",
+  "organisation_id": "aisingapore",
+  "name": "Qwen SEA LION v4 32B IT",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Qwen SEA LION v4 32B IT is a Hugging Face Hub model currently exposed through the Hugging Face Inference Providers chat router.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": [
+    "text"
+  ],
+  "output_types": [
+    "text"
+  ],
+  "api_model_id": "aisingapore/qwen-sea-lion-v4-32b-it",
+  "links": [
+    {
+      "title": "Official model card",
+      "kind": "model_card",
+      "url": "https://huggingface.co/aisingapore/Qwen-SEA-LION-v4-32B-IT"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": null,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": true,
+  "sources": [
+    {
+      "kind": "model_card",
+      "url": "https://huggingface.co/aisingapore/Qwen-SEA-LION-v4-32B-IT",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official Hub identity linked from the live Hugging Face router catalogue."
+    },
+    {
+      "kind": "official_api",
+      "url": "https://router.huggingface.co/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Current chat availability, modalities, context limit, selected external providers, and route feature flags."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Exact identity and current routed support verified; descriptive metadata is intentionally limited to facts published by the Hub and router APIs."
+  },
+  "last_updated": "2026-08-24T00:00:00",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null,
+  "page_notice": null
+}
