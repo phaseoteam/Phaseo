@@ -30,6 +30,17 @@ describe("settings sidebar navigation", () => {
 		expect(settings?.children?.map((child) => child.label)).toContain("Activity");
 	});
 
+	it("treats provider onboarding as a workspace capability", () => {
+		const settings = getActiveSettingsNav("/settings/workspaces/provider")?.item;
+		expect(settings?.label).toBe("Settings");
+		expect(settings?.children?.map((child) => child.label)).toContain("Provider");
+		expect(getSettingsSidebar()
+			.filter((group) => group.scope === "personal")
+			.flatMap((group) => group.items.flatMap((item) => item.children ?? []))
+			.some((child) => child.href.includes("provider")))
+			.toBe(false);
+	});
+
 	it("exposes Auto Routing within the Routing section", () => {
 		const active = getActiveSettingsNav("/settings/routing/auto", { showAutoRouting: true });
 		expect(active?.item.label).toBe("Routing");

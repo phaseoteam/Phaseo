@@ -171,6 +171,10 @@ accountSettingsRouter.get("/layout", async (c) => {
 		workspaceId,
 	});
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const workspaceProviderSlugs = (providerLinksResult.data ?? [])
+		.filter((link) => String(link.workspace_id) === context.workspaceId)
+		.map((link) => String(link.provider_slug));
+	const workspaceHasProviderCapability = workspaceProviderSlugs.length > 0;
 	const { data, error } = await context.client
 		.from("workspaces")
 		.select("name,tier,billing_mode,workspace_kind")
@@ -189,8 +193,8 @@ accountSettingsRouter.get("/layout", async (c) => {
 			...baseAccountContext,
 			workspaceRole: context.role,
 			workspaceKind: data?.workspace_kind ?? "personal",
-			workspaceExperience: data?.workspace_kind === "provider" ? "provider" : String(data?.tier ?? "basic").toLowerCase() === "enterprise" ? "enterprise" : "self_serve",
-			experiences: [data?.workspace_kind === "provider" ? "provider" : String(data?.tier ?? "basic").toLowerCase() === "enterprise" ? "enterprise" : "self_serve", ...(providerSlugs.length && data?.workspace_kind !== "provider" ? ["provider"] : []), ...(platformRole === "admin" ? ["internal"] : [])],
+			workspaceExperience: workspaceHasProviderCapability ? "provider" : String(data?.tier ?? "basic").toLowerCase() === "enterprise" ? "enterprise" : "self_serve",
+			experiences: [String(data?.tier ?? "basic").toLowerCase() === "enterprise" ? "enterprise" : "self_serve", ...(workspaceHasProviderCapability ? ["provider"] : []), ...(platformRole === "admin" ? ["internal"] : [])],
 		},
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });

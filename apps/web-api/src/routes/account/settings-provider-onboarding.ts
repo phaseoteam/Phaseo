@@ -4,6 +4,7 @@ import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { requireAccountWorkspace } from "./context";
 import {
 	fetchAndValidateProviderCatalog,
 	sameOrSubdomain,
@@ -22,6 +23,7 @@ const MAX_PROVIDER_SOURCES_PER_USER = 5;
 const MAX_PROVIDER_SUBMISSIONS_PER_USER_PER_DAY = 5;
 const httpsUrlSchema = z.string().trim().url().refine((value) => new URL(value).protocol === "https:");
 const profileSchema = z.object({
+	workspaceId: z.string().uuid(),
 	providerSlug: providerSlugSchema,
 	providerName: z.string().trim().min(2).max(120),
 	websiteUrl: httpsUrlSchema,
@@ -29,6 +31,13 @@ const profileSchema = z.object({
 	catalogUrl: httpsUrlSchema,
 	claimChallengeId: z.string().uuid().optional(),
 });
+
+export function providerWorkspaceAccess(workspaceKind: string, role: string) {
+	return {
+		eligible: ["organization", "enterprise", "provider"].includes(workspaceKind),
+		canManage: role === "owner" || role === "admin",
+	};
+}
 
 async function sha256(value: string): Promise<string> {
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -107,15 +116,6 @@ async function reserveProviderSubmissionSlot(client: any, userId: string): Promi
 	return result.data === true;
 }
 
-async function accessibleWorkspaceIds(client: any, userId: string): Promise<string[]> {
-	const [memberships, owned] = await Promise.all([
-		client.from("workspace_members").select("workspace_id").eq("user_id", userId),
-		client.from("workspaces").select("id").eq("owner_user_id", userId),
-	]);
-	if (memberships.error || owned.error) throw new Error("workspace_membership_unavailable");
-	return [...new Set([...(memberships.data ?? []).map((row: any) => String(row.workspace_id)), ...(owned.data ?? []).map((row: any) => String(row.id))])];
-}
-
 async function manageableWorkspaceIds(client: any, userId: string): Promise<string[]> {
 	const [memberships, owned] = await Promise.all([
 		client.from("workspace_members").select("workspace_id,role").eq("user_id", userId).in("role", ["owner", "admin"]),
@@ -123,20 +123,6 @@ async function manageableWorkspaceIds(client: any, userId: string): Promise<stri
 	]);
 	if (memberships.error || owned.error) throw new Error("workspace_membership_unavailable");
 	return [...new Set([...(memberships.data ?? []).map((row: any) => String(row.workspace_id)), ...(owned.data ?? []).map((row: any) => String(row.id))])];
-}
-
-async function createProviderWorkspace(client: any, userId: string, providerSlug: string, providerName: string): Promise<string> {
-	for (let attempt = 0; attempt < 3; attempt += 1) {
-		const suffix = attempt === 0 ? "" : `-${crypto.randomUUID().slice(0, 6)}`;
-		const created = await client.from("workspaces").insert({ name: `${providerName} Provider`, slug: `${providerSlug}-provider${suffix}`.slice(0, 80), owner_user_id: userId, workspace_kind: "provider" }).select("id").single();
-		if (!created.error && created.data?.id) {
-			const membership = await client.from("workspace_members").upsert({ workspace_id: created.data.id, user_id: userId, role: "owner" }, { onConflict: "workspace_id,user_id" });
-			if (membership.error) throw membership.error;
-			return String(created.data.id);
-		}
-		if (created.error?.code !== "23505") throw created.error;
-	}
-	throw new Error("provider_workspace_slug_unavailable");
 }
 
 export const accountSettingsProviderOnboardingRouter = new Hono<{ Bindings: Env }>();
@@ -165,24 +151,28 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const client = getDataClient(c.env);
-	let workspaceIds: string[];
-	try { workspaceIds = await accessibleWorkspaceIds(client, user.id); }
-	catch { return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); }
-	const [submissions, links, events, role] = await Promise.all([
+	const workspaceId = String(c.req.query("workspaceId") ?? "").trim();
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const [workspace, submissions, links, events, role] = await Promise.all([
+		client.from("workspaces").select("id,name,slug,workspace_kind").eq("id", workspaceId).maybeSingle(),
 		client.from("provider_onboarding_submissions")
 			.select("id,provider_slug,provider_name,catalog_url,status,model_count,validation_summary,submitted_at,created_at")
-			.eq("submitted_by", user.id)
+			.eq("workspace_id", workspaceId)
 			.order("created_at", { ascending: false })
 			.limit(20),
 		client.from("provider_account_links")
 			.select("provider_slug,workspace_id,role,status,verified_at")
-			.in("workspace_id", workspaceIds.length ? workspaceIds : ["00000000-0000-0000-0000-000000000000"])
+			.eq("workspace_id", workspaceId)
 			.in("status", ["pending", "active"])
 			.order("created_at", { ascending: false }),
-		client.from("provider_catalog_events").select("id,provider_slug,run_id,event_type,title,message,payload,read_at,created_at").in("workspace_id", workspaceIds.length ? workspaceIds : ["00000000-0000-0000-0000-000000000000"]).order("created_at", { ascending: false }).limit(50),
+		client.from("provider_catalog_events").select("id,provider_slug,run_id,event_type,title,message,payload,read_at,created_at").eq("workspace_id", workspaceId).order("created_at", { ascending: false }).limit(50),
 		client.from("users").select("role").eq("user_id", user.id).maybeSingle(),
 	]);
-	if (submissions.error || links.error || events.error || role.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (workspace.error || submissions.error || links.error || events.error || role.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!workspace.data) return c.json({ error: "workspace_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const workspaceKind = String(workspace.data.workspace_kind ?? "personal");
+	const providerAccess = providerWorkspaceAccess(workspaceKind, context.role);
 	const linkedSlugs = (links.data ?? []).map((link) => String(link.provider_slug));
 	const sources = linkedSlugs.length
 		? await client.from("provider_catalog_sources").select("provider_slug,status,delivery_mode,catalog_url,last_success_at,last_polled_at,last_catalog_sha256,consecutive_failures,last_error,etag,last_modified,next_poll_at").in("provider_slug", linkedSlugs)
@@ -202,6 +192,9 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 	return c.json({
 		signedIn: true,
 		isAdmin: String(role.data?.role ?? "").toLowerCase() === "admin",
+		workspace: { id: workspaceId, name: workspace.data.name, slug: workspace.data.slug, kind: workspaceKind, role: context.role },
+		canManageProvider: providerAccess.canManage,
+		providerEligible: providerAccess.eligible,
 		linkedProviders: links.data ?? [],
 		submissions: submissions.data ?? [],
 		syncSources: (sources.data ?? []).map((source) => ({ ...source, webhookUrl: providerCatalogWebhookUrl(c.env, String(source.provider_slug)) })),
@@ -237,6 +230,11 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 	const parsed = profileSchema.safeParse(rawBody);
 	if (!parsed.success) return responseError(c, parsed.error.issues[0]?.message ?? "Complete all provider fields.");
 	const input = parsed.data;
+	const workspaceContext = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: input.workspaceId });
+	if (!workspaceContext || !providerWorkspaceAccess("organization", workspaceContext.role).canManage) return c.json({ error: "provider_workspace_admin_required" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const workspace = await workspaceContext.client.from("workspaces").select("workspace_kind").eq("id", input.workspaceId).maybeSingle();
+	if (workspace.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!workspace.data || !providerWorkspaceAccess(String(workspace.data.workspace_kind), workspaceContext.role).eligible) return responseError(c, "Provider capabilities can only be enabled for an organisation workspace.", 409);
 	const websiteHost = hostFromUrl(input.websiteUrl);
 	const catalogHost = hostFromUrl(input.catalogUrl);
 	if (!sameOrSubdomain(catalogHost, websiteHost)) {
@@ -283,12 +281,11 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		.in("status", ["pending", "active"])
 		.maybeSingle();
 	if (link.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const userWorkspaceIds = await accessibleWorkspaceIds(client, user.id).catch(() => []);
 	const userManageableWorkspaceIds = await manageableWorkspaceIds(client, user.id).catch(() => []);
-	if (link.data && !userWorkspaceIds.includes(String(link.data.workspace_id))) {
+	if (link.data && String(link.data.workspace_id) !== input.workspaceId) {
 		return responseError(c, "This provider profile is already controlled by another provider workspace. Contact Phaseo to resolve the ownership conflict.", 409);
 	}
-	if (link.data && !userManageableWorkspaceIds.includes(String(link.data.workspace_id))) return c.json({ error: "provider_workspace_admin_required" }, 403, PRIVATE_NO_STORE_HEADERS);
+	if (!userManageableWorkspaceIds.includes(input.workspaceId)) return c.json({ error: "provider_workspace_admin_required" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (existing.data && !link.data) {
 		const existingWebsite = typeof existingMetadata.website_url === "string" ? existingMetadata.website_url : typeof existingMetadata.link === "string" ? existingMetadata.link : null;
 		if (!existingWebsite) return responseError(c, "This existing provider has no verified ownership domain and must be claimed through manual verification.", 409);
@@ -360,6 +357,7 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 
 	const submission = await client.from("provider_onboarding_submissions").insert({
 		provider_slug: input.providerSlug,
+		workspace_id: input.workspaceId,
 		submitted_by: user.id,
 		provider_name: input.providerName,
 		website_url: input.websiteUrl,
@@ -373,10 +371,8 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 	}).select("id,provider_slug,provider_name,status,model_count,submitted_at").single();
 	if (submission.error) return c.json({ error: "submission_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 
-	let providerWorkspaceId = link.data?.workspace_id ? String(link.data.workspace_id) : null;
+	const providerWorkspaceId = input.workspaceId;
 	if (!link.data) {
-		try { providerWorkspaceId = await createProviderWorkspace(client, user.id, input.providerSlug, input.providerName); }
-		catch { return c.json({ error: "provider_workspace_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); }
 		const accountLink = await client.from("provider_account_links").insert({
 			provider_slug: input.providerSlug,
 			workspace_id: providerWorkspaceId,

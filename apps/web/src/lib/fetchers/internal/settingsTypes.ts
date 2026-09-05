@@ -344,6 +344,9 @@ export type ProviderOnboardingSubmission = {
 export type SettingsProviderOnboardingInitialData = {
 	signedIn: boolean;
 	isAdmin: boolean;
+	workspace: { id: string; name: string; slug: string; kind: "personal" | "organization" | "enterprise" | "provider"; role: string };
+	canManageProvider: boolean;
+	providerEligible: boolean;
 	linkedProviders: Array<{
 		provider_slug: string;
 		workspace_id: string;
