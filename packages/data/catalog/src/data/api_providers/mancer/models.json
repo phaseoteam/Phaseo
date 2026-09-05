@@ -27,7 +27,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
       "execution": null,
@@ -44,16 +44,16 @@
     },
     "sources": [
       {
-        "kind": "pricing",
-        "url": "https://mancer.tech/models",
-        "accessed_at": "2026-08-01T00:00:00Z",
-        "notes": "Official live model catalogue lists the explicit model ID, availability, model source, context, output limit, capabilities and per-token credit costs."
+        "kind": "provider_models",
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-01T00:00:00Z",
-      "notes": "Confirmed as an online, distinct 0731 deployment; Phaseo routing remains disabled pending credentials and adapter validation."
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
     },
     "rate_limits": []
   },
@@ -68,7 +68,7 @@
     "output_modalities": "text",
     "context_length": 1048576,
     "max_output_tokens": 1048576,
-    "effective_from": null,
+    "effective_from": "2026-08-24T00:00:00Z",
     "effective_to": null,
     "capabilities": [
       {
@@ -85,75 +85,117 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [
-      "standard"
-    ],
+    "service_tiers": [],
     "api": {
       "formats": [
-        "openai.chat.completions"
+        "openai.chat.completions",
+        "openai.completions"
       ],
-      "endpoint": null,
+      "endpoint": "https://neuro.mancer.tech/oai/v1",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "documentation",
-        "url": "https://mancer.tech/models",
-        "accessed_at": "2026-08-03T00:00:00Z",
-        "notes": "Official model catalogue; Phaseo credentials and adapter validation remain pending."
+        "kind": "provider_models",
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-03T00:00:00Z",
-      "notes": "Provider deployment recorded; routing follows the disabled parent provider."
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemma-4-31b",
+    "provider_api_model_id": "mancer:google/gemma-4-31b",
+    "provider_model_slug": "gemma-4-31b-it",
+    "internal_model_id": "google/gemma-4-31b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": null,
+        "tool_call": true,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions",
+        "openai.completions"
+      ],
+      "endpoint": "https://neuro.mancer.tech/oai/v1",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-4.7",
     "provider_api_model_id": "mancer:z-ai/glm-4.7",
-    "provider_model_slug": "z-ai/glm-4.7",
+    "provider_model_slug": "glm-4.7",
     "internal_model_id": "z-ai/glm-4.7",
     "is_active_gateway": false,
-    "quantization_scheme": "fp4",
-    "input_modalities": null,
-    "output_modalities": null,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 131072,
     "max_output_tokens": 131072,
-    "effective_from": "2026-08-12T00:00:00Z",
+    "effective_from": "2026-08-24T00:00:00Z",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "disabled",
-        "params": [
-          "reasoning",
-          "include_reasoning",
-          "max_tokens",
-          "temperature",
-          "top_p",
-          "stop",
-          "frequency_penalty",
-          "presence_penalty",
-          "repetition_penalty",
-          "logit_bias",
-          "top_k",
-          "min_p",
-          "seed",
-          "top_a"
-        ],
-        "reasoning": null,
-        "tool_call": null,
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
         "structured_output": null,
-        "temperature": null,
-        "attachment": null,
+        "temperature": true,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -167,70 +209,51 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions",
+        "openai.completions"
+      ],
+      "endpoint": "https://neuro.mancer.tech/oai/v1",
       "deployment": null
     },
     "sources": [
       {
         "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "mancer:openai/gpt-oss-120b",
-    "provider_model_slug": "openai/gpt-oss-120b",
+    "provider_model_slug": "gpt-oss-120b",
     "internal_model_id": "openai/gpt-oss-120b",
     "is_active_gateway": false,
-    "quantization_scheme": "fp8",
+    "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 131072,
     "max_output_tokens": 131072,
-    "effective_from": "2026-08-12T00:00:00Z",
+    "effective_from": "2026-08-24T00:00:00Z",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "disabled",
-        "params": [
-          "reasoning",
-          "include_reasoning",
-          "max_tokens",
-          "temperature",
-          "top_p",
-          "stop",
-          "frequency_penalty",
-          "presence_penalty",
-          "repetition_penalty",
-          "logit_bias",
-          "top_k",
-          "min_p",
-          "seed",
-          "top_a",
-          "response_format",
-          "logprobs",
-          "top_logprobs",
-          "structured_outputs",
-          "tools",
-          "tool_choice",
-          "reasoning_effort"
-        ],
-        "reasoning": null,
-        "tool_call": null,
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
         "structured_output": null,
-        "temperature": null,
-        "attachment": null,
+        "temperature": true,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -244,22 +267,376 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions",
+        "openai.completions"
+      ],
+      "endpoint": "https://neuro.mancer.tech/oai/v1",
       "deployment": null
     },
     "sources": [
       {
         "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthracite/magnum-v4-72b",
+    "provider_api_model_id": "mancer:anthracite/magnum-v4-72b",
+    "provider_model_slug": "magnum-72b-v4",
+    "internal_model_id": "anthracite/magnum-v4-72b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": 4096,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions",
+        "openai.completions"
+      ],
+      "endpoint": "https://neuro.mancer.tech/oai/v1",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "gryphe/mythomax-l2-13b:free",
+    "provider_api_model_id": "mancer:gryphe/mythomax-l2-13b:free",
+    "provider_model_slug": "mytholite",
+    "internal_model_id": "gryphe/mythomax-l2-13b",
+    "canonical_model_id": "gryphe/mythomax-l2-13b:free",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 2560,
+    "max_output_tokens": 150,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions",
+        "openai.completions"
+      ],
+      "endpoint": "https://neuro.mancer.tech/oai/v1",
+      "deployment": "mytholite"
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "gryphe/mythomax-l2-13b",
+    "provider_api_model_id": "mancer:gryphe/mythomax-l2-13b",
+    "provider_model_slug": "mythomax",
+    "internal_model_id": "gryphe/mythomax-l2-13b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 8192,
+    "max_output_tokens": 8192,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions",
+        "openai.completions"
+      ],
+      "endpoint": "https://neuro.mancer.tech/oai/v1",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "undi95/remm-v2-l2-13b",
+    "provider_api_model_id": "mancer:undi95/remm-v2-l2-13b",
+    "provider_model_slug": "remm-slerp",
+    "internal_model_id": "undi95/remm-v2-l2-13b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 6144,
+    "max_output_tokens": 6144,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions",
+        "openai.completions"
+      ],
+      "endpoint": "https://neuro.mancer.tech/oai/v1",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "pocketdoc/dans-personality-engine-v1.3.0-24b",
+    "provider_api_model_id": "mancer:pocketdoc/dans-personality-engine-v1.3.0-24b",
+    "provider_model_slug": "dans-pe-1.3-24b",
+    "internal_model_id": "pocketdoc/dans-personality-engine-v1.3.0-24b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": 8192,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions",
+        "openai.completions"
+      ],
+      "endpoint": "https://neuro.mancer.tech/oai/v1",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "mancer/weaver-alpha",
+    "provider_api_model_id": "mancer:mancer/weaver-alpha",
+    "provider_model_slug": "weaver-alpha",
+    "internal_model_id": "mancer/weaver-alpha",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 8000,
+    "max_output_tokens": 6000,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions",
+        "openai.completions"
+      ],
+      "endpoint": "https://neuro.mancer.tech/oai/v1",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://neuro.mancer.tech/oai/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official unauthenticated live endpoint reports the exact public model ID, text modalities, limits, and per-token credit rates."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Online in Mancer's live public catalogue; Phaseo routing remains disabled."
     },
     "rate_limits": []
   }

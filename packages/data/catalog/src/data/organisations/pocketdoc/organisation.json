@@ -1,0 +1,28 @@
+{
+  "organisation_id": "pocketdoc",
+  "name": "PocketDoc",
+  "country_code": null,
+  "description": "PocketDoc publishes language models hosted by Mancer.",
+  "colour": null,
+  "organisation_links": [
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/PocketDoc"
+    }
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [
+    {
+      "kind": "model_card",
+      "url": "https://huggingface.co/PocketDoc/Dans-PersonalityEngine-V1.3.0-24b",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Primary model source linked by Mancer's official catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Identity verified from the primary model source; country was not asserted."
+  }
+}
