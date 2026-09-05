@@ -42,15 +42,15 @@
   ],
   "sources": [
     {
-      "kind": "models.dev",
-      "url": "https://models.dev/api.json",
-      "accessed_at": "2026-08-11T12:13:09.964Z",
-      "notes": "Provider pricing catalogue fallback; direct provider feeds take precedence."
+      "kind": "api",
+      "url": "https://api.jiekou.ai/openai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00.000Z",
+      "notes": "Jiekou public live model catalogue."
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-08-11T12:13:09.964Z",
-    "notes": "Pricing filled from the provider-specific models.dev catalogue because no direct local pricing record existed."
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00.000Z",
+    "notes": "Pricing from Jiekou's public live model catalogue."
   }
 }

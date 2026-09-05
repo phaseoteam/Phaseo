@@ -1,0 +1,56 @@
+{
+  "key": "jiekou:grok-4-fast-non-reasoning:text.generate",
+  "api_provider_id": "jiekou",
+  "provider_slug": "jiekou",
+  "api_model_id": "grok-4-fast-non-reasoning",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.19,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.475,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.jiekou.ai/openai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00.000Z",
+      "notes": "Jiekou public live model catalogue."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00.000Z",
+    "notes": "Pricing from Jiekou's public live model catalogue."
+  }
+}

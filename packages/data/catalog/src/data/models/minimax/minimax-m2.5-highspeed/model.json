@@ -1,0 +1,55 @@
+{
+  "model_id": "minimax/minimax-m2.5-highspeed",
+  "organisation_id": "minimax",
+  "name": "Minimax M2.5 Highspeed",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Minimax M2.5 Highspeed is a next-generation large language model designed for autonomous, real-world productivity and continuous improvement. It is tuned for lower latency and cost-sensitive production use.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "minimax/minimax-m2.5-highspeed",
+  "links": [],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
