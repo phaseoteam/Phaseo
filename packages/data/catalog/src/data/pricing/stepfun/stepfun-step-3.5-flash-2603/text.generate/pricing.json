@@ -1,0 +1,71 @@
+{
+  "key": "stepfun:stepfun/step-3.5-flash-2603:text.generate",
+  "api_provider_id": "stepfun",
+  "provider_slug": "stepfun",
+  "api_model_id": "stepfun/step-3.5-flash-2603",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.7,
+      "currency": "CNY",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.14,
+      "currency": "CNY",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.1,
+      "currency": "CNY",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "official-pricing",
+      "url": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
+      "accessed_at": "2026-09-05T21:08:38.965Z",
+      "notes": "Parsed directly from the provider's official pricing documentation."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-05T21:08:38.965Z",
+    "notes": "Pricing synchronized from the official provider source for review."
+  }
+}

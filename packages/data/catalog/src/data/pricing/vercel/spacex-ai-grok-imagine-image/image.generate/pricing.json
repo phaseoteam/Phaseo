@@ -1,0 +1,41 @@
+{
+  "key": "vercel:spacex-ai/grok-imagine-image:image.generate",
+  "api_provider_id": "vercel",
+  "provider_slug": "vercel",
+  "api_model_id": "spacex-ai/grok-imagine-image",
+  "capability_id": "image.generate",
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.02,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Vercel AI Gateway list price per generated image.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://ai-gateway.vercel.sh/v1/models",
+      "accessed_at": "2026-09-05T21:08:43.298Z",
+      "notes": "Provider model and pricing metadata."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-05T21:08:43.298Z",
+    "notes": "Pricing synchronized from the provider models API."
+  }
+}

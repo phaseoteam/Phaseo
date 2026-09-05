@@ -6,10 +6,25 @@
   "capability_id": "text.generate",
   "rules": [
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.012,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.060000000000000005,
+      "price_per_unit": 0.06,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -34,21 +49,6 @@
       "cache_duration_seconds": null,
       "conditions": [],
       "source": null
-    },
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.012000000000000002,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null
     }
   ],
   "regions": [],
@@ -64,8 +64,8 @@
     }
   ],
   "verification": {
-    "status": "verified",
-    "checked_at": "2026-08-21T00:00:00Z",
-    "notes": "Current standard, cached-input, priority, and flex pricing reconciled against the live DeepInfra model-details endpoint."
+    "status": "partial",
+    "checked_at": "2026-09-05T21:08:43.289Z",
+    "notes": "Pricing synchronized from the provider models API."
   }
 }

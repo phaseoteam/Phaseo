@@ -9,7 +9,7 @@
       "meter": "input_audio_minutes",
       "unit": "minute",
       "unit_size": 1,
-      "price_per_unit": 0.00051,
+      "price_per_unit": 0.0005,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -28,7 +28,7 @@
   "sources": [],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-11T11:36:58.353Z",
+    "checked_at": "2026-09-05T21:08:37.482Z",
     "notes": "Pricing synchronized from the official provider source: https://developers.cloudflare.com/workers-ai/platform/pricing/"
   }
 }

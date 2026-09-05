@@ -9,7 +9,7 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.145,
+      "price_per_unit": 0.044,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -25,7 +25,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 1.74,
+      "price_per_unit": 1.32,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -41,7 +41,7 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 3.48,
+      "price_per_unit": 3.96,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -61,7 +61,7 @@
   "sources": [],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-11T11:36:58.578Z",
+    "checked_at": "2026-09-05T21:08:37.933Z",
     "notes": "Pricing synchronized from the official provider source: https://docs.fireworks.ai/serverless/pricing"
   }
 }

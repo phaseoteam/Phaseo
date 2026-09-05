@@ -6,10 +6,26 @@
   "capability_id": "text.generate",
   "rules": [
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1599999975,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-21T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.deepinfra.com/models/list"
+    },
+    {
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.9500000000000001,
+      "price_per_unit": 0.95,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -36,22 +52,6 @@
       "cache_duration_seconds": null,
       "conditions": [],
       "source": "https://api.deepinfra.com/models/list"
-    },
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.1599999975,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-07-21T00:00:00Z",
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": "https://api.deepinfra.com/models/list"
     }
   ],
   "regions": [],
@@ -67,8 +67,8 @@
     }
   ],
   "verification": {
-    "status": "verified",
-    "checked_at": "2026-08-21T00:00:00Z",
-    "notes": "Current standard, cached-input, priority, and flex pricing reconciled against the live DeepInfra model-details endpoint."
+    "status": "partial",
+    "checked_at": "2026-09-05T21:08:43.289Z",
+    "notes": "Pricing synchronized from the provider models API."
   }
 }

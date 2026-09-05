@@ -54,8 +54,8 @@
     "internal_model_id": "anthropic/claude-fable-5",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -105,6 +105,183 @@
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
       "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-haiku-4-5",
+    "provider_api_model_id": "deepinfra:anthropic/claude-haiku-4-5",
+    "provider_model_slug": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4-7",
+    "provider_api_model_id": "deepinfra:anthropic/claude-opus-4-7",
+    "provider_model_slug": "anthropic/claude-opus-4-7",
+    "internal_model_id": "anthropic/claude-opus-4-7",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4-8",
+    "provider_api_model_id": "deepinfra:anthropic/claude-opus-4-8",
+    "provider_model_slug": "anthropic/claude-opus-4-8",
+    "internal_model_id": "anthropic/claude-opus-4-8",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -115,8 +292,8 @@
     "internal_model_id": "anthropic/claude-opus-5",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -170,14 +347,73 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "provider_api_model_id": "deepinfra:anthropic/claude-sonnet-4-6",
+    "provider_model_slug": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "anthropic/claude-sonnet-5",
     "provider_api_model_id": "deepinfra:anthropic/claude-sonnet-5",
     "provider_model_slug": "anthropic/claude-sonnet-5",
     "internal_model_id": "anthropic/claude-sonnet-5",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -237,8 +473,8 @@
     "internal_model_id": "baai/bge-m3",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 8192,
     "max_output_tokens": null,
     "effective_from": null,
@@ -298,8 +534,8 @@
     "internal_model_id": "black-forest-labs/flux-1-dev",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -359,8 +595,8 @@
     "internal_model_id": "black-forest-labs/flux-1-schnell",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -420,8 +656,8 @@
     "internal_model_id": "black-forest-labs/flux-1.1-pro",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -481,8 +717,8 @@
     "internal_model_id": "black-forest-labs/flux-2-dev",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -542,8 +778,8 @@
     "internal_model_id": "black-forest-labs/flux-2-klein-4b",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -603,8 +839,8 @@
     "internal_model_id": "black-forest-labs/flux-2-klein-9b",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -664,8 +900,8 @@
     "internal_model_id": "black-forest-labs/flux-2-max",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -725,8 +961,8 @@
     "internal_model_id": "black-forest-labs/flux-2-pro",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -833,6 +1069,65 @@
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
       "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance/seed-2.0-code",
+    "provider_api_model_id": "deepinfra:bytedance/seed-2.0-code",
+    "provider_model_slug": "ByteDance/Seed-2.0-code",
+    "internal_model_id": "bytedance/seed-2.0-code",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -957,8 +1252,8 @@
     "internal_model_id": "bytedance/seedance-1.5-pro",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -1018,8 +1313,8 @@
     "internal_model_id": "bytedance/seedance-2.0",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -1590,6 +1885,92 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "deepseek/deepseek-v4-flash-0731",
+    "provider_api_model_id": "deepinfra:deepseek/deepseek-v4-flash-0731",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "internal_model_id": "deepseek/deepseek-v4-flash-0731",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-31T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "reasoning",
+          "include_reasoning",
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "top_k",
+          "seed",
+          "min_p",
+          "response_format",
+          "logit_bias",
+          "tools",
+          "tool_choice",
+          "structured_outputs",
+          "reasoning_effort"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard",
+      "priority",
+      "flex"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "pricing",
+        "url": "https://deepinfra.com/deepseek-ai/DeepSeek-V4-Flash-0731",
+        "accessed_at": "2026-08-01T00:00:00Z",
+        "notes": "Official serverless model page, pricing, context, quantisation and feature support."
+      },
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-08-21T14:50:29.173Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-21T00:00:00Z",
+      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "deepseek/deepseek-v4-flash-vision-exp",
     "provider_api_model_id": "deepinfra:deepseek/deepseek-v4-flash-vision-exp",
     "provider_model_slug": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
@@ -1679,92 +2060,6 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "deepseek/deepseek-v4-flash-0731",
-    "provider_api_model_id": "deepinfra:deepseek/deepseek-v4-flash-0731",
-    "provider_model_slug": "deepseek-ai/DeepSeek-V4-Flash-0731",
-    "internal_model_id": "deepseek/deepseek-v4-flash-0731",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP4",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 1048576,
-    "max_output_tokens": null,
-    "effective_from": "2026-07-31T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          "reasoning",
-          "include_reasoning",
-          "max_tokens",
-          "temperature",
-          "top_p",
-          "stop",
-          "frequency_penalty",
-          "presence_penalty",
-          "repetition_penalty",
-          "top_k",
-          "seed",
-          "min_p",
-          "response_format",
-          "logit_bias",
-          "tools",
-          "tool_choice",
-          "structured_outputs",
-          "reasoning_effort"
-        ],
-        "reasoning": true,
-        "tool_call": true,
-        "structured_output": true,
-        "temperature": true,
-        "attachment": false,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": true,
-    "regions": {
-      "execution": null,
-      "data": null
-    },
-    "service_tiers": [
-      "standard",
-      "priority",
-      "flex"
-    ],
-    "api": {
-      "formats": [
-        "openai.chat.completions"
-      ],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "pricing",
-        "url": "https://deepinfra.com/deepseek-ai/DeepSeek-V4-Flash-0731",
-        "accessed_at": "2026-08-01T00:00:00Z",
-        "notes": "Official serverless model page, pricing, context, quantisation and feature support."
-      },
-      {
-        "kind": "provider_models",
-        "url": "https://api.deepinfra.com/models/list",
-        "accessed_at": "2026-08-21T14:50:29.173Z",
-        "notes": "Provider model and pricing metadata."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
-    },
-    "rate_limits": []
-  },
-  {
     "api_model_id": "deepseek/deepseek-v4-pro",
     "provider_api_model_id": "deepinfra:deepseek/deepseek-v4-pro",
     "provider_model_slug": "deepseek-ai/DeepSeek-V4-Pro",
@@ -1843,14 +2138,73 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "deepseek/deepseek-v4-pro-0813",
+    "provider_api_model_id": "deepinfra:deepseek/deepseek-v4-pro-0813",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V4-Pro-0813",
+    "internal_model_id": "deepseek/deepseek-v4-pro-0813",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "google/embeddinggemma-300m",
     "provider_api_model_id": "deepinfra:google/embeddinggemma-300m",
     "provider_model_slug": "google/embeddinggemma-300m",
     "internal_model_id": "google/embeddinggemma-300m",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 2048,
     "max_output_tokens": null,
     "effective_from": null,
@@ -1962,8 +2316,8 @@
     "internal_model_id": "google/gemini-2.5-flash",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2023,8 +2377,8 @@
     "internal_model_id": "google/gemini-2.5-pro",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2084,8 +2438,8 @@
     "internal_model_id": "google/gemini-3-pro-image",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2145,8 +2499,8 @@
     "internal_model_id": "google/gemini-3.1-flash-lite",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2200,14 +2554,73 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "google/gemini-3.1-pro",
+    "provider_api_model_id": "deepinfra:google/gemini-3.1-pro",
+    "provider_model_slug": "google/gemini-3.1-pro",
+    "internal_model_id": "google/gemini-3.1-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "google/gemini-3.5-flash",
     "provider_api_model_id": "deepinfra:google/gemini-3.5-flash",
     "provider_model_slug": "google/gemini-3.5-flash",
     "internal_model_id": "google/gemini-3.5-flash",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2267,8 +2680,8 @@
     "internal_model_id": "google/gemini-3.7-flash",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2322,14 +2735,309 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "google/gemma-3-12b-it",
+    "provider_api_model_id": "deepinfra:google/gemma-3-12b-it",
+    "provider_model_slug": "google/gemma-3-12b-it",
+    "internal_model_id": "google/gemma-3-12b-it",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemma-3-27b-it",
+    "provider_api_model_id": "deepinfra:google/gemma-3-27b-it",
+    "provider_model_slug": "google/gemma-3-27b-it",
+    "internal_model_id": "google/gemma-3-27b-it",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemma-3-4b-it",
+    "provider_api_model_id": "deepinfra:google/gemma-3-4b-it",
+    "provider_model_slug": "google/gemma-3-4b-it",
+    "internal_model_id": "google/gemma-3-4b-it",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemma-4-26b-a4b-it",
+    "provider_api_model_id": "deepinfra:google/gemma-4-26b-a4b-it",
+    "provider_model_slug": "google/gemma-4-26B-A4B-it",
+    "internal_model_id": "google/gemma-4-26b-a4b-it",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemma-4-31b-it",
+    "provider_api_model_id": "deepinfra:google/gemma-4-31b-it",
+    "provider_model_slug": "google/gemma-4-31B-it",
+    "internal_model_id": "google/gemma-4-31b-it",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "google/veo-3.1",
     "provider_api_model_id": "deepinfra:google/veo-3.1",
     "provider_model_slug": "google/veo-3.1",
     "internal_model_id": "google/veo-3.1",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2389,8 +3097,8 @@
     "internal_model_id": "google/veo-3.1-fast",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2444,14 +3152,73 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "gryphe/mythomax-l2-13b",
+    "provider_api_model_id": "deepinfra:gryphe/mythomax-l2-13b",
+    "provider_model_slug": "Gryphe/MythoMax-L2-13b",
+    "internal_model_id": "gryphe/mythomax-l2-13b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 4096,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "hexgrad/kokoro-82m",
     "provider_api_model_id": "deepinfra:hexgrad/kokoro-82m",
     "provider_model_slug": "hexgrad/Kokoro-82M",
     "internal_model_id": "hexgrad/kokoro-82m",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2505,6 +3272,75 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "ibm/granite-4.2-30b",
+    "provider_api_model_id": "deepinfra:ibm-granite/granite-4.2-30b",
+    "provider_model_slug": "ibm-granite/granite-4.2-30b",
+    "internal_model_id": "ibm/granite-4.2-30b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-08-26T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/ibm-granite/granite-4.2-30b",
+        "accessed_at": "2026-08-26T00:00:00Z",
+        "notes": "Live DeepInfra model detail: OpenAI-compatible text generation with tools, JSON, and reasoning support."
+      },
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-26T00:00:00Z",
+      "notes": "Availability, model slug, context limit, max output, capabilities, and token pricing reconciled against DeepInfra's live model catalogue."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "ibm/granite-4.2-3b",
     "provider_api_model_id": "deepinfra:ibm-granite/granite-4.2-3b",
     "provider_model_slug": "ibm-granite/granite-4.2-3b",
@@ -2535,12 +3371,20 @@
     "routing_status": "active",
     "routable": true,
     "regions": {
-      "execution": ["global"],
-      "data": ["global"]
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
     },
-    "service_tiers": ["standard"],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": ["openai.chat.completions"],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
@@ -2550,6 +3394,12 @@
         "url": "https://api.deepinfra.com/models/ibm-granite/granite-4.2-3b",
         "accessed_at": "2026-08-26T00:00:00Z",
         "notes": "Live DeepInfra model detail: OpenAI-compatible text generation with tools, JSON, and reasoning support."
+      },
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
       }
     ],
     "verification": {
@@ -2590,12 +3440,20 @@
     "routing_status": "active",
     "routable": true,
     "regions": {
-      "execution": ["global"],
-      "data": ["global"]
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
     },
-    "service_tiers": ["standard"],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": ["openai.chat.completions"],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
@@ -2605,61 +3463,12 @@
         "url": "https://api.deepinfra.com/models/ibm-granite/granite-4.2-8b",
         "accessed_at": "2026-08-26T00:00:00Z",
         "notes": "Live DeepInfra model detail: OpenAI-compatible text generation with tools, JSON, and reasoning support."
-      }
-    ],
-    "verification": {
-      "status": "verified",
-      "checked_at": "2026-08-26T00:00:00Z",
-      "notes": "Availability, model slug, context limit, max output, capabilities, and token pricing reconciled against DeepInfra's live model catalogue."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "ibm/granite-4.2-30b",
-    "provider_api_model_id": "deepinfra:ibm-granite/granite-4.2-30b",
-    "provider_model_slug": "ibm-granite/granite-4.2-30b",
-    "internal_model_id": "ibm/granite-4.2-30b",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 131072,
-    "max_output_tokens": 131072,
-    "effective_from": "2026-08-26T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": true,
-        "tool_call": true,
-        "structured_output": true,
-        "temperature": null,
-        "attachment": false,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": true,
-    "regions": {
-      "execution": ["global"],
-      "data": ["global"]
-    },
-    "service_tiers": ["standard"],
-    "api": {
-      "formats": ["openai.chat.completions"],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
+      },
       {
         "kind": "provider_models",
-        "url": "https://api.deepinfra.com/models/ibm-granite/granite-4.2-30b",
-        "accessed_at": "2026-08-26T00:00:00Z",
-        "notes": "Live DeepInfra model detail: OpenAI-compatible text generation with tools, JSON, and reasoning support."
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
       }
     ],
     "verification": {
@@ -2676,8 +3485,8 @@
     "internal_model_id": "inclusionai/ling-3.0-flash",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 131072,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2727,6 +3536,65 @@
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
       "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "inclusionai/ling-3.0-flash-fin",
+    "provider_api_model_id": "deepinfra:inclusionai/ling-3.0-flash-fin",
+    "provider_model_slug": "inclusionAI/Ling-3.0-flash-Fin",
+    "internal_model_id": "inclusionai/ling-3.0-flash-fin",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -3180,6 +4048,65 @@
   {
     "api_model_id": "meta/muse-glimmer-30b",
     "provider_api_model_id": "deepinfra:meta/muse-glimmer-30b",
+    "provider_model_slug": "meta-models/Muse-Glimmer-30B",
+    "internal_model_id": "meta/muse-glimmer-30b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "meta/muse-glimmer-30b",
+    "provider_api_model_id": "deepinfra:meta/muse-glimmer-30b",
     "provider_model_slug": "meta/muse-glimmer-30b",
     "internal_model_id": "meta/muse-glimmer-30b",
     "is_active_gateway": false,
@@ -3576,6 +4503,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "minimax/minimax-m3",
+    "provider_api_model_id": "deepinfra:minimax/minimax-m3",
+    "provider_model_slug": "MiniMaxAI/MiniMax-M3",
+    "internal_model_id": "minimax/minimax-m3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 524288,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "mistral/mistral-nemo",
     "provider_api_model_id": "deepinfra:mistralai/mistral-nemo",
     "provider_model_slug": "mistralai/mistral-nemo",
@@ -3867,6 +4853,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "mistral/voxtral-small-24b-2507",
+    "provider_api_model_id": "deepinfra:mistral/voxtral-small-24b-2507",
+    "provider_model_slug": "mistralai/Voxtral-Small-24B-2507",
+    "internal_model_id": "mistral/voxtral-small-24b-2507",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.transcribe",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "moonshotai/kimi-k2.5",
     "provider_api_model_id": "deepinfra:moonshotai/kimi-k2.5",
     "provider_model_slug": "moonshotai/Kimi-K2.5",
@@ -4085,8 +5130,8 @@
     "internal_model_id": "moonshotai/kimi-k3",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1048576,
     "max_output_tokens": null,
     "effective_from": null,
@@ -4363,6 +5408,65 @@
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
       "notes": "Route retired because it is absent from DeepInfra current OpenAI-compatible model inventory."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/llama-nemotron-embed-vl-1b-v2",
+    "provider_api_model_id": "deepinfra:nvidia/llama-nemotron-embed-vl-1b-v2",
+    "provider_model_slug": "nvidia/llama-nemotron-embed-vl-1b-v2",
+    "internal_model_id": "nvidia/llama-nemotron-embed-vl-1b-v2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 10240,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -4937,8 +6041,8 @@
     "internal_model_id": "openai/whisper-large-v3",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -4998,8 +6102,8 @@
     "internal_model_id": "openai/whisper-large-v3-turbo",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5059,8 +6163,8 @@
     "internal_model_id": "qwen/qwen-image-edit",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5120,8 +6224,8 @@
     "internal_model_id": "qwen/qwen-image-max",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5607,8 +6711,8 @@
     "internal_model_id": "qwen/qwen3-asr-0.6b",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5668,8 +6772,8 @@
     "internal_model_id": "qwen/qwen3-asr-1.7b",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5858,8 +6962,8 @@
     "internal_model_id": "qwen/qwen3-embedding-0.6b",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 32768,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5919,8 +7023,8 @@
     "internal_model_id": "qwen/qwen3-embedding-4b",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 32768,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5980,8 +7084,8 @@
     "internal_model_id": "qwen/qwen3-embedding-8b",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 32768,
     "max_output_tokens": null,
     "effective_from": null,
@@ -6230,8 +7334,8 @@
     "internal_model_id": "qwen/qwen3-tts",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -6291,8 +7395,8 @@
     "internal_model_id": "qwen/qwen3-tts-voicedesign",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -7194,8 +8298,8 @@
     "internal_model_id": "qwen/qwen3.8-2.4t-a95b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 262144,
     "max_output_tokens": null,
     "effective_from": null,
@@ -7255,8 +8359,8 @@
     "internal_model_id": "qwen/qwen3.8-27b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 262144,
     "max_output_tokens": null,
     "effective_from": null,
@@ -7377,6 +8481,124 @@
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
       "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/wan2.2-t2v-a14b",
+    "provider_api_model_id": "deepinfra:qwen/wan2.2-t2v-a14b",
+    "provider_model_slug": "Wan-AI/Wan2.2-T2V-A14B",
+    "internal_model_id": "qwen/wan2.2-t2v-a14b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "sentence-transformers/all-minilm-l6-v2",
+    "provider_api_model_id": "deepinfra:sentence-transformers/all-minilm-l6-v2",
+    "provider_model_slug": "sentence-transformers/all-MiniLM-L6-v2",
+    "internal_model_id": "sentence-transformers/all-minilm-l6-v2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 512,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -7510,8 +8732,8 @@
     "internal_model_id": "tencent/hy3",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 262144,
     "max_output_tokens": null,
     "effective_from": null,
@@ -7621,6 +8843,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "thinking-machines/inkling-small",
+    "provider_api_model_id": "deepinfra:thinking-machines/inkling-small",
+    "provider_model_slug": "thinkingmachines/Inkling-Small",
+    "internal_model_id": "thinking-machines/inkling-small",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 524288,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "xiaomi/mimo-v2.5",
     "provider_api_model_id": "deepinfra:xiaomi/mimo-v2.5",
     "provider_model_slug": "xiaomi/mimo-v2.5",
@@ -7694,6 +8975,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "xiaomi/mimo-v2.5",
+    "provider_api_model_id": "deepinfra:xiaomi/mimo-v2.5",
+    "provider_model_slug": "XiaomiMiMo/MiMo-V2.5",
+    "internal_model_id": "xiaomi/mimo-v2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "xiaomi/mimo-v2.5-pro",
     "provider_api_model_id": "deepinfra:xiaomi/mimo-v2.5-pro",
     "provider_model_slug": "xiaomi/mimo-v2.5-pro",
@@ -7763,6 +9103,124 @@
       "status": "partial",
       "checked_at": "2026-08-12T00:00:00Z",
       "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2.5-pro",
+    "provider_api_model_id": "deepinfra:xiaomi/mimo-v2.5-pro",
+    "provider_model_slug": "XiaomiMiMo/MiMo-V2.5-Pro",
+    "internal_model_id": "xiaomi/mimo-v2.5-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2.5-tts-voicedesign",
+    "provider_api_model_id": "deepinfra:xiaomi/mimo-v2.5-tts-voicedesign",
+    "provider_model_slug": "XiaomiMiMo/MiMo-V2.5-tts-voicedesign",
+    "internal_model_id": "xiaomi/mimo-v2.5-tts-voicedesign",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T21:08:43.289Z",
+      "notes": "Discovered from the provider models API; routing remains disabled pending review."
     },
     "rate_limits": []
   },
@@ -8224,6 +9682,93 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "z-ai/glm-5.3",
+    "canonical_model_id": "z-ai/glm-5.3",
+    "provider_api_model_id": "deepinfra:zai-org/GLM-5.3",
+    "provider_model_slug": "zai-org/GLM-5.3",
+    "internal_model_id": "z-ai/glm-5.3",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 1000000,
+    "effective_from": "2026-08-29T02:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "top_k",
+          "min_p",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "stop",
+          "seed",
+          "response_format",
+          "prompt_cache_key",
+          "tools",
+          "tool_choice",
+          "structured_outputs",
+          "include_reasoning"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": "serverless"
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/zai-org/GLM-5.3",
+        "accessed_at": "2026-08-29T07:23:42Z",
+        "notes": "DeepInfra's first-party live model endpoint reports the public FP8 route, 1M context, 1M generation ceiling, tools, JSON and structured output, reasoning, supported sampling parameters, and current token pricing."
+      },
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/list",
+        "accessed_at": "2026-09-05T21:08:43.289Z",
+        "notes": "Provider model and pricing metadata."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-29T07:23:42Z",
+      "notes": "Exact route ID, active public lifecycle, limits, quantization, capabilities, parameters, and pricing verified against DeepInfra's first-party live model endpoint."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "z-ai/glm-5.3-flash",
     "provider_api_model_id": "deepinfra:zai-org/GLM-5.3-Flash",
     "provider_model_slug": "zai-org/GLM-5.3-Flash",
@@ -8313,30 +9858,6 @@
       "checked_at": "2026-08-26T00:00:00Z",
       "notes": "Live availability and provider limits verified in OpenRouter's endpoint catalog; direct DeepInfra model-page and pricing verification remains incomplete."
     },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "z-ai/glm-5.3",
-    "canonical_model_id": "z-ai/glm-5.3",
-    "provider_api_model_id": "deepinfra:zai-org/GLM-5.3",
-    "provider_model_slug": "zai-org/GLM-5.3",
-    "internal_model_id": "z-ai/glm-5.3",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 1048576,
-    "max_output_tokens": 1000000,
-    "effective_from": "2026-08-29T02:00:00Z",
-    "effective_to": null,
-    "capabilities": [{"capability_id":"text.generate","status":"active","params":["max_tokens","temperature","top_p","top_k","min_p","frequency_penalty","presence_penalty","repetition_penalty","stop","seed","response_format","prompt_cache_key","tools","tool_choice","structured_outputs","include_reasoning"],"reasoning":true,"tool_call":true,"structured_output":true,"temperature":true,"attachment":false,"input_modalities":["text"],"output_modalities":["text"],"modes":[]}],
-    "routing_status": "active",
-    "routable": true,
-    "regions": {"execution":null,"data":null},
-    "service_tiers": ["standard"],
-    "api": {"formats":["openai.chat.completions"],"endpoint":null,"deployment":"serverless"},
-    "sources": [{"kind":"provider_models","url":"https://api.deepinfra.com/models/zai-org/GLM-5.3","accessed_at":"2026-08-29T07:23:42Z","notes":"DeepInfra's first-party live model endpoint reports the public FP8 route, 1M context, 1M generation ceiling, tools, JSON and structured output, reasoning, supported sampling parameters, and current token pricing."}],
-    "verification": {"status":"verified","checked_at":"2026-08-29T07:23:42Z","notes":"Exact route ID, active public lifecycle, limits, quantization, capabilities, parameters, and pricing verified against DeepInfra's first-party live model endpoint."},
     "rate_limits": []
   }
 ]

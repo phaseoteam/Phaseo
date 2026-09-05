@@ -5,12 +5,70 @@
   "api_model_id": "z-ai/glm-5.3-flash",
   "capability_id": "text.generate",
   "rules": [
-    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.15,"currency":"USD","pricing_plan":"standard","note":"Fireworks serverless input price.","match":[],"priority":100,"effective_from":"2026-08-31T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://fireworks.ai/models/fireworks/glm-5p3-flash"},
-    {"meter":"cached_read_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.029,"currency":"USD","pricing_plan":"standard","note":"Fireworks serverless cached-input price.","match":[],"priority":100,"effective_from":"2026-08-31T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://fireworks.ai/models/fireworks/glm-5p3-flash"},
-    {"meter":"output_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.5,"currency":"USD","pricing_plan":"standard","note":"Fireworks serverless output price.","match":[],"priority":100,"effective_from":"2026-08-31T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://fireworks.ai/models/fireworks/glm-5p3-flash"}
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.03,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Fireworks serverless cached-input price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-31T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://fireworks.ai/models/fireworks/glm-5p3-flash"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Fireworks serverless input price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-31T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://fireworks.ai/models/fireworks/glm-5p3-flash"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Fireworks serverless output price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-31T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://fireworks.ai/models/fireworks/glm-5p3-flash"
+    }
   ],
   "regions": [],
-  "service_tiers": ["standard"],
-  "sources": [{"url":"https://fireworks.ai/models/fireworks/glm-5p3-flash","kind":"provider_pricing","accessed_at":"2026-08-31T00:00:00Z","notes":"Fireworks lists GLM 5.3 Flash at $0.15 input, $0.029 cached input, and $0.50 output per 1M tokens."}],
-  "verification": {"status":"verified","checked_at":"2026-08-31T00:00:00Z","notes":"Pricing is verified against Fireworks' first-party GLM 5.3 Flash model page."}
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "url": "https://fireworks.ai/models/fireworks/glm-5p3-flash",
+      "kind": "provider_pricing",
+      "accessed_at": "2026-08-31T00:00:00Z",
+      "notes": "Fireworks lists GLM 5.3 Flash at $0.15 input, $0.029 cached input, and $0.50 output per 1M tokens."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-05T21:08:37.933Z",
+    "notes": "Pricing synchronized from the official provider source: https://docs.fireworks.ai/serverless/pricing"
+  }
 }

@@ -6,25 +6,10 @@
   "capability_id": "text.generate",
   "rules": [
     {
-      "meter": "output_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 3.75,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null
-    },
-    {
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.075,
+      "price_per_unit": 0.15,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -39,7 +24,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.75,
+      "price_per_unit": 1.5,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -64,6 +49,21 @@
       "cache_duration_seconds": null,
       "conditions": [],
       "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 7.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
   ],
   "regions": [],
@@ -79,8 +79,8 @@
     }
   ],
   "verification": {
-    "status": "verified",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Every distinct public price point from the official ZenMux models API is represented; upstream-specific labels are not exposed by that endpoint."
+    "status": "partial",
+    "checked_at": "2026-09-05T21:08:43.299Z",
+    "notes": "Pricing synchronized from the provider models API."
   }
 }

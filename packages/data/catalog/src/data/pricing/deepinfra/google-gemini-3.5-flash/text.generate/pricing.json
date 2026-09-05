@@ -9,7 +9,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 1.4999999999999998,
+      "price_per_unit": 1.5,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -49,8 +49,8 @@
     }
   ],
   "verification": {
-    "status": "verified",
-    "checked_at": "2026-08-21T00:00:00Z",
-    "notes": "Current standard, cached-input, priority, and flex pricing reconciled against DeepInfra's live /models/list detail feed."
+    "status": "partial",
+    "checked_at": "2026-09-05T21:08:43.289Z",
+    "notes": "Pricing synchronized from the provider models API."
   }
 }
