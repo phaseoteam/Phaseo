@@ -7,24 +7,24 @@
   "provider_family_id": null,
   "offer_label": null,
   "offer_scope": "specialized",
-  "description": null,
-  "link": "https://docs.meganova.ai",
+  "description": "OpenAI-compatible inference platform for text, multimodal, image, video, audio, embedding, and reranking models.",
+  "link": "https://www.meganova.ai",
   "residency_mode": null,
   "default_execution_regions": null,
   "default_data_regions": null,
   "zero_data_retention": false,
   "residency_source_url": null,
-  "prompt_training_policy": null,
-  "prompt_training_notes": null,
-  "prompt_training_source_url": null,
-  "user_identifier_policy": null,
+  "prompt_training_policy": "may_train",
+  "prompt_training_notes": "MegaNova states that uploaded and generated content, prompts, files, messages, and chats may be used for service improvement and grants broad rights to use generated chats; no opt-out or zero-retention commitment is published.",
+  "prompt_training_source_url": "https://docs.meganova.ai/legal-docs/privacy-policy",
+  "user_identifier_policy": "unknown",
   "user_identifier_notes": null,
-  "privacy_policy_url": null,
-  "terms_of_service_url": null,
-  "regional_pricing_mode": null,
+  "privacy_policy_url": "https://docs.meganova.ai/legal-docs/privacy-policy",
+  "terms_of_service_url": "https://docs.meganova.ai/legal-docs/terms-of-service",
+  "regional_pricing_mode": "same_as_global",
   "regional_pricing_uplift_percent": null,
-  "pricing_source_url": null,
-  "regional_pricing_notes": null,
+  "pricing_source_url": "https://docs.meganova.ai/inference-models/model-list",
+  "regional_pricing_notes": "Published rates are in USD with no regional price schedule.",
   "country_code": "US",
   "status": "Active",
   "colour": null,
@@ -37,25 +37,41 @@
   "auth_env": [
     "MEGANOVA_API_KEY"
   ],
-  "api_formats": [],
-  "service_tiers": [],
+  "api_formats": [
+    "chat_completions",
+    "images_generations",
+    "videos_generations",
+    "audio_speech",
+    "audio_transcriptions",
+    "embeddings"
+  ],
+  "service_tiers": [
+    "free",
+    "tier_2_plus"
+  ],
   "sources": [
     {
-      "kind": "official_company_page",
-      "url": "https://www.meganova.ai/about-us",
-      "accessed_at": "2026-08-09T00:00:00Z",
-      "notes": "MegaNova's official about page identifies Nebula Nova Inc. in Delaware, USA, alongside its Canadian operations."
+      "kind": "official_documentation",
+      "url": "https://docs.meganova.ai/inference-models/model-list.md",
+      "accessed_at": "2026-08-24T03:00:00Z",
+      "notes": "Complete official model catalogue, exact IDs, access tiers, modalities, and pricing."
     },
     {
-      "kind": "models.dev",
-      "url": "https://models.dev/api.json",
-      "accessed_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider metadata and model support enrichment; not a Phaseo-routable offer."
+      "kind": "official_documentation",
+      "url": "https://docs.meganova.ai/free-model-quota.md",
+      "accessed_at": "2026-08-24T03:00:00Z",
+      "notes": "Model-specific daily free quotas by account tier."
+    },
+    {
+      "kind": "privacy_policy",
+      "url": "https://docs.meganova.ai/legal-docs/privacy-policy.md",
+      "accessed_at": "2026-08-24T03:00:00Z",
+      "notes": "Data collection, retention, international transfer, and service-improvement disclosures."
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-07-23T09:08:52.190Z",
-    "notes": "Imported from the public models.dev provider registry."
+    "status": "verified",
+    "checked_at": "2026-08-24T03:00:00Z",
+    "notes": "Reconciled 93 exact official model IDs across all documented inference modalities; routing remains disabled."
   }
 }

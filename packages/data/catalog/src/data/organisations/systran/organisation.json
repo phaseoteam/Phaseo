@@ -1,0 +1,23 @@
+{
+  "organisation_id": "systran",
+  "name": "SYSTRAN",
+  "country_code": null,
+  "description": null,
+  "colour": null,
+  "organisation_links": [],
+  "status": "active",
+  "routable": null,
+  "sources": [
+    {
+      "kind": "provider_docs",
+      "url": "https://docs.meganova.ai/inference-models/model-list.md",
+      "accessed_at": "2026-08-24T03:00:00Z",
+      "notes": "MegaNova identifies SYSTRAN as the publisher namespace for listed model Systran/faster-whisper-large-v3."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T03:00:00Z",
+    "notes": "Publisher namespace verified from MegaNova’s official model catalogue; jurisdiction was not independently published."
+  }
+}

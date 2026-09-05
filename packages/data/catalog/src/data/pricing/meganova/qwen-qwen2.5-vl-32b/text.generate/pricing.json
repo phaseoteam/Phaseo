@@ -1,0 +1,56 @@
+{
+  "key": "meganova:qwen/qwen2.5-vl-32b:text.generate",
+  "api_provider_id": "meganova",
+  "provider_slug": "meganova",
+  "api_model_id": "qwen/qwen2.5-vl-32b",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "tier_2_plus",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.meganova.ai/inference-models/model-list.md"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.6,
+      "currency": "USD",
+      "pricing_plan": "tier_2_plus",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.meganova.ai/inference-models/model-list.md"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "tier_2_plus"
+  ],
+  "sources": [
+    {
+      "kind": "official_documentation",
+      "url": "https://docs.meganova.ai/inference-models/model-list.md",
+      "accessed_at": "2026-08-24T03:00:00Z",
+      "notes": "Published MegaNova pricing for exact upstream model ID Qwen/Qwen2.5-VL-32B-Instruct."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T03:00:00Z",
+    "notes": "Pricing verified against MegaNova’s official model list."
+  }
+}
