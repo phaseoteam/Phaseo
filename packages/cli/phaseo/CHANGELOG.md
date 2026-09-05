@@ -1,5 +1,25 @@
 # @phaseo/cli
 
+## 0.3.0
+
+### Minor Changes
+
+- [#1545](https://github.com/phaseoteam/Phaseo/pull/1545) [`9f33952`](https://github.com/phaseoteam/Phaseo/commit/9f339524a39eab3a58e7270f02c09f0e68aca730) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add safe OpenCode provider setup, status, and removal commands.
+
+- [#2086](https://github.com/phaseoteam/Phaseo/pull/2086) [`b70d520`](https://github.com/phaseoteam/Phaseo/commit/b70d520f07d879ce124c87570ae91b2f08f8bcb9) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add provider credential lifecycle, filtering, routing-mode, and ordering operations.
+
+- [#1662](https://github.com/phaseoteam/Phaseo/pull/1662) [`6de47c7`](https://github.com/phaseoteam/Phaseo/commit/6de47c70ebddd779ddda7da8d97a6052d74be3ae) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add automatic, integration-specific API-key provisioning for coding-agent setup, add DeepSeek Harness configuration support, and accept the documented Chat Completions `store` parameter required by Harness.
+
+- [#1685](https://github.com/phaseoteam/Phaseo/pull/1685) [`daa0275`](https://github.com/phaseoteam/Phaseo/commit/daa02757701eae300a06870a4817df60dd94e28d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add one-command installation and setup for the primary coding harnesses, including consent-gated installation prompts, direct `phaseo <harness>` shortcuts, compatible model-catalog sync, and automatic credential handling.
+
+- [#1510](https://github.com/phaseoteam/Phaseo/pull/1510) [`1149720`](https://github.com/phaseoteam/Phaseo/commit/114972048479d7f78a1e167d080df90299af8693) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add secure Codex and Claude Code gateway configuration commands.
+
+### Patch Changes
+
+- [#1812](https://github.com/phaseoteam/Phaseo/pull/1812) [`8aea1ef`](https://github.com/phaseoteam/Phaseo/commit/8aea1ef77d37fdb919418d54c40ad5914cb0da71) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Preserve integration credential revocation metadata across session refreshes and require coding harnesses to be installed manually from trusted releases.
+
+- [#2053](https://github.com/phaseoteam/Phaseo/pull/2053) [`7492964`](https://github.com/phaseoteam/Phaseo/commit/7492964f199b192af28240fddf072bb0a5820277) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Run the AI SDK 7 unit, compatibility, example, and package checks in the release path, and align coding-harness setup guidance with the CLI's configuration-only behavior.
+
 ## 0.2.3
 
 ### Patch Changes
