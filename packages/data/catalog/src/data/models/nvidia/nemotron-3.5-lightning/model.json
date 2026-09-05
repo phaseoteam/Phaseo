@@ -212,5 +212,12 @@
   "last_updated": "2026-08-11T00:00:00Z",
   "removal_date": null,
   "replacement_model_id": null,
-  "license_url": "https://openmdw.ai/license/1-1/"
+  "license_url": "https://openmdw.ai/license/1-1/",
+  "variants": [
+    {
+      "model_id": "nvidia/nemotron-3.5-lightning:free",
+      "name": "Nemotron 3.5 Lightning 30B A3B (Free)",
+      "variant_kind": "free"
+    }
+  ]
 }

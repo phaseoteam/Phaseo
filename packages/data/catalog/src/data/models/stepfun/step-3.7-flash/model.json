@@ -114,5 +114,12 @@
   "last_updated": "2026-08-24T00:00:00Z",
   "removal_date": null,
   "replacement_model_id": null,
-  "license_url": null
+  "license_url": null,
+  "variants": [
+    {
+      "model_id": "stepfun/step-3.7-flash:free",
+      "name": "Step 3.7 Flash (Free)",
+      "variant_kind": "free"
+    }
+  ]
 }

@@ -1,7 +1,7 @@
 {
   "model_id": "dots-studio/dots-3-note-preview",
   "organisation_id": "dots-studio",
-  "name": "Dots Studio: Dots3-Note Preview (free)",
+  "name": "Dots Studio: Dots3-Note Preview",
   "status": "Available",
   "previous_model_id": null,
   "description": "Dots3-Note Preview is an open-weight mixture-of-experts model from Dots Studio, with 16B active parameters out of 280B total. It is the lightest model in the Dots 3 family and is...",
@@ -18,6 +18,13 @@
     "text"
   ],
   "api_model_id": "dots-studio/dots-3-note-preview",
+  "variants": [
+    {
+      "model_id": "dots-studio/dots-3-note-preview:free",
+      "name": "Dots Studio: Dots3-Note Preview (Free)",
+      "variant_kind": "free"
+    }
+  ],
   "links": [
     {
       "platform": "model",

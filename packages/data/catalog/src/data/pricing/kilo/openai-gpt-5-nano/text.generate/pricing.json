@@ -18,13 +18,18 @@
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": {
+        "kind": "official_models",
+        "url": "https://api.kilo.ai/api/gateway/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Kilo Gateway live public model catalogue."
+      }
     },
     {
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.05,
+      "price_per_unit": 0.049999999999999996,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -33,13 +38,18 @@
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": {
+        "kind": "official_models",
+        "url": "https://api.kilo.ai/api/gateway/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Kilo Gateway live public model catalogue."
+      }
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.4,
+      "price_per_unit": 0.39999999999999997,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -48,17 +58,49 @@
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": {
+        "kind": "official_models",
+        "url": "https://api.kilo.ai/api/gateway/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Kilo Gateway live public model catalogue."
+      }
+    },
+    {
+      "meter": "native_web_search_requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "official_models",
+        "url": "https://api.kilo.ai/api/gateway/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Kilo Gateway live public model catalogue."
+      }
     }
   ],
   "regions": [],
   "service_tiers": [
     "standard"
   ],
-  "sources": [],
+  "sources": [
+    {
+      "kind": "official_models",
+      "url": "https://api.kilo.ai/api/gateway/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Live model availability, exact ID, modalities, limits, supported parameters, and pricing."
+    }
+  ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-08-11T04:00:58.599+00:00",
-    "notes": "Pricing synchronized from the provider models API."
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Synchronized from Kilo Gateway's unauthenticated live models endpoint."
   }
 }

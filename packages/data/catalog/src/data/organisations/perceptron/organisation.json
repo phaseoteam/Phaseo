@@ -1,0 +1,23 @@
+{
+  "organisation_id": "perceptron",
+  "name": "Perceptron",
+  "country_code": null,
+  "description": "Model publisher represented in the Kilo Gateway catalogue under the perceptron namespace.",
+  "colour": null,
+  "organisation_links": [],
+  "status": "active",
+  "routable": null,
+  "sources": [
+    {
+      "kind": "official_models",
+      "url": "https://api.kilo.ai/api/gateway/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Kilo Gateway publisher namespace: perceptron."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Publisher namespace verified from Kilo's live catalogue; legal identity and location were not independently verified."
+  }
+}

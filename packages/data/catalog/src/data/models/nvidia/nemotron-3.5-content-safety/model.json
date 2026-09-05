@@ -13,6 +13,13 @@
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "nvidia/nemotron-3.5-content-safety",
+  "variants": [
+    {
+      "model_id": "nvidia/nemotron-3.5-content-safety:free",
+      "name": "Nemotron 3 5 Content Safety (Free)",
+      "variant_kind": "free"
+    }
+  ],
   "links": [
     {
       "title": "Requesty model catalogue",

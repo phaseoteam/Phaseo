@@ -100,5 +100,12 @@
   "last_updated": null,
   "removal_date": null,
   "replacement_model_id": null,
-  "license_url": null
+  "license_url": null,
+  "variants": [
+    {
+      "model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "name": "Nemotron 3 Nano Omni 30B A3B Reasoning (Free)",
+      "variant_kind": "free"
+    }
+  ]
 }
