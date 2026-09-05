@@ -1,6 +1,6 @@
 {
   "name": "@phaseo/cpp-sdk",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "private": true,
   "description": "Phaseo C++ SDK (preview) - generated client with models wrapper",
   "license": "MIT",
