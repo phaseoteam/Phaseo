@@ -55,10 +55,10 @@
   "service_tiers": [
     "standard"
   ],
-  "sources": [],
+  "sources": [{ "kind": "pricing", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "First-party live prompt and completion prices." }],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-08-10T22:31:03.131+00:00",
-    "notes": "Pricing synchronized from the provider models API."
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Live serverless token prices verified against the first-party public catalog."
   }
 }

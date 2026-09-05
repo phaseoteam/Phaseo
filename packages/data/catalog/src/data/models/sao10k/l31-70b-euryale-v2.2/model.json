@@ -1,0 +1,72 @@
+{
+  "model_id": "sao10k/l31-70b-euryale-v2.2",
+  "organisation_id": "sao10k",
+  "name": "L3.1 70B Euryale v2.2",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Euryale L3.1 70B v2.2 is a model focused on creative roleplay from Sao10k. It is the successor of Euryale L3 70B v2.1.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "sao10k/l31-70b-euryale-v2.2",
+  "links": [
+    {
+      "title": "Novita model page",
+      "kind": "provider_model",
+      "url": "https://novita.ai/models/model-detail/sao10k-l31-70b-euryale-v2.2"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 8192,
+    "input": 8192,
+    "output": 8192
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_model",
+      "url": "https://novita.ai/models/model-detail/sao10k-l31-70b-euryale-v2.2",
+      "accessed_at": "2026-08-20T00:00:00Z",
+      "notes": "Provider availability and operational limits; creator metadata remains limited."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-20T00:00:00Z",
+    "notes": "Novita availability verified; creator release metadata is not asserted from the provider listing."
+  },
+  "last_updated": "2026-08-20T00:00:00",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
