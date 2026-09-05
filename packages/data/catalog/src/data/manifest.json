@@ -65,7 +65,8 @@
     "hexgrad",
     "jetbrains",
     "stealth",
-    "stability-ai"
+    "stability-ai",
+    "opengvlab"
   ],
   "models": {
     "ai21": [
@@ -279,7 +280,8 @@
       "deepseek/deepseek-r1-turbo",
       "deepseek/deepseek-v3",
       "deepseek/deepseek-v3-turbo",
-      "deepseek/deepseek-r1-distill-llama-70b"
+      "deepseek/deepseek-r1-distill-llama-70b",
+      "deepseek/deepseek-r1-distill-qwen-14b"
     ],
     "eleven-labs": [
       "eleven-labs/eleven-english-sts-v2",
@@ -713,7 +715,8 @@
       "mistral/mistral-nemo",
       "mistral/mistral-nemo-2407",
       "mistral/mistral-small-24b-2501",
-      "mistral/leanstral-1.5:free"
+      "mistral/leanstral-1.5:free",
+      "mistral/voxtral-mini-4b"
     ],
     "moonshotai": [
       "moonshotai/kimi-k1.5",
@@ -1429,6 +1432,9 @@
     ],
     "stability-ai": [
       "stability-ai/stable-diffusion-xl-base-1.0"
+    ],
+    "opengvlab": [
+      "opengvlab/internvl3.5-8b"
     ]
   },
   "benchmarks": [

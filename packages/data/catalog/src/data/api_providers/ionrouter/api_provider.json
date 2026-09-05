@@ -1,7 +1,7 @@
 {
   "api_provider_id": "ionrouter",
   "api_provider_name": "IonRouter",
-  "description": null,
+  "description": "US-based OpenAI-compatible inference provider for language, vision, image, video, and text-to-speech models.",
   "link": "https://ionrouter.io/docs",
   "residency_mode": "provider_managed",
   "default_execution_regions": null,
@@ -21,19 +21,32 @@
   "prompt_training_policy": "may_train",
   "prompt_training_notes": "IonRouter stores prompts and generated content for limited periods and says request logs and generated content may be reviewed to improve model performance, content safety systems, and the service.",
   "prompt_training_source_url": "https://ionrouter.io/privacy-policy.pdf",
-  "gateway_kind": null,
-  "routable": null,
-  "routing_enabled": null,
+  "gateway_kind": "openai_compatible",
+  "routable": true,
+  "routing_enabled": true,
   "sdk_package": null,
-  "api_base_url": null,
+  "api_base_url": "https://api.ionrouter.io/v1",
   "docs_url": "https://ionrouter.io/docs",
-  "auth_env": null,
-  "api_formats": [],
-  "service_tiers": [],
-  "sources": [],
+  "auth_env": "IONROUTER_API_KEY",
+  "api_formats": ["openai"],
+  "service_tiers": ["standard"],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://ionrouter.io/docs",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official API reference, endpoints, model catalog, pricing, and rate limits."
+    },
+    {
+      "kind": "api",
+      "url": "https://api.ionrouter.io/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live OpenAI-compatible model discovery endpoint."
+    }
+  ],
   "verification": {
-    "status": "unverified",
-    "checked_at": null,
-    "notes": null
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
   }
 }

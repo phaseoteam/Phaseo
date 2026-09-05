@@ -1,0 +1,15 @@
+{
+  "organisation_id": "nari-labs",
+  "name": "Nari Labs",
+  "country_code": null,
+  "description": null,
+  "website": null,
+  "colour": null,
+  "aliases": [],
+  "links": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
+}

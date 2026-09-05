@@ -1,0 +1,67 @@
+{
+  "model_id": "lllyasviel/framepack-i2v",
+  "organisation_id": "lllyasviel",
+  "name": "Framepack I2v",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Framepack I2v is available through IonRouter's published API catalog.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "video",
+  "api_model_id": "lllyasviel/framepack-i2v",
+  "links": [],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "video",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "video/*"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": true,
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://ionrouter.io/docs",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official IonRouter API reference and pricing catalog."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

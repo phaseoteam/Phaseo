@@ -18,7 +18,12 @@
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": {
+        "kind": "pricing",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter model pricing table."
+      }
     },
     {
       "meter": "output_text_tokens",
@@ -33,17 +38,29 @@
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": {
+        "kind": "pricing",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter model pricing table."
+      }
     }
   ],
   "regions": [],
   "service_tiers": [
     "standard"
   ],
-  "sources": [],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://ionrouter.io/docs",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official IonRouter model pricing table."
+    }
+  ],
   "verification": {
-    "status": "unverified",
-    "checked_at": null,
-    "notes": null
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Rates reconciled against the official IonRouter API reference."
   }
 }

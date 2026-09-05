@@ -1,0 +1,48 @@
+{
+  "key": "ionrouter:black-forest-labs/flux-1-schnell:image.generate",
+  "api_provider_id": "ionrouter",
+  "provider_slug": "ionrouter",
+  "api_model_id": "black-forest-labs/flux-1-schnell",
+  "capability_id": "image.generate",
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.005,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Approximate published per-image price.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog. Approximate published per-image price."
+      }
+    }
+  ],
+  "regions": [
+    "US"
+  ],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://ionrouter.io/docs",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official IonRouter model pricing table."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Rates reconciled against the official IonRouter API reference."
+  }
+}
