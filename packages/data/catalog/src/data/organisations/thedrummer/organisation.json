@@ -1,13 +1,24 @@
 {
   "organisation_id": "thedrummer",
-  "name": "Thedrummer",
+  "name": "TheDrummer",
   "country_code": null,
-  "description": "Thedrummer publishes models available through OpenRouter.",
+  "description": "TheDrummer publishes open model weights available through OpenRouter and hosted by Infermatic.",
   "colour": null,
-  "organisation_links": [],
+  "organisation_links": [
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/TheDrummer"
+    }
+  ],
   "status": "active",
   "routable": null,
   "sources": [
+    {
+      "kind": "repository",
+      "url": "https://huggingface.co/TheDrummer",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Identity source."
+    },
     {
       "kind": "provider_models",
       "url": "https://openrouter.ai/api/v1/models",
@@ -18,6 +29,6 @@
   "verification": {
     "status": "partial",
     "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Publisher identity is based on OpenRouter's official namespace."
+    "notes": "Publisher identity is supported by the official Hugging Face namespace and OpenRouter catalog namespace."
   }
 }

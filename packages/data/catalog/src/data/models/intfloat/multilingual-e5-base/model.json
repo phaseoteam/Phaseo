@@ -1,0 +1,73 @@
+{
+  "model_id": "intfloat/multilingual-e5-base",
+  "organisation_id": "intfloat",
+  "name": "multilingual-e5-base",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "multilingual-e5-base is a third-party model currently hosted by Infermatic.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "embedding",
+  "api_model_id": "intfloat/multilingual-e5-base",
+  "links": [
+    {
+      "title": "Infermatic model catalog",
+      "kind": "provider_model",
+      "url": "https://infermatic.ai/models/"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "embedding",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 512,
+    "input": 512,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "embedding"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": false,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_model",
+      "url": "https://infermatic.ai/models/",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Infermatic first-party catalog confirms hosted availability, creator attribution, context, and modality."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Provider availability verified; upstream release and license metadata are intentionally not asserted."
+  },
+  "last_updated": "2026-08-24T00:00:00",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
+
