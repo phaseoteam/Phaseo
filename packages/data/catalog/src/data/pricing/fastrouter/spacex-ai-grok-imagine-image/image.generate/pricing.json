@@ -1,0 +1,88 @@
+{
+  "key": "fastrouter:spacex-ai/grok-imagine-image:image.generate",
+  "api_provider_id": "fastrouter",
+  "provider_slug": "fastrouter",
+  "api_model_id": "spacex-ai/grok-imagine-image",
+  "capability_id": "image.generate",
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.02,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.size",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1k"
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.size",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1k"
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.02,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.size",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "2k"
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.size",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "2k"
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Published FastRouter list pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Structured from FastRouter's live published pricing metadata."
+  }
+}

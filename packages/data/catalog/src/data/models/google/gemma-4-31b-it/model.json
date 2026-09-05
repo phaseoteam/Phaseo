@@ -1,31 +1,26 @@
 {
   "model_id": "google/gemma-4-31b-it",
   "organisation_id": "google",
-  "name": "Gemma 4 31b It",
+  "name": "Google: Gemma 4 31B",
   "status": "Available",
   "previous_model_id": null,
-  "description": "Gemma is a family of open models built by Google DeepMind. Gemma 4 models are multimodal, handling text and image input and generating text output.",
-  "announced_date": "2026-04-02T16:48:06.000Z",
-  "release_date": "2026-04-02T16:48:06.000Z",
+  "description": "google/gemma-4-31b-it is Google DeepMind’s instruction-tuned 31B Gemma 4 model, built for strong reasoning, coding, agentic workflows, and multimodal understanding. It supports text and image input, has a 256K context window, and is positioned as the dense, higher-quality counterpart to the 26B MoE variant.",
+  "announced_date": null,
+  "release_date": "2026-04-02T16:48:06",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": "Open weights",
-  "input_types": "text,image",
+  "license": null,
+  "input_types": "image,text,video",
   "output_types": "text",
   "api_model_id": "google/gemma-4-31b-it",
   "links": [
     {
-      "title": "Requesty model catalogue",
+      "title": "FastRouter model catalogue",
       "kind": "api_reference",
-      "url": "https://router.requesty.ai/v1/models"
+      "url": "https://go.fastrouter.ai/api/v1/models"
     }
   ],
-  "details": [
-    {
-      "name": "requesty_availability",
-      "value": "Available through Requesty as deepinfra/google/gemma-4-31B-it."
-    }
-  ],
+  "details": [],
   "benchmarks": [],
   "family_id": null,
   "page_notice": null,
@@ -33,13 +28,14 @@
   "knowledge_cutoff": null,
   "limits": {
     "context": 262144,
-    "input": 262144,
-    "output": 0
+    "input": null,
+    "output": 131072
   },
   "modalities": {
     "input": [
+      "image/*",
       "text",
-      "image"
+      "video/*"
     ],
     "output": [
       "text"
@@ -53,25 +49,25 @@
     "attachment": true,
     "tool_call": true,
     "structured_output": true,
-    "temperature": null,
-    "streaming": true,
+    "temperature": true,
+    "streaming": false,
     "web_search": false
   },
-  "open_weights": true,
+  "open_weights": null,
   "sources": [
     {
       "kind": "provider_models",
-      "url": "https://router.requesty.ai/v1/models",
-      "accessed_at": "2026-08-24T00:00:00Z",
-      "notes": "Canonical name, developer, lifecycle timestamp, limits, modalities, and capabilities from Requesty's live catalogue."
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
     }
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Available in Requesty's official live catalogue; third-party developer metadata may require further enrichment."
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
   },
-  "last_updated": "2026-08-20T18:19:35.000Z",
+  "last_updated": "2026-08-24T00:29:58",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

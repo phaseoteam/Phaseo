@@ -1,0 +1,41 @@
+{
+  "key": "fastrouter:z-ai/glm-image:image.generate",
+  "api_provider_id": "fastrouter",
+  "provider_slug": "fastrouter",
+  "api_model_id": "z-ai/glm-image",
+  "capability_id": "image.generate",
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Published FastRouter list pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Structured from FastRouter's live published pricing metadata."
+  }
+}

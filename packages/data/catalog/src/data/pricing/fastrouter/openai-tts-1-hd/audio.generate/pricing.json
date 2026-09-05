@@ -1,0 +1,41 @@
+{
+  "key": "fastrouter:openai/tts-1-hd:audio.generate",
+  "api_provider_id": "fastrouter",
+  "provider_slug": "fastrouter",
+  "api_model_id": "openai/tts-1-hd",
+  "capability_id": "audio.generate",
+  "rules": [
+    {
+      "meter": "input_characters",
+      "unit": "character",
+      "unit_size": 1000000,
+      "price_per_unit": 30,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "FastRouter publishes 0.000030 USD per input character for this text-to-speech model.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Provider model and pricing metadata."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Pricing synchronized from the provider models API."
+  }
+}

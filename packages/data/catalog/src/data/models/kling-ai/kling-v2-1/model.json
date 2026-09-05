@@ -1,0 +1,73 @@
+{
+  "model_id": "kling-ai/kling-v2-1",
+  "organisation_id": "kling-ai",
+  "name": "Kling AI: Kling V2.1",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Kling 2.1 is Kuaishou's advanced image-to-video model (2025). It transforms reference images (and optional text) into high-definition cinematic videos using a 3D spatiotemporal attention architecture. The model simulates real-world physics and delivers very natural, intricate motion and lifelike characters. It can produce multiple video variants from the same prompt and uses AI-assisted prompting to help users craft detailed instructions. In comparative tests, Kling 2.1 rivals top closed-source competitors. Overall, it marks a significant step up in realism, coherence, and prompt-following over Kling 2.0.",
+  "announced_date": null,
+  "release_date": "2025-02-12T23:30:02",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "video",
+  "api_model_id": "kling-ai/kling-v2-1",
+  "links": [
+    {
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "video",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 8192,
+    "input": null,
+    "output": 4096
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "video/*"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": false,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
+  },
+  "last_updated": "2026-08-24T00:29:58",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

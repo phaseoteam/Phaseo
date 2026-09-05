@@ -1,0 +1,72 @@
+{
+  "model_id": "bytedance/seedream-5-lite",
+  "organisation_id": "bytedance",
+  "name": "ByteDance: Seedream 5.0 Lite",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Seedream 5.0 Lite is ByteDance's fast, cost-efficient image-generation model from the Seedream family, built on a unified generation-editing architecture that runs text-to-image, single-image editing, multi-image fusion, and batch sequence generation through one endpoint. It supports up to 6 images per batch, reference-image fusion (image_urls), and configurable resolution up to 3K, trading some fidelity versus Seedream 5.0 Pro for faster, cheaper generation.",
+  "announced_date": null,
+  "release_date": "2026-02-13T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "image",
+  "api_model_id": "bytedance/seedream-5-lite",
+  "links": [
+    {
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "image",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 4096,
+    "input": null,
+    "output": 0
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "image/*"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": false,
+    "structured_output": true,
+    "temperature": false,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
+  },
+  "last_updated": "2026-08-24T00:29:58",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

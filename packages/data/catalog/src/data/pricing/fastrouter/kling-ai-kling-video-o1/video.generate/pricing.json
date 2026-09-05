@@ -1,0 +1,401 @@
+{
+  "key": "fastrouter:kling-ai/kling-video-o1:video.generate",
+  "api_provider_id": "fastrouter",
+  "provider_slug": "fastrouter",
+  "api_model_id": "kling-ai/kling-video-o1",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.09999999999999999,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.09,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.096,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.09999999999999999,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.10285714285714286,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.105,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.10666666666666666,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.11200000000000002,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "pro"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Published FastRouter list pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Structured from FastRouter's live published pricing metadata."
+  }
+}

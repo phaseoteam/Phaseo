@@ -1,0 +1,73 @@
+{
+  "model_id": "pika/pika-v2-2",
+  "organisation_id": "pika",
+  "name": "Pika: Pika V2.2",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Pika 2.2 (early 2025) is a versatile video model supporting text-to-video and image-to-video. It generates dynamic 10-second clips at 1080p with improved realism and prompt responsiveness. New features include keyframe transitions (Pikaframes) that smoothly interpolate between start/end images, and various AI-powered effects (Pikaffects, Pikadditions, etc.) for creative control. Pika 2.2 delivers cinematic motion and camera effects, though very complex prompts can still produce occasional artifacts. Overall, it represents a major upgrade with higher resolution and fluidity over Pika 2.1, aimed at content creators and social media applications.",
+  "announced_date": null,
+  "release_date": "2025-02-12T23:31:52",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "video",
+  "api_model_id": "pika/pika-v2-2",
+  "links": [
+    {
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "video",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 8192,
+    "input": null,
+    "output": 4096
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "video/*"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": false,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
+  },
+  "last_updated": "2026-08-24T00:29:58",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

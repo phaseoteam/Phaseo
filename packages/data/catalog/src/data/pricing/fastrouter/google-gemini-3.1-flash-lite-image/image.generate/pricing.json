@@ -6,6 +6,21 @@
   "capability_id": "image.generate",
   "rules": [
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.025,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
       "meter": "input_image_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -65,7 +80,7 @@
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-11T12:20:01.341Z",
+    "checked_at": "2026-08-24T00:29:58.321Z",
     "notes": "Pricing synchronized from the provider models API."
   }
 }

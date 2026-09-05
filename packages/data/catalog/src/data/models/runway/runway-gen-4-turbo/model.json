@@ -1,0 +1,73 @@
+{
+  "model_id": "runway/runway-gen-4-turbo",
+  "organisation_id": "runway",
+  "name": "Runway: Runway Gen-4 Turbo",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Runway Gen-4 Turbo is optimized for speed and cost. By default it outputs 720p video but supports 4K upscaling for higher quality. Turbo preserves much of Gen-4's motion realism—handling dynamic lighting and depth convincingly—while sacrificing some fine details in very complex scenes. This makes it ideal for rapid prototyping and scenarios where quick turnaround is needed. Overall, Gen-4 Turbo delivers visually impressive 720p clips with fluid action and is faster (and cheaper) than the original Gen-4, at the cost of slight quality tradeoffs.",
+  "announced_date": null,
+  "release_date": "2025-02-12T23:31:41",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "video",
+  "api_model_id": "runway/runway-gen-4-turbo",
+  "links": [
+    {
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "video",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 8192,
+    "input": null,
+    "output": 4096
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "video/*"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": false,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
+  },
+  "last_updated": "2026-08-24T00:29:58",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

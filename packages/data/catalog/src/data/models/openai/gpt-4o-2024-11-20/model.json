@@ -4,34 +4,28 @@
   "name": "OpenAI: GPT-4o (2024-11-20)",
   "status": "Available",
   "previous_model_id": null,
-  "description": "The 2024-11-20 version of GPT-4o offers a leveled-up creative writing ability with more natural, engaging, and tailored writing to improve relevance & readability. It’s also better at working with uploaded...",
+  "description": "GPT-4o (November 2024 version) enhances OpenAI's flagship multimodal model with specialized improvements in creative writing and document analysis. This updated release delivers more natural, engaging, and contextually tailored writing with improved relevance and readability across various content types. The model demonstrates significantly enhanced document processing capabilities, providing deeper insights and more comprehensive responses when working with uploaded files. While maintaining the core multimodal architecture that processes both text and image inputs, this version incorporates refinements that improve multilingual processing and visual understanding. The model continues to deliver the performance level of GPT-4 Turbo with double the processing speed and 50% greater cost efficiency, making it particularly valuable for content creation, document analysis, and multilingual applications requiring both quality and responsiveness.",
   "announced_date": null,
-  "release_date": "2024-11-20",
+  "release_date": "2024-11-20T18:33:14",
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,
-  "input_types": [
-    "text",
-    "image/*",
-    "file"
-  ],
-  "output_types": [
-    "text"
-  ],
+  "input_types": "text,image,file",
+  "output_types": "text",
   "api_model_id": "openai/gpt-4o-2024-11-20",
   "links": [
     {
-      "platform": "model",
-      "title": "OpenRouter model page",
-      "url": "https://openrouter.ai/openai/gpt-4o-2024-11-20"
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
     }
   ],
   "details": [],
   "benchmarks": [],
   "family_id": null,
   "page_notice": null,
-  "model_type": "language",
-  "knowledge_cutoff": "2023-10-31",
+  "model_type": null,
+  "knowledge_cutoff": null,
   "limits": {
     "context": 128000,
     "input": null,
@@ -48,7 +42,7 @@
     ]
   },
   "reasoning": {
-    "supported": null,
+    "supported": false,
     "options": []
   },
   "capabilities": {
@@ -56,24 +50,24 @@
     "tool_call": true,
     "structured_output": true,
     "temperature": true,
-    "streaming": true,
-    "web_search": false
+    "streaming": false,
+    "web_search": true
   },
   "open_weights": null,
   "sources": [
     {
       "kind": "provider_models",
-      "url": "https://openrouter.ai/api/v1/models",
-      "accessed_at": "2026-08-24T00:00:00Z",
-      "notes": "Exact live OpenRouter ID: openai/gpt-4o-2024-11-20."
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
     }
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Availability, modalities, limits and parameters verified against OpenRouter's official models API; upstream publisher metadata remains provider-reported."
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
   },
-  "last_updated": "2026-08-24",
+  "last_updated": "2026-08-24T00:29:58",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

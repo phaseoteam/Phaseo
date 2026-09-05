@@ -1,31 +1,26 @@
 {
   "model_id": "spacex-ai/grok-4-fast",
   "organisation_id": "spacex-ai",
-  "name": "Grok 4 Fast",
+  "name": "xAI: Grok 4 Fast",
   "status": "Available",
   "previous_model_id": null,
-  "description": "xAI's latest advancement in cost-efficient reasoning models",
-  "announced_date": "2025-09-19T00:00:00.000Z",
-  "release_date": "2025-09-19T00:00:00.000Z",
+  "description": "Grok-4-Fast is xAI’s latest efficiency-focused generative AI model, designed to deliver high-speed responses with significant improvements in cost and latency over the original Grok 4. It features a unified architecture that seamlessly handles both reasoning and non-reasoning tasks; this allows it to produce quick replies for simple queries and dive deeply into complex coding or reasoning problems when needed. One of its standout capabilities is the very large 2 million token context window, enabling it to process lengthy documents, multi-hour transcripts, or entire codebases in one go. Grok-4-Fast achieves roughly 40% greater token efficiency than Grok 4, reducing computational cost by up to 98% in benchmark tasks while maintaining state-of-the-art performance in reasoning, search, and coding benchmarks such as GPQA Diamond and AIME 2025. The model supports advanced features like multimodal input (text, image, voice), tool and web search integration, and function calling for structured outputs, making it suitable for both enterprise automation and consumer apps. ",
+  "announced_date": null,
+  "release_date": "2025-09-19T00:01:30",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": "Proprietary",
-  "input_types": "text",
+  "license": null,
+  "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "spacex-ai/grok-4-fast",
   "links": [
     {
-      "title": "Requesty model catalogue",
+      "title": "FastRouter model catalogue",
       "kind": "api_reference",
-      "url": "https://router.requesty.ai/v1/models"
+      "url": "https://go.fastrouter.ai/api/v1/models"
     }
   ],
-  "details": [
-    {
-      "name": "requesty_availability",
-      "value": "Available through Requesty as xai/grok-4-fast."
-    }
-  ],
+  "details": [],
   "benchmarks": [],
   "family_id": null,
   "page_notice": null,
@@ -33,12 +28,13 @@
   "knowledge_cutoff": null,
   "limits": {
     "context": 2000000,
-    "input": 2000000,
-    "output": 0
+    "input": null,
+    "output": 30000
   },
   "modalities": {
     "input": [
-      "text"
+      "text",
+      "image/*"
     ],
     "output": [
       "text"
@@ -49,28 +45,28 @@
     "options": []
   },
   "capabilities": {
-    "attachment": false,
+    "attachment": true,
     "tool_call": true,
     "structured_output": true,
-    "temperature": null,
-    "streaming": true,
-    "web_search": true
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
   },
-  "open_weights": false,
+  "open_weights": null,
   "sources": [
     {
       "kind": "provider_models",
-      "url": "https://router.requesty.ai/v1/models",
-      "accessed_at": "2026-08-24T00:00:00Z",
-      "notes": "Canonical name, developer, lifecycle timestamp, limits, modalities, and capabilities from Requesty's live catalogue."
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
     }
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Available in Requesty's official live catalogue; third-party developer metadata may require further enrichment."
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
   },
-  "last_updated": "2026-08-20T18:19:35.000Z",
+  "last_updated": "2026-08-24T00:29:58",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

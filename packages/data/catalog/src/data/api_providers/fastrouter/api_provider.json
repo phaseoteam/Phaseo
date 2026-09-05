@@ -7,24 +7,24 @@
   "provider_family_id": null,
   "offer_label": null,
   "offer_scope": "specialized",
-  "description": null,
+  "description": "OpenAI-compatible multi-provider AI gateway with model routing, fallback, BYOK, observability, and media generation APIs.",
   "link": "https://fastrouter.ai/models",
   "residency_mode": null,
   "default_execution_regions": null,
   "default_data_regions": null,
   "zero_data_retention": false,
-  "residency_source_url": null,
-  "prompt_training_policy": null,
-  "prompt_training_notes": null,
-  "prompt_training_source_url": null,
+  "residency_source_url": "https://fastrouter.ai/privacy",
+  "prompt_training_policy": "may_train",
+  "prompt_training_notes": "The terms grant FastRouter rights to use inputs and outputs to provide, debug, optimize, and improve its services. Upstream model-provider terms also apply.",
+  "prompt_training_source_url": "https://fastrouter.ai/terms",
   "user_identifier_policy": null,
   "user_identifier_notes": null,
-  "privacy_policy_url": null,
-  "terms_of_service_url": null,
+  "privacy_policy_url": "https://fastrouter.ai/privacy",
+  "terms_of_service_url": "https://fastrouter.ai/terms",
   "regional_pricing_mode": null,
   "regional_pricing_uplift_percent": null,
-  "pricing_source_url": null,
-  "regional_pricing_notes": null,
+  "pricing_source_url": "https://go.fastrouter.ai/api/v1/models",
+  "regional_pricing_notes": "FastRouter advertises zero markup on underlying model costs; subscription and BYOK request limits vary by account plan.",
   "country_code": null,
   "status": "Active",
   "colour": null,
@@ -33,13 +33,37 @@
   "routing_enabled": false,
   "sdk_package": "@ai-sdk/openai-compatible",
   "api_base_url": "https://go.fastrouter.ai/api/v1",
-  "docs_url": "https://fastrouter.ai/models",
+  "docs_url": "https://docs.fastrouter.ai/api-reference/list-models-api",
   "auth_env": [
     "FASTROUTER_API_KEY"
   ],
   "api_formats": [],
   "service_tiers": [],
   "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Public live catalogue of exact model IDs, activity, modalities, supported parameters, context/output limits, and pricing metadata; returned 197 entries."
+    },
+    {
+      "kind": "official_pricing",
+      "url": "https://fastrouter.ai/pricing",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official plan limits, log-retention periods, and zero-markup pricing policy."
+    },
+    {
+      "kind": "official_privacy",
+      "url": "https://fastrouter.ai/privacy",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Prompt data is stored temporarily and typically deleted after seven days; usage logs may be retained up to 90 days."
+    },
+    {
+      "kind": "official_terms",
+      "url": "https://fastrouter.ai/terms",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official service terms and input/output licence governing service provision, debugging, optimization, improvement, and compliance."
+    },
     {
       "kind": "models.dev",
       "url": "https://models.dev/api.json",
@@ -48,8 +72,8 @@
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-07-22T11:23:04.646Z",
-    "notes": "Imported from the public models.dev provider registry; not a Phaseo-routable offer."
+    "status": "verified",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider identity, live catalogue endpoint, pricing policy, prompt retention, and service terms verified from official FastRouter sources. Phaseo routing remains disabled."
   }
 }

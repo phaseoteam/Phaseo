@@ -1,44 +1,40 @@
 {
   "model_id": "perplexity/sonar",
   "organisation_id": "perplexity",
-  "name": "Sonar",
+  "name": "Perplexity: Sonar",
   "status": "Available",
   "previous_model_id": null,
-  "description": "Lightweight offering with search grounding, quicker and cheaper than Sonar Pro.",
-  "announced_date": "2025-01-27T21:36:48.000Z",
-  "release_date": "2025-01-27T21:36:48.000Z",
+  "description": "Sonar is a lightweight, cost-effective non-reasoning search model built for delivering fast, grounded answers through real-time web search. With a context length of 128k, it is optimized for quick lookups and straightforward Q&A tasks, making it ideal for users who need immediate, reliable information without extensive processing. Sonar provides answers backed by citations, ensuring transparency while maintaining speed and low cost. Typical use cases include summarizing books, TV shows, or movies, looking up definitions or quick facts, and browsing up-to-date content across categories like news, sports, health, and finance. Its efficiency and accuracy make it well-suited for everyday information needs.",
+  "announced_date": null,
+  "release_date": "2025-01-27T21:36:48",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": "Proprietary",
-  "input_types": "text",
+  "license": null,
+  "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "perplexity/sonar",
   "links": [
     {
-      "title": "Requesty model catalogue",
+      "title": "FastRouter model catalogue",
       "kind": "api_reference",
-      "url": "https://router.requesty.ai/v1/models"
+      "url": "https://go.fastrouter.ai/api/v1/models"
     }
   ],
-  "details": [
-    {
-      "name": "requesty_availability",
-      "value": "Available through Requesty as perplexity/sonar."
-    }
-  ],
+  "details": [],
   "benchmarks": [],
   "family_id": null,
   "page_notice": null,
   "model_type": null,
   "knowledge_cutoff": null,
   "limits": {
-    "context": 131072,
-    "input": 131072,
-    "output": 8192
+    "context": 127072,
+    "input": null,
+    "output": 0
   },
   "modalities": {
     "input": [
-      "text"
+      "text",
+      "image/*"
     ],
     "output": [
       "text"
@@ -49,28 +45,28 @@
     "options": []
   },
   "capabilities": {
-    "attachment": false,
+    "attachment": true,
     "tool_call": false,
-    "structured_output": true,
-    "temperature": null,
-    "streaming": true,
+    "structured_output": false,
+    "temperature": true,
+    "streaming": false,
     "web_search": true
   },
-  "open_weights": false,
+  "open_weights": null,
   "sources": [
     {
       "kind": "provider_models",
-      "url": "https://router.requesty.ai/v1/models",
-      "accessed_at": "2026-08-24T00:00:00Z",
-      "notes": "Canonical name, developer, lifecycle timestamp, limits, modalities, and capabilities from Requesty's live catalogue."
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
     }
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Available in Requesty's official live catalogue; third-party developer metadata may require further enrichment."
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
   },
-  "last_updated": "2026-08-20T18:19:35.000Z",
+  "last_updated": "2026-08-24T00:29:58",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

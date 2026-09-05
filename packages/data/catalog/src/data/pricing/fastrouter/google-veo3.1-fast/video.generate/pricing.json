@@ -1,0 +1,296 @@
+{
+  "key": "fastrouter:google/veo3.1-fast:video.generate",
+  "api_provider_id": "fastrouter",
+  "provider_slug": "fastrouter",
+  "api_model_id": "google/veo3.1-fast",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "720P"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "720P"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1080p"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1080p"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "4k"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "4k"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "720P"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": true
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "720P"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": true
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1080p"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": true
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1080p"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": true
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.35,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "4k"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": true
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "4k"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": true
+        }
+      ],
+      "source": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Published FastRouter list pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Structured from FastRouter's live published pricing metadata."
+  }
+}
