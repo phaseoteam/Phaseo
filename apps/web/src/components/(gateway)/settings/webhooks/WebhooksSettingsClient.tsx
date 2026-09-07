@@ -14,7 +14,6 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,6 +65,7 @@ async function copyToClipboard(value: string, label: string) {
 export default function WebhooksSettingsClient({ endpoints }: Props) {
 	const router = useRouter();
 	const [revealedSecret, setRevealedSecret] = useState<RevealedSecret | null>(null);
+	const [deleteEndpoint, setDeleteEndpoint] = useState<WebhookEndpoint | null>(null);
 	const [pendingEndpointId, setPendingEndpointId] = useState<string | null>(null);
 	const [isPending, startTransition] = useTransition();
 
@@ -99,6 +99,28 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 	return (
 		<div className="space-y-5">
 			{revealedSecret ? <WebhookSecretNotice endpointId={revealedSecret.id} secret={revealedSecret.secret} /> : null}
+			<AlertDialog open={deleteEndpoint !== null} onOpenChange={(open) => !open && setDeleteEndpoint(null)}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete {deleteEndpoint?.name ?? "this endpoint"}?</AlertDialogTitle>
+						<AlertDialogDescription>New jobs will no longer deliver to this endpoint. Existing delivery history is retained.</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Keep endpoint</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							onClick={() => {
+								if (!deleteEndpoint) return;
+								const endpointId = deleteEndpoint.id;
+								setDeleteEndpoint(null);
+								runEndpointAction(endpointId, () => deleteWebhookEndpointAction(endpointId), "Endpoint deleted");
+							}}
+						>
+							Delete endpoint
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
 			{endpoints.length > 0 ? (
 				<div className="space-y-3">
@@ -144,25 +166,11 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 												<DropdownMenuItem onClick={() => runEndpointAction(endpoint.id, () => updateWebhookEndpointStatusAction(endpoint.id, endpoint.status === "active" ? "disabled" : "active"), endpoint.status === "active" ? "Endpoint paused" : "Endpoint enabled")}>
 													{endpoint.status === "active" ? "Pause endpoint" : "Enable endpoint"}
 												</DropdownMenuItem>
-												<DropdownMenuSeparator />
-												<AlertDialog>
-													<AlertDialogTrigger asChild>
-														<DropdownMenuItem variant="destructive">
-															<Trash2 className="mr-2 size-4" />
-															Delete endpoint
-														</DropdownMenuItem>
-													</AlertDialogTrigger>
-													<AlertDialogContent>
-														<AlertDialogHeader>
-															<AlertDialogTitle>Delete {endpoint.name}?</AlertDialogTitle>
-															<AlertDialogDescription>New jobs will no longer deliver to this endpoint. Existing delivery history is retained.</AlertDialogDescription>
-														</AlertDialogHeader>
-														<AlertDialogFooter>
-															<AlertDialogCancel>Keep endpoint</AlertDialogCancel>
-															<AlertDialogAction variant="destructive" onClick={() => runEndpointAction(endpoint.id, () => deleteWebhookEndpointAction(endpoint.id), "Endpoint deleted")}>Delete endpoint</AlertDialogAction>
-														</AlertDialogFooter>
-													</AlertDialogContent>
-												</AlertDialog>
+													<DropdownMenuSeparator />
+													<DropdownMenuItem variant="destructive" onClick={() => setDeleteEndpoint(endpoint)}>
+														<Trash2 className="mr-2 size-4" />
+														Delete endpoint
+													</DropdownMenuItem>
 											</DropdownMenuContent>
 										</DropdownMenu>
 									</div>
