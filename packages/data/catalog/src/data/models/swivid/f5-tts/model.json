@@ -1,0 +1,67 @@
+{
+  "model_id": "swivid/f5-tts",
+  "organisation_id": "swivid",
+  "name": "F5 Tts",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "F5 Tts is available through IonRouter's published API catalog.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,audio",
+  "output_types": "audio_tts",
+  "api_model_id": "swivid/f5-tts",
+  "links": [],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "audio/*"
+    ],
+    "output": [
+      "audio/*"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": true,
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://ionrouter.io/docs",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official IonRouter API reference and pricing catalog."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

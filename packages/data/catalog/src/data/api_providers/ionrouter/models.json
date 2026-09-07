@@ -9,7 +9,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -57,17 +57,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://glm.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "moonshotai/kimi-k2.5",
@@ -79,7 +95,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -127,17 +143,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://kimi.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "minimax/minimax-m2.5",
@@ -148,8 +180,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -197,17 +229,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://minimax.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3.5-122b-a10b",
@@ -216,10 +264,10 @@
     "internal_model_id": "qwen/qwen3.5-122b-a10b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "text",
+    "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -267,17 +315,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-oss-120b",
@@ -289,7 +353,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -337,17 +401,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3.5-35b-a3b",
@@ -356,10 +436,10 @@
     "internal_model_id": "qwen/qwen3.5-35b-a3b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "text",
+    "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -407,17 +487,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3.5-27b",
@@ -426,10 +522,10 @@
     "internal_model_id": "qwen/qwen3.5-27b",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "text",
+    "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -477,17 +573,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3-30b-a3b",
@@ -499,7 +611,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -547,17 +659,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen2.5-32b",
@@ -569,7 +697,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -617,17 +745,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3-14b",
@@ -639,7 +783,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -687,17 +831,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen2.5-14b",
@@ -709,7 +869,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -757,17 +917,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3-8b",
@@ -779,7 +955,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -827,17 +1003,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen2.5-7b",
@@ -849,7 +1041,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -897,17 +1089,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3-vl-8b",
@@ -919,7 +1127,7 @@
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -967,17 +1175,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3-vl-30b-a3b",
@@ -989,7 +1213,7 @@
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1037,17 +1261,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen2.5-vl-7b",
@@ -1059,7 +1299,7 @@
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1107,17 +1347,33 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   },
   {
     "api_model_id": "allenai/molmo-2-8b",
@@ -1129,7 +1385,7 @@
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1177,16 +1433,1218 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
     },
-    "rate_limits": []
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-r1-distill-qwen-14b",
+    "provider_api_model_id": "ionrouter:deepseek-r1-14b",
+    "provider_model_slug": "deepseek-r1-14b",
+    "internal_model_id": "deepseek/deepseek-r1-distill-qwen-14b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": 128000,
+            "provider_default": null,
+            "notes": "Provider-wide maximum chat tokens per request."
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": 0,
+            "provider_max": 2,
+            "provider_default": 1,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": 0,
+            "provider_max": 1,
+            "provider_default": 1,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "opengvlab/internvl3.5-8b",
+    "provider_api_model_id": "ionrouter:internvl3.5-8b",
+    "provider_model_slug": "internvl3.5-8b",
+    "internal_model_id": "opengvlab/internvl3.5-8b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": 128000,
+            "provider_default": null,
+            "notes": "Provider-wide maximum chat tokens per request."
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": 0,
+            "provider_max": 2,
+            "provider_default": 1,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": 0,
+            "provider_max": 1,
+            "provider_default": 1,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/voxtral-mini-4b",
+    "provider_api_model_id": "ionrouter:voxtral-mini-4b",
+    "provider_model_slug": "voxtral-mini-4b",
+    "internal_model_id": "mistral/voxtral-mini-4b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": 128000,
+            "provider_default": null,
+            "notes": "Provider-wide maximum chat tokens per request."
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": 0,
+            "provider_max": 2,
+            "provider_default": 1,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": 0,
+            "provider_max": 1,
+            "provider_default": 1,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-1-schnell",
+    "provider_api_model_id": "ionrouter:flux-schnell",
+    "provider_model_slug": "flux-schnell",
+    "internal_model_id": "black-forest-labs/flux-1-schnell",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-1-dev",
+    "provider_api_model_id": "ionrouter:flux-dev",
+    "provider_model_slug": "flux-dev",
+    "internal_model_id": "black-forest-labs/flux-1-dev",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "canopy-labs/orpheus-3b",
+    "provider_api_model_id": "ionrouter:orpheus-3b",
+    "provider_model_slug": "orpheus-3b",
+    "internal_model_id": "canopy-labs/orpheus-3b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "nari-labs/dia-1.6b",
+    "provider_api_model_id": "ionrouter:dia-1.6b",
+    "provider_model_slug": "dia-1.6b",
+    "internal_model_id": "nari-labs/dia-1.6b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "swivid/f5-tts",
+    "provider_api_model_id": "ionrouter:f5-tts",
+    "provider_model_slug": "f5-tts",
+    "internal_model_id": "swivid/f5-tts",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/wan2.2-t2v-a14b",
+    "provider_api_model_id": "ionrouter:wan2.2-t2v-general",
+    "provider_model_slug": "wan2.2-t2v-general",
+    "internal_model_id": "qwen/wan2.2-t2v-a14b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/wan2.2-i2v-a14b",
+    "provider_api_model_id": "ionrouter:wan2.2-i2v-general",
+    "provider_model_slug": "wan2.2-i2v-general",
+    "internal_model_id": "qwen/wan2.2-i2v-a14b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "tencent/hunyuanvideo",
+    "provider_api_model_id": "ionrouter:hunyuanvideo",
+    "provider_model_slug": "hunyuanvideo",
+    "internal_model_id": "tencent/hunyuanvideo",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "fastvideo/fastwan-t2v-14b",
+    "provider_api_model_id": "ionrouter:fastwan-t2v-14b",
+    "provider_model_slug": "fastwan-t2v-14b",
+    "internal_model_id": "fastvideo/fastwan-t2v-14b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "fastvideo/fastwan-ti2v-5b",
+    "provider_api_model_id": "ionrouter:fastwan-ti2v-5b",
+    "provider_model_slug": "fastwan-ti2v-5b",
+    "internal_model_id": "fastvideo/fastwan-ti2v-5b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "fastvideo/fastwan-t2v-1.3b",
+    "provider_api_model_id": "ionrouter:fastwan-t2v-1.3b",
+    "provider_model_slug": "fastwan-t2v-1.3b",
+    "internal_model_id": "fastvideo/fastwan-t2v-1.3b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "lllyasviel/framepack-i2v",
+    "provider_api_model_id": "ionrouter:framepack-i2v",
+    "provider_model_slug": "framepack-i2v",
+    "internal_model_id": "lllyasviel/framepack-i2v",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
+  },
+  {
+    "api_model_id": "lightricks/ltx-video",
+    "provider_api_model_id": "ionrouter:ltx-video",
+    "provider_model_slug": "ltx-video",
+    "internal_model_id": "lightricks/ltx-video",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": [
+        "US"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai"
+      ],
+      "endpoint": "https://api.ionrouter.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Reconciled against IonRouter official documentation and live /v1/models endpoint."
+    },
+    "rate_limits": [
+      {
+        "type": "requests_per_minute",
+        "limit": 100,
+        "scope": "api_key",
+        "notes": "Provider-wide documented limit."
+      }
+    ]
   }
 ]

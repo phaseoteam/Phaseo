@@ -1,0 +1,48 @@
+{
+  "key": "ionrouter:swivid/f5-tts:audio.speech",
+  "api_provider_id": "ionrouter",
+  "provider_slug": "ionrouter",
+  "api_model_id": "swivid/f5-tts",
+  "capability_id": "audio.speech",
+  "rules": [
+    {
+      "meter": "output_audio_minutes",
+      "unit": "minute",
+      "unit_size": 1,
+      "price_per_unit": 0.003,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Approximate published generated-audio price per minute.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "documentation",
+        "url": "https://ionrouter.io/docs",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official IonRouter API reference and pricing catalog. Approximate published generated-audio price per minute."
+      }
+    }
+  ],
+  "regions": [
+    "US"
+  ],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://ionrouter.io/docs",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official IonRouter model pricing table."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Rates reconciled against the official IonRouter API reference."
+  }
+}
