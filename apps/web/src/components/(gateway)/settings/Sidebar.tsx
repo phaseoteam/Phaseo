@@ -6,6 +6,8 @@ import { Building2, ChevronRight, ExternalLink, PanelLeftClose, PanelLeftOpen, U
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { filterSettingsNavigation } from "./Sidebar.search";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -53,6 +55,8 @@ export default function SettingsSidebar({
 	const pathname = usePathname();
 	const { isMobile, setOpenMobile, state, toggleSidebar } = useSidebar();
 	const isCollapsed = state === "collapsed" && !isMobile;
+	const [search, setSearch] = useState("");
+	const isSearching = search.trim().length > 0 && !isCollapsed;
 	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showEnterprise, showAutoRouting, showInternal });
 
 	function matchScore(item: NavItem) {
@@ -113,8 +117,11 @@ export default function SettingsSidebar({
 
 		return () => resizeObserver.disconnect();
 	}, [scrollViewport, selectedScope]);
-	const visibleGroups = navGroups.filter((group) => group.scope === selectedScope);
+	const visibleGroups = isSearching
+		? filterSettingsNavigation(navGroups, search)
+		: navGroups.filter((group) => group.scope === selectedScope);
 	const selectScope = (nextScope: SettingsScope) => {
+		setSearch("");
 		setScopeSelection({ routeScope, selectedScope: nextScope });
 	};
 
@@ -126,6 +133,7 @@ export default function SettingsSidebar({
 		const heading = (group.heading ?? "").trim();
 		return (
 			<SidebarGroup className={cn("py-0", !first && "group-data-[collapsible=icon]:pt-2")}>
+				{isSearching ? <p className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">{group.scope === "personal" ? "Account" : "Workspace"}</p> : null}
 				<SidebarGroupContent>
 					<SidebarMenu>
 						{group.items.map((item) =>
@@ -178,7 +186,7 @@ export default function SettingsSidebar({
 		);
 
 		if (item.children?.length) {
-			const sectionOpen = openSections[item.href] ?? active;
+			const sectionOpen = isSearching || (openSections[item.href] ?? active);
 			return (
 				<Collapsible
 					key={`${heading || "group"}-${item.href}`}
@@ -309,6 +317,9 @@ export default function SettingsSidebar({
 				</div>
 			</SidebarHeader>
 			<div className="shrink-0 group-data-[collapsible=icon]:hidden">
+				<div className="px-2 pt-3">
+					<Input type="search" aria-label="Search settings" placeholder="Search settings…" value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); setSearch(""); } }} className="h-8 text-sm" />
+				</div>
 				<div className="px-2 pb-2 pt-3">
 					<div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1" aria-label="Settings scope">
 						<button type="button" data-settings-segment aria-pressed={selectedScope === "personal"} onClick={() => selectScope("personal")} className={selectedScope === "personal" ? "flex h-8 items-center justify-center gap-1.5 rounded-md bg-background px-2 text-xs font-medium text-foreground shadow-sm" : "flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:text-foreground"}><UserRound className="size-3.5" />Account</button>
@@ -338,6 +349,7 @@ export default function SettingsSidebar({
 					viewportRef={setScrollViewport}
 				>
 					<div>
+						{isSearching && visibleGroups.length === 0 ? <p role="status" className="px-4 py-6 text-sm text-muted-foreground">No settings found.</p> : null}
 						{visibleGroups.map((group, idx) => (
 							<div key={`${group.heading ?? "group"}-${idx}`} className={idx > 0 ? "group-data-[collapsible=icon]:border-t group-data-[collapsible=icon]:border-sidebar-border" : undefined}>
 								<NavBlock group={group} first={idx === 0} />

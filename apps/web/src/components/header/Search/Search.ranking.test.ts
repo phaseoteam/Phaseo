@@ -1,4 +1,10 @@
-import { compareSearchCategories } from "./Search.ranking";
+import { compareSearchCategories, searchContextScore } from "./Search.ranking";
+
+it("prioritises nearby pages using complete route segments", () => {
+	expect(searchContextScore("/settings/usage/logs", "/settings/usage/trends")).toBeGreaterThan(searchContextScore("/settings/usage/logs", "/settings/profile"));
+	expect(searchContextScore("/settings", "/settings-other")).toBe(0);
+	expect(searchContextScore("/", "/models")).toBe(0);
+});
 
 describe("compareSearchCategories", () => {
 	it("ranks an exact organisation match above model keyword matches", () => {

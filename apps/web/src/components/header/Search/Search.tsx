@@ -59,7 +59,7 @@ import {
 	searchIndexPath,
 	wasAwayLongEnough,
 } from "./Search.freshness";
-import { compareSearchCategories } from "./Search.ranking";
+import { compareSearchCategories, searchContextScore } from "./Search.ranking";
 
 interface Props {
 	className?: string;
@@ -110,6 +110,8 @@ type SearchResultCategory = {
 		| "actions"
 		| "apiProviders"
 		| "benchmarks"
+		| "countries"
+		| "subscriptionPlans"
 		| "context"
 		| "models"
 		| "navigation"
@@ -136,6 +138,8 @@ type IndexedSearchItem<T extends SearchableItem> = {
 };
 
 type SearchIndex = {
+	countries: IndexedSearchItem<SearchData["countries"][number]>[];
+	subscriptionPlans: IndexedSearchItem<SearchData["subscriptionPlans"][number]>[];
 	models: IndexedSearchItem<SearchData["models"][number]>[];
 	apiProviders: IndexedSearchItem<SearchData["apiProviders"][number]>[];
 	organisations: IndexedSearchItem<SearchData["organisations"][number]>[];
@@ -344,9 +348,14 @@ function filterAndSortIndexed<T extends SearchableItem>(
 	term: string,
 	limit: number,
 	showAllWhenEmpty = false,
+	pathname = "/",
 ): T[] {
 	if (!term) {
-		return showAllWhenEmpty ? items.slice(0, limit).map(({ item }) => item) : [];
+		return showAllWhenEmpty
+			? items.map(({ item }) => item)
+				.sort((left, right) => searchContextScore(pathname, right.href) - searchContextScore(pathname, left.href))
+				.slice(0, limit)
+			: [];
 	}
 
 	return items
@@ -361,7 +370,7 @@ function filterAndSortIndexed<T extends SearchableItem>(
 				return right.score - left.score;
 			}
 
-			return left.sourceIndex - right.sourceIndex;
+			return searchContextScore(pathname, right.item.href) - searchContextScore(pathname, left.item.href) || left.sourceIndex - right.sourceIndex;
 		})
 		.map(({ item }) => item)
 		.slice(0, limit);
@@ -907,6 +916,8 @@ export default function Search({
 
 		return {
 			models: createSearchIndex(searchData.models),
+			countries: createSearchIndex(searchData.countries),
+			subscriptionPlans: createSearchIndex(searchData.subscriptionPlans),
 			apiProviders: createSearchIndex(searchData.apiProviders),
 			organisations: createSearchIndex(searchData.organisations),
 			benchmarks: createSearchIndex(searchData.benchmarks),
@@ -930,7 +941,7 @@ export default function Search({
 		const includesScope = (scope: typeof searchScope) =>
 			searchScope === "all" || searchScope === scope;
 		const navigation = includesScope("navigation")
-			? filterAndSortIndexed(NAVIGATION_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
+			? filterAndSortIndexed(NAVIGATION_SEARCH_INDEX, searchTerm, GLOBAL_NAVIGATION_ITEMS.length, showAllWhenScoped, pathname)
 			: [];
 		const actions = includesScope("actions")
 			? filterAndSortIndexed(ACTION_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
@@ -953,6 +964,8 @@ export default function Search({
 		const benchmarks = searchScope === "all" && searchIndex
 			? filterAndSortIndexed(searchIndex.benchmarks, searchTerm, resultLimit)
 			: [];
+		const countries = searchScope === "all" && searchIndex ? filterAndSortIndexed(searchIndex.countries, searchTerm, resultLimit) : [];
+		const subscriptionPlans = searchScope === "all" && searchIndex ? filterAndSortIndexed(searchIndex.subscriptionPlans, searchTerm, resultLimit) : [];
 		const workspaces = searchScope === "all"
 			? filterAndSortIndexed(workspaceSearchIndex, searchTerm, 12)
 			: [];
@@ -1007,15 +1020,26 @@ export default function Search({
 					: 0,
 			},
 			{
+				name: "countries" as const,
+				items: countries,
+				score: searchIndex ? getFirstResultScore(searchIndex.countries, countries, searchTerm) : 0,
+			},
+			{
+				name: "subscriptionPlans" as const,
+				items: subscriptionPlans,
+				score: searchIndex ? getFirstResultScore(searchIndex.subscriptionPlans, subscriptionPlans, searchTerm) : 0,
+			},
+			{
 				name: "workspaces" as const,
 				items: workspaces,
 				score: getFirstResultScore(workspaceSearchIndex, workspaces, searchTerm),
 			},
 		]
 			.filter((category) => category.items.length > 0)
-			.sort(compareSearchCategories);
+			.sort((left, right) => compareSearchCategories(left, right) || searchContextScore(pathname, right.items[0]?.href) - searchContextScore(pathname, left.items[0]?.href));
 	}, [
 		contextSearchIndex,
+		pathname,
 		hasQuery,
 		searchIndex,
 		searchScope,
@@ -1026,7 +1050,17 @@ export default function Search({
 	const defaultCategories = useMemo<DefaultSearchCategory[]>(() => {
 		if (hasQuery) return [];
 
+		const nearbyPages = GLOBAL_NAVIGATION_ITEMS
+			.filter((item) => item.href !== pathname && searchContextScore(pathname, item.href) > 0)
+			.sort((left, right) => searchContextScore(pathname, right.href) - searchContextScore(pathname, left.href))
+			.slice(0, 8);
 		return [
+			{
+				key: "nearby",
+				heading: pathname.startsWith("/settings") ? "Settings" : "In this area",
+				items: nearbyPages,
+				type: "navigation" as const,
+			},
 			{
 				key: "models",
 				heading: "Models",
@@ -1068,8 +1102,11 @@ export default function Search({
 				heading: "API Providers",
 				items: searchData?.apiProviders ?? [],
 			},
-		].filter((category) => category.items.length > 0);
-	}, [contextItems, hasQuery, pinnedItems, searchData, workspaceItems]);
+		].filter((category) => category.items.length > 0).sort((left, right) => {
+			const order = ["pinned", "context", "nearby", "quick-actions", "workspaces", "models", "apiProviders", "resources"];
+			return order.indexOf(left.key) - order.indexOf(right.key);
+		});
+	}, [pathname, contextItems, hasQuery, pinnedItems, searchData, workspaceItems]);
 
 	const defaultBrowseRows = useMemo<DefaultBrowseRow[]>(() => {
 		if (hasQuery) return [];
@@ -1295,6 +1332,8 @@ export default function Search({
 								) : (
 									orderedCategories.map((category, index) => {
 										const categoryConfig = {
+											countries: { heading: "Countries", type: undefined, showSubtitle: true },
+											subscriptionPlans: { heading: "Subscription Plans", type: undefined, showSubtitle: true },
 											actions: { heading: "Actions", type: "action" as const, showSubtitle: true },
 											context: { heading: "On this page", type: "context" as const, showSubtitle: true },
 											navigation: { heading: "Navigation", type: "navigation" as const, showSubtitle: true },
