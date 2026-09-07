@@ -159,6 +159,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 5,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Mistral Small 3.2; Artificial Analysis ID 43da3718-3d6e-40dd-901a-05664179ff7f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-small-3-2",
       "rank": 413
@@ -167,6 +168,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 12.5,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Mistral Small 3.2; Artificial Analysis ID 43da3718-3d6e-40dd-901a-05664179ff7f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-small-3-2",
       "rank": 225
@@ -175,6 +177,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Mistral Small 3.2; Artificial Analysis ID 43da3718-3d6e-40dd-901a-05664179ff7f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-small-3-2",
       "rank": 130

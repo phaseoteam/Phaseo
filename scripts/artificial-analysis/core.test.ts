@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { fetchModels, matchModel, mergeResults, resultsFor, type SourceModel } from "./core";
+import { fetchModels, matchModel, matchModels, mergeResults, resultsFor, type SourceModel } from "./core";
+import { writeBenchmarks } from "./catalog";
 
 const source = (overrides: Partial<SourceModel> = {}): SourceModel => ({
 	id: "aa-1", name: "Example 1", slug: "example-1", model_creator: { id: "creator-1", name: "OpenAI" },
@@ -61,11 +62,42 @@ test("keeps plus model families distinct", () => {
 	assert.equal(matchModel({ ...model, name: "Command R+", model_id: "openai/command-r-plus" }, [plus], config).status, "matched");
 });
 test("ambiguous source variants require a stable ID mapping, not the highest score", () => {
-	const sources = [source(), source({ id: "aa-2", name: "Example 1 (high)" })];
+	const sources = [source(), source({ id: "aa-2" })];
 	assert.equal(matchModel(model, sources, config).status, "ambiguous");
 	assert.equal(matchModel(model, sources, { ...config, models: { [model.model_id]: "aa-2" } }).source?.id, "aa-2");
 	assert.throws(() => matchModel(model, sources, { ...config, models: { [model.model_id]: "missing" } }), /missing/);
 	assert.equal(matchModel(model, sources, { ...config, models: { [model.model_id]: null } }).status, "excluded");
+});
+
+test("slug/name variant disagreements require an explicit mapping", () => {
+	const variant = source({ name: "Example 1 (high)" });
+	for (const candidate of [model, { ...model, model_id: "openai/example-1-high", name: "Example 1 (high)" }]) {
+		assert.equal(matchModel(candidate, [variant], config).status, "unmatched");
+	}
+});
+
+test("a source shared by catalog aliases requires explicit mapping", () => {
+	const alias = { ...model, model_id: "openai/example_1" };
+	assert.deepEqual(matchModels([model, alias], [source()], config).map((match) => match.status), ["ambiguous", "ambiguous"]);
+	const mapped = matchModels([model, alias], [source()], { ...config, models: { [model.model_id]: "aa-1" } });
+	assert.deepEqual(mapped.map((match) => match.status), ["matched", "ambiguous"]);
+	assert.throws(() => matchModels([model, alias], [source()], { ...config, models: { [model.model_id]: "aa-1", [alias.model_id]: "aa-1" } }), /only one explicit/);
+});
+
+test("catalog writes preserve surrounding compact JSON, newline style and snapshot time", () => {
+	const timestamp = "2026-09-07T22:00:00.000Z";
+	const rows = resultsFor(source(), 4.3, [source()], timestamp);
+	for (const eol of ["\n", "\r\n"]) {
+		const prefix = '{' + eol + '  "links": [{"url":"https://example.com"}],' + eol + '  "benchmarks": ';
+		const suffix = ',' + eol + '  "limits": {"input": 100}' + eol + '}' + eol;
+		const output = writeBenchmarks(prefix + '[]' + suffix, rows);
+		assert.ok(output.startsWith(prefix));
+		assert.ok(output.endsWith(suffix));
+		assert.ok(JSON.parse(output).benchmarks.every((row: { updated_at: string }) => row.updated_at === timestamp));
+		assert.equal(writeBenchmarks(output, rows), output);
+	}
+	const noBenchmarks = '{\n  "links": [{"url":"https://example.com"}]\n}\n';
+	assert.ok(writeBenchmarks(noBenchmarks, rows).includes('"links": [{"url":"https://example.com"}]'));
 });
 test("creator aliases support catalog naming differences", () => {
 	assert.equal(matchModel({ ...model, organisation_id: "open-ai" }, [source()], { ...config, creators: { "open-ai": "creator-1" } }).source?.id, "aa-1");

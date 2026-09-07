@@ -28,6 +28,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 13,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Qwen3 Max (Preview); Artificial Analysis ID 5b2beb12-81a9-47a1-8a2a-d0a727185b50; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-max-preview",
       "rank": 291

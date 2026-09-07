@@ -92,6 +92,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 16.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GLM-4.6 (Non-reasoning); Artificial Analysis ID 946e7aab-db1c-4c3f-b0b3-7720d0cff187; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-4-6",
       "rank": 243

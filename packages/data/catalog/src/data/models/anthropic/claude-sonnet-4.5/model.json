@@ -80,6 +80,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 27.3,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Claude 4.5 Sonnet (Reasoning); Artificial Analysis ID 90e078f2-051b-4c63-8919-76618971cb3f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-4-5-sonnet-thinking",
       "rank": 145
@@ -88,6 +89,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 52.1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Claude 4.5 Sonnet (Reasoning); Artificial Analysis ID 90e078f2-051b-4c63-8919-76618971cb3f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-4-5-sonnet-thinking",
       "rank": 106
@@ -96,6 +98,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 17.6,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Claude 4.5 Sonnet (Reasoning); Artificial Analysis ID 90e078f2-051b-4c63-8919-76618971cb3f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-4-5-sonnet-thinking",
       "rank": 89
@@ -104,6 +107,7 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 1123.43,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Claude 4.5 Sonnet (Reasoning); Artificial Analysis ID 90e078f2-051b-4c63-8919-76618971cb3f; Intelligence Index v4.3; USD 0.4666 per task",
       "source_link": "https://artificialanalysis.ai/models/claude-4-5-sonnet-thinking",
       "rank": 57

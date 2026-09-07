@@ -48,6 +48,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 40.3,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 3.6 Flash (high); Artificial Analysis ID 78332c88-fe60-42c8-af9d-3617e44cf1f5; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-6-flash",
       "rank": 61
@@ -56,6 +57,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 69.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 3.6 Flash (high); Artificial Analysis ID 78332c88-fe60-42c8-af9d-3617e44cf1f5; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-6-flash",
       "rank": 54
@@ -64,6 +66,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 30.3,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 3.6 Flash (high); Artificial Analysis ID 78332c88-fe60-42c8-af9d-3617e44cf1f5; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-6-flash",
       "rank": 62
@@ -72,6 +75,7 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 508.75,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 3.6 Flash (high); Artificial Analysis ID 78332c88-fe60-42c8-af9d-3617e44cf1f5; Intelligence Index v4.3; USD 0.3563 per task",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-6-flash",
       "rank": 38

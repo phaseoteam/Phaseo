@@ -3,7 +3,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { dirname, join, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { METRICS, fetchModels, matchModel, mergeResults, metricValue, resultsFor, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
+import { METRICS, fetchModels, matchModels, mergeResults, metricValue, resultsFor, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
+import { writeBenchmarks } from "./artificial-analysis/catalog";
 
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) {
 	if (existsSync(resolve(file))) loadEnvFile(resolve(file));
@@ -50,7 +51,9 @@ async function main() {
 	}
 	for (const id of Object.keys(config.models)) if (!entries.some((entry) => entry.model.model_id === id)) throw new Error(`Mapping references unknown Phaseo model ${id}.`);
 	const source = await fetchModels(apiKey);
-	const plan = entries.map((entry) => ({ ...entry, match: matchModel(entry.model, source.models, config) }));
+	const updated_at = new Date().toISOString();
+	const matches = matchModels(entries.map((entry) => entry.model), source.models, config);
+	const plan = entries.map((entry, index) => ({ ...entry, match: matches[index] }));
 	const report = { version: source.version, sourceModels: source.models.length,
 		matched: plan.filter((entry) => entry.match.status === "matched").length,
 		models: plan.map((entry) => ({ model_id: entry.model.model_id, status: entry.match.status, source_id: entry.match.source?.id, source_name: entry.match.source?.name, candidates: entry.match.candidates.map(({ id, name, slug }) => ({ id, name, slug })) })),
@@ -67,11 +70,10 @@ async function main() {
 	for (const entry of plan) {
 		// Retain unmatched models' previous results and provenance until explicitly mapped.
 		if (!entry.match.source) continue;
-		entry.model.benchmarks = mergeResults(entry.model, resultsFor(entry.match.source, source.version, source.models));
-		if (entry.file) writeJson(entry.file, entry.model);
+		entry.model.benchmarks = mergeResults(entry.model, resultsFor(entry.match.source, source.version, source.models, updated_at));
+		if (entry.file) writeFileSync(entry.file, writeBenchmarks(readFileSync(entry.file, "utf8"), entry.model.benchmarks));
 	}
 	if (!db) return;
-	const updated_at = new Date().toISOString();
 	const { error } = await db.from("v2_benchmarks").upsert(metadata.map(({ benchmark_name, type, ...rest }) => ({ ...rest, name: benchmark_name, benchmark_type: type, updated_at })), { onConflict: "benchmark_id" });
 	if (error) throw error;
 	for (const entry of plan) {

@@ -47,6 +47,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 19.6,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Ling-2.6-1T; Artificial Analysis ID 2e46d2fd-eb2b-42b9-9fe4-be50630fe870; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ling-2-6-1t",
       "rank": 215

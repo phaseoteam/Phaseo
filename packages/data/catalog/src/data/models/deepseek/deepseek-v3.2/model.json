@@ -76,6 +76,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 18.3,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "DeepSeek V3.2 (Non-reasoning); Artificial Analysis ID 6d9a176d-feb8-4dac-8872-afe32b31897f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/deepseek-v3-2",
       "rank": 232

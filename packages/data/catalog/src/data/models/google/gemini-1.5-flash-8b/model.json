@@ -161,6 +161,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 1.5 Flash-8B; Artificial Analysis ID 94229066-9381-4ee1-bf70-a16d63756a6e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-1-5-flash-8b",
       "rank": 513

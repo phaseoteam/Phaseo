@@ -22,22 +22,10 @@
     }
   ],
   "details": [
-    {
-      "name": "default_snapshot",
-      "value": "gpt-4-turbo-2024-04-09"
-    },
-    {
-      "name": "input_context_length",
-      "value": 128000
-    },
-    {
-      "name": "output_context_length",
-      "value": 4096
-    },
-    {
-      "name": "knowledge_cutoff",
-      "value": "2023-12-01T00:00:00Z"
-    }
+    { "name": "default_snapshot", "value": "gpt-4-turbo-2024-04-09" },
+    { "name": "input_context_length", "value": 128000 },
+    { "name": "output_context_length", "value": 4096 },
+    { "name": "knowledge_cutoff", "value": "2023-12-01T00:00:00Z" }
   ],
   "benchmarks": [
     {
@@ -68,6 +56,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 2.3,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GPT-4 Turbo; Artificial Analysis ID 76aa6af5-fdc6-4739-a300-983f14e74a67; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4-turbo",
       "rank": 480
@@ -76,6 +65,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 21.5,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GPT-4 Turbo; Artificial Analysis ID 76aa6af5-fdc6-4739-a300-983f14e74a67; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4-turbo",
       "rank": 192

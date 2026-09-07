@@ -31,6 +31,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Mixtral 8x22B Instruct; Artificial Analysis ID ca6c1412-f3c1-4391-9231-f83a702aa7af; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-8x22b-instruct",
       "rank": 513

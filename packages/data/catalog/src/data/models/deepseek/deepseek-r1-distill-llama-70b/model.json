@@ -20,6 +20,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 4.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "DeepSeek R1 Distill Llama 70B; Artificial Analysis ID 4a845d7b-a52d-43bb-80b7-b58c7a0c155e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/deepseek-r1-distill-llama-70b",
       "rank": 426

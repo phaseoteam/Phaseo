@@ -88,6 +88,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 15.6,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Command A+; Artificial Analysis ID 2e9ff877-fd2c-4ce7-b631-7ca1bdb6d13e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/command-a-plus",
       "rank": 255
@@ -96,6 +97,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 27.8,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Command A+; Artificial Analysis ID 2e9ff877-fd2c-4ce7-b631-7ca1bdb6d13e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/command-a-plus",
       "rank": 169
@@ -104,6 +106,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 3.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Command A+; Artificial Analysis ID 2e9ff877-fd2c-4ce7-b631-7ca1bdb6d13e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/command-a-plus",
       "rank": 114

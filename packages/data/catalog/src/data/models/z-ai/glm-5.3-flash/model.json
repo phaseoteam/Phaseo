@@ -72,6 +72,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 46.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GLM-5.3-Flash; Artificial Analysis ID 19496b81-9f41-4214-a77a-1df803b3c5ae; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-5-3-flash",
       "rank": 34
@@ -80,6 +81,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 71.5,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GLM-5.3-Flash; Artificial Analysis ID 19496b81-9f41-4214-a77a-1df803b3c5ae; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-5-3-flash",
       "rank": 43
@@ -88,6 +90,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 51.5,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GLM-5.3-Flash; Artificial Analysis ID 19496b81-9f41-4214-a77a-1df803b3c5ae; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-5-3-flash",
       "rank": 13
@@ -96,6 +99,7 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 219.23,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GLM-5.3-Flash; Artificial Analysis ID 19496b81-9f41-4214-a77a-1df803b3c5ae; Intelligence Index v4.3; USD 0.1825 per task",
       "source_link": "https://artificialanalysis.ai/models/glm-5-3-flash",
       "rank": 26

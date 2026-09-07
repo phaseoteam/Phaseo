@@ -14,36 +14,20 @@
   "output_types": "text",
   "api_model_id": "upstage/solar-pro-4",
   "links": [
-    {
-      "title": "Official model documentation",
-      "kind": "documentation",
-      "url": "https://console.upstage.ai/docs/models/solar-pro-4"
-    },
-    {
-      "title": "Official pricing",
-      "kind": "pricing",
-      "url": "https://www.upstage.ai/pricing/api"
-    }
+    { "title": "Official model documentation", "kind": "documentation", "url": "https://console.upstage.ai/docs/models/solar-pro-4" },
+    { "title": "Official pricing", "kind": "pricing", "url": "https://www.upstage.ai/pricing/api" }
   ],
   "details": [
-    {
-      "name": "parameters",
-      "value": "Not disclosed"
-    },
-    {
-      "name": "languages",
-      "value": "English, Korean, Japanese"
-    },
-    {
-      "name": "pricing_note",
-      "value": "Free through 2026-08-10 UTC, 90% off from 2026-08-11 through 2026-09-10 UTC, then $0.30/M input, $0.06/M cached input, and $1.20/M output."
-    }
+    { "name": "parameters", "value": "Not disclosed" },
+    { "name": "languages", "value": "English, Korean, Japanese" },
+    { "name": "pricing_note", "value": "Free through 2026-08-10 UTC, 90% off from 2026-08-11 through 2026-09-10 UTC, then $0.30/M input, $0.06/M cached input, and $1.20/M output." }
   ],
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 32.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Solar Pro 4; Artificial Analysis ID 1b64aa81-c223-4b8f-909b-82185a234765; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/solar-pro4",
       "rank": 94
@@ -52,6 +36,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 52.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Solar Pro 4; Artificial Analysis ID 1b64aa81-c223-4b8f-909b-82185a234765; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/solar-pro4",
       "rank": 102
@@ -61,23 +46,9 @@
   "page_notice": null,
   "model_type": null,
   "knowledge_cutoff": "2026-02-28",
-  "limits": {
-    "context": 524288,
-    "input": 524288,
-    "output": 131072
-  },
-  "modalities": {
-    "input": [
-      "text"
-    ],
-    "output": [
-      "text"
-    ]
-  },
-  "reasoning": {
-    "supported": true,
-    "options": []
-  },
+  "limits": { "context": 524288, "input": 524288, "output": 131072 },
+  "modalities": { "input": ["text"], "output": ["text"] },
+  "reasoning": { "supported": true, "options": [] },
   "capabilities": {
     "attachment": false,
     "tool_call": true,
@@ -88,24 +59,10 @@
   },
   "open_weights": false,
   "sources": [
-    {
-      "kind": "documentation",
-      "url": "https://console.upstage.ai/docs/models/solar-pro-4",
-      "accessed_at": "2026-08-06T00:00:00Z",
-      "notes": "Official model page confirms the 260806 alias, 512K context, 128K output, February 2026 cutoff, languages, and capabilities."
-    },
-    {
-      "kind": "pricing",
-      "url": "https://www.upstage.ai/pricing/api",
-      "accessed_at": "2026-08-06T00:00:00Z",
-      "notes": "Official pricing page defines the free, 90%-discounted, and standard pricing phases with exact UTC boundaries."
-    }
+    { "kind": "documentation", "url": "https://console.upstage.ai/docs/models/solar-pro-4", "accessed_at": "2026-08-06T00:00:00Z", "notes": "Official model page confirms the 260806 alias, 512K context, 128K output, February 2026 cutoff, languages, and capabilities." },
+    { "kind": "pricing", "url": "https://www.upstage.ai/pricing/api", "accessed_at": "2026-08-06T00:00:00Z", "notes": "Official pricing page defines the free, 90%-discounted, and standard pricing phases with exact UTC boundaries." }
   ],
-  "verification": {
-    "status": "verified",
-    "checked_at": "2026-08-06T00:00:00Z",
-    "notes": "Specifications, direct API availability, and staged launch pricing verified from official Upstage sources."
-  },
+  "verification": { "status": "verified", "checked_at": "2026-08-06T00:00:00Z", "notes": "Specifications, direct API availability, and staged launch pricing verified from official Upstage sources." },
   "last_updated": "2026-08-06T00:00:00Z",
   "removal_date": null,
   "replacement_model_id": null,

@@ -37,7 +37,7 @@ export function BenchmarkRankingsSection({ benchmarks }: { benchmarks: PublicBen
           <span className="text-sm tabular-nums text-muted-foreground">{entry.rank}</span>
           <span className="hidden size-8 items-center justify-center rounded-md border sm:flex"><Logo id={entry.organisation_id ?? entry.model_id} alt="" width={20} height={20} /></span>
           <div className="min-w-0"><Link href={`/models/${entry.model_id}`} className="block truncate text-sm font-medium hover:underline">{entry.model_name}</Link><p className="mt-1 truncate text-xs text-muted-foreground" title={entry.other_info ?? undefined}>{entry.other_info?.split(";")[0] ?? entry.organisation_name}</p></div>
-          <div className="min-w-20 text-right"><span className="text-sm font-semibold tabular-nums">{formatArtificialAnalysisScore(selected, entry.score)}</span><div className="mt-2 h-1 w-20 overflow-hidden rounded-full bg-muted sm:w-28" aria-hidden="true"><div className="h-full rounded-full bg-foreground/65" style={{ width: `${Math.max(0, entry.score / maximum * 100)}%` }} /></div></div>
+          <div className="min-w-20 text-right"><span className="text-sm font-semibold tabular-nums">{formatArtificialAnalysisScore(selected, entry.score)}</span><div className="mt-2 h-1 w-20 overflow-hidden rounded-full bg-muted sm:w-28" aria-hidden="true"><div className="h-full rounded-full bg-foreground/65" style={{ width: `${Math.max(0, (selected.endsWith("cost-v4") ? 1 - entry.score / maximum : entry.score / maximum) * 100)}%` }} /></div></div>
         </li>)}
       </ol>
       {!filtered.length ? <p className="px-5 py-10 text-center text-sm text-muted-foreground">{entries.length ? "No models match your search." : "No results available for this metric yet."}</p> : null}

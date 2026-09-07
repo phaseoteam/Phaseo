@@ -160,6 +160,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 26.9,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Claude 4.1 Opus (Reasoning); Artificial Analysis ID ccbfa8c3-a762-480b-aade-34fb9697f98c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-4-1-opus-thinking",
       "rank": 148

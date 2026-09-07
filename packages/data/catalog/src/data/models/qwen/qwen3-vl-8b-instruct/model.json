@@ -396,6 +396,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 2.8,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Qwen3 VL 8B Instruct; Artificial Analysis ID 3cf875b8-b6b5-42c0-ad70-617d5be59d00; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-vl-8b-instruct",
       "rank": 466

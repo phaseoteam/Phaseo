@@ -75,6 +75,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 16.6,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GLM-4.7-Flash (Reasoning); Artificial Analysis ID 2c4394a2-b443-470a-908e-5c4a271b780c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-4-7-flash",
       "rank": 245

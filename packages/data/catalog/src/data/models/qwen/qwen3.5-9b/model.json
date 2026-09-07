@@ -220,6 +220,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 14.8,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Qwen3.5 9B (Reasoning); Artificial Analysis ID 2d28a13a-096e-475a-beb8-26bbd1c7d51c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-5-9b",
       "rank": 267
@@ -228,6 +229,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 28.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Qwen3.5 9B (Reasoning); Artificial Analysis ID 2d28a13a-096e-475a-beb8-26bbd1c7d51c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-5-9b",
       "rank": 167

@@ -20,6 +20,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 14.4,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Qwen3 VL 235B A22B (Reasoning); Artificial Analysis ID a803d3d0-d22e-49a0-ac2c-b9c6f1141065; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-vl-235b-a22b-reasoning",
       "rank": 271

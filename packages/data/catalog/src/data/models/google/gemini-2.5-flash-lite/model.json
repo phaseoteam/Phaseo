@@ -40,6 +40,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1.4,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 2.5 Flash-Lite (Non-reasoning); Artificial Analysis ID 1d81aa1c-64c8-442a-9c41-81b37e407b91; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-2-5-flash-lite",
       "rank": 499

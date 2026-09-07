@@ -26,32 +26,7 @@
       "value": "Available through Requesty as anthropic/claude-opus-4-7."
     }
   ],
-  "benchmarks": [
-    {
-      "benchmark_id": "aa-intelligence-index-v4",
-      "score": 44.3,
-      "is_self_reported": false,
-      "other_info": "Claude Opus 4.7 (Adaptive Reasoning, Max Effort); Artificial Analysis ID e9a09db3-8fd6-41dd-ba2f-20e0a2bff7f2; Intelligence Index v4.3",
-      "source_link": "https://artificialanalysis.ai/models/claude-opus-4-7",
-      "rank": 42
-    },
-    {
-      "benchmark_id": "aa-coding-index-v4",
-      "score": 73.6,
-      "is_self_reported": false,
-      "other_info": "Claude Opus 4.7 (Adaptive Reasoning, Max Effort); Artificial Analysis ID e9a09db3-8fd6-41dd-ba2f-20e0a2bff7f2; Intelligence Index v4.3",
-      "source_link": "https://artificialanalysis.ai/models/claude-opus-4-7",
-      "rank": 34
-    },
-    {
-      "benchmark_id": "aa-agentic-index-v4",
-      "score": 39.7,
-      "is_self_reported": false,
-      "other_info": "Claude Opus 4.7 (Adaptive Reasoning, Max Effort); Artificial Analysis ID e9a09db3-8fd6-41dd-ba2f-20e0a2bff7f2; Intelligence Index v4.3",
-      "source_link": "https://artificialanalysis.ai/models/claude-opus-4-7",
-      "rank": 44
-    }
-  ],
+  "benchmarks": [],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

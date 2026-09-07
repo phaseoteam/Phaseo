@@ -76,6 +76,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 2.9,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Llama 3.1 Nemotron Nano 4B v1.1 (Reasoning); Artificial Analysis ID b1fa84f8-1ed3-4124-b403-4655dafa4267; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/llama-3-1-nemotron-nano-4b-reasoning",
       "rank": 462

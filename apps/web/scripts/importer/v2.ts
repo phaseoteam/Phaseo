@@ -684,7 +684,7 @@ export function isProtectedProviderModel(
     return providerModelId !== "" && protectedRouteIds.has(providerModelId);
 }
 
-function sourceJsonMaps(): {
+export function sourceJsonMaps(): {
     organisations: Record<string, any>[];
     models: Map<string, Record<string, any>>;
     modelVariants: Map<string, Record<string, any>>;
@@ -779,6 +779,7 @@ function sourceJsonMaps(): {
                             other_info: result.other_info ?? null,
                             source_link: result.source_link ?? null,
                             rank: result.rank ?? null,
+                            updated_at: result.updated_at ?? null,
                             occur_idx: index,
                             variant: result.variant ?? null,
                             result_key: resultKey,

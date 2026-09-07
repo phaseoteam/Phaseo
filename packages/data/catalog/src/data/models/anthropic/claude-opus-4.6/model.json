@@ -410,6 +410,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 30.8,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Claude Opus 4.6 (Non-reasoning, High Effort); Artificial Analysis ID 4386585e-71b4-4a0c-8a63-afb333419cd6; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-4-6",
       "rank": 115

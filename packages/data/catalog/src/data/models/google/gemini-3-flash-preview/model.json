@@ -248,6 +248,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 30.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 3 Flash Preview (Reasoning); Artificial Analysis ID 7c73c3be-7f51-4d14-bec8-d5789488df25; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-flash-reasoning",
       "rank": 116

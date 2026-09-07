@@ -19,7 +19,7 @@ To inspect database-only matches without writing, add `--sync-db` to the dry run
 
 ## Matching
 
-Automatic matching requires the same creator and an exact ID/name after removing punctuation and case. It does not remove dates, quantization, or reasoning-effort suffixes. Ambiguous matches are skipped, never selected by highest score. One AA record may match multiple canonical records where their IDs/names agree.
+Automatic matching requires the same creator, agreement between the source slug and name, and an exact catalog ID/name after removing punctuation and case. It does not remove dates, quantization, or reasoning-effort suffixes. Ambiguous matches and sources matching multiple catalog records are skipped unless explicitly mapped, never selected by highest score. Each source may have only one explicit mapping; its automatic matches to other catalog aliases are skipped. Explicit mappings document the tested configuration and select its canonical catalog entry.
 
 Review unmatched models and source IDs in the report, then add canonical Phaseo IDs to `mappings.json`:
 
@@ -33,6 +33,8 @@ Review unmatched models and source IDs in the report, then add canonical Phaseo 
 Use a `null` model mapping to opt out of future updates (existing records are retained). Creator mappings accept an AA creator ID or name. Incorrect/stale explicit mappings fail the entire run. Database-only mappings require `--sync-db`; add the model to the canonical catalog before using that mapping in the scheduled workflow.
 
 Unmatched records retain previous scores and their original provenance. Coverage is limited to models evaluated by Artificial Analysis; no scores are inferred for untested models. Major index version changes fail closed until a new benchmark family is added, so incompatible versions are not mixed. Minor versions remain recorded on each result, not in a global label that would relabel older data.
+
+Each result persists its snapshot time as `updated_at` through the normal catalog importer. Writes update only the benchmarks property, preserving unrelated model formatting.
 
 The free API has a 100-request daily quota; each page costs one request. We fetch a single snapshot per run, not one request per model. Attribution is displayed in the featured benchmark panel. See [API documentation and licensing](https://artificialanalysis.ai/data-api/docs) for use and redistribution terms.
 

@@ -155,6 +155,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 22.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemma 4 31B (Reasoning); Artificial Analysis ID cd26a386-4873-46ff-b853-d239050025a2; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-4-31b",
       "rank": 199
@@ -163,6 +164,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 43.4,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemma 4 31B (Reasoning); Artificial Analysis ID cd26a386-4873-46ff-b853-d239050025a2; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-4-31b",
       "rank": 133
@@ -171,6 +173,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 6.8,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemma 4 31B (Reasoning); Artificial Analysis ID cd26a386-4873-46ff-b853-d239050025a2; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-4-31b",
       "rank": 107

@@ -79,6 +79,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 29.9,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Grok 4.3 (high); Artificial Analysis ID 948892b5-db03-4118-a4a8-ccd51ed871ea; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/grok-4-3",
       "rank": 122
@@ -87,6 +88,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 42.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Grok 4.3 (high); Artificial Analysis ID 948892b5-db03-4118-a4a8-ccd51ed871ea; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/grok-4-3",
       "rank": 136
@@ -95,6 +97,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 17.3,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Grok 4.3 (high); Artificial Analysis ID 948892b5-db03-4118-a4a8-ccd51ed871ea; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/grok-4-3",
       "rank": 91
@@ -103,6 +106,7 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 309.57,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Grok 4.3 (high); Artificial Analysis ID 948892b5-db03-4118-a4a8-ccd51ed871ea; Intelligence Index v4.3; USD 0.1351 per task",
       "source_link": "https://artificialanalysis.ai/models/grok-4-3",
       "rank": 29

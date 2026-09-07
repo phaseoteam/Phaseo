@@ -137,6 +137,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemma 3n E4B Instruct; Artificial Analysis ID a797eaf3-6d75-4f29-86a8-e1243ce52d43; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-3n-e4b",
       "rank": 513
@@ -145,6 +146,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 3.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemma 3n E4B Instruct; Artificial Analysis ID a797eaf3-6d75-4f29-86a8-e1243ce52d43; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-3n-e4b",
       "rank": 250

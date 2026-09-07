@@ -27,6 +27,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 13.9,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Granite 4.2 8B; Artificial Analysis ID adfae555-f489-4f3e-9064-c6b7fcdd0783; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/granite-4-2-8b",
       "rank": 278
@@ -35,6 +36,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 22.4,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Granite 4.2 8B; Artificial Analysis ID adfae555-f489-4f3e-9064-c6b7fcdd0783; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/granite-4-2-8b",
       "rank": 190
@@ -43,6 +45,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 3.8,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Granite 4.2 8B; Artificial Analysis ID adfae555-f489-4f3e-9064-c6b7fcdd0783; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/granite-4-2-8b",
       "rank": 113
@@ -51,6 +54,7 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 40.91,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Granite 4.2 8B; Artificial Analysis ID adfae555-f489-4f3e-9064-c6b7fcdd0783; Intelligence Index v4.3; USD 0.023 per task",
       "source_link": "https://artificialanalysis.ai/models/granite-4-2-8b",
       "rank": 8
@@ -65,20 +69,12 @@
     "output": null
   },
   "modalities": {
-    "input": [
-      "text"
-    ],
-    "output": [
-      "text"
-    ]
+    "input": ["text"],
+    "output": ["text"]
   },
   "reasoning": {
     "supported": true,
-    "options": [
-      "thinking",
-      "non-thinking",
-      "low-effort"
-    ]
+    "options": ["thinking", "non-thinking", "low-effort"]
   },
   "capabilities": {
     "attachment": false,

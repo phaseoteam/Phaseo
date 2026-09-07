@@ -31,6 +31,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1.6,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Qwen2.5 Coder Instruct 32B; Artificial Analysis ID 04586102-6a28-48f8-a82e-85775d7ed779; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen2-5-coder-32b-instruct",
       "rank": 495

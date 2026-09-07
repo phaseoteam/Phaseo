@@ -42,6 +42,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 47.1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 3.8 Flash (high); Artificial Analysis ID 8a999846-4c1d-4ce7-a8b7-1310a7166fd7; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash",
       "rank": 28
@@ -50,6 +51,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 76.3,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 3.8 Flash (high); Artificial Analysis ID 8a999846-4c1d-4ce7-a8b7-1310a7166fd7; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash",
       "rank": 18
@@ -58,6 +60,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 41.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 3.8 Flash (high); Artificial Analysis ID 8a999846-4c1d-4ce7-a8b7-1310a7166fd7; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash",
       "rank": 41
@@ -66,6 +69,7 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 1077.95,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Gemini 3.8 Flash (high); Artificial Analysis ID 8a999846-4c1d-4ce7-a8b7-1310a7166fd7; Intelligence Index v4.3; USD 0.738 per task",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash",
       "rank": 56
@@ -81,23 +85,12 @@
     "output": 65536
   },
   "modalities": {
-    "input": [
-      "text",
-      "image/*",
-      "video/*",
-      "audio/*"
-    ],
-    "output": [
-      "text"
-    ]
+    "input": ["text", "image/*", "video/*", "audio/*"],
+    "output": ["text"]
   },
   "reasoning": {
     "supported": true,
-    "options": [
-      "low",
-      "medium",
-      "high"
-    ]
+    "options": ["low", "medium", "high"]
   },
   "capabilities": {
     "attachment": true,
@@ -109,24 +102,9 @@
   },
   "open_weights": false,
   "sources": [
-    {
-      "kind": "documentation",
-      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash",
-      "accessed_at": "2026-09-02T00:00:00Z",
-      "notes": "Official stable Gemini API model ID, modalities, token limits, capabilities, and Batch/Flex/Priority consumption options."
-    },
-    {
-      "kind": "documentation",
-      "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-8-flash",
-      "accessed_at": "2026-09-02T00:00:00Z",
-      "notes": "Official GA model ID, release date, modalities, token limits, capabilities, service options, and regions."
-    },
-    {
-      "kind": "pricing",
-      "url": "https://cloud.google.com/skus?filter=3.8%20Flash&currency=USD",
-      "accessed_at": "2026-09-02T00:00:00Z",
-      "notes": "Google's public billing catalogue contains model-specific Gemini 3.8 Flash SKUs for Gemini API and Vertex AI."
-    }
+    { "kind": "documentation", "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash", "accessed_at": "2026-09-02T00:00:00Z", "notes": "Official stable Gemini API model ID, modalities, token limits, capabilities, and Batch/Flex/Priority consumption options." },
+    { "kind": "documentation", "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-8-flash", "accessed_at": "2026-09-02T00:00:00Z", "notes": "Official GA model ID, release date, modalities, token limits, capabilities, service options, and regions." },
+    { "kind": "pricing", "url": "https://cloud.google.com/skus?filter=3.8%20Flash&currency=USD", "accessed_at": "2026-09-02T00:00:00Z", "notes": "Google's public billing catalogue contains model-specific Gemini 3.8 Flash SKUs for Gemini API and Vertex AI." }
   ],
   "verification": {
     "status": "verified",

@@ -102,6 +102,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 35.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "MiniMax-M3; Artificial Analysis ID 277f939a-985b-4b37-859d-b3eabc7c0b26; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/minimax-m3",
       "rank": 78
@@ -110,6 +111,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 58.6,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "MiniMax-M3; Artificial Analysis ID 277f939a-985b-4b37-859d-b3eabc7c0b26; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/minimax-m3",
       "rank": 87
@@ -118,6 +120,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 31,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "MiniMax-M3; Artificial Analysis ID 277f939a-985b-4b37-859d-b3eabc7c0b26; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/minimax-m3",
       "rank": 59
@@ -126,6 +129,7 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 293.46,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "MiniMax-M3; Artificial Analysis ID 277f939a-985b-4b37-859d-b3eabc7c0b26; Intelligence Index v4.3; USD 0.2294 per task",
       "source_link": "https://artificialanalysis.ai/models/minimax-m3",
       "rank": 27

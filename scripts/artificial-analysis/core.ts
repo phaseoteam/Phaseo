@@ -69,7 +69,8 @@ export function matchModel(model: CatalogModel, sources: SourceModel[], config: 
 	const eligible = sources.filter((source) => [source.model_creator.name, source.model_creator.id].some((value) => creators.has(normalized(value))));
 	const ids = [model.model_id.split("/").at(-1), model.api_model_id?.split("/").at(-1), model.name].filter((id): id is string => Boolean(id)).map(normalized);
 	// Never strip dates, quantization, thinking or effort suffixes: they change what was evaluated.
-	const candidates = eligible.filter((source) => ids.includes(normalized(source.slug)) || ids.includes(normalized(source.name)));
+	const candidates = eligible.filter((source) => normalized(source.slug) === normalized(source.name)
+		&& ids.includes(normalized(source.name)));
 	return candidates.length === 1 ? { status: "matched" as const, source: candidates[0], candidates }
 		: { status: candidates.length ? "ambiguous" as const : "unmatched" as const, candidates };
 }
@@ -78,14 +79,27 @@ export function metricValue(source: SourceModel, metric: typeof METRICS[number])
 	const value = metric.field === "total_cost" ? source.artificial_analysis_intelligence_index_cost?.total_cost : source.evaluations?.[metric.field];
 	return finite(value) ? value : null;
 }
-export function resultsFor(source: SourceModel, version: number, allSources: SourceModel[]) {
+export function matchModels(models: CatalogModel[], sources: SourceModel[], config: MappingConfig) {
+	const explicitIds = Object.values(config.models).filter((id) => id !== null);
+	if (new Set(explicitIds).size !== explicitIds.length) throw new Error("Each Artificial Analysis source must have only one explicit catalog mapping.");
+	const matches = models.map((model) => matchModel(model, sources, config));
+	return matches.map((match, index) => {
+		if (!match.source || Object.hasOwn(config.models, models[index].model_id)) return match;
+		if (matches.some((other, otherIndex) => otherIndex !== index && other.source?.id === match.source.id)) {
+			return { status: "ambiguous" as const, candidates: match.candidates };
+		}
+		return match;
+	});
+}
+
+export function resultsFor(source: SourceModel, version: number, allSources: SourceModel[], updated_at = new Date().toISOString()) {
 	return METRICS.flatMap((metric) => {
 		const score = metricValue(source, metric);
 		if (score === null) return [];
 		const scores = allSources.map((entry) => metricValue(entry, metric)).filter(finite);
 		const rank = 1 + scores.filter((other) => metric.higherBetter ? other > score : other < score).length;
 		const perTask = source.artificial_analysis_intelligence_index_cost?.cost_per_task?.total_cost;
-		return [{ benchmark_id: metric.id, score, is_self_reported: false,
+		return [{ benchmark_id: metric.id, score, is_self_reported: false, updated_at,
 			other_info: `${source.name}; Artificial Analysis ID ${source.id}; Intelligence Index v${version}${metric.field === "total_cost" && finite(perTask) ? `; USD ${perTask} per task` : ""}`,
 			source_link: `https://artificialanalysis.ai/models/${source.slug}`, rank }];
 	});

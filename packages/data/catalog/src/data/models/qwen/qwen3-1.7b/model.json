@@ -20,6 +20,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Qwen3 1.7B (Reasoning); Artificial Analysis ID 5962d643-0a6f-4630-bb08-ab5720d80056; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-1.7b-instruct-reasoning",
       "rank": 513

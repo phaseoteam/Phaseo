@@ -20,6 +20,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 5.5,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Ministral 3 14B; Artificial Analysis ID 713fae11-c75c-4f10-ae2c-8e4074cd58af; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ministral-3-14b",
       "rank": 405
@@ -28,6 +29,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 14.4,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Ministral 3 14B; Artificial Analysis ID 713fae11-c75c-4f10-ae2c-8e4074cd58af; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ministral-3-14b",
       "rank": 217
@@ -36,6 +38,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 1.1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Ministral 3 14B; Artificial Analysis ID 713fae11-c75c-4f10-ae2c-8e4074cd58af; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ministral-3-14b",
       "rank": 127

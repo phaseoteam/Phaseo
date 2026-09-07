@@ -70,6 +70,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 32.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Inkling (xhigh); Artificial Analysis ID 0de09623-2b1a-4c8d-86ef-7f5245d4e24b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/inkling",
       "rank": 102
@@ -78,6 +79,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 52.1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Inkling (xhigh); Artificial Analysis ID 0de09623-2b1a-4c8d-86ef-7f5245d4e24b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/inkling",
       "rank": 106
@@ -86,6 +88,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 24.4,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Inkling (xhigh); Artificial Analysis ID 0de09623-2b1a-4c8d-86ef-7f5245d4e24b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/inkling",
       "rank": 75
@@ -94,6 +97,7 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 825.66,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Inkling (xhigh); Artificial Analysis ID 0de09623-2b1a-4c8d-86ef-7f5245d4e24b; Intelligence Index v4.3; USD 0.4379 per task",
       "source_link": "https://artificialanalysis.ai/models/inkling",
       "rank": 50

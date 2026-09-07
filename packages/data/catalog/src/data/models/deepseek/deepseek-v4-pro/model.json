@@ -165,35 +165,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 42.1,
+      "score": 45.3,
       "is_self_reported": false,
-      "other_info": "DeepSeek V4 Pro 0813 (Reasoning, Max Effort); Artificial Analysis ID 83173329-c09a-41f1-a028-a282a5f908d7; Intelligence Index v4.3",
+      "other_info": "DeepSeek V4 Pro (Reasoning, Max Effort); Artificial Analysis Intelligence Index v4.1.1",
       "source_link": "https://artificialanalysis.ai/models/deepseek-v4-pro",
-      "rank": 48
-    },
-    {
-      "benchmark_id": "aa-coding-index-v4",
-      "score": 68.8,
-      "is_self_reported": false,
-      "other_info": "DeepSeek V4 Pro 0813 (Reasoning, Max Effort); Artificial Analysis ID 83173329-c09a-41f1-a028-a282a5f908d7; Intelligence Index v4.3",
-      "source_link": "https://artificialanalysis.ai/models/deepseek-v4-pro",
-      "rank": 56
-    },
-    {
-      "benchmark_id": "aa-agentic-index-v4",
-      "score": 42.5,
-      "is_self_reported": false,
-      "other_info": "DeepSeek V4 Pro 0813 (Reasoning, Max Effort); Artificial Analysis ID 83173329-c09a-41f1-a028-a282a5f908d7; Intelligence Index v4.3",
-      "source_link": "https://artificialanalysis.ai/models/deepseek-v4-pro",
-      "rank": 36
-    },
-    {
-      "benchmark_id": "aa-intelligence-index-cost-v4",
-      "score": 706.75,
-      "is_self_reported": false,
-      "other_info": "DeepSeek V4 Pro 0813 (Reasoning, Max Effort); Artificial Analysis ID 83173329-c09a-41f1-a028-a282a5f908d7; Intelligence Index v4.3; USD 0.3328 per task",
-      "source_link": "https://artificialanalysis.ai/models/deepseek-v4-pro",
-      "rank": 44
+      "rank": 42
     }
   ],
   "family_id": null,

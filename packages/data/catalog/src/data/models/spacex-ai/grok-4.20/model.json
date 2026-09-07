@@ -151,11 +151,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 30,
+      "score": 38,
       "is_self_reported": false,
-      "other_info": "Grok 4.20 0309 v2 (Reasoning); Artificial Analysis ID c72cb85a-18a4-4235-b455-77dff2f16c50; Intelligence Index v4.3",
+      "other_info": "Grok 4.20 0309 v2 (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
       "source_link": "https://artificialanalysis.ai/models/grok-4-20",
-      "rank": 121
+      "rank": 85
     }
   ],
   "family_id": null,

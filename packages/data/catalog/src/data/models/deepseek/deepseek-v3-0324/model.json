@@ -31,6 +31,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 9.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "DeepSeek V3 0324; Artificial Analysis ID 75e1c197-f239-4361-a9d6-66dccfead236; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/deepseek-v3-0324",
       "rank": 344
@@ -39,6 +40,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 21.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "DeepSeek V3 0324; Artificial Analysis ID 75e1c197-f239-4361-a9d6-66dccfead236; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/deepseek-v3-0324",
       "rank": 194
@@ -47,6 +49,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 0.8,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "DeepSeek V3 0324; Artificial Analysis ID 75e1c197-f239-4361-a9d6-66dccfead236; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/deepseek-v3-0324",
       "rank": 137

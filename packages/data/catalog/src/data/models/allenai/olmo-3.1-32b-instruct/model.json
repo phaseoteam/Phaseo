@@ -20,6 +20,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Olmo 3.1 32B Instruct; Artificial Analysis ID 94a6d26e-a903-47f3-8323-ae422d237bb9; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/olmo-3-1-32b-instruct",
       "rank": 513

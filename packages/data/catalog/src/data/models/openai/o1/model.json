@@ -150,6 +150,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 17.1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "o1; Artificial Analysis ID 5ad2f60f-ee05-49fd-85a0-cef69aa7cb7b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/o1",
       "rank": 240
@@ -158,6 +159,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 39.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "o1; Artificial Analysis ID 5ad2f60f-ee05-49fd-85a0-cef69aa7cb7b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/o1",
       "rank": 139

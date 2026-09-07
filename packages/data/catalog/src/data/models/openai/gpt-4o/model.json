@@ -61,6 +61,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 5.4,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GPT-4o (Nov '24); Artificial Analysis ID c1045dc0-4fd3-4adb-9548-18763e0d051f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4o",
       "rank": 406

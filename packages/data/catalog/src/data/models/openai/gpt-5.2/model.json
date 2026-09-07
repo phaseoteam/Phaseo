@@ -251,6 +251,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 35,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GPT-5.2 (xhigh); Artificial Analysis ID 498862c3-f9ac-49d2-852f-16a02bb0c38f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-2",
       "rank": 82

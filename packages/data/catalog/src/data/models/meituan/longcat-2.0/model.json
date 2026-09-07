@@ -40,6 +40,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 25.8,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "LongCat 2.0; Artificial Analysis ID 5c3bdc0d-abab-4526-8079-34de4089bb4a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/longcat-2-0",
       "rank": 165
@@ -48,6 +49,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 45.3,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "LongCat 2.0; Artificial Analysis ID 5c3bdc0d-abab-4526-8079-34de4089bb4a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/longcat-2-0",
       "rank": 125
@@ -72,10 +74,7 @@
   },
   "reasoning": {
     "supported": true,
-    "options": [
-      "enabled",
-      "disabled"
-    ]
+    "options": ["enabled", "disabled"]
   },
   "capabilities": {
     "attachment": false,

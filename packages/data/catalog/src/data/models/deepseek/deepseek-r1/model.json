@@ -34,11 +34,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 13.9,
+      "score": 20.4,
       "is_self_reported": false,
-      "other_info": "DeepSeek R1 0528 (May '25); Artificial Analysis ID a83f84b3-473a-4276-9ae1-8909da723159; Intelligence Index v4.3",
+      "other_info": "DeepSeek R1 0528 (May '25); Artificial Analysis Intelligence Index v4.1.1",
       "source_link": "https://artificialanalysis.ai/models/deepseek-r1",
-      "rank": 278
+      "rank": 234
     }
   ],
   "family_id": null,

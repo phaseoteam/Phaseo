@@ -220,6 +220,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 18.6,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Nemotron 3 Super 120B A12B (Reasoning); Artificial Analysis ID 63872e9c-3377-4a6b-b477-7bba244c38e9; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-super-120b-a12b",
       "rank": 229
@@ -228,6 +229,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 37.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Nemotron 3 Super 120B A12B (Reasoning); Artificial Analysis ID 63872e9c-3377-4a6b-b477-7bba244c38e9; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-super-120b-a12b",
       "rank": 146
@@ -236,6 +238,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 4.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Nemotron 3 Super 120B A12B (Reasoning); Artificial Analysis ID 63872e9c-3377-4a6b-b477-7bba244c38e9; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-super-120b-a12b",
       "rank": 111

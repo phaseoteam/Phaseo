@@ -117,6 +117,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 4.6,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Llama 4 Scout; Artificial Analysis ID adf9a85e-abc3-4f28-937b-db6655cc5238; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/llama-4-scout",
       "rank": 420
@@ -125,6 +126,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 8.2,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Llama 4 Scout; Artificial Analysis ID adf9a85e-abc3-4f28-937b-db6655cc5238; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/llama-4-scout",
       "rank": 239
@@ -133,6 +135,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 0.5,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Llama 4 Scout; Artificial Analysis ID adf9a85e-abc3-4f28-937b-db6655cc5238; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/llama-4-scout",
       "rank": 144

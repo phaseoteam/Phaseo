@@ -576,6 +576,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 15.6,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "gpt-oss-120b (high); Artificial Analysis ID f0083258-8646-45b8-8082-7aaf6c2ea82a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-oss-120b",
       "rank": 255
@@ -584,6 +585,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 30.4,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "gpt-oss-120b (high); Artificial Analysis ID f0083258-8646-45b8-8082-7aaf6c2ea82a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-oss-120b",
       "rank": 163
@@ -592,6 +594,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 6.3,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "gpt-oss-120b (high); Artificial Analysis ID f0083258-8646-45b8-8082-7aaf6c2ea82a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-oss-120b",
       "rank": 108
@@ -600,6 +603,7 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 145.74,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "gpt-oss-120b (high); Artificial Analysis ID f0083258-8646-45b8-8082-7aaf6c2ea82a; Intelligence Index v4.3; USD 0.123 per task",
       "source_link": "https://artificialanalysis.ai/models/gpt-oss-120b",
       "rank": 19

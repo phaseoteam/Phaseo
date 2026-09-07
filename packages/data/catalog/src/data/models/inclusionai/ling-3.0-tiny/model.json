@@ -48,6 +48,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 15.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Ling 3.0 Tiny; Artificial Analysis ID 7eaf926c-5f39-4e58-ae50-c38b5fc630fc; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ling-3-0-tiny",
       "rank": 253
@@ -56,6 +57,7 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 26.5,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Ling 3.0 Tiny; Artificial Analysis ID 7eaf926c-5f39-4e58-ae50-c38b5fc630fc; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ling-3-0-tiny",
       "rank": 172
@@ -64,6 +66,7 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 7.1,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Ling 3.0 Tiny; Artificial Analysis ID 7eaf926c-5f39-4e58-ae50-c38b5fc630fc; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ling-3-0-tiny",
       "rank": 106
@@ -72,6 +75,7 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 0,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Ling 3.0 Tiny; Artificial Analysis ID 7eaf926c-5f39-4e58-ae50-c38b5fc630fc; Intelligence Index v4.3; USD 0 per task",
       "source_link": "https://artificialanalysis.ai/models/ling-3-0-tiny",
       "rank": 1

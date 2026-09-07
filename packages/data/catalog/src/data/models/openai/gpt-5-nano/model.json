@@ -335,6 +335,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 13.7,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "GPT-5 nano (high); Artificial Analysis ID e18e5e6a-5a31-4c0b-b80b-ac401392f446; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-nano",
       "rank": 283

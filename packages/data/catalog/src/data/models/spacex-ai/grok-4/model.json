@@ -217,6 +217,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 26.5,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Grok 4; Artificial Analysis ID 5ea94a4a-55ac-4ea1-8898-2b3971e94af6; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/grok-4",
       "rank": 155

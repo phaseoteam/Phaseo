@@ -668,6 +668,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 22.6,
       "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
       "other_info": "Qwen3.5 35B A3B (Reasoning); Artificial Analysis ID 46d8315e-1630-463f-ab62-84185fa0faab; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-5-35b-a3b",
       "rank": 197
