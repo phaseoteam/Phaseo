@@ -69,6 +69,20 @@ export function toCanonicalWebhookEvent(value: string): string {
 	return normalized;
 }
 
+export function isKindSpecificWebhookEvent(value: string): boolean {
+	const normalized = value.trim().toLowerCase();
+	return normalized.startsWith("video.") || normalized.startsWith("batch.");
+}
+
 export function normalizeWebhookEvents(values: readonly string[]): string[] {
 	return [...new Set(values.map(toCanonicalWebhookEvent).filter(Boolean))];
+}
+
+export function getWebhookEventsForUpdate(
+	mode: "create" | "edit",
+	values: readonly string[],
+	selectionChanged: boolean,
+): string[] | undefined {
+	if (mode === "edit" && !selectionChanged) return undefined;
+	return [...values];
 }
