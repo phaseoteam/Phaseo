@@ -2,7 +2,7 @@ import {
 	getWebhookEventsForUpdate,
 	isKindSpecificWebhookEvent,
 	normalizeWebhookEvents,
-} from "./webhook-events";
+} from "@/components/(gateway)/settings/webhooks/webhook-events";
 
 describe("webhook event settings", () => {
 	it("recognizes kind-specific legacy subscriptions", () => {

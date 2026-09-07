@@ -23,7 +23,7 @@ import {
 	isKindSpecificWebhookEvent,
 	normalizeWebhookEvents,
 	WEBHOOK_EVENT_OPTIONS,
-} from "./webhook-events";
+} from "@/components/(gateway)/settings/webhooks/webhook-events";
 import WebhookSecretNotice from "./WebhookSecretNotice";
 
 export default function WebhookEndpointForm({
