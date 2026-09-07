@@ -62,7 +62,7 @@ export function formatProviderOfferDisplayName(args: {
     offerLabel?: string | null;
     offerScope?: ProviderOfferScope | null;
 }): string {
-    const providerName = resolveProviderDisplayName({
+    const providerName = resolveProviderBaseName({
         providerId: args.providerId,
         providerName: args.providerName,
     });
@@ -73,10 +73,12 @@ export function formatProviderOfferDisplayName(args: {
 
     if (!providerName) return "";
     if (!offerLabel) return providerName;
-    if (offerScope === "global" && explicitOfferLabel) return providerName;
-    if (offerScope === "regional" || (!explicitOfferLabel && inferredRegionalLabel)) {
+    if (offerScope === "global" && explicitOfferLabel && !inferredRegionalLabel) return providerName;
+    if (offerScope === "regional" || inferredRegionalLabel) {
         const regionalLabel = normalizeRegionalOfferLabel(providerName, offerLabel);
-        return regionalLabel ? `${providerName} (${regionalLabel})` : providerName;
+        if (providerName.toLowerCase().endsWith(`(${regionalLabel.toLowerCase()})`)) return providerName;
+        const baseName = providerName.replace(new RegExp(`(?:\\s+|-)${escapeRegExp(regionalLabel)}$`, "i"), "").trim();
+        return regionalLabel ? `${baseName || providerName} (${regionalLabel})` : providerName;
     }
     if (
         args.providerId &&
@@ -87,10 +89,18 @@ export function formatProviderOfferDisplayName(args: {
         return providerName;
     }
 
+    if (providerName.toLowerCase().endsWith(` ${offerLabel.toLowerCase()}`)) return providerName;
     return `${providerName} ${offerLabel}`;
 }
 
 export function resolveProviderDisplayName(args: {
+    providerId?: string | null;
+    providerName: string;
+}): string {
+    return formatProviderOfferDisplayName(args);
+}
+
+function resolveProviderBaseName(args: {
     providerId?: string | null;
     providerName: string;
 }): string {
