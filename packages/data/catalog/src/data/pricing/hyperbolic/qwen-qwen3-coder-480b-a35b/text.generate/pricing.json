@@ -1,25 +1,25 @@
 {
-  "key": "hyperbolic:deepseek/deepseek-r1-fp8:text.generate",
+  "key": "hyperbolic:qwen/qwen3-coder-480b-a35b:text.generate",
   "api_provider_id": "hyperbolic",
   "provider_slug": "hyperbolic",
-  "api_model_id": "deepseek/deepseek-r1-fp8",
+  "api_model_id": "qwen/qwen3-coder-480b-a35b",
   "capability_id": "text.generate",
   "rules": [
     {
       "meter": "total_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 2,
+      "price_per_unit": 0.4,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Hyperbolic publishes a single blended per-token rate.",
+      "note": "Hyperbolic publishes a single blended rate covering input and output tokens.",
       "match": [],
       "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null,
-      "effective_to": "2026-08-24T00:00:00Z"
+      "source": null
     }
   ],
   "regions": [],
@@ -31,13 +31,12 @@
       "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
       "kind": "pricing",
       "accessed_at": "2026-08-24T00:00:00Z",
-      "notes": "Route is absent from Hyperbolic's current live table; historical pricing retained with a closed effective window."
+      "notes": "Official Hyperbolic live model, context, tool-calling, and pricing table."
     }
   ],
   "verification": {
     "status": "verified",
     "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Historical price closed during the official live catalogue reconciliation."
-  },
-  "effective_to": "2026-08-24T00:00:00Z"
+    "notes": "Blended $0.40 per million-token rate verified from Hyperbolic's official live model table."
+  }
 }

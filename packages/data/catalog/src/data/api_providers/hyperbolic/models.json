@@ -11,11 +11,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-05-11T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -49,7 +49,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -61,11 +61,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -81,11 +88,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-05-11T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -119,7 +126,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -131,11 +138,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -151,11 +165,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-05-11T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -189,7 +203,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -201,11 +215,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -221,11 +242,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -259,7 +280,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -271,11 +292,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -291,11 +319,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -329,7 +357,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -341,11 +369,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -361,11 +396,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -399,7 +434,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -411,11 +446,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -431,11 +473,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -469,7 +511,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -481,11 +523,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -501,11 +550,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -539,7 +588,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -551,11 +600,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -571,11 +627,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-05-11T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -609,7 +665,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -621,11 +677,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -641,11 +704,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-05-11T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -679,7 +742,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -691,11 +754,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -711,11 +781,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-05-11T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -749,7 +819,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -761,11 +831,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -781,11 +858,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-05-11T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -819,7 +896,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -831,11 +908,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -851,11 +935,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-05-11T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "retired",
         "params": [
           {
             "param_id": "max_tokens",
@@ -889,7 +973,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -901,11 +985,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
   },
@@ -921,11 +1012,11 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "active",
+        "status": "retired",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -937,7 +1028,7 @@
         "modes": []
       }
     ],
-    "routing_status": null,
+    "routing_status": "retired",
     "routable": false,
     "regions": {
       "execution": null,
@@ -949,12 +1040,167 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "No longer present in Hyperbolic's live model table; retained as retired history."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Retired during the 2026-08-24 reconciliation against Hyperbolic's official live catalogue."
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "meta/llama-3.3-70b",
+    "provider_api_model_id": "hyperbolic:meta/llama-3.3-70b",
+    "provider_model_slug": "meta-llama/Llama-3.3-70B-Instruct",
+    "internal_model_id": "meta/llama-3.3-70b",
+    "quantization_scheme": "FP8",
+    "context_length": 131072,
+    "is_active_gateway": true,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stream",
+          "stop",
+          "tools",
+          "tool_choice"
+        ],
+        "reasoning": null,
+        "tool_call": true,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "https://api.hyperbolic.xyz/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official Hyperbolic live model, context, tool-calling, and pricing table."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Exact live model ID, context window, tool support, and blended token price verified from Hyperbolic's official text API table."
+    },
+    "rate_limits": [
+      {
+        "requests_per_minute": 60,
+        "tokens_per_minute": null,
+        "tier": "basic",
+        "notes": "Basic account limit; Pro is 600 RPM after a $5+ deposit. All tiers are capped at 600 RPM per source IP."
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-480b-a35b",
+    "provider_api_model_id": "hyperbolic:qwen/qwen3-coder-480b-a35b",
+    "provider_model_slug": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+    "internal_model_id": "qwen/qwen3-coder-480b-a35b",
+    "quantization_scheme": "FP8",
+    "context_length": 262144,
+    "is_active_gateway": true,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stream",
+          "stop",
+          "tools",
+          "tool_choice"
+        ],
+        "reasoning": null,
+        "tool_call": true,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "https://api.hyperbolic.xyz/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "url": "https://www.hyperbolic.ai/docs/inference/text-apis",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official Hyperbolic live model, context, tool-calling, and pricing table."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Exact live model ID, context window, tool support, and blended token price verified from Hyperbolic's official text API table."
+    },
+    "rate_limits": [
+      {
+        "requests_per_minute": 60,
+        "tokens_per_minute": null,
+        "tier": "basic",
+        "notes": "Basic account limit; Pro is 600 RPM after a $5+ deposit. All tiers are capped at 600 RPM per source IP."
+      }
+    ]
   }
 ]
