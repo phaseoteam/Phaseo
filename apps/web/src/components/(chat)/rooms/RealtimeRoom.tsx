@@ -484,6 +484,14 @@ type OpenAIRealtimePriceTable = {
 };
 
 const OPENAI_REALTIME_PRICES: Record<string, OpenAIRealtimePriceTable> = {
+	"gpt-realtime-1.5": {
+		inputTextPerMillion: 4,
+		cachedTextPerMillion: 0.4,
+		outputTextPerMillion: 16,
+		inputAudioPerMillion: 32,
+		cachedAudioPerMillion: 0.4,
+		outputAudioPerMillion: 64,
+	},
 	"gpt-realtime-2.1": {
 		inputTextPerMillion: 4,
 		cachedTextPerMillion: 0.4,
@@ -567,7 +575,7 @@ function toNumber(value: unknown): number {
 
 function openAIPricesForModel(model: string | null | undefined) {
 	if (!model) return DEFAULT_OPENAI_REALTIME_PRICES;
-	return OPENAI_REALTIME_PRICES[model] ?? DEFAULT_OPENAI_REALTIME_PRICES;
+	return OPENAI_REALTIME_PRICES[model.replace(/^openai\//, "")] ?? DEFAULT_OPENAI_REALTIME_PRICES;
 }
 
 function calculateOpenAICost(

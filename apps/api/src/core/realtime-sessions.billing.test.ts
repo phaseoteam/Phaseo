@@ -47,6 +47,11 @@ function pricedLine(priced: Record<string, unknown>, dimension: string) {
 }
 
 describe("realtime voice billing simulation", () => {
+	it("meters the same PCM duration regardless of chunk boundaries", () => {
+		const oneSample = Buffer.alloc(2).toString("base64");
+		const whole = Buffer.alloc(4800).toString("base64");
+		expect(pcm16Base64DurationMs(oneSample, 24000) * 2400).toBeCloseTo(pcm16Base64DurationMs(whole, 24000), 10);
+	});
 	it("preserves cached and uncached meters through relay, persistence, and settlement", () => {
 		const normalized = normalizeRealtimeUsage({
 			input_token_details: { text_tokens: 1000, audio_tokens: 2000,

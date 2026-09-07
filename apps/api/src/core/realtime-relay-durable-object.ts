@@ -49,8 +49,8 @@ const XAI_OUTPUT_SAMPLE_RATE = 24_000;
 const OPENAI_INPUT_SAMPLE_RATE = 24_000;
 const XAI_INPUT_SAMPLE_RATE = 24_000;
 const GOOGLE_INPUT_SAMPLE_RATE = 16_000;
-const GOOGLE_SPEECH_RMS_THRESHOLD = 0.012;
-const GOOGLE_SILENCE_END_MS = 1_000;
+const SPEECH_RMS_THRESHOLD = 0.012;
+const SILENCE_END_MS = 1_000;
 const BUDGET_CLOSING_INSTRUCTIONS =
 	"The realtime session budget is almost exhausted. Briefly tell the user that this voice session is ending, finish the current thought, and do not ask a follow-up question.";
 
@@ -362,8 +362,8 @@ export class RealtimeRelayDurableObject {
 	private settling = false;
 	private inputSinceLastResponse = false;
 	private turnStartedAtMs = 0;
-	private googleAudioActive = false;
-	private googleSilenceMs = 0;
+	private microphoneActive = false;
+	private microphoneSilenceMs = 0;
 
 	constructor(state: DurableObjectState, env: GatewayBindings) {
 		this.state = state;
@@ -518,8 +518,10 @@ export class RealtimeRelayDurableObject {
 				voice: voice ?? "eve",
 				instructions,
 				turn_detection: { type: "server_vad" },
-				input_audio_format: "pcm16",
-				output_audio_format: "pcm16",
+				audio: {
+					input: { format: { type: "audio/pcm", rate: XAI_INPUT_SAMPLE_RATE } },
+					output: { format: { type: "audio/pcm", rate: XAI_OUTPUT_SAMPLE_RATE } },
+				},
 			},
 		});
 	}
@@ -617,33 +619,33 @@ export class RealtimeRelayDurableObject {
 		}
 		// Ingress limits include dropped silence; billable usage must not.
 		this.receivedAudioMs += validated.durationMs;
-		if (provider === "google-ai-studio") {
-			// Compute activity from validated PCM, never the client-supplied rms.
-			// Do not forward idle microphone noise: Google's activity-only turns
-			// exclude silence and will not emit a usage event for it.
-			const pcm = atob(message.audio);
-			let squares = 0;
-			for (let i = 0; i < pcm.length; i += 2) {
-				const value = pcm.charCodeAt(i) | (pcm.charCodeAt(i + 1) << 8);
-				const sample = (value >= 32768 ? value - 65536 : value) / 32768;
-				squares += sample * sample;
-			}
-			const speech = Math.sqrt(squares / (pcm.length / 2)) >= GOOGLE_SPEECH_RMS_THRESHOLD;
-			if (speech) {
-				this.googleAudioActive = true;
-				this.googleSilenceMs = 0;
-			} else {
-				this.googleSilenceMs += validated.durationMs;
-				if (!this.googleAudioActive || this.googleSilenceMs >= GOOGLE_SILENCE_END_MS) {
-					if (this.googleAudioActive) this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
-					this.googleAudioActive = false;
-					return;
-				}
+		// Compute activity from validated PCM, never the client-supplied rms.
+		// Idle microphone silence does not create a provider VAD turn and
+		// must not reopen pending billing after the last response.
+		const pcm = atob(message.audio);
+		let squares = 0;
+		for (let i = 0; i < pcm.length; i += 2) {
+			const value = pcm.charCodeAt(i) | (pcm.charCodeAt(i + 1) << 8);
+			const sample = (value >= 32768 ? value - 65536 : value) / 32768;
+			squares += sample * sample;
+		}
+		const speech = Math.sqrt(squares / (pcm.length / 2)) >= SPEECH_RMS_THRESHOLD;
+		if (speech) {
+			this.microphoneActive = true;
+			this.microphoneSilenceMs = 0;
+		} else {
+			this.microphoneSilenceMs += validated.durationMs;
+			if (!this.microphoneActive || this.microphoneSilenceMs >= SILENCE_END_MS) {
+				if (this.microphoneActive && provider === "google-ai-studio") this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
+				this.microphoneActive = false;
+				return;
 			}
 		}
 		this.usage = addDuration(this.usage, "input_audio_ms", validated.durationMs);
-		this.inputSinceLastResponse = true;
-		this.usage.input_audio_pending = true;
+		if (speech) {
+			this.inputSinceLastResponse = true;
+			this.usage.input_audio_pending = true;
+		}
 		this.resetIdleTimer();
 		await this.checkpointUsage();
 		void this.maybePersistUsage();
@@ -707,6 +709,9 @@ export class RealtimeRelayDurableObject {
 			const response = getRecordField(event, "response");
 			const responseId = response ? getStringField(response, "id") : "";
 			const usage = response ? getRecordField(response, "usage") : null;
+			// A terminal event without authoritative token usage cannot settle
+			// an OpenAI turn, even when an earlier turn had valid usage.
+			if (provider === "openai" && (!usage || Object.keys(usage).length === 0)) return;
 			if (usage && (!responseId || !this.providerState.seenResponseIds.includes(responseId))) {
 				this.usage = addOpenAIUsage(this.usage, usage);
 				if (provider === "spacex-ai") {

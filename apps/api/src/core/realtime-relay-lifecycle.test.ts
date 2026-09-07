@@ -13,8 +13,8 @@ function relay(provider = "openai") {
 }
 
 describe("Realtime relay lifecycle", () => {
-	it("does not reopen billing for microphone silence after a completed Google turn", async () => {
-		const object = relay("google-ai-studio");
+	it.each(["google-ai-studio", "openai", "spacex-ai"])("does not reopen %s billing for microphone silence after a completed turn", async (provider) => {
+		const object = relay(provider);
 		object.providerSetupComplete = true;
 		object.upstream = { readyState: 1, bufferedAmount: 0 };
 		object.checkpointUsage = vi.fn();
@@ -22,13 +22,24 @@ describe("Realtime relay lifecycle", () => {
 		object.resetIdleTimer = vi.fn();
 		object.sendUpstream = vi.fn();
 		object.providerCompletedResponseSeen = true;
-		await object.handleClientMessage(JSON.stringify({ type: "client.audio", audio: Buffer.alloc(3200).toString("base64"), rms: 1 }));
+		await object.handleClientMessage(JSON.stringify({ type: "client.audio", audio: Buffer.alloc(provider === "google-ai-studio" ? 3200 : 4800).toString("base64"), rms: 1 }));
 		expect(object.sendUpstream).not.toHaveBeenCalled();
 		expect(object.usage.input_audio_ms).toBeUndefined();
 		expect(object.receivedAudioMs).toBe(100);
 		expect(object.inputSinceLastResponse).toBe(false);
 		await object.handleClientGone();
 		expect(object.settle).toHaveBeenCalledWith("completed", "client_disconnected");
+	});
+
+	it("does not clear new speech when OpenAI returns a response without usage", async () => {
+		const object = relay();
+		object.inputSinceLastResponse = true;
+		object.responseInFlight = true;
+		object.emitTurnTelemetry = vi.fn();
+		object.checkpointUsage = vi.fn();
+		await object.handleUpstreamMessage(JSON.stringify({ type: "response.done", response: { id: "missing_usage", status: "completed" } }));
+		expect(object.inputSinceLastResponse).toBe(true);
+		expect(object.settle).not.toHaveBeenCalled();
 	});
 
 	it("keeps actual Google speech pending even when the client claims silence", async () => {
