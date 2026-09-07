@@ -32,9 +32,13 @@ describe("provider health RPC fallback", () => {
 
 describe("public model canonical resolution", () => {
 	it("resolves an encoded model-page alias through the canonical RPC", async () => {
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
-			const url = String(input);
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/rpc/get_v2_model_resolution")) {
+				const request = input instanceof Request ? input.clone() : new Request(input, init);
+				await expect(request.json()).resolves.toEqual({
+					p_requested_slug: "openai/gpt-astra-latest",
+				});
 				return new Response(JSON.stringify({
 					requestedModelId: "openai/gpt-astra-latest",
 					canonicalModelId: "openai/gpt-6-astra",
