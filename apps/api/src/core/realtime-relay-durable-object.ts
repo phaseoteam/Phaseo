@@ -533,7 +533,7 @@ export class RealtimeRelayDurableObject {
 				provider: this.session?.provider,
 			});
 			this.closeUpstream("realtime_provider_socket_error");
-			this.queueUpstreamEvent(() => this.settle("failed", "provider_socket_error"));
+			this.queueUpstreamEvent(async () => { await this.settle("failed", "provider_socket_error"); });
 		});
 	}
 
