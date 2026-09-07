@@ -104,7 +104,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/tiers",
 				],
 				children: [
-					{ href: "/settings/credits", label: "Credits", exactOnly: true },
+					{ href: "/settings/credits", label: "Billing & Credits", exactOnly: true },
 					{ href: "/settings/credits/transactions", label: "Transactions" },
 					{ href: "/settings/payment-methods", label: "Payment Methods" },
 				],
@@ -206,6 +206,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					{ href: "/settings/usage/logs/requests", label: "Requests" },
 					{ href: "/settings/usage/logs/upstream", label: "Upstream Requests" },
 					{ href: "/settings/usage/logs/sessions", label: "Sessions" },
+					{ href: "/settings/usage/logs/realtime", label: "Realtime Sessions" },
 					{ href: "/settings/usage/logs/videos", label: "Videos" },
 					{ href: "/settings/usage/logs/batches", label: "Batches" },
 				],
