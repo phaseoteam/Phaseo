@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, XCircle } from "lucide-react";
@@ -809,7 +810,7 @@ export default function RequestDetailDialog({
 	request,
 	appName,
 	modelMetadata,
-	providerName,
+	providerName: suppliedProviderName,
 	providerNames,
 	providerMetadata,
 	headerNavigation,
@@ -822,6 +823,7 @@ export default function RequestDetailDialog({
 	const searchParams = useSearchParams();
 
 	if (!request) return null;
+	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
 	if (loading) {
 		const loadingContent = (
 			<>
