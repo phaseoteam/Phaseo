@@ -92,12 +92,14 @@ export default function EnterpriseSubscriptionCard({ workspaceId }: Props) {
 						</p>
 					</div>
 				</div>
-				<Button asChild variant="ghost" size="sm">
-					<Link href={`/settings/workspaces/enterprise?workspaceId=${encodeURIComponent(workspaceId)}`}>
-						Enterprise settings
-						<ArrowUpRight className="ml-2 h-3.5 w-3.5" />
-					</Link>
-				</Button>
+				{summary.canAccessSettings ? (
+					<Button asChild variant="ghost" size="sm">
+						<Link href={`/settings/workspaces/enterprise?workspaceId=${encodeURIComponent(workspaceId)}`}>
+							Enterprise settings
+							<ArrowUpRight className="ml-2 h-3.5 w-3.5" />
+						</Link>
+					</Button>
+				) : null}
 			</div>
 
 			<div className="grid gap-4 text-sm sm:grid-cols-3">
