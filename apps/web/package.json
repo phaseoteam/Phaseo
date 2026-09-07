@@ -57,7 +57,7 @@
 		"@streamdown/math": "^1.0.2",
 		"@stripe/react-stripe-js": "^6.8.2",
 		"@stripe/stripe-js": "^9.7.0",
-		"@supabase/ssr": "^0.10.3",
+		"@supabase/ssr": "^0.12.5",
 		"@supabase/supabase-js": "^2.106.2",
 		"@tanstack/react-table": "^8.21.3",
 		"@tanstack/react-virtual": "^3.14.6",
