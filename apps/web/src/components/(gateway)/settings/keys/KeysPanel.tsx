@@ -726,7 +726,7 @@ const DesktopKeyRow = memo(function DesktopKeyRow({ k, selected, toggleKeySelect
 		);
 });
 
-const desktopQuery = "(min-width: 1024px)";
+const desktopQuery = "(min-width: 64rem)";
 function subscribeToLayout(onChange: () => void) {
  const query = window.matchMedia(desktopQuery);
  query.addEventListener("change", onChange);
@@ -871,7 +871,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
   </DropdownMenu>
  );
 
-	if (!sortedTeams || sortedTeams.length === 0) {
+	if (!sortedTeams || sortedTeams.length === 0 || teamsWithKeys.every((team: any) => !team.keys?.length)) {
 		return (
 			<Empty className="mt-6 rounded-xl border border-dashed border-border/80 p-8">
 				<EmptyHeader>
