@@ -68,7 +68,12 @@ import {
 } from "@/lib/gateway/usage/timeFormatting";
 import { formatAsyncJobFailureSummary } from "@/lib/gateway/usage/asyncJobFailureSummary";
 import { formatRoomError } from "@/lib/chat/formatRoomError";
-import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
+import {
+	getModelDetailsHref,
+	getModelDisplayName,
+	getModelMetadataEntry,
+	type ModelMetadataMap,
+} from "./model-display";
 import Link from "next/link";
 import {
         DetailKeyValueGrid,
@@ -87,7 +92,7 @@ function AsyncJobHeader({
 	modelMetadata: ModelMetadataMap;
 	providerNames: Map<string, string>;
 }) {
-	const modelHref = getModelDetailsHref(job.model ?? null);
+	const modelHref = getModelDetailsHref(job.model ?? null, modelMetadata, job.provider);
 	const modelLabel = getModelDisplayName(job.model ?? null, modelMetadata);
 	const modelLogoId = getModelLogoId(job.model ?? null, modelMetadata);
 	const providerLabel = job.provider
@@ -141,20 +146,12 @@ function stopRowClick(event: React.MouseEvent<HTMLElement>) {
 	event.stopPropagation();
 }
 
-function getModelDetailsHref(modelId: string | null): string | null {
-	if (!modelId) return null;
-	const [organisationId, ...modelParts] = modelId.split("/");
-	if (!organisationId || modelParts.length === 0) return null;
-	const routeModelId = modelParts.join("/");
-	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(routeModelId)}`;
-}
-
 function getModelLogoId(
 	modelId: string | null,
 	modelMetadata: ModelMetadataMap,
 ): string | null {
 	if (!modelId) return null;
-	const metadata = modelMetadata.get(modelId);
+	const metadata = getModelMetadataEntry(modelId, modelMetadata);
 	if (metadata?.organisationId) return metadata.organisationId;
 	if (modelId.includes("/")) {
 		const [organisationId] = modelId.split("/");
@@ -1938,7 +1935,7 @@ export default function AsyncJobsPanel({
 						job.model,
 						resolvedModelMetadata,
 					);
-					const modelHref = getModelDetailsHref(job.model);
+					const modelHref = getModelDetailsHref(job.model, resolvedModelMetadata, job.provider);
 					const modelLogoId = getModelLogoId(
 						job.model,
 						resolvedModelMetadata,
@@ -2072,7 +2069,7 @@ export default function AsyncJobsPanel({
 							job.model,
 							resolvedModelMetadata,
 						);
-						const modelHref = getModelDetailsHref(job.model);
+						const modelHref = getModelDetailsHref(job.model, resolvedModelMetadata, job.provider);
 						const modelLogoId = getModelLogoId(
 							job.model,
 							resolvedModelMetadata,

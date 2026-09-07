@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import type { SearchCapabilities } from "@/components/header/Search/Search.navigation";
 
 const Search = dynamic(() => import("./Search"), {
 	ssr: false,
@@ -14,9 +15,10 @@ const Search = dynamic(() => import("./Search"), {
 interface SearchWrapperProps {
 	className?: string;
 	mobileGhost?: boolean;
+	capabilities?: SearchCapabilities;
 }
 
-export function SearchWrapper({ className, mobileGhost }: SearchWrapperProps) {
+export function SearchWrapper({ className, mobileGhost, capabilities }: SearchWrapperProps) {
 	const [activated, setActivated] = useState(false);
 
 	useEffect(() => {
@@ -35,6 +37,7 @@ export function SearchWrapper({ className, mobileGhost }: SearchWrapperProps) {
 			<Search
 				className={className}
 				mobileGhost={mobileGhost}
+				capabilities={capabilities}
 				initiallyOpen
 			/>
 		);

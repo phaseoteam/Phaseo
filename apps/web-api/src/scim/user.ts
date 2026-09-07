@@ -7,10 +7,18 @@ const multiValue = z.object({ value: stringValue, type: stringValue.optional(), 
 
 export const scimUserInputSchema = z.object({
 	schemas: z.array(z.string()).max(4).optional(),
+	id: stringValue.optional(),
+	meta: z.object({}).passthrough().optional(),
 	externalId: stringValue.optional(),
 	userName: z.string().trim().min(1).max(320),
 	displayName: stringValue.optional(),
 	active: z.boolean().optional().default(true),
+	// Some identity providers include write-only password and read-only groups
+	// attributes in create/replace payloads. Server-managed id/meta fields may
+	// also be echoed during replacement. Accept these for interoperability, but
+	// deliberately do not persist any client-supplied values for them.
+	password: z.string().max(1024).optional(),
+	groups: z.array(z.object({ value: stringValue.optional(), display: stringValue.optional(), type: stringValue.optional() }).passthrough()).max(1000).optional(),
 	name: z.object({ givenName: stringValue.optional(), familyName: stringValue.optional() }).passthrough().optional(),
 	emails: z.array(multiValue).max(20).optional().default([]),
 	phoneNumbers: z.array(multiValue).max(20).optional().default([]),

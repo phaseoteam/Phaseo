@@ -46,14 +46,15 @@ function realtimeWebSocketUrl(baseUrl: string, path: string): string {
 	return url.toString();
 }
 
-function normalizeRealtimeProvider(value: string): "openai" | "x-ai" | "google-ai-studio" | null {
+function normalizeRealtimeProvider(value: string): "openai" | "spacex-ai" | "google-ai-studio" | null {
 	if (value === "openai") return "openai";
-	if (value === "xai" || value === "x-ai") return "x-ai";
+	if (value === "xai" || value === "x-ai" || value === "spacex-ai") return "spacex-ai";
 	if (value === "google" || value === "google-ai-studio") return "google-ai-studio";
 	return null;
 }
 
 function normalizeRealtimeModel(provider: string, model: string): string {
+	if (provider === "spacex-ai") return model.includes("/") ? model.replace(/^(xai|x-ai)\//, "spacex-ai/") : `spacex-ai/${model}`;
 	if (model.includes("/")) return model;
 	if (provider === "openai") return `openai/${model}`;
 	if (provider === "x-ai") return `x-ai/${model}`;
@@ -113,6 +114,19 @@ chatRouter.post("/audio", async (c) => {
 	return proxyGateway(c.req.raw, c.env, waitUntil(c), { path: AUDIO_PATHS[action], requestBody: body.requestBody ?? {}, appHeaders: body.appHeaders, debug: body.debug, baseUrl: body.baseUrl });
 });
 
+chatRouter.get("/realtime/session/:sessionId", async (c) => {
+	const auth = await resolveGatewayKeys(c.req.raw, c.env, waitUntil(c));
+	if ("status" in auth) return realtimeError(auth.status, auth.code, auth.message);
+	const sessionId = c.req.param("sessionId");
+	if (!/^rt_[0-9a-hjkmnp-tv-z]{26}$/.test(sessionId)) return realtimeError(400, "invalid_session_id", "Invalid realtime session.");
+	const result = await getDataClient(c.env).from("gateway_realtime_sessions")
+		.select("session_id,status,reserved_nanos,captured_nanos,released_nanos,estimated_cost_nanos,final_cost_nanos,currency")
+		.eq("session_id", sessionId).eq("workspace_id", auth.workspaceId).eq("user_id", auth.userId).eq("source", "chat").maybeSingle();
+	if (result.error) return realtimeError(503, "realtime_status_unavailable", "Realtime billing is temporarily unavailable.");
+	if (!result.data) return realtimeError(404, "realtime_session_not_found", "Realtime session not found.");
+	return c.json(result.data, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
 chatRouter.post("/realtime/session", async (c) => {
 	const auth = await resolveGatewayKeys(c.req.raw, c.env, waitUntil(c));
 	if (!("apiKey" in auth)) return realtimeError(auth.status, auth.code, auth.message);
@@ -149,7 +163,6 @@ chatRouter.post("/realtime/session", async (c) => {
 				...(voice ? { voice } : {}),
 				...(instructions ? { instructions } : {}),
 				source: "chat",
-				relay: true,
 				metadata: { feature: "chat_realtime_voice", userId: auth.userId, workspaceId: auth.workspaceId },
 			}),
 		});
@@ -171,7 +184,7 @@ chatRouter.post("/realtime/session", async (c) => {
 	}
 	return c.json({
 		...payload,
-		provider: provider === "x-ai" ? "xai" : provider === "google-ai-studio" ? "google" : provider,
+		provider: provider === "spacex-ai" ? "xai" : provider === "google-ai-studio" ? "google" : provider,
 		connect: {
 			...connect,
 			transport: "websocket",

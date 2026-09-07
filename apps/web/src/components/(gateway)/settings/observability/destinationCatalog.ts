@@ -43,6 +43,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		id: "arize",
 		label: "Arize AI",
 		description: "Send traces to Arize with API + space credentials.",
+		logoId: "observability-arize",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "arize_...", type: "password" },
 			{ key: "space_key", label: "Space Key", placeholder: "space-key-123" },
@@ -59,6 +60,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		id: "braintrust",
 		label: "Braintrust",
 		description: "Export traces into your Braintrust project.",
+		logoId: "observability-braintrust",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "bt_...", type: "password" },
 			{ key: "project_id", label: "Project ID", placeholder: "proj_..." },
@@ -74,6 +76,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		id: "clickhouse",
 		label: "ClickHouse",
 		description: "Insert traces directly into ClickHouse.",
+		logoId: "observability-clickhouse",
 		fields: [
 			{ key: "endpoint", label: "HTTP Endpoint", placeholder: "https://host:8443" },
 			{ key: "username", label: "Username", placeholder: "default" },
@@ -86,6 +89,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		id: "comet_opik",
 		label: "Comet Opik",
 		description: "Send observability payloads to Comet Opik.",
+		logoId: "observability-opik",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "opik_...", type: "password" },
 			{ key: "workspace", label: "Workspace", placeholder: "my-workspace" },
@@ -159,6 +163,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		id: "new_relic",
 		label: "New Relic AI",
 		description: "Write traces into New Relic AI monitoring.",
+		logoId: "observability-newrelic",
 		fields: [
 			{ key: "license_key", label: "License Key", placeholder: "NRAK-...", type: "password" },
 			{ key: "region", label: "Region", placeholder: "US" },
@@ -168,6 +173,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		id: "otel_collector",
 		label: "OpenTelemetry Collector",
 		description: "Export GenAI traces over OTLP/HTTP JSON to your collector.",
+		logoId: "observability-opentelemetry",
 		fields: [
 			{
 				key: "otlp_endpoint",
@@ -186,6 +192,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		id: "posthog",
 		label: "PostHog",
 		description: "Publish traces into PostHog events.",
+		logoId: "observability-posthog",
 		fields: [
 			{ key: "api_key", label: "Project API Key", placeholder: "phc_...", type: "password" },
 			{
@@ -200,6 +207,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		id: "s3",
 		label: "S3 / S3-Compatible",
 		description: "Batch traces into object storage.",
+		logoId: "aws",
 		fields: [
 			{ key: "bucket", label: "Bucket", placeholder: "gateway-traces" },
 			{ key: "access_key_id", label: "Access Key ID", placeholder: "AKIA..." },
@@ -273,6 +281,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		id: "wandb_weave",
 		label: "W&B Weave",
 		description: "Send traces to Weights & Biases Weave.",
+		logoId: "weights-and-biases",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "wandb_...", type: "password" },
 			{ key: "entity", label: "Entity", placeholder: "your-team" },
@@ -333,6 +342,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "AWS Firehose",
+		logoId: "aws",
 		fields: [
 			{ key: "stream_name", label: "Delivery Stream Name", placeholder: "gateway-traces" },
 			{ key: "region", label: "Region", placeholder: "us-east-1" },
@@ -354,6 +364,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "Dynatrace",
+		logoId: "observability-dynatrace",
 		fields: [
 			{
 				key: "otlp_endpoint",
@@ -378,6 +389,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "Fiddler",
+		logoId: "observability-fiddler",
 		fields: [
 			{
 				key: "endpoint",
@@ -408,6 +420,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "Helicone",
+		logoId: "helicone",
 		fields: [
 			{
 				key: "api_key",
@@ -425,6 +438,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "HoneyHive",
+		logoId: "observability-honeyhive",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "hh_...", type: "password" },
 			{ key: "project", label: "Project", placeholder: "gateway-prod" },
@@ -444,6 +458,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "Middleware",
+		logoId: "observability-middleware",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "mw_...", type: "password" },
 			{
@@ -455,6 +470,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "Mona",
+		logoId: "observability-mona",
 		fields: [
 			{ key: "client_id", label: "Client ID", placeholder: "client-..." },
 			{ key: "client_secret", label: "Client Secret", placeholder: "********", type: "password" },
@@ -468,6 +484,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "OpenInference",
+		logoId: "observability-opentelemetry",
 		fields: [
 			{
 				key: "otlp_endpoint",
@@ -484,6 +501,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "Phoenix",
+		logoId: "observability-arize",
 		fields: [
 			{
 				key: "collector_endpoint",
@@ -519,6 +537,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "Supabase",
+		logoId: "observability-supabase",
 		fields: [
 			{
 				key: "project_url",
@@ -541,6 +560,7 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 	},
 	{
 		label: "WhyLabs",
+		logoId: "observability-whylabs",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "whylabs_...", type: "password" },
 			{ key: "org_id", label: "Organization ID", placeholder: "org-..." },

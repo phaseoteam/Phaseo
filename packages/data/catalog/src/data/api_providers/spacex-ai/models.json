@@ -2711,7 +2711,7 @@
         "provider_api_model_id":  "spacex-ai:x-ai/grok-voice-think-fast-2.0",
         "provider_model_slug":  "grok-voice-think-fast-2.0",
         "internal_model_id":  "spacex-ai/grok-voice-think-fast-2.0",
-        "is_active_gateway":  false,
+        "is_active_gateway":  true,
         "quantization_scheme":  null,
         "input_modalities":  "text,audio",
         "output_modalities":  "text,audio",
@@ -2751,8 +2751,8 @@
                                            ]
                              }
                          ],
-        "routing_status":  null,
-        "routable":  false,
+        "routing_status":  "active",
+        "routable":  true,
         "regions":  {
                         "execution":  [
                                           "us-east-1"
@@ -2787,8 +2787,8 @@
                     ],
         "verification":  {
                              "status":  "verified",
-                             "checked_at":  "2026-07-29T00:00:00Z",
-                             "notes":  "Model slug, endpoint, capabilities and pricing verified against xAI documentation; gateway-disabled pending authenticated realtime validation."
+                             "checked_at":  "2026-09-07T12:00:00Z",
+                             "notes":  "Verified setup, two-turn audio, usage pricing and hold release through the Phaseo relay on 2026-09-07; workspace Realtime preview gate remains required."
                          },
         "rate_limits":  [
 
