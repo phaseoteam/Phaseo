@@ -37,7 +37,7 @@ export async function createWebhookEndpointAction(args: {
 
 export async function updateWebhookEndpointAction(
 	id: string,
-	args: { name: string; url: string; events: string[] },
+	args: { name: string; url: string; events?: string[] },
 ) {
 	if (!id) throw new Error("Missing webhook endpoint id");
 	const context = await account();

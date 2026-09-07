@@ -19,9 +19,11 @@ import {
 import type { WebhookEndpoint } from "./WebhooksSettingsClient";
 import {
 	DEFAULT_WEBHOOK_EVENTS,
+	getWebhookEventsForUpdate,
+	isKindSpecificWebhookEvent,
 	normalizeWebhookEvents,
 	WEBHOOK_EVENT_OPTIONS,
-} from "./webhook-events";
+} from "@/components/(gateway)/settings/webhooks/webhook-events";
 import WebhookSecretNotice from "./WebhookSecretNotice";
 
 export default function WebhookEndpointForm({
@@ -39,15 +41,18 @@ export default function WebhookEndpointForm({
 		const supported = initial.filter((event) => WEBHOOK_EVENT_OPTIONS.some((option) => option.value === event));
 		return supported.length > 0 ? supported : DEFAULT_WEBHOOK_EVENTS;
 	});
+	const [eventsChanged, setEventsChanged] = useState(mode === "create");
 	const [revealedSecret, setRevealedSecret] = useState<{ id: string; secret: string } | null>(null);
 	const [isPending, startTransition] = useTransition();
 	const allSelected = selectedEvents.length === WEBHOOK_EVENT_OPTIONS.length;
+	const hasKindSpecificEvents = mode === "edit" && (initialEndpoint?.events ?? []).some(isKindSpecificWebhookEvent);
 	const selectedLabels = useMemo(
 		() => WEBHOOK_EVENT_OPTIONS.filter((option) => selectedEvents.includes(option.value)).map((option) => option.label),
 		[selectedEvents],
 	);
 
 	function toggleEvent(value: string, checked: boolean) {
+		setEventsChanged(true);
 		setSelectedEvents((current) => {
 			if (checked) return normalizeWebhookEvents([...current, value]);
 			return current.filter((event) => event !== value);
@@ -67,10 +72,11 @@ export default function WebhookEndpointForm({
 					setRevealedSecret({ id: result.id, secret: result.signingSecret });
 					toast.success("Webhook endpoint created");
 				} else if (initialEndpoint) {
+					const eventUpdate = getWebhookEventsForUpdate(mode, selectedEvents, eventsChanged);
 					await updateWebhookEndpointAction(initialEndpoint.id, {
 						name,
 						url,
-						events: selectedEvents,
+						...(eventUpdate ? { events: eventUpdate } : {}),
 					});
 					toast.success("Webhook endpoint updated");
 					router.push("/settings/webhooks");
@@ -123,9 +129,15 @@ export default function WebhookEndpointForm({
 					<CardDescription>Choose the updates you want to receive. These defaults apply when a job does not specify its own event list.</CardDescription>
 				</CardHeader>
 				<CardContent className="pt-5">
+					{hasKindSpecificEvents ? (
+						<Alert className="mb-4 border-border/70 bg-muted/25">
+							<AlertTitle>Existing kind-specific subscriptions</AlertTitle>
+							<AlertDescription>Video- or batch-only subscriptions are preserved when you save other changes. Changing this selection switches the endpoint to the job-wide events shown below.</AlertDescription>
+						</Alert>
+					) : null}
 					<div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/45 px-3 py-2.5 text-sm">
 						<div className="flex items-center gap-2"><ListChecks className="size-4 text-muted-foreground" /><span><span className="font-medium">{selectedEvents.length}</span> of {WEBHOOK_EVENT_OPTIONS.length} selected</span></div>
-						<Button type="button" variant="ghost" size="sm" onClick={() => setSelectedEvents(allSelected ? [] : WEBHOOK_EVENT_OPTIONS.map((option) => option.value))}>{allSelected ? "Clear all" : "Select all"}</Button>
+						<Button type="button" variant="ghost" size="sm" onClick={() => { setEventsChanged(true); setSelectedEvents(allSelected ? [] : WEBHOOK_EVENT_OPTIONS.map((option) => option.value)); }}>{allSelected ? "Clear all" : "Select all"}</Button>
 					</div>
 					<div className="grid gap-2 md:grid-cols-2">
 						{WEBHOOK_EVENT_OPTIONS.map((option) => {
