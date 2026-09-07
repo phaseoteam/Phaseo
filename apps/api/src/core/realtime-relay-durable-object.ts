@@ -49,8 +49,8 @@ const XAI_OUTPUT_SAMPLE_RATE = 24_000;
 const OPENAI_INPUT_SAMPLE_RATE = 24_000;
 const XAI_INPUT_SAMPLE_RATE = 24_000;
 const GOOGLE_INPUT_SAMPLE_RATE = 16_000;
-const SPEECH_RMS_THRESHOLD = 0.012;
-const SILENCE_END_MS = 1_000;
+const GOOGLE_SPEECH_RMS_THRESHOLD = 0.012;
+const GOOGLE_SILENCE_END_MS = 1_000;
 const BUDGET_CLOSING_INSTRUCTIONS =
 	"The realtime session budget is almost exhausted. Briefly tell the user that this voice session is ending, finish the current thought, and do not ask a follow-up question.";
 
@@ -62,11 +62,13 @@ type RelayUsageAggregate = {
 	cached_read_text_tokens?: number;
 	cached_read_audio_tokens?: number;
 	input_audio_ms?: number;
+	received_audio_ms?: number;
 	output_audio_ms?: number;
 	audio_ms?: number;
 	input_text_messages?: number;
 	assistant_response_in_flight?: boolean;
 	input_audio_pending?: boolean;
+	input_audio_clear_pending?: boolean;
 	provider_cost_usd_ticks?: number;
 	provider_cost_nanos?: number;
 };
@@ -362,8 +364,11 @@ export class RealtimeRelayDurableObject {
 	private settling = false;
 	private inputSinceLastResponse = false;
 	private turnStartedAtMs = 0;
-	private microphoneActive = false;
-	private microphoneSilenceMs = 0;
+	private googleAudioActive = false;
+	private googleSilenceMs = 0;
+	private openAISpeechActive = false;
+	private openAIInputCommitted = false;
+	private waitingForOpenAIInputClear = false;
 
 	constructor(state: DurableObjectState, env: GatewayBindings) {
 		this.state = state;
@@ -619,30 +624,37 @@ export class RealtimeRelayDurableObject {
 		}
 		// Ingress limits include dropped silence; billable usage must not.
 		this.receivedAudioMs += validated.durationMs;
-		// Compute activity from validated PCM, never the client-supplied rms.
-		// Idle microphone silence does not create a provider VAD turn and
-		// must not reopen pending billing after the last response.
-		const pcm = atob(message.audio);
-		let squares = 0;
-		for (let i = 0; i < pcm.length; i += 2) {
-			const value = pcm.charCodeAt(i) | (pcm.charCodeAt(i + 1) << 8);
-			const sample = (value >= 32768 ? value - 65536 : value) / 32768;
-			squares += sample * sample;
-		}
-		const speech = Math.sqrt(squares / (pcm.length / 2)) >= SPEECH_RMS_THRESHOLD;
-		if (speech) {
-			this.microphoneActive = true;
-			this.microphoneSilenceMs = 0;
-		} else {
-			this.microphoneSilenceMs += validated.durationMs;
-			if (!this.microphoneActive || this.microphoneSilenceMs >= SILENCE_END_MS) {
-				if (this.microphoneActive && provider === "google-ai-studio") this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
-				this.microphoneActive = false;
-				return;
+		if (provider === "google-ai-studio") {
+			// Compute activity from validated PCM, never the client-supplied rms.
+			// Idle microphone silence does not create a provider VAD turn and
+			// must not reopen pending billing after the last response.
+			const pcm = atob(message.audio);
+			let squares = 0;
+			for (let i = 0; i < pcm.length; i += 2) {
+				const value = pcm.charCodeAt(i) | (pcm.charCodeAt(i + 1) << 8);
+				const sample = (value >= 32768 ? value - 65536 : value) / 32768;
+				squares += sample * sample;
+			}
+			const speech = Math.sqrt(squares / (pcm.length / 2)) >= GOOGLE_SPEECH_RMS_THRESHOLD;
+			if (speech) {
+				this.googleAudioActive = true;
+				this.googleSilenceMs = 0;
+			} else {
+				this.googleSilenceMs += validated.durationMs;
+				if (!this.googleAudioActive || this.googleSilenceMs >= GOOGLE_SILENCE_END_MS) {
+					if (this.googleAudioActive) this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
+					this.googleAudioActive = false;
+					return;
+				}
 			}
 		}
-		this.usage = addDuration(this.usage, "input_audio_ms", validated.durationMs);
-		if (speech) {
+		if (provider === "openai") {
+			// Raw microphone duration is diagnostic; OpenAI bills committed tokens.
+			this.usage.received_audio_ms = this.receivedAudioMs;
+		} else {
+			this.usage = addDuration(this.usage, "input_audio_ms", validated.durationMs);
+		}
+		if (provider !== "spacex-ai") {
 			this.inputSinceLastResponse = true;
 			this.usage.input_audio_pending = true;
 		}
@@ -684,6 +696,22 @@ export class RealtimeRelayDurableObject {
 		if (event.error && !this.providerSetupComplete) {
 			await this.settle("failed", "provider_session_setup_failed");
 			return;
+		}
+		if (provider === "openai") {
+			if (type === "input_audio_buffer.speech_started") this.openAISpeechActive = true;
+			if (type === "input_audio_buffer.speech_stopped") this.openAISpeechActive = false;
+			if (type === "input_audio_buffer.committed") this.openAIInputCommitted = true;
+			if (type === "input_audio_buffer.cleared" && this.waitingForOpenAIInputClear) {
+				this.waitingForOpenAIInputClear = false;
+				delete this.usage.input_audio_clear_pending;
+				this.openAISpeechActive = false;
+				if (!this.openAIInputCommitted && !this.responseInFlight) {
+					this.inputSinceLastResponse = false;
+					delete this.usage.input_audio_pending;
+					await this.checkpointUsage(true);
+					await this.settle(this.providerCompletedResponseSeen ? "completed" : "cancelled", "client_disconnected_input_cleared");
+				}
+			}
 		}
 
 		if (
@@ -846,10 +874,12 @@ export class RealtimeRelayDurableObject {
 
 	private markResponseComplete() {
 		this.responseInFlight = false;
-		this.inputSinceLastResponse = false;
+		this.openAIInputCommitted = false;
+		this.inputSinceLastResponse = this.waitingForOpenAIInputClear;
 		delete this.usage.assistant_response_in_flight;
-		delete this.usage.input_audio_pending;
+		if (!this.waitingForOpenAIInputClear) delete this.usage.input_audio_pending;
 		void this.checkpointUsage(true);
+		if (this.waitingForOpenAIInputClear) return;
 		if (this.budgetClosing) {
 			void this.settle("expired", "realtime_budget_closed_after_response");
 			return;
@@ -861,6 +891,21 @@ export class RealtimeRelayDurableObject {
 
 	private async handleClientGone() {
 		this.acceptingAudio = false;
+		if (this.session && providerFromSession(this.session) === "openai" && this.receivedAudioMs > 0) {
+			if (this.openAISpeechActive && !this.openAIInputCommitted && !this.responseInFlight) {
+				this.sendUpstream({ type: "input_audio_buffer.commit" });
+				this.sendUpstream({ type: "response.create" });
+				this.markResponseInFlight();
+			} else {
+				// Wait for the provider to acknowledge discarding uncommitted input.
+				// Never infer silence from PCM volume or settle ahead of queued VAD events.
+				this.waitingForOpenAIInputClear = true;
+				this.usage.input_audio_clear_pending = true;
+				this.inputSinceLastResponse = true;
+				this.usage.input_audio_pending = true;
+				this.sendUpstream({ type: "input_audio_buffer.clear" });
+			}
+		}
 		await this.checkpointUsage(true);
 		if (this.responseInFlight || this.inputSinceLastResponse || this.providerState.googleTurnActive) {
 			// Tell Google's VAD that the microphone ended immediately; otherwise
@@ -888,6 +933,10 @@ export class RealtimeRelayDurableObject {
 	) {
 		if (!this.session || this.settled) return;
 		const provider = providerFromSession(this.session);
+		if (this.usage.input_audio_clear_pending === true) {
+			await this.markBillingUnresolved("openai_input_clear_acknowledgement_missing");
+			return;
+		}
 		if (
 			provider === "spacex-ai" ||
 			(!this.responseInFlight && !this.inputSinceLastResponse && !this.providerState.googleTurnActive)
