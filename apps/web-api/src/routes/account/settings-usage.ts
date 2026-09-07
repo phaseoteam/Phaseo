@@ -57,25 +57,45 @@ export async function metadataForIds(context: Awaited<ReturnType<typeof requireA
 	const modelIds = Array.from(new Set(args.models ?? [])).filter(Boolean);
 	const providerIds = Array.from(new Set(args.providers ?? [])).filter(Boolean);
 	const appIds = Array.from(new Set(args.apps ?? [])).filter(Boolean);
-	const [modelsResult, mappingsResult, providersResult, appsResult] = await Promise.all([
+	const routeSelect = "api_model_id:model_slug,model_id:model_slug,provider_model_id,provider_model_slug";
+	const [modelsResult, routesByModelResult, routesByProviderSlugResult, routesByProviderIdResult, providersResult, appsResult] = await Promise.all([
 		modelIds.length ? context.client.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
-		modelIds.length ? context.client.from("v2_model_provider_routes").select("api_model_id:model_slug,model_id:model_slug").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.client.from("v2_model_provider_routes").select(routeSelect).in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.client.from("v2_model_provider_routes").select(routeSelect).in("provider_model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.client.from("v2_model_provider_routes").select(routeSelect).in("provider_model_id", modelIds) : Promise.resolve({ data: [], error: null }),
 		providerIds.length ? context.client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,prompt_training_policy,metadata").in("provider_slug", providerIds) : Promise.resolve({ data: [], error: null }),
 		appIds.length ? context.client.from("api_apps").select("id,title,app_key,image_url").in("id", appIds) : Promise.resolve({ data: [], error: null }),
 	]);
-	const canonicalIds = Array.from(new Set((mappingsResult.data ?? []).map((row) => row.model_id).filter(Boolean)));
+	const routeRows = [
+		...(routesByModelResult.data ?? []),
+		...(routesByProviderSlugResult.data ?? []),
+		...(routesByProviderIdResult.data ?? []),
+	] as Array<Record<string, any>>;
+	const mappings = new Map<string, { model_id: string }>();
+	for (const route of routeRows) {
+		const canonicalId = route.model_id ?? route.api_model_id;
+		if (typeof canonicalId !== "string" || !canonicalId) continue;
+		for (const alias of [route.api_model_id, route.model_id, route.provider_model_slug, route.provider_model_id]) {
+			if (typeof alias === "string" && modelIds.includes(alias) && !mappings.has(alias)) {
+				mappings.set(alias, { model_id: canonicalId });
+			}
+		}
+	}
+	const canonicalIds = Array.from(new Set(Array.from(mappings.values()).map((row) => row.model_id).filter(Boolean)));
 	const mappedModelsResult = canonicalIds.length ? await context.client.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", canonicalIds) : { data: [], error: null };
 	const canonical = new Map<string, Record<string, unknown>>();
-	for (const row of [...(modelsResult.data ?? []), ...(mappedModelsResult.data ?? [])]) canonical.set(row.model_id, row);
+	for (const row of [...(modelsResult.data ?? []), ...(mappedModelsResult.data ?? [])]) {
+		if (row.model_id) canonical.set(row.model_id, row);
+	}
 	const modelMetadata = new Map<string, Record<string, unknown>>();
-	const addModel = (key: string, row: Record<string, any>) => {
+	const addModel = (key: string, row: Record<string, any>, canonicalModelId = row.model_id ?? key) => {
 		const organisation = Array.isArray(row.organisation) ? row.organisation[0] : row.organisation;
-		modelMetadata.set(key, { organisationId: row.organisation_id ?? "", organisationName: organisation?.name ?? row.organisation_id ?? "", organisationColour: organisation?.metadata?.colour ?? null, modelName: row.name ?? key });
+		modelMetadata.set(key, { canonicalModelId, organisationId: row.organisation_id ?? "", organisationName: organisation?.name ?? row.organisation_id ?? "", organisationColour: organisation?.metadata?.colour ?? null, modelName: row.name ?? key });
 	};
 	for (const [id, row] of canonical) addModel(id, row);
-	for (const mapping of mappingsResult.data ?? []) {
+	for (const [alias, mapping] of mappings) {
 		const row = canonical.get(mapping.model_id);
-		if (row && mapping.api_model_id) addModel(mapping.api_model_id, row);
+		if (row) addModel(alias, row, mapping.model_id);
 	}
 	const providerNames = new Map<string, string>();
 	const providerMetadata = new Map<string, Record<string, unknown>>();

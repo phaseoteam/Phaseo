@@ -7,6 +7,47 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account usage settings routes", () => {
+	it("resolves provider model slugs to canonical model metadata", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.includes("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.includes("v2_model_provider_routes")) {
+				return Response.json([{
+					model_id: "google/veo-3.1-fast",
+					api_model_id: "google/veo-3.1-fast",
+					provider_model_id: "veo-route-1",
+					provider_model_slug: "veo-3.1-fast-generate-001",
+				}]);
+			}
+			if (url.includes("v2_models")) {
+				return Response.json([{
+					model_id: "google/veo-3.1-fast",
+					name: "Veo 3.1 Fast",
+					organisation_id: "google",
+					organisation: { name: "Google" },
+				}]);
+			}
+			return Response.json([]);
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/usage/metadata?workspaceId=workspace-1&models=veo-3.1-fast-generate-001",
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+		expect(response.status).toBe(200);
+		const payload = await response.json() as any;
+		expect(payload.modelMetadataEntries).toEqual(expect.arrayContaining([
+			["veo-3.1-fast-generate-001", expect.objectContaining({
+				canonicalModelId: "google/veo-3.1-fast",
+				modelName: "Veo 3.1 Fast",
+				organisationId: "google",
+			})],
+		]));
+	});
+
 	it("scopes realtime session history to the authorized workspace and selects no secrets", async () => {
 		let query: URL | undefined;
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
