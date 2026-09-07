@@ -105,6 +105,7 @@ export function validateRealtimeAudioIngress(args: {
 	if (!value || value.length > RELAY_MAX_MESSAGE_BYTES || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
 		return { ok: false, reason: "realtime_audio_invalid_base64" };
 	}
+	try { atob(value); } catch { return { ok: false, reason: "realtime_audio_invalid_base64" }; }
 	const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
 	const byteLength = Math.floor((value.length * 3) / 4) - padding;
 	if (byteLength <= 0 || byteLength % 2 !== 0) {
