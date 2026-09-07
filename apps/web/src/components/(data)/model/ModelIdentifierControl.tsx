@@ -24,6 +24,25 @@ interface ModelIdentifierControlProps {
 	}>;
 }
 
+export function resolveModelIdentifierOptions({
+	defaultIdentifier,
+	aliases,
+	requestedAlias,
+}: Pick<ModelIdentifierControlProps, "defaultIdentifier" | "aliases" | "requestedAlias">): {
+	options: string[];
+	displayedIdentifier: string;
+} {
+	const normalizedRequestedAlias = requestedAlias?.trim().toLowerCase() || null;
+	return {
+		options: Array.from(new Set([
+			defaultIdentifier,
+			normalizedRequestedAlias,
+			...(aliases ?? []),
+		].filter((identifier): identifier is string => Boolean(identifier)))),
+		displayedIdentifier: normalizedRequestedAlias ?? defaultIdentifier,
+	};
+}
+
 export default function ModelIdentifierControl({
 	defaultIdentifier,
 	aliases = [],
@@ -32,21 +51,13 @@ export default function ModelIdentifierControl({
 }: ModelIdentifierControlProps) {
 	const router = useRouter();
 	const copyResetTimerRef = useRef<number | null>(null);
-	const options = useMemo<string[]>(
-		() => [
-			defaultIdentifier,
-			...Array.from(new Set(aliases))
-				.filter((alias) => alias && alias !== defaultIdentifier)
-				.map((alias) => alias),
-		],
-		[aliases, defaultIdentifier],
+	const { options, displayedIdentifier } = useMemo(
+		() => resolveModelIdentifierOptions({ defaultIdentifier, aliases, requestedAlias }),
+		[aliases, defaultIdentifier, requestedAlias],
 	);
 	const hasAliases = options.length > 1;
 	const hasVariants = variants.length > 1;
 	const hasMenu = hasAliases || hasVariants;
-	const displayedIdentifier = requestedAlias && options.includes(requestedAlias)
-		? requestedAlias
-		: defaultIdentifier;
 	const isDisplayingAlias = displayedIdentifier !== defaultIdentifier;
 
 	const [copied, setCopied] = useState(false);
