@@ -32,7 +32,7 @@ import {
 	Sparkles,
 	Trophy,
 } from "lucide-react";
-import { GLOBAL_NAVIGATION_ITEMS } from "./Search.navigation";
+import { DEFAULT_SEARCH_CAPABILITIES, getGlobalNavigationItems, isSearchDestinationEnabled, type SearchCapabilities } from "@/components/header/Search/Search.navigation";
 import {
 	EXTERNAL_RESOURCE_ITEMS,
 	getContextItems,
@@ -59,12 +59,13 @@ import {
 	searchIndexPath,
 	wasAwayLongEnough,
 } from "./Search.freshness";
-import { compareSearchCategories, searchContextScore } from "./Search.ranking";
+import { compareSearchCategories, searchContextScore } from "@/components/header/Search/Search.ranking";
 
 interface Props {
 	className?: string;
 	mobileGhost?: boolean;
 	initiallyOpen?: boolean;
+	capabilities?: SearchCapabilities;
 }
 
 type SearchableItem = PaletteItem;
@@ -280,14 +281,8 @@ async function fetchSearchData(path: string): Promise<SearchData> {
 
 let lastSearchGenerationCheckAt = 0;
 
-const NAVIGATION_SEARCH_INDEX = createSearchIndex(GLOBAL_NAVIGATION_ITEMS);
 const ACTION_SEARCH_INDEX = createSearchIndex(GLOBAL_ACTION_ITEMS);
 const RESOURCE_SEARCH_INDEX = createSearchIndex(EXTERNAL_RESOURCE_ITEMS);
-const KEYBOARD_SHORTCUT_ITEMS = [
-	...GLOBAL_NAVIGATION_ITEMS,
-	...GLOBAL_ACTION_ITEMS,
-	...EXTERNAL_RESOURCE_ITEMS,
-].filter((item) => item.shortcut);
 
 function getIndexedMatchScore<T extends SearchableItem>(
 	indexedItem: IndexedSearchItem<T>,
@@ -634,7 +629,15 @@ export default function Search({
 	className,
 	mobileGhost = false,
 	initiallyOpen = false,
+	capabilities = DEFAULT_SEARCH_CAPABILITIES,
 }: Props) {
+	const navigationItems = useMemo(() => getGlobalNavigationItems(capabilities), [capabilities]);
+	const navigationSearchIndex = useMemo(() => createSearchIndex(navigationItems), [navigationItems]);
+	const keyboardShortcutItems = useMemo(() => [
+		...navigationItems,
+		...GLOBAL_ACTION_ITEMS,
+		...EXTERNAL_RESOURCE_ITEMS,
+	].filter((item) => item.shortcut), [navigationItems]);
 	const router = useRouter();
 	const pathname = usePathname() ?? "/";
 	const { resolvedTheme, setTheme } = useTheme();
@@ -869,7 +872,7 @@ export default function Search({
 			const key = event.key.toUpperCase();
 			if (key.length !== 1) return;
 			if (pendingKey) {
-				const item = KEYBOARD_SHORTCUT_ITEMS.find(
+				const item = keyboardShortcutItems.find(
 					(candidate) => candidate.shortcut?.[0] === pendingKey && candidate.shortcut[1] === key,
 				);
 				resetChord();
@@ -879,7 +882,7 @@ export default function Search({
 				return;
 			}
 
-			if (!KEYBOARD_SHORTCUT_ITEMS.some((item) => item.shortcut?.[0] === key)) return;
+			if (!keyboardShortcutItems.some((item) => item.shortcut?.[0] === key)) return;
 			event.preventDefault();
 			pendingKey = key;
 			resetTimer = window.setTimeout(resetChord, 900);
@@ -890,7 +893,7 @@ export default function Search({
 			window.removeEventListener("keydown", onShortcut);
 			if (resetTimer) window.clearTimeout(resetTimer);
 		};
-	}, [handleSelect, open]);
+	}, [handleSelect, keyboardShortcutItems, open]);
 
 	const handleQueryChange = (value: string) => {
 		inputValueRef.current = value;
@@ -941,7 +944,7 @@ export default function Search({
 		const includesScope = (scope: typeof searchScope) =>
 			searchScope === "all" || searchScope === scope;
 		const navigation = includesScope("navigation")
-			? filterAndSortIndexed(NAVIGATION_SEARCH_INDEX, searchTerm, GLOBAL_NAVIGATION_ITEMS.length, showAllWhenScoped, pathname)
+			? filterAndSortIndexed(navigationSearchIndex, searchTerm, navigationItems.length, showAllWhenScoped, pathname)
 			: [];
 		const actions = includesScope("actions")
 			? filterAndSortIndexed(ACTION_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
@@ -984,7 +987,7 @@ export default function Search({
 			{
 				name: "navigation" as const,
 				items: navigation,
-				score: getFirstResultScore(NAVIGATION_SEARCH_INDEX, navigation, searchTerm),
+				score: getFirstResultScore(navigationSearchIndex, navigation, searchTerm),
 			},
 			{
 				name: "resources" as const,
@@ -1039,6 +1042,8 @@ export default function Search({
 			.sort((left, right) => compareSearchCategories(left, right) || searchContextScore(pathname, right.items[0]?.href) - searchContextScore(pathname, left.items[0]?.href));
 	}, [
 		contextSearchIndex,
+		navigationItems,
+		navigationSearchIndex,
 		pathname,
 		hasQuery,
 		searchIndex,
@@ -1050,7 +1055,7 @@ export default function Search({
 	const defaultCategories = useMemo<DefaultSearchCategory[]>(() => {
 		if (hasQuery) return [];
 
-		const nearbyPages = GLOBAL_NAVIGATION_ITEMS
+		const nearbyPages = navigationItems
 			.filter((item) => item.href !== pathname && searchContextScore(pathname, item.href) > 0)
 			.sort((left, right) => searchContextScore(pathname, right.href) - searchContextScore(pathname, left.href))
 			.slice(0, 8);
@@ -1070,7 +1075,7 @@ export default function Search({
 			{
 				key: "pinned",
 				heading: "Pinned",
-				items: pinnedItems,
+				items: pinnedItems.filter((item) => isSearchDestinationEnabled(item.href, capabilities)),
 			},
 			{
 				key: "context",
@@ -1106,7 +1111,7 @@ export default function Search({
 			const order = ["pinned", "context", "nearby", "quick-actions", "workspaces", "models", "apiProviders", "resources"];
 			return order.indexOf(left.key) - order.indexOf(right.key);
 		});
-	}, [pathname, contextItems, hasQuery, pinnedItems, searchData, workspaceItems]);
+	}, [capabilities, navigationItems, pathname, contextItems, hasQuery, pinnedItems, searchData, workspaceItems]);
 
 	const defaultBrowseRows = useMemo<DefaultBrowseRow[]>(() => {
 		if (hasQuery) return [];

@@ -7,7 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { filterSettingsNavigation } from "./Sidebar.search";
+import { filterSettingsNavigation } from "@/components/(gateway)/settings/Sidebar.search";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {

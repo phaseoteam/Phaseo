@@ -1,4 +1,4 @@
-import { compareSearchCategories, searchContextScore } from "./Search.ranking";
+import { compareSearchCategories, searchContextScore } from "@/components/header/Search/Search.ranking";
 
 it("prioritises nearby pages using complete route segments", () => {
 	expect(searchContextScore("/settings/usage/logs", "/settings/usage/trends")).toBeGreaterThan(searchContextScore("/settings/usage/logs", "/settings/profile"));

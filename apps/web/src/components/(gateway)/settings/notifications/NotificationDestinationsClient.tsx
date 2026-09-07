@@ -22,7 +22,7 @@ import type { NotificationDestination, NotificationEventKind } from "@/lib/fetch
 import { cn } from "@/lib/utils";
 import NotificationRouteSelector from "./NotificationRouteSelector";
 
-import { providers, providerByType } from "./notificationProviders";
+import { providers, providerByType } from "@/components/(gateway)/settings/notifications/notificationProviders";
 
 type DestinationType = NotificationDestination["type"];
 

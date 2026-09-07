@@ -1,4 +1,4 @@
-import type { NavGroup } from "./Sidebar.config";
+import type { NavGroup } from "@/components/(gateway)/settings/Sidebar.config";
 
 export function filterSettingsNavigation(groups: NavGroup[], query: string): NavGroup[] {
 	const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);

@@ -8,7 +8,7 @@ type ProviderIconProps = { className?: string };
 type Provider = { type: DestinationType; name: string; description: string; field: string; placeholder: string; icon: React.ComponentType<ProviderIconProps>; color: string };
 
 function DiscordIcon({ className }: ProviderIconProps) {
-	return <Image src="/social/discord.svg" alt="" width={24} height={19} className={className} />;
+	return <Image src="/social/discord.svg" alt="" width={24} height={19} className={`object-contain ${className ?? ""}`} />;
 }
 
 function SlackIcon({ className }: ProviderIconProps) {
@@ -23,7 +23,7 @@ function SlackIcon({ className }: ProviderIconProps) {
 }
 
 function TeamsIcon({ className }: ProviderIconProps) {
-	return <Image src="/logos/microsoft-teams.svg" alt="" width={24} height={25} className={className} />;
+	return <Image src="/logos/microsoft-teams.svg" alt="" width={24} height={25} className={`object-contain ${className ?? ""}`} />;
 }
 
 export const providers: Provider[] = [

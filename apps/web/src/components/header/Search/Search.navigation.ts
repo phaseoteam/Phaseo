@@ -3,6 +3,47 @@ import type { PaletteItem } from "./Search.types";
 
 export type GlobalNavigationItem = PaletteItem & { href: string };
 
+export type SearchCapabilities = {
+	autoRouting: boolean;
+	enterprise: boolean;
+	webhooks: boolean;
+	video: boolean;
+	realtime: boolean;
+	games: boolean;
+};
+
+export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
+	autoRouting: false,
+	enterprise: false,
+	webhooks: false,
+	video: false,
+	realtime: false,
+	games: false,
+};
+
+const GATED_DESTINATIONS: ReadonlyArray<[string, keyof SearchCapabilities]> = [
+	["/settings/routing/auto", "autoRouting"],
+	["/settings/workspaces/enterprise", "enterprise"],
+	["/settings/webhooks", "webhooks"],
+	["/chat/video", "video"],
+	["/chat/realtime", "realtime"],
+	["/games", "games"],
+];
+
+export function isSearchDestinationEnabled(
+	href: string | undefined,
+	capabilities: SearchCapabilities,
+): boolean {
+	const pathname = href?.split(/[?#]/)[0];
+	return GATED_DESTINATIONS.every(([prefix, capability]) =>
+		pathname !== prefix && !pathname?.startsWith(`${prefix}/`) || capabilities[capability],
+	);
+}
+
+export function getGlobalNavigationItems(capabilities: SearchCapabilities): GlobalNavigationItem[] {
+	return GLOBAL_NAVIGATION_ITEMS.filter((item) => isSearchDestinationEnabled(item.href, capabilities));
+}
+
 const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-home", title: "Home", subtitle: "Phaseo overview", href: "/", keywords: ["dashboard", "landing"], shortcut: ["G", "H"] },
 	{ id: "nav-models", title: "Models", subtitle: "Browse the AI model catalogue", href: "/models", keywords: ["model catalogue", "llms", "ai models"], shortcut: ["G", "M"] },

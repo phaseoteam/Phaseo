@@ -1,5 +1,5 @@
-import { getSettingsSidebar } from "./Sidebar.config";
-import { filterSettingsNavigation } from "./Sidebar.search";
+import { getSettingsSidebar } from "@/components/(gateway)/settings/Sidebar.config";
+import { filterSettingsNavigation } from "@/components/(gateway)/settings/Sidebar.search";
 
 describe("settings navigation search", () => {
 	const groups = getSettingsSidebar({ showEnterprise: false, showAutoRouting: false });

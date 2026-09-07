@@ -4,7 +4,7 @@ import * as React from "react";
 import { BellRing, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
-import { NotificationDestinationIcon } from "./notificationProviders";
+import { NotificationDestinationIcon } from "@/components/(gateway)/settings/notifications/notificationProviders";
 
 import { setNotificationRoute } from "@/app/(dashboard)/settings/credits/actions";
 import { Button } from "@/components/ui/button";
