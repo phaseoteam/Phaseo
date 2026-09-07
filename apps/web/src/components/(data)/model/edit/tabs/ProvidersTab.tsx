@@ -1,6 +1,6 @@
 "use client"
 
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "react"
 import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react"
 import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
@@ -208,6 +208,13 @@ function ModelIdCombobox({
   onChange: (value: string) => void
 }) {
   const [open, setOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const listId = useId()
+
+  const openAndFocusSearch = () => {
+    setOpen(true)
+    window.requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }))
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -218,6 +225,13 @@ function ModelIdCombobox({
           placeholder="organisation/model-id"
           role="combobox"
           aria-expanded={open}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return
+            event.preventDefault()
+            openAndFocusSearch()
+          }}
           className="pr-10"
         />
         <PopoverTrigger asChild>
@@ -234,8 +248,8 @@ function ModelIdCombobox({
       </div>
       <PopoverContent align="end" className="w-[min(28rem,calc(100vw-2rem))] p-0">
         <Command>
-          <CommandInput placeholder="Search known model IDs…" />
-          <CommandList>
+          <CommandInput ref={searchInputRef} placeholder="Search known model IDs…" />
+          <CommandList id={listId}>
             <CommandEmpty>No known model IDs found.</CommandEmpty>
             {options.map((option) => (
               <CommandItem
