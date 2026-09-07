@@ -32,6 +32,7 @@ export async function GET(request: Request) {
 	try {
 		const requestedWorkspaceId = new URL(request.url).searchParams.get("workspaceId")?.trim();
 		const { workspaceId } = await requireActiveWorkspaceBillingAdmin(["owner", "admin"], requestedWorkspaceId);
+		const canAccessSettings = await enterpriseSelfServePreviewEnabled();
 		const subscription = await currentSubscription(workspaceId);
 		const periodStart = new Date();
 		periodStart.setUTCDate(1);
@@ -58,6 +59,7 @@ export async function GET(request: Request) {
 			feePolicy: subscription?.fee_policy ?? null,
 			includedCardTopUpUsd: Number(subscription?.included_card_top_up_nanos ?? 0) / 1_000_000_000,
 			remainingCardTopUpUsd: Math.max(0, Number(subscription?.included_card_top_up_nanos ?? 0) - usedNanos) / 1_000_000_000,
+			canAccessSettings,
 		});
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);

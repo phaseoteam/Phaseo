@@ -104,7 +104,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/tiers",
 				],
 				children: [
-					{ href: "/settings/credits", label: "Credits", exactOnly: true },
+					{ href: "/settings/credits", label: "Billing & Credits", exactOnly: true },
 					{ href: "/settings/credits/transactions", label: "Transactions" },
 					{ href: "/settings/payment-methods", label: "Payment Methods" },
 				],
