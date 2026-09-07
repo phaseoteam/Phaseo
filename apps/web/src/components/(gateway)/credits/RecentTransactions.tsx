@@ -441,7 +441,7 @@ export default function RecentTransactions({
 	async function openDocument(tx: Transaction) {
 		const paymentIntentId = parsePaymentIntentId(tx);
 		if (!paymentIntentId) {
-			toast.error("No invoice or receipt is available for this row.");
+			toast.error("No receipt is available for this row.");
 			return;
 		}
 		setBusy(tx.id, true);
@@ -453,12 +453,12 @@ export default function RecentTransactions({
 			});
 			const payload = await response.json().catch(() => ({}));
 			if (!response.ok || !payload?.url) {
-				throw new Error(payload?.error ?? "Document lookup failed");
+				throw new Error(payload?.error ?? "Receipt lookup failed");
 			}
 			window.open(String(payload.url), "_blank", "noopener,noreferrer");
-			toast.success(payload?.message ?? "Opened document");
+			toast.success(payload?.message ?? "Opened receipt");
 		} catch (error: any) {
-			toast.error(error?.message ?? "Failed to fetch document");
+			toast.error(error?.message ?? "Failed to fetch receipt");
 		} finally {
 			setBusy(tx.id, false);
 		}
@@ -728,7 +728,7 @@ export default function RecentTransactions({
 															disabled={busy}
 															onClick={() => openDocument(t)}
 														>
-															Invoice
+															Receipt
 														</Button>
 														<Button
 															size="sm"
@@ -907,4 +907,3 @@ export default function RecentTransactions({
 		</section>
 	);
 }
-

@@ -823,10 +823,10 @@ const FAQ_SECTIONS: FAQSection[] = [
 					"A credit purchase is eligible for a self-serve refund within 24 hours if none of the purchased credits have been used. You can review eligibility and request the refund from Settings → Credits.",
 			},
 			{
-				id: "invoices",
-				question: "Can I download an invoice?",
+				id: "receipts",
+				question: "Can I get a receipt for a credit purchase?",
 				answer:
-					"Yes. PDF invoices are available for completed credit purchases from Settings → Credits. If an invoice is missing for a successful payment, contact support with the payment ID and date.",
+					"Yes. Stripe-hosted receipts are available for completed credit purchases from Settings → Credits. If a receipt is missing for a successful payment, contact support with the payment ID and date.",
 			},
 		],
 	},

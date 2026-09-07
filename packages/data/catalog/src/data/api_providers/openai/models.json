@@ -9913,8 +9913,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -9931,9 +9931,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T12:00:00Z",
+      "notes": "Verified setup, two-turn audio, usage pricing and hold release through the Phaseo relay on 2026-09-07; workspace Realtime preview gate remains required."
     },
     "rate_limits": []
   },
@@ -9965,8 +9965,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -9983,9 +9983,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T12:00:00Z",
+      "notes": "Verified setup, two-turn audio, usage pricing and hold release through the Phaseo relay on 2026-09-07; workspace Realtime preview gate remains required."
     },
     "rate_limits": []
   },
@@ -9994,7 +9994,7 @@
     "provider_api_model_id": "openai:openai/gpt-realtime-2.1",
     "provider_model_slug": "gpt-realtime-2.1",
     "internal_model_id": "openai/gpt-realtime-2.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,audio",
     "output_modalities": "text,audio",
@@ -10018,7 +10018,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -10035,9 +10035,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-11T04:31:15.029+00:00",
-      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+      "status": "verified",
+      "checked_at": "2026-09-07T12:00:00Z",
+      "notes": "Verified setup, two-turn audio, usage pricing and hold release through the Phaseo relay on 2026-09-07; workspace Realtime preview gate remains required."
     },
     "rate_limits": []
   },
@@ -10046,7 +10046,7 @@
     "provider_api_model_id": "openai:openai/gpt-realtime-2.1-mini",
     "provider_model_slug": "gpt-realtime-2.1-mini",
     "internal_model_id": "openai/gpt-realtime-2.1-mini",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,audio",
     "output_modalities": "text,audio",
@@ -10070,7 +10070,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -10087,9 +10087,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-11T04:31:15.029+00:00",
-      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+      "status": "verified",
+      "checked_at": "2026-09-07T12:00:00Z",
+      "notes": "Verified setup, two-turn audio, usage pricing and hold release through the Phaseo relay on 2026-09-07; workspace Realtime preview gate remains required."
     },
     "rate_limits": []
   },

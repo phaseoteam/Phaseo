@@ -33,6 +33,7 @@ import {
 	History,
 	KeyRound,
 	ListTree,
+	Maximize2,
 	PanelRightClose,
 	PanelRightOpen,
 	Percent,
@@ -52,6 +53,7 @@ import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -59,6 +61,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { branchLabel, orderedRouteNodes } from "./dynamicRouteGraph";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { publicSWRFetcher } from "@/lib/swr/publicFetcher";
 import { publicSWRKeys } from "@/lib/swr/keys";
@@ -404,31 +407,6 @@ function NodeInspector({ node, providers, update, remove }: { node: DynamicRoute
 	);
 }
 
-function orderedRouteNodes(nodes: DynamicRouteNode[], edges: DynamicRouteEdge[], entryNodeId?: string | null): DynamicRouteNode[] {
-	const byId = new Map(nodes.map((node) => [node.id, node]));
-	const ordered: DynamicRouteNode[] = [];
-	const queue = [entryNodeId ?? nodes.find((node) => node.type === "start")?.id].filter((id): id is string => Boolean(id));
-	const seen = new Set<string>();
-	while (queue.length) {
-		const id = queue.shift()!;
-		if (seen.has(id)) continue;
-		seen.add(id);
-		const node = byId.get(id);
-		if (node) ordered.push(node);
-		for (const edge of edges.filter((candidate) => candidate.source === id)) queue.push(edge.target);
-	}
-	for (const node of nodes) if (!seen.has(node.id)) ordered.push(node);
-	return ordered;
-}
-
-function branchLabel(handle: string | null | undefined): string {
-	if (handle === "true") return "True";
-	if (handle === "false") return "False";
-	if (handle === "within") return "Within limit";
-	if (handle === "exceeded") return "Exceeded";
-	return handle ? handle.replaceAll("_", " ") : "Next";
-}
-
 function MobileFlowEditor({ nodes, edges, entryNodeId, providers, selectedNodeId, onSelect, onAdd, onUpdate, onRemove }: {
 	nodes: DynamicRouteNode[];
 	edges: DynamicRouteEdge[];
@@ -462,6 +440,7 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 	const [selectedNodeId, setSelectedNodeId] = useState<string | null>(routes[0]?.config.entryNodeId ?? null);
 	const [tab, setTab] = useState<StudioTab>("editor");
 	const [inspectorOpen, setInspectorOpen] = useState(false);
+	const [focusModeOpen, setFocusModeOpen] = useState(false);
 	const [isPending, startTransition] = useTransition();
 	const selectedIndex = routes.findIndex((route) => route.id === selectedRouteId);
 	const selectedRoute = selectedIndex >= 0 ? routes[selectedIndex] : null;
@@ -617,31 +596,23 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 		startTransition(async () => { try { await deployDynamicRouteVersionAction(selectedRoute.id, version); deployLocal(); toast.success(`Version ${version} deployed`); router.refresh(); } catch (error) { toast.error(error instanceof Error ? error.message : "Could not deploy version"); } });
 	}
 
-	if (!selectedRoute) return <div className="rounded-xl border border-dashed p-12 text-center"><Workflow className="mx-auto size-7 text-muted-foreground" /><h2 className="mt-4 text-lg font-semibold">Create your first dynamic route</h2><p className="mt-2 text-sm text-muted-foreground">Branch on request context, split traffic and call the right model.</p><Button className="mt-5" onClick={createRoute}><Plus className="size-4" />New route</Button></div>;
-
-	return (
-		<section className="overflow-hidden border-y bg-background">
-			<header className="border-b px-4 pt-4 sm:px-5 sm:pt-5">
-				<div className="flex flex-wrap items-start gap-4 pb-4">
-					<div className="min-w-0 flex-1">
-						<p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Editing route</p>
-						<div className="mt-1.5 flex flex-wrap items-center gap-2">
-							<div className="w-full min-w-0 sm:w-72"><StudioSelect ariaLabel="Editing route" value={selectedRoute.id} onChange={(routeId) => { const route = routes.find((item) => item.id === routeId); setSelectedRouteId(routeId); setSelectedNodeId(route?.config.entryNodeId ?? null); }} options={routes.map((route) => ({ value: route.id, label: route.name }))} /></div>
-							<Badge variant="outline" className="h-6 capitalize">{selectedRoute.status}</Badge>
-						</div>
-						<p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground">{selectedRoute.description || "No route description"}</p>
-						<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span>{selectedRoute.keyIds.length} API key{selectedRoute.keyIds.length === 1 ? "" : "s"}</span><span aria-hidden="true">·</span><span>Version {selectedRoute.version}{selectedRoute.deployed_version === selectedRoute.version ? " deployed" : " draft"}</span></div>
+	function renderEditorSurface() {
+		return (
+			<div className="hidden min-h-0 flex-1 grid-cols-[190px_minmax(0,1fr)_auto] lg:grid">
+				<aside className="overflow-y-auto border-r p-3">
+					<p className="px-2 pb-2 text-sm font-semibold">Add a step</p>
+					<div className="space-y-1">
+						{(["condition", "percentage", "model", "rate_limit", "budget_limit", "end"] as DynamicRouteNodeType[]).map((type) => {
+							const copy = NODE_COPY[type];
+							const Icon = copy.icon;
+							return <button key={type} draggable onDragStart={(event) => startPaletteDrag(event, type)} onDragEnd={finishPaletteDrag} onClick={() => appendPaletteNode(type)} title="Drag onto the canvas or click to append" className="flex w-full cursor-grab items-center gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-muted active:cursor-grabbing"><div className={cn("grid size-8 shrink-0 place-items-center rounded-lg border", copy.tone)}><Icon className="size-4" /></div><div><p className="text-sm font-medium">{copy.label}</p><p className="text-[11px] text-muted-foreground">{copy.description}</p></div></button>;
+						})}
 					</div>
-					<div className="flex shrink-0 items-center gap-2"><Button variant="outline" onClick={createRoute} aria-label="New route"><Plus className="size-4" /><span className="hidden sm:inline">New route</span></Button><Button onClick={saveRoute} disabled={isPending}><Save className="size-4" /><span className="sm:hidden">Save</span><span className="hidden sm:inline">Save version</span></Button></div>
-				</div>
-				<nav className="flex w-full gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Route sections">{([['editor','Flow'],['versions','Versions'],['settings','Configuration']] as const).map(([value,label]) => <button key={value} onClick={() => setTab(value)} className={cn("relative h-10 shrink-0 border-b-2 px-0.5 text-sm transition", tab === value ? "border-foreground font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>{label}</button>)}</nav>
-			</header>
+					<div className="mt-5 border-t px-2 pt-4 text-xs leading-5 text-muted-foreground"><Braces className="mb-2 size-4" />Drag a step onto the canvas to place it freely, then connect its handles. Click to append it to the selected branch.</div>
+				</aside>
 
-			{tab === "editor" ? <><div className="hidden h-[760px] grid-cols-[210px_minmax(0,1fr)_auto] border-b lg:grid">
-				<aside className="border-r p-3"><p className="px-2 pb-2 text-sm font-semibold">Add a step</p><div className="space-y-1">{(["condition", "percentage", "model", "rate_limit", "budget_limit", "end"] as DynamicRouteNodeType[]).map((type) => { const copy = NODE_COPY[type]; const Icon = copy.icon; return <button key={type} draggable onDragStart={(event) => startPaletteDrag(event, type)} onDragEnd={finishPaletteDrag} onClick={() => appendPaletteNode(type)} title="Drag onto the canvas or click to append" className="flex w-full cursor-grab items-center gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-muted active:cursor-grabbing"><div className={cn("grid size-8 shrink-0 place-items-center rounded-lg border", copy.tone)}><Icon className="size-4" /></div><div><p className="text-sm font-medium">{copy.label}</p><p className="text-[11px] text-muted-foreground">{copy.description}</p></div></button>; })}</div><div className="mt-5 border-t px-2 pt-4 text-xs leading-5 text-muted-foreground"><Braces className="mb-2 size-4" />Drag a step onto the canvas to place it freely, then connect its handles. Click to append it to the selected branch.</div></aside>
-
-				<main className="relative min-w-0 bg-muted/15">
-					<div className="absolute left-4 top-4 z-10 rounded-lg border bg-background/90 px-3 py-2 text-xs shadow-sm backdrop-blur"><span className="font-medium">Drag to pan</span><span className="text-muted-foreground"> · Scroll to zoom · Connect node handles</span></div>
+				<main className="relative min-h-0 min-w-0 bg-background">
+					<div className="absolute left-4 top-4 z-10 rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-sm backdrop-blur"><span className="font-medium">Drag to pan</span><span className="text-muted-foreground"> · Scroll to zoom · Connect node handles</span></div>
 					<Button size="icon-sm" variant="outline" className="absolute right-4 top-4 z-10 bg-background" onClick={() => setInspectorOpen((open) => !open)} aria-label={inspectorOpen ? "Close inspector" : "Open inspector"}>{inspectorOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button>
 					<ReactFlow nodes={flowNodes} edges={flowEdges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onInit={setFlowInstance} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={dropPaletteNode} onNodeClick={(_, node) => { setSelectedNodeId(node.id); setInspectorOpen(true); }} onPaneClick={() => { setSelectedNodeId(null); setInspectorOpen(false); }} fitView fitViewOptions={{ padding: 0.25, minZoom: 0.65, maxZoom: 1 }} minZoom={0.4} maxZoom={1.6} panOnDrag selectionOnDrag={false} zoomOnDoubleClick={false} deleteKeyCode={["Backspace", "Delete"]}>
 						<Background gap={22} size={1} color="var(--border)" /><Controls position="bottom-left" /><MiniMap position="bottom-right" pannable zoomable className="!border !bg-background/90" maskColor="color-mix(in srgb, var(--background) 72%, transparent)" />
@@ -649,11 +620,49 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 				</main>
 
 				{inspectorOpen ? <aside className="w-[360px] overflow-y-auto border-l">{selectedNode ? <NodeInspector node={selectedNode} providers={initialData.providers} update={(data) => updateNode(selectedNode.id, data)} remove={() => removeNode(selectedNode.id)} /> : <div className="p-6 text-sm text-muted-foreground">Select a node to configure it.</div>}</aside> : null}
-			</div><MobileFlowEditor nodes={routeNodes} edges={routeEdges} entryNodeId={config.entryNodeId} providers={initialData.providers} selectedNodeId={selectedNodeId} onSelect={setSelectedNodeId} onAdd={addNode} onUpdate={updateNode} onRemove={removeNode} /></> : null}
+			</div>
+		);
+	}
 
-			{tab === "versions" ? <div className="mx-auto max-w-4xl p-8"><div className="flex items-start justify-between"><div><h2 className="text-lg font-semibold">Version history</h2><p className="mt-1 text-sm text-muted-foreground">Every save creates an immutable draft. Deploy or roll back without rebuilding the flow.</p></div><Button onClick={() => deployVersion(selectedRoute.version)}><Rocket className="size-4" />Deploy v{selectedRoute.version}</Button></div><div className="mt-6 divide-y rounded-xl border">{(selectedRoute.versions?.length ? selectedRoute.versions : [{ version: selectedRoute.version, status: "draft" as const, created_at: selectedRoute.updated_at }]).map((version) => <div key={`${version.version}-${version.created_at}`} className="flex items-center gap-4 p-4"><div className="grid size-9 place-items-center rounded-lg bg-muted"><History className="size-4" /></div><div className="flex-1"><div className="flex items-center gap-2"><p className="text-sm font-medium">Version {version.version}</p><Badge variant="outline">{version.status}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{new Date(version.created_at).toLocaleString()}</p></div>{version.status !== "deployed" ? <Button size="sm" variant="outline" onClick={() => deployVersion(version.version)}>Deploy</Button> : <span className="flex items-center gap-1 text-xs text-emerald-500"><Check className="size-3.5" />Live</span>}</div>)}</div></div> : null}
+	if (!selectedRoute) return <div className="rounded-xl border border-dashed p-12 text-center"><Workflow className="mx-auto size-7 text-muted-foreground" /><h2 className="mt-4 text-lg font-semibold">Create your first dynamic route</h2><p className="mt-2 text-sm text-muted-foreground">Branch on request context, split traffic and call the right model.</p><Button className="mt-5" onClick={createRoute}><Plus className="size-4" />New route</Button></div>;
 
-			{tab === "settings" ? <div className="mx-auto grid max-w-4xl gap-8 p-8 md:grid-cols-2"><div className="space-y-5"><div><h2 className="text-lg font-semibold">Route details</h2><p className="mt-1 text-sm text-muted-foreground">Name, lifecycle and request affinity.</p></div><div className="space-y-2"><Label>Name</Label><Input value={selectedRoute.name} onChange={(event) => replaceSelected((route) => ({ ...route, name: event.target.value }))} /></div><div className="space-y-2"><Label>Description</Label><Textarea value={selectedRoute.description ?? ""} onChange={(event) => replaceSelected((route) => ({ ...route, description: event.target.value }))} /></div><div className="flex items-center justify-between rounded-lg border p-4"><div><p className="text-sm font-medium">Cache-aware routing</p><p className="text-xs text-muted-foreground">Keep cache-producing requests on one provider for 15 minutes.</p></div><Switch checked={config.cacheAwareRouting !== false} onCheckedChange={(cacheAwareRouting) => updateConfig((current) => ({ ...current, cacheAwareRouting }))} /></div><div className="flex items-center justify-between rounded-lg border p-4"><div><p className="text-sm font-medium">Session affinity</p><p className="text-xs text-muted-foreground">Preserve provider affinity for cached sessions.</p></div><Switch checked={config.sessionAffinity !== false} onCheckedChange={(sessionAffinity) => updateConfig((current) => ({ ...current, sessionAffinity }))} /></div></div><div><div><h2 className="text-lg font-semibold">Attach API keys</h2><p className="mt-1 text-sm text-muted-foreground">Requests authenticated with these keys enter this route.</p></div><div className="mt-5 space-y-2">{initialData.keys.map((key) => { const active = selectedRoute.keyIds.includes(key.id); return <button key={key.id} onClick={() => replaceSelected((route) => ({ ...route, keyIds: active ? route.keyIds.filter((id) => id !== key.id) : [...route.keyIds, key.id] }))} className={cn("flex w-full items-center gap-3 rounded-lg border p-3 text-left", active && "border-primary bg-primary/5")}><KeyRound className="size-4" /><div className="flex-1"><p className="text-sm font-medium">{key.name}</p><p className="text-xs text-muted-foreground">{key.prefix}</p></div>{active ? <Check className="size-4 text-primary" /> : null}</button>; })}</div><Button variant="destructive" className="mt-8" onClick={deleteRoute}><Trash2 className="size-4" />Delete route</Button></div></div> : null}
+	return (
+		<section className="flex min-h-0 flex-1 flex-col bg-background">
+			<header className="shrink-0 border-b pb-2">
+				<div className="flex flex-wrap items-center gap-3">
+					<div className="min-w-0 flex-1">
+						<div className="mt-1 flex flex-wrap items-center gap-2">
+							<div className="w-full min-w-0 sm:w-72"><StudioSelect ariaLabel="Editing route" value={selectedRoute.id} onChange={(routeId) => { const route = routes.find((item) => item.id === routeId); setSelectedRouteId(routeId); setSelectedNodeId(route?.config.entryNodeId ?? null); }} options={routes.map((route) => ({ value: route.id, label: route.name }))} /></div>
+							<Badge variant="outline" className="h-6 capitalize">{selectedRoute.status}</Badge>
+						</div>
+						<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><button onClick={() => setTab("settings")} className="hover:text-foreground">{selectedRoute.keyIds.length} API key{selectedRoute.keyIds.length === 1 ? "" : "s"}</button><span aria-hidden="true">·</span><span>Version {selectedRoute.version}{selectedRoute.deployed_version === selectedRoute.version ? " deployed" : " draft"}</span></div>
+					</div>
+					<div className="flex shrink-0 items-center gap-2"><Button variant="outline" onClick={createRoute} aria-label="New route"><Plus className="size-4" /><span className="hidden sm:inline">New route</span></Button><Button variant="outline" onClick={() => { setTab("editor"); setFocusModeOpen(true); }} aria-label="Open focus mode"><Maximize2 className="size-4" /><span className="hidden sm:inline">Focus mode</span></Button><Button onClick={saveRoute} disabled={isPending}><Save className="size-4" /><span className="sm:hidden">Save</span><span className="hidden sm:inline">Save version</span></Button></div>
+				</div>
+				<nav className="mt-2 flex w-fit max-w-full gap-1 overflow-x-auto rounded-lg bg-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Route sections">{([['editor','Flow'],['versions','Versions'],['settings','Configuration']] as const).map(([value,label]) => <button key={value} onClick={() => setTab(value)} aria-current={tab === value ? "page" : undefined} className={cn("relative h-8 shrink-0 rounded-md px-3 text-sm transition", tab === value ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{label}</button>)}</nav>
+			</header>
+
+			{tab === "editor" && !focusModeOpen ? <>{renderEditorSurface()}<MobileFlowEditor nodes={routeNodes} edges={routeEdges} entryNodeId={config.entryNodeId} providers={initialData.providers} selectedNodeId={selectedNodeId} onSelect={setSelectedNodeId} onAdd={addNode} onUpdate={updateNode} onRemove={removeNode} /></> : null}
+
+			<Dialog open={focusModeOpen} onOpenChange={setFocusModeOpen}>
+				<DialogContent showCloseButton={false} className="flex h-[92vh] max-h-[92vh] max-w-[92vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[92vw]">
+					<div className="flex items-center justify-between gap-4 border-b px-4 py-3 sm:px-5">
+						<DialogHeader className="min-w-0 gap-0.5">
+							<DialogTitle className="truncate text-sm font-semibold">{selectedRoute.name}</DialogTitle>
+							<DialogDescription className="truncate text-xs">Focus mode · edit the route flow and node settings</DialogDescription>
+						</DialogHeader>
+						<DialogClose asChild><Button variant="outline" size="icon-sm" aria-label="Close focus mode"><X className="size-4" /></Button></DialogClose>
+					</div>
+					<div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:overflow-hidden">
+						{renderEditorSurface()}
+						<MobileFlowEditor nodes={routeNodes} edges={routeEdges} entryNodeId={config.entryNodeId} providers={initialData.providers} selectedNodeId={selectedNodeId} onSelect={setSelectedNodeId} onAdd={addNode} onUpdate={updateNode} onRemove={removeNode} />
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			{tab === "versions" ? <div className="mx-auto min-h-0 w-full max-w-4xl overflow-y-auto py-5"><div className="flex items-start justify-between"><div><h2 className="text-lg font-semibold">Version history</h2><p className="mt-1 text-sm text-muted-foreground">Every save creates an immutable draft. Deploy or roll back without rebuilding the flow.</p></div><Button onClick={() => deployVersion(selectedRoute.version)}><Rocket className="size-4" />Deploy v{selectedRoute.version}</Button></div><div className="mt-4 divide-y border-y">{(selectedRoute.versions?.length ? selectedRoute.versions : [{ version: selectedRoute.version, status: "draft" as const, created_at: selectedRoute.updated_at }]).map((version) => <div key={`${version.version}-${version.created_at}`} className="flex items-center gap-4 p-4"><div className="grid size-9 place-items-center rounded-lg bg-muted"><History className="size-4" /></div><div className="flex-1"><div className="flex items-center gap-2"><p className="text-sm font-medium">Version {version.version}</p><Badge variant="outline">{version.status}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{new Date(version.created_at).toLocaleString()}</p></div>{version.status !== "deployed" ? <Button size="sm" variant="outline" onClick={() => deployVersion(version.version)}>Deploy</Button> : <span className="flex items-center gap-1 text-xs text-emerald-500"><Check className="size-3.5" />Live</span>}</div>)}</div></div> : null}
+
+			{tab === "settings" ? <div className="mx-auto grid min-h-0 w-full max-w-4xl gap-8 overflow-y-auto py-5 md:grid-cols-2"><div className="space-y-5"><div><h2 className="text-lg font-semibold">Route details</h2><p className="mt-1 text-sm text-muted-foreground">Name, lifecycle and request affinity.</p></div><div className="space-y-2"><Label>Name</Label><Input value={selectedRoute.name} onChange={(event) => replaceSelected((route) => ({ ...route, name: event.target.value }))} /></div><div className="space-y-2"><Label>Description</Label><Textarea value={selectedRoute.description ?? ""} onChange={(event) => replaceSelected((route) => ({ ...route, description: event.target.value }))} /></div><div className="flex items-center justify-between rounded-lg border p-4"><div><p className="text-sm font-medium">Cache-aware routing</p><p className="text-xs text-muted-foreground">Keep cache-producing requests on one provider for 15 minutes.</p></div><Switch checked={config.cacheAwareRouting !== false} onCheckedChange={(cacheAwareRouting) => updateConfig((current) => ({ ...current, cacheAwareRouting }))} /></div><div className="flex items-center justify-between rounded-lg border p-4"><div><p className="text-sm font-medium">Session affinity</p><p className="text-xs text-muted-foreground">Preserve provider affinity for cached sessions.</p></div><Switch checked={config.sessionAffinity !== false} onCheckedChange={(sessionAffinity) => updateConfig((current) => ({ ...current, sessionAffinity }))} /></div></div><div><div><h2 className="text-lg font-semibold">Attach API keys</h2><p className="mt-1 text-sm text-muted-foreground">Requests authenticated with these keys enter this route.</p></div><Popover><PopoverTrigger asChild><Button variant="outline" className="mt-4 w-full justify-between"><span className="flex items-center gap-2"><KeyRound className="size-4" />{selectedRoute.keyIds.length} keys attached</span><ChevronsUpDown className="size-4" /></Button></PopoverTrigger><PopoverContent align="start" className="w-80 max-w-[calc(100vw-2rem)] p-0"><Command><CommandInput placeholder="Search keys by name or prefix…" /><CommandList className="max-h-64"><CommandEmpty>No keys found.</CommandEmpty><CommandGroup>{initialData.keys.map((key) => { const active = selectedRoute.keyIds.includes(key.id); return <CommandItem key={key.id} value={`${key.id} ${key.name} ${key.prefix}`} onSelect={() => replaceSelected((route) => ({ ...route, keyIds: active ? route.keyIds.filter((id) => id !== key.id) : [...route.keyIds, key.id] }))}><Check className={cn("size-4 shrink-0", !active && "opacity-0")} /><div className="min-w-0 flex-1"><p className="truncate">{key.name}</p><p className="text-xs text-muted-foreground">{key.prefix}</p></div><span className="sr-only">{active ? "Attached" : "Not attached"}</span></CommandItem>; })}</CommandGroup></CommandList></Command></PopoverContent></Popover><Button variant="destructive" className="mt-8" onClick={deleteRoute}><Trash2 className="size-4" />Delete route</Button></div></div> : null}
 
 		</section>
 	);
