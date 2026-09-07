@@ -30,6 +30,43 @@ describe("provider health RPC fallback", () => {
 	});
 });
 
+describe("public model canonical resolution", () => {
+	it("resolves an encoded model-page alias through the canonical RPC", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/rpc/get_v2_model_resolution")) {
+				const request = input instanceof Request ? input.clone() : new Request(input, init);
+				await expect(request.json()).resolves.toEqual({
+					p_requested_slug: "openai/gpt-astra-latest",
+				});
+				return new Response(JSON.stringify({
+					requestedModelId: "openai/gpt-astra-latest",
+					canonicalModelId: "openai/gpt-6-astra",
+					internalModelId: "openai/gpt-6-astra",
+					source: "alias",
+				}));
+			}
+			return new Response(JSON.stringify([]));
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/openai%2Fgpt-astra-latest/canonical",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toEqual({
+			resolution: {
+				requestedModelId: "openai/gpt-astra-latest",
+				canonicalModelId: "openai/gpt-6-astra",
+				internalModelId: "openai/gpt-6-astra",
+				source: "alias",
+			},
+		});
+	});
+});
+
 describe("stealth provider filters", () => {
 	it("invalidates catalogue cache entries created before stealth redaction", () => {
 		expect(CATALOGUE_CACHE_SCHEMA_VERSION).toBe("4");

@@ -4,6 +4,7 @@ import { Check, ChevronDown, CircleHelp, CircleSlash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 type RoutingDecision = {
 	decision_order?: number;
@@ -51,7 +52,7 @@ function label(value: string): string {
 }
 
 function providerLabel(providerId: string, providerNames?: Map<string, string>): string {
-	return providerNames?.get(providerId) ?? label(providerId);
+	return resolveProviderDisplayName({ providerId, providerName: providerNames?.get(providerId) ?? label(providerId) });
 }
 
 const METRIC_DESCRIPTIONS: Record<string, string> = {

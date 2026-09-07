@@ -1,13 +1,15 @@
 "use client"
 
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
-import { Plus, Trash2 } from "lucide-react"
+import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "react"
+import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react"
 import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -196,6 +198,79 @@ function FieldRow({
   )
 }
 
+function ModelIdCombobox({
+  value,
+  options,
+  onChange,
+}: {
+  value: string
+  options: string[]
+  onChange: (value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const listId = useId()
+
+  const openAndFocusSearch = () => {
+    setOpen(true)
+    window.requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }))
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <div className="relative">
+        <Input
+          value={value}
+          onChange={(event) => onChange(event.target.value.trim())}
+          placeholder="organisation/model-id"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return
+            event.preventDefault()
+            openAndFocusSearch()
+          }}
+          className="pr-10"
+        />
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Show known model IDs"
+            className="absolute right-0 top-0 h-full rounded-l-none px-2 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronsUpDown className="size-4" />
+          </Button>
+        </PopoverTrigger>
+      </div>
+      <PopoverContent align="end" className="w-[min(28rem,calc(100vw-2rem))] p-0">
+        <Command>
+          <CommandInput ref={searchInputRef} placeholder="Search known model IDs…" />
+          <CommandList id={listId}>
+            <CommandEmpty>No known model IDs found.</CommandEmpty>
+            {options.map((option) => (
+              <CommandItem
+                key={option}
+                value={option}
+                onSelect={() => {
+                  onChange(option)
+                  setOpen(false)
+                }}
+              >
+                <span className="min-w-0 flex-1 truncate font-mono text-xs">{option}</span>
+                <Check className={cn("size-4 shrink-0", option === value ? "opacity-100" : "opacity-0")} />
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 export default function ProvidersTab({
   modelId,
   providers,
@@ -291,7 +366,7 @@ export default function ProvidersTab({
 
       const capabilityRows = providerModelData.flatMap((row: any) =>
         (row.data_api_provider_model_capabilities ?? []).map((capability: any) => ({ ...capability, provider_api_model_id: row.provider_api_model_id }))
-	  )
+      )
 
       const providerById = new Map(mappedProviderModels.map((row) => [row.id, row]))
       const mappedCapabilities: ProviderCapabilityRow[] = (capabilityRows ?? []).flatMap((capability: any) => {
@@ -528,23 +603,11 @@ export default function ProvidersTab({
                 description="Select from known model IDs or enter one manually."
               >
                 <div>
-                  <Input
-                    list={`model-id-options-${providerModel.id}`}
+                  <ModelIdCombobox
                     value={providerModel.api_model_id}
-                    onChange={(event) =>
-                      updateProviderModel(
-                        providerModel.id,
-                        "api_model_id",
-                        event.target.value.trim()
-                      )
-                    }
-                    placeholder="organisation/model-id"
+                    options={selectableModelIds}
+                    onChange={(value) => updateProviderModel(providerModel.id, "api_model_id", value)}
                   />
-                  <datalist id={`model-id-options-${providerModel.id}`}>
-                    {selectableModelIds.map((candidateModelId) => (
-                      <option key={`${providerModel.id}-${candidateModelId}`} value={candidateModelId} />
-                    ))}
-                  </datalist>
                 </div>
               </FieldRow>
 
