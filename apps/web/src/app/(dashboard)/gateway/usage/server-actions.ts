@@ -36,7 +36,8 @@ export interface PaginatedRequestsParams { [key: string]: any; cursor?: { create
 export interface ProviderMetadataEntry { name: string; promptTrainingPolicy: string | null; [key: string]: any }
 export interface AppMetadata { id?: string; title: string; imageUrl: string | null; [key: string]: any }
 export type GatewayIoLog = { status: string; storage_provider: string | null; bytes: number | null; retention_until: string | null; error: string | null; payload: Record<string, unknown> | null; };
-export interface InvestigateGenerationResult { request: RequestRow; appName: string | null; modelMetadata: Array<[string, { organisationId: string; organisationName: string; modelName?: string }]>; providerNames: Array<[string, string]>; providerMetadata: Array<[string, ProviderMetadataEntry]>; ioLog?: GatewayIoLog | null; [key: string]: any }
+export type ModelMetadataEntry = { organisationId: string; organisationName: string; canonicalModelId?: string; modelName?: string };
+export interface InvestigateGenerationResult { request: RequestRow; appName: string | null; modelMetadata: Array<[string, ModelMetadataEntry]>; providerNames: Array<[string, string]>; providerMetadata: Array<[string, ProviderMetadataEntry]>; ioLog?: GatewayIoLog | null; [key: string]: any }
 export interface ChartDataResult { requestsChart: any[]; tokensChart: any[]; costChart: any[]; current: any; previous: any; [key: string]: any }
 export interface SessionRollupRow { session_id: string; request_count: number; total_cost_nanos: number; total_cost_usd: number; first_request_at: string; last_request_at: string; app_ids: string[] | null; model_ids: string[] | null; provider_ids: string[] | null; end_user_ids: string[] | null; app_counts?: Array<{ app_id: string; request_count: number }>; model_counts?: Array<{ model_id: string; request_count: number }>; [key: string]: any }
 export interface SessionRequestRow extends RequestRow { session_id: string | null; end_user_id: string | null }
@@ -62,7 +63,7 @@ async function operation<T>(name: string, args: unknown[]): Promise<T> {
 
 export async function fetchPaginatedRequests(params: PaginatedRequestsParams) { return operation<{ data: RequestRow[]; hasMore: boolean; nextCursor: { createdAt: string; id: string } | null; pageSize: number }>("paginatedRequests", [params]); }
 export async function fetchOrganizationColors(modelIds: string[]) { return new Map<string, string>(await operation<Array<[string, string]>>("organizationColors", [modelIds])); }
-export async function fetchModelMetadata(modelIds: string[]) { return new Map<string, { organisationId: string; organisationName: string; modelName?: string }>(await operation<Array<[string, { organisationId: string; organisationName: string; modelName?: string }]>>("modelMetadata", [modelIds])); }
+export async function fetchModelMetadata(modelIds: string[]) { return new Map<string, ModelMetadataEntry>(await operation<Array<[string, ModelMetadataEntry]>>("modelMetadata", [modelIds])); }
 export async function fetchProviderNames(providerIds: string[]) { return new Map<string, string>(await operation<Array<[string, string]>>("providerNames", [providerIds])); }
 export async function fetchProviderMetadata(providerIds: string[]) { return new Map<string, ProviderMetadataEntry>(await operation<Array<[string, ProviderMetadataEntry]>>("providerMetadata", [providerIds])); }
 export async function fetchFunStats(timeRange: { from: string; to: string }) { return operation<any>("funStats", [timeRange]); }
