@@ -141,6 +141,7 @@ export function OnePasswordSaveButton({
 			) : null}
 			<div
 				className="pointer-events-none absolute -left-[10000px] top-0 h-px w-px overflow-hidden"
+				inert
 				aria-hidden="true"
 			>
 				{React.createElement("onepassword-save-button", {
