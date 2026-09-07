@@ -7,23 +7,23 @@
   "provider_family_id": null,
   "offer_label": null,
   "offer_scope": "specialized",
-  "description": null,
-  "link": "https://www.hpc-ai.com/doc/docs/quickstart/",
-  "residency_mode": null,
+  "description": "Unified OpenAI- and Anthropic-compatible inference APIs for hosted text and multimodal models.",
+  "link": "https://www.hpc-ai.com/model-apis",
+  "residency_mode": "provider_managed",
   "default_execution_regions": null,
   "default_data_regions": null,
   "zero_data_retention": false,
-  "residency_source_url": null,
-  "prompt_training_policy": null,
-  "prompt_training_notes": null,
-  "prompt_training_source_url": null,
+  "residency_source_url": "https://www.hpc-ai.com/agreement/privacy",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Paid MaaS/API customer content is not used to train or fine-tune shared foundation models by default unless the customer opts in or law requires it. Operational logs may be retained for up to 30 days; eligible customers can request stricter controls including zero retention on supported endpoints.",
+  "prompt_training_source_url": "https://www.hpc-ai.com/agreement/privacy",
   "user_identifier_policy": null,
   "user_identifier_notes": null,
-  "privacy_policy_url": null,
-  "terms_of_service_url": null,
+  "privacy_policy_url": "https://www.hpc-ai.com/agreement/privacy",
+  "terms_of_service_url": "https://www.hpc-ai.com/agreement/service",
   "regional_pricing_mode": null,
   "regional_pricing_uplift_percent": null,
-  "pricing_source_url": null,
+  "pricing_source_url": "https://www.hpc-ai.com/api/maas/v1/models",
   "regional_pricing_notes": null,
   "country_code": "SG",
   "status": "Active",
@@ -37,9 +37,37 @@
   "auth_env": [
     "HPC_AI_API_KEY"
   ],
-  "api_formats": [],
-  "service_tiers": [],
+  "api_formats": [
+    "openai_chat",
+    "anthropic_messages"
+  ],
+  "service_tiers": [
+    "L0",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "L5"
+  ],
   "sources": [
+    {
+      "kind": "official_api",
+      "url": "https://www.hpc-ai.com/api/maas/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public catalogue endpoint listing exact served model IDs, contexts, modalities, features, endpoint compatibility, pricing bands, and per-tier RPM/TPM limits."
+    },
+    {
+      "kind": "official_documentation",
+      "url": "https://www.hpc-ai.com/doc/docs/Model-APIs/User-Guides/Rate-Limit/",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Documents automatic usage tiers and model-specific rate limiting."
+    },
+    {
+      "kind": "official_policy",
+      "url": "https://www.hpc-ai.com/agreement/privacy",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "MaaS/API training, retention, human access, and international transfer disclosures."
+    },
     {
       "kind": "official_company_page",
       "url": "https://www.hpc-ai.com/contact",
@@ -54,8 +82,8 @@
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-08-09T00:00:00Z",
-    "notes": "Location metadata verified from HPC-AI's official contact page; other provider metadata and model support remain sourced from models.dev. The provider is not a Phaseo-routable offer."
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Provider metadata, complete public model catalogue, pricing, compatibility, tier limits, and MaaS data policy verified from official HPC-AI sources. Geographic availability and execution/data residency remain unpublished. The provider remains catalogue-only and is not Phaseo-routable."
   }
 }

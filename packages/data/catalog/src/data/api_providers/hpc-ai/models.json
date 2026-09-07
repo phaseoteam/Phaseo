@@ -1,16 +1,16 @@
 [
   {
-    "api_model_id": "anthropic/claude-opus-4.7",
-    "provider_api_model_id": "hpc-ai:anthropic/claude-opus-4.7",
-    "provider_model_slug": "anthropic/claude-opus-4.7",
-    "internal_model_id": "anthropic/claude-opus-4.7",
+    "api_model_id": "anthropic/claude-fable-5",
+    "provider_api_model_id": "hpc-ai:anthropic/claude-fable-5",
+    "provider_model_slug": "anthropic/claude-fable-5",
+    "internal_model_id": "anthropic/claude-fable-5",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": "text,image",
+    "input_modalities": "text,image,file",
     "output_modalities": "text",
     "context_length": 1000000,
-    "max_output_tokens": 128000,
-    "effective_from": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-31T08:48:14.000Z",
     "effective_to": null,
     "capabilities": [
       {
@@ -19,7 +19,7 @@
         "params": [],
         "reasoning": true,
         "tool_call": true,
-        "structured_output": null,
+        "structured_output": true,
         "temperature": null,
         "attachment": true,
         "input_modalities": null,
@@ -30,46 +30,52 @@
     "routing_status": "active",
     "routable": false,
     "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
+      "execution": null,
+      "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
       "endpoint": null,
       "deployment": null
     },
     "sources": [
       {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: anthropic/claude-opus-4.7"
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, structured_outputs, reasoning, vision, prompt_caching]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
     },
     "rate_limits": []
   },
   {
-    "api_model_id": "deepseek/deepseek-v4-flash",
-    "provider_api_model_id": "hpc-ai:deepseek/deepseek-v4-flash",
-    "provider_model_slug": "deepseek/deepseek-v4-flash",
-    "internal_model_id": "deepseek/deepseek-v4-flash",
+    "api_model_id": "anthropic/claude-opus-5",
+    "provider_api_model_id": "hpc-ai:anthropic/claude-opus-5",
+    "provider_model_slug": "anthropic/claude-opus-5",
+    "internal_model_id": "anthropic/claude-opus-5",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": "text",
+    "input_modalities": "text,image,file",
     "output_modalities": "text",
-    "context_length": 1048576,
-    "max_output_tokens": 128000,
-    "effective_from": null,
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-31T08:47:39.000Z",
     "effective_to": null,
     "capabilities": [
       {
@@ -80,7 +86,7 @@
         "tool_call": true,
         "structured_output": true,
         "temperature": null,
-        "attachment": false,
+        "attachment": true,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -89,164 +95,52 @@
     "routing_status": "active",
     "routable": false,
     "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
+      "execution": null,
+      "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
       "endpoint": null,
       "deployment": null
     },
     "sources": [
       {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: deepseek/deepseek-v4-flash"
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, structured_outputs, reasoning, vision, prompt_caching]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
     },
     "rate_limits": []
   },
   {
-    "api_model_id": "deepseek/deepseek-v4-pro",
-    "provider_api_model_id": "hpc-ai:deepseek/deepseek-v4-pro",
-    "provider_model_slug": "deepseek/deepseek-v4-pro",
-    "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 1002000,
-    "max_output_tokens": 128000,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": true,
-        "tool_call": true,
-        "structured_output": true,
-        "temperature": null,
-        "attachment": false,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: deepseek/deepseek-v4-pro"
-      }
-    ],
-    "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "minimax/minimax-m2.5",
-    "provider_api_model_id": "hpc-ai:minimax/minimax-m2.5",
-    "provider_model_slug": "minimax/minimax-m2.5",
-    "internal_model_id": "minimax/minimax-m2.5",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 196000,
-    "max_output_tokens": 195000,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [],
-        "reasoning": true,
-        "tool_call": true,
-        "structured_output": true,
-        "temperature": null,
-        "attachment": false,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
-      }
-    ],
-    "routing_status": "active",
-    "routable": false,
-    "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
-    },
-    "service_tiers": [],
-    "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
-    },
-    "sources": [
-      {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: minimax/minimax-m2.5"
-      }
-    ],
-    "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
-    },
-    "rate_limits": []
-  },
-  {
-    "api_model_id": "moonshotai/kimi-k2.5",
-    "provider_api_model_id": "hpc-ai:moonshotai/kimi-k2.5",
-    "provider_model_slug": "moonshotai/kimi-k2.5",
-    "internal_model_id": "moonshotai/kimi-k2.5",
+    "api_model_id": "moonshotai/kimi-k3",
+    "provider_api_model_id": "hpc-ai:moonshotai/kimi-k3",
+    "provider_model_slug": "moonshotai/kimi-k3",
+    "internal_model_id": "moonshotai/kimi-k3",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": 256000,
-    "max_output_tokens": 256000,
-    "effective_from": null,
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-19T15:26:45.000Z",
     "effective_to": null,
     "capabilities": [
       {
@@ -266,31 +160,101 @@
     "routing_status": "active",
     "routable": false,
     "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
+      "execution": null,
+      "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
       "endpoint": null,
       "deployment": null
     },
     "sources": [
       {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: moonshotai/kimi-k2.5"
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs, vision, prompt_caching]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-oss-120b",
+    "provider_api_model_id": "hpc-ai:openai/gpt-oss-120b",
+    "provider_model_slug": "openai/gpt-oss-120b",
+    "internal_model_id": "openai/gpt-oss-120b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-02T09:40:13.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
     },
     "rate_limits": []
   },
@@ -305,7 +269,7 @@
     "output_modalities": "text",
     "context_length": 256000,
     "max_output_tokens": 256000,
-    "effective_from": null,
+    "effective_from": "2026-06-23T15:38:17.000Z",
     "effective_to": null,
     "capabilities": [
       {
@@ -325,31 +289,167 @@
     "routing_status": "active",
     "routable": false,
     "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
+      "execution": null,
+      "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
       "endpoint": null,
       "deployment": null
     },
     "sources": [
       {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: moonshotai/kimi-k2.7-code"
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $350); L3 1000 RPM/50000000 TPM (threshold $1400); L4 3000 RPM/50000000 TPM (threshold $7000); L5 8000 RPM/100000000 TPM (threshold $70000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "hpc-ai:zai-org/glm-5.2",
+    "provider_model_slug": "zai-org/glm-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-17T09:58:35.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4.8",
+    "provider_api_model_id": "hpc-ai:anthropic/claude-opus-4.8",
+    "provider_model_slug": "anthropic/claude-opus-4.8",
+    "internal_model_id": "anthropic/claude-opus-4.8",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,file",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T04:07:00.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, structured_outputs, reasoning, vision, prompt_caching]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
     },
     "rate_limits": []
   },
@@ -364,7 +464,7 @@
     "output_modalities": "text",
     "context_length": 1050000,
     "max_output_tokens": 128000,
-    "effective_from": null,
+    "effective_from": "2026-05-19T02:10:33.000Z",
     "effective_to": null,
     "capabilities": [
       {
@@ -384,31 +484,1012 @@
     "routing_status": "active",
     "routable": false,
     "regions": {
-      "execution": [
-        "global"
-      ],
-      "data": [
-        "global"
-      ]
+      "execution": null,
+      "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
       "endpoint": null,
       "deployment": null
     },
     "sources": [
       {
-        "kind": "models.dev",
-        "url": "https://models.dev/api.json",
-        "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: openai/gpt-5.5"
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider support imported from models.dev; routing remains disabled."
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, structured_outputs, reasoning, vision, prompt_caching]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4-pro",
+    "provider_api_model_id": "hpc-ai:deepseek/deepseek-v4-pro",
+    "provider_model_slug": "deepseek/deepseek-v4-pro",
+    "internal_model_id": "deepseek/deepseek-v4-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1002000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-04-24T12:52:06.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L5",
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L5 8000 RPM/100000000 TPM (threshold $10000); L0 0 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4.7",
+    "provider_api_model_id": "hpc-ai:anthropic/claude-opus-4.7",
+    "provider_model_slug": "anthropic/claude-opus-4.7",
+    "internal_model_id": "anthropic/claude-opus-4.7",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-05-19T02:17:48.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": false,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, reasoning, vision, prompt_caching]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4.6",
+    "provider_api_model_id": "hpc-ai:anthropic/claude-opus-4.6",
+    "provider_model_slug": "anthropic/claude-opus-4.6",
+    "internal_model_id": "anthropic/claude-opus-4.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-19T02:16:54.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": false,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, reasoning, vision, prompt_caching]. Tier limits: L0 5 RPM/10000000 TPM (threshold $0); L1 100 RPM/50000000 TPM (threshold $1); L2 1000 RPM/50000000 TPM (threshold $50); L3 3000 RPM/50000000 TPM (threshold $200); L4 8000 RPM/100000000 TPM (threshold $1000); L5 8000 RPM/2000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4-flash",
+    "provider_api_model_id": "hpc-ai:deepseek/deepseek-v4-flash",
+    "provider_model_slug": "deepseek/deepseek-v4-flash",
+    "internal_model_id": "deepseek/deepseek-v4-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-04-24T12:52:19.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2.5-pro",
+    "provider_api_model_id": "hpc-ai:xiaomi/mimo-v2.5-pro",
+    "provider_model_slug": "xiaomi/mimo-v2.5-pro",
+    "internal_model_id": "xiaomi/mimo-v2.5-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T07:07:09.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2.5",
+    "provider_api_model_id": "hpc-ai:xiaomi/mimo-v2.5",
+    "provider_model_slug": "xiaomi/mimo-v2.5",
+    "internal_model_id": "xiaomi/mimo-v2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T07:03:19.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $0); L2 100 RPM/50000000 TPM (threshold $0); L3 1000 RPM/50000000 TPM (threshold $0); L4 3000 RPM/50000000 TPM (threshold $0); L5 8000 RPM/100000000 TPM (threshold $0)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.6",
+    "provider_api_model_id": "hpc-ai:moonshotai/kimi-k2.6",
+    "provider_model_slug": "moonshotai/kimi-k2.6",
+    "internal_model_id": "moonshotai/kimi-k2.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-21T06:56:04.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "hpc-ai:zai-org/glm-5.1",
+    "provider_model_slug": "zai-org/glm-5.1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202000,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-08T09:11:50.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "provider_api_model_id": "hpc-ai:nvidia/nemotron-3-ultra-550b-a55b",
+    "provider_model_slug": "nvidia/nemotron-3-ultra-550b-a55b",
+    "internal_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-12T03:41:03.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, structured_outputs, reasoning]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.5",
+    "provider_api_model_id": "hpc-ai:moonshotai/kimi-k2.5",
+    "provider_model_slug": "moonshotai/kimi-k2.5",
+    "internal_model_id": "moonshotai/kimi-k2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 256000,
+    "effective_from": "2026-03-24T09:40:36.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "minimax/minimax-m3",
+    "provider_api_model_id": "hpc-ai:minimax/minimax-m3",
+    "provider_model_slug": "minimax/minimax-m3",
+    "internal_model_id": "minimax/minimax-m3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-12T03:39:48.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-397b-a17b",
+    "provider_api_model_id": "hpc-ai:qwen/qwen-3.5-397b-a17b",
+    "provider_model_slug": "qwen/qwen-3.5-397b-a17b",
+    "internal_model_id": "qwen/qwen3.5-397b-a17b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1010000,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-27T08:30:44.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 1000 RPM/50000000 TPM (threshold $1000); L5 1000 RPM/50000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-35b-a3b",
+    "provider_api_model_id": "hpc-ai:qwen/qwen-3.5-35b-a3b",
+    "provider_model_slug": "qwen/qwen-3.5-35b-a3b",
+    "internal_model_id": "qwen/qwen3.5-35b-a3b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1010000,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-06T08:40:36.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-27b",
+    "provider_api_model_id": "hpc-ai:qwen/qwen-3.5-27b",
+    "provider_model_slug": "qwen/qwen-3.5-27b",
+    "internal_model_id": "qwen/qwen3.5-27b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1010000,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-06T08:40:10.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, reasoning, structured_outputs]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "minimax/minimax-m2.5",
+    "provider_api_model_id": "hpc-ai:minimax/minimax-m2.5",
+    "provider_model_slug": "minimax/minimax-m2.5",
+    "internal_model_id": "minimax/minimax-m2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 196000,
+    "max_output_tokens": 195000,
+    "effective_from": "2026-03-24T09:40:36.000Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat",
+        "anthropic_messages"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_api",
+        "url": "https://www.hpc-ai.com/api/maas/v1/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Official catalogue reports features [tools, json_mode, structured_outputs, reasoning]. Tier limits: L0 5 RPM/2000000 TPM (threshold $0); L1 50 RPM/10000000 TPM (threshold $1); L2 100 RPM/50000000 TPM (threshold $50); L3 1000 RPM/50000000 TPM (threshold $200); L4 3000 RPM/50000000 TPM (threshold $1000); L5 8000 RPM/100000000 TPM (threshold $10000)."
     },
     "rate_limits": []
   }

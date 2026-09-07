@@ -1,104 +1,152 @@
 {
-  "key": "hpc-ai:deepseek/deepseek-v4-pro:text.generate",
+  "key": "hpc-ai:z-ai/glm-5.1:text.generate",
   "api_provider_id": "hpc-ai",
   "provider_slug": "hpc-ai",
-  "api_model_id": "deepseek/deepseek-v4-pro",
+  "api_model_id": "z-ai/glm-5.1",
   "capability_id": "text.generate",
   "rules": [
     {
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 1.74,
+      "price_per_unit": 0.8781,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Historical price retained from the pre-audit catalogue snapshot.",
+      "note": null,
       "match": [],
       "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null,
-      "effective_to": "2026-08-24T00:00:00Z"
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.145,
+      "price_per_unit": 0.1903,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Historical price retained from the pre-audit catalogue snapshot.",
+      "note": null,
       "match": [],
       "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null,
-      "effective_to": "2026-08-24T00:00:00Z"
+      "source": null
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 3.48,
+      "price_per_unit": 3.5126,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Historical price retained from the pre-audit catalogue snapshot.",
+      "note": null,
       "match": [],
       "priority": 100,
+      "effective_from": "2026-08-24T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null,
-      "effective_to": "2026-08-24T00:00:00Z"
+      "source": null
     },
     {
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 1.32,
+      "price_per_unit": 1.1709,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
+      "note": "Applies when input context is at least 32,000 tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        }
+      ],
+      "priority": 200,
       "effective_from": "2026-08-24T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
-      "conditions": [],
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        }
+      ],
       "source": null
     },
     {
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.044,
+      "price_per_unit": 0.2927,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
+      "note": "Applies when input context is at least 32,000 tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        }
+      ],
+      "priority": 200,
       "effective_from": "2026-08-24T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
-      "conditions": [],
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        }
+      ],
       "source": null
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 3.96,
+      "price_per_unit": 4.098,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
+      "note": "Applies when input context is at least 32,000 tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        }
+      ],
+      "priority": 200,
       "effective_from": "2026-08-24T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
-      "conditions": [],
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        }
+      ],
       "source": null
     }
   ],
@@ -112,17 +160,11 @@
       "url": "https://www.hpc-ai.com/api/maas/v1/models",
       "accessed_at": "2026-08-24T00:00:00Z",
       "notes": "HPC-AI public Model APIs catalogue; exact served model ID, context, modalities, features, endpoint compatibility, pricing, and tier limits."
-    },
-    {
-      "kind": "models.dev",
-      "url": "https://models.dev/api.json",
-      "accessed_at": "2026-08-11T12:13:09.964Z",
-      "notes": "Provider pricing catalogue fallback; direct provider feeds take precedence."
     }
   ],
   "verification": {
     "status": "verified",
     "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Verified against HPC-AI's public Model APIs catalogue endpoint. Prices are USD per million tokens; long-context bands use the published minimum-context threshold. Previous catalogue prices are retained with an effective end timestamp."
+    "notes": "Verified against HPC-AI's public Model APIs catalogue endpoint. Prices are USD per million tokens; long-context bands use the published minimum-context threshold."
   }
 }
