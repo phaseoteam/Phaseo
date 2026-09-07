@@ -11,10 +11,9 @@ export const metadata = {
 
 export default function DynamicRoutingSettingsPage() {
 	return (
-		<div className="space-y-5">
+		<div className="flex flex-col gap-3 lg:h-[calc(100dvh-var(--site-header-height,3.75rem)-var(--site-notice-height,0px)-2.5rem)] lg:min-h-[420px]">
 			<SettingsPageHeader
 				title="Dynamic routing"
-				description="Build request flows and attach them to specific API keys."
 				actions={
 					<ProductFeedbackButton
 						surface="settings_dynamic_routes"
