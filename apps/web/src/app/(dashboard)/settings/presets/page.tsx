@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import PresetsPanel from "@/components/(gateway)/settings/presets/PresetsPanel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Sparkles, Store } from "lucide-react";
+import { Info, Plus, Store } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,11 +21,11 @@ export default async function PresetsPage() {
 	return (
 		<div className="space-y-7">
 			<Alert className="border-border/80 bg-muted/25">
-				<Sparkles className="h-4 w-4 text-muted-foreground" />
+				<Info className="h-4 w-4 text-muted-foreground" />
 				<AlertTitle className="text-foreground">
 					Presets for request configuration
 				</AlertTitle>
-				<AlertDescription className="max-w-4xl text-muted-foreground">
+				<AlertDescription className="max-w-none text-muted-foreground">
 					Presets are named configurations starting with @ that you can reference
 					in your API calls. Save your preferred model, temperature, system
 					prompts, and other settings to create reusable request templates.
