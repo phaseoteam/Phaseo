@@ -39,7 +39,7 @@
 		"globals": "^17.9.0",
 		"lucide-react": "^1.17.0",
 		"react": "19.2.8",
-		"react-dom": "19.2.7",
+		"react-dom": "19.2.8",
 		"rimraf": "^6.0.0",
 		"typescript": "^6.0.2",
 		"typescript-eslint": "^8.60.0",
