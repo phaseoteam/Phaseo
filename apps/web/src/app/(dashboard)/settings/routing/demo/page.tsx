@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import DynamicRoutesStudio from "@/components/(gateway)/settings/routing/DynamicRoutesStudio";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import type { SettingsDynamicRoutesInitialData } from "@/lib/fetchers/internal/settingsTypes";
 
 const previewData: SettingsDynamicRoutesInitialData = {
@@ -65,11 +66,8 @@ export const metadata = { title: "Dynamic routing preview" };
 export default function DynamicRoutingDemoPage() {
 	if (process.env.NODE_ENV === "production") notFound();
 	return (
-		<div className="space-y-6">
-			<header>
-				<h1 className="text-2xl font-bold">Dynamic routing</h1>
-				<p className="mt-2 text-sm text-muted-foreground">Build request flows and attach them to specific API keys.</p>
-			</header>
+		<div className="space-y-5">
+			<SettingsPageHeader title="Dynamic routing" description="Build request flows and attach them to specific API keys." />
 			<div className="border-l-2 border-cyan-500 px-3 py-1 text-sm text-muted-foreground">Local preview mode — changes stay in this browser and do not touch the database.</div>
 			<DynamicRoutesStudio initialData={previewData} demoMode />
 		</div>
