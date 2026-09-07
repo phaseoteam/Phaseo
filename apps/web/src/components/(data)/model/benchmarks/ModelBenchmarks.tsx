@@ -5,6 +5,10 @@ import type {
 } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { ModelBenchmarksGrid } from "./ModelBenchmarksGrid";
 import { ModelBenchmarksTable } from "./ModelBenchmarksTable";
+import {
+	ArtificialAnalysisBenchmarks,
+	isArtificialAnalysisBenchmark,
+} from "./ArtificialAnalysisBenchmarks";
 
 type Props = {
 	highlightCards: ModelBenchmarkHighlight[];
@@ -18,18 +22,28 @@ export default function ModelBenchmarks({
 	mode = "full",
 }: Props) {
 	const showFull = mode === "full";
+	const otherHighlights = highlightCards.filter(
+		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId),
+	);
+	const hasArtificialAnalysis = otherHighlights.length !== highlightCards.length;
 
 	return (
 		<div className="space-y-8">
-			<section className="space-y-3">
-				{highlightCards.length ? (
-					<ModelBenchmarksGrid highlights={highlightCards} />
-				) : (
-					<Card className="border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-						No benchmark highlights available yet.
-					</Card>
-				)}
-			</section>
+			<ArtificialAnalysisBenchmarks highlights={highlightCards} />
+			{otherHighlights.length > 0 || !hasArtificialAnalysis ? (
+				<section className="space-y-3">
+					{hasArtificialAnalysis ? (
+						<h2 className="text-lg font-semibold">Other benchmarks</h2>
+					) : null}
+					{otherHighlights.length ? (
+						<ModelBenchmarksGrid highlights={otherHighlights} />
+					) : (
+						<Card className="border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+							No benchmark highlights available yet.
+						</Card>
+					)}
+				</section>
+			) : null}
 
 			{showFull ? (
 				<>

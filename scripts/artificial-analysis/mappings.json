@@ -1,0 +1,14 @@
+{
+  "models": {},
+  "creators": {
+    "google": "Google",
+    "x-ai": "xAI",
+    "spacex-ai": "xAI",
+    "meta": "Meta",
+    "meta-llama": "Meta",
+    "mistral": "Mistral",
+    "mistral-ai": "Mistral",
+    "alibaba": "Alibaba",
+    "qwen": "Alibaba"
+  }
+}

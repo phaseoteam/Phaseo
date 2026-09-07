@@ -1,0 +1,8 @@
+{
+  "benchmark_id": "aa-coding-index-v4",
+  "benchmark_name": "Artificial Analysis Coding Index v4",
+  "category": "coding",
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://artificialanalysis.ai/data-api/docs"
+}

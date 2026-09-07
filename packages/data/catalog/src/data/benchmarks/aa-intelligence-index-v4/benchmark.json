@@ -1,8 +1,8 @@
 {
   "benchmark_id": "aa-intelligence-index-v4",
-  "benchmark_name": "Artificial Analysis Intelligence Index v4.1.1",
+  "benchmark_name": "Artificial Analysis Intelligence Index v4",
   "category": "general",
-  "ascending_order": null,
+  "ascending_order": true,
   "type": "numerical",
   "link": "https://artificialanalysis.ai/models",
   "total_models": 583
