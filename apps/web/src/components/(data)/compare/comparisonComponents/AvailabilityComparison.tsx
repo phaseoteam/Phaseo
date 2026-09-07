@@ -1,4 +1,5 @@
 import type { ExtendedModel } from "@/data/types";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import {
 	Card,
 } from "@/components/ui/card";
@@ -44,7 +45,7 @@ function buildAvailabilitySummaries(
 						price.api_provider.api_provider_id
 					: priceProviderId;
 			if (!providerMap.has(priceProviderId)) {
-				providerMap.set(priceProviderId, priceProviderName);
+				providerMap.set(priceProviderId, resolveProviderDisplayName({ providerId: priceProviderId, providerName: priceProviderName }));
 			}
 		});
 
@@ -158,5 +159,4 @@ export default function AvailabilityComparison({
 		</div>
 	);
 }
-
 

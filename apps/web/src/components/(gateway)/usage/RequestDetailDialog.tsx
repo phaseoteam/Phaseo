@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, XCircle } from "lucide-react";
@@ -809,7 +810,7 @@ export default function RequestDetailDialog({
 	request,
 	appName,
 	modelMetadata,
-	providerName,
+	providerName: suppliedProviderName,
 	providerNames,
 	providerMetadata,
 	headerNavigation,
@@ -822,6 +823,7 @@ export default function RequestDetailDialog({
 	const searchParams = useSearchParams();
 
 	if (!request) return null;
+	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
 	if (loading) {
 		const loadingContent = (
 			<>
@@ -840,7 +842,11 @@ export default function RequestDetailDialog({
 		);
 		if (presentation === "sheet") {
 			return (
-				<ProviderInspectorSheet open={open} onOpenChange={onOpenChange}>
+				<ProviderInspectorSheet
+					open={open}
+					onOpenChange={onOpenChange}
+					disablePointerDismissal={disablePointerDismissal}
+				>
 					<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none">
 						{loadingContent}
 					</ProviderInspectorSheetContent>

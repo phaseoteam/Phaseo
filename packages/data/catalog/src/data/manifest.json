@@ -509,9 +509,9 @@
       "inclusionai/ling-3.0-tiny",
       "inclusionai/ling-2.6-flash",
       "inclusionai/ring-2.6-1t",
-        "inclusionai/ling-3.0-flash-fin",
-        "inclusionai/ling-3.0-flash-sante",
-        "inclusionai/ling-3.0-flash-vl"
+      "inclusionai/ling-3.0-flash-fin",
+      "inclusionai/ling-3.0-flash-sante",
+      "inclusionai/ling-3.0-flash-vl"
     ],
     "kwaipilot": [
       "kwaipilot/kat-coder-air-v2.5",
@@ -1309,7 +1309,8 @@
       "spacex-ai/grok-imagine-image-2.0",
       "spacex-ai/grok-4.6",
       "spacex-ai/grok-4.7",
-      "spacex-ai/grok-transcribe"
+      "spacex-ai/grok-transcribe",
+      "spacex-ai/grok-voice-think-fast-2.0"
     ],
     "xiaomi": [
       "xiaomi/mimo-v2-flash",
