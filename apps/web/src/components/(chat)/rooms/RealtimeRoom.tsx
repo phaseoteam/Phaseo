@@ -3074,8 +3074,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 											format={{
 												style: "currency",
 												currency: "USD",
-												minimumFractionDigits: 5,
-												maximumFractionDigits: 5,
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 6,
 											}}
 										/>
 									</StatCard>
@@ -3114,7 +3114,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 													style: "currency",
 													currency: "USD",
 													minimumFractionDigits: 2,
-													maximumFractionDigits: 2,
+													maximumFractionDigits: 6,
 												}}
 											/>
 										</StatCard>
