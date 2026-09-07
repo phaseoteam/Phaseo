@@ -613,7 +613,8 @@ export const logoManifest = {
 		color: "/observability/middleware.svg",
 	},
 	"observability-mona": {
-		color: "/observability/mona.svg",
+		light: "/observability/mona.svg",
+		dark: "/observability/mona_dark.svg",
 	},
 	"observability-newrelic": {
 		color: "/observability/newrelic.svg",

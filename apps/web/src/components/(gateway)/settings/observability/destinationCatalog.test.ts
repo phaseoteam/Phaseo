@@ -10,7 +10,10 @@ describe("coming-soon observability destinations", () => {
 
 			const logo = resolveLogo(destination.logoId);
 			expect(logo.src).toMatch(/^\/.*\.svg$/);
-			expect(existsSync(join(process.cwd(), "public", logo.src!.slice(1)))).toBe(true);
+			for (const src of Object.values(logo.assets)) {
+				expect(src).toMatch(/^\/.*\.svg$/);
+				expect(existsSync(join(process.cwd(), "public", src.slice(1)))).toBe(true);
+			}
 		}
 	});
 });
