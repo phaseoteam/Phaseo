@@ -1414,6 +1414,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		"normal" | "extension_needed" | "graceful_stop"
 	>("normal");
 	const [billingSessionId, setBillingSessionId] = useState<string | null>(null);
+	const [billingReadFailed, setBillingReadFailed] = useState(false);
 	const [ledger, setLedger] = useState<{ status: string; reserved_nanos: number; captured_nanos: number; released_nanos: number; estimated_cost_nanos: number; final_cost_nanos: number | null } | null>(null);
 	useEffect(() => {
 		if (!billingSessionId) return;
@@ -1423,13 +1424,13 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		const poll = async () => {
 			let terminal = false;
 			try {
-				const response = await fetch(`/api/chat/realtime/session/${encodeURIComponent(billingSessionId)}`, { signal: controller.signal, cache: "no-store" });
+				const response = await fetchChatWebApi(`/api/chat/realtime/session/${encodeURIComponent(billingSessionId)}`, { signal: controller.signal });
 				if (response.ok) {
 					const value = await response.json();
-					if (!controller.signal.aborted) setLedger(value);
+					if (!controller.signal.aborted) { setLedger(value); setBillingReadFailed(false); }
 					terminal = ["completed", "cancelled", "failed", "expired", "billing_unresolved"].includes(value.status);
-				}
-			} catch { /* Retry transient reads; settlement is owned by the relay. */ }
+				} else if (!controller.signal.aborted) setBillingReadFailed(true);
+			} catch { if (!controller.signal.aborted) setBillingReadFailed(true); }
 			if (!terminal && !controller.signal.aborted && Date.now() < deadline) timer = setTimeout(poll, 5000);
 		};
 		void poll();
@@ -1612,7 +1613,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const budgetRatio =
 		reservedBudgetUsd > 0 ? displayedCostUsd / reservedBudgetUsd : 0;
 	const costLabel =
-		ledger ? (ledger.final_cost_nanos != null ? "Final cost" : "Estimated cost") : !selectedModel
+		ledger ? (ledger.final_cost_nanos != null ? "Final cost" : "Estimated cost") : billingSessionId ? "Estimated cost" : !selectedModel
 			? "Cost"
 			: selectedModel.provider === "xai"
 			? "Estimated cost"
@@ -2867,6 +2868,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		relaySessionRef.current = false;
 		setSessionBilling(null);
 		setBillingSessionId(null);
+		setBillingReadFailed(false);
 		setLedger(null);
 		setBudgetState("normal");
 		gracefulStopRequestedRef.current = false;
@@ -3080,6 +3082,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 								</div>
 
 								{billingSessionId && <p className="text-sm text-muted-foreground">
+									{billingReadFailed ? "Billing status is unavailable; displayed amounts may be out of date. " : !ledger || ((status === "ended" || status === "error") && ledger.final_cost_nanos == null && ledger.status !== "billing_unresolved") ? "Finalizing billing. " : ""}
 									{ledger?.status === "billing_unresolved" ? "Final usage is pending billing review. The remaining hold is retained. " : ""}
 									<a className="underline" href="/settings/usage/logs/realtime">View session billing and releases</a>
 								</p>}
@@ -3102,10 +3105,10 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 										</StatCard>
 										<StatCard
 											icon={<BadgeDollarSign className="h-3.5 w-3.5" />}
-											label="Remaining"
+											label={ledger?.final_cost_nanos != null ? "Released" : "Remaining budget"}
 										>
 											<NumberFlow
-												value={remainingBudgetUsd}
+												value={ledger?.final_cost_nanos != null ? ledger.released_nanos / 1e9 : remainingBudgetUsd}
 												locales="en-US"
 												format={{
 													style: "currency",
