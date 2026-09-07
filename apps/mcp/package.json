@@ -19,7 +19,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260710.1",
     "@modelcontextprotocol/sdk": "1.30.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.7",
     "wrangler": "^4.110.0"
   }
