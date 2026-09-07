@@ -68,7 +68,7 @@
 		"eslint": "^10.8.1",
 		"openai": "^6.39.0",
 		"tsx": "^4.20.6",
-		"typescript": "^6.0.3",
+		"typescript": "^7.0.2",
 		"typescript-eslint": "^8.58.1",
 		"vitest": "^4.1.7",
 		"wrangler": "^4.94.0"
