@@ -209,33 +209,33 @@ function secondsFromDuration(source: any, kind: "input" | "output" | "total"): n
 	return minutes != null ? Math.max(0, minutes * 60) : null;
 }
 
-function providerFromModel(model: string, explicitProvider?: string | null): RealtimeProvider | null {
+export function providerFromModel(model: string, explicitProvider?: string | null): RealtimeProvider | null {
 	const provider = String(explicitProvider ?? "").trim().toLowerCase();
 	if (provider === "openai") return "openai";
-	if (provider === "xai" || provider === "x-ai" || provider === "spacex-ai") return "x-ai";
+	if (provider === "xai" || provider === "x-ai" || provider === "spacex-ai") return "spacex-ai";
 	if (provider === "google" || provider === "google-ai-studio") return "google-ai-studio";
 	const normalized = model.trim().toLowerCase();
 	if (normalized.startsWith("openai/")) return "openai";
-	if (normalized.startsWith("x-ai/") || normalized.startsWith("xai/")) return "x-ai";
+	if (/^(x-ai|xai|spacex-ai)\//.test(normalized)) return "spacex-ai";
 	if (normalized.startsWith("google/")) return "google-ai-studio";
 	return null;
 }
 
-function canonicalModel(provider: RealtimeProvider, model: string): string {
+export function canonicalModel(provider: RealtimeProvider, model: string): string {
 	const trimmed = model.trim();
 	if (!trimmed.includes("/")) {
 		if (provider === "openai") return `openai/${trimmed}`;
-		if (provider === "x-ai") return `x-ai/${trimmed}`;
+		if (provider === "x-ai" || provider === "spacex-ai") return `spacex-ai/${trimmed}`;
 		return `google/${trimmed}`;
 	}
-	if (provider === "x-ai" && trimmed.startsWith("xai/")) return `x-ai/${trimmed.slice(4)}`;
+	if (provider === "x-ai" || provider === "spacex-ai") return trimmed.replace(/^(xai|x-ai)\//, "spacex-ai/");
 	return trimmed;
 }
 
 function providerModel(provider: RealtimeProvider, model: string): string {
 	const canonical = canonicalModel(provider, model);
 	if (provider === "openai") return canonical.replace(/^openai\//, "");
-	if (provider === "x-ai") return canonical.replace(/^x-ai\//, "");
+	if (provider === "x-ai" || provider === "spacex-ai") return canonical.replace(/^spacex-ai\//, "");
 	return canonical.replace(/^google\//, "");
 }
 
@@ -639,9 +639,10 @@ export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>): Recor
 
 	return {
 		...source,
-		...(inputText != null ? { input_text_tokens: Math.max(0, inputText - (cachedText ?? 0)) } : {}),
+		// Canonical meters already exclude cache reads. Only split raw provider totals.
+		...(inputText != null ? { input_text_tokens: Math.max(0, inputText - (source.input_text_tokens != null ? 0 : cachedText ?? 0)) } : {}),
 		...(inputAudio != null
-			? { input_audio_tokens: Math.max(0, inputAudio - (cachedAudio ?? 0)) }
+			? { input_audio_tokens: Math.max(0, inputAudio - (source.input_audio_tokens != null ? 0 : cachedAudio ?? 0)) }
 			: {}),
 		...(outputText != null ? { output_text_tokens: outputText } : {}),
 		...(outputAudio != null
@@ -684,7 +685,7 @@ export function assertRealtimeBillingMetersPresent(args: {
 	usage: Record<string, unknown>;
 	costNanos: number;
 }) {
-	if (args.provider === "x-ai") return;
+	if (args.provider === "x-ai" || args.provider === "spacex-ai") return;
 	const responseInFlight = args.usage.assistant_response_in_flight === true;
 	if (responseInFlight) {
 		throw new Error(`${args.provider}_realtime_authoritative_usage_pending`);
@@ -1294,7 +1295,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 			}
 			if (session.status !== "created") {
 				const provider = providerFromModel(session.model_id, session.provider);
-				if (provider !== "x-ai") {
+				if (provider !== "spacex-ai") {
 					await markRealtimeSessionBillingUnresolved({
 						auth: {
 							requestId: `realtime_reconcile_unresolved:${session.session_id}`,

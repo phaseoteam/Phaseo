@@ -274,7 +274,7 @@ function providerFromModel(model: string): string | null {
 	return ["openai", "spacex-ai", "google-ai-studio"].includes(prefix) ? prefix : null;
 }
 
-async function authorizeRealtimeSource(args: {
+export async function authorizeRealtimeSource(args: {
 	auth: RouteAuthValue;
 	source: "api" | "chat";
 	metadata?: Record<string, unknown>;
@@ -288,13 +288,13 @@ async function authorizeRealtimeSource(args: {
 	if (!seed || args.auth.authMethod !== "api_key") {
 		throw new Error("realtime_chat_source_forbidden");
 	}
-	const expectedKid = await deterministicBase62(`${seed}:kid:${args.auth.workspaceId}`, 12);
-	if (args.auth.apiKeyKid !== expectedKid) {
-		throw new Error("realtime_chat_source_forbidden");
-	}
 	const metadataUserId = typeof args.metadata?.userId === "string" ? args.metadata.userId.trim() : "";
 	if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(metadataUserId)) {
 		throw new Error("realtime_chat_user_missing");
+	}
+	const expectedKid = await deterministicBase62(`${seed}:kid:${args.auth.workspaceId}:${metadataUserId}`, 12);
+	if (args.auth.apiKeyKid !== expectedKid) {
+		throw new Error("realtime_chat_source_forbidden");
 	}
 	return metadataUserId;
 }

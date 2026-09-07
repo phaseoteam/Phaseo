@@ -7,6 +7,33 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account usage settings routes", () => {
+	it("scopes realtime session history to the authorized workspace and selects no secrets", async () => {
+		let query: URL | undefined;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "member" }]);
+			if (url.pathname.includes("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.includes("gateway_realtime_sessions")) { query = url; return Response.json([{ session_id: "rt_test", status: "billing_unresolved", reserved_nanos: 5000000000 }]); }
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/realtime?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cache-control")).toBe("private, no-store");
+		expect(query?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
+		expect(query?.searchParams.get("select")).not.toMatch(/metadata|secret|error_message/);
+		expect(await response.json()).toMatchObject({ sessions: [{ status: "billing_unresolved" }] });
+	});
+	it("denies realtime history to nonmembers before querying sessions", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			return Response.json(url.includes("/auth/v1/user") ? { id: "outsider" } : []);
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/realtime?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(403);
+		expect(fetchMock.mock.calls.some(([url]) => String(url).includes("gateway_realtime_sessions"))).toBe(false);
+	});
 	it.each(["video", "batch"])("filters %s jobs before limiting and returns safe normalized logging fields", async (kind) => {
 		let jobUrl = "";
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {

@@ -206,6 +206,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					{ href: "/settings/usage/logs/requests", label: "Requests" },
 					{ href: "/settings/usage/logs/upstream", label: "Upstream Requests" },
 					{ href: "/settings/usage/logs/sessions", label: "Sessions" },
+					{ href: "/settings/usage/logs/realtime", label: "Realtime Sessions" },
 					{ href: "/settings/usage/logs/videos", label: "Videos" },
 					{ href: "/settings/usage/logs/batches", label: "Batches" },
 				],
