@@ -123,6 +123,9 @@ export const logoManifest = {
 	cogito: {
 		color: "/logos/cogito.svg",
 	},
+	crofai: {
+		color: "/logos/crofai.svg",
+	},
 	cursor: {
 		light: "/logos/cursor-light.svg",
 		dark: "/logos/cursor-dark.svg",
