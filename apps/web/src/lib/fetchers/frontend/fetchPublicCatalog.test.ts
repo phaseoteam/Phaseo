@@ -4,7 +4,18 @@ jest.mock("@/lib/web-api/client", () => ({
 	fetchPublicWebApi: (...args: unknown[]) => mockFetchPublicWebApi(...args),
 }));
 
-import { fetchFrontendFamilies } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchFrontendFamilies, fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+
+test("keeps regional routes distinct in the provider catalogue used by cards, comparison and BYOK", async () => {
+	mockFetchPublicWebApi.mockResolvedValueOnce({ providers: [
+		{ api_provider_id: "openai", api_provider_name: "OpenAI" },
+		{ api_provider_id: "openai-eu", api_provider_name: "OpenAI" },
+	] });
+	expect(await fetchFrontendAPIProviders()).toEqual([
+		{ api_provider_id: "openai", api_provider_name: "OpenAI" },
+		{ api_provider_id: "openai-eu", api_provider_name: "OpenAI (EU)" },
+	]);
+});
 
 describe("fetchFrontendFamilies", () => {
 	beforeEach(() => {

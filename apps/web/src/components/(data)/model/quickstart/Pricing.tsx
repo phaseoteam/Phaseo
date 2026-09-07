@@ -1,3 +1,4 @@
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import {
 	Card,
 	CardContent,
@@ -130,7 +131,7 @@ export default async function Pricing({ metadata, includeHidden }: PricingProps)
 					return (
 						<div key={providerPricing.provider.api_provider_id} className="space-y-4">
 							<h3 className="text-lg font-semibold">
-								{providerPricing.provider.api_provider_name}
+								{resolveProviderDisplayName({ providerId: providerPricing.provider.api_provider_id, providerName: providerPricing.provider.api_provider_name, offerLabel: providerPricing.provider.offer_label, offerScope: providerPricing.provider.offer_scope })}
 							</h3>
 							{Object.entries(typeGroups).map(([type, rules]) => {
 								const typeLabel = type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());

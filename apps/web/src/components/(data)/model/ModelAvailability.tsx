@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
 import type { ModelAvailabilityItem } from "@/lib/fetchers/models/getModelAvailability";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
@@ -49,8 +50,7 @@ export default function ModelAvailability({
 	for (const item of availability ?? []) {
 		const providerId =
 			item.provider?.api_provider_id ?? item.api_provider_id;
-		const providerName =
-			item.provider?.api_provider_name ?? item.api_provider_id;
+		const providerName = resolveProviderDisplayName({ providerId, providerName: item.provider?.api_provider_name ?? item.api_provider_id });
 
 		if (!providerId) continue;
 		const existing = providerGroups.get(providerId);

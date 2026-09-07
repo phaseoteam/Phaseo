@@ -43,10 +43,6 @@
     { "benchmark_id": "gpqa-diamond", "score": 96.0, "is_self_reported": true, "other_info": "GPT-6 Astra launch evaluation", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
     { "benchmark_id": "exploitbench-cap", "score": 100.0, "is_self_reported": true, "other_info": "ExploitBench without production safeguards", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null }
   ],
-  "page_notice": {
-    "tone": "info",
-    "markdown": "OpenAI is rolling GPT-6 Astra out through its API over the coming days. Availability through Phaseo depends on the connected OpenAI account having access."
-  },
   "model_type": null,
   "knowledge_cutoff": "2026-04-30T00:00:00",
   "limits": { "context": 1050000, "input": 922000, "output": 128000 },

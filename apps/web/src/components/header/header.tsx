@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 import AuthControls from "./AuthControls";
 import MainNav from "./MainNav";
-import { SearchWrapper } from "./Search/SearchWrapper";
+import { SearchWithCapabilities as SearchWrapper } from "@/components/header/Search/SearchWithCapabilities";
 import { HeaderAnnouncements } from "./HeaderAnnouncements";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
