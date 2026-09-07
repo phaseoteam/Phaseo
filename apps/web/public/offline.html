@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#0a0a0a" />
+		<title>Phaseo is offline</title>
+		<style>
+			:root {
+				color-scheme: light dark;
+				font-family: Montserrat, ui-sans-serif, system-ui, sans-serif;
+				background: #fff;
+				color: #171717;
+			}
+
+			body {
+				display: grid;
+				min-height: 100dvh;
+				margin: 0;
+				place-items: center;
+			}
+
+			main {
+				width: min(28rem, calc(100% - 3rem));
+				text-align: center;
+			}
+
+			img {
+				width: 4rem;
+				height: 4rem;
+				margin-bottom: 1.5rem;
+				border-radius: 1rem;
+			}
+
+			h1 {
+				margin: 0;
+				font-size: 1.5rem;
+			}
+
+			p {
+				margin: 0.75rem 0 1.5rem;
+				color: #666;
+				line-height: 1.6;
+			}
+
+			button {
+				border: 0;
+				border-radius: 0.625rem;
+				background: #171717;
+				color: #fff;
+				font: inherit;
+				font-weight: 600;
+				padding: 0.75rem 1rem;
+				cursor: pointer;
+			}
+
+			@media (prefers-color-scheme: dark) {
+				:root {
+					background: #171717;
+					color: #fafafa;
+				}
+
+				p {
+					color: #a3a3a3;
+				}
+
+				button {
+					background: #fafafa;
+					color: #171717;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<img src="/png_logo_dark.png" alt="" />
+			<h1>You’re offline</h1>
+			<p>Reconnect to continue using Phaseo and load the latest model and gateway data.</p>
+			<button type="button" onclick="window.location.reload()">Try again</button>
+		</main>
+	</body>
+</html>
