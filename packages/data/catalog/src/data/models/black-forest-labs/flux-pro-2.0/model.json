@@ -1,0 +1,72 @@
+{
+  "model_id": "black-forest-labs/flux-pro-2.0",
+  "organisation_id": "black-forest-labs",
+  "name": "Black Forest Labs: FLUX 2 Pro",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "FLUX.2 Pro (also styled as Flux-2-Pro or FLUX.2 [pro]) is a production-grade AI image generation and editing model developed by Black Forest Labs, released in November 2025 as the flagship of the FLUX.2 family. It excels in creating high-quality, photorealistic images up to 4 megapixels from text prompts, with advanced controls for editing, multi-reference image use (up to 8 references), and precise outputs suitable for commercial workflows like product photography, UI prototyping, and brand design.",
+  "announced_date": null,
+  "release_date": "2025-11-25T08:17:33",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "image",
+  "api_model_id": "black-forest-labs/flux-pro-2.0",
+  "links": [
+    {
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "image",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 4096,
+    "input": null,
+    "output": 4096
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "image/*"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": false,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
+  },
+  "last_updated": "2026-08-24T00:29:58",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

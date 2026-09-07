@@ -4,36 +4,32 @@
   "name": "Perplexity: Sonar Deep Research",
   "status": "Available",
   "previous_model_id": null,
-  "description": "Sonar Deep Research is a research-focused model designed for multi-step retrieval, synthesis, and reasoning across complex topics. It autonomously searches, reads, and evaluates sources, refining its approach as it gathers...",
+  "description": "Sonar Deep Research is a powerful deep research and reasoning model designed for conducting thorough investigations and generating expert-level insights. With a context length of 128k, it excels at synthesizing information from hundreds of sources to produce highly detailed, structured reports. Ideal for exhaustive research tasks, Sonar Deep Research offers in-depth subject analysis and is capable of crafting content with precision and authority. Common use cases include writing white papers for industry thought leadership, developing comprehensive go-to-market (GTM) strategies, and creating advanced educational material for universities or training programs. It's the ideal tool for users who need depth, clarity, and rigor in their research output.",
   "announced_date": null,
-  "release_date": "2025-03-07",
+  "release_date": "2025-03-07T01:34:06",
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,
-  "input_types": [
-    "text"
-  ],
-  "output_types": [
-    "text"
-  ],
+  "input_types": "text",
+  "output_types": "text",
   "api_model_id": "perplexity/sonar-deep-research",
   "links": [
     {
-      "platform": "model",
-      "title": "OpenRouter model page",
-      "url": "https://openrouter.ai/perplexity/sonar-deep-research"
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
     }
   ],
   "details": [],
   "benchmarks": [],
   "family_id": null,
   "page_notice": null,
-  "model_type": "language",
+  "model_type": null,
   "knowledge_cutoff": null,
   "limits": {
     "context": 128000,
     "input": null,
-    "output": null
+    "output": 0
   },
   "modalities": {
     "input": [
@@ -52,24 +48,24 @@
     "tool_call": false,
     "structured_output": false,
     "temperature": true,
-    "streaming": true,
+    "streaming": false,
     "web_search": false
   },
   "open_weights": null,
   "sources": [
     {
       "kind": "provider_models",
-      "url": "https://openrouter.ai/api/v1/models",
-      "accessed_at": "2026-08-24T00:00:00Z",
-      "notes": "Exact live OpenRouter ID: perplexity/sonar-deep-research."
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
     }
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Availability, modalities, limits and parameters verified against OpenRouter's official models API; upstream publisher metadata remains provider-reported."
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
   },
-  "last_updated": "2026-08-24",
+  "last_updated": "2026-08-24T00:29:58",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

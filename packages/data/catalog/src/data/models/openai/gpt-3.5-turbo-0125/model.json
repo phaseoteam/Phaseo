@@ -1,19 +1,25 @@
 {
   "model_id": "openai/gpt-3.5-turbo-0125",
   "organisation_id": "openai",
-  "name": "gpt-3.5-turbo-0125",
+  "name": "OpenAI: GPT-3.5 Turbo 0125",
   "status": "Available",
   "previous_model_id": null,
-  "description": "gpt-3.5-turbo-0125 is available through OrcaRouter under the exact model ID openai/gpt-3.5-turbo-0125.",
+  "description": "GPT-3.5 Turbo has been largely superseded by more advanced models in OpenAI's lineup. While still available for legacy applications and cost-sensitive implementations, its capabilities are now significantly outpaced by GPT-4o and the O-series models. The model remains suitable for basic conversational AI, content generation, and simple function-calling scenarios, but lacks the advanced reasoning, multilingual capabilities, and multimodal features of newer models. For applications requiring only core language processing without the need for cutting-edge performance, it continues to offer a cost-effective option.",
   "announced_date": null,
-  "release_date": null,
+  "release_date": "2023-05-28T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,
   "input_types": "text",
-  "output_types": null,
+  "output_types": "text",
   "api_model_id": "openai/gpt-3.5-turbo-0125",
-  "links": [],
+  "links": [
+    {
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
   "details": [],
   "benchmarks": [],
   "family_id": null,
@@ -21,7 +27,7 @@
   "model_type": null,
   "knowledge_cutoff": null,
   "limits": {
-    "context": null,
+    "context": 16385,
     "input": null,
     "output": 4096
   },
@@ -29,35 +35,37 @@
     "input": [
       "text"
     ],
-    "output": []
+    "output": [
+      "text"
+    ]
   },
   "reasoning": {
-    "supported": null,
+    "supported": false,
     "options": []
   },
   "capabilities": {
     "attachment": false,
-    "tool_call": null,
-    "structured_output": null,
-    "temperature": null,
-    "streaming": null,
-    "web_search": null
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
   },
   "open_weights": null,
   "sources": [
     {
-      "kind": "models",
-      "url": "https://api.orcarouter.ai/v1/models",
-      "accessed_at": "2026-08-24T00:00:00Z",
-      "notes": "OrcaRouter live model catalogue metadata."
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
     }
   ],
   "verification": {
-    "status": "verified",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Exact model ID, availability, limits, modalities, description, and pricing metadata verified against OrcaRouter's live official catalogue."
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
   },
-  "last_updated": "2026-08-24T00:00:00Z",
+  "last_updated": "2026-08-24T00:29:58",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

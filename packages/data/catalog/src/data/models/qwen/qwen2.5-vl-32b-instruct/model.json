@@ -1,0 +1,73 @@
+{
+  "model_id": "qwen/qwen2.5-vl-32b-instruct",
+  "organisation_id": "qwen",
+  "name": "Qwen: Qwen2.5 VL 32B Instruct",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Qwen2.5-VL-32B-Instruct is a state-of-the-art multimodal vision-language model from Alibaba’s Qwen team, designed to handle complex visual and textual tasks with 32 billion parameters. It supports long context lengths (up to 64K tokens for video) and features a Transformer-based architecture with enhanced ViT, dynamic resolution training, and advanced positional encoding for both images and videos. The model excels in object recognition, document parsing, structured data extraction, and long video understanding, including precise event localization. It also acts as a visual agent, capable of software control, tool integration, and autonomous multi-step task execution. Reinforced for strong mathematical reasoning, it delivers detailed, human-aligned responses across diverse use cases.",
+  "announced_date": null,
+  "release_date": "2025-03-24T18:10:38",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "qwen/qwen2.5-vl-32b-instruct",
+  "links": [
+    {
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 16384,
+    "input": null,
+    "output": 0
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
+  },
+  "last_updated": "2026-08-24T00:29:58",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

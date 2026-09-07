@@ -1,0 +1,72 @@
+{
+  "model_id": "black-forest-labs/flux-schnell",
+  "organisation_id": "black-forest-labs",
+  "name": "Black Forest Labs: FLUX Schnell",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "FLUX.1 [schnell] is a 12-billion-parameter rectified flow transformer model for text-to-image generation, developed by Black Forest Labs. \"Schnell\" (German for \"fast\") is the speed-optimized variant of the FLUX.1 model family, distilled for rapid inference — it can generate high-quality images in as few as 1–4 diffusion steps, making it significantly faster than typical diffusion models while maintaining strong prompt adherence and image fidelity.",
+  "announced_date": null,
+  "release_date": "2024-08-21T11:25:09",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "image",
+  "api_model_id": "black-forest-labs/flux-schnell",
+  "links": [
+    {
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "image",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 4096,
+    "input": null,
+    "output": 0
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "image/*"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": false,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
+  },
+  "last_updated": "2026-08-24T00:29:58",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

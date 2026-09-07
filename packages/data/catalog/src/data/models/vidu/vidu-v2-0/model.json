@@ -1,0 +1,73 @@
+{
+  "model_id": "vidu/vidu-v2-0",
+  "organisation_id": "vidu",
+  "name": "Vidu: Vidu V2.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Vidu 2.0 is an improved model (early 2024) that focuses on image-to-video generation. It adds support for more sophisticated animations and produces higher-quality output than Vidu 1.x. The model is better at interpreting detailed visual cues, allowing more intricate camera moves and character actions. It typically outputs at HD resolution. Compared to its predecessor, Vidu 2.0 yields smoother, more polished videos with richer detail. It's commonly used for bringing concept art or still images to life in an animated clip.",
+  "announced_date": null,
+  "release_date": "2025-02-12T23:31:54",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "video",
+  "api_model_id": "vidu/vidu-v2-0",
+  "links": [
+    {
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "video",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 8192,
+    "input": null,
+    "output": 4096
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "video/*"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": false,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
+  },
+  "last_updated": "2026-08-24T00:29:58",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

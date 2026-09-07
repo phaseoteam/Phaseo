@@ -1,29 +1,35 @@
 {
   "model_id": "mistral/mistral-7b-instruct-v0.3",
   "organisation_id": "mistral",
-  "name": "Mistral 7b Instruct V0 3",
+  "name": "Mistral: Mistral 7B Instruct v0.3",
   "status": "Available",
   "previous_model_id": null,
-  "description": "Mistral 7b Instruct V0 3 is available through NVIDIA's hosted NIM API catalog.",
+  "description": "An enhanced version of Mistral's popular 7B model with expanded vocabulary and added function calling capabilities. Maintains the original's speed and context length optimization while adding new features that make it more versatile for practical application development and integration with external tools and APIs.",
   "announced_date": null,
-  "release_date": null,
+  "release_date": "2024-05-27T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,
   "input_types": "text",
   "output_types": "text",
-  "api_model_id": "mistralai/mistral-7b-instruct-v0.3",
-  "family_id": null,
-  "links": [],
+  "api_model_id": "mistral/mistral-7b-instruct-v0.3",
+  "links": [
+    {
+      "title": "FastRouter model catalogue",
+      "kind": "api_reference",
+      "url": "https://go.fastrouter.ai/api/v1/models"
+    }
+  ],
   "details": [],
   "benchmarks": [],
+  "family_id": null,
   "page_notice": null,
-  "model_type": "language",
+  "model_type": null,
   "knowledge_cutoff": null,
   "limits": {
-    "context": null,
+    "context": 32768,
     "input": null,
-    "output": null
+    "output": 16384
   },
   "modalities": {
     "input": [
@@ -34,32 +40,32 @@
     ]
   },
   "reasoning": {
-    "supported": null,
+    "supported": false,
     "options": []
   },
   "capabilities": {
     "attachment": false,
-    "tool_call": null,
-    "structured_output": null,
-    "temperature": null,
-    "streaming": null,
+    "tool_call": false,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
     "web_search": false
   },
   "open_weights": null,
   "sources": [
     {
-      "kind": "api_reference",
-      "url": "https://integrate.api.nvidia.com/v1/models",
-      "accessed_at": "2026-08-24T00:00:00Z",
-      "notes": "NVIDIA's live OpenAI-compatible registry lists the exact model ID mistralai/mistral-7b-instruct-v0.3."
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
     }
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Exact hosted availability and API ID verified; unpublished model metadata remains null."
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
   },
-  "last_updated": null,
+  "last_updated": "2026-08-24T00:29:58",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

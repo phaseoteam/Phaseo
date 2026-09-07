@@ -1,0 +1,23 @@
+{
+  "organisation_id": "sarvam",
+  "name": "Sarvam AI",
+  "country_code": null,
+  "description": "Sarvam AI publishes AI models available through FastRouter.",
+  "colour": null,
+  "organisation_links": [],
+  "status": "active",
+  "routable": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "FastRouter identifies Sarvam as the model creator."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Identity verified from FastRouter's official live model catalogue."
+  }
+}

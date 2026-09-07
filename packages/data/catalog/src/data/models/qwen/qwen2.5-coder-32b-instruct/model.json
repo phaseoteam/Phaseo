@@ -1,40 +1,35 @@
 {
   "model_id": "qwen/qwen2.5-coder-32b-instruct",
   "organisation_id": "qwen",
-  "name": "Qwen2 5 Coder 32b Instruct",
+  "name": "Qwen: Qwen2.5 Coder 32B Instruct",
   "status": "Available",
   "previous_model_id": null,
-  "description": "Qwen3, the latest generation in the Qwen large language model series, features both dense and mixture-of-experts (MoE) architectures to excel in reasoning, multilingual support, and advanced agent tasks. Its unique ability to switch seamlessly between a thinking mode for complex reasoning and a non-thinking mode for efficient dialogue ensures versatile, high-quality performance.\n\nSignificantly outperforming prior models like QwQ and Qwen2.5, Qwen3 delivers superior mathematics, coding, commonsense reasoning, creative writing, and interactive dialogue capabilities. The Qwen3-30B-A3B variant includes 30.5 billion parameters (3.3 billion activated), 48 layers, 128 experts (8 activated per task), and supports up to 131K token contexts with YaRN, setting a new standard among open-source models.",
-  "announced_date": "2024-11-11T23:40:00.000Z",
-  "release_date": "2024-11-11T23:40:00.000Z",
+  "description": "A specialized 32B parameter model fine-tuned specifically for coding tasks with enhanced capabilities in code generation, debugging, and algorithmic reasoning. Maintains Qwen's traditional strengths in mathematics while offering improved performance across multiple programming languages and development tasks.",
+  "announced_date": null,
+  "release_date": "2024-11-11T23:40:00",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": "Open weights",
+  "license": null,
   "input_types": "text",
   "output_types": "text",
   "api_model_id": "qwen/qwen2.5-coder-32b-instruct",
   "links": [
     {
-      "title": "Requesty model catalogue",
+      "title": "FastRouter model catalogue",
       "kind": "api_reference",
-      "url": "https://router.requesty.ai/v1/models"
+      "url": "https://go.fastrouter.ai/api/v1/models"
     }
   ],
-  "details": [
-    {
-      "name": "requesty_availability",
-      "value": "Available through Requesty as deepinfra/Qwen/Qwen2.5-Coder-32B-Instruct."
-    }
-  ],
+  "details": [],
   "benchmarks": [],
   "family_id": null,
   "page_notice": null,
   "model_type": null,
   "knowledge_cutoff": null,
   "limits": {
-    "context": 16384,
-    "input": 16384,
-    "output": 40960
+    "context": 32768,
+    "input": null,
+    "output": 16384
   },
   "modalities": {
     "input": [
@@ -50,27 +45,27 @@
   },
   "capabilities": {
     "attachment": false,
-    "tool_call": true,
-    "structured_output": false,
-    "temperature": null,
-    "streaming": true,
+    "tool_call": false,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
     "web_search": false
   },
-  "open_weights": true,
+  "open_weights": null,
   "sources": [
     {
       "kind": "provider_models",
-      "url": "https://router.requesty.ai/v1/models",
-      "accessed_at": "2026-08-24T00:00:00Z",
-      "notes": "Canonical name, developer, lifecycle timestamp, limits, modalities, and capabilities from Requesty's live catalogue."
+      "url": "https://go.fastrouter.ai/api/v1/models",
+      "accessed_at": "2026-08-24T00:29:58.321Z",
+      "notes": "Exact identity, creator, description, lifecycle, limits, modalities, and parameters from FastRouter's live catalogue."
     }
   ],
   "verification": {
     "status": "partial",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Available in Requesty's official live catalogue; third-party developer metadata may require further enrichment."
+    "checked_at": "2026-08-24T00:29:58.321Z",
+    "notes": "Provider-offer identity and technical metadata verified from FastRouter; upstream creator documentation was not independently re-verified."
   },
-  "last_updated": "2026-08-20T18:19:35.000Z",
+  "last_updated": "2026-08-24T00:29:58",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null
