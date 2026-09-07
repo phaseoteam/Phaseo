@@ -124,20 +124,19 @@ export default function CreateKeyDialog({
 				</Button>
 			</DialogTrigger>
 
-			<DialogContent>
-				<DialogHeader>
+			<DialogContent className="gap-5 sm:max-w-lg">
+				<DialogHeader className="gap-2">
 					<DialogTitle>Create API Key</DialogTitle>
 					<DialogDescription>
 						Create a new API key for a workspace.
 					</DialogDescription>
-					<DialogDescription className="mt-2 text-sm text-red-600">
-						The key will be shown only <strong>once</strong> - copy
-						it and store it somewhere safe.
-					</DialogDescription>
+					<p className="rounded-md bg-destructive/10 px-3 py-2 text-sm leading-5 text-destructive">
+						The key is shown only once. Copy it and store it somewhere safe.
+					</p>
 				</DialogHeader>
 
 				{!plainKey ? (
-					<form onSubmit={onCreate} className="space-y-4">
+					<form onSubmit={onCreate} className="space-y-5">
 						{/* Team selector (dropdown placed above name input) */}
 						{resolvedTeams && resolvedTeams.length > 0 ? (
 							<DropdownMenu>
@@ -222,23 +221,20 @@ export default function CreateKeyDialog({
 						</DialogFooter>
 					</form>
 				) : (
-					<div className="space-y-4">
-						<div className="font-mono break-all select-all rounded-lg p-4 bg-gray-100 dark:bg-gray-800">
+					<div className="space-y-5">
+						<div className="select-all break-all rounded-lg border border-border bg-muted/60 p-3 font-mono text-xs leading-5 sm:text-sm">
 							{plainKey}
 						</div>
-						<div className="flex items-center gap-2">
-							<div className="text-sm text-muted-foreground font-bold">
-								This key will not be shown again and gives
-								anyone access to your credits for your workspace.
-								Keep this code secret at all times.
-							</div>
-						</div>
+						<p className="text-sm leading-5 text-muted-foreground">
+							This key will not be shown again and gives access to your
+							workspace credits. Keep it secret.
+						</p>
 						<SecretRevealActions
 							secret={plainKey}
 							name={name || "AI Stats API key"}
 							kind="api-key"
 						/>
-						<DialogFooter>
+						<DialogFooter className="pt-1">
 							<DialogClose asChild>
 								<Button onClick={onClose}>Done</Button>
 							</DialogClose>

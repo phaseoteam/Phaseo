@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { KeyRound } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 type OnePasswordSaveButtonProps = {
 	title: string;
@@ -28,7 +31,9 @@ export function OnePasswordSaveButton({
 	const [encodedValue, setEncodedValue] = React.useState<string | null>(null);
 	const [theme, setTheme] = React.useState<"light" | "dark">("light");
 	const [isReady, setIsReady] = React.useState(false);
+	const [loadError, setLoadError] = React.useState(false);
 	const buttonRef = React.useRef<HTMLElement | null>(null);
+	const statusId = React.useId();
 
 	React.useEffect(() => {
 		const root = document.documentElement;
@@ -63,10 +68,12 @@ export function OnePasswordSaveButton({
 				});
 				if (!cancelled && encoded) {
 					setEncodedValue(encoded);
-					window.setTimeout(() => saveButton.activateOPButton?.(), 0);
+					window.setTimeout(() => {
+						if (!cancelled) saveButton.activateOPButton?.();
+					}, 0);
 				}
 			} catch {
-				// The browser extension is optional; other reveal actions still work.
+				if (!cancelled) setLoadError(true);
 			}
 		}
 
@@ -80,10 +87,14 @@ export function OnePasswordSaveButton({
 		if (!encodedValue) return;
 
 		const interval = window.setInterval(() => {
-			const nativeButton = buttonRef.current?.shadowRoot?.querySelector("button");
-			if (nativeButton && !nativeButton.disabled) {
-				setIsReady(true);
-				window.clearInterval(interval);
+			const nativeButton = buttonRef.current?.shadowRoot?.querySelector<HTMLButtonElement>(
+				"button[data-onepassword-save-button]",
+			);
+			if (nativeButton) {
+				setIsReady(!nativeButton.disabled);
+				if (!nativeButton.disabled) {
+					window.clearInterval(interval);
+				}
 			}
 		}, 200);
 
@@ -92,20 +103,56 @@ export function OnePasswordSaveButton({
 
 	if (!encodedValue) return null;
 
-	return React.createElement(
-		"div",
-		{
-			className: isReady ? "block" : "hidden",
-			"aria-hidden": !isReady,
-		},
-		React.createElement("onepassword-save-button", {
-			ref: buttonRef,
-			"data-onepassword-type": "api-key",
-			value: encodedValue,
-			lang: "en",
-			class: "black",
-			"data-theme": theme,
-			padding: "compact",
-		})
+	function saveToOnePassword() {
+		const nativeButton = buttonRef.current?.shadowRoot?.querySelector<HTMLButtonElement>(
+			"button[data-onepassword-save-button]",
+		);
+		if (!nativeButton || nativeButton.disabled) {
+			toast.error(
+				"1Password isn't available here. Enable its extension and make sure this site is approved, or use Copy key instead.",
+			);
+			return;
+		}
+		nativeButton.click();
+	}
+
+	return (
+		<div className="relative flex flex-wrap items-center gap-2">
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				onClick={saveToOnePassword}
+				aria-describedby={statusId}
+			>
+				<KeyRound className="h-4 w-4" />
+				Save in 1Password
+			</Button>
+			{!isReady ? (
+				<span
+					id={statusId}
+					className="text-xs text-muted-foreground"
+					role="status"
+				>
+					{loadError
+						? "1Password is unavailable in this browser."
+						: "Requires the 1Password extension and an approved site."}
+				</span>
+			) : null}
+			<div
+				className="pointer-events-none absolute -left-[10000px] top-0 h-px w-px overflow-hidden"
+				aria-hidden="true"
+			>
+				{React.createElement("onepassword-save-button", {
+					ref: buttonRef,
+					"data-onepassword-type": "api-key",
+					value: encodedValue,
+					lang: "en",
+					class: "black",
+					"data-theme": theme,
+					padding: "none",
+				})}
+			</div>
+		</div>
 	);
 }
