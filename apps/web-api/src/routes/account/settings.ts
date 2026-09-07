@@ -1186,6 +1186,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 		context.client.from("wallets").select("stripe_customer_id").eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("credit_ledger")
 			.select("id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at")
+			// Usage debits belong in usage logs; filter before the billing history limit.
+			.or("kind.is.null,kind.not.in.(charge,usage)")
 			.eq("workspace_id", workspaceId).order("event_time", { ascending: false }).limit(250),
 	]);
 	if (walletResult.error || transactionsResult.error) {
