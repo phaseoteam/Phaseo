@@ -38,6 +38,7 @@ interface ModelDetailShellProps {
 	includeHidden?: boolean;
 	header?: ModelOverviewHeader;
 	modelOverview?: ModelOverviewPage | null;
+	requestedAlias?: string;
 }
 
 function getVisibleTabKeys(modelStatus?: string | null): string[] {
@@ -73,6 +74,7 @@ export default async function ModelDetailShell({
 	includeHidden = false,
 	header: prefetchedHeader,
 	modelOverview: prefetchedModelOverview,
+	requestedAlias,
 }: ModelDetailShellProps) {
 	const isFreeRouter = isFreeRouterModelId(modelId);
 	const [header, modelOverview, modelPageNotice, gatewayMetadata] = isFreeRouter
@@ -184,6 +186,7 @@ export default async function ModelDetailShell({
 					defaultIdentifier={header.model_id}
 					aliases={header.aliases}
 					variants={header.variants}
+					requestedAlias={requestedAlias}
 				/>
 							</div>
 						</div>

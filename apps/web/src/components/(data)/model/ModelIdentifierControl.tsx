@@ -16,6 +16,7 @@ import { toast } from "sonner";
 interface ModelIdentifierControlProps {
 	defaultIdentifier: string;
 	aliases?: string[];
+	requestedAlias?: string;
 	variants?: Array<{
 		model_id: string;
 		name: string;
@@ -26,6 +27,7 @@ interface ModelIdentifierControlProps {
 export default function ModelIdentifierControl({
 	defaultIdentifier,
 	aliases = [],
+	requestedAlias,
 	variants = [],
 }: ModelIdentifierControlProps) {
 	const router = useRouter();
@@ -42,6 +44,10 @@ export default function ModelIdentifierControl({
 	const hasAliases = options.length > 1;
 	const hasVariants = variants.length > 1;
 	const hasMenu = hasAliases || hasVariants;
+	const displayedIdentifier = requestedAlias && options.includes(requestedAlias)
+		? requestedAlias
+		: defaultIdentifier;
+	const isDisplayingAlias = displayedIdentifier !== defaultIdentifier;
 
 	const [copied, setCopied] = useState(false);
 
@@ -118,11 +124,11 @@ export default function ModelIdentifierControl({
 			<button
 				type="button"
 				className="group inline-flex max-w-full items-center gap-1 px-0 py-0 text-left text-xs font-medium text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-0 dark:text-zinc-300 dark:hover:text-zinc-50"
-				aria-label={`Copy model identifier ${defaultIdentifier}`}
+				aria-label={`Copy model identifier ${displayedIdentifier}`}
 				title={copied ? "Copied" : "Copy model identifier"}
-				onClick={() => void copyIdentifier(defaultIdentifier)}
+				onClick={() => void copyIdentifier(displayedIdentifier)}
 			>
-				<span className="min-w-0 select-none truncate font-mono">{defaultIdentifier}</span>
+				<span className="min-w-0 select-none truncate font-mono">{displayedIdentifier}</span>
 				<span className="ml-0.5 shrink-0 text-zinc-500 opacity-0 transition-all duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 dark:text-zinc-400">
 					{triggerIcon}
 				</span>
@@ -137,7 +143,12 @@ export default function ModelIdentifierControl({
 				className="group inline-flex max-w-full items-center gap-1 px-0 py-0 text-left text-xs font-medium text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-0 dark:text-zinc-300 dark:hover:text-zinc-50"
 					aria-label="Model identifiers" />}>
 
-					<span className="min-w-0 select-none truncate font-mono">{defaultIdentifier}</span>
+					<span className="min-w-0 select-none truncate font-mono">{displayedIdentifier}</span>
+					{isDisplayingAlias ? (
+						<span className="shrink-0 rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+							Alias
+						</span>
+					) : null}
 					<span className="ml-0.5 shrink-0 text-zinc-500 transition-all duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 dark:text-zinc-400">
 						{triggerIcon}
 					</span>
@@ -177,7 +188,7 @@ export default function ModelIdentifierControl({
 				<div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
 					Identifiers
 				</div>
-				{options.map((option, index) => (
+				{options.map((option) => (
 					<DropdownMenuItem
 						key={option}
 						closeOnClick={false}
@@ -186,9 +197,12 @@ export default function ModelIdentifierControl({
 						}}
 						className="flex items-center justify-between gap-3 rounded-lg"
 					>
-						<span className="min-w-0 truncate">{option}</span>
+						<span className="flex min-w-0 items-center gap-2">
+							<Check className={`h-3.5 w-3.5 shrink-0 ${option === displayedIdentifier ? "opacity-100" : "opacity-0"}`} />
+							<span className="truncate">{option}</span>
+						</span>
 						<span className="shrink-0 text-[11px] text-zinc-500 dark:text-zinc-400">
-							{index === 0 ? "Default" : "Alias"}
+							{option === defaultIdentifier ? "Default" : "Alias"}
 						</span>
 					</DropdownMenuItem>
 				))}
