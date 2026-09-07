@@ -51,7 +51,7 @@
 		"@rive-app/react-webgl2": "^4.29.3",
 		"@shadcn/react": "0.3.0",
 		"@statsig/js-client": "^3.33.3",
-		"@statsig/react-bindings": "^3.33.3",
+		"@statsig/react-bindings": "^3.33.5",
 		"@statsig/session-replay": "^3.33.3",
 		"@statsig/web-analytics": "^3.33.3",
 		"@streamdown/math": "^1.0.2",
