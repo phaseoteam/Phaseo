@@ -67,7 +67,7 @@
 		"dotenv": "^17.4.2",
 		"eslint": "^10.8.1",
 		"openai": "^6.39.0",
-		"tsx": "^4.20.6",
+		"tsx": "^4.23.13",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.58.1",
 		"vitest": "^4.1.7",
