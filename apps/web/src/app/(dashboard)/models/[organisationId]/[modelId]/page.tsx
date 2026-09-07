@@ -30,6 +30,7 @@ import {
 import {
 	buildModelOverviewMetadataDescription,
 	buildModelOverviewMetadataTitle,
+	countModelMetadataProviders,
 } from "@/lib/models/modelDescription";
 import {
 	analyseModelIndexability,
@@ -233,8 +234,8 @@ export async function generateMetadata(props: {
 		fetchFrontendModelGatewayMetadata(modelId).catch(() => null),
 		fetchFrontendModelSubscriptionPlans(modelId).catch(() => []),
 	]);
-	const providerCount = gatewayMetadata?.providers.length ?? 0;
-	const activeProviderCount = gatewayMetadata?.activeProviders.length ?? 0;
+	const providerCount = countModelMetadataProviders(gatewayMetadata?.providers);
+	const activeProviderCount = countModelMetadataProviders(gatewayMetadata?.activeProviders);
 	const analysis = model
 		? analyseModelIndexability({
 				modelId: model.model_id,
