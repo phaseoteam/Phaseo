@@ -1,9 +1,9 @@
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
-import { formatProviderOfferDisplayName } from "@/lib/providers/providerOffers";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 function withProviderDisplayName(model: GatewaySupportedModel): GatewaySupportedModel {
-	return { ...model, providerName: formatProviderOfferDisplayName({ providerId: model.providerId, providerName: model.providerName || model.providerId, offerLabel: model.providerOfferLabel, offerScope: model.providerOfferScope }) };
+	return { ...model, providerName: resolveProviderDisplayName({ providerId: model.providerId, providerName: model.providerName || model.providerId, offerLabel: model.providerOfferLabel, offerScope: model.providerOfferScope }) };
 }
 
 export async function fetchFrontendGatewayModels(): Promise<GatewaySupportedModel[]> {

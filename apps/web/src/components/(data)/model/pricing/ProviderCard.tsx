@@ -82,6 +82,7 @@ import {
 } from "@/components/(data)/model/pricing/providerPlanRouting";
 import {
 	formatProviderOfferDisplayName,
+	resolveProviderDisplayName,
 } from "@/lib/providers/providerOffers";
 import {
 	chooseGatewayStatus,
@@ -2252,7 +2253,7 @@ export default function ProviderCard({
 				candidate.provider.api_provider_id,
 				{
 					id: candidate.provider.api_provider_id,
-					name: formatProviderOfferDisplayName({ providerId: candidate.provider.api_provider_id, providerName: candidate.provider.api_provider_name || candidate.provider.api_provider_id, offerLabel: candidate.provider.offer_label, offerScope: candidate.provider.offer_scope }),
+					name: resolveProviderDisplayName({ providerId: candidate.provider.api_provider_id, providerName: candidate.provider.api_provider_name || candidate.provider.api_provider_id, offerLabel: candidate.provider.offer_label, offerScope: candidate.provider.offer_scope }),
 				},
 			]),
 		).values(),
@@ -2262,7 +2263,7 @@ export default function ProviderCard({
 			candidate.provider.api_provider_id,
 			{
 				id: candidate.provider.api_provider_id,
-				name: formatProviderOfferDisplayName({ providerId: candidate.provider.api_provider_id, providerName: candidate.provider.api_provider_name || candidate.provider.api_provider_id, offerLabel: candidate.provider.offer_label, offerScope: candidate.provider.offer_scope }),
+				name: resolveProviderDisplayName({ providerId: candidate.provider.api_provider_id, providerName: candidate.provider.api_provider_name || candidate.provider.api_provider_id, offerLabel: candidate.provider.offer_label, offerScope: candidate.provider.offer_scope }),
 			},
 		]),
 	);

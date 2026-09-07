@@ -96,8 +96,13 @@ export function formatProviderOfferDisplayName(args: {
 export function resolveProviderDisplayName(args: {
     providerId?: string | null;
     providerName: string;
+    offerLabel?: string | null;
+    offerScope?: ProviderOfferScope | null;
 }): string {
-    return formatProviderOfferDisplayName(args);
+    return formatProviderOfferDisplayName({
+        ...args,
+        offerLabel: args.offerScope === "regional" ? args.offerLabel : undefined,
+    });
 }
 
 function resolveProviderBaseName(args: {

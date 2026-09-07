@@ -6,6 +6,10 @@ import {
 } from "@/lib/providers/providerOffers";
 
 describe("providerOffers", () => {
+    test("preserves specialized catalogue names while formatting explicit regions", () => {
+        expect(resolveProviderDisplayName({ providerId: "minimax-lightning", providerName: "MiniMax Lightning", offerLabel: "highspeed", offerScope: "specialized" })).toBe("MiniMax Lightning");
+        expect(resolveProviderDisplayName({ providerId: "regional-route", providerName: "Example", offerLabel: "Singapore", offerScope: "regional" })).toBe("Example (Singapore)");
+    });
     test.each([
         ["openai", "OpenAI", "OpenAI"],
         ["openai-eu", "OpenAI", "OpenAI (EU)"],
