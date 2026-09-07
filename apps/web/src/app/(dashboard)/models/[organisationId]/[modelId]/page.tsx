@@ -23,6 +23,7 @@ import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import {
 	getModelPath,
 	getModelMetadataIdentity,
+	isModelAliasRoute,
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
@@ -304,17 +305,19 @@ export default async function Page({
 }) {
 	const routeParams = await params;
 	const includeHidden = false;
-	const { requestedModelId, canonicalModelId } = await resolveModelRouteIds(
+	const { requestedModelId, canonicalModelId, source } = await resolveModelRouteIds(
 		routeParams,
 		includeHidden,
 	);
-	if (canonicalModelId !== requestedModelId) {
+	const isAliasRoute = isModelAliasRoute({ requestedModelId, canonicalModelId, source });
+	if (canonicalModelId !== requestedModelId && !isAliasRoute) {
 		permanentRedirect(getModelPath(canonicalModelId));
 	}
+	const requestedAlias = isAliasRoute ? requestedModelId : undefined;
 	const modelId = canonicalModelId;
 	if (isFreeRouterModelId(modelId)) {
 		return (
-			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
+			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} requestedAlias={requestedAlias}>
 				<FreeRouterOverview />
 			</ModelDetailShell>
 		);
@@ -457,7 +460,7 @@ export default async function Page({
 				id="model-breadcrumb-schema"
 				data={breadcrumbSchema}
 			/>
-			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview}>
+			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview} requestedAlias={requestedAlias}>
 				<div className="space-y-10">
 					<div className="flex flex-col gap-6 lg:flex-row lg:items-start">
 						<ModelPageToc
