@@ -25,7 +25,16 @@
     }
   ],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1,
+      "is_self_reported": false,
+      "other_info": "Reka Flash 3; Artificial Analysis ID dbbcf240-a69e-4078-8f16-7c94c7a8c514; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/reka-flash-3",
+      "rank": 513
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": "language",

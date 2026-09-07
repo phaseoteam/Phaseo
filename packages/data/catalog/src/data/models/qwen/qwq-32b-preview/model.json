@@ -102,11 +102,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 9.1,
+      "score": 3.6,
       "is_self_reported": false,
-      "other_info": "QwQ 32B-Preview; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "QwQ 32B-Preview; Artificial Analysis ID 8823351e-8232-4c9c-8a1d-cd2c1d2c1196; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/QwQ-32B-Preview",
-      "rank": 394
+      "rank": 439
     }
   ],
   "family_id": null,

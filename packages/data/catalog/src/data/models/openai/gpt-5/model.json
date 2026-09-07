@@ -581,11 +581,19 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 35.3,
+      "score": 27.1,
       "is_self_reported": false,
-      "other_info": "GPT-5 (high); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "GPT-5 (high); Artificial Analysis ID 48e50f00-1fd1-4acc-b337-61078aa341e6; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5",
-      "rank": 106
+      "rank": 147
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 37.8,
+      "is_self_reported": false,
+      "other_info": "GPT-5 (high); Artificial Analysis ID 48e50f00-1fd1-4acc-b337-61078aa341e6; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5",
+      "rank": 145
     }
   ],
   "page_notice": null,

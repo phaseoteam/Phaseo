@@ -20,9 +20,9 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
-      "other_info": "LFM2.5-VL-1.6B; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "LFM2.5-VL-1.6B; Artificial Analysis ID 3c5289e5-1c62-434c-bc44-c51c39f640a1; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/lfm2-5-vl-1-6b",
-      "rank": 570
+      "rank": 513
     }
   ],
   "family_id": null,

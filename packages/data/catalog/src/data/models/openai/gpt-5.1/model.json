@@ -113,11 +113,19 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 37.5,
+      "score": 29.1,
       "is_self_reported": false,
-      "other_info": "GPT-5.1 (high); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "GPT-5.1 (high); Artificial Analysis ID 4dc12a38-b18f-4c43-8e1b-678f8434b5b1; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-1",
-      "rank": 89
+      "rank": 127
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 49.4,
+      "is_self_reported": false,
+      "other_info": "GPT-5.1 (high); Artificial Analysis ID 4dc12a38-b18f-4c43-8e1b-678f8434b5b1; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-1",
+      "rank": 113
     }
   ],
   "page_notice": null,

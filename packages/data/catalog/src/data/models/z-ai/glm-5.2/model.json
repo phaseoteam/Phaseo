@@ -60,11 +60,35 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 52.6,
+      "score": 42.1,
       "is_self_reported": false,
-      "other_info": "GLM-5.2 (max); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "GLM-5.2 (max); Artificial Analysis ID f7a4ea75-e548-4069-80d4-9be8bc7c009b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-5-2",
-      "rank": 23
+      "rank": 48
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 68.8,
+      "is_self_reported": false,
+      "other_info": "GLM-5.2 (max); Artificial Analysis ID f7a4ea75-e548-4069-80d4-9be8bc7c009b; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-2",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 39.7,
+      "is_self_reported": false,
+      "other_info": "GLM-5.2 (max); Artificial Analysis ID f7a4ea75-e548-4069-80d4-9be8bc7c009b; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-2",
+      "rank": 44
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 1005.58,
+      "is_self_reported": false,
+      "other_info": "GLM-5.2 (max); Artificial Analysis ID f7a4ea75-e548-4069-80d4-9be8bc7c009b; Intelligence Index v4.3; USD 0.5611 per task",
+      "source_link": "https://artificialanalysis.ai/models/glm-5-2",
+      "rank": 55
     }
   ],
   "family_id": null,

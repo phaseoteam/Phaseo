@@ -22,11 +22,11 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 28.9,
+      "score": 21.7,
       "is_self_reported": false,
-      "other_info": "KAT-Coder-Pro V1; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "KAT-Coder-Pro V1; Artificial Analysis ID fb112343-c82c-4b43-afea-996bd5101d62; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/kat-coder-pro-v1",
-      "rank": 164
+      "rank": 203
     }
   ],
   "family_id": null,

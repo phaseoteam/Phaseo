@@ -187,11 +187,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 8.9,
+      "score": 3.4,
       "is_self_reported": false,
-      "other_info": "ERNIE 4.5 300B A47B; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "ERNIE 4.5 300B A47B; Artificial Analysis ID ae4fe623-80ab-4ea3-8921-70a18ea0fc7e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ernie-4-5-300b-a47b",
-      "rank": 400
+      "rank": 446
     }
   ],
   "page_notice": null,

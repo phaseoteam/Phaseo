@@ -4,5 +4,6 @@
   "category": "coding",
   "ascending_order": true,
   "type": "numerical",
-  "link": "https://artificialanalysis.ai/data-api/docs"
+  "link": "https://artificialanalysis.ai/data-api/docs",
+  "total_models": 256
 }

@@ -133,11 +133,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 2.7,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Gemini 1.0 Pro; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Gemini 1.0 Pro; Artificial Analysis ID 8ddacd41-bf43-411b-aa30-43ebf0567dd8; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-1-0-pro",
-      "rank": 535
+      "rank": 513
     }
   ],
   "page_notice": null,

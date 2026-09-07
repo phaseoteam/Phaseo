@@ -188,11 +188,19 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 14.8,
+      "score": 8.8,
       "is_self_reported": false,
-      "other_info": "GPT-4.1 mini; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "GPT-4.1 mini; Artificial Analysis ID 9f7c7566-a704-49a2-a383-cb3181da33a4; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4-1-mini",
-      "rank": 300
+      "rank": 350
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 20.2,
+      "is_self_reported": false,
+      "other_info": "GPT-4.1 mini; Artificial Analysis ID 9f7c7566-a704-49a2-a383-cb3181da33a4; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-4-1-mini",
+      "rank": 201
     }
   ],
   "page_notice": null,

@@ -160,6 +160,38 @@
       "other_info": null,
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
       "rank": 3
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 19.3,
+      "is_self_reported": false,
+      "other_info": "Gemini 3.1 Flash-Lite; Artificial Analysis ID 598190f8-dc9c-4fea-a7ea-4b81c402ab18; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-1-flash-lite-preview",
+      "rank": 220
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 34.7,
+      "is_self_reported": false,
+      "other_info": "Gemini 3.1 Flash-Lite; Artificial Analysis ID 598190f8-dc9c-4fea-a7ea-4b81c402ab18; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-1-flash-lite-preview",
+      "rank": 153
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 3.3,
+      "is_self_reported": false,
+      "other_info": "Gemini 3.1 Flash-Lite; Artificial Analysis ID 598190f8-dc9c-4fea-a7ea-4b81c402ab18; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-1-flash-lite-preview",
+      "rank": 117
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 96.18,
+      "is_self_reported": false,
+      "other_info": "Gemini 3.1 Flash-Lite; Artificial Analysis ID 598190f8-dc9c-4fea-a7ea-4b81c402ab18; Intelligence Index v4.3; USD 0.0372 per task",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-1-flash-lite-preview",
+      "rank": 12
     }
   ],
   "page_notice": null,

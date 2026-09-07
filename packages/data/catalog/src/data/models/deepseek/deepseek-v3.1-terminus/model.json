@@ -146,11 +146,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 30.6,
+      "score": 15.2,
       "is_self_reported": false,
-      "other_info": "DeepSeek V3.1 Terminus (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
-      "source_link": "https://artificialanalysis.ai/models/deepseek-v3-1-terminus-reasoning",
-      "rank": 149
+      "other_info": "DeepSeek V3.1 Terminus (Non-reasoning); Artificial Analysis ID dfb9292d-bc7c-4425-a260-4256217e709f; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/deepseek-v3-1-terminus",
+      "rank": 261
     }
   ],
   "family_id": null,

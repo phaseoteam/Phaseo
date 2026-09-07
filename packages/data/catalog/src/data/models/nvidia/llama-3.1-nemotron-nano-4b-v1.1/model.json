@@ -74,11 +74,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 8.4,
+      "score": 2.9,
       "is_self_reported": false,
-      "other_info": "Llama 3.1 Nemotron Nano 4B v1.1 (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Llama 3.1 Nemotron Nano 4B v1.1 (Reasoning); Artificial Analysis ID b1fa84f8-1ed3-4124-b403-4655dafa4267; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/llama-3-1-nemotron-nano-4b-reasoning",
-      "rank": 416
+      "rank": 462
     }
   ],
   "family_id": null,

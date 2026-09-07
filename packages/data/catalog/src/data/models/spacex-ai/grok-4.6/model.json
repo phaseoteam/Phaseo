@@ -65,7 +65,40 @@
       "value": "us-east-1,us-west-2"
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 50.6,
+      "is_self_reported": false,
+      "other_info": "Grok 4.6 (high); Artificial Analysis ID c8adc5cf-fd5a-407b-af51-dc3bede3e49c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-6",
+      "rank": 17
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 76.8,
+      "is_self_reported": false,
+      "other_info": "Grok 4.6 (high); Artificial Analysis ID c8adc5cf-fd5a-407b-af51-dc3bede3e49c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-6",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 53.6,
+      "is_self_reported": false,
+      "other_info": "Grok 4.6 (high); Artificial Analysis ID c8adc5cf-fd5a-407b-af51-dc3bede3e49c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-6",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 1632.13,
+      "is_self_reported": false,
+      "other_info": "Grok 4.6 (high); Artificial Analysis ID c8adc5cf-fd5a-407b-af51-dc3bede3e49c; Intelligence Index v4.3; USD 1.2536 per task",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-6",
+      "rank": 68
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

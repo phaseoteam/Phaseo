@@ -98,11 +98,35 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 58.1,
+      "score": 46.9,
       "is_self_reported": false,
-      "other_info": "Qwen3.8 Max; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Qwen3.8 Max; Artificial Analysis ID 5e5b4ce7-bc54-47b2-b911-21b9cad8394c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-8-max",
-      "rank": 9
+      "rank": 29
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 71.8,
+      "is_self_reported": false,
+      "other_info": "Qwen3.8 Max; Artificial Analysis ID 5e5b4ce7-bc54-47b2-b911-21b9cad8394c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-8-max",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 49.9,
+      "is_self_reported": false,
+      "other_info": "Qwen3.8 Max; Artificial Analysis ID 5e5b4ce7-bc54-47b2-b911-21b9cad8394c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-8-max",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 1937.5,
+      "is_self_reported": false,
+      "other_info": "Qwen3.8 Max; Artificial Analysis ID 5e5b4ce7-bc54-47b2-b911-21b9cad8394c; Intelligence Index v4.3; USD 1.1877 per task",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-8-max",
+      "rank": 74
     }
   ],
   "family_id": null,

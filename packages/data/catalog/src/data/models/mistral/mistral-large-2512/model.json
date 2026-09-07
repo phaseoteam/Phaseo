@@ -15,7 +15,40 @@
   "api_model_id": "mistral/mistral-large-2512",
   "links": [],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 11.1,
+      "is_self_reported": false,
+      "other_info": "Mistral Large 3; Artificial Analysis ID 4928e950-7f37-4475-b0dc-c5bad781a321; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-large-3",
+      "rank": 318
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 20.1,
+      "is_self_reported": false,
+      "other_info": "Mistral Large 3; Artificial Analysis ID 4928e950-7f37-4475-b0dc-c5bad781a321; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-large-3",
+      "rank": 202
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 2.5,
+      "is_self_reported": false,
+      "other_info": "Mistral Large 3; Artificial Analysis ID 4928e950-7f37-4475-b0dc-c5bad781a321; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-large-3",
+      "rank": 120
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 91.24,
+      "is_self_reported": false,
+      "other_info": "Mistral Large 3; Artificial Analysis ID 4928e950-7f37-4475-b0dc-c5bad781a321; Intelligence Index v4.3; USD 0.0689 per task",
+      "source_link": "https://artificialanalysis.ai/models/mistral-large-3",
+      "rank": 11
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

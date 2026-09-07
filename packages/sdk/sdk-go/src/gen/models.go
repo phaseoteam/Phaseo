@@ -507,8 +507,11 @@ type BenchmarkId string
 const (
 	BenchmarkId2BenchRetail BenchmarkId = "2-bench-retail"
 	BenchmarkId2BenchTelecom BenchmarkId = "2-bench-telecom"
+	BenchmarkIdAaAgenticIndexV4 BenchmarkId = "aa-agentic-index-v4"
 	BenchmarkIdAaBriefcase BenchmarkId = "aa-briefcase"
+	BenchmarkIdAaCodingIndexV4 BenchmarkId = "aa-coding-index-v4"
 	BenchmarkIdAaIndex BenchmarkId = "aa-index"
+	BenchmarkIdAaIntelligenceIndexCostV4 BenchmarkId = "aa-intelligence-index-cost-v4"
 	BenchmarkIdAaIntelligenceIndexV4 BenchmarkId = "aa-intelligence-index-v4"
 	BenchmarkIdAaLcr BenchmarkId = "aa-lcr"
 	BenchmarkIdAaOmniscience BenchmarkId = "aa-omniscience"

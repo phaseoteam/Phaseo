@@ -6,7 +6,7 @@ import { withPublicCache } from "@/http/cache";
 const LIVE_CACHE = { edgeTtlSeconds: 15 * 60, staleWhileRevalidateSeconds: 15 * 60, cacheTags: ["web-api-rankings"] } as const;
 const META_CACHE = { edgeTtlSeconds: 60 * 60, staleWhileRevalidateSeconds: 24 * 60 * 60, cacheTags: ["web-api-ranking-metadata"] } as const;
 
-const RANKING_BENCHMARK_IDS = ["aa-intelligence-index-v4"] as const;
+const RANKING_BENCHMARK_IDS: string[] = ["aa-intelligence-index-v4", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v4"];
 
 function bounded(value: string | undefined, fallback: number, max: number) {
 	const parsed = Math.round(Number(value));
@@ -170,57 +170,56 @@ publicRankingsRouter.get("/rankings/tool-calls", async (c) => {
 publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 	try {
 		const client = getDataClient(c.env);
-		const [benchmarkResult, scoreResult] = await Promise.all([
-			client
-				.from("v2_benchmarks")
-				.select("benchmark_id,name,category,ascending_order,benchmark_type,total_models")
-				.in("benchmark_id", [...RANKING_BENCHMARK_IDS]),
-			client
-				.from("v2_benchmark_results")
-				.select("benchmark_id,model_slug,score_numeric,rank")
-				.in("benchmark_id", [...RANKING_BENCHMARK_IDS])
-				.not("score_numeric", "is", null)
-				.limit(2_000),
-		]);
+		const benchmarkResult = await client.from("v2_benchmarks")
+			.select("benchmark_id,name,category,ascending_order,benchmark_type,total_models")
+			.in("benchmark_id", RANKING_BENCHMARK_IDS);
 		if (benchmarkResult.error) throw benchmarkResult.error;
-		if (scoreResult.error) throw scoreResult.error;
-
-		const modelIds = [...new Set((scoreResult.data ?? []).map((row) => row.model_slug).filter(Boolean))];
-		const modelsResult = modelIds.length
-			? await client
-					.from("v2_models")
-					.select("model_slug,name,lab_slug,lab:v2_labs!v2_models_lab_slug_fkey(name)")
-					.in("model_slug", modelIds)
-					.eq("hidden", false)
-			: { data: [], error: null };
-		if (modelsResult.error) throw modelsResult.error;
-		const models = new Map((modelsResult.data ?? []).map((row) => {
-			const lab = Array.isArray(row.lab) ? row.lab[0] : row.lab;
-			return [row.model_slug, {
-				model_name: row.name ?? row.model_slug,
-				organisation_id: row.lab_slug ?? null,
-				organisation_name: lab?.name ?? row.lab_slug ?? null,
-			}];
-		}));
+		const scores: Array<{ benchmark_id: string; model_slug: string; score_numeric: number | null; other_info: string | null; source_link: string | null; updated_at: string | null }> = [];
+		for (let offset = 0; ; offset += 500) {
+			const page = await client.from("v2_benchmark_results")
+				.select("benchmark_id,model_slug,score_numeric,other_info,source_link,updated_at")
+				.in("benchmark_id", RANKING_BENCHMARK_IDS).not("score_numeric", "is", null)
+				.order("result_id").range(offset, offset + 499);
+			if (page.error) throw page.error;
+			scores.push(...(page.data ?? []));
+			if ((page.data ?? []).length < 500) break;
+		}
+		const modelIds = [...new Set(scores.map((row) => row.model_slug))];
+		const models = new Map<string, { model_name: string; organisation_id: string | null; organisation_name: string | null }>();
+		for (let offset = 0; offset < modelIds.length; offset += 200) {
+			const result = await client.from("v2_models")
+				.select("model_slug,name,lab_slug,lab:v2_labs!v2_models_lab_slug_fkey(name)")
+				.in("model_slug", modelIds.slice(offset, offset + 200)).eq("hidden", false);
+			if (result.error) throw result.error;
+			for (const row of result.data ?? []) {
+				const lab = Array.isArray(row.lab) ? row.lab[0] : row.lab;
+				models.set(row.model_slug, { model_name: row.name ?? row.model_slug, organisation_id: row.lab_slug ?? null, organisation_name: lab?.name ?? row.lab_slug ?? null });
+			}
+		}
 		const order = new Map(RANKING_BENCHMARK_IDS.map((id, index) => [id, index]));
 		const benchmarks = (benchmarkResult.data ?? [])
 			.sort((left, right) => (order.get(left.benchmark_id) ?? 99) - (order.get(right.benchmark_id) ?? 99))
 			.map((benchmark) => {
-				const lowerIsBetter = benchmark.ascending_order === true;
-				const bestByModel = new Map<string, { score: number; rank: number | null }>();
-				for (const row of scoreResult.data ?? []) {
+				const lowerIsBetter = benchmark.ascending_order === false;
+				const versionOf = (info: string | null) => info?.match(/Intelligence Index v([\d.]+)/)?.[1] ?? null;
+				const benchmarkScores = scores.filter((row) => row.benchmark_id === benchmark.benchmark_id && models.has(row.model_slug));
+				const latestVersion = benchmarkScores.map((row) => versionOf(row.other_info)).filter((version): version is string => Boolean(version)).sort((a, b) => b.localeCompare(a, "en", { numeric: true }))[0];
+				const bestByModel = new Map<string, { score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>();
+				for (const row of benchmarkScores) {
+					// Preserve historical records, but never rank different index versions together.
+					if (latestVersion && versionOf(row.other_info) !== latestVersion) continue;
 					if (row.benchmark_id !== benchmark.benchmark_id || !models.has(row.model_slug)) continue;
 					const score = Number(row.score_numeric);
 					if (!Number.isFinite(score)) continue;
 					const previous = bestByModel.get(row.model_slug);
 					if (!previous || (lowerIsBetter ? score < previous.score : score > previous.score)) {
-						bestByModel.set(row.model_slug, { score, rank: row.rank ?? null });
+						bestByModel.set(row.model_slug, { score, other_info: row.other_info, source_link: row.source_link, updated_at: row.updated_at });
 					}
 				}
 				const entries = [...bestByModel.entries()]
 					.map(([modelId, result]) => ({ model_id: modelId, ...models.get(modelId), ...result }))
 					.sort((left, right) => lowerIsBetter ? left.score - right.score : right.score - left.score)
-					.map((entry, index) => ({ ...entry, rank: index + 1 }));
+					.map((entry, index, sorted) => ({ ...entry, rank: index > 0 && sorted[index - 1].score === entry.score ? sorted.findIndex((item) => item.score === entry.score) + 1 : index + 1 }));
 				return {
 					benchmark_id: benchmark.benchmark_id,
 					name: benchmark.name,

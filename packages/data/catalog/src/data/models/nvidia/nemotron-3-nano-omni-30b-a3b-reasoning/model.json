@@ -38,11 +38,19 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 15,
+      "score": 9,
       "is_self_reported": false,
-      "other_info": "Nemotron 3 Nano Omni 30B A3B Reasoning; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Nemotron 3 Nano Omni 30B A3B Reasoning; Artificial Analysis ID 8c748e53-61ae-48b8-af8d-eb8298b1e9db; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nemotron-3-nano-omni-30b-a3b",
-      "rank": 297
+      "rank": 348
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 13.8,
+      "is_self_reported": false,
+      "other_info": "Nemotron 3 Nano Omni 30B A3B Reasoning; Artificial Analysis ID 8c748e53-61ae-48b8-af8d-eb8298b1e9db; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/nemotron-3-nano-omni-30b-a3b",
+      "rank": 221
     }
   ],
   "family_id": null,

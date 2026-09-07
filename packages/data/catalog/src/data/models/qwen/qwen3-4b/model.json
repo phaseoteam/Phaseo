@@ -18,11 +18,11 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 8.2,
+      "score": 2.7,
       "is_self_reported": false,
-      "other_info": "Qwen3 4B (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Qwen3 4B (Reasoning); Artificial Analysis ID 191a2097-cce3-49cf-881e-0c790892059f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-4b-instruct-reasoning",
-      "rank": 421
+      "rank": 469
     }
   ],
   "family_id": null,

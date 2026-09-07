@@ -4,8 +4,11 @@
 export type BenchmarkId =
   | "2-bench-retail"
   | "2-bench-telecom"
+  | "aa-agentic-index-v4"
   | "aa-briefcase"
+  | "aa-coding-index-v4"
   | "aa-index"
+  | "aa-intelligence-index-cost-v4"
   | "aa-intelligence-index-v4"
   | "aa-lcr"
   | "aa-omniscience"

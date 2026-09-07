@@ -43,11 +43,19 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 3.3,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Claude 2.0; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Claude 2.0; Artificial Analysis ID ddc748d0-6a9b-466b-8d6c-68417980d56d; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-2",
-      "rank": 523
+      "rank": 513
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 12.9,
+      "is_self_reported": false,
+      "other_info": "Claude 2.0; Artificial Analysis ID ddc748d0-6a9b-466b-8d6c-68417980d56d; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-2",
+      "rank": 224
     }
   ],
   "page_notice": null,

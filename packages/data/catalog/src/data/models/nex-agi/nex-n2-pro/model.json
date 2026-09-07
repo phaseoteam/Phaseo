@@ -54,11 +54,19 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 41.7,
+      "score": 32.7,
       "is_self_reported": false,
-      "other_info": "Nex-N2-Pro; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Nex-N2-Pro; Artificial Analysis ID 3b5ba264-ad25-429b-a460-4d8698205f0d; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nex-n2-pro",
-      "rank": 59
+      "rank": 94
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 59.1,
+      "is_self_reported": false,
+      "other_info": "Nex-N2-Pro; Artificial Analysis ID 3b5ba264-ad25-429b-a460-4d8698205f0d; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/nex-n2-pro",
+      "rank": 83
     }
   ],
   "family_id": null,

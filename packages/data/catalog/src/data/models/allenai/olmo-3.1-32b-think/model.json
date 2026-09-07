@@ -18,11 +18,11 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 7.9,
+      "score": 2.5,
       "is_self_reported": false,
-      "other_info": "Olmo 3.1 32B Think; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Olmo 3.1 32B Think; Artificial Analysis ID 39b64e04-7a69-4aa2-9e2e-fe38c24681ec; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/olmo-3-1-32b-think",
-      "rank": 428
+      "rank": 475
     }
   ],
   "family_id": null,

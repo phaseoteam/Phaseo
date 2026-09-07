@@ -32,7 +32,6 @@ async function main() {
 	if (!apiKey) throw new Error("Set ARTIFICIAL_ANALYSIS_API_KEY in .env.local, .env, apps/web/.env.local or the environment.");
 	const write = process.argv.includes("--write");
 	const syncDb = process.argv.includes("--sync-db");
-	if (syncDb && !write) throw new Error("--sync-db requires --write.");
 	const config = JSON.parse(readFileSync(resolve("scripts/artificial-analysis/mappings.json"), "utf8")) as MappingConfig;
 	if (!config.models || !config.creators || Object.values(config.models).some((id) => id !== null && (typeof id !== "string" || !id)) || Object.values(config.creators).some((id) => typeof id !== "string" || !id)) throw new Error("Invalid Artificial Analysis mappings.");
 	const entries: Array<{ file: string | null; model: CatalogModel }> = modelFiles(join(DATA_ROOT, "models")).map((file) => ({ file, model: JSON.parse(readFileSync(file, "utf8")) }));
@@ -90,7 +89,8 @@ async function main() {
 		const { data: old, error: readError } = await db.from("v2_benchmark_results").select("result_id").eq("model_slug", entry.model.model_id).in("benchmark_id", METRICS.map((metric) => metric.id));
 		if (readError) throw readError;
 		const stale = (old ?? []).filter((row) => !rows.some((result) => result.result_id === row.result_id)).map((row) => row.result_id);
-		if (stale.length) { const { error } = await db.from("v2_benchmark_results").delete().in("result_id", stale); if (error) throw error; }
+		// Saved catalogue records cannot be deleted. Withdraw obsolete scores in place.
+		if (stale.length) { const { error } = await db.from("v2_benchmark_results").update({ score: null, score_numeric: null, rank: null, updated_at }).in("result_id", stale); if (error) throw error; }
 	}
 	console.log("Synchronized matched database models. Public caches expire under their normal TTLs.");
 }

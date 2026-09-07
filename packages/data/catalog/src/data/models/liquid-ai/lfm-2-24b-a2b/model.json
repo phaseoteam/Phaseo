@@ -18,11 +18,11 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 4.6,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "LFM2 24B A2B; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "LFM2 24B A2B; Artificial Analysis ID fbc58677-e324-4b45-a979-7fd8eec555cd; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/lfm2-24b-a2b",
-      "rank": 496
+      "rank": 513
     }
   ],
   "family_id": null,

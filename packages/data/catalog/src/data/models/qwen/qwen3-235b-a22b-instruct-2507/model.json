@@ -26,7 +26,16 @@
       "value": "Available through Requesty as deepinfra/Qwen/Qwen3-235B-A22B-Instruct-2507."
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 12.1,
+      "is_self_reported": false,
+      "other_info": "Qwen3 235B A22B 2507 Instruct; Artificial Analysis ID 3373245b-e6dc-4b66-a7b0-3f06f9b7bd46; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-235b-a22b-instruct-2507",
+      "rank": 303
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

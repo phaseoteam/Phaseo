@@ -26,7 +26,16 @@
       "value": "Available through Requesty as anthropic/claude-opus-4-6."
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 30.8,
+      "is_self_reported": false,
+      "other_info": "Claude Opus 4.6 (Non-reasoning, High Effort); Artificial Analysis ID 4386585e-71b4-4a0c-8a63-afb333419cd6; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-4-6",
+      "rank": 115
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

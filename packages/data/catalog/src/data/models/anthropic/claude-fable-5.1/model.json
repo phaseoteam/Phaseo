@@ -23,17 +23,65 @@
     }
   ],
   "details": [
-    { "name": "input_context_length", "value": 1000000 },
-    { "name": "output_context_length", "value": 128000 },
-    { "name": "prompt_cache_minimum_tokens", "value": 512 },
-    { "name": "data_retention", "value": "30 days; unavailable under zero data retention unless expressly authorized" },
-    { "name": "tool_choice", "value": "Supports auto and none. Forced any or named-tool selection is not supported." },
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    },
+    {
+      "name": "prompt_cache_minimum_tokens",
+      "value": 512
+    },
+    {
+      "name": "data_retention",
+      "value": "30 days; unavailable under zero data retention unless expressly authorized"
+    },
+    {
+      "name": "tool_choice",
+      "value": "Supports auto and none. Forced any or named-tool selection is not supported."
+    },
     {
       "name": "availability",
       "value": "Claude Fable 5.1 is enabled through the direct Anthropic provider. Anthropic also confirms availability on Amazon Bedrock, Claude Platform on AWS, Google Cloud, and Microsoft Foundry; Phaseo tracks those mappings as supported but non-routable pending provider-specific IDs, regions, and pricing verification."
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 56.8,
+      "is_self_reported": false,
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback); Artificial Analysis ID 3e87c73e-a257-495e-9730-367a66229811; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 81.6,
+      "is_self_reported": false,
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback); Artificial Analysis ID 3e87c73e-a257-495e-9730-367a66229811; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 58.2,
+      "is_self_reported": false,
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback); Artificial Analysis ID 3e87c73e-a257-495e-9730-367a66229811; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 10815.7,
+      "is_self_reported": false,
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback); Artificial Analysis ID 3e87c73e-a257-495e-9730-367a66229811; Intelligence Index v4.3; USD 6.1169 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1",
+      "rank": 90
+    }
+  ],
   "page_notice": null,
   "model_type": null,
   "knowledge_cutoff": "2026-06-01T00:00:00",
@@ -43,8 +91,13 @@
     "output": 128000
   },
   "modalities": {
-    "input": ["text", "image/*"],
-    "output": ["text"]
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
   },
   "reasoning": {
     "supported": true,

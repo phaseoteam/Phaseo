@@ -1,11 +1,85 @@
 {
-  "model_id": "reka/reka-flash", "organisation_id": "reka", "name": "Reka Flash", "status": "Available", "previous_model_id": null,
-  "description": "Reka's fast multimodal model for text, image, short-video, audio, and PDF understanding.", "announced_date": null, "release_date": null, "deprecation_date": null, "retirement_date": null,
-  "license": "Proprietary", "input_types": "text,image,video,audio,document", "output_types": "text", "api_model_id": "reka-flash", "family_id": null,
-  "links": [{ "title": "Models", "kind": "documentation", "url": "https://docs.reka.ai/chat/models" }, { "title": "Multimodal guide", "kind": "documentation", "url": "https://docs.reka.ai/chat/chat-with-image-video-and-audio" }],
-  "details": [], "benchmarks": [], "model_type": "multimodal", "knowledge_cutoff": null, "limits": { "context": null, "input": null, "output": null },
-  "modalities": { "input": ["text","image/*","video/*","audio/*","application/pdf"], "output": ["text"] },
-  "reasoning": { "supported": false, "options": [] }, "capabilities": { "attachment": true, "tool_call": true, "structured_output": false, "temperature": true, "streaming": true, "web_search": false },
-  "open_weights": false, "sources": [{ "kind": "documentation", "url": "https://docs.reka.ai/chat/models", "accessed_at": "2026-08-12T00:00:00Z" }],
-  "verification": { "status": "verified", "checked_at": "2026-08-12T00:00:00Z" }, "last_updated": "2026-08-12T00:00:00Z", "license_url": null
+  "model_id": "reka/reka-flash",
+  "organisation_id": "reka",
+  "name": "Reka Flash",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Reka's fast multimodal model for text, image, short-video, audio, and PDF understanding.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio,document",
+  "output_types": "text",
+  "api_model_id": "reka-flash",
+  "family_id": null,
+  "links": [
+    {
+      "title": "Models",
+      "kind": "documentation",
+      "url": "https://docs.reka.ai/chat/models"
+    },
+    {
+      "title": "Multimodal guide",
+      "kind": "documentation",
+      "url": "https://docs.reka.ai/chat/chat-with-image-video-and-audio"
+    }
+  ],
+  "details": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1,
+      "is_self_reported": false,
+      "other_info": "Reka Flash (Sep '24); Artificial Analysis ID a971b0c0-4c0f-484a-b018-e36b5be3409e; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/reka-flash",
+      "rank": 513
+    }
+  ],
+  "model_type": "multimodal",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "video/*",
+      "audio/*",
+      "application/pdf"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": true,
+    "structured_output": false,
+    "temperature": true,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": false,
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://docs.reka.ai/chat/models",
+      "accessed_at": "2026-08-12T00:00:00Z"
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-12T00:00:00Z"
+  },
+  "last_updated": "2026-08-12T00:00:00Z",
+  "license_url": null
 }

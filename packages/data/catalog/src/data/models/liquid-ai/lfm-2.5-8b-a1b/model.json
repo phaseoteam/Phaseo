@@ -15,18 +15,59 @@
   "api_model_id": "liquid-ai/lfm-2.5-8b-a1b",
   "links": [],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 2.7,
+      "is_self_reported": false,
+      "other_info": "LFM2.5-8B-A1B; Artificial Analysis ID e2b664ca-7992-4de6-8839-4867f035c892; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/lfm2-5-8b-a1b",
+      "rank": 469
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,
   "knowledge_cutoff": null,
-  "limits": {"context":32768,"input":32768,"output":null},
-  "modalities": {"input":["text"],"output":["text"]},
-  "reasoning": {"supported":null,"options":[]},
-  "capabilities": {"attachment":false,"tool_call":null,"structured_output":null,"temperature":null,"streaming":true,"web_search":false},
+  "limits": {
+    "context": 32768,
+    "input": 32768,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": true,
+    "web_search": false
+  },
   "open_weights": null,
-  "sources": [{"kind":"models","url":"https://docs.together.ai/docs/serverless/models","accessed_at":"2026-08-20T00:00:00Z","notes":"Current serverless model identity and context limit."}],
-  "verification": {"status":"partial","checked_at":"2026-08-20T00:00:00Z","notes":"Together availability, identity, context, and pricing verified."},
+  "sources": [
+    {
+      "kind": "models",
+      "url": "https://docs.together.ai/docs/serverless/models",
+      "accessed_at": "2026-08-20T00:00:00Z",
+      "notes": "Current serverless model identity and context limit."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-20T00:00:00Z",
+    "notes": "Together availability, identity, context, and pricing verified."
+  },
   "last_updated": "2026-08-20T00:00:00Z",
   "removal_date": null,
   "replacement_model_id": null,

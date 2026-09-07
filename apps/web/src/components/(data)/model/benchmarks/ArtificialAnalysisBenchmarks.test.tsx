@@ -28,6 +28,7 @@ describe("Artificial Analysis benchmark panel", () => {
 	});
 	it("does not create a panel for models without AA scores", () => {
 		expect(renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[highlight("mmlu", 89)]} />)).toBe("");
+		expect(renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[{ ...highlight("aa-intelligence-index-v4", 42), score: null }]} />)).toBe("");
 	});
 	it("features AA first and retains other highlights and the full benchmark table", () => {
 		const html = renderToStaticMarkup(<ModelBenchmarks highlightCards={[

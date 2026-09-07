@@ -33,11 +33,11 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 6,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Solar Mini; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Solar Mini; Artificial Analysis ID d97713f2-afa6-4f8d-b2f3-ac89a24c4d6c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/solar-mini",
-      "rank": 474
+      "rank": 513
     }
   ],
   "family_id": null,

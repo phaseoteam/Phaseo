@@ -197,11 +197,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 4.6,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Phi-4; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Phi-4; Artificial Analysis ID ee708f92-374e-4123-b900-e22d7b2afc19; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/phi-4",
-      "rank": 495
+      "rank": 513
     }
   ],
   "page_notice": null,

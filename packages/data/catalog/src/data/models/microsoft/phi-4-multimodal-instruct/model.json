@@ -181,11 +181,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 4.2,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Phi-4 Multimodal Instruct; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Phi-4 Multimodal Instruct; Artificial Analysis ID 2cd04201-2b6e-47ef-853e-7601f705f2a8; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/phi-4-multimodal",
-      "rank": 504
+      "rank": 513
     }
   ],
   "page_notice": null,

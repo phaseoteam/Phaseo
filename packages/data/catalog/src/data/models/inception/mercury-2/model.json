@@ -66,11 +66,27 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 21.9,
+      "score": 14.9,
       "is_self_reported": false,
-      "other_info": "Mercury 2; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Mercury 2; Artificial Analysis ID 016d330a-2141-4afa-b2fc-62b314423dc1; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mercury-2",
-      "rank": 218
+      "rank": 266
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 31.1,
+      "is_self_reported": false,
+      "other_info": "Mercury 2; Artificial Analysis ID 016d330a-2141-4afa-b2fc-62b314423dc1; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mercury-2",
+      "rank": 161
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 4.1,
+      "is_self_reported": false,
+      "other_info": "Mercury 2; Artificial Analysis ID 016d330a-2141-4afa-b2fc-62b314423dc1; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mercury-2",
+      "rank": 112
     }
   ],
   "family_id": null,

@@ -27,6 +27,14 @@ test("fails on later-page errors instead of accepting a partial snapshot", async
 	let calls = 0;
 	await assert.rejects(fetchModels("key", async () => ++calls === 1 ? page([source()], 1, true) : new Response(null, { status: 429 })), /429/);
 });
+test("accepts unavailable evaluation-cost and evaluation objects from the live free API", async () => {
+	const withoutCost = source({ artificial_analysis_intelligence_index_cost: null });
+	const withoutEvaluations = source({ id: "aa-2", evaluations: null });
+	const snapshot = await fetchModels("key", async () => page([withoutCost, withoutEvaluations]));
+	assert.equal(snapshot.models.length, 2);
+	assert.equal(resultsFor(withoutCost, 4.3, snapshot.models).some((result) => result.benchmark_id === "aa-intelligence-index-cost-v4"), false);
+	assert.equal(resultsFor(withoutEvaluations, 4.3, snapshot.models).length, 1);
+});
 test("rejects unknown major versions, empty data, duplicate IDs and broken metrics", async () => {
 	for (const response of [page([source()], 1, false, 5), page([]), page([source(), source()]), page([source({ evaluations: {} })]), page([source({ artificial_analysis_intelligence_index_cost: { total_cost: -1 } })])]) {
 		await assert.rejects(fetchModels("key", async () => response));
@@ -46,6 +54,11 @@ test("does not strip date, quantization or effort variants", () => {
 	for (const suffix of ["-high", "-2026-01-01", "-int4", "-thinking"]) {
 		assert.equal(matchModel(model, [source({ slug: `example-1${suffix}`, name: `Example 1${suffix}` })], config).status, "unmatched");
 	}
+});
+test("keeps plus model families distinct", () => {
+	const plus = source({ name: "Command R+", slug: "command-r-plus" });
+	assert.equal(matchModel({ ...model, name: "Command R", model_id: "openai/command-r" }, [plus], config).status, "unmatched");
+	assert.equal(matchModel({ ...model, name: "Command R+", model_id: "openai/command-r-plus" }, [plus], config).status, "matched");
 });
 test("ambiguous source variants require a stable ID mapping, not the highest score", () => {
 	const sources = [source(), source({ id: "aa-2", name: "Example 1 (high)" })];

@@ -66,11 +66,27 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 10.4,
+      "score": 7.1,
       "is_self_reported": false,
-      "other_info": "Qwen3 14B (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Qwen3 14B (Reasoning); Artificial Analysis ID 4559e9f0-8aad-4681-89fb-68cb915e0f16; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-14b-instruct-reasoning",
-      "rank": 370
+      "rank": 376
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 13.8,
+      "is_self_reported": false,
+      "other_info": "Qwen3 14B (Reasoning); Artificial Analysis ID 4559e9f0-8aad-4681-89fb-68cb915e0f16; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-14b-instruct-reasoning",
+      "rank": 221
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 0.9,
+      "is_self_reported": false,
+      "other_info": "Qwen3 14B (Reasoning); Artificial Analysis ID 4559e9f0-8aad-4681-89fb-68cb915e0f16; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-14b-instruct-reasoning",
+      "rank": 132
     }
   ],
   "family_id": null,

@@ -18,11 +18,11 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 15.7,
+      "score": 9.6,
       "is_self_reported": false,
-      "other_info": "INTELLECT-3; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "INTELLECT-3; Artificial Analysis ID 369329e4-629f-425d-975a-e8980aec2965; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/intellect-3",
-      "rank": 288
+      "rank": 339
     }
   ],
   "family_id": null,

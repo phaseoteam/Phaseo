@@ -50,11 +50,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 12.7,
+      "score": 6.9,
       "is_self_reported": false,
-      "other_info": "Nova Premier; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Nova Premier; Artificial Analysis ID e58bbffd-fdc2-412a-b6d7-ca0e3f5d611a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nova-premier",
-      "rank": 328
+      "rank": 378
     }
   ],
   "family_id": null,

@@ -381,11 +381,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 26.1,
+      "score": 19.1,
       "is_self_reported": false,
-      "other_info": "o4-mini (high); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "o4-mini (high); Artificial Analysis ID 84b49308-6b93-47aa-a4f6-776ee1a1e8cd; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/o4-mini",
-      "rank": 180
+      "rank": 223
     }
   ],
   "page_notice": null,

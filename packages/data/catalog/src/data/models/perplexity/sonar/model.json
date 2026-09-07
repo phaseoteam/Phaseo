@@ -26,7 +26,16 @@
       "value": "Available through Requesty as perplexity/sonar."
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 3.8,
+      "is_self_reported": false,
+      "other_info": "Sonar; Artificial Analysis ID 5ec4a0db-da66-4e46-9682-fceeed755ef8; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/sonar",
+      "rank": 436
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

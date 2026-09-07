@@ -46,11 +46,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 20.3,
+      "score": 8.2,
       "is_self_reported": false,
-      "other_info": "Gemini 2.5 Flash (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
-      "source_link": "https://artificialanalysis.ai/models/gemini-2-5-flash-reasoning",
-      "rank": 235
+      "other_info": "Gemini 2.5 Flash (Non-reasoning); Artificial Analysis ID 6afbfb62-27e4-435e-9c85-d9fe1b92519e; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-2-5-flash",
+      "rank": 360
     }
   ],
   "page_notice": null,

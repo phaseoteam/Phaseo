@@ -193,11 +193,27 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 14.5,
+      "score": 8.6,
       "is_self_reported": false,
-      "other_info": "NVIDIA Nemotron 3 Nano 30B A3B (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "NVIDIA Nemotron 3 Nano 30B A3B (Reasoning); Artificial Analysis ID 76dcf6ef-39ea-4be0-b693-b88da25b4caf; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-nano-30b-a3b-reasoning",
-      "rank": 305
+      "rank": 351
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 14.4,
+      "is_self_reported": false,
+      "other_info": "NVIDIA Nemotron 3 Nano 30B A3B (Reasoning); Artificial Analysis ID 76dcf6ef-39ea-4be0-b693-b88da25b4caf; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-nano-30b-a3b-reasoning",
+      "rank": 217
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 1,
+      "is_self_reported": false,
+      "other_info": "NVIDIA Nemotron 3 Nano 30B A3B (Reasoning); Artificial Analysis ID 76dcf6ef-39ea-4be0-b693-b88da25b4caf; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-nano-30b-a3b-reasoning",
+      "rank": 130
     }
   ],
   "family_id": null,

@@ -1,7 +1,98 @@
 {
-  "model_id":"nvidia/nemotron-cascade-2-30b-a3b","organisation_id":"nvidia","name":"Nemotron Cascade 2 30B A3B","status":"Available","previous_model_id":"nvidia/nemotron-3-nano-30b-a3b","description":"Nemotron Cascade 2 30B A3B is NVIDIA's open 30B mixture-of-experts reasoning model with 3B active parameters, supporting thinking and non-thinking modes for agentic, mathematical, and coding work.","announced_date":"2026-03-19T00:00:00","release_date":"2026-03-19T00:00:00","deprecation_date":null,"retirement_date":null,"license":"Nvidia Open Model License","input_types":"text","output_types":"text","api_model_id":"nvidia/nemotron-cascade-2-30b-a3b",
-  "links":[{"title":"Weights","kind":"weights","url":"https://huggingface.co/nvidia/Nemotron-Cascade-2-30B-A3B"}],
-  "details":[{"name":"parameter_count","value":30000000000},{"name":"active_parameter_count","value":3000000000}],"benchmarks":[],"family_id":null,"page_notice":null,"model_type":null,"knowledge_cutoff":"2024-07",
-  "limits":{"context":262144,"input":262144,"output":131072},"modalities":{"input":["text"],"output":["text"]},"reasoning":{"supported":true,"options":[]},"capabilities":{"attachment":false,"tool_call":true,"structured_output":null,"temperature":true,"streaming":true,"web_search":false},"open_weights":true,
-  "sources":[{"kind":"weights","url":"https://huggingface.co/nvidia/Nemotron-Cascade-2-30B-A3B","accessed_at":"2026-08-24T00:00:00Z","notes":"Official NVIDIA model card documents release date, architecture, reasoning modes, and license."}],"verification":{"status":"verified","checked_at":"2026-08-24T00:00:00Z","notes":"Canonical entity verified against NVIDIA's official model card and Vultr's live hosted configuration."},"last_updated":"2026-08-24T00:00:00Z","removal_date":null,"replacement_model_id":null,"license_url":"https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/"
+  "model_id": "nvidia/nemotron-cascade-2-30b-a3b",
+  "organisation_id": "nvidia",
+  "name": "Nemotron Cascade 2 30B A3B",
+  "status": "Available",
+  "previous_model_id": "nvidia/nemotron-3-nano-30b-a3b",
+  "description": "Nemotron Cascade 2 30B A3B is NVIDIA's open 30B mixture-of-experts reasoning model with 3B active parameters, supporting thinking and non-thinking modes for agentic, mathematical, and coding work.",
+  "announced_date": "2026-03-19T00:00:00",
+  "release_date": "2026-03-19T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Nvidia Open Model License",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "nvidia/nemotron-cascade-2-30b-a3b",
+  "links": [
+    {
+      "title": "Weights",
+      "kind": "weights",
+      "url": "https://huggingface.co/nvidia/Nemotron-Cascade-2-30B-A3B"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameter_count",
+      "value": 30000000000
+    },
+    {
+      "name": "active_parameter_count",
+      "value": 3000000000
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 11.5,
+      "is_self_reported": false,
+      "other_info": "Nemotron Cascade 2 30B A3B; Artificial Analysis ID 9815da7d-70f4-44d6-b539-9ffef0faa152; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/nemotron-cascade-2-30b-a3b",
+      "rank": 313
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 25.3,
+      "is_self_reported": false,
+      "other_info": "Nemotron Cascade 2 30B A3B; Artificial Analysis ID 9815da7d-70f4-44d6-b539-9ffef0faa152; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/nemotron-cascade-2-30b-a3b",
+      "rank": 178
+    }
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-07",
+  "limits": {
+    "context": 262144,
+    "input": 262144,
+    "output": 131072
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": true,
+    "structured_output": null,
+    "temperature": true,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": true,
+  "sources": [
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/nvidia/Nemotron-Cascade-2-30B-A3B",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official NVIDIA model card documents release date, architecture, reasoning modes, and license."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Canonical entity verified against NVIDIA's official model card and Vultr's live hosted configuration."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/"
 }

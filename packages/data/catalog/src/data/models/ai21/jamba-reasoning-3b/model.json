@@ -38,11 +38,11 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 3.8,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Jamba Reasoning 3B; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Jamba Reasoning 3B; Artificial Analysis ID f78138d6-2e04-4a84-919a-20d177cb6ff1; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/jamba-reasoning-3b",
-      "rank": 512
+      "rank": 513
     }
   ],
   "family_id": null,

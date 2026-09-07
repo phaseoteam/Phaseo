@@ -25,7 +25,7 @@ export default function ModelBenchmarks({
 	const otherHighlights = highlightCards.filter(
 		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId),
 	);
-	const hasArtificialAnalysis = otherHighlights.length !== highlightCards.length;
+	const hasArtificialAnalysis = highlightCards.some((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
 
 	return (
 		<div className="space-y-8">

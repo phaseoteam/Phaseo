@@ -4,5 +4,6 @@
   "category": "cost",
   "ascending_order": false,
   "type": "numerical",
-  "link": "https://artificialanalysis.ai/data-api/docs"
+  "link": "https://artificialanalysis.ai/data-api/docs",
+  "total_models": 90
 }

@@ -7,8 +7,8 @@ export const METRICS = [
 export type SourceModel = {
 	id: string; name: string; slug: string;
 	model_creator: { id: string; name: string };
-	evaluations: Record<string, number | null>;
-	artificial_analysis_intelligence_index_cost: { total_cost: number | null; cost_per_task?: { total_cost: number | null } };
+	evaluations: Record<string, number | null> | null;
+	artificial_analysis_intelligence_index_cost: { total_cost: number | null; cost_per_task?: { total_cost: number | null } } | null;
 };
 export type CatalogModel = {
 	model_id: string; api_model_id?: string | null; organisation_id?: string | null; name?: string | null;
@@ -20,7 +20,7 @@ export type MappingConfig = {
 	// Canonical organisation ID -> Artificial Analysis creator name or ID.
 	creators: Record<string, string>;
 };
-const normalized = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+const normalized = (value: string) => value.toLowerCase().replace(/\+/g, "plus").replace(/[^a-z0-9]+/g, "");
 const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
 export async function fetchModels(apiKey: string, fetcher: typeof fetch = fetch) {
@@ -38,9 +38,10 @@ export async function fetchModels(apiKey: string, fetcher: typeof fetch = fetch)
 		if (version !== body.intelligence_index_version || body.pagination?.page !== page || typeof body.pagination?.has_more !== "boolean" || !Array.isArray(body.data)) throw new Error("Invalid or inconsistent Artificial Analysis pagination/version; no data was written.");
 		for (const model of body.data) {
 			if (!model || typeof model.id !== "string" || !model.id || typeof model.name !== "string" || typeof model.slug !== "string" || !/^[a-zA-Z0-9._-]+$/.test(model.slug) || typeof model.model_creator?.name !== "string" || typeof model.model_creator?.id !== "string" || ids.has(model.id)) throw new Error("Invalid or duplicate Artificial Analysis model; no data was written.");
-			if (!model.evaluations || !model.artificial_analysis_intelligence_index_cost) throw new Error(`Missing benchmark fields for ${model.id}.`);
+			if (!Object.hasOwn(model, "evaluations") || !Object.hasOwn(model, "artificial_analysis_intelligence_index_cost")) throw new Error(`Missing benchmark fields for ${model.id}.`);
 			for (const metric of METRICS) {
-				const score = metric.field === "total_cost" ? model.artificial_analysis_intelligence_index_cost?.total_cost : model.evaluations?.[metric.field];
+				const container = metric.field === "total_cost" ? model.artificial_analysis_intelligence_index_cost : model.evaluations;
+				const score = container === null ? null : container?.[metric.field];
 				if (score !== null && !finite(score)) throw new Error(`Invalid ${metric.field} for ${model.id}.`);
 				if (metric.field === "total_cost" && finite(score) && score < 0) throw new Error(`Negative evaluation cost for ${model.id}.`);
 			}

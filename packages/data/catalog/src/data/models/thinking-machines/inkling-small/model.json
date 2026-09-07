@@ -59,11 +59,35 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 41.2,
+      "score": 32.2,
       "is_self_reported": false,
-      "other_info": "Inkling Small; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Inkling Small; Artificial Analysis ID 7261504e-503c-4a66-a9d3-a3272cdf9ad6; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/inkling-small",
-      "rank": 62
+      "rank": 102
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 52.9,
+      "is_self_reported": false,
+      "other_info": "Inkling Small; Artificial Analysis ID 7261504e-503c-4a66-a9d3-a3272cdf9ad6; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/inkling-small",
+      "rank": 101
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 25.1,
+      "is_self_reported": false,
+      "other_info": "Inkling Small; Artificial Analysis ID 7261504e-503c-4a66-a9d3-a3272cdf9ad6; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/inkling-small",
+      "rank": 73
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 202.75,
+      "is_self_reported": false,
+      "other_info": "Inkling Small; Artificial Analysis ID 7261504e-503c-4a66-a9d3-a3272cdf9ad6; Intelligence Index v4.3; USD 0.0719 per task",
+      "source_link": "https://artificialanalysis.ai/models/inkling-small",
+      "rank": 24
     }
   ],
   "family_id": null,

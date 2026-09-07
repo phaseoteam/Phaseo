@@ -368,11 +368,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 13.6,
+      "score": 7.7,
       "is_self_reported": false,
-      "other_info": "GPT-4.5 (Preview); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "GPT-4.5 (Preview); Artificial Analysis ID 5ce30d25-5353-45bb-bef9-6b87480ba3a2; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4-5",
-      "rank": 318
+      "rank": 365
     }
   ],
   "page_notice": null,

@@ -184,11 +184,19 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 43.5,
+      "score": 35.8,
       "is_self_reported": false,
-      "other_info": "Muse Spark; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Muse Spark; Artificial Analysis ID ebf3b39f-0be6-43a1-a37a-f9b2978c9916; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/muse-spark",
-      "rank": 49
+      "rank": 76
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 58.6,
+      "is_self_reported": false,
+      "other_info": "Muse Spark; Artificial Analysis ID ebf3b39f-0be6-43a1-a37a-f9b2978c9916; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/muse-spark",
+      "rank": 87
     }
   ],
   "family_id": null,

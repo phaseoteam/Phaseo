@@ -976,6 +976,9 @@ export async function fetchFrontendRankingToolCallTimeseries(
 }
 
 export type PublicBenchmarkRankingEntry = {
+	other_info?: string | null;
+	source_link?: string | null;
+	updated_at?: string | null;
 	model_id: string;
 	model_name: string;
 	organisation_id: string | null;

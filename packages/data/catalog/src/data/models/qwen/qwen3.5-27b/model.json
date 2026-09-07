@@ -682,11 +682,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 34.6,
+      "score": 26.9,
       "is_self_reported": false,
-      "other_info": "Qwen3.5 27B (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Qwen3.5 27B (Reasoning); Artificial Analysis ID 169e47f5-3d4d-4ad4-8f8b-ab46f0c73f67; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-5-27b",
-      "rank": 113
+      "rank": 148
     }
   ],
   "family_id": null,

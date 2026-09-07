@@ -15,39 +15,189 @@
   "api_model_id": "openai/gpt-6-astra",
   "family_id": null,
   "links": [
-    { "title": "GPT-6 Astra: A new generation of intelligence", "kind": "announcement", "url": "https://openai.com/index/gpt-6-astra/" },
-    { "title": "GPT-6 Astra model documentation", "kind": "api_reference", "url": "https://developers.openai.com/api/docs/models/gpt-6-astra" },
-    { "title": "GPT-6 Astra System Card", "kind": "paper", "url": "https://deploymentsafety.openai.com/gpt-6-astra" },
-    { "title": "Path to Astra", "kind": "announcement", "url": "https://openai.com/index/path-to-astra/" }
+    {
+      "title": "GPT-6 Astra: A new generation of intelligence",
+      "kind": "announcement",
+      "url": "https://openai.com/index/gpt-6-astra/"
+    },
+    {
+      "title": "GPT-6 Astra model documentation",
+      "kind": "api_reference",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-astra"
+    },
+    {
+      "title": "GPT-6 Astra System Card",
+      "kind": "paper",
+      "url": "https://deploymentsafety.openai.com/gpt-6-astra"
+    },
+    {
+      "title": "Path to Astra",
+      "kind": "announcement",
+      "url": "https://openai.com/index/path-to-astra/"
+    }
   ],
   "details": [
-    { "name": "default_snapshot", "value": "gpt-6-astra" },
-    { "name": "input_context_length", "value": 1050000 },
-    { "name": "max_input_tokens", "value": 922000 },
-    { "name": "output_context_length", "value": 128000 },
-    { "name": "knowledge_cutoff", "value": "2026-04-30T00:00:00" },
-    { "name": "availability", "value": "Available through Phaseo for OpenAI API accounts with GPT-6 Astra access." },
-    { "name": "endpoints", "value": "Responses, Chat Completions, and Batch" },
-    { "name": "reasoning_effort", "value": "Supports low, medium, high, xhigh, and max." },
-    { "name": "pro_mode", "value": "Supports pro mode with reasoning.mode set to pro in the Responses API." },
-    { "name": "prompt_caching", "value": "Cached input is $1 per million tokens and cache writes are $12.50 per million tokens at Standard rates." },
-    { "name": "long_context_pricing", "value": "Requests above 272K input tokens use 2x input and cache rates and 1.5x output rates for the full request." },
-    { "name": "service_tiers", "value": "Batch and Flex cost 50% of Standard rates; Fast mode costs 2x the applicable rates." },
-    { "name": "zero_data_retention", "value": "Supported for eligible OpenAI API customers." }
+    {
+      "name": "default_snapshot",
+      "value": "gpt-6-astra"
+    },
+    {
+      "name": "input_context_length",
+      "value": 1050000
+    },
+    {
+      "name": "max_input_tokens",
+      "value": 922000
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2026-04-30T00:00:00"
+    },
+    {
+      "name": "availability",
+      "value": "Available through Phaseo for OpenAI API accounts with GPT-6 Astra access."
+    },
+    {
+      "name": "endpoints",
+      "value": "Responses, Chat Completions, and Batch"
+    },
+    {
+      "name": "reasoning_effort",
+      "value": "Supports low, medium, high, xhigh, and max."
+    },
+    {
+      "name": "pro_mode",
+      "value": "Supports pro mode with reasoning.mode set to pro in the Responses API."
+    },
+    {
+      "name": "prompt_caching",
+      "value": "Cached input is $1 per million tokens and cache writes are $12.50 per million tokens at Standard rates."
+    },
+    {
+      "name": "long_context_pricing",
+      "value": "Requests above 272K input tokens use 2x input and cache rates and 1.5x output rates for the full request."
+    },
+    {
+      "name": "service_tiers",
+      "value": "Batch and Flex cost 50% of Standard rates; Fast mode costs 2x the applicable rates."
+    },
+    {
+      "name": "zero_data_retention",
+      "value": "Supported for eligible OpenAI API customers."
+    }
   ],
   "benchmarks": [
-    { "benchmark_id": "agents-last-exam", "score": 59.3, "is_self_reported": true, "other_info": "GPT-6 Astra launch evaluation", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
-    { "benchmark_id": "osworld-2.0", "score": 72.6, "is_self_reported": true, "other_info": "v2026.08.08 offline set, partial score", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
-    { "benchmark_id": "browsecomp", "score": 91.5, "is_self_reported": true, "other_info": "GPT-6 Astra launch evaluation", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
-    { "benchmark_id": "deepswe", "score": 74.1, "is_self_reported": true, "other_info": "DeepSWE v1.1", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
-    { "benchmark_id": "gpqa-diamond", "score": 96.0, "is_self_reported": true, "other_info": "GPT-6 Astra launch evaluation", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
-    { "benchmark_id": "exploitbench-cap", "score": 100.0, "is_self_reported": true, "other_info": "ExploitBench without production safeguards", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null }
+    {
+      "benchmark_id": "agents-last-exam",
+      "score": 59.3,
+      "is_self_reported": true,
+      "other_info": "GPT-6 Astra launch evaluation",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "osworld-2.0",
+      "score": 72.6,
+      "is_self_reported": true,
+      "other_info": "v2026.08.08 offline set, partial score",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 91.5,
+      "is_self_reported": true,
+      "other_info": "GPT-6 Astra launch evaluation",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "deepswe",
+      "score": 74.1,
+      "is_self_reported": true,
+      "other_info": "DeepSWE v1.1",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 96,
+      "is_self_reported": true,
+      "other_info": "GPT-6 Astra launch evaluation",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "exploitbench-cap",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": "ExploitBench without production safeguards",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 54.7,
+      "is_self_reported": false,
+      "other_info": "GPT-6 Astra (max); Artificial Analysis ID 2f339a97-9a0d-499a-9cb5-e0db665bfa25; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-6-astra",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 76.9,
+      "is_self_reported": false,
+      "other_info": "GPT-6 Astra (max); Artificial Analysis ID 2f339a97-9a0d-499a-9cb5-e0db665bfa25; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-6-astra",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 51.6,
+      "is_self_reported": false,
+      "other_info": "GPT-6 Astra (max); Artificial Analysis ID 2f339a97-9a0d-499a-9cb5-e0db665bfa25; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-6-astra",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 4063.77,
+      "is_self_reported": false,
+      "other_info": "GPT-6 Astra (max); Artificial Analysis ID 2f339a97-9a0d-499a-9cb5-e0db665bfa25; Intelligence Index v4.3; USD 2.5673 per task",
+      "source_link": "https://artificialanalysis.ai/models/gpt-6-astra",
+      "rank": 83
+    }
   ],
   "model_type": null,
   "knowledge_cutoff": "2026-04-30T00:00:00",
-  "limits": { "context": 1050000, "input": 922000, "output": 128000 },
-  "modalities": { "input": ["text", "image/*"], "output": ["text"] },
-  "reasoning": { "supported": true, "options": ["low", "medium", "high", "xhigh", "max"] },
+  "limits": {
+    "context": 1050000,
+    "input": 922000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ]
+  },
   "capabilities": {
     "attachment": true,
     "tool_call": true,
@@ -58,9 +208,24 @@
   },
   "open_weights": false,
   "sources": [
-    { "kind": "announcement", "url": "https://openai.com/index/gpt-6-astra/", "accessed_at": "2026-09-03T00:00:00Z", "notes": "Official launch, availability, pricing, capability, benchmark, safety, and privacy information." },
-    { "kind": "api_reference", "url": "https://developers.openai.com/api/docs/models/gpt-6-astra", "accessed_at": "2026-09-03T00:00:00Z", "notes": "Official model ID, snapshot, modalities, limits, knowledge cutoff, pricing, endpoints, features, tools, and rate limits." },
-    { "kind": "paper", "url": "https://deploymentsafety.openai.com/gpt-6-astra", "accessed_at": "2026-09-03T00:00:00Z", "notes": "Official GPT-6 Astra system card and safety evaluation record." }
+    {
+      "kind": "announcement",
+      "url": "https://openai.com/index/gpt-6-astra/",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Official launch, availability, pricing, capability, benchmark, safety, and privacy information."
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Official model ID, snapshot, modalities, limits, knowledge cutoff, pricing, endpoints, features, tools, and rate limits."
+    },
+    {
+      "kind": "paper",
+      "url": "https://deploymentsafety.openai.com/gpt-6-astra",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Official GPT-6 Astra system card and safety evaluation record."
+    }
   ],
   "verification": {
     "status": "verified",

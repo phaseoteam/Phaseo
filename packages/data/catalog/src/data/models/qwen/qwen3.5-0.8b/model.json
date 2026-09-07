@@ -178,11 +178,19 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 5,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Qwen3.5 0.8B (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Qwen3.5 0.8B (Reasoning); Artificial Analysis ID a6ea7ec0-0aca-4442-98fb-4296c6d18b31; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-5-0-8b",
-      "rank": 485
+      "rank": 513
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 0,
+      "is_self_reported": false,
+      "other_info": "Qwen3.5 0.8B (Reasoning); Artificial Analysis ID a6ea7ec0-0aca-4442-98fb-4296c6d18b31; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-5-0-8b",
+      "rank": 256
     }
   ],
   "family_id": null,

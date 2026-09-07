@@ -18,11 +18,11 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 13.4,
+      "score": 7.5,
       "is_self_reported": false,
-      "other_info": "Qwen3 VL 30B A3B (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Qwen3 VL 30B A3B (Reasoning); Artificial Analysis ID ce3d286e-093d-413d-a81a-0270309f039e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-vl-30b-a3b-reasoning",
-      "rank": 323
+      "rank": 371
     }
   ],
   "family_id": null,

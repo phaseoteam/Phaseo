@@ -14,28 +14,124 @@
   "output_types": "text",
   "api_model_id": "meta/muse-spark-1.3",
   "links": [
-    { "title": "Meta Model API models", "kind": "api_reference", "url": "https://dev.meta.ai/docs/models" },
-    { "title": "Meta Model API pricing and rate limits", "kind": "pricing", "url": "https://dev.meta.ai/docs/pricing-rate-limits" },
-    { "title": "Meta debuts Muse Spark 1.3", "kind": "announcement", "url": "https://www.axios.com/2026/09/02/meta-debuts-muse-spark-13-as-personal-agent-work-continues" }
+    {
+      "title": "Meta Model API models",
+      "kind": "api_reference",
+      "url": "https://dev.meta.ai/docs/models"
+    },
+    {
+      "title": "Meta Model API pricing and rate limits",
+      "kind": "pricing",
+      "url": "https://dev.meta.ai/docs/pricing-rate-limits"
+    },
+    {
+      "title": "Meta debuts Muse Spark 1.3",
+      "kind": "announcement",
+      "url": "https://www.axios.com/2026/09/02/meta-debuts-muse-spark-13-as-personal-agent-work-continues"
+    }
   ],
   "details": [
-    { "name": "context_window", "value": "1048576", "unit": "tokens", "source_link": "https://dev.meta.ai/models", "other_info": "Meta lists a 1M token context window." },
-    { "name": "api_status", "value": "available", "unit": null, "source_link": "https://dev.meta.ai/models", "other_info": "Available through the Meta Model API standard route." }
+    {
+      "name": "context_window",
+      "value": "1048576",
+      "unit": "tokens",
+      "source_link": "https://dev.meta.ai/models",
+      "other_info": "Meta lists a 1M token context window."
+    },
+    {
+      "name": "api_status",
+      "value": "available",
+      "unit": null,
+      "source_link": "https://dev.meta.ai/models",
+      "other_info": "Available through the Meta Model API standard route."
+    }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 53,
+      "is_self_reported": false,
+      "other_info": "Muse Spark 1.3 (max); Artificial Analysis ID 58a40aba-a44f-457f-9cca-75b43d4e6934; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/muse-spark-1-3",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 76.3,
+      "is_self_reported": false,
+      "other_info": "Muse Spark 1.3 (max); Artificial Analysis ID 58a40aba-a44f-457f-9cca-75b43d4e6934; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/muse-spark-1-3",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 55.6,
+      "is_self_reported": false,
+      "other_info": "Muse Spark 1.3 (max); Artificial Analysis ID 58a40aba-a44f-457f-9cca-75b43d4e6934; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/muse-spark-1-3",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 1340.75,
+      "is_self_reported": false,
+      "other_info": "Muse Spark 1.3 (max); Artificial Analysis ID 58a40aba-a44f-457f-9cca-75b43d4e6934; Intelligence Index v4.3; USD 0.9588 per task",
+      "source_link": "https://artificialanalysis.ai/models/muse-spark-1-3",
+      "rank": 62
+    }
+  ],
   "family_id": "meta/muse-spark-1.3",
   "model_type": null,
   "knowledge_cutoff": null,
-  "limits": { "context": 1048576, "input": null, "output": null },
-  "modalities": { "input": ["text", "image/*", "video/*", "audio/*", "application/pdf"], "output": ["text"] },
-  "reasoning": { "supported": true, "options": [] },
-  "capabilities": { "attachment": true, "tool_call": true, "structured_output": true, "temperature": true, "streaming": true, "web_search": true },
+  "limits": {
+    "context": 1048576,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "video/*",
+      "audio/*",
+      "application/pdf"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": true,
+    "web_search": true
+  },
   "open_weights": false,
   "sources": [
-    { "kind": "api_reference", "url": "https://dev.meta.ai/models", "accessed_at": "2026-09-02T00:00:00Z", "notes": "Authenticated Meta Model API catalogue verified model IDs, availability, context window, description, and pricing." },
-    { "kind": "announcement", "url": "https://www.axios.com/2026/09/02/meta-debuts-muse-spark-13-as-personal-agent-work-continues", "accessed_at": "2026-09-02T00:00:00Z", "notes": "Release timing and rollout to Muse Code and Meta's API." }
+    {
+      "kind": "api_reference",
+      "url": "https://dev.meta.ai/models",
+      "accessed_at": "2026-09-02T00:00:00Z",
+      "notes": "Authenticated Meta Model API catalogue verified model IDs, availability, context window, description, and pricing."
+    },
+    {
+      "kind": "announcement",
+      "url": "https://www.axios.com/2026/09/02/meta-debuts-muse-spark-13-as-personal-agent-work-continues",
+      "accessed_at": "2026-09-02T00:00:00Z",
+      "notes": "Release timing and rollout to Muse Code and Meta's API."
+    }
   ],
-  "verification": { "status": "verified", "checked_at": "2026-09-02T00:00:00Z", "notes": "Verified in the authenticated Meta Model API catalogue." },
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-02T00:00:00Z",
+    "notes": "Verified in the authenticated Meta Model API catalogue."
+  },
   "last_updated": "2026-09-02T00:00:00Z",
   "removal_date": null,
   "replacement_model_id": null,

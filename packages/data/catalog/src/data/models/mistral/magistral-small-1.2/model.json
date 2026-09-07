@@ -50,11 +50,19 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 11.5,
+      "score": 5.7,
       "is_self_reported": false,
-      "other_info": "Magistral Small 1.2; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Magistral Small 1.2; Artificial Analysis ID 70152cb0-fb36-4732-a925-89ef40994be1; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/magistral-small-2509",
-      "rank": 354
+      "rank": 403
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 14.7,
+      "is_self_reported": false,
+      "other_info": "Magistral Small 1.2; Artificial Analysis ID 70152cb0-fb36-4732-a925-89ef40994be1; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/magistral-small-2509",
+      "rank": 215
     }
   ],
   "family_id": null,

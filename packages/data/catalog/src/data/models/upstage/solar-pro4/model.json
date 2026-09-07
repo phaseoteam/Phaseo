@@ -25,7 +25,24 @@
     }
   ],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 32.7,
+      "is_self_reported": false,
+      "other_info": "Solar Pro 4; Artificial Analysis ID 1b64aa81-c223-4b8f-909b-82185a234765; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro4",
+      "rank": 94
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 52.7,
+      "is_self_reported": false,
+      "other_info": "Solar Pro 4; Artificial Analysis ID 1b64aa81-c223-4b8f-909b-82185a234765; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/solar-pro4",
+      "rank": 102
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": "language",

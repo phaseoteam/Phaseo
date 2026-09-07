@@ -16,7 +16,16 @@
   "family_id": null,
   "links": [],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1,
+      "is_self_reported": false,
+      "other_info": "DBRX Instruct; Artificial Analysis ID 1cb96708-f6c1-4668-9804-5db6ecac01ed; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/dbrx",
+      "rank": 513
+    }
+  ],
   "page_notice": null,
   "model_type": "language",
   "knowledge_cutoff": null,

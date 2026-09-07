@@ -370,11 +370,19 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 36,
+      "score": 27.6,
       "is_self_reported": false,
-      "other_info": "Kimi K2.5 (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Kimi K2.5 (Reasoning); Artificial Analysis ID a550ffca-f89e-4381-ade6-a85dc6a1fb4c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/kimi-k2-5",
-      "rank": 99
+      "rank": 140
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 46.8,
+      "is_self_reported": false,
+      "other_info": "Kimi K2.5 (Reasoning); Artificial Analysis ID a550ffca-f89e-4381-ade6-a85dc6a1fb4c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/kimi-k2-5",
+      "rank": 119
     }
   ],
   "family_id": null,

@@ -152,11 +152,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 8.6,
+      "score": 3.2,
       "is_self_reported": false,
-      "other_info": "Gemini 2.0 Flash-Lite (Feb '25); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Gemini 2.0 Flash-Lite (Feb '25); Artificial Analysis ID 7b269763-ecc0-41ef-aa29-47ef632ac065; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-2-0-flash-lite-001",
-      "rank": 409
+      "rank": 453
     }
   ],
   "page_notice": null,

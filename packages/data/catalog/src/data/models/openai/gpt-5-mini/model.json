@@ -357,11 +357,27 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 31.6,
+      "score": 18.4,
       "is_self_reported": false,
-      "other_info": "GPT-5 mini (medium); Artificial Analysis Intelligence Index v4.1.1",
-      "source_link": "https://artificialanalysis.ai/models/gpt-5-mini-medium",
-      "rank": 139
+      "other_info": "GPT-5 mini (high); Artificial Analysis ID 29855680-7469-43eb-8b88-cd3fb1d99da3; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-mini",
+      "rank": 231
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 15.6,
+      "is_self_reported": false,
+      "other_info": "GPT-5 mini (high); Artificial Analysis ID 29855680-7469-43eb-8b88-cd3fb1d99da3; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-mini",
+      "rank": 213
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 9,
+      "is_self_reported": false,
+      "other_info": "GPT-5 mini (high); Artificial Analysis ID 29855680-7469-43eb-8b88-cd3fb1d99da3; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-mini",
+      "rank": 103
     }
   ],
   "page_notice": null,

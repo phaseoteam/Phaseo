@@ -38,11 +38,19 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 33.9,
+      "score": 25.8,
       "is_self_reported": false,
-      "other_info": "LongCat 2.0; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "LongCat 2.0; Artificial Analysis ID 5c3bdc0d-abab-4526-8079-34de4089bb4a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/longcat-2-0",
-      "rank": 124
+      "rank": 165
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 45.3,
+      "is_self_reported": false,
+      "other_info": "LongCat 2.0; Artificial Analysis ID 5c3bdc0d-abab-4526-8079-34de4089bb4a; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/longcat-2-0",
+      "rank": 125
     }
   ],
   "family_id": null,
@@ -64,7 +72,10 @@
   },
   "reasoning": {
     "supported": true,
-    "options": ["enabled", "disabled"]
+    "options": [
+      "enabled",
+      "disabled"
+    ]
   },
   "capabilities": {
     "attachment": false,

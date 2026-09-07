@@ -101,11 +101,19 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 11.8,
+      "score": 6,
       "is_self_reported": false,
-      "other_info": "Claude 3 Opus; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Claude 3 Opus; Artificial Analysis ID 7829427f-f0e3-4f6d-a228-5fbf70dacc02; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-3-opus",
-      "rank": 349
+      "rank": 397
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 19.5,
+      "is_self_reported": false,
+      "other_info": "Claude 3 Opus; Artificial Analysis ID 7829427f-f0e3-4f6d-a228-5fbf70dacc02; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-3-opus",
+      "rank": 205
     }
   ],
   "page_notice": null,

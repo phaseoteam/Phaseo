@@ -209,11 +209,19 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1,
+      "is_self_reported": false,
+      "other_info": "Granite 4.1 3B; Artificial Analysis ID 91e3b45f-3f52-4511-8c15-8948854bebc5; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/granite-4-1-3b",
+      "rank": 513
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
       "score": 4.7,
       "is_self_reported": false,
-      "other_info": "Granite 4.1 3B; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Granite 4.1 3B; Artificial Analysis ID 91e3b45f-3f52-4511-8c15-8948854bebc5; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/granite-4-1-3b",
-      "rank": 491
+      "rank": 247
     }
   ],
   "page_notice": null,

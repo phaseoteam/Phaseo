@@ -7,6 +7,10 @@ import type {
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { fetchOptionalPublicWebApi, fetchPublicWebApi } from "@/lib/web-api/client";
 
+export async function fetchFrontendRankingBenchmarks() {
+	return fetchPublicWebApi<{ benchmarks: PublicBenchmarkRanking[] }>("/api/_web/rankings/benchmarks");
+}
+
 export async function fetchFrontendRankingFastestModels(days = 30, limit = 20) {
 	return fetchPublicWebApi<{ data: PerformanceData[] }>(
 		`/api/_web/rankings/fastest-models?days=${encodeURIComponent(String(days))}&limit=${encodeURIComponent(String(limit))}`,

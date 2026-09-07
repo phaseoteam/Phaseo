@@ -90,11 +90,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 29.3,
+      "score": 16.7,
       "is_self_reported": false,
-      "other_info": "GLM-4.6 (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
-      "source_link": "https://artificialanalysis.ai/models/glm-4-6-reasoning",
-      "rank": 160
+      "other_info": "GLM-4.6 (Non-reasoning); Artificial Analysis ID 946e7aab-db1c-4c3f-b0b3-7720d0cff187; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/glm-4-6",
+      "rank": 243
     }
   ],
   "family_id": null,

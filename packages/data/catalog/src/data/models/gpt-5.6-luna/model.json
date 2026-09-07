@@ -15,7 +15,40 @@
   "api_model_id": "gpt-5.6-luna",
   "links": [],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 43.4,
+      "is_self_reported": false,
+      "other_info": "GPT-5.6 Luna (max); Artificial Analysis ID 426d24c8-49ae-482a-b4a8-20f1c53f21c1; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 71.4,
+      "is_self_reported": false,
+      "other_info": "GPT-5.6 Luna (max); Artificial Analysis ID 426d24c8-49ae-482a-b4a8-20f1c53f21c1; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna",
+      "rank": 47
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 42.9,
+      "is_self_reported": false,
+      "other_info": "GPT-5.6 Luna (max); Artificial Analysis ID 426d24c8-49ae-482a-b4a8-20f1c53f21c1; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna",
+      "rank": 34
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 213.83,
+      "is_self_reported": false,
+      "other_info": "GPT-5.6 Luna (max); Artificial Analysis ID 426d24c8-49ae-482a-b4a8-20f1c53f21c1; Intelligence Index v4.3; USD 0.0969 per task",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna",
+      "rank": 25
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

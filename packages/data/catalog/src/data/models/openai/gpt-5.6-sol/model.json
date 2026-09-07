@@ -72,11 +72,35 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 60.9,
+      "score": 51.3,
       "is_self_reported": false,
-      "other_info": "GPT-5.6 Sol (max); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "GPT-5.6 Sol (max); Artificial Analysis ID d93edfe8-bf35-49ad-b56e-b18116142a1c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-6-sol",
-      "rank": 5
+      "rank": 15
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 77.4,
+      "is_self_reported": false,
+      "other_info": "GPT-5.6 Sol (max); Artificial Analysis ID d93edfe8-bf35-49ad-b56e-b18116142a1c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-sol",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 50.7,
+      "is_self_reported": false,
+      "other_info": "GPT-5.6 Sol (max); Artificial Analysis ID d93edfe8-bf35-49ad-b56e-b18116142a1c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-sol",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 2463.56,
+      "is_self_reported": false,
+      "other_info": "GPT-5.6 Sol (max); Artificial Analysis ID d93edfe8-bf35-49ad-b56e-b18116142a1c; Intelligence Index v4.3; USD 1.2495 per task",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-sol",
+      "rank": 77
     }
   ],
   "page_notice": null,

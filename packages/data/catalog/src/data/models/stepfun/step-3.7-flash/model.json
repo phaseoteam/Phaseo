@@ -47,11 +47,19 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 30.9,
+      "score": 22.9,
       "is_self_reported": false,
-      "other_info": "Step 3.7 Flash; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Step 3.7 Flash; Artificial Analysis ID 6c7b322e-2f35-48ff-9171-fb621a726fc0; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/step-3-7-flash",
-      "rank": 147
+      "rank": 192
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 39.6,
+      "is_self_reported": false,
+      "other_info": "Step 3.7 Flash; Artificial Analysis ID 6c7b322e-2f35-48ff-9171-fb621a726fc0; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/step-3-7-flash",
+      "rank": 140
     }
   ],
   "family_id": null,

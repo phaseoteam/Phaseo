@@ -115,11 +115,19 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 8.4,
+      "score": 3,
       "is_self_reported": false,
-      "other_info": "GPT-4o (May '24); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "GPT-4o (May '24); Artificial Analysis ID e98e911e-9fb2-4a9a-826e-3d681d0cdca8; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4o-2024-05-13",
-      "rank": 414
+      "rank": 458
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 24.2,
+      "is_self_reported": false,
+      "other_info": "GPT-4o (May '24); Artificial Analysis ID e98e911e-9fb2-4a9a-826e-3d681d0cdca8; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-4o-2024-05-13",
+      "rank": 181
     }
   ],
   "page_notice": null,

@@ -26,11 +26,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 19.4,
+      "score": 13,
       "is_self_reported": false,
-      "other_info": "Qwen3 Max (Preview); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Qwen3 Max (Preview); Artificial Analysis ID 5b2beb12-81a9-47a1-8a2a-d0a727185b50; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-max-preview",
-      "rank": 244
+      "rank": 291
     }
   ],
   "family_id": null,

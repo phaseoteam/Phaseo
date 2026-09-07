@@ -1,134 +1,24 @@
 "use client";
-
-import React from "react";
+import { useState } from "react";
 import Link from "next/link";
-
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 
-interface ModelBenchmarksGridProps {
-	highlights: ModelBenchmarkHighlight[];
-}
-
-function sortHighlights(highlights: ModelBenchmarkHighlight[]) {
-	return [...highlights].sort((a, b) => {
-		const totalA = a.totalModels ?? -1;
-		const totalB = b.totalModels ?? -1;
-		if (totalA !== totalB) return totalB - totalA;
-
-		const nameA = (a.benchmarkName || "").toLowerCase();
-		const nameB = (b.benchmarkName || "").toLowerCase();
-		return nameA.localeCompare(nameB);
-	});
-}
-
-function clampScore(value: number | null | undefined): number {
-	if (typeof value !== "number" || !Number.isFinite(value)) return 0;
-	return Math.min(100, Math.max(0, value));
-}
-
-function ScoreIndicator({
-	score,
-	isPercentage,
-	label,
-}: {
-	score: number | null;
-	isPercentage: boolean;
-	label: string;
-}) {
-	if (!isPercentage || score == null) {
-		return (
-			<span
-				className="h-2.5 w-2.5 rounded-full bg-muted-foreground/45"
-				title={`${label} score recorded`}
-				aria-label={`${label} score recorded`}
-			/>
-		);
-	}
-
-	const normalizedScore = clampScore(score);
-
-	return (
-		<span
-			className="relative h-5 w-5 shrink-0 rounded-full"
-			style={{
-				background: `conic-gradient(var(--primary) ${normalizedScore}%, var(--muted) 0)`,
-			}}
-			title={`${label}: ${normalizedScore.toFixed(
-				normalizedScore % 1 === 0 ? 0 : 1
-			)}%`}
-			aria-label={`${label}: ${normalizedScore.toFixed(
-				normalizedScore % 1 === 0 ? 0 : 1
-			)}%`}
-		>
-			<span className="absolute inset-[4px] rounded-full bg-card" />
-		</span>
-	);
-}
-
-export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
-	const [showAllOnMobile, setShowAllOnMobile] = React.useState(false);
-
-	if (!highlights.length) {
-		return (
-			<div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-				No benchmark results available for this model yet.
-			</div>
-		);
-	}
-
-	const sorted = sortHighlights(highlights);
-
-	return (
-		<div className="mb-8 w-full space-y-3">
-			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-				{sorted.map((highlight, index) => {
-					return (
-						<Card
-							key={`${highlight.benchmarkId}`}
-							className={`min-h-0 flex-col justify-center rounded-lg border border-border/80 bg-card p-3 text-card-foreground shadow-xs ${
-								index >= 6 && !showAllOnMobile ? "hidden sm:flex" : "flex"
-							}`}
-							style={{ minHeight: 0 }}
-						>
-							<div className="flex flex-col gap-1">
-								<div className="truncate text-xs font-semibold leading-tight text-card-foreground">
-									<Link
-										href={`/benchmarks/${highlight.benchmarkId}`}
-									>
-										<span className="relative truncate font-semibold underline decoration-transparent hover:decoration-current transition-colors duration-200">
-											{highlight.benchmarkName ||
-												"Unnamed Benchmark"}
-										</span>
-									</Link>
-								</div>
-								<div className="flex items-center justify-between font-mono text-base text-foreground">
-									<span className="truncate text-sm text-muted-foreground">
-										{highlight.scoreDisplay}
-									</span>
-									<ScoreIndicator
-										score={highlight.score}
-										isPercentage={highlight.isPercentage}
-										label={highlight.benchmarkName}
-									/>
-								</div>
-							</div>
-						</Card>
-					);
-				})}
-			</div>
-			{sorted.length > 6 ? (
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					className="w-full sm:hidden"
-					onClick={() => setShowAllOnMobile((current) => !current)}
-				>
-					{showAllOnMobile ? "Show less" : `Show ${sorted.length - 6} more`}
-				</Button>
-			) : null}
-		</div>
-	);
+export function ModelBenchmarksGrid({ highlights }: { highlights: ModelBenchmarkHighlight[] }) {
+  const [search, setSearch] = useState("");
+  const [showAll, setShowAll] = useState(false);
+  const filtered = [...highlights].filter((item) => item.benchmarkName.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => (b.totalModels ?? 0) - (a.totalModels ?? 0) || a.benchmarkName.localeCompare(b.benchmarkName));
+  return <div className="space-y-3">
+    {highlights.length > 8 ? <Input aria-label="Search model benchmarks" placeholder="Search benchmarks" value={search} onChange={(e) => setSearch(e.target.value)} className="sm:max-w-xs" /> : null}
+    <div className="grid gap-x-6 sm:grid-cols-2">
+      {(showAll || search ? filtered : filtered.slice(0, 8)).map((item) => <div key={item.benchmarkId} className="border-b py-3">
+        <div className="flex items-center justify-between gap-4"><Link href={`/benchmarks/${item.benchmarkId}`} className="text-sm font-medium hover:underline">{item.benchmarkName}</Link><span className="shrink-0 text-sm font-semibold tabular-nums">{item.scoreDisplay}</span></div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">{item.isSelfReported ? <span>Self-reported</span> : null}{item.sourceLink ? <a href={item.sourceLink} target="_blank" rel="noreferrer" className="hover:underline">Source ↗</a> : null}{item.otherInfo ? <details><summary className="cursor-pointer">Details</summary><p className="mt-1 break-words">{item.otherInfo}</p></details> : null}</div>
+      </div>)}
+    </div>
+    {!filtered.length ? <p className="py-6 text-sm text-muted-foreground">No benchmarks match your search.</p> : null}
+    {!search && filtered.length > 8 ? <Button variant="ghost" size="sm" onClick={() => setShowAll(!showAll)}>{showAll ? "Show fewer benchmarks" : `Show all ${filtered.length} benchmarks`}</Button> : null}
+  </div>;
 }

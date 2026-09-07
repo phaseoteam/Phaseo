@@ -41,7 +41,40 @@
       "value": "Introductory Standard pricing is $0.75 input, $0.075 cached input, and $3.75 output per 1M tokens through December 31, 2026. Standard pricing doubles to $1.50 input, $0.15 cached input, and $7.50 output on January 1, 2027. Batch and Flex remain 50% of Standard; Priority is priced at 1.8x Standard."
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 45.2,
+      "is_self_reported": false,
+      "other_info": "Gemini 3.7 Flash (high); Artificial Analysis ID b2331108-72ed-415a-82d1-188633875bbc; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash",
+      "rank": 39
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 76.1,
+      "is_self_reported": false,
+      "other_info": "Gemini 3.7 Flash (high); Artificial Analysis ID b2331108-72ed-415a-82d1-188633875bbc; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 36.6,
+      "is_self_reported": false,
+      "other_info": "Gemini 3.7 Flash (high); Artificial Analysis ID b2331108-72ed-415a-82d1-188633875bbc; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash",
+      "rank": 51
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 687.92,
+      "is_self_reported": false,
+      "other_info": "Gemini 3.7 Flash (high); Artificial Analysis ID b2331108-72ed-415a-82d1-188633875bbc; Intelligence Index v4.3; USD 0.5484 per task",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash",
+      "rank": 43
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,
@@ -52,8 +85,15 @@
     "output": null
   },
   "modalities": {
-    "input": ["text", "image/*", "video/*", "audio/*"],
-    "output": ["text"]
+    "input": [
+      "text",
+      "image/*",
+      "video/*",
+      "audio/*"
+    ],
+    "output": [
+      "text"
+    ]
   },
   "reasoning": {
     "supported": null,

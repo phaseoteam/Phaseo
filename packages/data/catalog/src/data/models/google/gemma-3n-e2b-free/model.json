@@ -110,9 +110,9 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
-      "other_info": "Gemma 3n E2B Instruct; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "Gemma 3n E2B Instruct; Artificial Analysis ID a8c67863-9d66-44dd-8d27-f58654ecde03; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-3n-e2b",
-      "rank": 579
+      "rank": 513
     }
   ],
   "page_notice": null,

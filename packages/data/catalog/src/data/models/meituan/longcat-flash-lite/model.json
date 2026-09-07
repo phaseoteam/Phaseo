@@ -18,11 +18,11 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 17.4,
+      "score": 11.2,
       "is_self_reported": false,
-      "other_info": "LongCat Flash Lite; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "LongCat Flash Lite; Artificial Analysis ID 6056731b-c705-455b-aa0d-43cbf29b1054; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/longcat-flash-lite",
-      "rank": 270
+      "rank": 316
     }
   ],
   "family_id": null,

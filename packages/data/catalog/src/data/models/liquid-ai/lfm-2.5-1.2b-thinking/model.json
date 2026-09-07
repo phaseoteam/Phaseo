@@ -18,11 +18,11 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 2.3,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "LFM2.5-1.2B-Thinking; Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "LFM2.5-1.2B-Thinking; Artificial Analysis ID 5a088cde-18e2-4dfa-98dd-d283e1c19654; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/lfm2-5-1-2b-thinking",
-      "rank": 549
+      "rank": 513
     }
   ],
   "family_id": null,

@@ -66,11 +66,11 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 8.7,
+      "score": 3.2,
       "is_self_reported": false,
-      "other_info": "NVIDIA Nemotron Nano 9B V2 (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "other_info": "NVIDIA Nemotron Nano 9B V2 (Reasoning); Artificial Analysis ID f1d52583-9d20-4099-99ac-b5df9430c3b6; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-nano-9b-v2-reasoning",
-      "rank": 407
+      "rank": 453
     }
   ],
   "family_id": null,
