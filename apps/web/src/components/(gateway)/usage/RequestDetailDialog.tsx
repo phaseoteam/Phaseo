@@ -840,7 +840,11 @@ export default function RequestDetailDialog({
 		);
 		if (presentation === "sheet") {
 			return (
-				<ProviderInspectorSheet open={open} onOpenChange={onOpenChange}>
+				<ProviderInspectorSheet
+					open={open}
+					onOpenChange={onOpenChange}
+					disablePointerDismissal={disablePointerDismissal}
+				>
 					<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none">
 						{loadingContent}
 					</ProviderInspectorSheetContent>
