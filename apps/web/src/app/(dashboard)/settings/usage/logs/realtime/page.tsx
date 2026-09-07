@@ -16,7 +16,7 @@ async function SessionList({ searchParams }: { searchParams: Promise<{ page?: st
 	} catch {
 		return <p role="alert">Realtime sessions could not be loaded. Refresh to try again.</p>;
 	}
-	return <RealtimeSessionsPanel key={context.workspaceId} sessions={data.sessions} page={page} hasMore={data.hasMore} />;
+	return <RealtimeSessionsPanel key={context.workspaceId} sessions={data.sessions} page={page} hasMore={data.hasMore && page < 10000} />;
 }
 
 export default function RealtimeSessionsPage(props: { searchParams: Promise<{ page?: string }> }) {
