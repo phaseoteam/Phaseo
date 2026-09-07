@@ -1,6 +1,7 @@
 "use client";
 
 import type { ExtendedModel, Price } from "@/data/types";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import {
 	Card,
 	CardHeader,
@@ -149,7 +150,7 @@ function resolveProvider(price: Price): PricingProvider | null {
 			: providerId;
 	return {
 		id: providerId,
-		name: providerName,
+		name: resolveProviderDisplayName({ providerId, providerName }),
 	};
 }
 
@@ -787,4 +788,3 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 		</section>
 	);
 }
-
