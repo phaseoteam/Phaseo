@@ -1,4 +1,5 @@
 import CurrentCredits from "@/components/(gateway)/credits/CurrentCredits";
+import EnterpriseSubscriptionCard from "@/components/(gateway)/credits/EnterpriseSubscriptionCard";
 import Banner from "@/components/(gateway)/credits/Banner";
 import BuyCreditsClient from "@/components/(gateway)/credits/CreditPurchases/TopUp/BuyCreditsClient";
 import AutoTopUpClient from "@/components/(gateway)/credits/CreditPurchases/AutoTopUp/AutoTopUpClient";
@@ -11,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { fetchSettingsCreditsInitialData } from "@/lib/fetchers/internal/fetchSettingsCreditsInitialData";
 
 export const metadata: Metadata = {
-	title: "Credits - Settings",
+	title: "Billing & Credits - Settings",
 };
 
 export default function Page(props: {
@@ -48,7 +49,12 @@ async function CreditsSettingsContent(props: {
 			data-obfuscate-pii={initialData.obfuscateInfo ? "true" : "false"}
 			data-obfuscation-sync="true"
 		>
-			<SettingsPageHeader title="Credits" />
+			<SettingsPageHeader
+				title="Billing & Credits"
+				description="Manage model usage credits and workspace subscriptions."
+			/>
+
+			{initialData.workspaceId ? <EnterpriseSubscriptionCard workspaceId={initialData.workspaceId} /> : null}
 
 			<Banner
 				queryString={queryString ?? null}
@@ -57,7 +63,7 @@ async function CreditsSettingsContent(props: {
 
 			<CurrentCredits
 				balance={initialData.initialBalance}
-				title="Current Balance"
+				title="Model usage balance"
 				refreshAriaLabel="refresh balance"
 			/>
 

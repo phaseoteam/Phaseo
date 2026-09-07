@@ -319,6 +319,7 @@ export type SettingsCreditsInitialData = {
 			id: string;
 		}>;
 	};
+	workspaceId: string | null;
 	wallet: {
 		stripe_customer_id?: string | null;
 		balance_bigint?: number | null;

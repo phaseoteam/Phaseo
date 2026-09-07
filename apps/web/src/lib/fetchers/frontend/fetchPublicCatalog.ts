@@ -4,6 +4,7 @@ import type {
 	RangeKey,
 } from "@/lib/fetchers/apps/types";
 import { connection } from "next/server";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import type { ProfileSnapshot } from "@/lib/fetchers/profile/types";
 import type {
 	OgEntity,
@@ -530,7 +531,7 @@ export async function fetchFrontendModelBenchmarkHighlights(
 
 export async function fetchFrontendAPIProviders(): Promise<APIProviderCard[]> {
 	const payload = await fetchPublicWebApi<{ providers: APIProviderCard[] }>("/api/_web/api-providers");
-	return payload.providers;
+	return payload.providers.map((provider) => ({ ...provider, api_provider_name: resolveProviderDisplayName({ providerId: provider.api_provider_id, providerName: provider.api_provider_name }) }));
 }
 
 export async function fetchFrontendAPIProviderHeader(
@@ -539,7 +540,8 @@ export async function fetchFrontendAPIProviderHeader(
 	const payload = await fetchOptionalPublicWebApi<{ provider: APIProviderHeader }>(
 		`/api/_web/api-providers/${encodeURIComponent(apiProviderId)}/header`,
 	);
-	return payload?.provider ?? null;
+	const provider = payload?.provider;
+	return provider ? { ...provider, api_provider_name: resolveProviderDisplayName({ providerId: apiProviderId, providerName: provider.api_provider_name }) } : null;
 }
 
 export async function fetchFrontendAPIProviderModels(
@@ -1021,7 +1023,8 @@ export async function fetchFrontendProviderMetaByIds(
 	providerIds: string[],
 ): Promise<Record<string, ProviderMeta>> {
 	if (!providerIds.length) return {};
-	return (await fetchPublicWebApi<{ providers: Record<string, ProviderMeta> }>(`/api/_web/rankings/provider-meta?ids=${encodeURIComponent([...new Set(providerIds)].sort().join(","))}`)).providers;
+	const { providers } = await fetchPublicWebApi<{ providers: Record<string, ProviderMeta> }>(`/api/_web/rankings/provider-meta?ids=${encodeURIComponent([...new Set(providerIds)].sort().join(","))}`);
+	return Object.fromEntries(Object.entries(providers).map(([providerId, metadata]) => [providerId, { ...metadata, name: resolveProviderDisplayName({ providerId, providerName: metadata.name }) }]));
 }
 
 export async function fetchFrontendOrganisationLogoIdsByNames(
