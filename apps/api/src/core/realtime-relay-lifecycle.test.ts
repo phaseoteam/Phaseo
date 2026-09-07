@@ -24,6 +24,8 @@ describe("Realtime relay lifecycle", () => {
 		object.providerCompletedResponseSeen = true;
 		await object.handleClientMessage(JSON.stringify({ type: "client.audio", audio: Buffer.alloc(3200).toString("base64"), rms: 1 }));
 		expect(object.sendUpstream).not.toHaveBeenCalled();
+		expect(object.usage.input_audio_ms).toBeUndefined();
+		expect(object.receivedAudioMs).toBe(100);
 		expect(object.inputSinceLastResponse).toBe(false);
 		await object.handleClientGone();
 		expect(object.settle).toHaveBeenCalledWith("completed", "client_disconnected");

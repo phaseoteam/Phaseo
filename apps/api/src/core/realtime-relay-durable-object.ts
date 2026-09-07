@@ -358,6 +358,7 @@ export class RealtimeRelayDurableObject {
 	private lastUsagePersistAt = 0;
 	private lastProviderStatePersistAt = 0;
 	private audioStartedAt = 0;
+	private receivedAudioMs = 0;
 	private settling = false;
 	private inputSinceLastResponse = false;
 	private turnStartedAtMs = 0;
@@ -603,7 +604,7 @@ export class RealtimeRelayDurableObject {
 		const validated = validateRealtimeAudioIngress({
 			base64: message.audio,
 			sampleRate: inputSampleRate(provider),
-			currentInputMs: toNumber(this.usage.input_audio_ms),
+			currentInputMs: this.receivedAudioMs,
 			elapsedMs: Date.now() - this.audioStartedAt,
 		});
 		if ("reason" in validated) {
@@ -614,11 +615,8 @@ export class RealtimeRelayDurableObject {
 			await this.rejectAudio("realtime_upstream_backpressure");
 			return;
 		}
-		this.usage = addDuration(
-			this.usage,
-			"input_audio_ms",
-			validated.durationMs,
-		);
+		// Ingress limits include dropped silence; billable usage must not.
+		this.receivedAudioMs += validated.durationMs;
 		if (provider === "google-ai-studio") {
 			// Compute activity from validated PCM, never the client-supplied rms.
 			// Do not forward idle microphone noise: Google's activity-only turns
@@ -639,11 +637,11 @@ export class RealtimeRelayDurableObject {
 				if (!this.googleAudioActive || this.googleSilenceMs >= GOOGLE_SILENCE_END_MS) {
 					if (this.googleAudioActive) this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
 					this.googleAudioActive = false;
-					await this.checkpointUsage();
 					return;
 				}
 			}
 		}
+		this.usage = addDuration(this.usage, "input_audio_ms", validated.durationMs);
 		this.inputSinceLastResponse = true;
 		this.usage.input_audio_pending = true;
 		this.resetIdleTimer();
