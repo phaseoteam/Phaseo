@@ -30,6 +30,7 @@ export function getModelDetailsHref(
 	const metadata = modelMetadata
 		? getModelMetadataEntry(value, modelMetadata)
 		: undefined;
+	if (fallbackOrganisationId && !metadata) return null;
 	const canonicalValue = metadata?.canonicalModelId?.trim() || value;
 	const [canonicalOrganisationIdFromId, ...canonicalModelParts] = canonicalValue.split("/");
 	const organisationId = canonicalModelParts.length > 0

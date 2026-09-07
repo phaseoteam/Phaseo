@@ -57,7 +57,7 @@ export async function metadataForIds(context: Awaited<ReturnType<typeof requireA
 	const modelIds = Array.from(new Set(args.models ?? [])).filter(Boolean);
 	const providerIds = Array.from(new Set(args.providers ?? [])).filter(Boolean);
 	const appIds = Array.from(new Set(args.apps ?? [])).filter(Boolean);
-	const routeSelect = "api_model_id:model_slug,model_id:model_slug,provider_model_id,provider_model_slug";
+	const routeSelect = "api_model_id:model_slug,model_id:model_slug,provider_model_id,provider_model_slug,provider_slug";
 	const [modelsResult, routesByModelResult, routesByProviderSlugResult, routesByProviderIdResult, providersResult, appsResult] = await Promise.all([
 		modelIds.length ? context.client.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
 		modelIds.length ? context.client.from("v2_model_provider_routes").select(routeSelect).in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
@@ -71,15 +71,24 @@ export async function metadataForIds(context: Awaited<ReturnType<typeof requireA
 		...(routesByProviderSlugResult.data ?? []),
 		...(routesByProviderIdResult.data ?? []),
 	] as Array<Record<string, any>>;
-	const mappings = new Map<string, { model_id: string }>();
+	const requestedProviders = new Set(providerIds.map((provider) => provider.toLowerCase()));
+	const mappingCandidates = new Map<string, Set<string>>();
 	for (const route of routeRows) {
 		const canonicalId = route.model_id ?? route.api_model_id;
 		if (typeof canonicalId !== "string" || !canonicalId) continue;
+		const routeProvider = typeof route.provider_slug === "string" ? route.provider_slug.trim().toLowerCase() : null;
+		if (requestedProviders.size > 0 && routeProvider && !requestedProviders.has(routeProvider)) continue;
 		for (const alias of [route.api_model_id, route.model_id, route.provider_model_slug, route.provider_model_id]) {
-			if (typeof alias === "string" && modelIds.includes(alias) && !mappings.has(alias)) {
-				mappings.set(alias, { model_id: canonicalId });
-			}
+			if (typeof alias !== "string" || !modelIds.includes(alias)) continue;
+			const candidates = mappingCandidates.get(alias) ?? new Set<string>();
+			candidates.add(canonicalId);
+			mappingCandidates.set(alias, candidates);
 		}
+	}
+	const mappings = new Map<string, { model_id: string }>();
+	for (const [alias, candidates] of mappingCandidates) {
+		if (candidates.size !== 1) continue;
+		mappings.set(alias, { model_id: Array.from(candidates)[0] });
 	}
 	const canonicalIds = Array.from(new Set(Array.from(mappings.values()).map((row) => row.model_id).filter(Boolean)));
 	const mappedModelsResult = canonicalIds.length ? await context.client.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", canonicalIds) : { data: [], error: null };

@@ -31,4 +31,8 @@ describe("usage model display helpers", () => {
 			"/models/openai/gpt-5.4",
 		);
 	});
+
+	it("does not guess a route for unresolved IDs under a serving provider", () => {
+		expect(getModelDetailsHref("unknown-model", new Map(), "openrouter")).toBeNull();
+	});
 });
