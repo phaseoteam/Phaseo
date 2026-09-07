@@ -400,7 +400,9 @@ export function pcm16Base64DurationMs(base64: string, sampleRate: number): numbe
 	const padding = normalized.endsWith("==") ? 2 : normalized.endsWith("=") ? 1 : 0;
 	const byteLength = Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
 	const samples = Math.floor(byteLength / 2);
-	return Math.round((samples / sampleRate) * 1000);
+	// Preserve fractional milliseconds across chunks; rounding each packet
+	// makes a duration-based bill depend on the provider's packet sizes.
+	return (samples / sampleRate) * 1000;
 }
 
 export function resolveRealtimeFinalCostNanos(args: {

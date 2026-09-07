@@ -13,8 +13,8 @@ function relay(provider = "openai") {
 }
 
 describe("Realtime relay lifecycle", () => {
-	it("does not reopen billing for microphone silence after a completed Google turn", async () => {
-		const object = relay("google-ai-studio");
+	it.each(["google-ai-studio"])("does not reopen %s billing for microphone silence after a completed turn", async (provider) => {
+		const object = relay(provider);
 		object.providerSetupComplete = true;
 		object.upstream = { readyState: 1, bufferedAmount: 0 };
 		object.checkpointUsage = vi.fn();
@@ -22,13 +22,59 @@ describe("Realtime relay lifecycle", () => {
 		object.resetIdleTimer = vi.fn();
 		object.sendUpstream = vi.fn();
 		object.providerCompletedResponseSeen = true;
-		await object.handleClientMessage(JSON.stringify({ type: "client.audio", audio: Buffer.alloc(3200).toString("base64"), rms: 1 }));
+		await object.handleClientMessage(JSON.stringify({ type: "client.audio", audio: Buffer.alloc(provider === "google-ai-studio" ? 3200 : 4800).toString("base64"), rms: 1 }));
 		expect(object.sendUpstream).not.toHaveBeenCalled();
 		expect(object.usage.input_audio_ms).toBeUndefined();
 		expect(object.receivedAudioMs).toBe(100);
 		expect(object.inputSinceLastResponse).toBe(false);
 		await object.handleClientGone();
 		expect(object.settle).toHaveBeenCalledWith("completed", "client_disconnected");
+	});
+	it.each(["openai", "spacex-ai"])("forwards quiet %s speech without an RMS gate", async (provider) => {
+		const object = relay(provider);
+		object.providerSetupComplete = true;
+		object.upstream = { readyState: 1, bufferedAmount: 0 };
+		object.checkpointUsage = vi.fn(); object.maybePersistUsage = vi.fn();
+		object.resetIdleTimer = vi.fn(); object.sendUpstream = vi.fn();
+		const audio = Buffer.alloc(4800); for (let i = 0; i < audio.length; i += 2) audio.writeInt16LE(100, i);
+		await object.handleClientMessage(JSON.stringify({ type: "client.audio", audio: audio.toString("base64"), rms: 0 }));
+		expect(object.sendUpstream).toHaveBeenCalledWith({ type: "input_audio_buffer.append", audio: audio.toString("base64") });
+	});
+	it.each([false, true])("waits for OpenAI to clear uncommitted audio after completed response=%s", async (completed) => {
+		vi.useFakeTimers();
+		try {
+			const object = relay();
+			object.state.storage = { put: vi.fn(), setAlarm: vi.fn() };
+			object.receivedAudioMs = 3000;
+			object.inputSinceLastResponse = true;
+			object.providerCompletedResponseSeen = completed;
+			object.checkpointUsage = vi.fn(); object.sendUpstream = vi.fn();
+			await object.handleClientGone();
+			expect(object.settle).not.toHaveBeenCalled();
+			expect(object.sendUpstream).toHaveBeenCalledWith({ type: "input_audio_buffer.clear" });
+			await object.handleUpstreamMessage(JSON.stringify({ type: "input_audio_buffer.cleared" }));
+			expect(object.settle).toHaveBeenCalledWith(completed ? "completed" : "cancelled", "client_disconnected_input_cleared");
+		} finally { vi.clearAllTimers(); vi.useRealTimers(); }
+	});
+	it("does not settle a committed OpenAI turn when the trailing buffer is cleared", async () => {
+		const object = relay();
+		object.waitingForOpenAIInputClear = true;
+		object.openAIInputCommitted = true;
+		object.inputSinceLastResponse = true;
+		await object.handleUpstreamMessage(JSON.stringify({ type: "input_audio_buffer.cleared" }));
+		expect(object.inputSinceLastResponse).toBe(true);
+		expect(object.settle).not.toHaveBeenCalled();
+	});
+
+	it("does not clear new speech when OpenAI returns a response without usage", async () => {
+		const object = relay();
+		object.inputSinceLastResponse = true;
+		object.responseInFlight = true;
+		object.emitTurnTelemetry = vi.fn();
+		object.checkpointUsage = vi.fn();
+		await object.handleUpstreamMessage(JSON.stringify({ type: "response.done", response: { id: "missing_usage", status: "completed" } }));
+		expect(object.inputSinceLastResponse).toBe(true);
+		expect(object.settle).not.toHaveBeenCalled();
 	});
 
 	it("keeps actual Google speech pending even when the client claims silence", async () => {

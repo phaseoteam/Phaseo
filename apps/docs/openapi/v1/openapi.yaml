@@ -20709,6 +20709,8 @@ components:
         - openai/gpt-realtime
         - openai/gpt-realtime-1.5
         - openai/gpt-realtime-2
+        - openai/gpt-realtime-2.1
+        - openai/gpt-realtime-2.1-mini
         - openai/gpt-transcribe
         - openai/o1
         - openai/o1-mini
@@ -20915,6 +20917,7 @@ components:
         - voyage/voyage-multilingual-2
         - voyage/voyage-multimodal-3
         - voyage/voyage-multimodal-3.5
+        - x-ai/grok-voice-think-fast-2.0
         - xiaomi/mimo-v2.5
         - xiaomi/mimo-v2.5-asr
         - xiaomi/mimo-v2.5-pro
