@@ -49,6 +49,8 @@ const XAI_OUTPUT_SAMPLE_RATE = 24_000;
 const OPENAI_INPUT_SAMPLE_RATE = 24_000;
 const XAI_INPUT_SAMPLE_RATE = 24_000;
 const GOOGLE_INPUT_SAMPLE_RATE = 16_000;
+const GOOGLE_SPEECH_RMS_THRESHOLD = 0.012;
+const GOOGLE_SILENCE_END_MS = 1_000;
 const BUDGET_CLOSING_INSTRUCTIONS =
 	"The realtime session budget is almost exhausted. Briefly tell the user that this voice session is ending, finish the current thought, and do not ask a follow-up question.";
 
@@ -103,6 +105,7 @@ export function validateRealtimeAudioIngress(args: {
 	if (!value || value.length > RELAY_MAX_MESSAGE_BYTES || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
 		return { ok: false, reason: "realtime_audio_invalid_base64" };
 	}
+	try { atob(value); } catch { return { ok: false, reason: "realtime_audio_invalid_base64" }; }
 	const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
 	const byteLength = Math.floor((value.length * 3) / 4) - padding;
 	if (byteLength <= 0 || byteLength % 2 !== 0) {
@@ -355,9 +358,12 @@ export class RealtimeRelayDurableObject {
 	private lastUsagePersistAt = 0;
 	private lastProviderStatePersistAt = 0;
 	private audioStartedAt = 0;
+	private receivedAudioMs = 0;
 	private settling = false;
 	private inputSinceLastResponse = false;
 	private turnStartedAtMs = 0;
+	private googleAudioActive = false;
+	private googleSilenceMs = 0;
 
 	constructor(state: DurableObjectState, env: GatewayBindings) {
 		this.state = state;
@@ -400,11 +406,11 @@ export class RealtimeRelayDurableObject {
 		this.clientGoneHandled = false;
 		server.accept();
 		server.addEventListener("message", (event) => {
-			void this.handleClientMessage(event.data);
+			this.state.waitUntil(this.handleClientMessage(event.data));
 		});
 		server.addEventListener("close", (event) => {
 			this.replyToClientClose(server, event);
-			void this.handleClientGoneOnce(server, "client_socket_closed");
+			this.state.waitUntil(this.handleClientGoneOnce(server, "client_socket_closed"));
 		});
 		server.addEventListener("error", () => {
 			try {
@@ -412,7 +418,7 @@ export class RealtimeRelayDurableObject {
 			} catch {
 				// The browser socket may already be closing.
 			}
-			void this.handleClientGoneOnce(server, "client_socket_error");
+			this.state.waitUntil(this.handleClientGoneOnce(server, "client_socket_error"));
 		});
 
 		try {
@@ -598,7 +604,7 @@ export class RealtimeRelayDurableObject {
 		const validated = validateRealtimeAudioIngress({
 			base64: message.audio,
 			sampleRate: inputSampleRate(provider),
-			currentInputMs: toNumber(this.usage.input_audio_ms),
+			currentInputMs: this.receivedAudioMs,
 			elapsedMs: Date.now() - this.audioStartedAt,
 		});
 		if ("reason" in validated) {
@@ -609,11 +615,33 @@ export class RealtimeRelayDurableObject {
 			await this.rejectAudio("realtime_upstream_backpressure");
 			return;
 		}
-		this.usage = addDuration(
-			this.usage,
-			"input_audio_ms",
-			validated.durationMs,
-		);
+		// Ingress limits include dropped silence; billable usage must not.
+		this.receivedAudioMs += validated.durationMs;
+		if (provider === "google-ai-studio") {
+			// Compute activity from validated PCM, never the client-supplied rms.
+			// Do not forward idle microphone noise: Google's activity-only turns
+			// exclude silence and will not emit a usage event for it.
+			const pcm = atob(message.audio);
+			let squares = 0;
+			for (let i = 0; i < pcm.length; i += 2) {
+				const value = pcm.charCodeAt(i) | (pcm.charCodeAt(i + 1) << 8);
+				const sample = (value >= 32768 ? value - 65536 : value) / 32768;
+				squares += sample * sample;
+			}
+			const speech = Math.sqrt(squares / (pcm.length / 2)) >= GOOGLE_SPEECH_RMS_THRESHOLD;
+			if (speech) {
+				this.googleAudioActive = true;
+				this.googleSilenceMs = 0;
+			} else {
+				this.googleSilenceMs += validated.durationMs;
+				if (!this.googleAudioActive || this.googleSilenceMs >= GOOGLE_SILENCE_END_MS) {
+					if (this.googleAudioActive) this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
+					this.googleAudioActive = false;
+					return;
+				}
+			}
+		}
+		this.usage = addDuration(this.usage, "input_audio_ms", validated.durationMs);
 		this.inputSinceLastResponse = true;
 		this.usage.input_audio_pending = true;
 		this.resetIdleTimer();
@@ -728,7 +756,9 @@ export class RealtimeRelayDurableObject {
 					this.markResponseInFlight();
 				}
 			}
-			if (serverContent.turnComplete || serverContent.generationComplete || serverContent.interrupted) {
+			// generationComplete precedes turnComplete (and interrupted also has a
+			// following turnComplete). Only the latter closes the usage accumulator.
+			if (serverContent.turnComplete) {
 				this.beginGoogleTurn();
 				this.providerState.googleTurnComplete = true;
 			}
@@ -828,6 +858,11 @@ export class RealtimeRelayDurableObject {
 		this.acceptingAudio = false;
 		await this.checkpointUsage(true);
 		if (this.responseInFlight || this.inputSinceLastResponse || this.providerState.googleTurnActive) {
+			// Tell Google's VAD that the microphone ended immediately; otherwise
+			// the pending input can never finish while we wait for final usage.
+			if (this.session && providerFromSession(this.session) === "google-ai-studio") {
+				this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
+			}
 			await this.state.storage.put(STORAGE_PENDING_SETTLEMENT, {
 				status: "cancelled",
 				reason: "client_disconnected_drain_timeout",
