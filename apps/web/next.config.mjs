@@ -68,7 +68,10 @@ const nextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), payment=(self)",
+            // Chat can be entered through client navigation from any page. Allow
+            // this origin to request the user's microphone permission; cross-origin
+            // frames remain blocked and the browser still requires user consent.
+            value: "camera=(), microphone=(self), geolocation=(), payment=(self)",
           },
         ],
       },

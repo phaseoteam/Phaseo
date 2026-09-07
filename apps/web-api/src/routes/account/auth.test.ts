@@ -65,6 +65,45 @@ describe("account auth routes", () => {
 		});
 	});
 
+	it.each([
+		"phaseo_v1_sk_abcdefghijkl_12345678901234567890",
+		"aistats_v1_sk_abcdefghijkl_12345678901234567890",
+	])("tests %s keys against the gateway", async (apiKey) => {
+		const gatewayRequests: Array<{ url: string; authorization: string | null }> = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			if (url.includes("/auth/v1/user")) {
+				return new Response(JSON.stringify({ id: "user-1", email: "user@example.com" }), { status: 200 });
+			}
+			if (url.includes("/models?endpoints=chat/completions")) {
+				const headers = new Headers(init?.headers);
+				gatewayRequests.push({ url, authorization: headers.get("authorization") });
+				return new Response(JSON.stringify({ data: [] }), { status: 200 });
+			}
+			return new Response(JSON.stringify({ error: "unexpected request" }), { status: 404 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/account/auth/test-key",
+			{
+				method: "POST",
+				headers: {
+					authorization: "Bearer session-token",
+					"content-type": "application/json",
+				},
+				body: JSON.stringify({ apiKey }),
+			},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ ok: true, modelCount: 0 });
+		expect(gatewayRequests).toEqual([{
+			url: "https://api.phaseo.app/v1/models?endpoints=chat/completions",
+			authorization: `Bearer ${apiKey}`,
+		}]);
+	});
+
 	it("builds authenticated header data from verified workspace access", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);

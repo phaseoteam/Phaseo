@@ -47,6 +47,21 @@ function pricedLine(priced: Record<string, unknown>, dimension: string) {
 }
 
 describe("realtime voice billing simulation", () => {
+	it("meters the same PCM duration regardless of chunk boundaries", () => {
+		const oneSample = Buffer.alloc(2).toString("base64");
+		const whole = Buffer.alloc(4800).toString("base64");
+		expect(pcm16Base64DurationMs(oneSample, 24000) * 2400).toBeCloseTo(pcm16Base64DurationMs(whole, 24000), 10);
+	});
+	it("preserves cached and uncached meters through relay, persistence, and settlement", () => {
+		const normalized = normalizeRealtimeUsage({
+			input_token_details: { text_tokens: 1000, audio_tokens: 2000,
+				cached_tokens_details: { text_tokens: 400, audio_tokens: 100 } },
+		});
+		expect(normalized).toMatchObject({ input_text_tokens: 600, input_audio_tokens: 1900,
+			cached_read_text_tokens: 400, cached_read_audio_tokens: 100 });
+		expect(normalizeRealtimeUsage(normalized)).toEqual(normalized);
+		expect(normalizeRealtimeUsage(normalizeRealtimeUsage(normalized))).toEqual(normalized);
+	});
 	it("ignores client supplied final cost overrides for public settlement", () => {
 		expect(resolveRealtimeFinalCostNanos({
 			auth: { internal: false },

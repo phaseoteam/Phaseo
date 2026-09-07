@@ -173,7 +173,7 @@ type RealtimeSessionResponse = {
 		gracefulStopThreshold: number;
 		maxDurationSeconds: number;
 		idleTimeoutSeconds: number;
-		authoritative: false;
+		authoritative: boolean;
 	};
 	connect: {
 		transport: "webrtc" | "websocket";
@@ -299,6 +299,7 @@ const XAI_GROK_VOICES: RealtimeVoiceOption[] = [
 	{ id: "sal", label: "Sal", description: "Smooth, balanced" },
 	{ id: "altair", label: "Altair" },
 	{ id: "atlas", label: "Atlas" },
+	{ id: "aurora", label: "Aurora" },
 	{ id: "carina", label: "Carina" },
 	{ id: "castor", label: "Castor" },
 	{ id: "celeste", label: "Celeste" },
@@ -307,6 +308,7 @@ const XAI_GROK_VOICES: RealtimeVoiceOption[] = [
 	{ id: "helix", label: "Helix" },
 	{ id: "iris", label: "Iris" },
 	{ id: "kepler", label: "Kepler" },
+	{ id: "liora", label: "Liora" },
 	{ id: "lumen", label: "Lumen" },
 	{ id: "luna", label: "Luna" },
 	{ id: "lux", label: "Lux" },
@@ -482,6 +484,14 @@ type OpenAIRealtimePriceTable = {
 };
 
 const OPENAI_REALTIME_PRICES: Record<string, OpenAIRealtimePriceTable> = {
+	"gpt-realtime-1.5": {
+		inputTextPerMillion: 4,
+		cachedTextPerMillion: 0.4,
+		outputTextPerMillion: 16,
+		inputAudioPerMillion: 32,
+		cachedAudioPerMillion: 0.4,
+		outputAudioPerMillion: 64,
+	},
 	"gpt-realtime-2.1": {
 		inputTextPerMillion: 4,
 		cachedTextPerMillion: 0.4,
@@ -508,7 +518,7 @@ const DEFAULT_OPENAI_REALTIME_PRICES: OpenAIRealtimePriceTable = {
 	cachedAudioPerMillion: 0.4,
 	outputAudioPerMillion: 64,
 };
-const XAI_AUDIO_PRICE_PER_MINUTE = 0.05;
+const XAI_AUDIO_PRICE_PER_MINUTE = 0.08;
 const XAI_TEXT_MESSAGE_PRICE = 0.004;
 const GOOGLE_PRICES = {
 	inputTextPerMillion: 0.75,
@@ -565,7 +575,7 @@ function toNumber(value: unknown): number {
 
 function openAIPricesForModel(model: string | null | undefined) {
 	if (!model) return DEFAULT_OPENAI_REALTIME_PRICES;
-	return OPENAI_REALTIME_PRICES[model] ?? DEFAULT_OPENAI_REALTIME_PRICES;
+	return OPENAI_REALTIME_PRICES[model.replace(/^openai\//, "")] ?? DEFAULT_OPENAI_REALTIME_PRICES;
 }
 
 function calculateOpenAICost(
@@ -1217,12 +1227,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function providerFromGatewayModel(model: GatewaySupportedModel): RealtimeProvider | null {
 	const providerId = model.providerId.trim().toLowerCase();
-	const modelId = model.modelId.trim().toLowerCase();
-	if (providerId === "openai" || modelId.startsWith("openai/")) return "openai";
-	if (providerId === "x-ai" || providerId === "xai" || modelId.startsWith("x-ai/") || modelId.startsWith("xai/")) {
+	if (providerId === "openai") return "openai";
+	if (providerId === "x-ai" || providerId === "xai" || providerId === "spacex-ai") {
 		return "xai";
 	}
-	if (providerId === "google-ai-studio" || providerId === "google" || modelId.startsWith("google/")) {
+	if (providerId === "google-ai-studio" || providerId === "google") {
 		return "google";
 	}
 	return null;
@@ -1369,7 +1378,7 @@ function buildRealtimeModels(models: GatewaySupportedModel[]): RealtimeModel[] {
 		.map(gatewayModelToRealtimeModel)
 		.filter((model): model is RealtimeModel => Boolean(model));
 	const seen = new Set<string>();
-	const deduped = [...mapped, ...REALTIME_MODELS].filter((model) => {
+	const deduped = mapped.filter((model) => {
 		if (seen.has(model.id)) return false;
 		seen.add(model.id);
 		return true;
@@ -1412,6 +1421,29 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const [budgetState, setBudgetState] = useState<
 		"normal" | "extension_needed" | "graceful_stop"
 	>("normal");
+	const [billingSessionId, setBillingSessionId] = useState<string | null>(null);
+	const [billingReadFailed, setBillingReadFailed] = useState(false);
+	const [ledger, setLedger] = useState<{ status: string; reserved_nanos: number; captured_nanos: number; released_nanos: number; estimated_cost_nanos: number; final_cost_nanos: number | null } | null>(null);
+	useEffect(() => {
+		if (!billingSessionId) return;
+		const controller = new AbortController();
+		let timer: ReturnType<typeof setTimeout>;
+		const deadline = Date.now() + (status === "connected" || status === "connecting" ? 30 * 60_000 : 120_000);
+		const poll = async () => {
+			let terminal = false;
+			try {
+				const response = await fetchChatWebApi(`/api/chat/realtime/session/${encodeURIComponent(billingSessionId)}`, { signal: controller.signal });
+				if (response.ok) {
+					const value = await response.json();
+					if (!controller.signal.aborted) { setLedger(value); setBillingReadFailed(false); }
+					terminal = ["completed", "cancelled", "failed", "expired", "billing_unresolved"].includes(value.status);
+				} else if (!controller.signal.aborted) setBillingReadFailed(true);
+			} catch { if (!controller.signal.aborted) setBillingReadFailed(true); }
+			if (!terminal && !controller.signal.aborted && Date.now() < deadline) timer = setTimeout(poll, 5000);
+		};
+		void poll();
+		return () => { controller.abort(); clearTimeout(timer); };
+	}, [billingSessionId, status]);
 	const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
 	const [diagnosticLogs, setDiagnosticLogs] = useState<RealtimeDiagnosticLog[]>(
 		[],
@@ -1581,15 +1613,15 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			XAI_AUDIO_PRICE_PER_MINUTE +
 		xaiTextMessages * XAI_TEXT_MESSAGE_PRICE;
 	const displayedCostUsd =
-		selectedModel?.provider === "xai"
+		ledger ? (ledger.final_cost_nanos ?? ledger.estimated_cost_nanos) / 1e9 : selectedModel?.provider === "xai"
 			? xaiEstimatedCostUsd
 			: actualCostUsd;
-	const reservedBudgetUsd = sessionBilling?.reservationUsd ?? 0;
+	const reservedBudgetUsd = ledger ? Math.max(0, ledger.reserved_nanos - ledger.captured_nanos - ledger.released_nanos) / 1e9 : sessionBilling?.reservationUsd ?? 0;
 	const remainingBudgetUsd = Math.max(0, reservedBudgetUsd - displayedCostUsd);
 	const budgetRatio =
 		reservedBudgetUsd > 0 ? displayedCostUsd / reservedBudgetUsd : 0;
 	const costLabel =
-		!selectedModel
+		ledger ? (ledger.final_cost_nanos != null ? "Final cost" : "Estimated cost") : billingSessionId ? "Estimated cost" : !selectedModel
 			? "Cost"
 			: selectedModel.provider === "xai"
 			? "Estimated cost"
@@ -2739,29 +2771,35 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				session.connect.protocols?.length ? session.connect.protocols : undefined,
 			);
 			webSocketRef.current = ws;
+			let ready: () => void = () => undefined;
+			let failSetup: (error: Error) => void = () => undefined;
+			const setup = new Promise<void>((resolve, reject) => { ready = resolve; failSetup = reject; });
+			const setupTimer = window.setTimeout(() => failSetup(new Error("The provider did not accept the session within 15 seconds.")), 15_000);
 
 			ws.onmessage = (message) => {
 				void parseRealtimeEvent(message).then((event) => {
-					if (event) handleRealtimeEvent(event, session.provider);
+					if (event) {
+						if (event.type === "session.updated" || event.setupComplete) ready();
+						if (event.error || event.type === "relay.upstream_error") failSetup(new Error("The provider rejected the realtime session."));
+						handleRealtimeEvent(event, session.provider);
+					}
 				});
 			};
 			ws.onclose = (event) => {
+				failSetup(new Error("The realtime connection closed before setup completed."));
 				addDiagnosticLog(
 					"Realtime relay socket closed",
 					{ code: event.code, reason: event.reason, wasClean: event.wasClean },
 					event.wasClean ? "info" : "warning",
 				);
-				if (status === "connected" || status === "connecting" || isFinishing) {
-					setStatus((current) => (current === "error" ? current : "ended"));
-					setPersonaState("asleep");
-					setIsFinishing(false);
-				}
+				setStatus((current) => (current === "error" ? current : "ended"));
+				setPersonaState("asleep");
+				setIsFinishing(false);
 			};
 
-			await new Promise<void>((resolve, reject) => {
-				ws.onerror = () => reject(new Error("Realtime relay WebSocket failed to connect."));
-				ws.onopen = () => resolve();
-			});
+			ws.onerror = () => failSetup(new Error("Realtime relay WebSocket failed to connect."));
+			try { await setup; } catch (error) { ws.close(); throw error; }
+			finally { window.clearTimeout(setupTimer); }
 
 			const sampleRate = session.provider === "google" ? 16_000 : 24_000;
 			await startPcmInputStream(
@@ -2837,6 +2875,9 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		googleAssistantTranscriptIdRef.current = null;
 		relaySessionRef.current = false;
 		setSessionBilling(null);
+		setBillingSessionId(null);
+		setBillingReadFailed(false);
+		setLedger(null);
 		setBudgetState("normal");
 		gracefulStopRequestedRef.current = false;
 		currentSessionIdRef.current = null;
@@ -2861,6 +2902,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			currentSessionIdRef.current = session.session_id ?? session.id ?? null;
 			relaySessionRef.current = session.connect.url.includes("/relay");
 			setSessionBilling(session.billing ?? null);
+			setBillingSessionId(session.session_id ?? session.id ?? null);
 			addDiagnosticLog("Session created", {
 				sessionId: session.session_id ?? session.id,
 				provider: session.provider,
@@ -3040,18 +3082,23 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 											format={{
 												style: "currency",
 												currency: "USD",
-												minimumFractionDigits: 5,
-												maximumFractionDigits: 5,
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 6,
 											}}
 										/>
 									</StatCard>
 								</div>
 
+								{billingSessionId && <p className="text-sm text-muted-foreground">
+									{billingReadFailed ? "Billing status is unavailable; displayed amounts may be out of date. " : !ledger || ((status === "ended" || status === "error") && ledger.final_cost_nanos == null && ledger.status !== "billing_unresolved") ? "Finalizing billing. " : ""}
+									{ledger?.status === "billing_unresolved" ? "Final usage is pending billing review. The remaining hold is retained. " : ""}
+									<a className="underline" href="/settings/usage/logs/realtime">View session billing and releases</a>
+								</p>}
 								{sessionBilling ? (
 									<div className="grid w-full gap-3 sm:grid-cols-2">
 										<StatCard
 											icon={<BadgeDollarSign className="h-3.5 w-3.5" />}
-											label="Reserved"
+											label="Currently held"
 										>
 											<NumberFlow
 												value={reservedBudgetUsd}
@@ -3066,16 +3113,16 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 										</StatCard>
 										<StatCard
 											icon={<BadgeDollarSign className="h-3.5 w-3.5" />}
-											label="Remaining"
+											label={ledger?.final_cost_nanos != null ? "Released" : "Remaining budget"}
 										>
 											<NumberFlow
-												value={remainingBudgetUsd}
+												value={ledger?.final_cost_nanos != null ? ledger.released_nanos / 1e9 : remainingBudgetUsd}
 												locales="en-US"
 												format={{
 													style: "currency",
 													currency: "USD",
 													minimumFractionDigits: 2,
-													maximumFractionDigits: 2,
+													maximumFractionDigits: 6,
 												}}
 											/>
 										</StatCard>

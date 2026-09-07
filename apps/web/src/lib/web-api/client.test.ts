@@ -1,10 +1,22 @@
 import {
 	fetchAccountWebApi,
+	fetchChatWebApi,
 	fetchOptionalPublicWebApi,
 	fetchPublicWebApi,
 } from "./client";
 
+jest.mock("@/lib/fetchers/internal/accountAuthClient", () => ({ getBrowserAccessToken: async () => "session-token" }));
+
 describe("Cloudflare web API client", () => {
+	it("authenticates Realtime billing polling and preserves its abort signal", async () => {
+		process.env.WEB_API_ORIGIN = "https://phaseo.app";
+		const signal = new AbortController().signal;
+		const fetchMock = jest.spyOn(global, "fetch").mockResolvedValue(Response.json({ status: "completed", captured_nanos: 1254750, released_nanos: 4998745250 }));
+		await fetchChatWebApi("/api/chat/realtime/session/rt_test", { signal });
+		expect(fetchMock).toHaveBeenCalledWith("https://phaseo.app/api/chat/realtime/session/rt_test", {
+			signal, headers: { Authorization: "Bearer session-token" }, cache: "no-store",
+		});
+	});
 	const originalOrigin = process.env.WEB_API_ORIGIN;
 
 	afterEach(() => {
