@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { BellRing, Globe2, Mail, Plus, Trash2, X } from "lucide-react";
+import { BellRing, ChevronDown, Globe2, Mail, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { createNotificationDestination, deleteNotificationDestination, setBillingNotificationPreference, testNotificationConfiguration, testNotificationDestination } from "@/app/(dashboard)/settings/credits/actions";
@@ -19,11 +19,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { NotificationDestination, NotificationEventKind } from "@/lib/fetchers/internal/settingsTypes";
 import { cn } from "@/lib/utils";
 import NotificationRouteSelector from "./NotificationRouteSelector";
 
 type DestinationType = NotificationDestination["type"];
+type NotificationTestKind = "notification_test" | "model_deprecation";
 type ProviderIconProps = { className?: string };
 type Provider = { type: DestinationType; name: string; description: string; field: string; placeholder: string; icon: React.ComponentType<ProviderIconProps>; color: string };
 
@@ -82,7 +84,27 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 	function discordMentionFields(type: "discord" | "discord_webhook") { return <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor={`${type}-user-ids`}>Ping user IDs <span className="font-normal text-muted-foreground">(optional)</span></Label><Input className="rounded-md" id={`${type}-user-ids`} value={discordMentions[type]?.userIds ?? ""} onChange={(event) => setDiscordMentions((current) => ({ ...current, [type]: { userIds: event.target.value, roleIds: current[type]?.roleIds ?? "" } }))} placeholder="123…, 456…" /></div><div className="space-y-2"><Label htmlFor={`${type}-role-ids`}>Ping role IDs <span className="font-normal text-muted-foreground">(optional)</span></Label><Input className="rounded-md" id={`${type}-role-ids`} value={discordMentions[type]?.roleIds ?? ""} onChange={(event) => setDiscordMentions((current) => ({ ...current, [type]: { userIds: current[type]?.userIds ?? "", roleIds: event.target.value } }))} placeholder="123…, 456…" /></div></div>; }
 	function slackMentionFields() { return <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="slack-user-ids">Ping user IDs <span className="font-normal text-muted-foreground">(optional)</span></Label><Input className="rounded-md" id="slack-user-ids" value={slackMentions.userIds} onChange={(event) => setSlackMentions((current) => ({ ...current, userIds: event.target.value }))} placeholder="U012…, U034…" /></div><div className="space-y-2"><Label htmlFor="slack-user-group-ids">Ping user group IDs <span className="font-normal text-muted-foreground">(optional)</span></Label><Input className="rounded-md" id="slack-user-group-ids" value={slackMentions.userGroupIds} onChange={(event) => setSlackMentions((current) => ({ ...current, userGroupIds: event.target.value }))} placeholder="S012…, S034…" /></div></div>; }
 	function teamsMentionFields() { return <div className="space-y-2"><Label htmlFor="teams-mention-ids">Ping users <span className="font-normal text-muted-foreground">(optional)</span></Label><Input className="rounded-md" id="teams-mention-ids" value={teamsMentionIds} onChange={(event) => setTeamsMentionIds(event.target.value)} placeholder="alex@company.com, Entra object ID…" /><p className="text-xs text-muted-foreground">Use Microsoft 365 email addresses or Entra object IDs. Teams webhooks cannot mention roles or everyone.</p></div>; }
-	function sendConfigurationTest(type: DestinationType) { toast.promise(testNotificationConfiguration({ type, target: targetForType(type) }), { loading: `Sending ${providerByType.get(type)?.name ?? "channel"} test…`, success: "Test notification delivered", error: (error) => error instanceof Error ? error.message : "Could not send test" }); }
+	async function sendNotificationTest(action: () => Promise<{ ok: true; status?: number } | { ok: false; error: string }>, loadingMessage: string) {
+		const toastId = toast.loading(loadingMessage);
+		try {
+			const result = await action();
+			if (!result.ok) {
+				toast.error(result.error, { id: toastId });
+				return;
+			}
+			toast.success("Test notification sent", { id: toastId });
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : "Could not send test", { id: toastId });
+		}
+	}
+
+	function sendConfigurationTest(type: DestinationType) {
+		void sendNotificationTest(() => testNotificationConfiguration({ type, target: targetForType(type) }), `Sending ${providerByType.get(type)?.name ?? "channel"} test…`);
+	}
+	function sendDestinationTest(destinationId: string, kind: NotificationTestKind) {
+		const isModelDeprecation = kind === "model_deprecation";
+		void sendNotificationTest(() => testNotificationDestination(destinationId, kind), isModelDeprecation ? "Sending model deprecation test…" : "Sending test…");
+	}
 	function addEmail() {
 		const email = emailDraft.trim().toLowerCase();
 		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { if (email) toast.error("Enter a valid email address"); return; }
@@ -129,7 +151,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						<div className="flex flex-col items-center px-6 py-12 text-center"><div className="mb-4 rounded-md border bg-muted/40 p-3"><BellRing className="size-5 text-muted-foreground" /></div><h3 className="text-sm font-medium">No destinations yet</h3><p className="mt-1 max-w-sm text-sm text-muted-foreground">Add a destination to route alerts to the tools your team already watches.</p><Button className="mt-5 rounded-md" variant="outline" onClick={() => setOpen(true)}><Plus /> Add destination</Button></div>
 					) : destinations.map((destination, index) => {
 						const item = providerByType.get(destination.type)!; const Icon = item.icon;
-						return <div key={destination.id} className={cn("flex items-center gap-3 px-4 py-3.5", index > 0 && "border-t")}><div className={cn("grid size-9 place-items-center rounded-md", item.color)}><Icon className="size-4.5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{destination.name}</p><p className="truncate text-xs text-muted-foreground">{item.name} · {destination.targetPreview}</p></div><Button className="rounded-md" variant="outline" size="sm" disabled={saving} onClick={() => toast.promise(testNotificationDestination(destination.id), { loading: "Sending test…", success: "Test notification delivered", error: (error) => error instanceof Error ? error.message : "Could not send test" })}>Send test</Button><Button className="rounded-md" variant="ghost" size="icon-sm" aria-label={`Delete ${destination.name}`} disabled={saving} onClick={() => void removeDestination(destination.id)}><Trash2 /></Button></div>;
+						return <div key={destination.id} className={cn("flex items-center gap-3 px-4 py-3.5", index > 0 && "border-t")}><div className={cn("grid size-9 place-items-center rounded-md", item.color)}><Icon className="size-4.5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{destination.name}</p><p className="truncate text-xs text-muted-foreground">{item.name} · {destination.targetPreview}</p></div><DropdownMenu><DropdownMenuTrigger asChild><Button className="rounded-md" variant="outline" size="sm" disabled={saving}>Send test <ChevronDown className="ml-1 size-3.5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => sendDestinationTest(destination.id, "notification_test")}>Connection test</DropdownMenuItem><DropdownMenuItem onClick={() => sendDestinationTest(destination.id, "model_deprecation")}>Model deprecation sample</DropdownMenuItem></DropdownMenuContent></DropdownMenu><Button className="rounded-md" variant="ghost" size="icon-sm" aria-label={`Delete ${destination.name}`} disabled={saving} onClick={() => void removeDestination(destination.id)}><Trash2 /></Button></div>;
 					})}
 				</div>
 			</section>

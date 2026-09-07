@@ -178,20 +178,32 @@ export async function setNotificationRoute(eventKind: import("@/lib/fetchers/int
 	return { ok: true };
 }
 
-export async function testNotificationDestination(destinationId: string) {
+export async function testNotificationDestination(destinationId: string, kind: "notification_test" | "model_deprecation" = "notification_test") {
 	const context = await getServerAccountContext();
 	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
 	if (!context.accessToken) throw new Error("Unauthorized");
-	await fetchAccountWebApi(`/api/account/credits/notification-destinations/${encodeURIComponent(destinationId)}/test`, context.accessToken, { method: "POST", body: JSON.stringify({ workspaceId }) });
-	return { ok: true };
+	try {
+		const result = await fetchAccountWebApi<{ ok: boolean; status?: number }>(`/api/account/credits/notification-destinations/${encodeURIComponent(destinationId)}/test`, context.accessToken, { method: "POST", body: JSON.stringify({ workspaceId, kind }) });
+		return { ok: true as const, status: result.status };
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Could not send test notification";
+		console.error("[notifications] saved destination test failed", { destinationId, workspaceId, error: message });
+		return { ok: false as const, error: message };
+	}
 }
 
-export async function testNotificationConfiguration(configuration: { type: import("@/lib/fetchers/internal/settingsTypes").NotificationDestination["type"]; target: string }) {
+export async function testNotificationConfiguration(configuration: { type: import("@/lib/fetchers/internal/settingsTypes").NotificationDestination["type"]; target: string; kind?: "notification_test" | "model_deprecation" }) {
 	const context = await getServerAccountContext();
 	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
 	if (!context.accessToken) throw new Error("Unauthorized");
-	await fetchAccountWebApi("/api/account/credits/notification-destinations/test", context.accessToken, { method: "POST", body: JSON.stringify({ workspaceId, ...configuration }) });
-	return { ok: true };
+	try {
+		const result = await fetchAccountWebApi<{ ok: boolean; status?: number }>("/api/account/credits/notification-destinations/test", context.accessToken, { method: "POST", body: JSON.stringify({ workspaceId, ...configuration }) });
+		return { ok: true as const, status: result.status };
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Could not send test notification";
+		console.error("[notifications] configuration test failed", { type: configuration.type, workspaceId, error: message });
+		return { ok: false as const, error: message };
+	}
 }
 
 type ChargeSavedPaymentArgs = {

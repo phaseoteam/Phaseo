@@ -98,36 +98,26 @@ async function callResend<T>(
 }
 
 function renderEmailHtml(args: {
-	kicker: string;
 	title: string;
 	intro: string;
 	ctaLabel: string;
 	ctaHref: string;
 	steps: Array<{ title: string; body: string; hrefLabel?: string; href?: string }>;
-	replyNote: string;
+	replyToEmail: string;
 	includeUnsubscribe: boolean;
 }): string {
 	const stepsHtml = args.steps
 		.map((step, index) => {
 			const linkHtml =
 				step.href && step.hrefLabel
-					? `<p style="margin:8px 0 0;font-size:13px;line-height:1.5;"><a href="${step.href}" style="color:#18181b;text-decoration:underline;font-weight:600;">${step.hrefLabel}</a></p>`
+					? `<p style="margin-top:8px;margin-right:0;margin-bottom:0;margin-left:0;font-size:13px;line-height:20px;color:#3f3f46;font-weight:400;"><a href="${step.href}" style="font-size:13px;line-height:20px;color:#0369a1;text-decoration:underline;font-weight:600;">${step.hrefLabel}</a></p>`
 					: "";
 			return `
 				<tr>
-					<td style="padding:0 0 16px 0;">
-						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-							<tr>
-								<td width="30" valign="top" style="padding:0 10px 0 0;">
-									<p style="margin:0;font-size:12px;line-height:1.4;color:#71717a;font-weight:700;">0${index + 1}</p>
-								</td>
-								<td valign="top" style="padding:0 0 0 12px;border-left:1px solid #e4e4e7;">
-									<p style="margin:0;font-size:16px;line-height:1.35;color:#18181b;font-weight:700;">${step.title}</p>
-									<p style="margin:5px 0 0;font-size:14px;line-height:1.65;color:#3f3f46;">${step.body}</p>
-									${linkHtml}
-								</td>
-							</tr>
-						</table>
+					<td style="padding-top:${index === 0 ? "0" : "12px"};padding-right:0;padding-bottom:12px;padding-left:0;border-bottom:1px solid #e4e4e7;">
+						<p style="margin-top:0;margin-right:0;margin-bottom:5px;margin-left:0;font-size:15px;line-height:21px;color:#18181b;font-weight:700;">0${index + 1} &nbsp; ${step.title}</p>
+						<p style="margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;font-size:14px;line-height:22px;color:#52525b;font-weight:400;">${step.body}</p>
+						${linkHtml}
 					</td>
 				</tr>
 			`;
@@ -135,54 +125,40 @@ function renderEmailHtml(args: {
 		.join("");
 
 	const unsubscribeHtml = args.includeUnsubscribe
-		? `<p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#71717a;">Manage email preferences: <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#3f3f46;">Unsubscribe</a></p>`
+		? `<p style="margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0;font-size:12px;line-height:18px;color:#71717a;font-weight:400;">Manage email preferences: <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="font-size:12px;line-height:18px;color:#52525b;text-decoration:underline;font-weight:400;">Unsubscribe</a></p>`
 		: "";
 
 	return `
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 </head>
-<body style="margin:0;padding:0;background:#f4f4f5;">
-	<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${args.title}</div>
-	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f5;">
+<body style="margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;background-color:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#18181b;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;text-size-adjust:100%;">
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%;background-color:#ffffff;">
 		<tr>
-			<td align="center" style="padding:26px 10px 34px;">
-				<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:640px;">
-					<tr>
-						<td style="padding:0;">
-							<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border:1px solid #e4e4e7;border-radius:20px;overflow:hidden;">
-								<tr>
-									<td style="padding:30px 32px 12px;font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;">
-											<p style="margin:0 0 10px;font-size:11px;line-height:1.2;letter-spacing:0.14em;text-transform:uppercase;color:#71717a;font-weight:700;">${args.kicker}</p>
-											<h1 style="margin:0 0 12px;font-size:32px;line-height:1.12;font-weight:800;letter-spacing:-0.02em;color:#09090b;">${args.title}</h1>
-											<p style="margin:0 0 8px;font-size:15px;line-height:1.7;color:#18181b;font-weight:600;">Hi {{{user_name}}},</p>
-											<p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#3f3f46;font-weight:500;">${args.intro}</p>
-										<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">
-											<tr>
-												<td style="border-radius:999px;background:#18181b;">
-													<a href="${args.ctaHref}" style="display:inline-block;padding:12px 18px;font-size:12px;line-height:1.2;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-family:'Montserrat','Avenir Next','Segoe UI',Arial,sans-serif;color:#ffffff;font-weight:800;">${args.ctaLabel}</a>
-												</td>
-											</tr>
-										</table>
-										<div style="height:1px;background:#e4e4e7;margin:0 0 18px;"></div>
-										<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-											${stepsHtml}
-										</table>
-										<div style="margin:8px 0 0;padding:14px 16px;border-radius:10px;background:#fafafa;border:1px solid #e4e4e7;">
-											<p style="margin:0;font-size:13px;line-height:1.6;color:#27272a;font-weight:600;">${args.replyNote}</p>
-										</div>
-										${unsubscribeHtml}
-									</td>
-								</tr>
-							</table>
-						</td>
-					</tr>
+			<td align="center" style="padding-top:40px;padding-right:20px;padding-bottom:40px;padding-left:20px;">
+				<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%;max-width:600px;min-width:0;background-color:#ffffff;">
+				<tr><td style="padding-top:0;padding-right:0;padding-bottom:0;padding-left:0;font-family:Arial,Helvetica,sans-serif;color:#18181b;font-size:16px;line-height:26px;">
+						<table role="presentation" align="center" width="147" cellpadding="0" cellspacing="0" border="0" bgcolor="#0284c7" style="width:147px;margin-bottom:28px;background-color:#0284c7;border-radius:8px;"><tr>
+							<td style="padding-top:14px;padding-right:16px;padding-bottom:14px;padding-left:16px;vertical-align:middle;"><img src="https://phaseo.app/wordmark_dark.svg" width="115" height="24" border="0" alt="Phaseo" style="display:block;width:115px;height:24px;border:0;"></td>
+						</tr></table>
+						<h1 align="center" style="margin-top:0;margin-right:0;margin-bottom:18px;margin-left:0;font-size:28px;line-height:34px;letter-spacing:-.02em;color:#09090b;font-weight:500;">${args.title}</h1>
+						<p align="center" style="margin-top:0;margin-right:0;margin-bottom:10px;margin-left:0;font-size:15px;line-height:26px;color:#18181b;font-weight:600;">Hi {{{user_name}}},</p>
+						<p align="center" style="margin-top:0;margin-right:0;margin-bottom:26px;margin-left:0;font-size:16px;line-height:26px;color:#3f3f46;font-weight:400;">${args.intro}</p>
+						<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:26px;"><tr>
+							<td style="border-radius:6px;background-color:#0369a1;" bgcolor="#0369a1"><a href="${args.ctaHref}" style="display:inline-block;padding-top:11px;padding-right:15px;padding-bottom:11px;padding-left:15px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:16px;text-decoration:none;color:#ffffff;font-weight:600;">${args.ctaLabel}</a></td>
+						</tr></table>
+						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;"><tr><td style="height:1px;padding-top:0;padding-right:0;padding-bottom:0;padding-left:0;background-color:#e4e4e7;font-size:1px;line-height:1px;" bgcolor="#e4e4e7">&nbsp;</td></tr></table>
+						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${stepsHtml}</table>
+						<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;"><tr><td style="padding-top:18px;padding-right:0;padding-bottom:0;padding-left:0;border-top:1px solid #e4e4e7;">
+							<p style="margin-top:0;margin-right:0;margin-bottom:4px;margin-left:0;font-size:12px;line-height:18px;color:#71717a;font-weight:600;">Need help?</p>
+							<p style="margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;font-size:13px;line-height:21px;color:#52525b;font-weight:400;">Reply to this email and we&rsquo;ll get back to you at <a href="mailto:${args.replyToEmail}" style="font-size:13px;line-height:21px;color:#3f3f46;text-decoration:underline;font-weight:600;">${args.replyToEmail}</a>.</p>
+						</td></tr></table>
+						${unsubscribeHtml}
+					</td></tr>
 				</table>
 			</td>
 		</tr>
@@ -208,7 +184,6 @@ function buildTemplates(args: {
 			subject: "Welcome to Phaseo",
 			replyTo: args.replyToEmail,
 			html: renderEmailHtml({
-				kicker: "Phaseo onboarding",
 				title: "Welcome. Your control layer is ready.",
 				intro: "You now have one place to route requests, monitor usage, and move quickly across providers.",
 				ctaLabel: "Open dashboard",
@@ -233,10 +208,10 @@ function buildTemplates(args: {
 						href: creditsUrl,
 					},
 				],
-				replyNote: `Replies go straight to ${args.replyToEmail} if you want help shipping your first request this week.`,
+				replyToEmail: args.replyToEmail,
 				includeUnsubscribe: false,
 			}),
-			text: `Hi {{{user_name}}},\n\nWelcome to Phaseo.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nReply to ${args.replyToEmail} if you want help with setup.`,
+			text: `Hi {{{user_name}}},\n\nWelcome to Phaseo.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nNeed help? Reply to this email and we'll get back to you at ${args.replyToEmail}.`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_PURCHASED_7D,
@@ -244,7 +219,6 @@ function buildTemplates(args: {
 			subject: "You're ready to ship with Phaseo",
 			replyTo: args.replyToEmail,
 			html: renderEmailHtml({
-				kicker: "Momentum unlocked",
 				title: "Credits are live. Let's get you moving.",
 				intro: "Great call on purchasing credits early. Here is the fastest route to start seeing value immediately.",
 				ctaLabel: "Start building",
@@ -269,10 +243,10 @@ function buildTemplates(args: {
 						href: dashboardUrl,
 					},
 				],
-				replyNote: `Replies go straight to ${args.replyToEmail} if you want a quick architecture review before scaling up traffic.`,
+				replyToEmail: args.replyToEmail,
 				includeUnsubscribe: true,
 			}),
-			text: `Hi {{{user_name}}},\n\nThanks for purchasing credits.\n\nNext: add an API key (${keysUrl}), review model IDs (${modelsUrl}), and monitor usage (${dashboardUrl}).\n\nReply to ${args.replyToEmail} for implementation help.\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
+			text: `Hi {{{user_name}}},\n\nThanks for purchasing credits.\n\nNext: add an API key (${keysUrl}), review model IDs (${modelsUrl}), and monitor usage (${dashboardUrl}).\n\nNeed help? Reply to this email and we'll get back to you at ${args.replyToEmail}.\n\nManage email preferences: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_NOT_PURCHASED_7D,
@@ -280,7 +254,6 @@ function buildTemplates(args: {
 			subject: "Anything blocking you from getting started?",
 			replyTo: args.replyToEmail,
 			html: renderEmailHtml({
-				kicker: "Quick pulse check",
 				title: "Anything blocking your first credit purchase?",
 				intro: "If you got stuck, reply and tell us what slowed you down. We will unblock you quickly.",
 				ctaLabel: "Resume checkout",
@@ -301,10 +274,10 @@ function buildTemplates(args: {
 						href: modelsUrl,
 					},
 				],
-				replyNote: `Replies go straight to ${args.replyToEmail}. A short note is enough.`,
+				replyToEmail: args.replyToEmail,
 				includeUnsubscribe: true,
 			}),
-			text: `Hi {{{user_name}}},\n\nIt looks like you haven't purchased credits yet.\n\nReply and tell us what blocked you (setup, pricing, model choice, or anything else) and we'll help.\n\nTop up any time: ${creditsUrl}\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
+			text: `Hi {{{user_name}}},\n\nIt looks like you haven't purchased credits yet.\n\nNeed help? Reply to this email and we'll get back to you at ${args.replyToEmail}.\n\nTop up any time: ${creditsUrl}\n\nManage email preferences: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.CHECKOUT_ABANDONED,
@@ -312,7 +285,6 @@ function buildTemplates(args: {
 			subject: "Did anything go wrong at checkout?",
 			replyTo: args.replyToEmail,
 			html: renderEmailHtml({
-				kicker: "Checkout support",
 				title: "Need help finishing your credit purchase?",
 				intro: "Looks like checkout started but did not complete. If anything failed, we can help fast.",
 				ctaLabel: "Return to checkout",
@@ -333,10 +305,10 @@ function buildTemplates(args: {
 						href: creditsUrl,
 					},
 				],
-				replyNote: `Replies go straight to ${args.replyToEmail} so you can get direct help.`,
+				replyToEmail: args.replyToEmail,
 				includeUnsubscribe: true,
 			}),
-			text: `Hi {{{user_name}}},\n\nWe noticed checkout started but purchase didn't complete.\n\nReply with what went wrong and we'll help.\n\nReturn to credits: ${creditsUrl}\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
+			text: `Hi {{{user_name}}},\n\nWe noticed checkout started but purchase didn't complete.\n\nNeed help? Reply to this email and we'll get back to you at ${args.replyToEmail}.\n\nReturn to credits: ${creditsUrl}\n\nManage email preferences: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.LOW_BALANCE,
@@ -344,7 +316,6 @@ function buildTemplates(args: {
 			subject: "Low credit balance alert",
 			replyTo: args.replyToEmail,
 			html: renderEmailHtml({
-				kicker: "Billing alert",
 				title: "Your balance is running low.",
 				intro: "Your {{{workspace_name}}} balance is now at ${{{balance_remaining}}}, below your configured threshold of ${{{low_balance_threshold}}}.",
 				ctaLabel: "Top up credits",
@@ -367,15 +338,67 @@ function buildTemplates(args: {
 						body: `Reply and we can help set a practical threshold based on your usage.`,
 					},
 				],
-				replyNote: `Replies go straight to ${args.replyToEmail}.`,
+				replyToEmail: args.replyToEmail,
 				includeUnsubscribe: false,
 			}),
-			text: `Hi {{{user_name}}},\n\nYour {{{workspace_name}}} balance is now \${{{balance_remaining}}}, below your alert threshold of \${{{low_balance_threshold}}}.\n\nTop up credits here: ${creditsUrl}\n\nReply if you want help setting the right threshold for your usage.`,
+			text: `Hi {{{user_name}}},\n\nYour {{{workspace_name}}} balance is now \${{{balance_remaining}}}, below your alert threshold of \${{{low_balance_threshold}}}.\n\nTop up credits here: ${creditsUrl}\n\nNeed help? Reply to this email and we'll get back to you at ${args.replyToEmail}.`,
 			variables: [
 				{ key: "user_name", type: "string", fallbackValue: "there" },
 				{ key: "workspace_name", type: "string", fallbackValue: "your workspace" },
 				{ key: "balance_remaining", type: "number", fallbackValue: 0 },
 				{ key: "low_balance_threshold", type: "number", fallbackValue: 0 },
+			],
+		},
+		{
+			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.MODEL_DEPRECATION,
+			name: "Model - Deprecation Alert",
+			subject: "Model deprecation: {{{model_name}}}",
+			replyTo: args.replyToEmail,
+			html: `
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	</head>
+<body style="margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;background-color:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#18181b;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;text-size-adjust:100%;">
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%;background-color:#ffffff;">
+		<tr><td align="center" style="padding-top:40px;padding-right:20px;padding-bottom:40px;padding-left:20px;">
+			<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%;max-width:600px;min-width:0;background-color:#ffffff;">
+				<tr><td style="padding-top:0;padding-right:0;padding-bottom:0;padding-left:0;font-family:Arial,Helvetica,sans-serif;color:#18181b;font-size:16px;line-height:26px;">
+					<table role="presentation" align="center" width="147" cellpadding="0" cellspacing="0" border="0" bgcolor="#0284c7" style="width:147px;margin-bottom:28px;background-color:#0284c7;border-radius:8px;"><tr>
+						<td style="padding-top:14px;padding-right:16px;padding-bottom:14px;padding-left:16px;vertical-align:middle;"><img src="https://phaseo.app/wordmark_dark.svg" width="115" height="24" border="0" alt="Phaseo" style="display:block;width:115px;height:24px;border:0;"></td>
+					</tr></table>
+					<h1 align="center" style="margin-top:0;margin-right:0;margin-bottom:18px;margin-left:0;font-size:28px;line-height:34px;letter-spacing:-.02em;color:#09090b;font-weight:500;">{{{model_name}}} is changing</h1>
+					<p align="center" style="margin-top:0;margin-right:0;margin-bottom:10px;margin-left:0;font-size:15px;line-height:26px;color:#18181b;font-weight:600;">Hi {{{user_name}}},</p>
+					<p style="margin-top:0;margin-right:0;margin-bottom:26px;margin-left:0;font-size:16px;line-height:26px;color:#3f3f46;font-weight:400;">{{{message}}}</p>
+					<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f6f7f8" style="margin-bottom:22px;background-color:#f6f7f8;border:1px solid #e4e4e7;border-radius:10px;"><tr><td style="padding-top:14px;padding-right:16px;padding-bottom:14px;padding-left:16px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:21px;color:#3f3f46;font-weight:600;">Recommended successor: {{{replacement_model_name}}}</td></tr></table>
+					<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td align="center">
+						<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-radius:6px;background-color:#0369a1;" bgcolor="#0369a1"><a href="{{{compare_url}}}" style="display:inline-block;padding-top:11px;padding-right:15px;padding-bottom:11px;padding-left:15px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:16px;text-decoration:none;color:#ffffff;font-weight:600;white-space:nowrap;">Compare models</a></td></tr></table>
+						<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td height="8" style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+						<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td style="border:1px solid #bae6fd;border-radius:6px;background-color:#ffffff;" bgcolor="#ffffff"><a href="{{{replacement_model_url}}}" style="display:inline-block;padding-top:10px;padding-right:14px;padding-bottom:10px;padding-left:14px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:16px;text-decoration:none;color:#0369a1;font-weight:600;white-space:nowrap;">View recommended model</a></td></tr></table>
+					</td></tr></table>
+					<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;"><tr><td style="padding-top:18px;padding-right:0;padding-bottom:0;padding-left:0;border-top:1px solid #e4e4e7;">
+						<p style="margin-top:0;margin-right:0;margin-bottom:4px;margin-left:0;font-size:12px;line-height:18px;color:#71717a;font-weight:600;">Need help?</p>
+						<p style="margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;font-size:13px;line-height:21px;color:#52525b;font-weight:400;">Reply to this email and we&rsquo;ll get back to you at <a href="mailto:${args.replyToEmail}" style="font-size:13px;line-height:21px;color:#3f3f46;text-decoration:underline;font-weight:600;">${args.replyToEmail}</a>.</p>
+					</td></tr></table>
+					<p align="center" style="margin-top:26px;margin-right:0;margin-bottom:0;margin-left:0;font-size:13px;line-height:20px;color:#71717a;font-weight:400;"><a href="{{{settings_url}}}" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:#52525b;text-decoration:underline;font-weight:400;">Manage notifications</a></p>
+				</td></tr>
+			</table>
+		</td></tr>
+	</table>
+</body>
+</html>`.trim(),
+			text: `Hi {{{user_name}}},\n\n{{{message}}}\n\nRecommended successor: {{{replacement_model_name}}}\n\nCompare models: {{{compare_url}}}\nView recommended model: {{{replacement_model_url}}}\nManage notifications: {{{settings_url}}}`,
+			variables: [
+				{ key: "user_name", type: "string", fallbackValue: "there" },
+				{ key: "model_name", type: "string", fallbackValue: "A model used by your workspace" },
+				{ key: "message", type: "string", fallbackValue: "A model used by your workspace is changing." },
+				{ key: "replacement_model_name", type: "string", fallbackValue: "a supported replacement" },
+				{ key: "compare_url", type: "string", fallbackValue: "https://phaseo.app/models" },
+				{ key: "replacement_model_url", type: "string", fallbackValue: "https://phaseo.app/models" },
+				{ key: "settings_url", type: "string", fallbackValue: "https://phaseo.app/settings/notifications" },
 			],
 		},
 	];
@@ -792,6 +815,7 @@ async function main(): Promise<void> {
 			fromEmail,
 		);
 	}
+	console.log(`Model deprecation template ID: ${templateIds[RESEND_ONBOARDING_TEMPLATE_ALIASES.MODEL_DEPRECATION]}`);
 
 	console.log("Upserting automations...");
 	const existingAutomations = await listAllAutomations(resend);

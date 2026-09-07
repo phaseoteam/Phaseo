@@ -13,7 +13,7 @@ const catalogMutationSchemas = {
 	providers: z.object({ api_provider_id: z.string().trim().min(1).optional(), api_provider_name: z.string().trim().min(1), description: z.string().nullable().optional(), link: z.string().nullable().optional(), country_code: z.string().trim().min(2).max(3).nullable().optional(), default_execution_regions: z.array(z.string().trim().min(1)).optional(), byok_available: z.boolean().optional(), prompt_training_policy: z.string().nullable().optional(), prompt_training_notes: z.string().nullable().optional(), prompt_training_source_url: z.string().nullable().optional(), data_policy_tier: z.string().nullable().optional(), data_policy_confidence: z.string().nullable().optional(), data_policy_contract_mode: z.string().nullable().optional(), data_policy_contract_notes: z.string().nullable().optional(), status: z.string().nullable().optional() }),
 	benchmarks: z.object({ id: z.string().trim().min(1).optional(), name: z.string().trim().min(1), category: z.string().nullable().optional(), link: z.string().nullable().optional(), ascending_order: z.boolean().nullable().optional() }),
 	"subscription-plans": z.object({ plan_uuid: z.uuid().optional(), plan_id: z.string().trim().min(1), name: z.string().trim().min(1), organisation_id: z.string().nullable().optional(), description: z.string().nullable().optional(), frequency: z.string().nullable().optional(), price: z.number().finite().nullable().optional(), currency: z.string().nullable().optional(), link: z.string().nullable().optional(), other_info: z.record(z.string(), z.unknown()).default({}) }),
-	models: z.object({ modelId: z.string().trim().min(1).optional(), name: z.string().trim().min(1), organisationId: z.string().trim().min(1).optional(), familyId: z.string().nullable().optional(), status: z.string().nullable().optional(), hidden: z.boolean().optional(), inputTypes: z.union([z.string(), z.array(z.string())]).nullable().optional(), outputTypes: z.union([z.string(), z.array(z.string())]).nullable().optional(), announcementDate: z.string().nullable().optional(), releaseDate: z.string().nullable().optional(), deprecationDate: z.string().nullable().optional(), retirementDate: z.string().nullable().optional(), license: z.string().nullable().optional(), previousModelId: z.string().nullable().optional() }),
+	models: z.object({ modelId: z.string().trim().min(1).optional(), name: z.string().trim().min(1), organisationId: z.string().trim().min(1).optional(), familyId: z.string().nullable().optional(), status: z.string().nullable().optional(), hidden: z.boolean().optional(), inputTypes: z.union([z.string(), z.array(z.string())]).nullable().optional(), outputTypes: z.union([z.string(), z.array(z.string())]).nullable().optional(), announcementDate: z.string().nullable().optional(), releaseDate: z.string().nullable().optional(), deprecationDate: z.string().nullable().optional(), retirementDate: z.string().nullable().optional(), license: z.string().nullable().optional(), previousModelId: z.string().nullable().optional(), replacementModelId: z.string().nullable().optional() }),
 } as const;
 
 export const accountModelsRouter = new Hono<{ Bindings: Env }>();
@@ -66,6 +66,7 @@ const modelGraphSchema = z.object({
 	status: z.string().nullable().optional(), hidden: z.boolean().optional(), license: z.string().nullable().optional(),
 	announcement_date: z.string().nullable().optional(), release_date: z.string().nullable().optional(), deprecation_date: z.string().nullable().optional(), retirement_date: z.string().nullable().optional(),
 	input_types: z.string().nullable().optional(), output_types: z.string().nullable().optional(), previous_model_id: z.string().nullable().optional(), family_id: z.string().nullable().optional(),
+	replacement_model_id: z.string().nullable().optional(),
 	model_details: z.array(z.object({ detail_name: z.string().trim().min(1), detail_value: z.unknown() })).optional(),
 	links: z.array(z.object({ platform: z.string().optional(), kind: z.string().optional(), title: z.string().optional(), url: z.url() })).optional(),
 	benchmark_results: z.array(z.record(z.string(), z.unknown())).optional(), subscription_plan_models: z.array(z.record(z.string(), z.unknown())).optional(),
@@ -318,6 +319,7 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 			output_types: Array.isArray(rawModel.output_modalities) ? rawModel.output_modalities.join(",") : null,
 			license: rawModel.metadata?.license ?? null,
 			previous_model_id: rawModel.metadata?.previous_model_id ?? null,
+			replacement_model_id: rawModel.replacement_model_slug ?? rawModel.metadata?.replacement_model_id ?? null,
 		} : null;
 		return c.json({ source: { requestedModelId, canonicalApiId: modelId, internalModelId: modelId, model: editorModel, links: links.data ?? [], details: details.data ?? [], providerRows: pricingSource.providerRows, pricingRules: pricingSource.pricingRows, subscriptionPlans: plans.data ?? [] } }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
@@ -339,6 +341,10 @@ async function runCatalogMutation(c: any, resource: keyof typeof catalogMutation
 	if (!resourceId) return c.json({ error: "invalid_catalogue_id" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await admin.context.client.rpc("mutate_v2_admin_catalogue", { p_actor_user_id: admin.context.user.id, p_resource_type: resource, p_action: action, p_resource_id: resourceId, p_payload: payload });
 	if (result.error) return c.json({ error: "admin_catalogue_mutation_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+	if (resource === "models" && action !== "delete" && Object.prototype.hasOwnProperty.call(payload, "replacementModelId")) {
+		const successor = await admin.context.client.rpc("set_v2_model_recommended_successor", { p_actor_user_id: admin.context.user.id, p_model_slug: resourceId, p_replacement_model_slug: payload.replacementModelId });
+		if (successor.error) return c.json({ error: "admin_catalogue_mutation_failed", message: successor.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+	}
 	return c.json({ success: true, record: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 }
 
@@ -358,6 +364,14 @@ accountModelsRouter.put("/:modelId/graph", async (c) => {
 	if (!parsed.success || parsed.data.modelId !== c.req.param("modelId")) return c.json({ error: "invalid_model_graph", issues: parsed.success ? [] : parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await admin.context.client.rpc("mutate_v2_admin_model_graph", { p_actor_user_id: admin.context.user.id, p_model_slug: parsed.data.modelId, p_payload: parsed.data });
 	if (result.error) return c.json({ ok: false, error: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+	if (Object.prototype.hasOwnProperty.call(parsed.data, "replacement_model_id")) {
+		const successor = await admin.context.client.rpc("set_v2_model_recommended_successor", {
+			p_actor_user_id: admin.context.user.id,
+			p_model_slug: parsed.data.modelId,
+			p_replacement_model_slug: parsed.data.replacement_model_id,
+		});
+		if (successor.error) return c.json({ ok: false, error: successor.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+	}
 	return c.json({ ok: true, graph: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

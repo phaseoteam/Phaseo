@@ -215,6 +215,32 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
             </SelectContent>
           </Select>
         </FieldRow>
+        <FieldRow
+          label="Recommended successor"
+          description="Shown in deprecation notices; independent of model lineage."
+        >
+          <Select
+            value={model.replacement_model_id || "__none__"}
+            onValueChange={(value) =>
+              onModelChange({
+                ...model,
+                replacement_model_id: value === "__none__" ? null : value,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select recommended successor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">None</SelectItem>
+              {existingModels.map((existingModel) => (
+                <SelectItem key={existingModel.model_id} value={existingModel.model_id}>
+                  {existingModel.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FieldRow>
         <FieldRow label="Model family">
           <Select
             value={model.family_id || "__none__"}

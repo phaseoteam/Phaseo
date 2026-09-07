@@ -529,7 +529,7 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 	const windowStart = new Date(now - 7 * 86_400_000).toISOString().slice(0, 10);
 	const windowEnd = new Date(now + 90 * 86_400_000).toISOString().slice(0, 10);
 	const lifecycleResult = await context.client.from("v2_models")
-		.select("model_id:model_slug,name,organisation_id:lab_slug,deprecation_date:deprecated_at,retirement_date:retired_at,previous_model_id:previous_model_slug")
+		.select("model_id:model_slug,name,organisation_id:lab_slug,deprecation_date:deprecated_at,retirement_date:retired_at,previous_model_id:previous_model_slug,replacement_model_id:replacement_model_slug")
 		.eq("hidden", false)
 		.or(`and(retired_at.gte.${windowStart},retired_at.lte.${windowEnd}),and(deprecated_at.gte.${windowStart},deprecated_at.lte.${windowEnd})`);
 	if (lifecycleResult.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -583,7 +583,7 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 		const usedRecently = Boolean(lastUsedAt && Date.parse(lastUsedAt) >= now - 90 * 86_400_000);
 		let severity: Warning["severity"] = "fyi";
 		if (primary != null && primary >= 0 && primary <= 90 && usedRecently) severity = primary <= 7 ? "critical" : primary <= 28 ? "warning" : "notice";
-		return { modelId: model.model_id, modelName: model.name ?? null, organisationId: model.organisation_id ?? null, lastUsedAt, deprecationDate, retirementDate, deprecationDaysUntil, retirementDaysUntil, replacementModelId: replacementByPrevious.get(model.model_id) ?? null, previousModelId: model.previous_model_id ?? null, countAsAlert: usedRecently && primary != null && primary >= 0 && primary <= 90, severity };
+		return { modelId: model.model_id, modelName: model.name ?? null, organisationId: model.organisation_id ?? null, lastUsedAt, deprecationDate, retirementDate, deprecationDaysUntil, retirementDaysUntil, replacementModelId: model.replacement_model_id ?? replacementByPrevious.get(model.model_id) ?? null, previousModelId: model.previous_model_id ?? null, countAsAlert: usedRecently && primary != null && primary >= 0 && primary <= 90, severity };
 	}).filter((warning) => [warning.deprecationDaysUntil, warning.retirementDaysUntil].some((days) => days != null && days >= -7 && days <= 90))
 		.sort((left, right) => Math.min(left.retirementDaysUntil ?? Infinity, left.deprecationDaysUntil ?? Infinity) - Math.min(right.retirementDaysUntil ?? Infinity, right.deprecationDaysUntil ?? Infinity));
 	return c.json({ signedIn: true, warnings, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);

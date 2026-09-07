@@ -6,7 +6,7 @@ import { fetchAccountWebApi } from "@/lib/web-api/client";
 export interface CompleteModelData {
 	model_id: string; name: string; organisation_id: string | null; status: string | null; hidden: boolean;
 	release_date: string | null; retirement_date: string | null; announcement_date: string | null; deprecation_date: string | null;
-	license: string | null; family_id: string | null; previous_model_id: string | null; input_types: string[]; output_types: string[];
+	license: string | null; family_id: string | null; previous_model_id: string | null; replacement_model_id: string | null; input_types: string[]; output_types: string[];
 	details: Array<{ detail_name: string; detail_value: string }>;
 	links: Array<{ platform: string; kind: string; title: string; url: string }>;
 	aliases: Array<{ alias_slug: string; is_enabled: boolean }>;

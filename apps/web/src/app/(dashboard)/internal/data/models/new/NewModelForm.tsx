@@ -762,6 +762,18 @@ export default function NewModelForm({
 							))}
 						</select>
 					</label>
+					<label htmlFor="new-model-replacement-model" className="text-sm">
+						<div className="mb-1 text-muted-foreground">Recommended successor</div>
+						<select id="new-model-replacement-model" name="replacement_model_id" className="w-full rounded-md border px-3 py-2 text-sm">
+							<option value="">None</option>
+							{previousModels.map((successor) => (
+								<option key={successor.model_id} value={successor.model_id}>
+									{successor.name ?? successor.model_id}
+								</option>
+							))}
+						</select>
+						<p className="mt-1 text-xs text-muted-foreground">Shown in deprecation notices; independent of lineage.</p>
+					</label>
 					<label className="text-sm flex items-center gap-2 self-end">
 						<input type="checkbox" name="hidden" />
 						<span>Hidden</span>

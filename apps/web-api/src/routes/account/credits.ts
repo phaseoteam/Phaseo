@@ -309,13 +309,18 @@ creditsRouter.post("/notification-destinations/test", async (c) => {
 	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const type = String(body.type ?? "") as NotificationDestinationType;
 	if (!NOTIFICATION_DESTINATION_TYPES.includes(type)) return c.json({ error: "invalid_destination" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const kind = body.kind === "model_deprecation" ? "model_deprecation" : "notification_test";
 	try {
 		const target = validateNotificationTarget(type, body.target);
-		const response = await fetch(`${String(c.env.GATEWAY_API_ORIGIN ?? "https://api.phaseo.app").replace(/\/$/, "")}/internal/notification-tests`, { method: "POST", headers: { authorization: `Bearer ${c.env.GATEWAY_INTERNAL_TEST_TOKEN ?? ""}`, "content-type": "application/json" }, body: JSON.stringify({ workspaceId, type, target }), signal: AbortSignal.timeout(10_000) });
+		const response = await fetch(`${String(c.env.GATEWAY_API_ORIGIN ?? "https://api.phaseo.app").replace(/\/$/, "")}/internal/notification-tests`, { method: "POST", headers: { authorization: `Bearer ${c.env.GATEWAY_INTERNAL_TEST_TOKEN ?? ""}`, "content-type": "application/json" }, body: JSON.stringify({ workspaceId, type, target, kind }), signal: AbortSignal.timeout(10_000) });
 		const result: { error?: string; status?: number } = await response.json().catch(() => ({}));
 		if (!response.ok) throw new Error(result.error ?? `destination_http_${response.status}`);
 		return c.json({ ok: true, status: result.status }, 200, PRIVATE_NO_STORE_HEADERS);
-	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "notification_test_failed" }, 502, PRIVATE_NO_STORE_HEADERS); }
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "notification_test_failed";
+		console.error("notification_configuration_test_failed", { workspaceId, type, error: message });
+		return c.json({ error: message }, 502, PRIVATE_NO_STORE_HEADERS);
+	}
 });
 
 creditsRouter.post("/notification-destinations/:destinationId/test", async (c) => {
@@ -327,12 +332,18 @@ creditsRouter.post("/notification-destinations/:destinationId/test", async (c) =
 	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const destination = await context.client.from("notification_destinations").select("id").eq("id", c.req.param("destinationId")).eq("workspace_id", workspaceId).eq("status", "active").maybeSingle();
 	if (destination.error || !destination.data) return c.json({ error: "notification_destination_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const kind = body.kind === "model_deprecation" ? "model_deprecation" : "notification_test";
+	console.log("notification_saved_destination_test_kind", { kind });
 	try {
-		const response = await fetch(`${String(c.env.GATEWAY_API_ORIGIN ?? "https://api.phaseo.app").replace(/\/$/, "")}/internal/notification-tests`, { method: "POST", headers: { authorization: `Bearer ${c.env.GATEWAY_INTERNAL_TEST_TOKEN ?? ""}`, "content-type": "application/json" }, body: JSON.stringify({ workspaceId, destinationId: destination.data.id }), signal: AbortSignal.timeout(10_000) });
+		const response = await fetch(`${String(c.env.GATEWAY_API_ORIGIN ?? "https://api.phaseo.app").replace(/\/$/, "")}/internal/notification-tests`, { method: "POST", headers: { authorization: `Bearer ${c.env.GATEWAY_INTERNAL_TEST_TOKEN ?? ""}`, "content-type": "application/json" }, body: JSON.stringify({ workspaceId, destinationId: destination.data.id, kind }), signal: AbortSignal.timeout(10_000) });
 		const result: { error?: string; status?: number } = await response.json().catch(() => ({}));
 		if (!response.ok) throw new Error(result.error ?? `destination_http_${response.status}`);
 		return c.json({ ok: true, status: result.status }, 200, PRIVATE_NO_STORE_HEADERS);
-	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "notification_test_failed" }, 502, PRIVATE_NO_STORE_HEADERS); }
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "notification_test_failed";
+		console.error("notification_saved_destination_test_failed", { workspaceId, destinationId: destination.data.id, error: message });
+		return c.json({ error: message }, 502, PRIVATE_NO_STORE_HEADERS);
+	}
 });
 
 creditsRouter.post("/redeem", async (c) => {

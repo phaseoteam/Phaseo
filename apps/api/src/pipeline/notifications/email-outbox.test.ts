@@ -140,6 +140,27 @@ describe("email outbox", () => {
 		});
 	});
 
+	it("leaves model deprecation rows for routed notification delivery", async () => {
+		state.rows.push({
+			id: "email_model_deprecation",
+			created_at: "2026-08-07T12:00:00Z",
+			kind: "model_deprecation",
+			template: "model_deprecation",
+			to_email: "owner@example.com",
+			subject: "Example Model has been deprecated",
+			workspace_id: "ws_1",
+			user_id: "user_1",
+			payload: { model_name: "Example Model" },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 0, sent: 0, failed: 0 });
+		expect(state.sendEmail).not.toHaveBeenCalled();
+	});
+
 	it("renders billing alerts and passes their deduplication key to Resend", async () => {
 		state.rows.push({
 			id: "email_auto_top_up_failed",

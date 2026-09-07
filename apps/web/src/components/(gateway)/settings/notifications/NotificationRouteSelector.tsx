@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { setNotificationRoute } from "@/app/(dashboard)/settings/credits/actions";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { NotificationDestination, NotificationEventKind } from "@/lib/fetchers/internal/settingsTypes";
 
 export default function NotificationRouteSelector(props: {
@@ -48,12 +48,14 @@ function NotificationRouteSelectorState({ destinations, eventKind, initialDestin
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-72">
-				<DropdownMenuLabel>Deliver this alert to</DropdownMenuLabel>
-				{destinations.map((destination) => (
-					<DropdownMenuCheckboxItem key={destination.id} disabled={saving} checked={effectiveSelectedIds.includes(destination.id)} onCheckedChange={(checked) => update(destination.id, Boolean(checked))} onSelect={(event) => event.preventDefault()}>
-						<span className="min-w-0"><span className="block truncate text-sm">{destination.name}</span><span className="block truncate text-xs text-muted-foreground">{destination.targetPreview}</span></span>
-					</DropdownMenuCheckboxItem>
-				))}
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>Deliver this alert to</DropdownMenuLabel>
+					{destinations.map((destination) => (
+						<DropdownMenuCheckboxItem key={destination.id} disabled={saving} checked={effectiveSelectedIds.includes(destination.id)} onCheckedChange={(checked) => update(destination.id, Boolean(checked))} onSelect={(event) => event.preventDefault()}>
+							<span className="min-w-0"><span className="block truncate text-sm">{destination.name}</span><span className="block truncate text-xs text-muted-foreground">{destination.targetPreview}</span></span>
+						</DropdownMenuCheckboxItem>
+					))}
+				</DropdownMenuGroup>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);

@@ -11,6 +11,7 @@ export const RESEND_ONBOARDING_TEMPLATE_ALIASES = {
 	WELCOME_NOT_PURCHASED_7D: "onboarding-welcome-not-purchased-7d",
 	CHECKOUT_ABANDONED: "onboarding-checkout-abandoned",
 	LOW_BALANCE: "billing-low-balance-alert",
+	MODEL_DEPRECATION: "model-deprecation-alert",
 } as const;
 
 export const RESEND_ONBOARDING_AUTOMATION_NAMES = {

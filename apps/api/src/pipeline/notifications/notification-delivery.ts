@@ -1,12 +1,33 @@
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@/core/webhook-endpoints";
 import { sendEmail } from "@/lib/email/resend";
-import { getSupabaseAdmin } from "@/runtime/env";
+import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
+import { getModelDeprecationContent, getModelDeprecationTemplateVariables, renderModelDeprecationEmail, renderNotificationTestEmail } from "@/pipeline/notifications/model-deprecation";
 
 const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "notification_test"];
 const EVENT_PAGE_SIZE = 100;
 const WORKSPACE_PAGE_SIZE = 500;
 const DELIVERY_TIMEOUT_MS = 60_000;
+const MODEL_DEPRECATION_LEAD_TIME_MS = 7 * 24 * 60 * 60 * 1000;
+export type NotificationTestKind = "notification_test" | "model_deprecation";
+
+function configuredModelDeprecationTemplateId(): string {
+	try {
+		return getBindings().RESEND_TEMPLATE_MODEL_DEPRECATION_ID?.trim() ?? "";
+	} catch {
+		return "";
+	}
+}
+
+export function shouldNotifyModelDeprecation(
+	model: { status?: unknown; deprecated_at?: unknown },
+	now = new Date(),
+): boolean {
+	const deprecationTimestamp = model.deprecated_at ? Date.parse(String(model.deprecated_at)) : Number.NaN;
+	const isDeprecated = String(model.status ?? "").toLowerCase() === "deprecated" || (Number.isFinite(deprecationTimestamp) && deprecationTimestamp <= now.getTime());
+	const isWithinLeadTime = Number.isFinite(deprecationTimestamp) && deprecationTimestamp <= now.getTime() + MODEL_DEPRECATION_LEAD_TIME_MS;
+	return isDeprecated || isWithinLeadTime;
+}
 
 type EventRow = { id: string; kind: string; subject: string | null; workspace_id: string; payload: Record<string, unknown> | null; created_at: string };
 type DestinationRow = { id: string; workspace_id: string; name: string; type: string; target_ciphertext: string; target_iv: string; target_key_version: string; status: string; is_ephemeral?: boolean };
@@ -23,6 +44,10 @@ export async function forEachPage<T>(pageSize: number, fetchPage: (from: number,
 }
 
 export function eventContent(event: EventRow) {
+	if (event.kind === "model_deprecation") {
+		const content = getModelDeprecationContent(event.payload ?? {});
+		return { title: content.title, message: content.message, settingsUrl: content.settingsUrl };
+	}
 	const payload = event.payload ?? {};
 	const title = String(payload.title ?? event.subject ?? ({ low_balance: "Low balance alert", auto_top_up_failed: "Auto Top-Up failed", payment_method_expiring: "Payment method expiring soon", model_deprecation: "Model deprecation alert", notification_test: "Phaseo test notification" } as Record<string, string>)[event.kind] ?? "Phaseo notification");
 	let message = String(payload.message ?? "");
@@ -68,12 +93,24 @@ async function deliver(event: EventRow, destination: DestinationRow): Promise<nu
 	const target = await decryptTarget(destination);
 	const content = eventContent(event);
 	if (destination.type === "email") {
+		const modelDeprecationEmail = event.kind === "model_deprecation" ? renderModelDeprecationEmail(event.payload ?? {}) : null;
+		const notificationTestEmail = event.kind === "notification_test" ? renderNotificationTestEmail() : null;
+		const modelDeprecationTemplateId = event.kind === "model_deprecation" ? configuredModelDeprecationTemplateId() : "";
+		if (event.kind === "model_deprecation") console.log("model_deprecation_template", { configured: Boolean(modelDeprecationTemplateId) });
 		let recipients: string[];
 		try { const parsed = JSON.parse(target); recipients = Array.isArray(parsed) ? parsed.map(String) : [target]; } catch { recipients = [target]; }
 		let delivered = 0;
 		for (const [index, recipient] of recipients.entries()) {
 			if (await getEmailSuppressionReason(recipient)) continue;
-			await sendEmail({ to: recipient, subject: content.title, text: `${content.title}\n\n${content.message}\n\nManage notifications: ${content.settingsUrl}`, html: `<div style="font-family:ui-sans-serif,system-ui;line-height:1.5"><h2>${content.title.replaceAll("<", "&lt;")}</h2><p>${content.message.replaceAll("<", "&lt;")}</p><p><a href="${content.settingsUrl}">Manage notifications</a></p></div>`, idempotencyKey: `notification:${event.id}:${destination.id}:${index}`, signal });
+			await sendEmail({
+				to: recipient,
+				subject: modelDeprecationEmail?.subject ?? notificationTestEmail?.subject ?? content.title,
+				...(modelDeprecationTemplateId
+					? { template: { id: modelDeprecationTemplateId, variables: getModelDeprecationTemplateVariables(event.payload ?? {}) } }
+					: { text: modelDeprecationEmail?.text ?? notificationTestEmail?.text ?? `${content.title}\n\n${content.message}\n\nManage notifications: ${content.settingsUrl}`, html: modelDeprecationEmail?.html ?? notificationTestEmail?.html ?? `<div style="font-family:ui-sans-serif,system-ui;line-height:1.5"><h2>${content.title.replaceAll("<", "&lt;")}</h2><p>${content.message.replaceAll("<", "&lt;")}</p><p><a href="${content.settingsUrl}">Manage notifications</a></p></div>` }),
+				idempotencyKey: `notification:${event.id}:${destination.id}:${index}`,
+				signal,
+			});
 			delivered += 1;
 		}
 		if (delivered === 0) return 208;
@@ -88,16 +125,28 @@ export async function deliverNotificationTest(input: {
 	target?: string;
 	destinationId?: string;
 	workspaceId: string;
+	kind?: NotificationTestKind;
 }): Promise<number> {
+	const kind = input.kind ?? "notification_test";
+	const isModelDeprecationSample = kind === "model_deprecation";
 	const event: EventRow = {
 		id: crypto.randomUUID(),
-		kind: "notification_test",
-		subject: "Phaseo test notification",
+		kind,
+		subject: isModelDeprecationSample ? "Model deprecation: GPT 5.6 Sol" : "Phaseo test notification",
 		workspace_id: input.workspaceId,
-		payload: {
-			title: "Phaseo test notification",
-			message: "Your notification destination is connected and ready.",
-		},
+		payload: isModelDeprecationSample
+			? {
+				model_id: "openai/gpt-5.6-sol",
+				model_name: "GPT 5.6 Sol",
+				deprecation_date: new Date(Date.now() + MODEL_DEPRECATION_LEAD_TIME_MS).toISOString(),
+				retirement_date: new Date(Date.now() + 37 * 24 * 60 * 60 * 1000).toISOString(),
+				replacement_model_id: "openai/gpt-5.6-terra",
+				replacement_model_name: "GPT 5.6 Terra",
+			}
+			: {
+				title: "Phaseo test notification",
+				message: "Your notification destination is connected and ready.",
+			},
 		created_at: new Date().toISOString(),
 	};
 
@@ -115,6 +164,9 @@ export async function deliverNotificationTest(input: {
 
 	if (!input.type || !input.target) throw new Error("notification_test_target_missing");
 	const content = eventContent(event);
+	const modelDeprecationEmail = isModelDeprecationSample ? renderModelDeprecationEmail(event.payload ?? {}) : null;
+	const notificationTestEmail = kind === "notification_test" ? renderNotificationTestEmail() : null;
+	const modelDeprecationTemplateId = isModelDeprecationSample ? configuredModelDeprecationTemplateId() : "";
 	if (input.type === "email") {
 		let recipients: string[];
 		try { const parsed = JSON.parse(input.target); recipients = Array.isArray(parsed) ? parsed.map(String) : [input.target]; } catch { recipients = [input.target]; }
@@ -122,11 +174,12 @@ export async function deliverNotificationTest(input: {
 		for (const [index, recipient] of recipients.entries()) {
 			if (await getEmailSuppressionReason(recipient)) continue;
 			await sendEmail({
-			to: recipient,
-			subject: content.title,
-			text: `${content.title}\n\n${content.message}\n\nManage notifications: ${content.settingsUrl}`,
-			html: `<div style="font-family:ui-sans-serif,system-ui;line-height:1.5"><h2>${content.title}</h2><p>${content.message}</p><p><a href="${content.settingsUrl}">Manage notifications</a></p></div>`,
-			idempotencyKey: `notification-test:${event.id}:${index}`,
+				to: recipient,
+				subject: modelDeprecationEmail?.subject ?? notificationTestEmail?.subject ?? content.title,
+				...(modelDeprecationTemplateId
+					? { template: { id: modelDeprecationTemplateId, variables: getModelDeprecationTemplateVariables(event.payload ?? {}) } }
+					: { text: modelDeprecationEmail?.text ?? notificationTestEmail?.text ?? `${content.title}\n\n${content.message}\n\nManage notifications: ${content.settingsUrl}`, html: modelDeprecationEmail?.html ?? notificationTestEmail?.html ?? `<div style="font-family:ui-sans-serif,system-ui;line-height:1.5"><h2>${content.title}</h2><p>${content.message}</p><p><a href="${content.settingsUrl}">Manage notifications</a></p></div>` }),
+				idempotencyKey: `notification-test:${event.id}:${index}`,
 			});
 			delivered += 1;
 		}
@@ -189,22 +242,41 @@ export async function enqueueModelDeprecationNotifications(now = new Date()): Pr
 		return settingsResult.data ?? [];
 	}, async (settings) => {
 		const workspaceId = String(settings.workspace_id);
-		const usage = await supabase.from("gateway_requests").select("model_id").eq("workspace_id", workspaceId).not("model_id", "is", null).gte("created_at", new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()).limit(5000);
+		const usage = await supabase.rpc("get_workspace_model_last_used", {
+			p_workspace_id: workspaceId,
+			p_since: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+		});
 		if (usage.error) return;
-		const modelIds = [...new Set((usage.data ?? []).map((row) => String(row.model_id ?? "").trim()).filter(Boolean))];
+		const modelIds = (usage.data ?? []).map((row) => String(row.model_id ?? "").trim()).filter(Boolean);
 		if (!modelIds.length) return;
-		const models = await supabase.from("v2_models").select("model_slug,name,status,deprecated_at,retired_at").in("model_slug", modelIds);
+		const models = await supabase.from("v2_models").select("model_slug,name,status,deprecated_at,retired_at,replacement_model_slug").in("model_slug", modelIds);
 		if (models.error) return;
+		const replacementIds = [...new Set((models.data ?? []).map((model) => String(model.replacement_model_slug ?? "").trim()).filter(Boolean))];
+		const replacements = replacementIds.length
+			? await supabase.from("v2_models").select("model_slug,name").in("model_slug", replacementIds)
+			: { data: [], error: null };
+		const replacementNames = new Map<string, string>();
+		for (const replacement of replacements.data ?? []) {
+			if (replacement.model_slug && replacement.name) replacementNames.set(String(replacement.model_slug), String(replacement.name));
+		}
 		const workspace = await supabase.from("workspaces").select("name,owner_user_id").eq("id", workspaceId).maybeSingle();
 		if (workspace.error || !workspace.data?.owner_user_id) return;
 		const user = await (supabase as any).auth.admin.getUserById(workspace.data.owner_user_id).catch(() => null);
 		const email = String(user?.data?.user?.email ?? "").trim();
 		if (!email) return;
 		for (const model of models.data ?? []) {
-			const deprecated = String(model.status ?? "").toLowerCase() === "deprecated" || (model.deprecated_at && Date.parse(String(model.deprecated_at)) <= now.getTime());
-			if (!deprecated) continue;
+			if (!shouldNotifyModelDeprecation(model, now)) continue;
+			const replacementModelId = String(model.replacement_model_slug ?? "").trim() || null;
+			const content = getModelDeprecationContent({
+				model_id: model.model_slug,
+				model_name: model.name ?? model.model_slug,
+				deprecation_date: model.deprecated_at,
+				retirement_date: model.retired_at,
+				replacement_model_id: replacementModelId,
+				replacement_model_name: replacementModelId ? replacementNames.get(replacementModelId) : null,
+			}, now);
 			const dedupeKey = `model_deprecation:${workspaceId}:${model.model_slug}:${String(model.deprecated_at ?? model.status ?? "deprecated")}`.slice(0, 500);
-			const inserted = await supabase.from("email_outbox").upsert({ dedupe_key: dedupeKey, kind: "model_deprecation", template: "model_deprecation", to_email: email, subject: `${String(model.name ?? model.model_slug)} has been deprecated`, workspace_id: workspaceId, user_id: workspace.data.owner_user_id, payload: { workspace_name: workspace.data.name ?? "your workspace", model_id: model.model_slug, model_name: model.name ?? model.model_slug, deprecation_date: model.deprecated_at, retirement_date: model.retired_at, title: `${String(model.name ?? model.model_slug)} has been deprecated` } }, { onConflict: "dedupe_key", ignoreDuplicates: true });
+			const inserted = await supabase.from("email_outbox").upsert({ dedupe_key: dedupeKey, kind: "model_deprecation", template: "model_deprecation", to_email: email, subject: content.title, workspace_id: workspaceId, user_id: workspace.data.owner_user_id, payload: { workspace_name: workspace.data.name ?? "your workspace", model_id: model.model_slug, model_name: model.name ?? model.model_slug, deprecation_date: model.deprecated_at, retirement_date: model.retired_at, replacement_model_id: replacementModelId, replacement_model_name: replacementModelId ? replacementNames.get(replacementModelId) ?? null : null, title: content.title } }, { onConflict: "dedupe_key", ignoreDuplicates: true });
 			if (!inserted.error) enqueued += 1;
 		}
 	});

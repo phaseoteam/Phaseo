@@ -302,6 +302,7 @@ export type GatewayBindings = {
     RESEND_FROM_EMAIL?: string;
     RESEND_ONBOARDING_AUTOMATIONS_ENABLED?: string;
     RESEND_TEMPLATE_LOW_BALANCE_ID?: string;
+    RESEND_TEMPLATE_MODEL_DEPRECATION_ID?: string;
     DISCORD_WEBHOOK_URL?: string;
     DISCORD_ROLE_ID?: string;
     DISCORD_USER_ID?: string;
