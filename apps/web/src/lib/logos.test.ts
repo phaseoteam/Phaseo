@@ -66,6 +66,15 @@ describe("logos", () => {
 		});
 	});
 
+	test("resolves the CrofAI logo by provider id", () => {
+		expect(resolveLogo("crofai")).toMatchObject({
+			id: "crofai",
+			label: "CrofAI",
+			src: "/logos/crofai.svg",
+			variant: "color",
+		});
+	});
+
 	test("resolves themed Poe logo variants", () => {
 		expect(resolveLogo("poe", { theme: "light" })).toMatchObject({
 			id: "poe",
