@@ -52,7 +52,12 @@ describe("OpenAI image edit schema", () => {
 	});
 
 	it("accepts GPT Image 2 transparent backgrounds and configurable input fidelity", () => {
-		for (const model of ["openai/gpt-image-2", "openai/gpt-image-2-2026-04-21"]) {
+		for (const model of [
+			"openai/gpt-image-2",
+			"openai/gpt-image-2-2026-04-21",
+			"openai/gpt-image-2.5-flare",
+			"openai/gpt-image-2.5-sunburst",
+		]) {
 			for (const input_fidelity of ["low", "high"] as const) {
 				expect(ImagesEditSchema.safeParse({
 					model,
@@ -65,6 +70,48 @@ describe("OpenAI image edit schema", () => {
 			}
 		}
 	});
+
+	it.each(["openai/gpt-image-2.5-flare", "openai/gpt-image-2.5-sunburst"])(
+		"accepts GPT Image 2.5 xhigh and max edit quality for %s",
+		(model) => {
+			for (const quality of ["xhigh", "max"] as const) {
+				expect(ImagesEditSchema.safeParse({ model, image: "image", prompt: "edit", quality }).success).toBe(true);
+			}
+		},
+	);
+
+	it.each(["xhigh", "max"])("accepts %s quality through the GPT Image latest alias", (quality) => {
+		expect(ImagesEditSchema.safeParse({
+			model: "openai/gpt-image-latest",
+			image: "image",
+			prompt: "Refine the lighting",
+			quality,
+			size: "2048x1152",
+		}).success).toBe(true);
+	});
+
+	it("rejects GPT Image 2.5-only edit quality for earlier GPT Image models", () => {
+		expect(ImagesEditSchema.safeParse({
+			model: "openai/gpt-image-2",
+			image: "image",
+			prompt: "edit",
+			quality: "max",
+		}).success).toBe(false);
+		expect(ImagesEditSchema.safeParse({
+			model: "spacex-ai/grok-imagine-image-2.0",
+			image: "image",
+			prompt: "edit",
+			quality: "xhigh",
+		}).success).toBe(false);
+	});
+
+	it.each(["openai/gpt-image-2.5-flare", "openai/gpt-image-2.5-sunburst"])(
+		"validates GPT Image 2.5 edit dimensions for %s",
+		(model) => {
+			expect(ImagesEditSchema.safeParse({ model, image: "image", prompt: "edit", size: "2048x1152" }).success).toBe(true);
+			expect(ImagesEditSchema.safeParse({ model, image: "image", prompt: "edit", size: "1025x1024" }).success).toBe(false);
+		},
+	);
 
 	it("enforces image count, prompt, and output compression constraints", () => {
 		expect(ImagesEditSchema.safeParse({

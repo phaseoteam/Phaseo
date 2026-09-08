@@ -1,9 +1,15 @@
 export interface ImagesEditRequest {
-  image: string;
+  background?: "transparent" | "opaque" | "auto";
+  image: string | string[];
+  input_fidelity?: "high" | "low";
   mask?: string;
   meta?: boolean;
   model: string;
+  moderation?: "auto" | "low";
   n?: number;
+  output_compression?: number;
+  output_format?: "png" | "jpeg" | "webp";
+  partial_images?: number;
   prompt: string;
   provider?: {
     allow_fallbacks?: boolean | null;
@@ -42,8 +48,10 @@ export interface ImagesEditRequest {
         };
     zdr?: boolean | null;
   };
+  quality?: "standard" | "low" | "medium" | "high" | "xhigh" | "max" | "auto";
   resolution?: string;
   size?: string;
+  stream?: boolean;
   usage?: boolean;
   user?: string;
 }

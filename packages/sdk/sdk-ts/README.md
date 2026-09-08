@@ -101,7 +101,8 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.responses.create(...)`
 - `client.chat.completions.create(...)`
 - `client.messages.create(...)`
-- `client.streamChat(...)`, `client.streamResponses(...)`, and `client.streamMessages(...)` for parsed streaming chunks with `text`, `usage`, and `reasoningTokens`
+- `client.streamChat(...)`, `client.streamResponses(...)`, and `client.streamMessages(...)` for parsed text streaming chunks with `text`, `usage`, and `reasoningTokens`
+- `client.streamImage(...)` and `client.streamImageEdit(...)` for incremental image-generation and image-edit events
 - `client.models.list(...)`
 - `client.listOrganisations(...)` for paginated `/organisations` discovery
 - `client.listPricingModels(...)` for `/pricing/models` catalogue pricing discovery

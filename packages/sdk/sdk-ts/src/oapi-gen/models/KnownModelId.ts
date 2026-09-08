@@ -354,6 +354,8 @@ export type KnownModelId =
   | "openai/gpt-image-1-mini"
   | "openai/gpt-image-1.5"
   | "openai/gpt-image-2"
+  | "openai/gpt-image-2.5-flare"
+  | "openai/gpt-image-2.5-sunburst"
   | "openai/gpt-oss-120b"
   | "openai/gpt-oss-20b"
   | "openai/gpt-oss-safeguard-120b"

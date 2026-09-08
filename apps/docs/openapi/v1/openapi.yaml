@@ -1246,6 +1246,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImagesGenerationResponse'
+            text/event-stream:
+              schema:
+                type: string
   /images/edits:
     post:
       x-beta: true
@@ -1269,6 +1272,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImagesEditResponse'
+            text/event-stream:
+              schema:
+                type: string
   /videos:
     get:
       x-beta: true
@@ -11005,6 +11011,33 @@ components:
           maximum: 10
         quality:
           type: string
+        stream:
+          type: boolean
+        partial_images:
+          type: integer
+          minimum: 0
+          maximum: 3
+        output_format:
+          type: string
+          enum:
+            - png
+            - jpeg
+            - webp
+        output_compression:
+          type: integer
+          minimum: 0
+          maximum: 100
+        background:
+          type: string
+          enum:
+            - transparent
+            - opaque
+            - auto
+        moderation:
+          type: string
+          enum:
+            - auto
+            - low
         response_format:
           type: string
         style:
@@ -11041,7 +11074,13 @@ components:
         model:
           type: string
         image:
-          type: string
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              maxItems: 16
+              items:
+                type: string
         mask:
           type: string
         prompt:
@@ -11054,6 +11093,51 @@ components:
           type: integer
           minimum: 1
           maximum: 10
+        quality:
+          type: string
+          enum:
+            - standard
+            - low
+            - medium
+            - high
+            - xhigh
+            - max
+            - auto
+          description: >-
+            Image rendering quality. xhigh and max are available only for GPT
+            Image 2.5 models.
+        stream:
+          type: boolean
+        partial_images:
+          type: integer
+          minimum: 0
+          maximum: 3
+        output_format:
+          type: string
+          enum:
+            - png
+            - jpeg
+            - webp
+        output_compression:
+          type: integer
+          minimum: 0
+          maximum: 100
+        background:
+          type: string
+          enum:
+            - transparent
+            - opaque
+            - auto
+        moderation:
+          type: string
+          enum:
+            - auto
+            - low
+        input_fidelity:
+          type: string
+          enum:
+            - high
+            - low
         user:
           type: string
         meta:
@@ -20750,6 +20834,8 @@ components:
         - openai/gpt-image-1-mini
         - openai/gpt-image-1.5
         - openai/gpt-image-2
+        - openai/gpt-image-2.5-flare
+        - openai/gpt-image-2.5-sunburst
         - openai/gpt-oss-120b
         - openai/gpt-oss-20b
         - openai/gpt-oss-safeguard-120b

@@ -1425,15 +1425,23 @@ struct ImageModerationInput {
 };
 
 struct ImagesEditRequest {
-	std::string image;
+	std::any background;
+	std::any image;
+	std::any input_fidelity;
 	std::string mask;
 	std::optional<bool> meta;
 	std::string model;
+	std::any moderation;
 	std::optional<int> n;
+	std::optional<int> output_compression;
+	std::any output_format;
+	std::optional<int> partial_images;
 	std::string prompt;
 	std::map<std::string, std::any> provider;
+	std::any quality;
 	std::string resolution;
 	std::string size;
+	std::optional<bool> stream;
 	std::optional<bool> usage;
 	std::string user;
 };
@@ -1444,14 +1452,20 @@ struct ImagesEditResponse {
 };
 
 struct ImagesGenerationRequest {
+	std::any background;
 	std::string model;
+	std::any moderation;
 	std::optional<int> n;
+	std::optional<int> output_compression;
+	std::any output_format;
+	std::optional<int> partial_images;
 	std::string prompt;
 	std::map<std::string, std::any> provider;
 	std::string quality;
 	std::string resolution;
 	std::string response_format;
 	std::string size;
+	std::optional<bool> stream;
 	std::string style;
 	std::string user;
 };

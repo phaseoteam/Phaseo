@@ -356,6 +356,9 @@ final class ModelIds
     /** Model ID: deepseek/deepseek-v4-pro-0813. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
     public const DEEPSEEK_DEEPSEEK_V4_PRO_0813 = 'deepseek/deepseek-v4-pro-0813';
 
+    /** Model ID: deepseek/deepseek-v4.1-flash-beta. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta */
+    public const DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = 'deepseek/deepseek-v4.1-flash-beta';
+
     /** Model ID: early-access/ea-29b-a4b. Model page: https://phaseo.app/models/early-access/ea-29b-a4b */
     public const EARLY_ACCESS_EA_29B_A4B = 'early-access/ea-29b-a4b';
 
@@ -1060,6 +1063,12 @@ final class ModelIds
 
     /** Model ID: openai/gpt-image-2. Model page: https://phaseo.app/models/openai/gpt-image-2 */
     public const OPENAI_GPT_IMAGE_2 = 'openai/gpt-image-2';
+
+    /** Model ID: openai/gpt-image-2.5-flare. Model page: https://phaseo.app/models/openai/gpt-image-2.5-flare */
+    public const OPENAI_GPT_IMAGE_2_5_FLARE = 'openai/gpt-image-2.5-flare';
+
+    /** Model ID: openai/gpt-image-2.5-sunburst. Model page: https://phaseo.app/models/openai/gpt-image-2.5-sunburst */
+    public const OPENAI_GPT_IMAGE_2_5_SUNBURST = 'openai/gpt-image-2.5-sunburst';
 
     /** Model ID: openai/gpt-oss-120b. Model page: https://phaseo.app/models/openai/gpt-oss-120b */
     public const OPENAI_GPT_OSS_120B = 'openai/gpt-oss-120b';

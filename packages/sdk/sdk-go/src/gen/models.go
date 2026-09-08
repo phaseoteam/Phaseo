@@ -2142,15 +2142,23 @@ type ImageModerationInput struct {
 }
 
 type ImagesEditRequest struct {
-	Image string `json:"image"`
+	Background *string `json:"background,omitempty"`
+	Image interface{} `json:"image"`
+	InputFidelity *string `json:"input_fidelity,omitempty"`
 	Mask *string `json:"mask,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
 	Model string `json:"model"`
+	Moderation *string `json:"moderation,omitempty"`
 	N *int `json:"n,omitempty"`
+	OutputCompression *int `json:"output_compression,omitempty"`
+	OutputFormat *string `json:"output_format,omitempty"`
+	PartialImages *int `json:"partial_images,omitempty"`
 	Prompt string `json:"prompt"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Quality *string `json:"quality,omitempty"`
 	Resolution *string `json:"resolution,omitempty"`
 	Size *string `json:"size,omitempty"`
+	Stream *bool `json:"stream,omitempty"`
 	Usage *bool `json:"usage,omitempty"`
 	User *string `json:"user,omitempty"`
 }
@@ -2161,14 +2169,20 @@ type ImagesEditResponse struct {
 }
 
 type ImagesGenerationRequest struct {
+	Background *string `json:"background,omitempty"`
 	Model string `json:"model"`
+	Moderation *string `json:"moderation,omitempty"`
 	N *int `json:"n,omitempty"`
+	OutputCompression *int `json:"output_compression,omitempty"`
+	OutputFormat *string `json:"output_format,omitempty"`
+	PartialImages *int `json:"partial_images,omitempty"`
 	Prompt string `json:"prompt"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Quality *string `json:"quality,omitempty"`
 	Resolution *string `json:"resolution,omitempty"`
 	ResponseFormat *string `json:"response_format,omitempty"`
 	Size *string `json:"size,omitempty"`
+	Stream *bool `json:"stream,omitempty"`
 	Style *string `json:"style,omitempty"`
 	User *string `json:"user,omitempty"`
 }
@@ -2546,6 +2560,8 @@ const (
 	KnownModelIdOpenaiGptImage1Mini KnownModelId = "openai/gpt-image-1-mini"
 	KnownModelIdOpenaiGptImage15 KnownModelId = "openai/gpt-image-1.5"
 	KnownModelIdOpenaiGptImage2 KnownModelId = "openai/gpt-image-2"
+	KnownModelIdOpenaiGptImage25Flare KnownModelId = "openai/gpt-image-2.5-flare"
+	KnownModelIdOpenaiGptImage25Sunburst KnownModelId = "openai/gpt-image-2.5-sunburst"
 	KnownModelIdOpenaiGptOss120b KnownModelId = "openai/gpt-oss-120b"
 	KnownModelIdOpenaiGptOss20b KnownModelId = "openai/gpt-oss-20b"
 	KnownModelIdOpenaiGptOssSafeguard120b KnownModelId = "openai/gpt-oss-safeguard-120b"

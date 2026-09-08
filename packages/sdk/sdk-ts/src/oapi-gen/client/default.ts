@@ -3317,8 +3317,13 @@ export type CreateImageParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    background?: "transparent" | "opaque" | "auto";
     model: string;
+    moderation?: "auto" | "low";
     n?: number;
+    output_compression?: number;
+    output_format?: "png" | "jpeg" | "webp";
+    partial_images?: number;
     prompt: string;
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -3361,6 +3366,7 @@ export type CreateImageParams = {
     resolution?: string;
     response_format?: string;
     size?: string;
+    stream?: boolean;
     style?: string;
     user?: string;
   };
@@ -3403,11 +3409,17 @@ export type CreateImageEditParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    image: string;
+    background?: "transparent" | "opaque" | "auto";
+    image: string | string[];
+    input_fidelity?: "high" | "low";
     mask?: string;
     meta?: boolean;
     model: string;
+    moderation?: "auto" | "low";
     n?: number;
+    output_compression?: number;
+    output_format?: "png" | "jpeg" | "webp";
+    partial_images?: number;
     prompt: string;
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -3446,8 +3458,10 @@ export type CreateImageEditParams = {
           };
       zdr?: boolean | null;
     };
+    quality?: "standard" | "low" | "medium" | "high" | "xhigh" | "max" | "auto";
     resolution?: string;
     size?: string;
+    stream?: boolean;
     usage?: boolean;
     user?: string;
   };

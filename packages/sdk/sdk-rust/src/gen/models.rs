@@ -2,6 +2,11 @@ use std::collections::HashMap;
 
 pub type JsonValue = String;
 
+pub enum StringOrStringArray {
+	String(String),
+	Array(Vec<String>),
+}
+
 pub struct ActivityEntry {
 	pub byok_usage_inference: f64,
 	pub completion_tokens: i64,
@@ -1421,15 +1426,23 @@ pub struct ImageModerationInput {
 }
 
 pub struct ImagesEditRequest {
-	pub image: String,
+	pub background: Option<String>,
+	pub image: StringOrStringArray,
+	pub input_fidelity: Option<String>,
 	pub mask: Option<String>,
 	pub meta: Option<bool>,
 	pub model: String,
+	pub moderation: Option<String>,
 	pub n: Option<i64>,
+	pub output_compression: Option<i64>,
+	pub output_format: Option<String>,
+	pub partial_images: Option<i64>,
 	pub prompt: String,
 	pub provider: Option<HashMap<String, String>>,
+	pub quality: Option<String>,
 	pub resolution: Option<String>,
 	pub size: Option<String>,
+	pub stream: Option<bool>,
 	pub usage: Option<bool>,
 	pub user: Option<String>,
 }
@@ -1440,14 +1453,20 @@ pub struct ImagesEditResponse {
 }
 
 pub struct ImagesGenerationRequest {
+	pub background: Option<String>,
 	pub model: String,
+	pub moderation: Option<String>,
 	pub n: Option<i64>,
+	pub output_compression: Option<i64>,
+	pub output_format: Option<String>,
+	pub partial_images: Option<i64>,
 	pub prompt: String,
 	pub provider: Option<HashMap<String, String>>,
 	pub quality: Option<String>,
 	pub resolution: Option<String>,
 	pub response_format: Option<String>,
 	pub size: Option<String>,
+	pub stream: Option<bool>,
 	pub style: Option<String>,
 	pub user: Option<String>,
 }

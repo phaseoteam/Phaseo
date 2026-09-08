@@ -238,6 +238,8 @@ namespace PhaseoSdk
         public const string DeepseekDeepseekV4Pro = "deepseek/deepseek-v4-pro";
         /// <summary>Model ID: <c>deepseek/deepseek-v4-pro-0813</c>. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813</summary>
         public const string DeepseekDeepseekV4Pro0813 = "deepseek/deepseek-v4-pro-0813";
+        /// <summary>Model ID: <c>deepseek/deepseek-v4.1-flash-beta</c>. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta</summary>
+        public const string DeepseekDeepseekV41FlashBeta = "deepseek/deepseek-v4.1-flash-beta";
         /// <summary>Model ID: <c>early-access/ea-29b-a4b</c>. Model page: https://phaseo.app/models/early-access/ea-29b-a4b</summary>
         public const string EarlyAccessEa29bA4b = "early-access/ea-29b-a4b";
         /// <summary>Model ID: <c>eleven-labs/eleven-flash-v2</c>. Model page: https://phaseo.app/models/eleven-labs/eleven-flash-v2</summary>
@@ -708,6 +710,10 @@ namespace PhaseoSdk
         public const string OpenaiGptImage15 = "openai/gpt-image-1.5";
         /// <summary>Model ID: <c>openai/gpt-image-2</c>. Model page: https://phaseo.app/models/openai/gpt-image-2</summary>
         public const string OpenaiGptImage2 = "openai/gpt-image-2";
+        /// <summary>Model ID: <c>openai/gpt-image-2.5-flare</c>. Model page: https://phaseo.app/models/openai/gpt-image-2.5-flare</summary>
+        public const string OpenaiGptImage25Flare = "openai/gpt-image-2.5-flare";
+        /// <summary>Model ID: <c>openai/gpt-image-2.5-sunburst</c>. Model page: https://phaseo.app/models/openai/gpt-image-2.5-sunburst</summary>
+        public const string OpenaiGptImage25Sunburst = "openai/gpt-image-2.5-sunburst";
         /// <summary>Model ID: <c>openai/gpt-oss-120b</c>. Model page: https://phaseo.app/models/openai/gpt-oss-120b</summary>
         public const string OpenaiGptOss120b = "openai/gpt-oss-120b";
         /// <summary>Model ID: <c>openai/gpt-oss-20b</c>. Model page: https://phaseo.app/models/openai/gpt-oss-20b</summary>

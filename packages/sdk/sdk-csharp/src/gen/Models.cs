@@ -3473,8 +3473,14 @@ public sealed class ImageModerationInput
 
 public sealed class ImagesEditRequest
 {
+	[JsonPropertyName("background")]
+	public string? Background { get; set; }
+
 	[JsonPropertyName("image")]
-	public string Image { get; set; }
+	public object Image { get; set; }
+
+	[JsonPropertyName("input_fidelity")]
+	public string? InputFidelity { get; set; }
 
 	[JsonPropertyName("mask")]
 	public string? Mask { get; set; }
@@ -3485,8 +3491,20 @@ public sealed class ImagesEditRequest
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("moderation")]
+	public string? Moderation { get; set; }
+
 	[JsonPropertyName("n")]
 	public long? N { get; set; }
+
+	[JsonPropertyName("output_compression")]
+	public long? OutputCompression { get; set; }
+
+	[JsonPropertyName("output_format")]
+	public string? OutputFormat { get; set; }
+
+	[JsonPropertyName("partial_images")]
+	public long? PartialImages { get; set; }
 
 	[JsonPropertyName("prompt")]
 	public string Prompt { get; set; }
@@ -3494,11 +3512,17 @@ public sealed class ImagesEditRequest
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
+	[JsonPropertyName("quality")]
+	public string? Quality { get; set; }
+
 	[JsonPropertyName("resolution")]
 	public string? Resolution { get; set; }
 
 	[JsonPropertyName("size")]
 	public string? Size { get; set; }
+
+	[JsonPropertyName("stream")]
+	public bool? Stream { get; set; }
 
 	[JsonPropertyName("usage")]
 	public bool? Usage { get; set; }
@@ -3520,11 +3544,26 @@ public sealed class ImagesEditResponse
 
 public sealed class ImagesGenerationRequest
 {
+	[JsonPropertyName("background")]
+	public string? Background { get; set; }
+
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
+	[JsonPropertyName("moderation")]
+	public string? Moderation { get; set; }
+
 	[JsonPropertyName("n")]
 	public long? N { get; set; }
+
+	[JsonPropertyName("output_compression")]
+	public long? OutputCompression { get; set; }
+
+	[JsonPropertyName("output_format")]
+	public string? OutputFormat { get; set; }
+
+	[JsonPropertyName("partial_images")]
+	public long? PartialImages { get; set; }
 
 	[JsonPropertyName("prompt")]
 	public string Prompt { get; set; }
@@ -3543,6 +3582,9 @@ public sealed class ImagesGenerationRequest
 
 	[JsonPropertyName("size")]
 	public string? Size { get; set; }
+
+	[JsonPropertyName("stream")]
+	public bool? Stream { get; set; }
 
 	[JsonPropertyName("style")]
 	public string? Style { get; set; }
