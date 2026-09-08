@@ -1,4 +1,5 @@
 -- Recovered from the production supabase_migrations.schema_migrations ledger.
+-- phaseo:allow-production-history-backfill reason: Version 20260907233627 is already applied in production; restore its recorded SQL without replaying it.
 -- Original version and SQL are retained; this migration is already applied in production.
 
 -- Repair functions that still referenced removed team_* tables.

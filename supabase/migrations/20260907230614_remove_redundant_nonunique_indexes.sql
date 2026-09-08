@@ -1,4 +1,5 @@
 -- Recovered from the production supabase_migrations.schema_migrations ledger.
+-- phaseo:allow-production-history-backfill reason: Version 20260907230614 is already applied in production; restore its recorded SQL without replaying it.
 -- Original version and SQL are retained; this migration is already applied in production.
 
 -- Each removed index has an equivalent valid UNIQUE/PRIMARY index with the

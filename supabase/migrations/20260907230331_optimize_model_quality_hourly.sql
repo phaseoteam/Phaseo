@@ -1,4 +1,5 @@
 -- Recovered from the production supabase_migrations.schema_migrations ledger.
+-- phaseo:allow-production-history-backfill reason: Version 20260907230331 is already applied in production; restore its recorded SQL without replaying it.
 -- Original version and SQL are retained; this migration is already applied in production.
 
 CREATE OR REPLACE FUNCTION public.get_v2_model_quality_hourly_v1(p_model_slug text, p_cloudflare_colo text DEFAULT NULL::text, p_stream_mode text DEFAULT 'all'::text, p_context_bucket text DEFAULT 'all'::text)

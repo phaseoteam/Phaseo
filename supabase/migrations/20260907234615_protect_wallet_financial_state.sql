@@ -1,4 +1,5 @@
 -- Recovered from the production supabase_migrations.schema_migrations ledger.
+-- phaseo:allow-production-history-backfill reason: Version 20260907234615 is already applied in production; restore its recorded SQL without replaying it.
 -- Original version and SQL are retained; this migration is already applied in production.
 -- phaseo:allow-destructive-migration reason: Restore already-applied history: financial table write privileges are revoked; TRUNCATE is not executed.
 

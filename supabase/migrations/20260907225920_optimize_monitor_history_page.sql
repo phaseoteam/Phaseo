@@ -1,4 +1,5 @@
 -- Recovered from the production supabase_migrations.schema_migrations ledger.
+-- phaseo:allow-production-history-backfill reason: Version 20260907225920 is already applied in production; restore its recorded SQL without replaying it.
 -- Original version and SQL are retained; this migration is already applied in production.
 
 CREATE OR REPLACE FUNCTION public.get_monitor_history_page(p_model text DEFAULT NULL::text, p_provider text DEFAULT NULL::text, p_change_kind text DEFAULT NULL::text, p_commit_offset integer DEFAULT 0, p_commit_limit integer DEFAULT 18)
