@@ -2546,6 +2546,8 @@ const (
 	KnownModelIdOpenaiGptImage1Mini KnownModelId = "openai/gpt-image-1-mini"
 	KnownModelIdOpenaiGptImage15 KnownModelId = "openai/gpt-image-1.5"
 	KnownModelIdOpenaiGptImage2 KnownModelId = "openai/gpt-image-2"
+	KnownModelIdOpenaiGptImage25Flare KnownModelId = "openai/gpt-image-2.5-flare"
+	KnownModelIdOpenaiGptImage25Sunburst KnownModelId = "openai/gpt-image-2.5-sunburst"
 	KnownModelIdOpenaiGptOss120b KnownModelId = "openai/gpt-oss-120b"
 	KnownModelIdOpenaiGptOss20b KnownModelId = "openai/gpt-oss-20b"
 	KnownModelIdOpenaiGptOssSafeguard120b KnownModelId = "openai/gpt-oss-safeguard-120b"
