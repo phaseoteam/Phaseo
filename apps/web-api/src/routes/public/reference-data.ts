@@ -348,6 +348,7 @@ publicReferenceDataRouter.get("/subscription-plans", async (c) => {
 		const [{ data, error }, labsResult] = await Promise.all([
 			client.from("v2_subscription_plans")
 				.select("plan_uuid,plan_id,name,lab_slug,description,frequency,price,currency,link,other_info")
+				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 				.order("name", { ascending: true }),
 			client.from("v2_labs").select("lab_slug,name,country_code,metadata"),
 		]);
@@ -386,6 +387,7 @@ publicReferenceDataRouter.get("/subscription-plans/:planId", async (c) => {
 		const { data: planRows, error: planError } = await client
 			.from("v2_subscription_plans")
 			.select("plan_uuid,plan_id,name,lab_slug,description,frequency,price,currency,link,other_info")
+			.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 			.eq("plan_id", planId);
 		if (planError) throw planError;
 		if (!planRows?.length) return notFound(c, "subscription_plan");

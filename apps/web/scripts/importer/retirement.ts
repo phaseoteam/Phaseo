@@ -2,7 +2,8 @@ import { assertOk, type client } from "./supa";
 import { chunk } from "./util";
 
 type RetainedTable = "v2_models" | "v2_model_provider_routes" | "v2_model_aliases"
-    | "v2_pricing_skus" | "v2_benchmark_results" | "v2_subscription_plan_models";
+    | "v2_pricing_skus" | "v2_benchmark_results" | "v2_subscription_plan_models"
+    | "v2_subscription_plans" | "v2_route_capabilities";
 
 export function retirementValues(table: RetainedTable, row: Record<string, any>, now: string) {
     const dateColumn = table === "v2_models" ? "retired_at" : "effective_to";
@@ -14,6 +15,7 @@ export function retirementValues(table: RetainedTable, row: Record<string, any>,
     if (table === "v2_models") Object.assign(values, { hidden: true, status: "retired", catalogue_status: "retired" });
     if (table === "v2_model_provider_routes") Object.assign(values, { status: "disabled", routing_enabled: false });
     if (table === "v2_model_aliases") values.enabled = false;
+    if (table === "v2_route_capabilities") values.status = "disabled";
     if (table === "v2_pricing_skus") {
         values.status = row.status === "disabled" || Date.parse(row.effective_from ?? "") >= Date.parse(now)
             ? "disabled" : "deprecated";
