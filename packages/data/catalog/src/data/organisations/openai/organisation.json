@@ -2,6 +2,7 @@
   "organisation_id": "openai",
   "name": "OpenAI",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "OpenAI is an AI research and deployment company based in San Francisco, California. Their mission is to ensure that artificial general intelligence (AGI) benefits all of humanity.",
   "colour": "#333333",
   "organisation_links": [

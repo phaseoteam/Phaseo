@@ -3,5 +3,6 @@ export interface OrganisationCard {
     organisation_id: string;
     organisation_name: string | null;
     country_code: string | null;
+    subdivision_code: string | null;
     colour: string | null;
 }

@@ -2,6 +2,7 @@
   "organisation_id": "kwaipilot",
   "name": "KwaiKAT",
   "country_code": "CN",
+  "subdivision_code": "CN-BJ",
   "description": "KwaiKAT is Kuaishou's coding-model team behind the KAT-Coder family. Kuaishou lists its corporate contact address in Beijing, China. Its public model IDs use the kwaipilot namespace.",
   "colour": null,
   "organisation_links": [

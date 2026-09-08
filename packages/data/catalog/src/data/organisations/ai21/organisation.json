@@ -2,6 +2,7 @@
   "organisation_id": "ai21",
   "name": "ai21",
   "country_code": "IL",
+  "subdivision_code": "IL-TA",
   "description": "AI21 Labs is an AI research and product company with an office in Tel Aviv, Israel. Their mission is to build advanced language models and writing-tools that enable humans and machines to collaborate in thinking and creating.",
   "colour": "#E91E63",
   "organisation_links": [

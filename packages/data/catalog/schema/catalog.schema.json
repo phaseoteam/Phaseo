@@ -184,6 +184,7 @@
         "organisation_id": { "$ref": "#/$defs/slug" },
         "name": { "type": "string", "minLength": 1 },
         "country_code": { "type": "string", "minLength": 2, "maxLength": 3 },
+        "subdivision_code": { "type": ["string", "null"], "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$" },
         "description": { "$ref": "#/$defs/nullableString" },
         "colour": { "$ref": "#/$defs/nullableString" },
         "organisation_links": { "type": "array", "items": { "$ref": "#/$defs/link" } }
@@ -206,6 +207,7 @@
         "provider_family_id": { "type": ["string", "null"] },
         "status": { "type": ["string", "null"] },
         "country_code": { "type": ["string", "null"] },
+        "subdivision_code": { "type": ["string", "null"], "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$" },
         "availability": {
           "type": ["object", "null"],
           "required": ["mode", "countries", "country_source", "unknown_country"],

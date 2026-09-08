@@ -947,6 +947,12 @@ function checkOrganisations(state: ValidationState): string[] {
         if (data.country_code !== null && !/^[A-Z]{2,3}$/.test(countryCode)) {
             errors.push(`Organisation ${organisationId} has invalid country_code`);
         }
+        const subdivisionCode = typeof data.subdivision_code === 'string' ? data.subdivision_code.trim() : '';
+        if (data.subdivision_code !== undefined && data.subdivision_code !== null && !/^[A-Z]{2}-[A-Z0-9]{1,3}$/.test(subdivisionCode)) {
+            errors.push(`Organisation ${organisationId} has invalid subdivision_code`);
+        } else if (subdivisionCode && countryCode.length === 2 && subdivisionCode.slice(0, 2) !== countryCode) {
+            errors.push(`Organisation ${organisationId} subdivision_code must belong to country_code`);
+        }
         const links = Array.isArray(data.organisation_links) ? data.organisation_links : [];
         const seenPlatforms = new Set<string>();
         for (const [index, link] of links.entries()) {
@@ -1316,6 +1322,13 @@ function checkApiProviders(state: ValidationState): string[] {
         }
         if (data.zero_data_retention === true && data.data_retention_days !== 0) {
             errors.push(`API provider ${providerId} with zero data retention must set data_retention_days to 0`);
+        }
+        const subdivisionCode = typeof data.subdivision_code === 'string' ? data.subdivision_code.trim() : '';
+        const countryCode = typeof data.country_code === 'string' ? data.country_code.trim() : '';
+        if (data.subdivision_code !== undefined && data.subdivision_code !== null && !/^[A-Z]{2}-[A-Z0-9]{1,3}$/.test(subdivisionCode)) {
+            errors.push(`API provider ${providerId} has invalid subdivision_code`);
+        } else if (subdivisionCode && countryCode.length === 2 && subdivisionCode.slice(0, 2) !== countryCode) {
+            errors.push(`API provider ${providerId} subdivision_code must belong to country_code`);
         }
 		const providerModelsPath = path.join(providersDir, provider, 'models.json');
 		const providerModels = fs.existsSync(providerModelsPath)
