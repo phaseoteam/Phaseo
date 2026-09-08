@@ -177,6 +177,7 @@ export type KnownModelId =
   | "ibm/granite-4.2-3b"
   | "ibm/granite-4.2-8b"
   | "inception/mercury-2"
+  | "inception/mercury-2.5"
   | "inception/mercury-edit-2"
   | "inclusionai/ling-2.6-1t"
   | "inclusionai/ling-2.6-flash"
