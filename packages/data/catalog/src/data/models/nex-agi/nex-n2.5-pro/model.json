@@ -9,7 +9,7 @@
   "release_date": "2026-09-08T00:00:00Z",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
+  "license": "Apache 2.0",
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "nex-agi/nex-n2.5-pro",
@@ -55,6 +55,10 @@
     }
   ],
   "benchmarks": [],
+  "page_notice": {
+    "tone": "warning",
+    "markdown": "Nex-N2.5-Pro weights are coming soon."
+  },
   "model_type": "Mixture of Experts",
   "knowledge_cutoff": null,
   "limits": {
@@ -72,19 +76,25 @@
     ]
   },
   "reasoning": {
-    "supported": null,
-    "options": []
+    "supported": true,
+    "options": ["none", "medium", "high"]
   },
   "capabilities": {
-    "attachment": null,
-    "tool_call": null,
+    "attachment": true,
+    "tool_call": true,
     "structured_output": null,
-    "temperature": null,
+    "temperature": true,
     "streaming": null,
     "web_search": null
   },
-  "open_weights": true,
+  "open_weights": false,
   "sources": [
+    {
+      "kind": "official_model_card",
+      "url": "https://huggingface.co/nex-agi/Nex-N2.5-Pro",
+      "accessed_at": "2026-09-08",
+      "notes": "Live Hugging Face page confirms Apache 2.0 metadata but contains only the README and figures; it explicitly says that Nex-N2.5-Pro weights are coming soon and publishes no model config or weights."
+    },
     {
       "kind": "website",
       "url": "https://nex-agi.com/",
@@ -95,7 +105,7 @@
   "verification": {
     "status": "verified",
     "checked_at": "2026-09-08T00:00:00Z",
-    "notes": "Model identity and published specifications are verified from Nex AGI's official launch page. The catalog announcement and release date are assumed as 2026-09-08 per the requested catalog update."
+    "notes": "Model identity and launch specifications are verified from Nex AGI's official launch page. The live Hugging Face page is README-only and explicitly says that weights are coming soon, so open_weights is false and runtime limits remain unset."
   },
   "last_updated": "2026-09-08T00:00:00Z",
   "removal_date": null,

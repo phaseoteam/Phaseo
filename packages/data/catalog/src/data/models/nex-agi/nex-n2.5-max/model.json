@@ -9,7 +9,8 @@
   "release_date": "2026-09-08T00:00:00Z",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
+  "license": "Apache 2.0",
+  "license_url": "https://huggingface.co/nex-agi/Nex-N2.5-Max/blob/main/LICENSE",
   "input_types": "text",
   "output_types": "text",
   "api_model_id": "nex-agi/nex-n2.5-max",
@@ -39,7 +40,8 @@
   "details": [
     {
       "name": "parameter_count",
-      "value": 1600000000000
+      "value": 1600787478430,
+      "source_link": "https://huggingface.co/collections/nex-agi/nex-n25"
     },
     {
       "name": "active_parameter_count",
@@ -52,14 +54,31 @@
     {
       "name": "architecture",
       "value": "Mixture of Experts"
+    },
+    {
+      "name": "supported_precision",
+      "value": "FP8 expert weights",
+      "source_link": "https://huggingface.co/nex-agi/Nex-N2.5-Max"
+    },
+    {
+      "name": "hf_model_type",
+      "value": "deepseek_v4",
+      "source_link": "https://huggingface.co/nex-agi/Nex-N2.5-Max"
+    },
+    {
+      "name": "weight_shard_count",
+      "value": 644,
+      "unit": "Safetensors shards",
+      "source_link": "https://huggingface.co/nex-agi/Nex-N2.5-Max"
     }
   ],
   "benchmarks": [],
+  "page_notice": null,
   "model_type": "Mixture of Experts",
   "knowledge_cutoff": null,
   "limits": {
-    "context": null,
-    "input": null,
+    "context": 1048576,
+    "input": 1048576,
     "output": null
   },
   "modalities": {
@@ -71,19 +90,25 @@
     ]
   },
   "reasoning": {
-    "supported": null,
-    "options": []
+    "supported": true,
+    "options": ["none", "medium", "high"]
   },
   "capabilities": {
-    "attachment": null,
-    "tool_call": null,
+    "attachment": false,
+    "tool_call": true,
     "structured_output": null,
-    "temperature": null,
+    "temperature": true,
     "streaming": null,
     "web_search": null
   },
   "open_weights": true,
   "sources": [
+    {
+      "kind": "official_model_card",
+      "url": "https://huggingface.co/nex-agi/Nex-N2.5-Max",
+      "accessed_at": "2026-09-08",
+      "notes": "Live Hugging Face model card confirms Apache 2.0 licensing, deepseek_v4 architecture, FP8 expert weights, text-only support, 1048576 max_position_embeddings, and 644 Safetensors weight shards."
+    },
     {
       "kind": "website",
       "url": "https://nex-agi.com/",
@@ -94,10 +119,9 @@
   "verification": {
     "status": "verified",
     "checked_at": "2026-09-08T00:00:00Z",
-    "notes": "Model identity and published specifications are verified from Nex AGI's official launch page. The catalog announcement and release date are assumed as 2026-09-08 per the requested catalog update."
+    "notes": "Model identity and launch specifications are verified from Nex AGI's official launch page and the live Hugging Face model card. The native config advertises a 1048576-token context, while the example deployment command caps runtime context at 262144; no hosted inference provider is listed."
   },
   "last_updated": "2026-09-08T00:00:00Z",
   "removal_date": null,
-  "replacement_model_id": null,
-  "license_url": null
+  "replacement_model_id": null
 }
