@@ -174,10 +174,10 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 			.select("benchmark_id,name,category,ascending_order,benchmark_type,total_models")
 			.in("benchmark_id", RANKING_BENCHMARK_IDS);
 		if (benchmarkResult.error) throw benchmarkResult.error;
-		const scores: Array<{ benchmark_id: string; model_slug: string; score_numeric: number | null; other_info: string | null; source_link: string | null; updated_at: string | null }> = [];
+		const scores: Array<{ benchmark_id: string; model_slug: string; score_numeric: number | null; other_info: string | null; source_link: string | null; updated_at: string | null; variant: string | null; result_key: string | null }> = [];
 		for (let offset = 0; ; offset += 500) {
 			const page = await client.from("v2_benchmark_results")
-				.select("benchmark_id,model_slug,score_numeric,other_info,source_link,updated_at")
+				.select("benchmark_id,model_slug,score_numeric,other_info,source_link,updated_at,variant,result_key")
 				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 				.in("benchmark_id", RANKING_BENCHMARK_IDS).not("score_numeric", "is", null)
 				.order("result_id").range(offset, offset + 499);
@@ -186,15 +186,15 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 			if ((page.data ?? []).length < 500) break;
 		}
 		const modelIds = [...new Set(scores.map((row) => row.model_slug))];
-		const models = new Map<string, { model_name: string; organisation_id: string | null; organisation_name: string | null }>();
+		const models = new Map<string, { model_name: string; organisation_id: string | null; organisation_name: string | null; organisation_colour: string | null }>();
 		for (let offset = 0; offset < modelIds.length; offset += 200) {
 			const result = await client.from("v2_models")
-				.select("model_slug,name,lab_slug,lab:v2_labs!v2_models_lab_slug_fkey(name)")
+				.select("model_slug,name,lab_slug,lab:v2_labs!v2_models_lab_slug_fkey(name,colour)")
 				.in("model_slug", modelIds.slice(offset, offset + 200)).eq("hidden", false);
 			if (result.error) throw result.error;
 			for (const row of result.data ?? []) {
 				const lab = Array.isArray(row.lab) ? row.lab[0] : row.lab;
-				models.set(row.model_slug, { model_name: row.name ?? row.model_slug, organisation_id: row.lab_slug ?? null, organisation_name: lab?.name ?? row.lab_slug ?? null });
+				models.set(row.model_slug, { model_name: row.name ?? row.model_slug, organisation_id: row.lab_slug ?? null, organisation_name: lab?.name ?? row.lab_slug ?? null, organisation_colour: lab?.colour ?? null });
 			}
 		}
 		const order = new Map(RANKING_BENCHMARK_IDS.map((id, index) => [id, index]));
@@ -206,19 +206,23 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 				const benchmarkScores = scores.filter((row) => row.benchmark_id === benchmark.benchmark_id && models.has(row.model_slug));
 				const latestVersion = benchmarkScores.map((row) => versionOf(row.other_info)).filter((version): version is string => Boolean(version)).sort((a, b) => b.localeCompare(a, "en", { numeric: true }))[0];
 				const bestByModel = new Map<string, { score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>();
+				const configurationsByModel = new Map<string, Array<{ variant: string | null; result_key: string | null; score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>>();
 				for (const row of benchmarkScores) {
 					// Preserve historical records, but never rank different index versions together.
 					if (latestVersion && versionOf(row.other_info) !== latestVersion) continue;
 					if (row.benchmark_id !== benchmark.benchmark_id || !models.has(row.model_slug)) continue;
 					const score = Number(row.score_numeric);
 					if (!Number.isFinite(score)) continue;
+					const configurations = configurationsByModel.get(row.model_slug) ?? [];
+					configurations.push({ variant: row.variant, result_key: row.result_key, score, other_info: row.other_info, source_link: row.source_link, updated_at: row.updated_at });
+					configurationsByModel.set(row.model_slug, configurations);
 					const previous = bestByModel.get(row.model_slug);
 					if (!previous || (lowerIsBetter ? score < previous.score : score > previous.score)) {
 						bestByModel.set(row.model_slug, { score, other_info: row.other_info, source_link: row.source_link, updated_at: row.updated_at });
 					}
 				}
 				const entries = [...bestByModel.entries()]
-					.map(([modelId, result]) => ({ model_id: modelId, ...models.get(modelId), ...result }))
+					.map(([modelId, result]) => ({ model_id: modelId, ...models.get(modelId), ...result, configurations: (configurationsByModel.get(modelId) ?? []).sort((left, right) => lowerIsBetter ? left.score - right.score : right.score - left.score) }))
 					.sort((left, right) => lowerIsBetter ? left.score - right.score : right.score - left.score)
 					.map((entry, index, sorted) => ({ ...entry, rank: index > 0 && sorted[index - 1].score === entry.score ? sorted.findIndex((item) => item.score === entry.score) + 1 : index + 1 }));
 				return {

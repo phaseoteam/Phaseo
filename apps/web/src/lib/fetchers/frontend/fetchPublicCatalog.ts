@@ -992,8 +992,17 @@ export type PublicBenchmarkRankingEntry = {
 	model_name: string;
 	organisation_id: string | null;
 	organisation_name: string | null;
+	organisation_colour?: string | null;
 	score: number;
 	rank: number;
+	configurations?: Array<{
+		variant: string | null;
+		result_key: string | null;
+		score: number;
+		other_info: string | null;
+		source_link: string | null;
+		updated_at: string | null;
+	}>;
 };
 
 export type PublicBenchmarkRanking = {
