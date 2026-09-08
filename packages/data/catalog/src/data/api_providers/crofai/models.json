@@ -16,7 +16,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -64,7 +74,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -112,7 +141,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -167,7 +206,26 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -234,7 +292,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -284,7 +352,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -341,7 +419,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -389,7 +486,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -444,7 +560,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -492,7 +618,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -540,7 +676,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -588,7 +743,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -643,7 +808,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -691,7 +866,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -739,7 +933,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -794,7 +998,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -842,7 +1065,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -897,7 +1139,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -952,7 +1213,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1000,7 +1271,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1048,7 +1329,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1096,7 +1387,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1144,7 +1445,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1192,7 +1503,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1240,7 +1561,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1288,7 +1619,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1336,7 +1677,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1384,7 +1744,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1439,7 +1809,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1487,7 +1876,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1542,7 +1941,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1599,7 +2008,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1654,7 +2073,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1709,7 +2138,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1764,7 +2203,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1812,7 +2270,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -1867,7 +2335,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1915,7 +2402,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -1963,7 +2469,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -2011,7 +2536,17 @@
       {
         "capability_id": "text.generate",
         "status": "inactive",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2066,7 +2601,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": true,
         "structured_output": null,
@@ -2123,7 +2677,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": true,
         "structured_output": null,
@@ -2180,7 +2753,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2237,7 +2820,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2292,7 +2885,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2349,7 +2952,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2404,7 +3017,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2459,7 +3082,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2514,7 +3147,17 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2569,7 +3212,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -2630,7 +3292,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,
@@ -2691,7 +3372,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": [],
+        "params": {
+          "max_tokens": true,
+          "max_completion_tokens": true,
+          "temperature": true,
+          "top_p": true,
+          "stop": true,
+          "seed": true,
+          "tools": true,
+          "reasoning_effort": {
+            "type": "enum",
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "response_format": true,
+          "repetition_penalty": true
+        },
         "reasoning": true,
         "tool_call": null,
         "structured_output": null,

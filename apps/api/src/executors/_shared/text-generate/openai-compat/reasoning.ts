@@ -116,6 +116,17 @@ export function applyReasoningParams(args: {
 		if (effort && effort !== "none") args.request.reasoning_effort = effort;
 		return;
 	}
+	if (args.providerId === "crofai") {
+		const effort = typeof reasoning.effort === "string"
+			? reasoning.effort
+			: reasoning.enabled === false
+				? "none"
+				: reasoning.enabled === true
+					? "medium"
+					: undefined;
+		if (effort !== undefined) args.request.reasoning_effort = effort;
+		return;
+	}
 
 	if (args.providerId === "stepfun") {
 		const effort = typeof reasoning.effort === "string"
