@@ -947,6 +947,11 @@ export async function syncV2Catalogue(): Promise<void> {
         ...(protectedCatalogueKeys.get("models") ?? []),
         ...(protectedCatalogueKeys.get("model") ?? []),
     ]);
+    for (const route of providerModels) {
+        if (protectedModelSlugs.has(canonicalModelSlug(route.model_id))) {
+            protectedRouteIds.add(String(route.provider_api_model_id));
+        }
+    }
 
     if (modelPreflight.issues.length) {
         await upsertChunks(supa, "v2_catalogue_backfill_issues", modelPreflight.issues, "source_type,source_key,issue_code");
@@ -1370,7 +1375,8 @@ export async function syncV2Catalogue(): Promise<void> {
     );
 
     await upsertChunks(supa, "v2_route_capabilities", uniqueRows(capabilities
-        .filter(row => providerModels.some(route => String(route.provider_api_model_id) === String(row.provider_api_model_id)))
+        .filter(row => desiredRouteIds.has(String(row.provider_api_model_id))
+            && !isProtectedProviderModel(row, protectedRouteIds))
         .map(row => ({
             provider_model_id: row.provider_api_model_id,
             capability_id: row.capability_id,
