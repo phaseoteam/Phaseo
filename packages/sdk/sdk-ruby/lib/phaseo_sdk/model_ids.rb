@@ -351,6 +351,9 @@ module PhaseoSdk
     # Model ID: deepseek/deepseek-v4-pro-0813
     # Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
     DEEPSEEK_DEEPSEEK_V4_PRO_0813 = "deepseek/deepseek-v4-pro-0813"
+    # Model ID: deepseek/deepseek-v4.1-flash-beta
+    # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
+    DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = "deepseek/deepseek-v4.1-flash-beta"
     # Model ID: early-access/ea-29b-a4b
     # Model page: https://phaseo.app/models/early-access/ea-29b-a4b
     EARLY_ACCESS_EA_29B_A4B = "early-access/ea-29b-a4b"
@@ -1056,6 +1059,12 @@ module PhaseoSdk
     # Model ID: openai/gpt-image-2
     # Model page: https://phaseo.app/models/openai/gpt-image-2
     OPENAI_GPT_IMAGE_2 = "openai/gpt-image-2"
+    # Model ID: openai/gpt-image-2.5-flare
+    # Model page: https://phaseo.app/models/openai/gpt-image-2.5-flare
+    OPENAI_GPT_IMAGE_2_5_FLARE = "openai/gpt-image-2.5-flare"
+    # Model ID: openai/gpt-image-2.5-sunburst
+    # Model page: https://phaseo.app/models/openai/gpt-image-2.5-sunburst
+    OPENAI_GPT_IMAGE_2_5_SUNBURST = "openai/gpt-image-2.5-sunburst"
     # Model ID: openai/gpt-oss-120b
     # Model page: https://phaseo.app/models/openai/gpt-oss-120b
     OPENAI_GPT_OSS_120B = "openai/gpt-oss-120b"
@@ -2062,6 +2071,7 @@ module PhaseoSdk
     ModelIds::DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
     ModelIds::DEEPSEEK_DEEPSEEK_V4_PRO,
     ModelIds::DEEPSEEK_DEEPSEEK_V4_PRO_0813,
+    ModelIds::DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA,
     ModelIds::EARLY_ACCESS_EA_29B_A4B,
     ModelIds::ELEVEN_LABS_ELEVEN_FLASH_V2,
     ModelIds::ELEVEN_LABS_ELEVEN_FLASH_V2_5,
@@ -2297,6 +2307,8 @@ module PhaseoSdk
     ModelIds::OPENAI_GPT_IMAGE_1_MINI,
     ModelIds::OPENAI_GPT_IMAGE_1_5,
     ModelIds::OPENAI_GPT_IMAGE_2,
+    ModelIds::OPENAI_GPT_IMAGE_2_5_FLARE,
+    ModelIds::OPENAI_GPT_IMAGE_2_5_SUNBURST,
     ModelIds::OPENAI_GPT_OSS_120B,
     ModelIds::OPENAI_GPT_OSS_20B,
     ModelIds::OPENAI_GPT_OSS_SAFEGUARD_120B,

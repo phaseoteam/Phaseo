@@ -354,6 +354,9 @@ inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_PRO = "deepseek/deepseek-
 // Model ID: deepseek/deepseek-v4-pro-0813
 // Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_PRO_0813 = "deepseek/deepseek-v4-pro-0813";
+// Model ID: deepseek/deepseek-v4.1-flash-beta
+// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = "deepseek/deepseek-v4.1-flash-beta";
 // Model ID: early-access/ea-29b-a4b
 // Model page: https://phaseo.app/models/early-access/ea-29b-a4b
 inline constexpr std::string_view EARLY_ACCESS_EA_29B_A4B = "early-access/ea-29b-a4b";
@@ -1059,6 +1062,12 @@ inline constexpr std::string_view OPENAI_GPT_IMAGE_1_5 = "openai/gpt-image-1.5";
 // Model ID: openai/gpt-image-2
 // Model page: https://phaseo.app/models/openai/gpt-image-2
 inline constexpr std::string_view OPENAI_GPT_IMAGE_2 = "openai/gpt-image-2";
+// Model ID: openai/gpt-image-2.5-flare
+// Model page: https://phaseo.app/models/openai/gpt-image-2.5-flare
+inline constexpr std::string_view OPENAI_GPT_IMAGE_2_5_FLARE = "openai/gpt-image-2.5-flare";
+// Model ID: openai/gpt-image-2.5-sunburst
+// Model page: https://phaseo.app/models/openai/gpt-image-2.5-sunburst
+inline constexpr std::string_view OPENAI_GPT_IMAGE_2_5_SUNBURST = "openai/gpt-image-2.5-sunburst";
 // Model ID: openai/gpt-oss-120b
 // Model page: https://phaseo.app/models/openai/gpt-oss-120b
 inline constexpr std::string_view OPENAI_GPT_OSS_120B = "openai/gpt-oss-120b";
@@ -1947,7 +1956,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 646> ALL = {
+inline constexpr std::array<std::string_view, 649> ALL = {
 	AI21_JAMBA_1_5_LARGE,
 	AI21_JAMBA_1_5_MINI,
 	AION_LABS_AION_2_0,
@@ -2064,6 +2073,7 @@ inline constexpr std::array<std::string_view, 646> ALL = {
 	DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
 	DEEPSEEK_DEEPSEEK_V4_PRO,
 	DEEPSEEK_DEEPSEEK_V4_PRO_0813,
+	DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA,
 	EARLY_ACCESS_EA_29B_A4B,
 	ELEVEN_LABS_ELEVEN_FLASH_V2,
 	ELEVEN_LABS_ELEVEN_FLASH_V2_5,
@@ -2299,6 +2309,8 @@ inline constexpr std::array<std::string_view, 646> ALL = {
 	OPENAI_GPT_IMAGE_1_MINI,
 	OPENAI_GPT_IMAGE_1_5,
 	OPENAI_GPT_IMAGE_2,
+	OPENAI_GPT_IMAGE_2_5_FLARE,
+	OPENAI_GPT_IMAGE_2_5_SUNBURST,
 	OPENAI_GPT_OSS_120B,
 	OPENAI_GPT_OSS_20B,
 	OPENAI_GPT_OSS_SAFEGUARD_120B,

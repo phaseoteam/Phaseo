@@ -355,6 +355,9 @@ const (
 	// Model ID: deepseek/deepseek-v4-pro-0813
 	// Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
 	ModelIDDeepseekDeepseekV4Pro0813 gen.ModelId = "deepseek/deepseek-v4-pro-0813"
+	// Model ID: deepseek/deepseek-v4.1-flash-beta
+	// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
+	ModelIDDeepseekDeepseekV41FlashBeta gen.ModelId = "deepseek/deepseek-v4.1-flash-beta"
 	// Model ID: early-access/ea-29b-a4b
 	// Model page: https://phaseo.app/models/early-access/ea-29b-a4b
 	ModelIDEarlyAccessEa29bA4b gen.ModelId = "early-access/ea-29b-a4b"
@@ -1060,6 +1063,12 @@ const (
 	// Model ID: openai/gpt-image-2
 	// Model page: https://phaseo.app/models/openai/gpt-image-2
 	ModelIDOpenaiGptImage2 gen.ModelId = "openai/gpt-image-2"
+	// Model ID: openai/gpt-image-2.5-flare
+	// Model page: https://phaseo.app/models/openai/gpt-image-2.5-flare
+	ModelIDOpenaiGptImage25Flare gen.ModelId = "openai/gpt-image-2.5-flare"
+	// Model ID: openai/gpt-image-2.5-sunburst
+	// Model page: https://phaseo.app/models/openai/gpt-image-2.5-sunburst
+	ModelIDOpenaiGptImage25Sunburst gen.ModelId = "openai/gpt-image-2.5-sunburst"
 	// Model ID: openai/gpt-oss-120b
 	// Model page: https://phaseo.app/models/openai/gpt-oss-120b
 	ModelIDOpenaiGptOss120b gen.ModelId = "openai/gpt-oss-120b"
@@ -2066,6 +2075,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDDeepseekDeepseekV4FlashVisionExp,
 	ModelIDDeepseekDeepseekV4Pro,
 	ModelIDDeepseekDeepseekV4Pro0813,
+	ModelIDDeepseekDeepseekV41FlashBeta,
 	ModelIDEarlyAccessEa29bA4b,
 	ModelIDElevenLabsElevenFlashV2,
 	ModelIDElevenLabsElevenFlashV25,
@@ -2301,6 +2311,8 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDOpenaiGptImage1Mini,
 	ModelIDOpenaiGptImage15,
 	ModelIDOpenaiGptImage2,
+	ModelIDOpenaiGptImage25Flare,
+	ModelIDOpenaiGptImage25Sunburst,
 	ModelIDOpenaiGptOss120b,
 	ModelIDOpenaiGptOss20b,
 	ModelIDOpenaiGptOssSafeguard120b,

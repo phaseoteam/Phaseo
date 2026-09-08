@@ -1437,6 +1437,7 @@ public final class Models {
 		public Integer n;
 		public String prompt;
 		public Object provider;
+		public Object quality;
 		public String resolution;
 		public String size;
 		public Boolean usage;

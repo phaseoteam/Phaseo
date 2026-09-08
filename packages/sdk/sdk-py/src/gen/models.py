@@ -1281,6 +1281,7 @@ class ImagesEditRequest(TypedDict):
 	n: NotRequired[int]
 	prompt: str
 	provider: NotRequired[ProviderRoutingOptions]
+	quality: NotRequired[Literal["standard", "low", "medium", "high", "xhigh", "max", "auto"]]
 	resolution: NotRequired[str]
 	size: NotRequired[str]
 	usage: NotRequired[bool]

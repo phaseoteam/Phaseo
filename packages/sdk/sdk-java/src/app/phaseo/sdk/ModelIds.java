@@ -355,6 +355,9 @@ public final class ModelIds {
     /** Model ID: <code>deepseek/deepseek-v4-pro-0813</code>. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
     public static final String DEEPSEEK_DEEPSEEK_V4_PRO_0813 = "deepseek/deepseek-v4-pro-0813";
 
+    /** Model ID: <code>deepseek/deepseek-v4.1-flash-beta</code>. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta */
+    public static final String DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = "deepseek/deepseek-v4.1-flash-beta";
+
     /** Model ID: <code>early-access/ea-29b-a4b</code>. Model page: https://phaseo.app/models/early-access/ea-29b-a4b */
     public static final String EARLY_ACCESS_EA_29B_A4B = "early-access/ea-29b-a4b";
 
@@ -1059,6 +1062,12 @@ public final class ModelIds {
 
     /** Model ID: <code>openai/gpt-image-2</code>. Model page: https://phaseo.app/models/openai/gpt-image-2 */
     public static final String OPENAI_GPT_IMAGE_2 = "openai/gpt-image-2";
+
+    /** Model ID: <code>openai/gpt-image-2.5-flare</code>. Model page: https://phaseo.app/models/openai/gpt-image-2.5-flare */
+    public static final String OPENAI_GPT_IMAGE_2_5_FLARE = "openai/gpt-image-2.5-flare";
+
+    /** Model ID: <code>openai/gpt-image-2.5-sunburst</code>. Model page: https://phaseo.app/models/openai/gpt-image-2.5-sunburst */
+    public static final String OPENAI_GPT_IMAGE_2_5_SUNBURST = "openai/gpt-image-2.5-sunburst";
 
     /** Model ID: <code>openai/gpt-oss-120b</code>. Model page: https://phaseo.app/models/openai/gpt-oss-120b */
     public static final String OPENAI_GPT_OSS_120B = "openai/gpt-oss-120b";

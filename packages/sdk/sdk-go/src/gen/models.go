@@ -2149,6 +2149,7 @@ type ImagesEditRequest struct {
 	N *int `json:"n,omitempty"`
 	Prompt string `json:"prompt"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Quality *string `json:"quality,omitempty"`
 	Resolution *string `json:"resolution,omitempty"`
 	Size *string `json:"size,omitempty"`
 	Usage *bool `json:"usage,omitempty"`

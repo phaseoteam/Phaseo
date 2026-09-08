@@ -3446,6 +3446,7 @@ export type CreateImageEditParams = {
           };
       zdr?: boolean | null;
     };
+    quality?: "standard" | "low" | "medium" | "high" | "xhigh" | "max" | "auto";
     resolution?: string;
     size?: string;
     usage?: boolean;

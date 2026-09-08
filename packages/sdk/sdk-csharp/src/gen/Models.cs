@@ -3494,6 +3494,9 @@ public sealed class ImagesEditRequest
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
+	[JsonPropertyName("quality")]
+	public string? Quality { get; set; }
+
 	[JsonPropertyName("resolution")]
 	public string? Resolution { get; set; }
 

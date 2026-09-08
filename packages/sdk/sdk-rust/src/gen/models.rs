@@ -1428,6 +1428,7 @@ pub struct ImagesEditRequest {
 	pub n: Option<i64>,
 	pub prompt: String,
 	pub provider: Option<HashMap<String, String>>,
+	pub quality: Option<String>,
 	pub resolution: Option<String>,
 	pub size: Option<String>,
 	pub usage: Option<bool>,
