@@ -12,6 +12,27 @@ afterEach(() => {
 });
 
 describe("public reference-data routes", () => {
+    it("excludes retired plan prices from listings and detail pages", async () => {
+        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+            const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+            if (!url.pathname.endsWith("/v2_subscription_plans")) return new Response("[]");
+            const rows = [
+                { plan_uuid: "active", plan_id: "active", name: "Active", price: 10, effective_to: null },
+                { plan_uuid: "retired", plan_id: "retired", name: "Retired", price: 20, effective_to: "2020-01-01T00:00:00Z" },
+            ];
+            const activeOnly = url.searchParams.get("or")?.includes("effective_to.is.null,effective_to.gt.");
+            const selected = rows.filter(row => (!activeOnly || row.effective_to === null)
+                && (!url.searchParams.has("plan_id") || url.searchParams.get("plan_id") === `eq.${row.plan_id}`));
+            return new Response(JSON.stringify(selected));
+        }));
+        const listing = await app.request("https://phaseo.app/api/_web/subscription-plans", {}, env);
+        expect(listing.status).toBe(200);
+        expect((await listing.json() as { subscription_plans: { plan_id: string }[] }).subscription_plans.map(plan => plan.plan_id))
+            .toEqual(["active"]);
+        const retired = await app.request("https://phaseo.app/api/_web/subscription-plans/retired", {}, env);
+        expect(retired.status).toBe(404);
+    });
+
 	it("returns stable public datasets with a long-lived edge policy", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
