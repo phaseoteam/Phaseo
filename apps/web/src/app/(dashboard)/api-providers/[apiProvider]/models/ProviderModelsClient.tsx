@@ -246,6 +246,27 @@ export default function ProviderModelsClient({
 		setParamPickerValue("");
 	}
 
+	if (models.length === 0) {
+		return (
+			<Empty className="mt-4 rounded-xl border p-8">
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<FilePlus />
+					</EmptyMedia>
+					<EmptyTitle>No models available</EmptyTitle>
+					<EmptyDescription>
+						{providerLabel} does not have any public models yet.
+					</EmptyDescription>
+				</EmptyHeader>
+				<EmptyContent>
+					<Button asChild>
+						<Link href="/contribute">Contribute</Link>
+					</Button>
+				</EmptyContent>
+			</Empty>
+		);
+	}
+
 	return (
 		<>
 			<div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
@@ -328,29 +349,7 @@ export default function ProviderModelsClient({
 			</div>
 
 			<div className="mt-4">
-				{models.length === 0 ? (
-					<Empty className="rounded-xl border p-8">
-						<EmptyHeader>
-							<EmptyMedia variant="icon">
-								<FilePlus />
-							</EmptyMedia>
-							<EmptyTitle>No models found</EmptyTitle>
-							<EmptyDescription>
-								There are no models for this provider yet.
-							</EmptyDescription>
-						</EmptyHeader>
-						<EmptyContent>
-							<div className="flex gap-2">
-								<Button asChild>
-									<a href="/contribute">Contribute</a>
-								</Button>
-								<Button variant="outline" asChild>
-									<a href="https://phaseo.app">Learn more</a>
-								</Button>
-							</div>
-						</EmptyContent>
-					</Empty>
-				) : filteredModels.length === 0 ? (
+				{filteredModels.length === 0 ? (
 					<Empty className="rounded-xl border p-8">
 						<EmptyHeader>
 							<EmptyMedia variant="icon">

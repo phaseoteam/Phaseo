@@ -90,6 +90,14 @@ function publicRouting(value: unknown): boolean {
 	return normalized === null || normalized === "active" || normalized === "deranked_lvl1" || normalized === "deranked_lvl2" || normalized === "deranked_lvl3";
 }
 
+function providerAvailabilityAllowsRouting(row: Row, now: number): boolean {
+	const providerAvailability = status(row.provider_availability_status);
+	if (providerAvailability === null || ["available", "preview", "limited_access"].includes(providerAvailability)) return true;
+	if (providerAvailability !== "deprecated") return false;
+	const effectiveTo = row.effective_to ? Date.parse(String(row.effective_to)) : Number.NaN;
+	return Number.isFinite(effectiveTo) && effectiveTo > now;
+}
+
 function availability(row: Row, capability: Row, provider: Row | null, now: number): "active" | "coming_soon" | "inactive" {
 	const from = row.effective_from ? Date.parse(String(row.effective_from)) : Number.NEGATIVE_INFINITY;
 	const to = row.effective_to ? Date.parse(String(row.effective_to)) : Number.POSITIVE_INFINITY;
@@ -97,7 +105,7 @@ function availability(row: Row, capability: Row, provider: Row | null, now: numb
 	if (now < from) return "coming_soon";
 	const providerAvailability = status(row.provider_availability_status);
 	if (providerAvailability === "coming_soon") return "coming_soon";
-	if (providerAvailability && !["available", "preview", "limited_access"].includes(providerAvailability)) return "inactive";
+	if (!providerAvailabilityAllowsRouting(row, now)) return "inactive";
 	const phaseo = status(row.phaseo_status);
 	if (status(row.access_scope) === "internal") return "coming_soon";
 	if (phaseo && ["planned", "implementing", "testing"].includes(phaseo)) return "coming_soon";
@@ -107,7 +115,7 @@ function availability(row: Row, capability: Row, provider: Row | null, now: numb
 	if (!row.is_active_gateway || (providerStatus && providerStatus !== "active") || !publicRouting(provider?.routing_status) || !publicRouting(row.routing_status)) return "inactive";
 	const capabilityStatus = status(capability.status);
 	if (capabilityStatus === "internal_testing" || capabilityStatus === "coming_soon") return "coming_soon";
-	return capabilityStatus && capabilityStatus !== "active" ? "inactive" : "active";
+	return capabilityStatus && capabilityStatus !== "active" && !(providerAvailability === "deprecated" && capabilityStatus === "degraded") ? "inactive" : "active";
 }
 
 function availabilityReason(row: Row, capability: Row, provider: Row | null, now: number): string {
@@ -147,7 +155,7 @@ export async function fetchGatewayMetadataSource(env: Env, modelId: string): Pro
 	if (!v2Pricing.error && Array.isArray(v2Pricing.data)) {
 		const routeStatusResult = await client
 			.from("v2_model_provider_routes")
-			.select("provider_model_id,provider_availability_status,phaseo_status,access_scope")
+			.select("provider_model_id,provider_availability_status,phaseo_status,access_scope,effective_from,effective_to")
 			.eq("model_slug", modelId);
 		const explicitStatusesByRoute = new Map(
 			(routeStatusResult.error ? [] : rows(routeStatusResult.data)).flatMap((route) => {
@@ -182,8 +190,8 @@ export async function fetchGatewayMetadataSource(env: Env, modelId: string): Pro
 					output_modalities: item.output_modalities,
 					context_length: item.context_length,
 					max_output_tokens: item.max_output_tokens,
-					effective_from: null,
-					effective_to: null,
+					effective_from: explicitStatuses?.effective_from ?? item.effective_from ?? null,
+					effective_to: explicitStatuses?.effective_to ?? item.effective_to ?? null,
 				};
 				if (!providerModels.has(key) || item.execution_region == null) providerModels.set(key, normalized);
 				caps.set(key, {

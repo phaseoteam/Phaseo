@@ -98,11 +98,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 39.1,
+      "score": 31,
       "is_self_reported": false,
-      "other_info": "GLM-5-Turbo; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GLM-5-Turbo; Artificial Analysis ID 149096f3-57b7-4413-80c2-a2c010a2995a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
-      "rank": 76
+      "rank": 112
     }
   ],
   "family_id": null,

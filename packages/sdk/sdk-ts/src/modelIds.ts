@@ -249,6 +249,8 @@ export const ModelIds = {
   GOOGLE_GEMINI_3_6_FLASH: "google/gemini-3.6-flash",
   /** Model ID: `google/gemini-3.7-flash`. Model page: https://phaseo.app/models/google/gemini-3.7-flash */
   GOOGLE_GEMINI_3_7_FLASH: "google/gemini-3.7-flash",
+  /** Model ID: `google/gemini-3.8-flash`. Model page: https://phaseo.app/models/google/gemini-3.8-flash */
+  GOOGLE_GEMINI_3_8_FLASH: "google/gemini-3.8-flash",
   /** Model ID: `google/gemini-embedding-001`. Model page: https://phaseo.app/models/google/gemini-embedding-001 */
   GOOGLE_GEMINI_EMBEDDING_001: "google/gemini-embedding-001",
   /** Model ID: `google/gemini-embedding-2`. Model page: https://phaseo.app/models/google/gemini-embedding-2 */

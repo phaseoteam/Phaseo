@@ -236,6 +236,12 @@ function formatContextLength(value: number): string {
 	return String(Math.round(value));
 }
 
+export function countModelMetadataProviders(
+	providers: ReadonlyArray<{ api_provider_id: string }> = [],
+): number {
+	return new Set(providers.map((provider) => provider.api_provider_id.trim()).filter(Boolean)).size;
+}
+
 export function buildModelOverviewMetadataTitle(
 	modelName: string,
 	signals?: ModelOverviewMetadataSignals,

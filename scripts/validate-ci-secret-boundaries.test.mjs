@@ -7,7 +7,6 @@ const productionMigrationCondition = `
             always() &&
             github.event_name == 'push' &&
             github.ref == 'refs/heads/main' &&
-            needs.check-paths.outputs.migrations-changed == 'true' &&
             needs.migration-validation.result == 'success' &&
             vars.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true'
 `;
@@ -34,7 +33,8 @@ jobs:
 
     migration-validation:
         if: >-
-            needs.check-paths.outputs.migrations-changed == 'true'
+            needs.check-paths.outputs.migrations-changed == 'true' ||
+            (github.event_name == 'push' && vars.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true')
         steps:
             - run: node scripts/validate-supabase-migrations.mjs
 
@@ -65,8 +65,11 @@ ${migrationCondition}
             - check-paths
             - migrate-production
         if: >-
-            needs.check-paths.outputs.migrations-changed != 'true' ||
-            needs.migrate-production.result == 'success'
+            (vars.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true' &&
+            needs.migrate-production.result == 'success') ||
+            (vars.ENABLE_PRODUCTION_DB_MIGRATIONS != 'true' &&
+            needs.check-paths.outputs.migrations-changed != 'true' &&
+            needs.migrate-production.result == 'skipped')
         steps:
             - run: deploy
 `;
@@ -106,6 +109,21 @@ for (const [label, replacement] of [
 test("tracks database smoke-test changes as migration changes", () => {
 	const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
 	assert.match(workflow, /- 'supabase\/tests\/\*\*'/);
+});
+
+test("rechecks production migration state before every opted-in main deployment", () => {
+	const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+	const migrationJob = workflow.slice(
+		workflow.indexOf("    migrate-production:"),
+		workflow.indexOf("    openapi-lint:"),
+	);
+	const deployJob = workflow.slice(
+		workflow.indexOf("    deploy:"),
+		workflow.indexOf("    agent-sdk-tests:"),
+	);
+	assert.doesNotMatch(migrationJob, /migrations-changed/);
+	assert.match(deployJob, /vars\.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true'[\s\S]*needs\.migrate-production\.result == 'success'/);
+	assert.match(deployJob, /vars\.ENABLE_PRODUCTION_DB_MIGRATIONS != 'true'[\s\S]*needs\.check-paths\.outputs\.migrations-changed != 'true'/);
 });
 
 test("rejects any pull-request Vercel credential boundary", () => {
@@ -238,7 +256,21 @@ test("issue triage bounds its paginated snapshot at the trigger comment", () => 
 		issueTriageWorkflow,
 		/allComments\.slice\(0, triggerIndex \+ 1\)/,
 	);
-	assert.match(issueTriageWorkflow, /\.opencode-issue-context\.md/);
+	assert.match(issueTriageWorkflow, /\.opencode-issue-context\.tmp/);
+});
+
+test("issue triage keeps its snapshot ignored and inside the OpenCode project boundary", () => {
+	assert.match(issueTriageWorkflow, /process\.env\.GITHUB_WORKSPACE/);
+	assert.match(
+		issueTriageWorkflow,
+		/\$\{\{ github\.workspace \}\}\/\.opencode-issue-context\.tmp/,
+	);
+	assert.match(issueTriageWorkflow, /git status --porcelain/);
+	assert.doesNotMatch(
+		issueTriageWorkflow,
+		/process\.env\.RUNNER_TEMP/,
+	);
+	assert.match(readFileSync(new URL("../.gitignore", import.meta.url), "utf8"), /^\*\.tmp$/m);
 });
 
 test("issue triage treats the frozen thread as authoritative untrusted data", () => {

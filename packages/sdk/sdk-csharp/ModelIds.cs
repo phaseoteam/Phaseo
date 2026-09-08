@@ -252,6 +252,8 @@ namespace PhaseoSdk
         public const string GoogleGemini36Flash = "google/gemini-3.6-flash";
         /// <summary>Model ID: <c>google/gemini-3.7-flash</c>. Model page: https://phaseo.app/models/google/gemini-3.7-flash</summary>
         public const string GoogleGemini37Flash = "google/gemini-3.7-flash";
+        /// <summary>Model ID: <c>google/gemini-3.8-flash</c>. Model page: https://phaseo.app/models/google/gemini-3.8-flash</summary>
+        public const string GoogleGemini38Flash = "google/gemini-3.8-flash";
         /// <summary>Model ID: <c>google/gemini-embedding-001</c>. Model page: https://phaseo.app/models/google/gemini-embedding-001</summary>
         public const string GoogleGeminiEmbedding001 = "google/gemini-embedding-001";
         /// <summary>Model ID: <c>google/gemini-embedding-2</c>. Model page: https://phaseo.app/models/google/gemini-embedding-2</summary>

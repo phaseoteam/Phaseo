@@ -190,6 +190,8 @@ const rows = await client.batches.listRequests(completed.id!, {
 
 For large prebuilt JSONL inputs, upload with `client.uploadFile({ model, purpose: "batch", file })` and create the batch with `input_file_id`. The default path above lets Phaseo create provider files or inline requests for you.
 
+For completed Anthropic batches, `await client.batches.streamResults(batchId, { signal })` returns the original JSONL as a `ReadableStream<Uint8Array>`. Pipe it to a file without buffering; cancel the stream or abort the signal to stop early. This download has no fixed total timeout and does not add inference charges.
+
 Webhook consumers can verify Phaseo signatures before processing the payload:
 
 ```ts

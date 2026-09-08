@@ -16,7 +16,7 @@
 		"eyebrows": "section"
 	},
 	"api": {
-		"openapi": "openapi/v1/openapi.public.yaml",
+		"openapi": "openapi/v1/openapi.yaml",
 		"version": "0.1.0",
 		"playground": {
 			"display": "interactive"
@@ -30,1576 +30,1630 @@
 	},
 	"navigation": {
 		"tabs": [
+			{
+				"tab": "Docs",
+				"icon": "book",
+				"groups": [
 					{
-						"tab": "Docs",
-						"icon": "book",
-						"groups": [
-							{
-								"group": "Overview",
-								"icon": "compass",
-								"expanded": true,
-								"pages": [
-									"v1/index",
-									"v1/quickstart",
-									"v1/developers/introduction",
-									"v1/guides/examples",
-									"v1/guides/principles",
-									"v1/developers/authentication",
-									"v1/developers/integrating-with-the-gateway",
-									"v1/developers/cli-and-mcp",
-									"v1/community/faq"
-								]
-							},
-							{
-								"group": "Models & Routing",
-								"icon": "route",
-								"expanded": false,
-								"pages": [
-									"v1/exploring/models",
-									"v1/exploring/api-providers",
-									"v1/guides/routing-and-fallbacks",
-									"v1/guides/regional-routing",
-									"v1/guides/provider-qualified-models",
-									"v1/guides/provider-statuses"
-								]
-							},
-							{
-								"group": "Features",
-								"icon": "sparkles",
-								"expanded": false,
-								"pages": [
-									"v1/guides/presets",
-									"v1/guides/preset-feedback",
-									"v1/guides/service-tiers",
-									"v1/guides/prompt-caching",
-									"v1/guides/multimodality",
-									"v1/guides/document-parsing",
-									"v1/guides/tool-calling",
-									{
-										"group": "Server Tools",
-										"icon": "sparkles",
-										"expanded": false,
-										"pages": [
-											"v1/guides/server-tools/index",
-											"v1/guides/server-tools/datetime",
-											"v1/guides/server-tools/web-search",
-											"v1/guides/server-tools/web-fetch",
-											"v1/guides/server-tools/advisor",
-											"v1/guides/server-tools/subagent",
-											"v1/guides/server-tools/fusion",
-											"v1/guides/server-tools/search-models",
-											"v1/guides/server-tools/image-generation",
-											"v1/guides/server-tools/apply-patch"
-										]
-									},
-									{
-										"group": "Structured Outputs",
-										"icon": "braces",
-										"expanded": false,
-										"pages": [
-											"v1/guides/structured-outputs",
-											"v1/guides/structured-outputs-schemas",
-											"v1/guides/structured-outputs-validation"
-										]
-									},
-									{
-										"group": "Advanced Tool Calling",
-										"icon": "workflow",
-										"expanded": false,
-										"pages": [
-											"v1/guides/tool-calling-patterns",
-											"v1/guides/tool-calling-safety"
-										]
-									},
-									"v1/guides/streaming",
-									{
-										"group": "Streaming in Production",
-										"icon": "radio",
-										"expanded": false,
-										"pages": [
-											"v1/guides/streaming-sse",
-											"v1/guides/streaming-production"
-										]
-									},
-									{
-										"group": "Model Optimization",
-										"icon": "gauge",
-										"expanded": false,
-										"pages": [
-											"v1/guides/model-quantization",
-											"v1/guides/quantization-formats",
-											"v1/guides/quantization-methods",
-											"v1/guides/quantization-selection",
-											"v1/guides/inference-parameters",
-											"v1/guides/sampling-and-decoding",
-											"v1/guides/context-and-token-budgeting"
-										]
-									},
-									"v1/guides/app-attribution",
-									"v1/guides/request-labels",
-									"v1/guides/workspace-notifications"
-								]
-							},
-							{
-								"group": "Integrations",
-								"icon": "plug",
-								"expanded": false,
-								"pages": [
-									"v1/guides/integrations/index",
-									"v1/guides/integrations/docs-mcp",
-									"v1/guides/integrations/phaseo-cli",
-									"v1/guides/integrations/observability",
-									{
-										"group": "Platforms & Operations",
-										"icon": "workflow",
-										"expanded": false,
-										"pages": [
-											"v1/guides/integrations/livekit",
-											"v1/guides/integrations/replit",
-											"v1/guides/integrations/automation",
-											"v1/guides/integrations/infisical"
-										]
-									},
-									{
-										"group": "SDKs & Frameworks",
-										"icon": "blocks",
-										"expanded": false,
-										"pages": [
-											"v1/guides/integrations/openai-sdk",
-											"v1/guides/integrations/anthropic-sdk",
-											"v1/guides/integrations/ai-sdk",
-											"v1/guides/integrations/langchain",
-											"v1/guides/integrations/llamaindex",
-											"v1/guides/integrations/litellm",
-											"v1/guides/integrations/pydanticai",
-											"v1/guides/integrations/mastra",
-											"v1/guides/integrations/tanstack-ai",
-											"v1/guides/integrations/effect-ai"
-										]
-									},
-									{
-										"group": "Coding Assistants",
-										"icon": "bot",
-										"expanded": false,
-										"pages": [
-											"v1/guides/integrations/coding-assistants",
-											"v1/guides/integrations/claude-code",
-											"v1/guides/integrations/codex",
-											"v1/guides/integrations/deepseek-harness",
-											"v1/guides/integrations/opencode",
-											"v1/guides/integrations/pi",
-											"v1/guides/integrations/prime-agent"
-											,"v1/guides/integrations/aider"
-											,"v1/guides/integrations/continue"
-											,"v1/guides/integrations/cline"
-											,"v1/guides/integrations/roo-code"
-											,"v1/guides/integrations/kilo-code"
-											,"v1/guides/integrations/cursor"
-											,"v1/guides/integrations/zed"
-										]
-									}
-								]
-							},
-							{
-								"group": "Workspace & Access",
-								"icon": "users-round",
-								"expanded": false,
-								"pages": [
-									"v1/guides/workspaces",
-									"v1/guides/workspace-audit-log",
-									"v1/developers/management-api-keys"
-								]
-							},
-							{
-								"group": "Reliability & Operations",
-								"icon": "shield-check",
-								"expanded": false,
-								"pages": [
-									"v1/developers/reliability-and-status",
-									"v1/developers/rate-limits",
-									"v1/developers/error-handling",
-									"v1/developers/best-practices"
-								]
-							},
-							{
-								"group": "Platform & Research",
-								"icon": "database",
-								"expanded": false,
-								"pages": [
-									"v1/exploring/overview",
-									"v1/pricing/tiers",
-									"v1/exploring/subscription-plans",
-									"v1/exploring/organisations",
-									"v1/exploring/benchmarks",
-									"v1/exploring/pricing-performance",
-									{
-										"group": "Research",
-										"icon": "microscope",
-										"expanded": false,
-										"pages": [
-											"v1/research/benchmark-methodology",
-											"v1/research/citation",
-											"v1/research/submitting-scores"
-										]
-									}
-								]
-							},
-							{
-								"group": "Migration Guides",
-								"icon": "arrow-right-left",
-								"expanded": false,
-								"pages": [
-									"v1/migration-guides/index",
-									{
-										"group": "Model Migrations",
-										"icon": "brain-circuit",
-										"expanded": false,
-										"pages": [
-											"v1/model-migrations/index",
-											"v1/model-migrations/anthropic-claude-opus-5",
-											"v1/model-migrations/openai-migrating-to-gpt-5-6",
-											"v1/model-migrations/openai-deprecations",
-											"v1/model-migrations/anthropic-claude-opus-4-1-to-4-8",
-											"v1/model-migrations/anthropic-claude-opus-4-6-to-4-7",
-											"v1/model-migrations/mistral-small-3-2-to-mistral-small-4",
-											"v1/model-migrations/openai-migrating-to-gpt-5-4",
-											"v1/model-migrations/google-nano-banana-1-to-nano-banana-2",
-											"v1/model-migrations/google-migrating-to-gemini-3-and-3-1",
-											"v1/model-migrations/anthropic-claude-sonnet-4-5-to-4-6",
-											"v1/model-migrations/xai-grok-4-20",
-											"v1/model-migrations/anthropic-claude-opus-4-5-to-4-6"
-										]
-									},
-									{
-										"group": "Platform Migrations",
-										"icon": "arrow-right-left",
-										"expanded": false,
-										"pages": [
-											"v1/migration-guides/assistant",
-                                                                        "v1/migration-guides/from-openai",
-                                                                        "v1/migration-guides/from-anthropic",
-                                                                        "v1/migration-guides/from-openrouter",
-                                                                        "v1/migration-guides/from-vercel",
-                                                                        "v1/migration-guides/from-llmgateway",
-                                                                        "v1/migration-guides/from-cloudflare",
-                                                                        "v1/migration-guides/from-helicone",
-                                                                        "v1/migration-guides/from-litellm",
-											{
-												"group": "Planning & Validation",
-												"icon": "clipboard-check",
-												"expanded": false,
-												"pages": [
-													"v1/migration-guides/gateway-parity-review",
-													"v1/migration-guides/feature-parity-matrix"
-												]
-											}
-                                                                        ]
-                                                                }
-                                                        ]
-							},
-							{
-								"group": "Community",
-								"icon": "life-buoy",
-								"expanded": false,
-								"pages": [
-									"v1/community/contact-and-support",
-									"v1/contributing/overview",
-									{
-										"group": "Contribution Guides",
-										"icon": "handshake",
-										"expanded": false,
-										"pages": [
-											"v1/contributing/how-to-contribute",
-											"v1/contributing/repo-structure",
-											"v1/contributing/editing-a-model",
-											"v1/contributing/editing-an-organisation"
-										]
-									},
-									"v1/community/code-of-conduct"
-								]
-							}
+						"group": "Overview",
+						"icon": "compass",
+						"expanded": true,
+						"pages": [
+							"v1/index",
+							"v1/quickstart",
+							"v1/developers/introduction",
+							"v1/guides/examples",
+							"v1/developers/authentication",
+							"v1/developers/integrating-with-the-gateway",
+							"v1/developers/cli-and-mcp",
+							"v1/community/faq"
 						]
 					},
 					{
-						"tab": "API Reference",
-						"icon": "server",
-						"groups": [
-							{
-								"group": "API Guides",
-								"icon": "book-open",
-								"expanded": true,
-								"pages": [
-									"v1/api-reference/introduction",
-									"v1/api-reference/authentication",
-									"v1/api-reference/parameters",
-									"v1/api-reference/streaming",
-									"v1/api-reference/limits",
-									"v1/api-reference/errors"
-								]
-							},
-							{
-								"group": "API Reference",
-								"icon": "square-terminal",
-								"expanded": true,
-								"pages": [
-									{
-										"group": "Responses API",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/responses"
-										]
-									},
-									{
-										"group": "Chat",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/chat-completions"
-										]
-									},
-									{
-										"group": "Anthropic Messages",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/anthropic-messages"
-										]
-									},
-									{
-										"group": "Models",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/models",
-											"v1/api-reference/endpoint/model-endpoints"
-										]
-									},
-									{
-										"group": "Providers",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/providers"
-										]
-									},
-									{
-										"group": "Endpoints",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/endpoints"
-										]
-									},
-									{
-										"group": "Pricing",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/pricing-models",
-											"v1/api-reference/endpoint/pricing-calculate"
-										]
-									},
-									{
-										"group": "Embeddings",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/embeddings"
-										]
-									},
-									{
-										"group": "Reranking",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/rerank"
-										]
-									},
-									{
-										"group": "Images",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/images-generations",
-											"v1/api-reference/endpoint/images-edits"
-										]
-									},
-									{
-										"group": "TTS",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/audio-speech"
-										]
-									},
-									{
-										"group": "STT",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/audio-transcriptions",
-											"v1/api-reference/endpoint/audio-translations"
-										]
-									},
-									{
-										"group": "Music Generation",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/music-generate",
-											"v1/api-reference/endpoint/music-status"
-										]
-									},
-									{
-										"group": "Moderations",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/moderations"
-										]
-									},
-									{
-										"group": "OCR",
-										"tag": "Beta",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/ocr",
-											"v1/api-reference/endpoint/parse"
-										]
-									},
-									{
-										"group": "Files",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/files",
-											"v1/api-reference/endpoint/files-list",
-											"v1/api-reference/endpoint/files-retrieve",
-											"v1/api-reference/endpoint/files-content"
-										]
-									},
-									{
-										"group": "Generations",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/generation"
-										]
-									},
-									{
-										"group": "Activity",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/activity",
-											"v1/api-reference/endpoint/audit-events"
-										]
-									},
-									{
-										"group": "Health",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/health"
-										]
-									},
-									{
-										"group": "Credits",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/credits"
-										]
-									},
-									{
-										"group": "Budgets",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/budgets-list",
-											"v1/api-reference/endpoint/budgets-create",
-											"v1/api-reference/endpoint/budgets-get",
-											"v1/api-reference/endpoint/budgets-update",
-											"v1/api-reference/endpoint/budgets-delete"
-										]
-									},
-									{
-										"group": "API Keys",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/key-current",
-											"v1/api-reference/endpoint/keys-list",
-											"v1/api-reference/endpoint/keys-create",
-											"v1/api-reference/endpoint/keys-get",
-											"v1/api-reference/endpoint/keys-rotate",
-											"v1/api-reference/endpoint/keys-delete",
-											"v1/api-reference/endpoint/keys-update",
-											"v1/api-reference/endpoint/keys-rotate",
-											"v1/api-reference/endpoint/keys-invalidate"
-										]
-									},
-									{
-										"group": "Management Keys",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/management-keys-list",
-											"v1/api-reference/endpoint/management-keys-create",
-											"v1/api-reference/endpoint/management-keys-get",
-											"v1/api-reference/endpoint/management-keys-update",
-											"v1/api-reference/endpoint/management-keys-delete"
-										]
-									},
-									{
-										"group": "Workspaces",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/workspaces-list",
-											"v1/api-reference/endpoint/workspaces-create",
-											"v1/api-reference/endpoint/workspaces-get",
-											"v1/api-reference/endpoint/workspaces-delete",
-											"v1/api-reference/endpoint/workspaces-update",
-											"v1/api-reference/endpoint/workspace-members-list",
-											"v1/api-reference/endpoint/workspace-members-add",
-											"v1/api-reference/endpoint/workspace-members-remove",
-											"v1/api-reference/endpoint/workspace-member-role-update",
-											"v1/api-reference/endpoint/workspace-invites-list",
-											"v1/api-reference/endpoint/workspace-invites-create",
-											"v1/api-reference/endpoint/workspace-invites-delete",
-											"v1/api-reference/endpoint/workspace-join-requests-list",
-											"v1/api-reference/endpoint/workspace-join-request-approve",
-											"v1/api-reference/endpoint/workspace-join-request-reject"
-										]
-									},
-									{
-										"group": "Analytics",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/analytics-get",
-											"v1/api-reference/endpoint/analytics-export"
-										]
-									},
-									{
-										"group": "Routing",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/workspace-settings-get",
-											"v1/api-reference/endpoint/workspace-settings-update",
-											"v1/api-reference/endpoint/dynamic-routes-list",
-											"v1/api-reference/endpoint/dynamic-routes-create",
-											"v1/api-reference/endpoint/dynamic-routes-get",
-											"v1/api-reference/endpoint/dynamic-routes-update",
-											"v1/api-reference/endpoint/dynamic-routes-keys-update",
-											"v1/api-reference/endpoint/dynamic-routes-deploy",
-											"v1/api-reference/endpoint/dynamic-routes-delete"
-										]
-									},
-									{
-										"group": "Presets",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/presets-list",
-											"v1/api-reference/endpoint/presets-create",
-											"v1/api-reference/endpoint/presets-get",
-											"v1/api-reference/endpoint/presets-update",
-											"v1/api-reference/endpoint/presets-versions-list",
-											"v1/api-reference/endpoint/presets-version-publish",
-											"v1/api-reference/endpoint/presets-fork",
-											"v1/api-reference/endpoint/presets-upstream-apply",
-											"v1/api-reference/endpoint/presets-publisher-get",
-											"v1/api-reference/endpoint/presets-publisher-update",
-											"v1/api-reference/endpoint/presets-delete"
-										]
-									},
-									{
-										"group": "Observability",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/observability-logging-policy-get",
-											"v1/api-reference/endpoint/observability-logging-policy-update",
-											"v1/api-reference/endpoint/observability-destinations-list",
-											"v1/api-reference/endpoint/observability-destinations-create",
-											"v1/api-reference/endpoint/observability-destinations-get",
-											"v1/api-reference/endpoint/observability-destinations-update",
-											"v1/api-reference/endpoint/observability-destinations-delete"
-										]
-									},
-									{
-										"group": "Provider credentials",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/provider-credentials-list",
-											"v1/api-reference/endpoint/provider-credentials-create",
-											"v1/api-reference/endpoint/provider-credentials-get",
-											"v1/api-reference/endpoint/provider-credentials-update",
-											"v1/api-reference/endpoint/provider-credentials-delete",
-											"v1/api-reference/endpoint/provider-credentials-reorder"
-										]
-									},
-									{
-										"group": "Organisations",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/organisations"
-										]
-									},
-									{
-										"group": "Guardrails",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/guardrails",
-											"v1/api-reference/endpoint/guardrails-list",
-											"v1/api-reference/endpoint/guardrails-create",
-											"v1/api-reference/endpoint/guardrails-get",
-											"v1/api-reference/endpoint/guardrails-update",
-											"v1/api-reference/endpoint/guardrails-delete",
-											"v1/api-reference/endpoint/guardrail-keys-list",
-											"v1/api-reference/endpoint/guardrail-keys-replace",
-											"v1/api-reference/endpoint/guardrail-keys-add",
-											"v1/api-reference/endpoint/guardrail-keys-remove",
-											"v1/api-reference/endpoint/guardrail-members-list",
-											"v1/api-reference/endpoint/guardrail-members-add",
-											"v1/api-reference/endpoint/guardrail-members-remove"
-										]
-									},
-									{
-										"group": "OAuth Applications",
-										"tag": "Beta",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/oauth-clients-list",
-											"v1/api-reference/endpoint/oauth-clients-create",
-											"v1/api-reference/endpoint/oauth-clients-get",
-											"v1/api-reference/endpoint/oauth-clients-update",
-											"v1/api-reference/endpoint/oauth-clients-delete",
-											"v1/api-reference/endpoint/oauth-clients-regenerate-secret"
-										]
-									},
-									{
-										"group": "Webhook Endpoints",
-										"tag": "Beta",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/webhook-endpoints-list",
-											"v1/api-reference/endpoint/webhook-endpoints-create",
-											"v1/api-reference/endpoint/webhook-endpoints-get",
-											"v1/api-reference/endpoint/webhook-endpoints-update",
-											"v1/api-reference/endpoint/webhook-endpoints-delete",
-											"v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
-										]
-									},
-									{
-										"group": "Data Contribution",
-										"tag": "Beta",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/data-contribution-get",
-											"v1/api-reference/endpoint/data-contribution-consent-update",
-											"v1/api-reference/endpoint/data-contribution-classifier-create",
-											"v1/api-reference/endpoint/data-contribution-classifier-update",
-											"v1/api-reference/endpoint/data-contribution-classifier-delete"
-										]
-									},
-									{
-										"group": "Identity & Provisioning",
-										"tag": "Beta",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/identity-sso-get",
-											"v1/api-reference/endpoint/identity-sso-update",
-											"v1/api-reference/endpoint/identity-scim-get",
-											"v1/api-reference/endpoint/identity-scim-update",
-											"v1/api-reference/endpoint/identity-scim-token-create",
-											"v1/api-reference/endpoint/identity-scim-token-revoke",
-											"v1/api-reference/endpoint/identity-scim-audit-list",
-											"v1/api-reference/endpoint/identity-directory-get",
-											"v1/api-reference/endpoint/identity-directory-member-update",
-											"v1/api-reference/endpoint/identity-departments-list",
-											"v1/api-reference/endpoint/identity-department-create",
-											"v1/api-reference/endpoint/identity-department-update",
-											"v1/api-reference/endpoint/identity-department-delete",
-											"v1/api-reference/endpoint/identity-department-member-set",
-											"v1/api-reference/endpoint/identity-department-member-delete",
-											"v1/api-reference/endpoint/identity-group-mappings-list",
-											"v1/api-reference/endpoint/identity-group-mapping-create",
-											"v1/api-reference/endpoint/identity-group-mapping-update",
-											"v1/api-reference/endpoint/identity-group-mapping-delete"
-										]
-									},
-									{
-										"group": "Notifications",
-										"tag": "Beta",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/notifications-settings-get",
-											"v1/api-reference/endpoint/notifications-settings-update",
-											"v1/api-reference/endpoint/notifications-destinations-list",
-											"v1/api-reference/endpoint/notifications-destination-create",
-											"v1/api-reference/endpoint/notifications-destination-delete",
-											"v1/api-reference/endpoint/notifications-destination-config-test",
-											"v1/api-reference/endpoint/notifications-destination-test",
-											"v1/api-reference/endpoint/notifications-routes-list",
-											"v1/api-reference/endpoint/notifications-route-update"
-										]
-									},
-									{
-										"group": "Applications",
-										"tag": "Beta",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/apps-list",
-											"v1/api-reference/endpoint/app-update",
-											"v1/api-reference/endpoint/app-merge"
-										]
-									},
-									{
-										"group": "Logs",
-										"tag": "Beta",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/logs-list",
-											"v1/api-reference/endpoint/logs-get"
-										]
-									},
-									{
-										"group": "Feedback & Evaluations",
-										"tag": "Beta",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/feedback-list",
-											"v1/api-reference/endpoint/feedback-create",
-											"v1/api-reference/endpoint/feedback-summary",
-											"v1/api-reference/endpoint/events-list",
-											"v1/api-reference/endpoint/events-create",
-											"v1/api-reference/endpoint/preset-test-runs-list",
-											"v1/api-reference/endpoint/preset-test-run-create",
-											"v1/api-reference/endpoint/preset-test-run-get",
-											"v1/api-reference/endpoint/preset-test-run-update"
-										]
-									}
-								]
-							}
+						"group": "Models & Routing",
+						"icon": "route",
+						"expanded": false,
+						"pages": [
+							"v1/exploring/models",
+							"v1/exploring/api-providers",
+							"v1/guides/routing-and-fallbacks",
+							"v1/guides/regional-routing",
+							"v1/guides/provider-qualified-models",
+							"v1/guides/private-models",
+							"v1/guides/provider-statuses"
 						]
 					},
 					{
-						"tab": "Client SDKs",
-						"icon": "package",
-						"menu": [
+						"group": "Features",
+						"icon": "blocks",
+						"expanded": false,
+						"pages": [
+							"v1/guides/presets",
+							"v1/guides/preset-feedback",
+							"v1/guides/service-tiers",
+							"v1/guides/prompt-caching",
+							"v1/guides/multimodality",
+							"v1/guides/async-video-and-batch",
+							"v1/guides/document-parsing",
+							"v1/guides/tool-calling",
 							{
-								"item": "AI SDK (Vercel)",
-								"icon": "/icons/brands/vercel.svg",
-								"groups": [
-									{
-										"group": "Introduction",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/sdk/ai-sdk"
-										]
-									},
-									{
-										"group": "Text",
-										"icon": "message-square-text",
-										"pages": [
-											"v1/sdk-reference/sdk/generate-text/index",
-											"v1/sdk-reference/sdk/stream-text/index",
-											"v1/sdk-reference/sdk/tool-calling/index",
-											"v1/sdk-reference/sdk/structured-output/index"
-										]
-									},
-									{
-										"group": "Multimodal",
-										"icon": "shapes",
-										"pages": [
-											"v1/sdk-reference/sdk/embeddings/index",
-											"v1/sdk-reference/sdk/images/index",
-											"v1/sdk-reference/sdk/audio/index"
-										]
-									},
-									{
-										"group": "Models",
-										"icon": "brain-circuit",
-										"pages": [
-											"v1/sdk-reference/sdk/get-models/index"
-										]
-									}
-								]
-							},
-							{
-								"item": "TypeScript SDK",
-								"icon": "/icons/languages/typescript.svg",
-								"groups": [
-									{
-										"group": "Introduction",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/typescript/overview",
-											"v1/sdk-reference/typescript/installation",
-											"v1/sdk-reference/typescript/usage"
-										]
-									},
-									{
-										"group": "Text",
-										"icon": "message-square-text",
-										"pages": [
-											"v1/sdk-reference/typescript/responses",
-											"v1/sdk-reference/typescript/chat-completions"
-										]
-									},
-									{
-										"group": "Image",
-										"icon": "image",
-										"pages": [
-											"v1/sdk-reference/typescript/images-generations",
-											"v1/sdk-reference/typescript/images-edits"
-										]
-									},
-									{
-										"group": "Audio",
-										"icon": "audio-lines",
-										"pages": [
-											"v1/sdk-reference/typescript/audio-speech",
-											"v1/sdk-reference/typescript/audio-transcriptions",
-											"v1/sdk-reference/typescript/audio-translations"
-										]
-									},
-									{
-										"group": "Specialised",
-										"icon": "blocks",
-										"pages": [
-											"v1/sdk-reference/typescript/embeddings",
-											"v1/sdk-reference/typescript/rerank",
-											"v1/sdk-reference/typescript/moderations",
-											"v1/sdk-reference/typescript/files"
-										]
-									},
-									{
-										"group": "Admin",
-										"icon": "settings-2",
-										"pages": [
-											"v1/sdk-reference/typescript/models",
-											"v1/sdk-reference/typescript/generation"
-										]
-									}
-								]
-							},
-							{
-								"item": "Python SDK",
-								"icon": "/icons/languages/python.svg",
-								"groups": [
-									{
-										"group": "Introduction",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/python/overview",
-											"v1/sdk-reference/python/installation",
-											"v1/sdk-reference/python/usage"
-										]
-									},
-									{
-										"group": "Supported Now",
-										"icon": "circle-check",
-										"pages": [
-											"v1/sdk-reference/python/responses",
-											"v1/sdk-reference/python/chat-completions",
-											"v1/sdk-reference/python/embeddings",
-											"v1/sdk-reference/python/moderations",
-											"v1/sdk-reference/python/models"
-										]
-									},
-									{
-										"group": "Coming Soon in SDK",
-										"icon": "clock-3",
-										"pages": [
-											"v1/sdk-reference/python/images-generations",
-											"v1/sdk-reference/python/images-edits",
-											"v1/sdk-reference/python/audio-speech",
-											"v1/sdk-reference/python/audio-transcriptions",
-											"v1/sdk-reference/python/audio-translations",
-											"v1/sdk-reference/python/files",
-											"v1/sdk-reference/python/generation"
-										]
-									}
-								]
-							},
-							{
-								"item": "Go SDK",
-								"icon": "/icons/languages/go.svg",
-								"groups": [
-									{
-										"group": "Introduction",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/go/overview",
-											"v1/sdk-reference/go/installation",
-											"v1/sdk-reference/go/usage"
-										]
-									},
-									{
-										"group": "Text",
-										"icon": "message-square-text",
-										"pages": [
-											"v1/sdk-reference/go/responses",
-											"v1/sdk-reference/go/chat-completions"
-										]
-									},
-									{
-										"group": "Image",
-										"icon": "image",
-										"pages": [
-											"v1/sdk-reference/go/images-generations",
-											"v1/sdk-reference/go/images-edits"
-										]
-									},
-									{
-										"group": "Audio",
-										"icon": "audio-lines",
-										"pages": [
-											"v1/sdk-reference/go/audio-speech",
-											"v1/sdk-reference/go/audio-transcriptions",
-											"v1/sdk-reference/go/audio-translations"
-										]
-									},
-									{
-										"group": "Specialised",
-										"icon": "blocks",
-										"pages": [
-											"v1/sdk-reference/go/embeddings",
-											"v1/sdk-reference/go/moderations",
-											"v1/sdk-reference/go/files"
-										]
-									},
-									{
-										"group": "Admin",
-										"icon": "settings-2",
-										"pages": [
-											"v1/sdk-reference/go/models",
-											"v1/sdk-reference/go/generation"
-										]
-									}
-								]
-							},
-							{
-								"item": "C# SDK",
-								"icon": "/icons/languages/csharp.svg",
-								"groups": [
-									{
-										"group": "Introduction",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/csharp/overview",
-											"v1/sdk-reference/csharp/installation",
-											"v1/sdk-reference/csharp/usage"
-										]
-									},
-									{
-										"group": "Text",
-										"icon": "message-square-text",
-										"pages": [
-											"v1/sdk-reference/csharp/responses",
-											"v1/sdk-reference/csharp/chat-completions"
-										]
-									},
-									{
-										"group": "Image",
-										"icon": "image",
-										"pages": [
-											"v1/sdk-reference/csharp/images-generations",
-											"v1/sdk-reference/csharp/images-edits"
-										]
-									},
-									{
-										"group": "Audio",
-										"icon": "audio-lines",
-										"pages": [
-											"v1/sdk-reference/csharp/audio-speech",
-											"v1/sdk-reference/csharp/audio-transcriptions",
-											"v1/sdk-reference/csharp/audio-translations"
-										]
-									},
-									{
-										"group": "Specialised",
-										"icon": "blocks",
-										"pages": [
-											"v1/sdk-reference/csharp/embeddings",
-											"v1/sdk-reference/csharp/moderations",
-											"v1/sdk-reference/csharp/files"
-										]
-									},
-									{
-										"group": "Admin",
-										"icon": "settings-2",
-										"pages": [
-											"v1/sdk-reference/csharp/models",
-											"v1/sdk-reference/csharp/generation"
-										]
-									}
-								]
-							},
-							{
-								"item": "PHP SDK",
-								"icon": "/icons/languages/php.svg",
-								"groups": [
-									{
-										"group": "Introduction",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/php/overview",
-											"v1/sdk-reference/php/installation",
-											"v1/sdk-reference/php/usage"
-										]
-									},
-									{
-										"group": "Text",
-										"icon": "message-square-text",
-										"pages": [
-											"v1/sdk-reference/php/responses",
-											"v1/sdk-reference/php/chat-completions"
-										]
-									},
-									{
-										"group": "Image",
-										"icon": "image",
-										"pages": [
-											"v1/sdk-reference/php/images-generations",
-											"v1/sdk-reference/php/images-edits"
-										]
-									},
-									{
-										"group": "Audio",
-										"icon": "audio-lines",
-										"pages": [
-											"v1/sdk-reference/php/audio-speech",
-											"v1/sdk-reference/php/audio-transcriptions",
-											"v1/sdk-reference/php/audio-translations"
-										]
-									},
-									{
-										"group": "Specialised",
-										"icon": "blocks",
-										"pages": [
-											"v1/sdk-reference/php/embeddings",
-											"v1/sdk-reference/php/moderations",
-											"v1/sdk-reference/php/files"
-										]
-									},
-									{
-										"group": "Admin",
-										"icon": "settings-2",
-										"pages": [
-											"v1/sdk-reference/php/models",
-											"v1/sdk-reference/php/generation"
-										]
-									}
-								]
-							},
-							{
-								"item": "Ruby SDK",
-								"icon": "/icons/languages/ruby.svg",
-								"groups": [
-									{
-										"group": "Introduction",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/ruby/overview",
-											"v1/sdk-reference/ruby/installation",
-											"v1/sdk-reference/ruby/usage"
-										]
-									},
-									{
-										"group": "Text",
-										"icon": "message-square-text",
-										"pages": [
-											"v1/sdk-reference/ruby/responses",
-											"v1/sdk-reference/ruby/chat-completions"
-										]
-									},
-									{
-										"group": "Image",
-										"icon": "image",
-										"pages": [
-											"v1/sdk-reference/ruby/images-generations",
-											"v1/sdk-reference/ruby/images-edits"
-										]
-									},
-									{
-										"group": "Audio",
-										"icon": "audio-lines",
-										"pages": [
-											"v1/sdk-reference/ruby/audio-speech",
-											"v1/sdk-reference/ruby/audio-transcriptions",
-											"v1/sdk-reference/ruby/audio-translations"
-										]
-									},
-									{
-										"group": "Specialised",
-										"icon": "blocks",
-										"pages": [
-											"v1/sdk-reference/ruby/embeddings",
-											"v1/sdk-reference/ruby/moderations",
-											"v1/sdk-reference/ruby/files"
-										]
-									},
-									{
-										"group": "Admin",
-										"icon": "settings-2",
-										"pages": [
-											"v1/sdk-reference/ruby/models",
-											"v1/sdk-reference/ruby/generation"
-										]
-									}
-								]
-							},
-							{
-								"item": "Rust SDK",
-								"icon": "/icons/languages/rust.svg",
-								"groups": [
-									{
-										"group": "Introduction",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/rust/overview",
-											"v1/sdk-reference/rust/installation",
-											"v1/sdk-reference/rust/usage"
-										]
-									},
-									{
-										"group": "Text",
-										"icon": "message-square-text",
-										"pages": [
-											"v1/sdk-reference/rust/responses",
-											"v1/sdk-reference/rust/chat-completions"
-										]
-									},
-									{
-										"group": "Reference",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/rust/api-reference"
-										]
-									}
-								]
-							}
-						]
-					},
-					{
-						"tab": "Agent SDK",
-						"icon": "bot",
-						"menu": [
-							{
-								"item": "Overview",
-								"icon": "compass",
-								"groups": [
-									{
-										"group": "Start Here",
-										"icon": "rocket",
-										"pages": [
-											"v1/sdk-reference/agent-sdk/overview"
-										]
-									}
-								]
-							},
-							{
-								"item": "TypeScript Agent SDK",
-								"icon": "/icons/languages/typescript.svg",
-								"groups": [
-									{
-										"group": "Start Here",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/typescript/agent-sdk-overview",
-											"v1/sdk-reference/typescript/agent-sdk-installation"
-										]
-									},
-									{
-										"group": "Build",
-										"icon": "workflow",
-										"pages": [
-											"v1/sdk-reference/typescript/agent-sdk",
-											"v1/sdk-reference/typescript/agent-sdk-tools",
-											"v1/sdk-reference/typescript/agent-sdk-streaming",
-											"v1/sdk-reference/typescript/agent-sdk-items",
-											"v1/sdk-reference/typescript/agent-sdk-dynamic-turns",
-											"v1/sdk-reference/typescript/agent-sdk-stop-conditions",
-											"v1/sdk-reference/typescript/agent-sdk-state-and-approval",
-											"v1/sdk-reference/typescript/agent-sdk-run-controls"
-										]
-									},
-									{
-										"group": "Observe",
-										"icon": "activity",
-										"pages": [
-											"v1/sdk-reference/typescript/agent-sdk-lifecycle-hooks",
-											"v1/sdk-reference/typescript/agent-sdk-devtools"
-										]
-									},
-									{
-										"group": "Reference",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/typescript/agent-sdk-api-reference",
-											"v1/sdk-reference/typescript/agent-sdk-examples",
-											"v1/sdk-reference/typescript/agent-sdk-events-and-errors"
-										]
-									}
-								]
-							},
-							{
-								"item": "Python Agent SDK",
-								"icon": "/icons/languages/python.svg",
-								"groups": [
-									{
-										"group": "Start Here",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/python/agent-sdk-overview",
-											"v1/sdk-reference/python/agent-sdk-installation"
-										]
-									},
-									{
-										"group": "Build",
-										"icon": "workflow",
-										"pages": [
-											"v1/sdk-reference/python/agent-sdk",
-											"v1/sdk-reference/python/agent-sdk-tools",
-											"v1/sdk-reference/python/agent-sdk-streaming",
-											"v1/sdk-reference/python/agent-sdk-items",
-											"v1/sdk-reference/python/agent-sdk-dynamic-turns",
-											"v1/sdk-reference/python/agent-sdk-stop-conditions",
-											"v1/sdk-reference/python/agent-sdk-state-and-approval",
-											"v1/sdk-reference/python/agent-sdk-run-controls"
-										]
-									},
-									{
-										"group": "Observe",
-										"icon": "activity",
-									"pages": [
-										"v1/sdk-reference/python/agent-sdk-lifecycle-hooks",
-										"v1/sdk-reference/python/agent-sdk-devtools"
-									]
-									},
-									{
-										"group": "Reference",
-										"icon": "book-open",
-									"pages": [
-										"v1/sdk-reference/python/agent-sdk-api-reference",
-										"v1/sdk-reference/python/agent-sdk-examples",
-										"v1/sdk-reference/python/agent-sdk-observability"
-									]
-									}
-								]
-							},
-							{
-								"item": "Go Agent SDK",
-								"icon": "/icons/languages/go.svg",
-								"groups": [
-									{
-										"group": "Start Here",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/go/agent-sdk-overview",
-											"v1/sdk-reference/go/agent-sdk-installation"
-										]
-									},
-									{
-										"group": "Build",
-										"icon": "workflow",
-										"pages": [
-											"v1/sdk-reference/go/agent-sdk",
-											"v1/sdk-reference/go/agent-sdk-tools",
-											"v1/sdk-reference/go/agent-sdk-streaming",
-											"v1/sdk-reference/go/agent-sdk-items",
-											"v1/sdk-reference/go/agent-sdk-dynamic-turns",
-											"v1/sdk-reference/go/agent-sdk-stop-conditions",
-											"v1/sdk-reference/go/agent-sdk-state-and-approval",
-											"v1/sdk-reference/go/agent-sdk-run-controls"
-										]
-									},
-									{
-										"group": "Observe",
-										"icon": "activity",
-									"pages": [
-										"v1/sdk-reference/go/agent-sdk-lifecycle-hooks",
-										"v1/sdk-reference/go/agent-sdk-devtools"
-									]
-									},
-									{
-										"group": "Reference",
-										"icon": "book-open",
-									"pages": [
-										"v1/sdk-reference/go/agent-sdk-api-reference",
-										"v1/sdk-reference/go/agent-sdk-examples",
-										"v1/sdk-reference/go/agent-sdk-observability"
-									]
-									}
-								]
-							},
-							{
-								"item": "C# Agent SDK",
-								"icon": "/icons/languages/csharp.svg",
-								"groups": [
-									{
-										"group": "Start Here",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/csharp/agent-sdk-overview",
-											"v1/sdk-reference/csharp/agent-sdk-installation"
-										]
-									},
-									{
-										"group": "Build",
-										"icon": "workflow",
-										"pages": [
-											"v1/sdk-reference/csharp/agent-sdk",
-											"v1/sdk-reference/csharp/agent-sdk-tools",
-											"v1/sdk-reference/csharp/agent-sdk-streaming",
-											"v1/sdk-reference/csharp/agent-sdk-items",
-											"v1/sdk-reference/csharp/agent-sdk-dynamic-turns",
-											"v1/sdk-reference/csharp/agent-sdk-stop-conditions",
-											"v1/sdk-reference/csharp/agent-sdk-state-and-approval",
-											"v1/sdk-reference/csharp/agent-sdk-run-controls"
-										]
-									},
-									{
-										"group": "Observe",
-										"icon": "activity",
-									"pages": [
-										"v1/sdk-reference/csharp/agent-sdk-lifecycle-hooks",
-										"v1/sdk-reference/csharp/agent-sdk-devtools"
-									]
-									},
-									{
-										"group": "Reference",
-										"icon": "book-open",
-									"pages": [
-										"v1/sdk-reference/csharp/agent-sdk-api-reference",
-										"v1/sdk-reference/csharp/agent-sdk-examples",
-										"v1/sdk-reference/csharp/agent-sdk-observability"
-									]
-									}
-								]
-							},
-							{
-								"item": "PHP Agent SDK",
-								"icon": "/icons/languages/php.svg",
-								"groups": [
-									{
-										"group": "Start Here",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/php/agent-sdk-overview",
-											"v1/sdk-reference/php/agent-sdk-installation"
-										]
-									},
-									{
-										"group": "Build",
-										"icon": "workflow",
-										"pages": [
-											"v1/sdk-reference/php/agent-sdk",
-											"v1/sdk-reference/php/agent-sdk-tools",
-											"v1/sdk-reference/php/agent-sdk-streaming",
-											"v1/sdk-reference/php/agent-sdk-items",
-											"v1/sdk-reference/php/agent-sdk-dynamic-turns",
-											"v1/sdk-reference/php/agent-sdk-stop-conditions",
-											"v1/sdk-reference/php/agent-sdk-state-and-approval",
-											"v1/sdk-reference/php/agent-sdk-run-controls"
-										]
-									},
-									{
-										"group": "Observe",
-										"icon": "activity",
-									"pages": [
-										"v1/sdk-reference/php/agent-sdk-lifecycle-hooks",
-										"v1/sdk-reference/php/agent-sdk-devtools"
-									]
-									},
-									{
-										"group": "Reference",
-										"icon": "book-open",
-									"pages": [
-										"v1/sdk-reference/php/agent-sdk-api-reference",
-										"v1/sdk-reference/php/agent-sdk-examples",
-										"v1/sdk-reference/php/agent-sdk-observability"
-									]
-									}
-								]
-							},
-							{
-								"item": "Ruby Agent SDK",
-								"icon": "/icons/languages/ruby.svg",
-								"groups": [
-									{
-										"group": "Start Here",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/ruby/agent-sdk-overview",
-											"v1/sdk-reference/ruby/agent-sdk-installation"
-										]
-									},
-									{
-										"group": "Build",
-										"icon": "workflow",
-										"pages": [
-											"v1/sdk-reference/ruby/agent-sdk",
-											"v1/sdk-reference/ruby/agent-sdk-tools",
-											"v1/sdk-reference/ruby/agent-sdk-streaming",
-											"v1/sdk-reference/ruby/agent-sdk-items",
-											"v1/sdk-reference/ruby/agent-sdk-dynamic-turns",
-											"v1/sdk-reference/ruby/agent-sdk-stop-conditions",
-											"v1/sdk-reference/ruby/agent-sdk-state-and-approval",
-											"v1/sdk-reference/ruby/agent-sdk-run-controls"
-										]
-									},
-									{
-										"group": "Observe",
-										"icon": "activity",
-									"pages": [
-										"v1/sdk-reference/ruby/agent-sdk-lifecycle-hooks",
-										"v1/sdk-reference/ruby/agent-sdk-devtools"
-									]
-									},
-									{
-										"group": "Reference",
-										"icon": "book-open",
-									"pages": [
-										"v1/sdk-reference/ruby/agent-sdk-api-reference",
-										"v1/sdk-reference/ruby/agent-sdk-examples",
-										"v1/sdk-reference/ruby/agent-sdk-observability"
-									]
-									}
-								]
-							},
-							{
-								"item": "Rust Agent SDK",
-								"icon": "/icons/languages/rust.svg",
-								"groups": [
-									{
-										"group": "Start Here",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/rust/agent-sdk-overview",
-											"v1/sdk-reference/rust/agent-sdk-installation"
-										]
-									},
-									{
-										"group": "Build",
-										"icon": "workflow",
-										"pages": [
-											"v1/sdk-reference/rust/agent-sdk",
-											"v1/sdk-reference/rust/agent-sdk-tools",
-											"v1/sdk-reference/rust/agent-sdk-state-and-approval"
-										]
-									},
-									{
-										"group": "Observe",
-										"icon": "activity",
-										"pages": [
-											"v1/sdk-reference/rust/agent-sdk-events-and-errors"
-										]
-									},
-									{
-										"group": "Reference",
-										"icon": "book-open",
-										"pages": [
-											"v1/sdk-reference/rust/agent-sdk-api-reference"
-										]
-									}
-								]
-							}
-						]
-					},
-					{
-						"tab": "Cookbook",
-						"icon": "chef-hat",
-						"groups": [
-							{
-								"group": "Start Here",
-								"icon": "sparkles",
-								"expanded": true,
-								"pages": [
-									"v1/cookbook/index",
-									"v1/cookbook/free-router-first-deploy",
-									"v1/cookbook/mini-app-starter-prompts"
-								]
-							},
-							{
-								"group": "Build Apps",
-								"icon": "folder-open",
-								"expanded": true,
-								"pages": [
-									"v1/cookbook/build-a-nextjs-web-chat-app",
-									"v1/cookbook/build-an-oauth-nextjs-workbench",
-									"v1/cookbook/build-a-node-rest-smoke-app",
-									"v1/cookbook/build-a-python-gateway-cli"
-								]
-							},
-							{
-								"group": "Routing and Policy",
-								"icon": "route",
+								"group": "Server Tools",
+								"icon": "wrench",
 								"expanded": false,
 								"pages": [
-									"v1/cookbook/preset-rollout-and-routing-debug",
-									"v1/cookbook/sort-providers-by-price-latency-or-throughput",
-									"v1/cookbook/pin-or-ignore-providers-per-request",
-									"v1/cookbook/route-only-to-eu-or-zdr-providers",
-									"v1/cookbook/guardrails-for-api-keys",
-									"v1/cookbook/response-caching-with-presets"
+									"v1/guides/server-tools/index",
+									"v1/guides/server-tools/datetime",
+									"v1/guides/server-tools/web-search",
+									"v1/guides/server-tools/web-fetch",
+									"v1/guides/server-tools/advisor",
+									"v1/guides/server-tools/subagent",
+									"v1/guides/server-tools/fusion",
+									"v1/guides/server-tools/search-models",
+									"v1/guides/server-tools/image-generation",
+									"v1/guides/server-tools/apply-patch"
 								]
 							},
+							"v1/guides/structured-outputs",
 							{
-								"group": "Search & Structured Data",
-								"icon": "search-check",
-								"expanded": false,
-								"pages": [
-									"v1/cookbook/sdk-python-presets-and-json",
-									"v1/cookbook/sdk-typescript-managed-search",
-									"v1/cookbook/web-search-debugging",
-									"v1/cookbook/tool-grounding-with-web-fetch",
-									"v1/cookbook/response-healing-for-structured-json",
-									"v1/cookbook/plugin-defaults-and-response-healing"
-								]
-							},
-							{
-								"group": "Agent SDK Quickstarts",
-								"icon": "bot",
-								"expanded": false,
-								"pages": [
-									"v1/cookbook/agent-sdk-durable-loop",
-									"v1/cookbook/agent-sdk-python-structured-extraction",
-									"v1/cookbook/agent-sdk-go-ops-runbook",
-									"v1/cookbook/agent-sdk-csharp-ticket-triage",
-									"v1/cookbook/agent-sdk-php-content-review",
-									"v1/cookbook/agent-sdk-ruby-rag-notes"
-								]
-							},
-							{
-								"group": "Advanced Agent Workflows",
+								"group": "Advanced Tool Calling",
 								"icon": "workflow",
 								"expanded": false,
 								"pages": [
-									"v1/cookbook/agent-sdk-research-brief",
-									"v1/cookbook/agent-sdk-support-triage",
-									"v1/cookbook/agent-sdk-coding-review",
-									"v1/cookbook/agent-sdk-parallel-tools",
-									"v1/cookbook/coding-agents-skill-md"
+									"v1/guides/tool-calling-patterns",
+									"v1/guides/tool-calling-safety"
+								]
+							},
+							"v1/guides/streaming",
+							{
+								"group": "Model Optimization",
+								"icon": "gauge",
+								"expanded": false,
+								"pages": [
+									"v1/guides/quantization-selection",
+									"v1/guides/quantization-formats",
+									"v1/guides/quantization-methods",
+									"v1/guides/inference-parameters",
+									"v1/guides/sampling-and-decoding",
+									"v1/guides/context-and-token-budgeting"
+								]
+							},
+							"v1/guides/app-attribution",
+							"v1/guides/request-labels",
+							"v1/guides/workspace-notifications"
+						]
+					},
+					{
+						"group": "Integrations",
+						"icon": "plug",
+						"expanded": false,
+						"pages": [
+							"v1/guides/integrations/index",
+							"v1/guides/integrations/docs-mcp",
+							"v1/guides/integrations/phaseo-cli",
+							"v1/guides/integrations/observability",
+							{
+								"group": "Platforms & Operations",
+								"icon": "workflow",
+								"expanded": false,
+								"pages": [
+									"v1/guides/integrations/livekit",
+									"v1/guides/integrations/replit",
+									"v1/guides/integrations/automation",
+									"v1/guides/integrations/infisical"
+								]
+							},
+							{
+								"group": "SDKs & Frameworks",
+								"icon": "blocks",
+								"expanded": false,
+								"pages": [
+									"v1/guides/integrations/openai-sdk",
+									"v1/guides/integrations/anthropic-sdk",
+									"v1/guides/integrations/ai-sdk",
+									"v1/guides/integrations/langchain",
+									"v1/guides/integrations/llamaindex",
+									"v1/guides/integrations/litellm",
+									"v1/guides/integrations/pydanticai",
+									"v1/guides/integrations/mastra",
+									"v1/guides/integrations/tanstack-ai",
+									"v1/guides/integrations/effect-ai"
+								]
+							},
+							{
+								"group": "Coding Assistants",
+								"icon": "bot",
+								"expanded": false,
+								"pages": [
+									"v1/guides/integrations/coding-assistants",
+									"v1/guides/integrations/claude-code",
+									"v1/guides/integrations/codex",
+									"v1/guides/integrations/deepseek-harness",
+									"v1/guides/integrations/opencode",
+									"v1/guides/integrations/pi",
+									"v1/guides/integrations/prime-agent",
+									"v1/guides/integrations/aider",
+									"v1/guides/integrations/continue",
+									"v1/guides/integrations/cline",
+									"v1/guides/integrations/roo-code",
+									"v1/guides/integrations/kilo-code",
+									"v1/guides/integrations/cursor",
+									"v1/guides/integrations/zed"
 								]
 							}
 						]
 					},
 					{
-						"tab": "Changelog",
-						"icon": "history",
-						"groups": [
+						"group": "Workspace & Access",
+						"icon": "users-round",
+						"expanded": false,
+						"pages": [
+							"v1/guides/workspaces",
+							"v1/guides/workspace-audit-log",
+							"v1/developers/management-api-keys"
+						]
+					},
+					{
+						"group": "Reliability & Operations",
+						"icon": "shield-check",
+						"expanded": false,
+						"pages": [
+							"v1/developers/reliability-and-status",
+							"v1/api-reference/limits",
+							"v1/api-reference/errors",
+							"v1/developers/best-practices"
+						]
+					},
+					{
+						"group": "Platform & Research",
+						"icon": "database",
+						"expanded": false,
+						"pages": [
+							"v1/exploring/overview",
+							"v1/pricing/tiers",
+							"v1/exploring/subscription-plans",
+							"v1/exploring/organisations",
+							"v1/exploring/benchmarks",
+							"v1/exploring/pricing-performance",
 							{
-								"group": "2026",
-								"icon": "calendar-days",
+								"group": "Research",
+								"icon": "microscope",
+								"expanded": false,
 								"pages": [
-									"v1/changelog",
-									"v1/changelog/2026-08",
-									"v1/changelog/2026-07",
-									"v1/changelog/2026-06",
-									"v1/changelog/2026-05",
-									"v1/changelog/2026-04",
-									"v1/changelog/2026-03",
-									"v1/changelog/2026-02",
-									"v1/changelog/2026-01"
+									"v1/research/benchmark-methodology",
+									"v1/research/citation",
+									"v1/research/submitting-scores"
+								]
+							}
+						]
+					},
+					{
+						"group": "Migration Guides",
+						"icon": "arrow-right-left",
+						"expanded": false,
+						"pages": [
+							"v1/migration-guides/index",
+							{
+								"group": "Model Migrations",
+								"icon": "brain-circuit",
+								"expanded": false,
+								"pages": [
+									"v1/model-migrations/index",
+									"v1/model-migrations/anthropic-claude-opus-5",
+									"v1/model-migrations/openai-migrating-to-gpt-5-6",
+									"v1/model-migrations/openai-deprecations",
+									"v1/model-migrations/anthropic-claude-opus-4-1-to-4-8",
+									"v1/model-migrations/anthropic-claude-opus-4-6-to-4-7",
+									"v1/model-migrations/mistral-small-3-2-to-mistral-small-4",
+									"v1/model-migrations/openai-migrating-to-gpt-5-4",
+									"v1/model-migrations/google-nano-banana-1-to-nano-banana-2",
+									"v1/model-migrations/google-migrating-to-gemini-3-and-3-1",
+									"v1/model-migrations/anthropic-claude-sonnet-4-5-to-4-6",
+									"v1/model-migrations/xai-grok-4-20",
+									"v1/model-migrations/anthropic-claude-opus-4-5-to-4-6"
 								]
 							},
 							{
-								"group": "Archive",
-								"icon": "archive",
+								"group": "Platform Migrations",
+								"icon": "arrow-right-left",
+								"expanded": false,
 								"pages": [
-									"v1/changelog/2025",
-									"v1/changelog/2024",
-									"v1/changelog/2023",
-									"v1/changelog/2022",
-									"v1/changelog/2021",
-									"v1/changelog/2020",
-									"v1/changelog/2019",
-									"v1/changelog/2018"
+									"v1/migration-guides/from-openai",
+									"v1/migration-guides/from-anthropic",
+									"v1/migration-guides/from-openrouter",
+									"v1/migration-guides/from-vercel",
+									"v1/migration-guides/from-llmgateway",
+									"v1/migration-guides/from-cloudflare",
+									"v1/migration-guides/from-helicone",
+									"v1/migration-guides/from-litellm",
+									{
+										"group": "Planning & Validation",
+										"icon": "clipboard-check",
+										"expanded": false,
+										"pages": [
+											"v1/migration-guides/gateway-parity-review",
+											"v1/migration-guides/feature-parity-matrix"
+										]
+									}
+								]
+							}
+						]
+					},
+					{
+						"group": "Community",
+						"icon": "life-buoy",
+						"expanded": false,
+						"pages": [
+							"v1/community/contact-and-support",
+							"v1/contributing/overview",
+							{
+								"group": "Contribution Guides",
+								"icon": "handshake",
+								"expanded": false,
+								"pages": [
+									"v1/contributing/how-to-contribute",
+									"v1/contributing/repo-structure",
+									"v1/contributing/editing-a-model",
+									"v1/contributing/editing-an-organisation"
+								]
+							},
+							"v1/community/code-of-conduct"
+						]
+					}
+				]
+			},
+			{
+				"tab": "API Reference",
+				"icon": "server",
+				"groups": [
+					{
+						"group": "API Guides",
+						"icon": "book-open",
+						"expanded": true,
+						"pages": [
+							"v1/api-reference/introduction",
+							"v1/developers/authentication",
+							"v1/api-reference/parameters",
+							"v1/guides/streaming",
+							"v1/api-reference/limits",
+							"v1/api-reference/errors"
+						]
+					},
+					{
+						"group": "Inference",
+						"icon": "cpu",
+						"pages": [
+							{
+								"group": "Responses API",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/responses"
+								]
+							},
+							{
+								"group": "Chat",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/chat-completions"
+								]
+							},
+							{
+								"group": "Anthropic Messages",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/anthropic-messages"
+								]
+							},
+							{
+								"group": "Embeddings",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/embeddings"
+								]
+							},
+							{
+								"group": "Reranking",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/rerank"
+								]
+							},
+							{
+								"group": "Images",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/images-generations",
+									"v1/api-reference/endpoint/images-edits"
+								]
+							},
+							{
+								"group": "TTS",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/audio-speech"
+								]
+							},
+							{
+								"group": "STT",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/audio-transcriptions",
+									"v1/api-reference/endpoint/audio-translations"
+								]
+							},
+							{
+								"group": "Music Generation",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/music-generate",
+									"v1/api-reference/endpoint/music-status"
+								]
+							},
+							{
+								"group": "Moderations",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/moderations"
+								]
+							},
+							{
+								"group": "OCR",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/ocr",
+									"v1/api-reference/endpoint/parse"
+								]
+							}
+						]
+					},
+					{
+						"group": "Async Jobs & Files",
+						"icon": "layers",
+						"pages": [
+							{
+								"group": "Video",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/video-list",
+									"v1/api-reference/endpoint/video-create",
+									"v1/api-reference/endpoint/video-models",
+									"v1/api-reference/endpoint/video-status",
+									"v1/api-reference/endpoint/video-delete",
+									"v1/api-reference/endpoint/video-cancel",
+									"v1/api-reference/endpoint/video-content",
+									"v1/api-reference/endpoint/video-download-url"
+								]
+							},
+							{
+								"group": "Batch",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/batches-list",
+									"v1/api-reference/endpoint/batches-create",
+									"v1/api-reference/endpoint/batches-models",
+									"v1/api-reference/endpoint/batches-capabilities",
+									"v1/api-reference/endpoint/batches-files-list",
+									"v1/api-reference/endpoint/batches-files-upload",
+									"v1/api-reference/endpoint/batches-files-retrieve",
+									"v1/api-reference/endpoint/batches-files-content",
+									"v1/api-reference/endpoint/batches-retrieve",
+									"v1/api-reference/endpoint/batches-results",
+									"v1/api-reference/endpoint/batches-requests",
+									"v1/api-reference/endpoint/batches-cancel"
+								]
+							},
+							{
+								"group": "Files",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/files",
+									"v1/api-reference/endpoint/files-list",
+									"v1/api-reference/endpoint/files-retrieve",
+									"v1/api-reference/endpoint/files-content"
+								]
+							},
+							{
+								"group": "Webhook Endpoints",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/webhook-endpoints-list",
+									"v1/api-reference/endpoint/webhook-endpoints-create",
+									"v1/api-reference/endpoint/webhook-endpoints-get",
+									"v1/api-reference/endpoint/webhook-endpoints-update",
+									"v1/api-reference/endpoint/webhook-endpoints-delete",
+									"v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
+								]
+							}
+						]
+					},
+					{
+						"group": "Models & Pricing",
+						"icon": "boxes",
+						"pages": [
+							{
+								"group": "Models",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/models",
+									"v1/api-reference/endpoint/model-endpoints"
+								]
+							},
+							{
+								"group": "Providers",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/providers"
+								]
+							},
+							{
+								"group": "Endpoints",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/endpoints"
+								]
+							},
+							{
+								"group": "Pricing",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/pricing-models",
+									"v1/api-reference/endpoint/pricing-calculate"
+								]
+							},
+							{
+								"group": "Organisations",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/organisations"
+								]
+							}
+						]
+					},
+					{
+						"group": "Routing & Policies",
+						"icon": "route",
+						"pages": [
+							{
+								"group": "Routing",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/workspace-settings-get",
+									"v1/api-reference/endpoint/workspace-settings-update",
+									"v1/api-reference/endpoint/dynamic-routes-list",
+									"v1/api-reference/endpoint/dynamic-routes-create",
+									"v1/api-reference/endpoint/dynamic-routes-get",
+									"v1/api-reference/endpoint/dynamic-routes-update",
+									"v1/api-reference/endpoint/dynamic-routes-keys-update",
+									"v1/api-reference/endpoint/dynamic-routes-deploy",
+									"v1/api-reference/endpoint/dynamic-routes-delete"
+								]
+							},
+							{
+								"group": "Presets",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/presets-list",
+									"v1/api-reference/endpoint/presets-create",
+									"v1/api-reference/endpoint/presets-get",
+									"v1/api-reference/endpoint/presets-update",
+									"v1/api-reference/endpoint/presets-versions-list",
+									"v1/api-reference/endpoint/presets-version-publish",
+									"v1/api-reference/endpoint/presets-fork",
+									"v1/api-reference/endpoint/presets-upstream-apply",
+									"v1/api-reference/endpoint/presets-publisher-get",
+									"v1/api-reference/endpoint/presets-publisher-update",
+									"v1/api-reference/endpoint/presets-delete"
+								]
+							},
+							{
+								"group": "Private Models",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/private-models-list",
+									"v1/api-reference/endpoint/private-models-create",
+									"v1/api-reference/endpoint/private-models-get",
+									"v1/api-reference/endpoint/private-models-update",
+									"v1/api-reference/endpoint/private-models-delete"
+								]
+							},
+							{
+								"group": "Provider credentials",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/provider-credentials-list",
+									"v1/api-reference/endpoint/provider-credentials-create",
+									"v1/api-reference/endpoint/provider-credentials-get",
+									"v1/api-reference/endpoint/provider-credentials-update",
+									"v1/api-reference/endpoint/provider-credentials-delete",
+									"v1/api-reference/endpoint/provider-credentials-reorder"
+								]
+							},
+							{
+								"group": "Guardrails",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/guardrails",
+									"v1/api-reference/endpoint/guardrails-list",
+									"v1/api-reference/endpoint/guardrails-create",
+									"v1/api-reference/endpoint/guardrails-get",
+									"v1/api-reference/endpoint/guardrails-update",
+									"v1/api-reference/endpoint/guardrails-delete",
+									"v1/api-reference/endpoint/guardrail-keys-list",
+									"v1/api-reference/endpoint/guardrail-keys-replace",
+									"v1/api-reference/endpoint/guardrail-keys-add",
+									"v1/api-reference/endpoint/guardrail-keys-remove",
+									"v1/api-reference/endpoint/guardrail-members-list",
+									"v1/api-reference/endpoint/guardrail-members-add",
+									"v1/api-reference/endpoint/guardrail-members-remove"
+								]
+							}
+						]
+					},
+					{
+						"group": "Usage & Monitoring",
+						"icon": "chart-no-axes-combined",
+						"pages": [
+							{
+								"group": "Generations",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/generation"
+								]
+							},
+							{
+								"group": "Activity",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/activity",
+									"v1/api-reference/endpoint/audit-events"
+								]
+							},
+							{
+								"group": "Analytics",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/analytics-get",
+									"v1/api-reference/endpoint/analytics-export"
+								]
+							},
+							{
+								"group": "Logs",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/logs-list",
+									"v1/api-reference/endpoint/logs-get"
+								]
+							},
+							{
+								"group": "Observability",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/observability-logging-policy-get",
+									"v1/api-reference/endpoint/observability-logging-policy-update",
+									"v1/api-reference/endpoint/observability-destinations-list",
+									"v1/api-reference/endpoint/observability-destinations-create",
+									"v1/api-reference/endpoint/observability-destinations-get",
+									"v1/api-reference/endpoint/observability-destinations-update",
+									"v1/api-reference/endpoint/observability-destinations-delete"
+								]
+							},
+							{
+								"group": "Feedback & Evaluations",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/feedback-list",
+									"v1/api-reference/endpoint/feedback-create",
+									"v1/api-reference/endpoint/feedback-summary",
+									"v1/api-reference/endpoint/events-list",
+									"v1/api-reference/endpoint/events-create",
+									"v1/api-reference/endpoint/preset-test-runs-list",
+									"v1/api-reference/endpoint/preset-test-run-create",
+									"v1/api-reference/endpoint/preset-test-run-get",
+									"v1/api-reference/endpoint/preset-test-run-update"
+								]
+							},
+							{
+								"group": "Health",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/health"
+								]
+							}
+						]
+					},
+					{
+						"group": "Workspace Management",
+						"icon": "users",
+						"pages": [
+							{
+								"group": "Workspaces",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/workspaces-list",
+									"v1/api-reference/endpoint/workspaces-create",
+									"v1/api-reference/endpoint/workspaces-get",
+									"v1/api-reference/endpoint/workspaces-delete",
+									"v1/api-reference/endpoint/workspaces-update",
+									"v1/api-reference/endpoint/workspace-members-list",
+									"v1/api-reference/endpoint/workspace-members-add",
+									"v1/api-reference/endpoint/workspace-members-remove",
+									"v1/api-reference/endpoint/workspace-member-role-update",
+									"v1/api-reference/endpoint/workspace-invites-list",
+									"v1/api-reference/endpoint/workspace-invites-create",
+									"v1/api-reference/endpoint/workspace-invites-delete",
+									"v1/api-reference/endpoint/workspace-join-requests-list",
+									"v1/api-reference/endpoint/workspace-join-request-approve",
+									"v1/api-reference/endpoint/workspace-join-request-reject"
+								]
+							},
+							{
+								"group": "API Keys",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/key-current",
+									"v1/api-reference/endpoint/keys-list",
+									"v1/api-reference/endpoint/keys-create",
+									"v1/api-reference/endpoint/keys-get",
+									"v1/api-reference/endpoint/keys-rotate",
+									"v1/api-reference/endpoint/keys-delete",
+									"v1/api-reference/endpoint/keys-update",
+									"v1/api-reference/endpoint/keys-invalidate"
+								]
+							},
+							{
+								"group": "Management Keys",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/management-keys-list",
+									"v1/api-reference/endpoint/management-keys-create",
+									"v1/api-reference/endpoint/management-keys-get",
+									"v1/api-reference/endpoint/management-keys-update",
+									"v1/api-reference/endpoint/management-keys-delete"
+								]
+							},
+							{
+								"group": "Credits",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/credits"
+								]
+							},
+							{
+								"group": "Budgets",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/budgets-list",
+									"v1/api-reference/endpoint/budgets-create",
+									"v1/api-reference/endpoint/budgets-get",
+									"v1/api-reference/endpoint/budgets-update",
+									"v1/api-reference/endpoint/budgets-delete"
+								]
+							},
+							{
+								"group": "OAuth Applications",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/oauth-clients-list",
+									"v1/api-reference/endpoint/oauth-clients-create",
+									"v1/api-reference/endpoint/oauth-clients-get",
+									"v1/api-reference/endpoint/oauth-clients-update",
+									"v1/api-reference/endpoint/oauth-clients-delete",
+									"v1/api-reference/endpoint/oauth-clients-regenerate-secret"
+								]
+							},
+							{
+								"group": "Identity & Provisioning",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/identity-sso-get",
+									"v1/api-reference/endpoint/identity-sso-update",
+									"v1/api-reference/endpoint/identity-scim-get",
+									"v1/api-reference/endpoint/identity-scim-update",
+									"v1/api-reference/endpoint/identity-scim-token-create",
+									"v1/api-reference/endpoint/identity-scim-token-revoke",
+									"v1/api-reference/endpoint/identity-scim-audit-list",
+									"v1/api-reference/endpoint/identity-directory-get",
+									"v1/api-reference/endpoint/identity-directory-member-update",
+									"v1/api-reference/endpoint/identity-departments-list",
+									"v1/api-reference/endpoint/identity-department-create",
+									"v1/api-reference/endpoint/identity-department-update",
+									"v1/api-reference/endpoint/identity-department-delete",
+									"v1/api-reference/endpoint/identity-department-member-set",
+									"v1/api-reference/endpoint/identity-department-member-delete",
+									"v1/api-reference/endpoint/identity-group-mappings-list",
+									"v1/api-reference/endpoint/identity-group-mapping-create",
+									"v1/api-reference/endpoint/identity-group-mapping-update",
+									"v1/api-reference/endpoint/identity-group-mapping-delete"
+								]
+							},
+							{
+								"group": "Notifications",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/notifications-settings-get",
+									"v1/api-reference/endpoint/notifications-settings-update",
+									"v1/api-reference/endpoint/notifications-destinations-list",
+									"v1/api-reference/endpoint/notifications-destination-create",
+									"v1/api-reference/endpoint/notifications-destination-delete",
+									"v1/api-reference/endpoint/notifications-destination-config-test",
+									"v1/api-reference/endpoint/notifications-destination-test",
+									"v1/api-reference/endpoint/notifications-routes-list",
+									"v1/api-reference/endpoint/notifications-route-update"
+								]
+							},
+							{
+								"group": "Applications",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/apps-list",
+									"v1/api-reference/endpoint/app-update",
+									"v1/api-reference/endpoint/app-merge"
+								]
+							},
+							{
+								"group": "Data Contribution",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/data-contribution-get",
+									"v1/api-reference/endpoint/data-contribution-consent-update",
+									"v1/api-reference/endpoint/data-contribution-classifier-create",
+									"v1/api-reference/endpoint/data-contribution-classifier-update",
+									"v1/api-reference/endpoint/data-contribution-classifier-delete"
 								]
 							}
 						]
 					}
+				]
+			},
+			{
+				"tab": "Client SDKs",
+				"icon": "package",
+				"menu": [
+					{
+						"item": "AI SDK (Vercel)",
+						"icon": "/icons/brands/vercel.svg",
+						"groups": [
+							{
+								"group": "Introduction",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/sdk/ai-sdk"
+								]
+							},
+							{
+								"group": "Text",
+								"icon": "message-square-text",
+								"pages": [
+									"v1/sdk-reference/sdk/generate-text/index",
+									"v1/sdk-reference/sdk/stream-text/index",
+									"v1/sdk-reference/sdk/tool-calling/index",
+									"v1/sdk-reference/sdk/structured-output/index"
+								]
+							},
+							{
+								"group": "Multimodal",
+								"icon": "shapes",
+								"pages": [
+									"v1/sdk-reference/sdk/embeddings/index",
+									"v1/sdk-reference/sdk/images/index",
+									"v1/sdk-reference/sdk/audio/index"
+								]
+							},
+							{
+								"group": "Models",
+								"icon": "brain-circuit",
+								"pages": [
+									"v1/sdk-reference/sdk/get-models/index"
+								]
+							}
+						]
+					},
+					{
+						"item": "TypeScript SDK",
+						"icon": "/icons/languages/typescript.svg",
+						"groups": [
+							{
+								"group": "Introduction",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/typescript/overview",
+									"v1/sdk-reference/typescript/installation",
+									"v1/sdk-reference/typescript/usage"
+								]
+							},
+							{
+								"group": "Text",
+								"icon": "message-square-text",
+								"pages": [
+									"v1/sdk-reference/typescript/responses",
+									"v1/sdk-reference/typescript/chat-completions"
+								]
+							},
+							{
+								"group": "Image",
+								"icon": "image",
+								"pages": [
+									"v1/sdk-reference/typescript/images-generations",
+									"v1/sdk-reference/typescript/images-edits"
+								]
+							},
+							{
+								"group": "Audio",
+								"icon": "audio-lines",
+								"pages": [
+									"v1/sdk-reference/typescript/audio-speech",
+									"v1/sdk-reference/typescript/audio-transcriptions",
+									"v1/sdk-reference/typescript/audio-translations"
+								]
+							},
+							{
+								"group": "Specialised",
+								"icon": "blocks",
+								"pages": [
+									"v1/sdk-reference/typescript/embeddings",
+									"v1/sdk-reference/typescript/rerank",
+									"v1/sdk-reference/typescript/moderations",
+									"v1/sdk-reference/typescript/files"
+								]
+							},
+							{
+								"group": "Admin",
+								"icon": "settings-2",
+								"pages": [
+									"v1/sdk-reference/typescript/models",
+									"v1/sdk-reference/typescript/generation"
+								]
+							}
+						]
+					},
+					{
+						"item": "Python SDK",
+						"icon": "/icons/languages/python.svg",
+						"groups": [
+							{
+								"group": "Introduction",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/python/overview",
+									"v1/sdk-reference/python/installation",
+									"v1/sdk-reference/python/usage"
+								]
+							},
+							{
+								"group": "Supported Now",
+								"icon": "circle-check",
+								"pages": [
+									"v1/sdk-reference/python/responses",
+									"v1/sdk-reference/python/chat-completions",
+									"v1/sdk-reference/python/embeddings",
+									"v1/sdk-reference/python/moderations",
+									"v1/sdk-reference/python/models"
+								]
+							},
+							{
+								"group": "Coming Soon in SDK",
+								"icon": "clock-3",
+								"pages": [
+									"v1/sdk-reference/python/images-generations",
+									"v1/sdk-reference/python/images-edits",
+									"v1/sdk-reference/python/audio-speech",
+									"v1/sdk-reference/python/audio-transcriptions",
+									"v1/sdk-reference/python/audio-translations",
+									"v1/sdk-reference/python/files",
+									"v1/sdk-reference/python/generation"
+								]
+							}
+						]
+					},
+					{
+						"item": "Go SDK",
+						"icon": "/icons/languages/go.svg",
+						"groups": [
+							{
+								"group": "Introduction",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/go/overview",
+									"v1/sdk-reference/go/installation",
+									"v1/sdk-reference/go/usage"
+								]
+							},
+							{
+								"group": "Text",
+								"icon": "message-square-text",
+								"pages": [
+									"v1/sdk-reference/go/responses",
+									"v1/sdk-reference/go/chat-completions"
+								]
+							},
+							{
+								"group": "Image",
+								"icon": "image",
+								"pages": [
+									"v1/sdk-reference/go/images-generations",
+									"v1/sdk-reference/go/images-edits"
+								]
+							},
+							{
+								"group": "Audio",
+								"icon": "audio-lines",
+								"pages": [
+									"v1/sdk-reference/go/audio-speech",
+									"v1/sdk-reference/go/audio-transcriptions",
+									"v1/sdk-reference/go/audio-translations"
+								]
+							},
+							{
+								"group": "Specialised",
+								"icon": "blocks",
+								"pages": [
+									"v1/sdk-reference/go/embeddings",
+									"v1/sdk-reference/go/moderations",
+									"v1/sdk-reference/go/files"
+								]
+							},
+							{
+								"group": "Admin",
+								"icon": "settings-2",
+								"pages": [
+									"v1/sdk-reference/go/models",
+									"v1/sdk-reference/go/generation"
+								]
+							}
+						]
+					},
+					{
+						"item": "C# SDK",
+						"icon": "/icons/languages/csharp.svg",
+						"groups": [
+							{
+								"group": "Introduction",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/csharp/overview",
+									"v1/sdk-reference/csharp/installation",
+									"v1/sdk-reference/csharp/usage"
+								]
+							},
+							{
+								"group": "Text",
+								"icon": "message-square-text",
+								"pages": [
+									"v1/sdk-reference/csharp/responses",
+									"v1/sdk-reference/csharp/chat-completions"
+								]
+							},
+							{
+								"group": "Image",
+								"icon": "image",
+								"pages": [
+									"v1/sdk-reference/csharp/images-generations",
+									"v1/sdk-reference/csharp/images-edits"
+								]
+							},
+							{
+								"group": "Audio",
+								"icon": "audio-lines",
+								"pages": [
+									"v1/sdk-reference/csharp/audio-speech",
+									"v1/sdk-reference/csharp/audio-transcriptions",
+									"v1/sdk-reference/csharp/audio-translations"
+								]
+							},
+							{
+								"group": "Specialised",
+								"icon": "blocks",
+								"pages": [
+									"v1/sdk-reference/csharp/embeddings",
+									"v1/sdk-reference/csharp/moderations",
+									"v1/sdk-reference/csharp/files"
+								]
+							},
+							{
+								"group": "Admin",
+								"icon": "settings-2",
+								"pages": [
+									"v1/sdk-reference/csharp/models",
+									"v1/sdk-reference/csharp/generation"
+								]
+							}
+						]
+					},
+					{
+						"item": "PHP SDK",
+						"icon": "/icons/languages/php.svg",
+						"groups": [
+							{
+								"group": "Introduction",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/php/overview",
+									"v1/sdk-reference/php/installation",
+									"v1/sdk-reference/php/usage"
+								]
+							},
+							{
+								"group": "Text",
+								"icon": "message-square-text",
+								"pages": [
+									"v1/sdk-reference/php/responses",
+									"v1/sdk-reference/php/chat-completions"
+								]
+							},
+							{
+								"group": "Image",
+								"icon": "image",
+								"pages": [
+									"v1/sdk-reference/php/images-generations",
+									"v1/sdk-reference/php/images-edits"
+								]
+							},
+							{
+								"group": "Audio",
+								"icon": "audio-lines",
+								"pages": [
+									"v1/sdk-reference/php/audio-speech",
+									"v1/sdk-reference/php/audio-transcriptions",
+									"v1/sdk-reference/php/audio-translations"
+								]
+							},
+							{
+								"group": "Specialised",
+								"icon": "blocks",
+								"pages": [
+									"v1/sdk-reference/php/embeddings",
+									"v1/sdk-reference/php/moderations",
+									"v1/sdk-reference/php/files"
+								]
+							},
+							{
+								"group": "Admin",
+								"icon": "settings-2",
+								"pages": [
+									"v1/sdk-reference/php/models",
+									"v1/sdk-reference/php/generation"
+								]
+							}
+						]
+					},
+					{
+						"item": "Ruby SDK",
+						"icon": "/icons/languages/ruby.svg",
+						"groups": [
+							{
+								"group": "Introduction",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/ruby/overview",
+									"v1/sdk-reference/ruby/installation",
+									"v1/sdk-reference/ruby/usage"
+								]
+							},
+							{
+								"group": "Text",
+								"icon": "message-square-text",
+								"pages": [
+									"v1/sdk-reference/ruby/responses",
+									"v1/sdk-reference/ruby/chat-completions"
+								]
+							},
+							{
+								"group": "Image",
+								"icon": "image",
+								"pages": [
+									"v1/sdk-reference/ruby/images-generations",
+									"v1/sdk-reference/ruby/images-edits"
+								]
+							},
+							{
+								"group": "Audio",
+								"icon": "audio-lines",
+								"pages": [
+									"v1/sdk-reference/ruby/audio-speech",
+									"v1/sdk-reference/ruby/audio-transcriptions",
+									"v1/sdk-reference/ruby/audio-translations"
+								]
+							},
+							{
+								"group": "Specialised",
+								"icon": "blocks",
+								"pages": [
+									"v1/sdk-reference/ruby/embeddings",
+									"v1/sdk-reference/ruby/moderations",
+									"v1/sdk-reference/ruby/files"
+								]
+							},
+							{
+								"group": "Admin",
+								"icon": "settings-2",
+								"pages": [
+									"v1/sdk-reference/ruby/models",
+									"v1/sdk-reference/ruby/generation"
+								]
+							}
+						]
+					},
+					{
+						"item": "Rust SDK",
+						"icon": "/icons/languages/rust.svg",
+						"groups": [
+							{
+								"group": "Introduction",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/rust/overview",
+									"v1/sdk-reference/rust/installation",
+									"v1/sdk-reference/rust/usage"
+								]
+							},
+							{
+								"group": "Text",
+								"icon": "message-square-text",
+								"pages": [
+									"v1/sdk-reference/rust/responses",
+									"v1/sdk-reference/rust/chat-completions"
+								]
+							},
+							{
+								"group": "Reference",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/rust/api-reference"
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"tab": "Agent SDK",
+				"icon": "bot",
+				"menu": [
+					{
+						"item": "Overview",
+						"icon": "compass",
+						"groups": [
+							{
+								"group": "Start Here",
+								"icon": "rocket",
+								"pages": [
+									"v1/sdk-reference/agent-sdk/overview"
+								]
+							}
+						]
+					},
+					{
+						"item": "TypeScript Agent SDK",
+						"icon": "/icons/languages/typescript.svg",
+						"groups": [
+							{
+								"group": "Start Here",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/typescript/agent-sdk-overview",
+									"v1/sdk-reference/typescript/agent-sdk-installation"
+								]
+							},
+							{
+								"group": "Build",
+								"icon": "workflow",
+								"pages": [
+									"v1/sdk-reference/typescript/agent-sdk",
+									"v1/sdk-reference/typescript/agent-sdk-tools",
+									"v1/sdk-reference/typescript/agent-sdk-streaming",
+									"v1/sdk-reference/typescript/agent-sdk-items",
+									"v1/sdk-reference/typescript/agent-sdk-dynamic-turns",
+									"v1/sdk-reference/typescript/agent-sdk-stop-conditions",
+									"v1/sdk-reference/typescript/agent-sdk-state-and-approval",
+									"v1/sdk-reference/typescript/agent-sdk-run-controls"
+								]
+							},
+							{
+								"group": "Observe",
+								"icon": "activity",
+								"pages": [
+									"v1/sdk-reference/typescript/agent-sdk-lifecycle-hooks",
+									"v1/sdk-reference/typescript/agent-sdk-devtools"
+								]
+							},
+							{
+								"group": "Reference",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/typescript/agent-sdk-api-reference",
+									"v1/sdk-reference/typescript/agent-sdk-examples",
+									"v1/sdk-reference/typescript/agent-sdk-events-and-errors"
+								]
+							}
+						]
+					},
+					{
+						"item": "Python Agent SDK",
+						"icon": "/icons/languages/python.svg",
+						"groups": [
+							{
+								"group": "Start Here",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/python/agent-sdk-overview",
+									"v1/sdk-reference/python/agent-sdk-installation"
+								]
+							},
+							{
+								"group": "Build",
+								"icon": "workflow",
+								"pages": [
+									"v1/sdk-reference/python/agent-sdk",
+									"v1/sdk-reference/python/agent-sdk-tools",
+									"v1/sdk-reference/python/agent-sdk-streaming",
+									"v1/sdk-reference/python/agent-sdk-items",
+									"v1/sdk-reference/python/agent-sdk-dynamic-turns",
+									"v1/sdk-reference/python/agent-sdk-stop-conditions",
+									"v1/sdk-reference/python/agent-sdk-state-and-approval",
+									"v1/sdk-reference/python/agent-sdk-run-controls"
+								]
+							},
+							{
+								"group": "Observe",
+								"icon": "activity",
+								"pages": [
+									"v1/sdk-reference/python/agent-sdk-lifecycle-hooks",
+									"v1/sdk-reference/python/agent-sdk-devtools"
+								]
+							},
+							{
+								"group": "Reference",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/python/agent-sdk-api-reference",
+									"v1/sdk-reference/python/agent-sdk-examples",
+									"v1/sdk-reference/python/agent-sdk-observability"
+								]
+							}
+						]
+					},
+					{
+						"item": "Go Agent SDK",
+						"icon": "/icons/languages/go.svg",
+						"groups": [
+							{
+								"group": "Start Here",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/go/agent-sdk-overview",
+									"v1/sdk-reference/go/agent-sdk-installation"
+								]
+							},
+							{
+								"group": "Build",
+								"icon": "workflow",
+								"pages": [
+									"v1/sdk-reference/go/agent-sdk",
+									"v1/sdk-reference/go/agent-sdk-tools",
+									"v1/sdk-reference/go/agent-sdk-streaming",
+									"v1/sdk-reference/go/agent-sdk-items",
+									"v1/sdk-reference/go/agent-sdk-dynamic-turns",
+									"v1/sdk-reference/go/agent-sdk-stop-conditions",
+									"v1/sdk-reference/go/agent-sdk-state-and-approval",
+									"v1/sdk-reference/go/agent-sdk-run-controls"
+								]
+							},
+							{
+								"group": "Observe",
+								"icon": "activity",
+								"pages": [
+									"v1/sdk-reference/go/agent-sdk-lifecycle-hooks",
+									"v1/sdk-reference/go/agent-sdk-devtools"
+								]
+							},
+							{
+								"group": "Reference",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/go/agent-sdk-api-reference",
+									"v1/sdk-reference/go/agent-sdk-examples",
+									"v1/sdk-reference/go/agent-sdk-observability"
+								]
+							}
+						]
+					},
+					{
+						"item": "C# Agent SDK",
+						"icon": "/icons/languages/csharp.svg",
+						"groups": [
+							{
+								"group": "Start Here",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/csharp/agent-sdk-overview",
+									"v1/sdk-reference/csharp/agent-sdk-installation"
+								]
+							},
+							{
+								"group": "Build",
+								"icon": "workflow",
+								"pages": [
+									"v1/sdk-reference/csharp/agent-sdk",
+									"v1/sdk-reference/csharp/agent-sdk-tools",
+									"v1/sdk-reference/csharp/agent-sdk-streaming",
+									"v1/sdk-reference/csharp/agent-sdk-items",
+									"v1/sdk-reference/csharp/agent-sdk-dynamic-turns",
+									"v1/sdk-reference/csharp/agent-sdk-stop-conditions",
+									"v1/sdk-reference/csharp/agent-sdk-state-and-approval",
+									"v1/sdk-reference/csharp/agent-sdk-run-controls"
+								]
+							},
+							{
+								"group": "Observe",
+								"icon": "activity",
+								"pages": [
+									"v1/sdk-reference/csharp/agent-sdk-lifecycle-hooks",
+									"v1/sdk-reference/csharp/agent-sdk-devtools"
+								]
+							},
+							{
+								"group": "Reference",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/csharp/agent-sdk-api-reference",
+									"v1/sdk-reference/csharp/agent-sdk-examples",
+									"v1/sdk-reference/csharp/agent-sdk-observability"
+								]
+							}
+						]
+					},
+					{
+						"item": "PHP Agent SDK",
+						"icon": "/icons/languages/php.svg",
+						"groups": [
+							{
+								"group": "Start Here",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/php/agent-sdk-overview",
+									"v1/sdk-reference/php/agent-sdk-installation"
+								]
+							},
+							{
+								"group": "Build",
+								"icon": "workflow",
+								"pages": [
+									"v1/sdk-reference/php/agent-sdk",
+									"v1/sdk-reference/php/agent-sdk-tools",
+									"v1/sdk-reference/php/agent-sdk-streaming",
+									"v1/sdk-reference/php/agent-sdk-items",
+									"v1/sdk-reference/php/agent-sdk-dynamic-turns",
+									"v1/sdk-reference/php/agent-sdk-stop-conditions",
+									"v1/sdk-reference/php/agent-sdk-state-and-approval",
+									"v1/sdk-reference/php/agent-sdk-run-controls"
+								]
+							},
+							{
+								"group": "Observe",
+								"icon": "activity",
+								"pages": [
+									"v1/sdk-reference/php/agent-sdk-lifecycle-hooks",
+									"v1/sdk-reference/php/agent-sdk-devtools"
+								]
+							},
+							{
+								"group": "Reference",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/php/agent-sdk-api-reference",
+									"v1/sdk-reference/php/agent-sdk-examples",
+									"v1/sdk-reference/php/agent-sdk-observability"
+								]
+							}
+						]
+					},
+					{
+						"item": "Ruby Agent SDK",
+						"icon": "/icons/languages/ruby.svg",
+						"groups": [
+							{
+								"group": "Start Here",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/ruby/agent-sdk-overview",
+									"v1/sdk-reference/ruby/agent-sdk-installation"
+								]
+							},
+							{
+								"group": "Build",
+								"icon": "workflow",
+								"pages": [
+									"v1/sdk-reference/ruby/agent-sdk",
+									"v1/sdk-reference/ruby/agent-sdk-tools",
+									"v1/sdk-reference/ruby/agent-sdk-streaming",
+									"v1/sdk-reference/ruby/agent-sdk-items",
+									"v1/sdk-reference/ruby/agent-sdk-dynamic-turns",
+									"v1/sdk-reference/ruby/agent-sdk-stop-conditions",
+									"v1/sdk-reference/ruby/agent-sdk-state-and-approval",
+									"v1/sdk-reference/ruby/agent-sdk-run-controls"
+								]
+							},
+							{
+								"group": "Observe",
+								"icon": "activity",
+								"pages": [
+									"v1/sdk-reference/ruby/agent-sdk-lifecycle-hooks",
+									"v1/sdk-reference/ruby/agent-sdk-devtools"
+								]
+							},
+							{
+								"group": "Reference",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/ruby/agent-sdk-api-reference",
+									"v1/sdk-reference/ruby/agent-sdk-examples",
+									"v1/sdk-reference/ruby/agent-sdk-observability"
+								]
+							}
+						]
+					},
+					{
+						"item": "Rust Agent SDK",
+						"icon": "/icons/languages/rust.svg",
+						"groups": [
+							{
+								"group": "Start Here",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/rust/agent-sdk-overview",
+									"v1/sdk-reference/rust/agent-sdk-installation"
+								]
+							},
+							{
+								"group": "Build",
+								"icon": "workflow",
+								"pages": [
+									"v1/sdk-reference/rust/agent-sdk",
+									"v1/sdk-reference/rust/agent-sdk-tools",
+									"v1/sdk-reference/rust/agent-sdk-state-and-approval"
+								]
+							},
+							{
+								"group": "Observe",
+								"icon": "activity",
+								"pages": [
+									"v1/sdk-reference/rust/agent-sdk-events-and-errors"
+								]
+							},
+							{
+								"group": "Reference",
+								"icon": "book-open",
+								"pages": [
+									"v1/sdk-reference/rust/agent-sdk-api-reference"
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"tab": "Cookbook",
+				"icon": "chef-hat",
+				"groups": [
+					{
+						"group": "Start Here",
+						"icon": "rocket",
+						"expanded": true,
+						"pages": [
+							"v1/cookbook/index",
+							"v1/cookbook/free-router-first-deploy",
+							"v1/cookbook/mini-app-starter-prompts"
+						]
+					},
+					{
+						"group": "Build Apps",
+						"icon": "folder-open",
+						"expanded": true,
+						"pages": [
+							"v1/cookbook/build-a-nextjs-web-chat-app",
+							"v1/cookbook/build-an-oauth-nextjs-workbench",
+							"v1/cookbook/build-a-node-rest-smoke-app",
+							"v1/cookbook/build-a-python-gateway-cli"
+						]
+					},
+					{
+						"group": "Routing and Policy",
+						"icon": "route",
+						"expanded": false,
+						"pages": [
+							"v1/cookbook/preset-rollout-and-routing-debug",
+							"v1/cookbook/sort-providers-by-price-latency-or-throughput",
+							"v1/cookbook/pin-or-ignore-providers-per-request",
+							"v1/cookbook/route-only-to-eu-or-zdr-providers",
+							"v1/cookbook/guardrails-for-api-keys",
+							"v1/cookbook/response-caching-with-presets"
+						]
+					},
+					{
+						"group": "Search & Structured Data",
+						"icon": "search-check",
+						"expanded": false,
+						"pages": [
+							"v1/cookbook/sdk-python-presets-and-json",
+							"v1/cookbook/sdk-typescript-managed-search",
+							"v1/cookbook/web-search-debugging",
+							"v1/cookbook/tool-grounding-with-web-fetch",
+							"v1/cookbook/response-healing-for-structured-json",
+							"v1/cookbook/plugin-defaults-and-response-healing"
+						]
+					},
+					{
+						"group": "Agent SDK Quickstarts",
+						"icon": "bot",
+						"expanded": false,
+						"pages": [
+							"v1/cookbook/agent-sdk-durable-loop",
+							"v1/cookbook/agent-sdk-python-structured-extraction",
+							"v1/cookbook/agent-sdk-go-ops-runbook",
+							"v1/cookbook/agent-sdk-csharp-ticket-triage",
+							"v1/cookbook/agent-sdk-php-content-review",
+							"v1/cookbook/agent-sdk-ruby-rag-notes"
+						]
+					},
+					{
+						"group": "Advanced Agent Workflows",
+						"icon": "workflow",
+						"expanded": false,
+						"pages": [
+							"v1/cookbook/agent-sdk-research-brief",
+							"v1/cookbook/agent-sdk-support-triage",
+							"v1/cookbook/agent-sdk-coding-review",
+							"v1/cookbook/agent-sdk-parallel-tools",
+							"v1/cookbook/coding-agents-skill-md"
+						]
+					}
+				]
+			},
+			{
+				"tab": "Changelog",
+				"icon": "history",
+				"groups": [
+					{
+						"group": "2026",
+						"icon": "calendar-days",
+						"pages": [
+							"v1/changelog",
+							"v1/changelog/2026-08",
+							"v1/changelog/2026-07",
+							"v1/changelog/2026-06",
+							"v1/changelog/2026-05",
+							"v1/changelog/2026-04",
+							"v1/changelog/2026-03",
+							"v1/changelog/2026-02",
+							"v1/changelog/2026-01"
+						]
+					},
+					{
+						"group": "Archive",
+						"icon": "archive",
+						"pages": [
+							"v1/changelog/2025",
+							"v1/changelog/2024",
+							"v1/changelog/2023",
+							"v1/changelog/2022",
+							"v1/changelog/2021",
+							"v1/changelog/2020",
+							"v1/changelog/2019",
+							"v1/changelog/2018"
+						]
+					}
+				]
+			}
 		]
 	},
 	"logo": {
@@ -1641,6 +1695,50 @@
 	},
 	"redirects": [
 		{
+			"source": "/v1/migration-guides/assistant",
+			"destination": "/v1/migration-guides"
+		},
+		{
+			"source": "/v1/guides/model-quantization",
+			"destination": "/v1/guides/quantization-selection"
+		},
+		{
+			"source": "/v1/guides/structured-outputs-validation",
+			"destination": "/v1/guides/structured-outputs"
+		},
+		{
+			"source": "/v1/guides/structured-outputs-schemas",
+			"destination": "/v1/guides/structured-outputs"
+		},
+		{
+			"source": "/v1/guides/streaming-production",
+			"destination": "/v1/guides/streaming"
+		},
+		{
+			"source": "/v1/guides/streaming-sse",
+			"destination": "/v1/guides/streaming"
+		},
+		{
+			"source": "/v1/api-reference/streaming",
+			"destination": "/v1/guides/streaming"
+		},
+		{
+			"source": "/v1/developers/rate-limits",
+			"destination": "/v1/api-reference/limits"
+		},
+		{
+			"source": "/v1/developers/error-handling",
+			"destination": "/v1/api-reference/errors"
+		},
+		{
+			"source": "/v1/api-reference/authentication",
+			"destination": "/v1/developers/authentication"
+		},
+		{
+			"source": "/v1/guides/principles",
+			"destination": "/v1/developers/introduction"
+		},
+		{
 			"source": "/v1/api-reference/async-lifecycle-updates",
 			"destination": "/v1/api-reference/introduction"
 		},
@@ -1650,14 +1748,6 @@
 		},
 		{
 			"source": "/v1/api-reference/endpoint/realtime",
-			"destination": "/v1/api-reference/introduction"
-		},
-		{
-			"source": "/v1/api-reference/endpoint/video-:slug*",
-			"destination": "/v1/api-reference/introduction"
-		},
-		{
-			"source": "/v1/api-reference/endpoint/batches:slug*",
 			"destination": "/v1/api-reference/introduction"
 		},
 		{

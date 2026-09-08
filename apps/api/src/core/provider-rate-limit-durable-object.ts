@@ -4,6 +4,7 @@
 
 import { DurableObject } from "cloudflare:workers";
 import type { GatewayBindings } from "@/runtime/env.types";
+import { BATCH_DOWNLOAD_LIMIT, BATCH_DOWNLOAD_WINDOW_MS, type BatchDownloadAdmission } from "@core/batch-download-limits";
 import {
 	resolveProviderRateLimitDenial,
 	type ProviderRateLimitAdmission,
@@ -38,6 +39,36 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 					day_tokens INTEGER NOT NULL
 				)
 			`);
+		});
+	}
+
+	async admitBatchDownload(): Promise<BatchDownloadAdmission> {
+		// Synchronous SQL admission cannot interleave with another request. At most ten rows
+		// are retained, in a separate object per workspace/batch from provider quotas.
+		const now = Date.now();
+		const sql = this.ctx.storage.sql;
+		sql.exec("CREATE TABLE IF NOT EXISTS batch_downloads (started_at INTEGER NOT NULL)");
+		sql.exec("DELETE FROM batch_downloads WHERE started_at <= ?", now - BATCH_DOWNLOAD_WINDOW_MS);
+		const rows = sql.exec<{ started_at: number }>("SELECT started_at FROM batch_downloads ORDER BY started_at").toArray();
+		if (rows.length >= BATCH_DOWNLOAD_LIMIT) {
+			return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil((rows[0].started_at + BATCH_DOWNLOAD_WINDOW_MS - now) / 1000)) };
+		}
+		sql.exec("INSERT INTO batch_downloads (started_at) VALUES (?)", now);
+		await this.ctx.storage.setAlarm(now + BATCH_DOWNLOAD_WINDOW_MS);
+		return { allowed: true, retryAfterSeconds: 0 };
+	}
+
+	async alarm(): Promise<void> {
+		await this.ctx.blockConcurrencyWhile(async () => {
+			const sql = this.ctx.storage.sql;
+			const table = sql.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'batch_downloads'").toArray();
+			if (!table.length) return;
+			const latest = sql.exec<{ latest: number | null }>("SELECT MAX(started_at) AS latest FROM batch_downloads").toArray()[0]?.latest;
+			if (latest != null && latest + BATCH_DOWNLOAD_WINDOW_MS > Date.now()) {
+				await this.ctx.storage.setAlarm(latest + BATCH_DOWNLOAD_WINDOW_MS);
+			} else {
+				await this.ctx.storage.deleteAll();
+			}
 		});
 	}
 

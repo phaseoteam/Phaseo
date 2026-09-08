@@ -138,11 +138,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 32.5,
+      "score": 25,
       "is_self_reported": false,
-      "other_info": "Qwen3 Max Thinking; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen3 Max Thinking; Artificial Analysis ID 806032ff-6252-4c22-ba99-a126e411b7a4; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-max-thinking",
-      "rank": 132
+      "rank": 173
     }
   ],
   "family_id": null,

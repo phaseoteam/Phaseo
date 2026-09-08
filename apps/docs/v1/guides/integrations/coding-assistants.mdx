@@ -59,20 +59,22 @@ For Anthropic-compatible tools, use:
 | Auth token | Your Phaseo API key |
 | Model | A Phaseo model id, such as `anthropic/claude-sonnet-4.5` |
 
-## Cursor
+## Assistant-specific setup
 
-Cursor supports custom OpenAI-compatible endpoints through its OpenAI API key settings.
+Use the dedicated guide for the assistant's exact settings and troubleshooting:
 
-1. Open `Cursor Settings`.
-2. Go to `Models`.
-3. Enable or add the `OpenAI API Key` entry.
-4. Paste your Phaseo API key.
-5. Enable `Override OpenAI Base URL`.
-6. Set the base URL to `https://api.phaseo.app/v1`.
-7. Add a custom model using A Phaseo model id, for example `openai/gpt-5-nano`.
-8. Enable the model and verify it from the Cursor model picker.
-
-If Cursor rejects a model id with `/`, create the closest local alias the UI allows and route that alias to the Phaseo model in your own config when the client supports aliases.
+| Assistant | Setup guide |
+| --- | --- |
+| Codex | [CLI, app, and IDE extension](./codex.mdx) |
+| Claude Code | [Anthropic-compatible configuration](./claude-code.mdx) |
+| OpenCode | [Provider configuration](./opencode.mdx) |
+| DeepSeek Harness | [UI and YAML configuration](./deepseek-harness.mdx) |
+| Cursor | [Model settings](./cursor.mdx) |
+| Continue | [Provider configuration](./continue.mdx) |
+| Cline / Roo Code / Kilo Code | [Cline](./cline.mdx), [Roo Code](./roo-code.mdx), [Kilo Code](./kilo-code.mdx) |
+| Aider | [Model and environment setup](./aider.mdx) |
+| Zed | [Provider and key setup](./zed.mdx) |
+| Pi / Prime Agent | [Pi](./pi.mdx), [Prime Agent](./prime-agent.mdx) |
 
 ## VS Code
 
@@ -88,98 +90,11 @@ VS Code supports adding models through the Language Models editor when the OpenA
 
 If your VS Code build does not show an OpenAI-compatible provider, use an extension that supports custom providers, such as Continue, Cline, Roo Code, or Kilo Code.
 
-## Continue
-
-Continue can use Phaseo through its OpenAI provider with a custom API base.
-
-```yaml
-name: Phaseo
-version: 0.0.1
-schema: v1
-
-models:
-  - name: Phaseo GPT-5 Nano
-    provider: openai
-    model: openai/gpt-5-nano
-    apiKey: ${{ secrets.PHASEO_API_KEY }}
-    apiBase: https://api.phaseo.app/v1
-    roles:
-      - chat
-      - edit
-      - apply
-```
-
-For models where Continue defaults to Responses but your workflow needs Chat Completions compatibility, set `useResponsesApi: false`.
-
-## Cline, Roo Code, and Kilo Code
-
-These tools expose similar provider settings.
-
-1. Open the extension settings.
-2. Choose `OpenAI Compatible` as the provider.
-3. Set the base URL to `https://api.phaseo.app/v1`.
-4. Paste your Phaseo API key.
-5. Enter A Phaseo model id.
-6. Save and run a small chat request before using file-editing tools.
-
-## Aider
-
-Set OpenAI-compatible environment variables and pass the model on launch:
-
-```bash
-export OPENAI_API_BASE="https://api.phaseo.app/v1"
-export OPENAI_API_KEY="your_phaseo_api_key"
-aider --model openai/openai/gpt-5-nano
-```
-
-Aider often expects OpenAI-compatible custom models to be prefixed with `openai/`. Because Phaseo model ids already include provider prefixes, the full Aider model string may look like `openai/openai/gpt-5-nano`.
-
 ## Pi, Prime Agent, OpenClaw, and Hermes Agent
 
 `phaseo pi` adds a dedicated provider extension that resolves its key from the Phaseo CLI at runtime. `phaseo prime-agent` writes a command-backed provider to `~/.prime/agent/models.json`. Both receive the compatible Phaseo model catalog. `phaseo openclaw` registers the compatible model catalog plus an exec-backed SecretRef, without placing the API key in `openclaw.json`.
 
 `phaseo hermes` offers to run the official Nous Research installer when Hermes is missing, then configures the installed agent. It saves the previous Hermes model settings, configures Phaseo as the custom endpoint, and uses Hermes' official `hermes config set` command to place the dedicated key in `~/.hermes/.env` as `OPENAI_API_KEY`. Hermes deliberately uses this plaintext file for provider credentials; protect it like any other API-key file. Removal restores the previous model settings, removes `OPENAI_API_KEY`, deletes Phaseo's recovery state, and revokes the key.
-
-## Zed
-
-Run `phaseo integrations setup zed`, then follow the printed steps to add an OpenAI-compatible provider in Zed's settings. Use the generated key only in Zed's credential prompt.
-
-## Codex
-
-Use the dedicated [Codex guide](./codex.mdx) for Codex CLI, Codex App, and the Codex IDE extension. The short version is:
-
-```toml
-model = "openai/gpt-5.5"
-model_provider = "phaseo"
-
-[model_providers.phaseo]
-name = "Phaseo"
-base_url = "https://api.phaseo.app/v1"
-env_key = "PHASEO_API_KEY"
-wire_api = "responses"
-```
-
-Codex custom providers use the Responses wire protocol.
-
-## OpenCode
-
-Use the dedicated [OpenCode guide](./opencode.mdx) when you want OpenCode to call Phaseo through an OpenAI-compatible custom provider.
-
-## Claude Code
-
-Use the dedicated [Claude Code guide](./claude-code.mdx). Claude Code uses Anthropic-compatible gateway environment variables:
-
-```bash
-export ANTHROPIC_BASE_URL="https://api.phaseo.app"
-export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
-export ANTHROPIC_API_KEY=""
-```
-
-Then start Claude Code from the same shell:
-
-```bash
-claude
-```
 
 ## Claude Desktop
 

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { VideoJobMeta, VideoJobRecord } from "@core/video-jobs";
 import { installFetchMock, jsonResponse } from "../../../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
-import { cancelFalTask, decodeFalVideoIdentity, extractVideoOutputFromPayload, fetchMiniMaxVideoTask, resolveDashscopeTaskId, resolveXAiNativeId } from "./providers";
+import { cancelFalTask, decodeFalVideoIdentity, extractVideoOutputFromPayload, fetchMiniMaxVideoTask, resolveDashscopeTaskId, resolveXAiNativeId, resolveGoogleVertexOperationName, resolveGoogleAiStudioOperationName, resolveMiniMaxTaskId, resolveByteplusTaskId, resolveRunwayTaskId, resolveAtlasTaskId } from "./providers";
 
 beforeAll(() => setupRuntimeFromEnv({
 	FAL_KEY: "test-fal-key",
@@ -20,6 +20,19 @@ function meta(provider: string, providerTaskId: string): VideoJobMeta {
 }
 
 describe("video provider task id resolution", () => {
+	it("keeps AI Studio and Vertex operation credentials separate", () => {
+		const operation = "models/veo-3.1-lite-generate-preview/operations/task";
+		const videoMeta = { provider: "google-ai-studio", googleOperationName: operation } as VideoJobMeta;
+		expect(resolveGoogleVertexOperationName(record("google-ai-studio", operation), videoMeta, "G-test")).toBeNull();
+		expect(resolveGoogleAiStudioOperationName(record("google-ai-studio", operation), videoMeta, "G-test")).toBe(operation);
+		const vertex = "projects/project/locations/us-central1/publishers/google/models/veo/operations/task";
+		expect(resolveGoogleAiStudioOperationName(record("google-vertex", vertex), { provider: "google-vertex", googleOperationName: vertex } as VideoJobMeta, "G-test")).toBeNull();
+	});
+	it("does not route another provider's stored task through MiniMax, BytePlus, Runway or Atlas", () => {
+		for (const resolve of [resolveMiniMaxTaskId, resolveByteplusTaskId, resolveRunwayTaskId, resolveAtlasTaskId]) {
+			expect(resolve(record("fal", "fal-task"), meta("fal", "fal-task"), "G-test")).toBeNull();
+		}
+	});
 	it("recognizes all xAI provider aliases", () => {
 		for (const provider of ["spacex-ai", "x-ai", "xai"]) {
 			expect(resolveXAiNativeId(record(provider, "xai_request_1"), meta(provider, "xai_request_1"), "video_1"))
@@ -76,7 +89,7 @@ describe("MiniMax V1/V2 lifecycle", () => {
 		try {
 			const response = await fetchMiniMaxVideoTask(
 				{ workspaceId: "team_test", requestId: "req_h3" } as any,
-				meta("minimax", "task_h3") as VideoJobMeta,
+				{ ...meta("minimax", "task_h3"), model: "MiniMax-H3" },
 				"task_h3",
 			);
 			expect(response).toBeInstanceOf(Response);

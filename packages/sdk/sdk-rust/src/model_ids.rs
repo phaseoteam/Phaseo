@@ -372,6 +372,9 @@ pub mod model_ids {
     /// Model ID: `google/gemini-3.7-flash`.
     /// Model page: https://phaseo.app/models/google/gemini-3.7-flash
     pub const GOOGLE_GEMINI_3_7_FLASH: &str = "google/gemini-3.7-flash";
+    /// Model ID: `google/gemini-3.8-flash`.
+    /// Model page: https://phaseo.app/models/google/gemini-3.8-flash
+    pub const GOOGLE_GEMINI_3_8_FLASH: &str = "google/gemini-3.8-flash";
     /// Model ID: `google/gemini-embedding-001`.
     /// Model page: https://phaseo.app/models/google/gemini-embedding-001
     pub const GOOGLE_GEMINI_EMBEDDING_001: &str = "google/gemini-embedding-001";
@@ -1814,6 +1817,7 @@ pub mod model_ids {
         GOOGLE_GEMINI_3_5_FLASH_LITE,
         GOOGLE_GEMINI_3_6_FLASH,
         GOOGLE_GEMINI_3_7_FLASH,
+        GOOGLE_GEMINI_3_8_FLASH,
         GOOGLE_GEMINI_EMBEDDING_001,
         GOOGLE_GEMINI_EMBEDDING_2,
         GOOGLE_GEMINI_ROBOTICS_ER_2_PREVIEW,

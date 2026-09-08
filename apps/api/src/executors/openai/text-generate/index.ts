@@ -61,6 +61,7 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"gpt-5.6-terra": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-5.6-terra-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-6-astra": new Set(["low", "medium", "high", "xhigh", "max"]),
+	"gpt-6-astra-pro": new Set(["low", "medium", "high", "xhigh", "max"]),
 	"o1": new Set(["low", "medium", "high"]),
 	"o1-preview": new Set(["low", "medium", "high"]),
 	"o1-mini": new Set(["low", "medium", "high"]),
@@ -415,13 +416,13 @@ function normalizeModelName(model?: string | null): string {
 	return parts[parts.length - 1] || value;
 }
 
-function normalizeOpenAIGpt56ProModelSlug(model?: string | null): {
+function normalizeOpenAIProModelSlug(model?: string | null): {
 	model: string | null;
 	proMode: boolean;
 } {
 	const normalized = normalizeModelName(model);
 	if (!normalized) return { model: model ?? null, proMode: false };
-	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna))-pro$/i);
+	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-astra)-pro$/i);
 	if (!match) return { model: model ?? null, proMode: false };
 	return { model: match[1].toLowerCase(), proMode: true };
 }
@@ -432,8 +433,8 @@ function withOpenAIProReasoningMode(
 	modelForRouting: string | null | undefined,
 ): IRChatRequest {
 	if (!isOpenAIProviderOffer(providerId)) return ir;
-	const routed = normalizeOpenAIGpt56ProModelSlug(modelForRouting);
-	const requested = normalizeOpenAIGpt56ProModelSlug(ir.model);
+	const routed = normalizeOpenAIProModelSlug(modelForRouting);
+	const requested = normalizeOpenAIProModelSlug(ir.model);
 	if (!routed.proMode && !requested.proMode) return ir;
 
 	return {
@@ -761,7 +762,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	} as any);
 
 	const requestedRoutingModel = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
-	const normalizedRoutingModel = normalizeOpenAIGpt56ProModelSlug(requestedRoutingModel);
+	const normalizedRoutingModel = normalizeOpenAIProModelSlug(requestedRoutingModel);
 	const modelForRouting = normalizedRoutingModel.model ?? requestedRoutingModel;
 	const hasAsyncTool = (args.ir as IRChatRequest).tools?.some((tool) => tool.async === true) ?? false;
 	const useNativeChatRoute =

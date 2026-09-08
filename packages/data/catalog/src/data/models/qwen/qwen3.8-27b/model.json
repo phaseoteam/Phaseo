@@ -211,6 +211,42 @@
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3.8-27B",
       "rank": null
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 41.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen3.8 27B (xhigh); Artificial Analysis ID b01dee41-c62b-48ed-8d16-984adc405e5c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-8-27b",
+      "rank": 52
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 68.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen3.8 27B (xhigh); Artificial Analysis ID b01dee41-c62b-48ed-8d16-984adc405e5c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-8-27b",
+      "rank": 60
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 46.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen3.8 27B (xhigh); Artificial Analysis ID b01dee41-c62b-48ed-8d16-984adc405e5c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-8-27b",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 900.36,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen3.8 27B (xhigh); Artificial Analysis ID b01dee41-c62b-48ed-8d16-984adc405e5c; Intelligence Index v4.3; USD 0.5727 per task",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-8-27b",
+      "rank": 53
     }
   ],
   "family_id": null,

@@ -743,6 +743,8 @@ class BatchRequest
 	public $prompts;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
 	/** @var array|null */
 	public $requests;
 	/** @var string|null */
@@ -891,6 +893,8 @@ class BatchResponse
 	public $request_counts;
 	/** @var string|null */
 	public $request_id;
+	/** @var string|null */
+	public $results_url;
 	/** @var string|null */
 	public $session_id;
 	/** @var string|null */
@@ -3883,6 +3887,140 @@ class PresetVersionResponse
 
 class PresetVisibility { }
 
+class PrivateModel
+{
+	/** @var string */
+	public $base_url;
+	/** @var string|null */
+	public $catalog_model_id;
+	/** @var int|null */
+	public $context_length;
+	/** @var string|null */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string|null */
+	public $credential_prefix;
+	/** @var string|null */
+	public $credential_suffix;
+	/** @var string|null */
+	public $custom_provider_name;
+	/** @var string|null */
+	public $custom_provider_url;
+	/** @var string|null */
+	public $description;
+	/** @var bool */
+	public $enabled;
+	/** @var string|null */
+	public $host_provider_id;
+	/** @var string */
+	public $id;
+	/** @var array|null */
+	public $input_modalities;
+	/** @var string|null */
+	public $local_slug;
+	/** @var int|null */
+	public $max_output_tokens;
+	/** @var string */
+	public $model_id;
+	/** @var string */
+	public $name;
+	/** @var array|null */
+	public $output_modalities;
+	/** @var string|null */
+	public $routing_policy;
+	/** @var bool */
+	public $supports_responses;
+	/** @var string|null */
+	public $updated_at;
+	/** @var string */
+	public $upstream_model_id;
+	/** @var string */
+	public $workspace_id;
+}
+
+class PrivateModelCreateRequest
+{
+	/** @var string */
+	public $base_url;
+	/** @var int|null */
+	public $context_length;
+	/** @var string */
+	public $credential;
+	/** @var string|null */
+	public $custom_provider_name;
+	/** @var string|null */
+	public $custom_provider_url;
+	/** @var string|null */
+	public $description;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $host_provider_id;
+	/** @var int|null */
+	public $max_output_tokens;
+	/** @var string */
+	public $model_reference;
+	/** @var string */
+	public $name;
+	/** @var string|null */
+	public $routing_policy;
+	/** @var bool|null */
+	public $supports_responses;
+	/** @var string */
+	public $upstream_model_id;
+}
+
+class PrivateModelDeleteResponse
+{
+	/** @var bool */
+	public $deleted;
+}
+
+class PrivateModelListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class PrivateModelResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class PrivateModelUpdateRequest
+{
+	/** @var string|null */
+	public $base_url;
+	/** @var int|null */
+	public $context_length;
+	/** @var string|null */
+	public $credential;
+	/** @var string|null */
+	public $custom_provider_name;
+	/** @var string|null */
+	public $custom_provider_url;
+	/** @var string|null */
+	public $description;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $host_provider_id;
+	/** @var int|null */
+	public $max_output_tokens;
+	/** @var string|null */
+	public $model_reference;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $routing_policy;
+	/** @var bool|null */
+	public $supports_responses;
+	/** @var string|null */
+	public $upstream_model_id;
+}
+
 class Provider
 {
 	/** @var string|null */
@@ -4531,6 +4669,8 @@ class VideoGenerationRequest
 	public $duration;
 	/** @var bool|null */
 	public $enhance_prompt;
+	/** @var array|null */
+	public $frame_images;
 	/** @var bool|null */
 	public $generate_audio;
 	/** @var float|null */
@@ -4551,6 +4691,8 @@ class VideoGenerationRequest
 	public $prompt;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
 	/** @var array<string, mixed>|null */
 	public $provider_params;
 	/** @var string|null */

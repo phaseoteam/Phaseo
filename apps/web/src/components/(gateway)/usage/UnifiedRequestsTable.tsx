@@ -840,7 +840,9 @@ export default function UnifiedRequestsTable({
 						const requestedModelId = getRequestedModelId(row);
 						const routedModelId = getRoutedModelId(row);
 						const rowKey = `mobile-${row.request_id}-${row.created_at}-${requestedModelId ?? "no-requested-model"}-${routedModelId ?? "no-routed-model"}-${row.provider ?? "no-provider"}-${index}`;
-						const modelHref = getModelDetailsHref(routedModelId);
+						const modelHref = row.provider === "private-model"
+							? "/settings/workspaces/private-models"
+							: getModelDetailsHref(routedModelId);
 						const modelMeta = routedModelId
 							? resolvedModelMetadata.get(routedModelId)
 							: undefined;
@@ -1029,7 +1031,7 @@ export default function UnifiedRequestsTable({
 									{row.provider ? (
 										<UsageEntityHoverCard
 											title={providerLabel ?? row.provider}
-											href={`/api-providers/${encodeURIComponent(row.provider)}`}
+											href={row.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(row.provider)}`}
 											visual={
 												<Logo
 													id={row.provider}
@@ -1057,7 +1059,7 @@ export default function UnifiedRequestsTable({
 											]}
 										>
 											<Link
-												href={`/api-providers/${encodeURIComponent(row.provider)}`}
+											href={row.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(row.provider)}`}
 											className="inline-flex min-w-0 items-center gap-2 font-medium text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-200 hover:decoration-foreground"
 												onClick={stopRowClick}
 											>
@@ -1246,8 +1248,12 @@ export default function UnifiedRequestsTable({
 									const requestedModelId = getRequestedModelId(row);
 									const routedModelId = getRoutedModelId(row);
 									const rowKey = `${row.request_id}-${row.created_at}-${requestedModelId ?? "no-requested-model"}-${routedModelId ?? "no-routed-model"}-${row.provider ?? "no-provider"}-${index}`;
-									const requestedModelHref = getModelDetailsHref(requestedModelId);
-									const routedModelHref = getModelDetailsHref(routedModelId);
+									const requestedModelHref = row.provider === "private-model"
+										? "/settings/workspaces/private-models"
+										: getModelDetailsHref(requestedModelId);
+									const routedModelHref = row.provider === "private-model"
+										? "/settings/workspaces/private-models"
+										: getModelDetailsHref(routedModelId);
 									const requestedModelMeta = requestedModelId
 										? resolvedModelMetadata.get(requestedModelId)
 										: undefined;
@@ -1593,7 +1599,7 @@ export default function UnifiedRequestsTable({
 												{row.provider ? (
 													<UsageEntityHoverCard
 														title={providerLabel ?? row.provider}
-														href={`/api-providers/${encodeURIComponent(row.provider)}`}
+													href={row.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(row.provider)}`}
 														visual={<Logo id={row.provider} width={16} height={16} />}
 														rows={[
 															{
@@ -1615,7 +1621,7 @@ export default function UnifiedRequestsTable({
 														]}
 													>
 														<Link
-															href={`/api-providers/${encodeURIComponent(row.provider)}`}
+														href={row.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(row.provider)}`}
 															className="inline-flex min-w-0 max-w-[180px] items-center gap-2 font-medium text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-200 hover:decoration-foreground"
 															onClick={stopRowClick}
 														>

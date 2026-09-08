@@ -45,6 +45,9 @@ const runtime = vi.hoisted(() => {
 	};
 	const rpc = vi.fn(async () => ({ data: [contextPayload], error: null }));
 	const from = vi.fn((table: string) => {
+		if (table === "workspace_private_models") {
+			return { select: () => ({ eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }) };
+		}
 		if (table === "wallets") {
 			return {
 				select: () => ({
@@ -157,7 +160,7 @@ function seedContextCache(options: { legacyCredit?: boolean; credit?: unknown } 
 		}),
 	);
 	runtime.store.set(
-		`gateway:static:v3:default:${workspaceId}:${endpoint}:${model}`,
+		`gateway:static:v3:default:${workspaceId}:v1:${endpoint}:${model}`,
 		JSON.stringify({
 			workspaceId,
 			resolvedModel: model,
@@ -325,7 +328,7 @@ describe("fetchGatewayContext credit-only cache refresh", () => {
 		expect(runtime.background).toHaveLength(1);
 		expect(runtime.pendingWrites.map(({ key }) => key).sort()).toEqual([
 			`gateway:dynamic:default:${workspaceId}:${apiKeyId}:v1`,
-			`gateway:static:v3:default:${workspaceId}:${endpoint}:${model}`,
+			`gateway:static:v3:default:${workspaceId}:v1:${endpoint}:${model}`,
 		]);
 
 		await fetchPromise;

@@ -155,7 +155,7 @@ const METRICS: Record<MetricKey, MetricConfig> = {
 		formatValue: (value) => (value != null ? `${Math.round(value)} ms` : "-"),
 	},
 	endToEnd: {
-		label: "End-to-end latency",
+		label: "End-to-End Latency",
 		description: "Total time from the request entering Phaseo until the complete response is returned.",
 		axisLabel: "Duration",
 		valueKey: "avgEndToEndMs",
@@ -792,7 +792,7 @@ export default function ModelProviderTrendChart({
 					</div>
 				</ScrollArea>
 			) : (
-			<div className="min-h-16 space-y-1.5 pt-1">
+			<div className="space-y-1.5 pt-1">
 				{providerRows.map((provider) => {
 					const { isActive, isDimmed } = getSeriesEmphasis(
 						activeSeriesKey,

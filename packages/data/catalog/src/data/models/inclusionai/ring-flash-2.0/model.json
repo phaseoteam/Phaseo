@@ -33,11 +33,12 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 8,
+      "score": 2.6,
       "is_self_reported": false,
-      "other_info": "Ring-flash-2.0; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Ring-flash-2.0; Artificial Analysis ID 47b7df55-5804-40de-ba11-317de786710a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ring-flash-2-0",
-      "rank": 426
+      "rank": 473
     }
   ],
   "family_id": null,

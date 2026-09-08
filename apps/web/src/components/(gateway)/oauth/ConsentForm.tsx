@@ -222,6 +222,24 @@ const SCOPE_META: Record<string, ScopeMeta> = {
 		icon: KeyRound,
 		tone: "delete",
 	},
+	"private_models:read": {
+		label: "Read private models",
+		description: "Lets the app inspect workspace private-model configuration without revealing credentials.",
+		icon: KeyRound,
+		tone: "read",
+	},
+	"private_models:write": {
+		label: "Manage private models",
+		description: "Lets the app connect or update workspace private-model endpoints.",
+		icon: KeyRound,
+		tone: "write",
+	},
+	"private_models:delete": {
+		label: "Delete private models",
+		description: "Lets the app permanently remove workspace private models.",
+		icon: KeyRound,
+		tone: "delete",
+	},
 	"guardrails:read": {
 		label: "Read guardrails",
 		description: "Lets the app inspect guardrails and policy configuration.",

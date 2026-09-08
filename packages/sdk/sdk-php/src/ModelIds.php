@@ -377,6 +377,9 @@ final class ModelIds
     /** Model ID: google/gemini-3.7-flash. Model page: https://phaseo.app/models/google/gemini-3.7-flash */
     public const GOOGLE_GEMINI_3_7_FLASH = 'google/gemini-3.7-flash';
 
+    /** Model ID: google/gemini-3.8-flash. Model page: https://phaseo.app/models/google/gemini-3.8-flash */
+    public const GOOGLE_GEMINI_3_8_FLASH = 'google/gemini-3.8-flash';
+
     /** Model ID: google/gemini-embedding-001. Model page: https://phaseo.app/models/google/gemini-embedding-001 */
     public const GOOGLE_GEMINI_EMBEDDING_001 = 'google/gemini-embedding-001';
 

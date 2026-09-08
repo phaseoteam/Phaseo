@@ -6,6 +6,31 @@ import {
 } from "@/lib/providers/providerOffers";
 
 describe("providerOffers", () => {
+    test("preserves specialized catalogue names while formatting explicit regions", () => {
+        expect(resolveProviderDisplayName({ providerId: "minimax-lightning", providerName: "MiniMax Lightning", offerLabel: "highspeed", offerScope: "specialized" })).toBe("MiniMax Lightning");
+        expect(resolveProviderDisplayName({ providerId: "regional-route", providerName: "Example", offerLabel: "Singapore", offerScope: "regional" })).toBe("Example (Singapore)");
+    });
+    test.each([
+        ["openai", "OpenAI", "OpenAI"],
+        ["openai-eu", "OpenAI", "OpenAI (EU)"],
+        ["anthropic-us", "Anthropic", "Anthropic (US)"],
+        ["anthropic-aws-us", "Anthropic", "Claude Platform for AWS (US)"],
+        ["google-vertex-eu", "Google Vertex (EU)", "Google Vertex (EU)"],
+        ["google-vertex-eu", "Google Vertex EU", "Google Vertex (EU)"],
+    ])("preserves route identity for %s", (providerId, providerName, expected) => {
+        const name = resolveProviderDisplayName({ providerId, providerName });
+        expect(name).toBe(expected);
+        expect(formatProviderOfferDisplayName({ providerId, providerName: name })).toBe(expected);
+    });
+
+    test("does not repeat specialized offer labels when formatting catalogue names again", () => {
+        expect(formatProviderOfferDisplayName({ providerId: "example-fast", providerName: "Example Fast", offerLabel: "Fast", offerScope: "specialized" })).toBe("Example Fast");
+    });
+
+    test("retains the region when offer scope is omitted", () => {
+        expect(formatProviderOfferDisplayName({ providerId: "openai-eu", providerName: "OpenAI", offerLabel: "EU" })).toBe("OpenAI (EU)");
+    });
+
     test("keeps Anthropic on AWS offers branded with AWS logos", () => {
         expect(
             resolveProviderLogoId({

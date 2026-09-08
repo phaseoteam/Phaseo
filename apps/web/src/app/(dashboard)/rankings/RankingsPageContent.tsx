@@ -76,7 +76,7 @@ const rankingSectionLabels: Record<RankingModality, string> = {
 const textRankingTocItems: ModelPageTocItem[] = [
 	{ id: "text", label: "Leaderboard" },
 	{ id: "fastest-models", label: "Fastest Models" },
-	{ id: "benchmarks", label: "Intelligence Index" },
+	{ id: "benchmarks", label: "Benchmarks" },
 	{ id: "context-length", label: "Context Length" },
 	{ id: "unique-users", label: "Unique Users" },
 	{ id: "retention", label: "Return Rate" },

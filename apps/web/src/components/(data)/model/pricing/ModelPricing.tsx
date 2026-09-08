@@ -12,6 +12,7 @@ import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingCl
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWorkspacePrivacySettings";
 import type { WorkspacePrivacySettings } from "@/lib/fetchers/internal/settingsTypes";
+import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import {
 	Empty,
@@ -56,6 +57,7 @@ export default async function ModelPricing({
 	modelName,
 	creatorOrganisationId,
 	creatorOrganisationName,
+	providersOverride,
 }: {
 	modelId: string;
 	includeHidden: boolean;
@@ -65,9 +67,10 @@ export default async function ModelPricing({
 	modelName?: string | null;
 	creatorOrganisationId?: string | null;
 	creatorOrganisationName?: string | null;
+	providersOverride?: ProviderPricing[];
 }) {
 	const [providers, identity, showAdminPricingControls] = await Promise.all([
-		fetchFrontendModelPricing(modelId),
+		providersOverride ? Promise.resolve(providersOverride) : fetchFrontendModelPricing(modelId),
 		modelStatus !== undefined
 			? Promise.resolve({
 					status: modelStatus,
@@ -114,7 +117,7 @@ export default async function ModelPricing({
 	const showPendingApiBanner =
 		identity.status === "Available" && !hasActiveApiProviders;
 
-	const [runtimeStats, routingHealth] = await Promise.all([
+	const [runtimeStats, routingHealth] = providersOverride ? [{}, {}] : await Promise.all([
 		withOptionalTimeout(
 			fetchFrontendModelProviderRuntimeStats({
 				modelId,

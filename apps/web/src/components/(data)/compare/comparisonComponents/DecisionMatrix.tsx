@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -265,7 +266,7 @@ function getProviderOptions(model: ExtendedModel): ProviderOption[] {
 		}
 		byProvider.set(id, {
 			id,
-			name: providerNames.get(id) ?? getProviderName(price) ?? id,
+			name: resolveProviderDisplayName({ providerId: id, providerName: providerNames.get(id) ?? getProviderName(price) ?? id }),
 			prices: [price],
 		});
 	}
@@ -274,8 +275,7 @@ function getProviderOptions(model: ExtendedModel): ProviderOption[] {
 		if (!byProvider.has(group.provider.api_provider_id)) {
 			byProvider.set(group.provider.api_provider_id, {
 				id: group.provider.api_provider_id,
-				name:
-					group.provider.api_provider_name ?? group.provider.api_provider_id,
+				name: resolveProviderDisplayName({ providerId: group.provider.api_provider_id, providerName: group.provider.api_provider_name ?? group.provider.api_provider_id }),
 				prices: [],
 			});
 		}

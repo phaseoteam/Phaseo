@@ -209,11 +209,39 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 62.1,
+      "score": 53.2,
       "is_self_reported": false,
-      "other_info": "Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback); Artificial Analysis ID cd55210d-358e-4df1-ba9c-9acb5f186cc9; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-fable-5",
-      "rank": 3
+      "rank": 9
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 76.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback); Artificial Analysis ID cd55210d-358e-4df1-ba9c-9acb5f186cc9; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 51.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback); Artificial Analysis ID cd55210d-358e-4df1-ba9c-9acb5f186cc9; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 7603.22,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback); Artificial Analysis ID cd55210d-358e-4df1-ba9c-9acb5f186cc9; Intelligence Index v4.3; USD 5.6175 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5",
+      "rank": 89
     }
   ],
   "page_notice": null,

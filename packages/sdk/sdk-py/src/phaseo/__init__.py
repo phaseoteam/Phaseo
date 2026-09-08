@@ -128,6 +128,9 @@ class _BatchesResource:
     def retrieve(self, batch_id: str) -> dict[str, Any]:
         return self._parent.get_batch(batch_id)
 
+    def stream_results(self, batch_id: str) -> Iterator[bytes]:
+        return self._parent.stream_batch_results(batch_id)
+
     def cancel(self, batch_id: str) -> dict[str, Any]:
         return self._parent.cancel_batch(batch_id)
 
@@ -1018,6 +1021,13 @@ class Phaseo:
 
     def list_batch_models(self) -> dict[str, Any]:
         return self.request("GET", "/batches/models")
+
+    def stream_batch_results(self, batch_id: str) -> Iterator[bytes]:
+        """Stream batch JSONL. Close the iterator when stopping early."""
+        url = f"{self._base_url}/batches/{quote(batch_id, safe='')}/results"
+        with httpx.stream("GET", url, headers={**self._headers, "Accept": "application/x-ndjson"}, timeout=self._timeout, follow_redirects=False) as response:
+            response.raise_for_status()
+            yield from response.iter_bytes()
 
     def get_batch(self, batch_id: str) -> dict[str, Any]:
         request = {"batch_id": batch_id}

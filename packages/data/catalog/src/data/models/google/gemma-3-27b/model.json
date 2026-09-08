@@ -95,11 +95,30 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 7.4,
+      "score": 2,
       "is_self_reported": false,
-      "other_info": "Gemma 3 27B Instruct; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemma 3 27B Instruct; Artificial Analysis ID 2bfdd17a-e027-4068-a54e-b0e90a6df118; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-3-27b",
-      "rank": 440
+      "rank": 487
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 10.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemma 3 27B Instruct; Artificial Analysis ID 2bfdd17a-e027-4068-a54e-b0e90a6df118; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemma-3-27b",
+      "rank": 232
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 0.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemma 3 27B Instruct; Artificial Analysis ID 2bfdd17a-e027-4068-a54e-b0e90a6df118; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemma-3-27b",
+      "rank": 145
     }
   ],
   "page_notice": null,

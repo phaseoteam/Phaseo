@@ -15,6 +15,7 @@ const BATCH_REQUEST_TOKEN_OVERHEAD = 16;
 
 export type BatchReservationRequest = {
 	body: unknown;
+	model?: string | null;
 	endpoint?: string | null;
 	method?: string | null;
 };
@@ -158,7 +159,7 @@ async function quotedRequestCost(providerId: string, request: BatchReservationRe
 	if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) throw new Error("invalid_batch_reservation_body");
 	const body = request.body as Record<string, unknown>;
 	validatePriceableTextRequest(providerId, request, body);
-	const model = text(body.model);
+	const model = text(request.model) ?? text(body.model);
 	if (!model) throw new Error("missing_batch_reservation_model");
 	let card: Awaited<ReturnType<typeof loadPriceCard>> | null = null;
 	for (const capability of endpointCapability(request.endpoint)) {

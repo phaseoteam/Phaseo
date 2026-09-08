@@ -353,6 +353,7 @@ export async function cancelBatch(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -466,6 +467,7 @@ export async function cancelBatch(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -600,6 +602,7 @@ export async function cancelBatchAlias(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -713,6 +716,7 @@ export async function cancelBatchAlias(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -1350,6 +1354,11 @@ export type CreateBatchParams = {
           };
       zdr?: boolean | null;
     };
+    provider_options?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
     requests?: {
       body: {
         [key: string]: unknown;
@@ -1440,6 +1449,7 @@ export async function createBatch(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -1553,6 +1563,7 @@ export async function createBatch(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -1673,6 +1684,11 @@ export type CreateBatchAliasParams = {
           };
       zdr?: boolean | null;
     };
+    provider_options?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
     requests?: {
       body: {
         [key: string]: unknown;
@@ -1763,6 +1779,7 @@ export async function createBatchAlias(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -1876,6 +1893,7 @@ export async function createBatchAlias(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -4488,6 +4506,100 @@ export async function createPresetTestRun(
   });
 }
 
+export type CreatePrivateModelParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    base_url: string;
+    context_length?: number | null;
+    credential: string;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string;
+    enabled?: boolean;
+    host_provider_id?: string | null;
+    max_output_tokens?: number | null;
+    model_reference: string;
+    name: string;
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses?: boolean;
+    upstream_model_id: string;
+  };
+};
+
+/**
+ * Creates a workspace-only OpenAI-compatible model endpoint. Requires `private_models:write` and an owner or admin identity.
+ */
+export async function createPrivateModel(
+  client: Client,
+  args: CreatePrivateModelParams = {},
+): Promise<{
+  data: {
+    base_url: string;
+    catalog_model_id?: string | null;
+    context_length?: number | null;
+    created_at?: string | null;
+    created_by?: string | null;
+    credential_prefix?: string | null;
+    credential_suffix?: string | null;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string | null;
+    enabled: boolean;
+    host_provider_id?: string | null;
+    id: string;
+    input_modalities?: string[];
+    local_slug?: string;
+    max_output_tokens?: number | null;
+    model_id: string;
+    name: string;
+    output_modalities?: string[];
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses: boolean;
+    updated_at?: string | null;
+    upstream_model_id: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/private-models";
+  return client.request<{
+    data: {
+      base_url: string;
+      catalog_model_id?: string | null;
+      context_length?: number | null;
+      created_at?: string | null;
+      created_by?: string | null;
+      credential_prefix?: string | null;
+      credential_suffix?: string | null;
+      custom_provider_name?: string | null;
+      custom_provider_url?: string | null;
+      description?: string | null;
+      enabled: boolean;
+      host_provider_id?: string | null;
+      id: string;
+      input_modalities?: string[];
+      local_slug?: string;
+      max_output_tokens?: number | null;
+      model_id: string;
+      name: string;
+      output_modalities?: string[];
+      routing_policy?: "preferred" | "balanced" | "fallback";
+      supports_responses: boolean;
+      updated_at?: string | null;
+      upstream_model_id: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateProviderCredentialParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -5429,6 +5541,13 @@ export type CreateVideoParams = {
     compression_quality?: number;
     duration?: number;
     enhance_prompt?: boolean;
+    frame_images?: {
+      frame_type: "first_frame" | "last_frame";
+      image_url: {
+        url: string;
+      };
+      type: "image_url";
+    }[];
     generate_audio?: boolean;
     input_audio_duration?: number;
     input_references?: (
@@ -5493,6 +5612,11 @@ export type CreateVideoParams = {
             [key: string]: unknown;
           };
       zdr?: boolean | null;
+    };
+    provider_options?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
     };
     provider_params?: {
       [key: string]: unknown;
@@ -5755,6 +5879,13 @@ export type CreateVideoAliasParams = {
     compression_quality?: number;
     duration?: number;
     enhance_prompt?: boolean;
+    frame_images?: {
+      frame_type: "first_frame" | "last_frame";
+      image_url: {
+        url: string;
+      };
+      type: "image_url";
+    }[];
     generate_audio?: boolean;
     input_audio_duration?: number;
     input_references?: (
@@ -5819,6 +5950,11 @@ export type CreateVideoAliasParams = {
             [key: string]: unknown;
           };
       zdr?: boolean | null;
+    };
+    provider_options?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
     };
     provider_params?: {
       [key: string]: unknown;
@@ -6223,7 +6359,7 @@ export async function createWorkspace(
     created_by: string | null;
     id: string;
     name: string | null;
-    slug: string | null;
+    slug?: string | null;
     updated_at: string | null;
   };
 }> {
@@ -6235,7 +6371,7 @@ export async function createWorkspace(
       created_by: string | null;
       id: string;
       name: string | null;
-      slug: string | null;
+      slug?: string | null;
       updated_at: string | null;
     };
   }>({
@@ -6884,6 +7020,37 @@ export async function deletePreset(
   const resolvedPath = `/presets/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     deleted: true;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeletePrivateModelParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Permanently deletes a private model owned by the authenticated workspace. Repeated deletion is safe.
+ */
+export async function deletePrivateModel(
+  client: Client,
+  args: DeletePrivateModelParams,
+): Promise<{
+  deleted: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/private-models/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    deleted: boolean;
   }>({
     method: "DELETE",
     path: resolvedPath,
@@ -9458,6 +9625,87 @@ export async function getPresetTestRun(
   });
 }
 
+export type GetPrivateModelParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns endpoint metadata for one private model in the authenticated workspace without returning its credential.
+ */
+export async function getPrivateModel(
+  client: Client,
+  args: GetPrivateModelParams,
+): Promise<{
+  data: {
+    base_url: string;
+    catalog_model_id?: string | null;
+    context_length?: number | null;
+    created_at?: string | null;
+    created_by?: string | null;
+    credential_prefix?: string | null;
+    credential_suffix?: string | null;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string | null;
+    enabled: boolean;
+    host_provider_id?: string | null;
+    id: string;
+    input_modalities?: string[];
+    local_slug?: string;
+    max_output_tokens?: number | null;
+    model_id: string;
+    name: string;
+    output_modalities?: string[];
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses: boolean;
+    updated_at?: string | null;
+    upstream_model_id: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/private-models/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      base_url: string;
+      catalog_model_id?: string | null;
+      context_length?: number | null;
+      created_at?: string | null;
+      created_by?: string | null;
+      credential_prefix?: string | null;
+      credential_suffix?: string | null;
+      custom_provider_name?: string | null;
+      custom_provider_url?: string | null;
+      description?: string | null;
+      enabled: boolean;
+      host_provider_id?: string | null;
+      id: string;
+      input_modalities?: string[];
+      local_slug?: string;
+      max_output_tokens?: number | null;
+      model_id: string;
+      name: string;
+      output_modalities?: string[];
+      routing_policy?: "preferred" | "balanced" | "fallback";
+      supports_responses: boolean;
+      updated_at?: string | null;
+      upstream_model_id: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetProviderCredentialParams = {
   path: {
     id: string;
@@ -10184,7 +10432,7 @@ export async function getWorkspace(
     created_by: string | null;
     id: string;
     name: string | null;
-    slug: string | null;
+    slug?: string | null;
     updated_at: string | null;
   };
 }> {
@@ -10196,7 +10444,7 @@ export async function getWorkspace(
       created_by: string | null;
       id: string;
       name: string | null;
-      slug: string | null;
+      slug?: string | null;
       updated_at: string | null;
     };
   }>({
@@ -11038,6 +11286,7 @@ export async function listBatches(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -11162,6 +11411,7 @@ export async function listBatches(
         total?: number;
       };
       request_id?: string;
+      results_url?: string | null;
       session_id?: string;
       status?: string;
       usage?: {
@@ -11304,6 +11554,7 @@ export async function listBatchesAlias(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -11428,6 +11679,7 @@ export async function listBatchesAlias(
         total?: number;
       };
       request_id?: string;
+      results_url?: string | null;
       session_id?: string;
       status?: string;
       usage?: {
@@ -14233,6 +14485,85 @@ export async function listPricingModels(
   });
 }
 
+export type ListPrivateModelsParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists private model metadata for the authenticated workspace. Requires `private_models:read` and an owner or admin identity.
+ */
+export async function listPrivateModels(
+  client: Client,
+  args: ListPrivateModelsParams = {},
+): Promise<{
+  data: {
+    base_url: string;
+    catalog_model_id?: string | null;
+    context_length?: number | null;
+    created_at?: string | null;
+    created_by?: string | null;
+    credential_prefix?: string | null;
+    credential_suffix?: string | null;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string | null;
+    enabled: boolean;
+    host_provider_id?: string | null;
+    id: string;
+    input_modalities?: string[];
+    local_slug?: string;
+    max_output_tokens?: number | null;
+    model_id: string;
+    name: string;
+    output_modalities?: string[];
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses: boolean;
+    updated_at?: string | null;
+    upstream_model_id: string;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/private-models";
+  return client.request<{
+    data: {
+      base_url: string;
+      catalog_model_id?: string | null;
+      context_length?: number | null;
+      created_at?: string | null;
+      created_by?: string | null;
+      credential_prefix?: string | null;
+      credential_suffix?: string | null;
+      custom_provider_name?: string | null;
+      custom_provider_url?: string | null;
+      description?: string | null;
+      enabled: boolean;
+      host_provider_id?: string | null;
+      id: string;
+      input_modalities?: string[];
+      local_slug?: string;
+      max_output_tokens?: number | null;
+      model_id: string;
+      name: string;
+      output_modalities?: string[];
+      routing_policy?: "preferred" | "balanced" | "fallback";
+      supports_responses: boolean;
+      updated_at?: string | null;
+      upstream_model_id: string;
+      workspace_id: string;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListProviderCredentialsParams = {
   path?: Record<string, never>;
   query?: {
@@ -16255,7 +16586,7 @@ export async function listWorkspaces(
     created_by: string | null;
     id: string;
     name: string | null;
-    slug: string | null;
+    slug?: string | null;
     updated_at: string | null;
   }[];
   total_count: number;
@@ -16268,7 +16599,7 @@ export async function listWorkspaces(
       created_by: string | null;
       id: string;
       name: string | null;
-      slug: string | null;
+      slug?: string | null;
       updated_at: string | null;
     }[];
     total_count: number;
@@ -16823,6 +17154,7 @@ export async function retrieveBatch(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -16936,6 +17268,7 @@ export async function retrieveBatch(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -17070,6 +17403,7 @@ export async function retrieveBatchAlias(
     total?: number;
   };
   request_id?: string;
+  results_url?: string | null;
   session_id?: string;
   status?: string;
   usage?: {
@@ -17183,6 +17517,7 @@ export async function retrieveBatchAlias(
       total?: number;
     };
     request_id?: string;
+    results_url?: string | null;
     session_id?: string;
     status?: string;
     usage?: {
@@ -17373,6 +17708,60 @@ export async function retrieveBatchFileContentAlias(
   const { path, query, headers, body } = args;
   const resolvedPath = `/batch/files/${encodeURIComponent(String(path["file_id"]))}/content`;
   return client.request<Blob>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RetrieveBatchResultsParams = {
+  path: {
+    batch_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Streams complete provider-native result rows as JSONL for a terminal batch owned by the authenticated workspace. Combines success and error files, converts inline outputs, and follows provider result pagination. Use a Phaseo API key. Downloads do not submit inference or add usage charges. Existing file endpoints remain available. Inline rows are limited to 8 MiB; interrupted downloads must be discarded and downloaded again. Limited to 10 download attempts per workspace per batch in a rolling 30-minute window, shared across API keys and aliases. Failed or cancelled upstream attempts count. A 429 response includes Retry-After in seconds.
+ */
+export async function retrieveBatchResults(
+  client: Client,
+  args: RetrieveBatchResultsParams,
+): Promise<string> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batches/${encodeURIComponent(String(path["batch_id"]))}/results`;
+  return client.request<string>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RetrieveBatchResultsAliasParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Streams complete provider-native result rows as JSONL for a terminal batch owned by the authenticated workspace. Combines success and error files, converts inline outputs, and follows provider result pagination. Use a Phaseo API key. Downloads do not submit inference or add usage charges. Existing file endpoints remain available. Inline rows are limited to 8 MiB; interrupted downloads must be discarded and downloaded again. Limited to 10 download attempts per workspace per batch in a rolling 30-minute window, shared across API keys and aliases. Failed or cancelled upstream attempts count. A 429 response includes Retry-After in seconds.
+ */
+export async function retrieveBatchResultsAlias(
+  client: Client,
+  args: RetrieveBatchResultsAliasParams,
+): Promise<string> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batch/${encodeURIComponent(String(path["id"]))}/results`;
+  return client.request<string>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -19127,6 +19516,102 @@ export async function updatePresetTestRun(
   });
 }
 
+export type UpdatePrivateModelParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    base_url?: string;
+    context_length?: number | null;
+    credential?: string;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string | null;
+    enabled?: boolean;
+    host_provider_id?: string | null;
+    max_output_tokens?: number | null;
+    model_reference?: string;
+    name?: string;
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses?: boolean;
+    upstream_model_id?: string;
+  };
+};
+
+/**
+ * Updates private model metadata or replaces its write-only encrypted credential.
+ */
+export async function updatePrivateModel(
+  client: Client,
+  args: UpdatePrivateModelParams,
+): Promise<{
+  data: {
+    base_url: string;
+    catalog_model_id?: string | null;
+    context_length?: number | null;
+    created_at?: string | null;
+    created_by?: string | null;
+    credential_prefix?: string | null;
+    credential_suffix?: string | null;
+    custom_provider_name?: string | null;
+    custom_provider_url?: string | null;
+    description?: string | null;
+    enabled: boolean;
+    host_provider_id?: string | null;
+    id: string;
+    input_modalities?: string[];
+    local_slug?: string;
+    max_output_tokens?: number | null;
+    model_id: string;
+    name: string;
+    output_modalities?: string[];
+    routing_policy?: "preferred" | "balanced" | "fallback";
+    supports_responses: boolean;
+    updated_at?: string | null;
+    upstream_model_id: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/private-models/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      base_url: string;
+      catalog_model_id?: string | null;
+      context_length?: number | null;
+      created_at?: string | null;
+      created_by?: string | null;
+      credential_prefix?: string | null;
+      credential_suffix?: string | null;
+      custom_provider_name?: string | null;
+      custom_provider_url?: string | null;
+      description?: string | null;
+      enabled: boolean;
+      host_provider_id?: string | null;
+      id: string;
+      input_modalities?: string[];
+      local_slug?: string;
+      max_output_tokens?: number | null;
+      model_id: string;
+      name: string;
+      output_modalities?: string[];
+      routing_policy?: "preferred" | "balanced" | "fallback";
+      supports_responses: boolean;
+      updated_at?: string | null;
+      upstream_model_id: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type UpdateProviderCredentialParams = {
   path: {
     id: string;
@@ -19287,7 +19772,7 @@ export async function updateWorkspace(
     created_by: string | null;
     id: string;
     name: string | null;
-    slug: string | null;
+    slug?: string | null;
     updated_at: string | null;
   };
 }> {
@@ -19299,7 +19784,7 @@ export async function updateWorkspace(
       created_by: string | null;
       id: string;
       name: string | null;
-      slug: string | null;
+      slug?: string | null;
       updated_at: string | null;
     };
   }>({

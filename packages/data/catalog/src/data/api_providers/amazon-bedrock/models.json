@@ -1,5 +1,62 @@
 [
   {
+    "api_model_id": "openai/gpt-6-astra",
+    "provider_api_model_id": "amazon-bedrock:openai/gpt-6-astra",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-6-astra",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": false,
+        "attachment": true,
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "provider_status": "unknown",
+    "phaseo_status": "planned",
+    "access_scope": "public",
+    "regions": { "execution": null, "data": null },
+    "service_tiers": [],
+    "api": { "formats": [], "endpoint": null, "deployment": null },
+    "sources": [
+      {
+        "kind": "provider_announcement",
+        "url": "https://openai.com/index/gpt-6-astra/",
+        "accessed_at": "2026-09-05T00:00:00Z",
+        "notes": "OpenAI announces that GPT-6 Astra will become available through AWS Bedrock, but AWS does not yet list the model in its endpoint or regional compatibility catalogues."
+      },
+      {
+        "kind": "models",
+        "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/models-endpoint-availability.html",
+        "accessed_at": "2026-09-05T00:00:00Z",
+        "notes": "AWS endpoint availability catalogue does not yet include GPT-6 Astra for bedrock-runtime or bedrock-mantle."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-05T00:00:00Z",
+      "notes": "AWS availability is announced but not yet documented with a model ID, endpoint compatibility, regions, or pricing. Keep this coming-soon listing non-routable until AWS publishes those details and Phaseo implements the route."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "anthropic/claude-fable-5.1",
     "provider_api_model_id": "amazon-bedrock:anthropic/claude-fable-5.1",
     "provider_model_slug": "us.anthropic.claude-fable-5-1",

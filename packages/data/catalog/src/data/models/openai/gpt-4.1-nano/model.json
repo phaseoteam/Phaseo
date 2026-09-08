@@ -156,11 +156,21 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 9.6,
+      "score": 4.1,
       "is_self_reported": false,
-      "other_info": "GPT-4.1 nano; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GPT-4.1 nano; Artificial Analysis ID 72c358fd-7d45-4d68-89aa-699743710924; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4-1-nano",
-      "rank": 383
+      "rank": 428
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 11.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GPT-4.1 nano; Artificial Analysis ID 72c358fd-7d45-4d68-89aa-699743710924; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-4-1-nano",
+      "rank": 229
     }
   ],
   "page_notice": null,

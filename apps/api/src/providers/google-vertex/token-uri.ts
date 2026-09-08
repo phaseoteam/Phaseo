@@ -10,6 +10,8 @@ export function googleOAuthTokenRequestInit(body: URLSearchParams): RequestInit 
 		method: "POST",
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
 		body,
-		redirect: "error",
+		// Workerd rejects redirect="error". Return redirects to the caller,
+		// which rejects non-2xx responses without forwarding the signed JWT.
+		redirect: "manual",
 	};
 }

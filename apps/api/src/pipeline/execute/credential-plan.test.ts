@@ -15,6 +15,21 @@ function key(id: string, routingMode: "priority" | "fallback", sortOrder: number
 }
 
 describe("credential attempt plan", () => {
+	it("keeps balanced private credentials in ranked provider order", () => {
+		const managed = { candidate: { providerId: "managed", byokMeta: [] } };
+		const privateRoute = {
+			candidate: {
+				providerId: "private-model",
+				byokMeta: [{ ...key("private", "fallback", 0), routingMode: "balanced" as const }],
+			},
+		};
+		const plan = buildCredentialAttemptPlan([managed, privateRoute]);
+		expect(plan.map((attempt) => [attempt.routed.candidate.providerId, attempt.phase])).toEqual([
+			["managed", "gateway"],
+			["private-model", "balanced_byok"],
+		]);
+	});
+
 	it("keeps the executable limit aligned with the stored per-provider capacity", () => {
 		expect(MAX_BYOK_CREDENTIAL_ATTEMPTS).toBe(32);
 	});

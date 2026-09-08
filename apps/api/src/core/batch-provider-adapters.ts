@@ -150,7 +150,7 @@ export function buildProviderFileDeletePath(providerId: string, fileIdRaw: strin
 	return buildProviderFileMetadataPath(providerId, fileIdRaw);
 }
 
-export async function fetchProviderFileContent(providerId: string, fileIdRaw: string): Promise<Response> {
+export async function fetchProviderFileContent(providerId: string, fileIdRaw: string, options: Pick<RequestInit, "redirect" | "signal"> = {}): Promise<Response> {
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
 		const bindings = getBindings() as unknown as Record<string, string | undefined>;
 		const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
@@ -161,12 +161,13 @@ export async function fetchProviderFileContent(providerId: string, fileIdRaw: st
 			.join("/");
 		return fetch(
 			`https://generativelanguage.googleapis.com/download/v1beta/${fileName}:download?alt=media`,
-			{ headers: { "x-goog-api-key": key } },
+			{ headers: { "x-goog-api-key": key }, ...options },
 		);
 	}
 	return fetchProviderBatchApi(providerId, {
 		endpointPath: `/files/${encodeURIComponent(fileIdRaw)}/content`,
 		method: "GET",
+		...options,
 	});
 }
 
@@ -195,6 +196,8 @@ export async function fetchProviderBatchApi(providerId: string, args: {
 	method: string;
 	body?: BodyInit | null;
 	contentType?: string | null;
+	redirect?: RequestRedirect;
+	signal?: AbortSignal | null;
 }): Promise<Response> {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	if (providerId === ANTHROPIC_BATCH_PROVIDER_ID) {
@@ -215,6 +218,8 @@ export async function fetchProviderBatchApi(providerId: string, args: {
 				"Content-Type": args.contentType ?? JSON_BATCH_CONTENT_TYPE,
 			},
 			body: args.body ?? undefined,
+			...(args.redirect ? { redirect: args.redirect } : {}),
+			...(args.signal ? { signal: args.signal } : {}),
 		});
 	}
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
@@ -227,6 +232,8 @@ export async function fetchProviderBatchApi(providerId: string, args: {
 				"Content-Type": args.contentType ?? JSON_BATCH_CONTENT_TYPE,
 			},
 			body: args.body ?? undefined,
+			...(args.redirect ? { redirect: args.redirect } : {}),
+			...(args.signal ? { signal: args.signal } : {}),
 		});
 	}
 
@@ -244,6 +251,8 @@ export async function fetchProviderBatchApi(providerId: string, args: {
 		method: args.method,
 		headers,
 		body: args.body ?? undefined,
+		...(args.redirect ? { redirect: args.redirect } : {}),
+		...(args.signal ? { signal: args.signal } : {}),
 	});
 }
 
@@ -771,6 +780,7 @@ function compactOutputEntry(entry: any, index: number): any {
 						? { response: { videoMetadata: body.response.videoMetadata } }
 						: {}),
 					...(body.seconds != null ? { seconds: body.seconds } : {}),
+					...(typeof body.status === "string" ? { status: body.status } : {}),
 					...(body.duration != null ? { duration: body.duration } : {}),
 					...(body.duration_seconds != null ? { duration_seconds: body.duration_seconds } : {}),
 					...(body.size != null ? { size: body.size } : {}),

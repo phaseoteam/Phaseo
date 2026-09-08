@@ -26,7 +26,17 @@
     }
   ],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Large 2 (Jul '24); Artificial Analysis ID 1b05e346-e86a-4a20-8feb-7da8c65a99aa; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-large-2407",
+      "rank": 493
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": "language",

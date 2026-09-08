@@ -10,6 +10,7 @@ import { executor as googleAiStudioVideo } from "../google/video-generate";
 import { executor as falVideo } from "../fal/video-generate";
 import { executor as minimaxVideo } from "../minimax/video-generate";
 import { executor as ltxVideo } from "../ltx/video-generate";
+import { executor as novitaVideo } from "../novita/video-generate";
 import { executor as openaiVideo } from "../openai/video-generate";
 import { executor as runwayVideo } from "../runway/video-generate";
 import { executor as xAiVideo } from "../x-ai/video-generate";
@@ -24,6 +25,7 @@ const VIDEO_EXECUTOR_FILES = [
 	"google-vertex/video-generate/index.ts",
 	"minimax/video-generate/index.ts",
 	"ltx/video-generate/index.ts",
+	"novita/video-generate/index.ts",
 	"openai/video-generate/index.ts",
 	"runway/video-generate/index.ts",
 	"x-ai/video-generate/index.ts",
@@ -50,6 +52,7 @@ describe("video reservation ids", () => {
 			googleAiStudioVideo,
 			minimaxVideo,
 			ltxVideo,
+			novitaVideo,
 			openaiVideo,
 			runwayVideo,
 			xAiVideo,
@@ -65,7 +68,7 @@ describe("video reservation ids", () => {
 			).toBe(true);
 		}
 
-		expect(resolveProviderExecutor("novita", "video.generation")).toBeNull();
+		expect(resolveProviderExecutor("novita", "video.generation")).toBe(novitaVideo);
 		expect(resolveProviderExecutor("fal", "video.generation")).toBe(falVideo);
 		expect(resolveProviderExecutor("fal-ai", "video.generation")).toBeNull();
 	});

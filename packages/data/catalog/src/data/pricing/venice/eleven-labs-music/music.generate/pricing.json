@@ -1,0 +1,396 @@
+{
+  "key": "venice:eleven-labs/music:music.generate",
+  "api_provider_id": "venice",
+  "provider_slug": "venice",
+  "api_model_id": "eleven-labs/music",
+  "capability_id": "music.generate",
+  "regions": [],
+  "rules": [
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.69,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 3
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 60
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 3
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 60
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 1.38,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 61
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 120
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 61
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 120
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 2.08,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 121
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 180
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 121
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 180
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 2.76,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 181
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 240
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 181
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 240
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 3.45,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 241
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 300
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 241
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 300
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 4.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 301
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 360
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 301
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 360
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 4.84,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 361
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 420
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 361
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 420
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 5.52,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 421
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 480
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 421
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 480
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 6.22,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 481
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 540
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 481
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 540
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 6.9,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 541
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 600
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "duration_seconds",
+          "op": "gte",
+          "value": 541
+        },
+        {
+          "path": "duration_seconds",
+          "op": "lte",
+          "value": 600
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    }
+  ],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_pricing",
+      "url": "https://api.venice.ai/api/v1/models",
+      "accessed_at": "2026-09-07T23:17:00Z",
+      "notes": "Verified against the live Venice models API; USD units are explicit on each rule."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07",
+    "notes": "Verified against the live Venice models API; USD units are explicit on each rule."
+  }
+}

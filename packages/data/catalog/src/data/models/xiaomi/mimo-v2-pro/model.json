@@ -115,11 +115,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 41.4,
+      "score": 33.1,
       "is_self_reported": false,
-      "other_info": "MiMo-V2-Pro; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "MiMo-V2-Pro; Artificial Analysis ID 5d8183dc-24f4-46c5-a1d0-d937de149364; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mimo-v2-pro",
-      "rank": 60
+      "rank": 90
     }
   ],
   "family_id": null,

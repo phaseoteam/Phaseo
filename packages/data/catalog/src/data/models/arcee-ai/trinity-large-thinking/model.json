@@ -121,11 +121,39 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 18.6,
+      "score": 13.1,
       "is_self_reported": false,
-      "other_info": "Trinity Large Thinking; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Trinity Large Thinking; Artificial Analysis ID b6d2e43d-3082-43f5-9318-0f4dbcb54163; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/trinity-large-thinking",
-      "rank": 253
+      "rank": 289
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 25.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Trinity Large Thinking; Artificial Analysis ID b6d2e43d-3082-43f5-9318-0f4dbcb54163; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/trinity-large-thinking",
+      "rank": 176
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 1.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Trinity Large Thinking; Artificial Analysis ID b6d2e43d-3082-43f5-9318-0f4dbcb54163; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/trinity-large-thinking",
+      "rank": 126
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 326.95,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Trinity Large Thinking; Artificial Analysis ID b6d2e43d-3082-43f5-9318-0f4dbcb54163; Intelligence Index v4.3; USD 0.1871 per task",
+      "source_link": "https://artificialanalysis.ai/models/trinity-large-thinking",
+      "rank": 31
     }
   ],
   "family_id": null,

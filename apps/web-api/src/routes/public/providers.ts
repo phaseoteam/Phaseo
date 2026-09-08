@@ -350,13 +350,38 @@ export const publicProvidersRouter = new Hono<{ Bindings: Env }>();
 
 publicProvidersRouter.use("/:providerId/*", async (c, next) => {
 	const providerId = c.req.param("providerId");
-	const visibility = await getDataClient(c.env).from("v2_model_provider_routes")
+	const client = getDataClient(c.env);
+	const visibility = await client.from("v2_model_provider_routes")
 		.select("provider_model_id")
 		.eq("provider_slug", providerId)
 		.eq("is_stealth", false)
 		.limit(1);
 	if (visibility.error) return c.json({ error: "provider_unavailable" }, 503);
-	if (!visibility.data?.length) return c.json({ error: "provider_not_found" }, 404);
+	if (!visibility.data?.length) {
+		const provider = await client.from("v2_providers")
+			.select("provider_slug")
+			.eq("provider_slug", providerId)
+			.maybeSingle();
+		if (provider.error) return c.json({ error: "provider_unavailable" }, 503);
+		if (!provider.data) return c.json({ error: "provider_not_found" }, 404);
+
+		// A provider identity is public even when all of its routes are stealth.
+		// Short-circuit every child resource so aggregate telemetry cannot reveal
+		// the existence, names, traffic, or applications of those routes.
+		const resource = c.req.path.split("/").pop();
+		if (resource === "models" || resource === "top-models") {
+			return withPublicCache(c.json({ models: [] }), providerPolicy(resource === "models" ? UPDATES_CACHE : TELEMETRY_CACHE, providerId));
+		}
+		if (resource === "top-apps") return withPublicCache(c.json({ apps: [] }), providerPolicy(TELEMETRY_CACHE, providerId));
+		if (resource === "updates") return withPublicCache(c.json({ newModels: [], recentModels: [], recentTokens: 0 }), providerPolicy(UPDATES_CACHE, providerId));
+		if (resource === "metrics") return withPublicCache(c.json({
+			summary: { uptimePct: null, avgLatencyMs: null, avgThroughput: null, avgGenerationMs: null, requests24h: 0, successful24h: 0 },
+			timeseries: { latency: [], throughput: [] },
+			dailyModelLeaderboards: {},
+		}), providerPolicy(TELEMETRY_CACHE, providerId));
+		if (resource === "model-token-timeseries") return withPublicCache(c.json({ models: [], points: [] }), providerPolicy(TELEMETRY_CACHE, providerId));
+		if (resource === "app-token-timeseries") return withPublicCache(c.json({ apps: [], points: [] }), providerPolicy(TELEMETRY_CACHE, providerId));
+	}
 	await next();
 });
 

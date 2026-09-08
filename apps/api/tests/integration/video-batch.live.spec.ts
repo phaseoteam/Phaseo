@@ -81,7 +81,7 @@ describeLive("Video and batch live coverage", () => {
                 prompt: "A simple gray sphere slowly rotating on a plain white background.",
                 duration: 4,
                 size: "720p",
-                generate_audio: false,
+                generate_audio: true,
                 provider: { only: [videoProvider] },
             });
             assertOk(create, "/videos");

@@ -23,6 +23,7 @@ export type IdentityAddonSummary = {
 	feePolicy: "standard_5_percent" | "included_allowance" | null;
 	includedCardTopUpUsd: number;
 	remainingCardTopUpUsd: number;
+	canAccessSettings: boolean;
 };
 
 export function isWorkspaceAddonActive(row: {

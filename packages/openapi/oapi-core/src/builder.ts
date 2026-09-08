@@ -261,7 +261,7 @@ function classifyContentType(type: string): "json" | "form" | "text" | "binary" 
 	if (type === "multipart/form-data" || type === "application/x-www-form-urlencoded") {
 		return "form";
 	}
-	if (type.startsWith("text/")) {
+	if (type.startsWith("text/") || type === "application/x-ndjson") {
 		return "text";
 	}
 	if (type === "application/octet-stream" || type.startsWith("audio/") || type.startsWith("image/") || type.startsWith("video/")) {

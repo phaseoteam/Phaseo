@@ -1,5 +1,62 @@
 [
   {
+    "api_model_id": "openai/gpt-6-astra",
+    "provider_api_model_id": "azure:openai/gpt-6-astra",
+    "provider_model_slug": "gpt-6-astra",
+    "internal_model_id": "openai/gpt-6-astra",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-09-03T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": ["max_tokens", "reasoning", "reasoning_effort", "response_format", "structured_outputs", "tools", "tool_choice", "stream"],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": false,
+        "attachment": true,
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "provider_status": "available",
+    "phaseo_status": "planned",
+    "access_scope": "public",
+    "regions": { "execution": ["global"], "data": null },
+    "service_tiers": [],
+    "api": { "formats": ["openai"], "endpoint": "/openai/v1", "deployment": "gpt-6-astra" },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure",
+        "accessed_at": "2026-09-05T00:00:00Z",
+        "notes": "Microsoft documents GPT-6 Astra version 2026-09-03 through the Foundry Limited Access Program. Availability depends on deployment type, Azure geography, subscription, quota, and rollout access."
+      },
+      {
+        "kind": "provider_announcement",
+        "url": "https://azure.microsoft.com/en-us/blog/gpt-6-astra-frontier-intelligence-for-work-now-available-in-microsoft-foundry/",
+        "accessed_at": "2026-09-05T00:00:00Z",
+        "notes": "Microsoft announces GPT-6 Astra as available through a limited-access rollout in Microsoft Foundry."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-05T00:00:00Z",
+      "notes": "Azure availability is verified. Phaseo routing remains disabled because Azure deployments require resource-specific configuration and Astra is not yet implemented on the gateway."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "anthropic/claude-fable-5.1",
     "provider_api_model_id": "azure:anthropic/claude-fable-5.1",
     "provider_model_slug": "claude-fable-5-1",

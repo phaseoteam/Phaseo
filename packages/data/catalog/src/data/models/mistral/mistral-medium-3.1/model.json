@@ -50,11 +50,30 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 14.7,
+      "score": 8.4,
       "is_self_reported": false,
-      "other_info": "Mistral Medium 3.1; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Medium 3.1; Artificial Analysis ID 05a32e26-e609-4377-951b-8fa23d329926; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-medium-3-1",
-      "rank": 301
+      "rank": 355
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 20.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Medium 3.1; Artificial Analysis ID 05a32e26-e609-4377-951b-8fa23d329926; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-medium-3-1",
+      "rank": 199
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 3.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Medium 3.1; Artificial Analysis ID 05a32e26-e609-4377-951b-8fa23d329926; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-medium-3-1",
+      "rank": 117
     }
   ],
   "family_id": null,

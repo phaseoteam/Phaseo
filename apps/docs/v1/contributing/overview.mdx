@@ -1,154 +1,29 @@
 ---
 title: "Contributing to Phaseo"
-description: "Learn how to contribute data, documentation, or improvements to the Phaseo project and help build the world's most comprehensive AI database."
+description: "Choose the right workflow for a data correction, documentation edit, or code contribution."
 sidebarTitle: "Contributing"
 icon: "handshake"
 ---
 
-Phaseo is an **open and community-driven project** - designed to make as much information about AI models, benchmarks, and providers freely accessible to everyone.
+Submit a pull request to the [Phaseo repository](https://github.com/phaseoteam/Phaseo) with the change, its source or rationale, and the checks you ran.
 
-Your contributions help keep the platform accurate, transparent, and up to date.  
-Whether you're fixing a typo, adding new benchmark data, or improving documentation, every contribution makes a difference.
+## Choose your contribution
 
----
+| Change | Start here |
+| --- | --- |
+| Model metadata, capabilities, or pricing | [Edit a model](./editing-a-model.mdx) |
+| Company or research organisation details | [Edit an organisation](./editing-an-organisation.mdx) |
+| Benchmark results | [Submit scores](../research/submitting-scores.mdx) |
+| Documentation or code | [Contribution workflow](./how-to-contribute.mdx) and [repository structure](./repo-structure.mdx) |
 
-## Why contribute?
+For a larger schema or feature change, discuss the proposal with maintainers before implementing it.
 
-AI evolves at an ever increasing speed - new models, updates, and pricing changes happen daily.  
-By contributing, you help:
+## Before submitting
 
--   Keep data on models, organizations, and benchmarks current and reliable
--   Improve the accuracy of AI comparisons across providers
--   Share research insights, community findings, or missing metadata
--   Strengthen the open ecosystem for AI transparency
--   Ensure the database remains freely accessible and community-owned
+- Cite official sources for data changes and distinguish reported results from independently measured results.
+- Follow the existing schema and formatting. Include the relevant validation results in the pull request.
+- Keep the change focused and explain the problem it fixes.
+- Never include credentials or private customer data.
+- Follow the [Code of Conduct](../community/code-of-conduct.mdx).
 
-Your name will also appear in the [Contributors page](https://phaseo.app/contribute), recognizing your contributions.
-
----
-
-## What you can contribute
-
-<Columns cols={2}>
-	<Card
-		title="Model Data"
-		icon="brain"
-		href="./editing-a-model.mdx"
-	>
-		Update or add model information such as capabilities, benchmarks, or
-		pricing.
-	</Card>
-	<Card
-		title="Organization Data"
-		icon="building"
-		href="./editing-an-organisation.mdx"
-	>
-		Add or correct details about companies or research groups behind models.
-	</Card>
-</Columns>
-
----
-
-## Contribution workflow overview
-
-1. **Fork** the [Phaseo GitHub repository](https://github.com/phaseoteam/Phaseo).
-2. **Create a branch** for your changes (e.g. `fix-model-data` or `add-new-benchmark`).
-3. **Edit the JSON or Markdown files** according to the structure outlined in [Repo Structure](./repo-structure.mdx).
-4. **Test your changes locally** if relevant (for example, viewing your edits in the Next.js frontend).
-5. **Commit and push** your changes.
-6. **Open a Pull Request (PR)** - describe what you've changed and why.
-
-Once reviewed and approved, your contribution will be merged and visible in the live Phaseo database.
-
----
-
-## Contribution types
-
-| Type                   | Example                                                 | Difficulty |
-| ---------------------- | ------------------------------------------------------- | ---------- |
-| **Data Fix**           | Correcting model names, providers, or benchmark values. | Easy       |
-| **New Entry**          | Adding a new model, benchmark, or organization.         | Moderate   |
-| **Structural Change**  | Adjusting database or schema layout.                    | Advanced   |
-| **Feature Addition**   | Adding UI components or Next.js logic.                  | Advanced   |
-| **Documentation Edit** | Improving Markdown files or guides.                     | Easy       |
-
-No matter what change you want to make, we welcome contributions of all sizes and complexities.
-
----
-
-## Guidelines and standards
-
-All contributions must follow these standards to ensure data quality and consistency:
-
--   **Accurate Sources:** Only include verified or officially published data.
--   **Consistent Formatting:** Use correct casing, indentation, and schema keys.
--   **Versioned Changes:** Keep changelogs or commit messages descriptive.
--   **Citations:** Include links to data sources in PR descriptions.
--   **Respectful Communication:** Follow our [Code of Conduct](../community/code-of-conduct.mdx).
-
----
-
-## Example contribution flow
-
-```bash
-# 1. Fork and clone the repo
-git clone https://github.com/yourusername/Phaseo.git
-
-# 2. Create a new branch
-git checkout -b add-openai-new-model
-
-# 3. Make your edits
-# e.g. edit packages/data/catalog/src/data/models/openai/new-model/model.json
-
-# 4. Stage, commit, and push
-git add .
-git commit -m "Added new OpenAI model with updated benchmark data"
-git push origin add-openai-new-model
-
-# 5. Open a Pull Request on GitHub
-# Describe your changes and link any sources
-```
-
----
-
-## Need help?
-
-If you're unsure how to contribute or want feedback before submitting, you can:
-
--   Ask in the [Phaseo Discord](https://discord.gg/aQyywCvgZ5).
--   Open a **GitHub Discussion** for questions or suggestions.
--   Tag maintainers in your PR for review guidance.
-
-<Card
-	title="How to Contribute"
-	icon="handshake"
-	href="./how-to-contribute.mdx"
-	horizontal
->
-	Learn the step-by-step process for making your first contribution.
-</Card>
-
-We greatly appreciate all contributions, big and small, as they help build and maintain this valuable resource for the AI community.
-
----
-
-## Next steps
-
-Move on to learn about the specific contribution process for your focus area:
-
-<Columns cols={2}>
-	<Card
-		title="How to Contribute"
-		icon="compass"
-		href="./how-to-contribute.mdx"
-	>
-		Understand the detailed workflow for editing files and creating PRs.
-	</Card>
-	<Card
-		title="Repo Structure"
-		icon="folder-tree"
-		href="./repo-structure.mdx"
-	>
-		Learn how the Phaseo repository is organized.
-	</Card>
-</Columns>
+Use the [step-by-step contribution workflow](./how-to-contribute.mdx) for branch setup, local checks, and opening a pull request. Ask for help in [Discord](https://discord.gg/aQyywCvgZ5) if you are unsure where a change belongs.

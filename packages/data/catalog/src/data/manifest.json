@@ -509,9 +509,9 @@
       "inclusionai/ling-3.0-tiny",
       "inclusionai/ling-2.6-flash",
       "inclusionai/ring-2.6-1t",
-        "inclusionai/ling-3.0-flash-fin",
-        "inclusionai/ling-3.0-flash-sante",
-        "inclusionai/ling-3.0-flash-vl"
+      "inclusionai/ling-3.0-flash-fin",
+      "inclusionai/ling-3.0-flash-sante",
+      "inclusionai/ling-3.0-flash-vl"
     ],
     "kwaipilot": [
       "kwaipilot/kat-coder-air-v2.5",
@@ -956,7 +956,8 @@
       "openai/daybreak-blue-latest",
       "openai/daybreak-red-latest",
       "openai/gpt-5.6-cyber",
-      "openai/gpt-6-astra"
+      "openai/gpt-6-astra",
+      "openai/gpt-6-astra-pro"
     ],
     "perplexity": [
       "perplexity/pplx-embed-v1-0.6b",
@@ -1308,7 +1309,8 @@
       "spacex-ai/grok-imagine-image-2.0",
       "spacex-ai/grok-4.6",
       "spacex-ai/grok-4.7",
-      "spacex-ai/grok-transcribe"
+      "spacex-ai/grok-transcribe",
+      "spacex-ai/grok-voice-think-fast-2.0"
     ],
     "xiaomi": [
       "xiaomi/mimo-v2-flash",
@@ -1434,8 +1436,11 @@
   "benchmarks": [
     "2-bench-retail",
     "2-bench-telecom",
+    "aa-agentic-index-v4",
     "aa-briefcase",
+    "aa-coding-index-v4",
     "aa-index",
+    "aa-intelligence-index-cost-v4",
     "aa-intelligence-index-v4",
     "aa-lcr",
     "aa-omniscience",

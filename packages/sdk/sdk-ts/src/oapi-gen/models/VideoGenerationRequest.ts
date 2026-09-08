@@ -3,6 +3,13 @@ export interface VideoGenerationRequest {
   compression_quality?: number;
   duration?: number;
   enhance_prompt?: boolean;
+  frame_images?: {
+    frame_type: "first_frame" | "last_frame";
+    image_url: {
+      url: string;
+    };
+    type: "image_url";
+  }[];
   generate_audio?: boolean;
   input_audio_duration?: number;
   input_references?: (
@@ -67,6 +74,11 @@ export interface VideoGenerationRequest {
           [key: string]: unknown;
         };
     zdr?: boolean | null;
+  };
+  provider_options?: {
+    [key: string]: {
+      [key: string]: unknown;
+    };
   };
   provider_params?: {
     [key: string]: unknown;

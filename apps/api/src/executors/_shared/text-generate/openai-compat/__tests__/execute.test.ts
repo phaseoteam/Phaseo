@@ -98,6 +98,43 @@ describe("executeOpenAIWire", () => {
 		expect(Array.isArray(capturedBody?.tools)).toBe(true);
 	});
 
+	it("routes private models only to their request-scoped endpoint", async () => {
+		const args = buildArgs();
+		args.providerId = "private-model";
+		args.providerModelSlug = "legal-v4";
+		args.privateEndpoint = { baseUrl: "https://models.customer.example/openai/v1", supportsResponses: false };
+		args.byokMeta = [{
+			id: "private-model-id",
+			providerId: "private-model",
+			fingerprintSha256: "fingerprint",
+			keyVersion: "1",
+			alwaysUse: true,
+			key: "private-endpoint-secret",
+		}];
+		let capturedHeaders: Record<string, string> = {};
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url === "https://models.customer.example/openai/v1/chat/completions",
+			response: sseResponse([{
+				id: "chatcmpl_private",
+				object: "chat.completion.chunk",
+				model: "legal-v4",
+				choices: [{ index: 0, delta: { content: "private response" }, finish_reason: null }],
+			}, "[DONE]"]),
+			onRequest: (call) => {
+				capturedHeaders = call.headers;
+				capturedBody = call.bodyJson;
+			},
+		}]);
+
+		const result = await executeOpenAIWire(args, { forceChat: true });
+		mock.restore();
+
+		expect(result.kind).toBe("stream");
+		expect(capturedHeaders.Authorization).toBe("Bearer private-endpoint-secret");
+		expect(capturedBody.model).toBe("legal-v4");
+	});
+
 	it("routes alibaba-cloud to chat completions for text models", async () => {
 		const args = buildArgs();
 		args.providerId = "alibaba-cloud";

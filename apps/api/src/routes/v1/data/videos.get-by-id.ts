@@ -3,6 +3,7 @@ import { setVideoJobStatus, type VideoJobMeta, type VideoJobRecord } from "@core
 import { guardAuth } from "@pipeline/before/guards";
 import { err } from "@pipeline/before/http";
 import { fetchVideoProviderStatus } from "@core/video-reconciliation";
+import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 
 import * as videoHelpers from "./videos.helpers";
 
@@ -85,7 +86,14 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 			video_id: id,
 		});
 	}
-	if ((videoRecord.provider ?? videoMeta?.provider) === "fal") {
+	const reconciledProvider = videoRecord.provider ?? videoMeta?.provider;
+	if (videoMeta?.submissionState === "submitting" || videoMeta?.submissionState === "unknown") {
+		return Response.json(await toPublicVideoResponse({
+			requestUrl: req.url, id, record: videoRecord, meta: videoMeta,
+			payload: { id, status: "pending", provider: reconciledProvider, model: videoRecord.model },
+		}));
+	}
+	if (reconciledProvider === "fal" || reconciledProvider === "ltx" || reconciledProvider === "novita") {
 		const polled = await fetchVideoProviderStatus(videoRecord);
 		if (!polled) {
 			if (isTerminalVideoStatus(videoRecord.status ?? "")) {
@@ -96,7 +104,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 					payload: enrichVideoPayloadWithJobMetrics({
 						id,
 						status: videoRecord.status,
-						provider: "fal",
+						provider: reconciledProvider,
 						model: videoRecord.model,
 						output: downloadUrl ? [{ index: 0, uri: downloadUrl, mime_type: "video/mp4" }] : [],
 					}, videoRecord, videoMeta),
@@ -105,21 +113,22 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 				})), { status: 200, headers: { "Content-Type": "application/json" } });
 			}
 			return err("upstream_error", {
-				reason: "fal_video_status_fetch_failed",
+				reason: `${reconciledProvider}_video_status_fetch_failed`,
 				request_id: authValue.requestId,
 				workspace_id: authValue.workspaceId,
 				video_id: id,
-				provider: "fal",
+				provider: reconciledProvider,
 			});
 		}
 		await finalizeVideoStatusIfTerminal({
 			auth: authValue,
 			videoId: id,
 			videoMeta,
-			providerId: "fal",
+			providerId: reconciledProvider,
 			status: polled.status,
 			model: polled.model ?? videoRecord.model,
 			seconds: polled.seconds,
+			requestOptions: polled.requestOptions,
 			metaPatch: polled.metaPatch,
 		});
 		if (isTerminalVideoStatus(polled.status)) {
@@ -136,7 +145,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 			payload: enrichVideoPayloadWithJobMetrics({
 				id,
 				status: polled.status,
-				provider: "fal",
+				provider: reconciledProvider,
 				model: polled.model ?? videoRecord.model,
 				result: polled.raw,
 				output: downloadUrl ? [{ index: 0, uri: downloadUrl, mime_type: "video/mp4" }] : [],
@@ -283,44 +292,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 			const json = await res.clone().json().catch(() => null);
 			if (!res.ok) {
 				if (isGoogleOperationsGetAuthFailure(res.status, json)) {
-					await finalizeVideoStatusIfTerminal({
-						auth: authValue,
-						videoId: id,
-						videoMeta,
-						providerId: videoMeta?.provider ?? "google-ai-studio",
-						status: "failed",
-						model: videoMeta?.model ?? null,
-						seconds: toFiniteNumber(videoMeta?.seconds),
-						resolution: videoMeta?.resolution ?? null,
-						quality: videoMeta?.quality ?? null,
-						metaPatch: {
-							googleOperationName: operationName,
-							googlePollingAuthUnsupported: true,
-							googlePollingAuthFailureAt: new Date().toISOString(),
-						},
-					});
-					const refreshed = await refreshOwnedVideoJob(authValue, id);
-					return new Response(JSON.stringify(await toPublicVideoResponse({
-						requestUrl: req.url,
-						id,
-						payload: enrichVideoPayloadWithJobMetrics({
-						id,
-						status: "failed",
-						provider: videoMeta?.provider ?? "google-ai-studio",
-						model: videoMeta?.model ?? null,
-						error: {
-							type: "google_operation_auth_unsupported",
-							message:
-								"Google native operation polling rejected API-key auth for this job. Use OAuth bearer auth for native polling.",
-						},
-						result: json,
-					}, refreshed?.record ?? videoRecord, refreshed?.meta ?? videoMeta),
-						record: refreshed?.record ?? videoRecord,
-						meta: refreshed?.meta ?? videoMeta,
-					})), {
-						status: 200,
-						headers: { "Content-Type": "application/json" },
-					});
+					return err("upstream_error", { reason: "google_operation_auth_unsupported", request_id: authValue.requestId, video_id: id });
 				}
 				return normalizeVideoUpstreamErrorResponse({
 					response: res,
@@ -615,6 +587,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 			const providerId = videoMeta?.provider ?? MINIMAX_PROVIDER_ID;
 			const model = String(task?.model ?? task?.data?.model ?? videoMeta?.model ?? "").trim();
 			await finalizeVideoStatusIfTerminal({
+				requestOptions: buildVideoPricingRequestOptions({ input_image_count: task?.usage?.input_image_count ?? videoMeta?.inputImageCount, input_video_seconds: task?.usage?.input_seconds ?? videoMeta?.inputVideoSeconds, input_audio_seconds: task?.usage?.input_audio_seconds ?? videoMeta?.inputAudioSeconds }),
 				auth: authValue,
 				videoId: id,
 				videoMeta,

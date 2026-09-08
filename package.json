@@ -70,9 +70,7 @@
 		"data:test-sampling-params": "node scripts/test-sampling-params.js",
 		"docs:links": "cd apps/docs && pnpm run check:links",
 		"docs:build": "cd apps/docs && pnpm run build",
-		"docs:openapi": "node scripts/openapi/build-public-docs-spec.mjs",
-		"docs:openapi:check": "node scripts/openapi/build-public-docs-spec.mjs --check",
-		"docs:public-safety": "pnpm run docs:openapi:check && node scripts/validate-public-docs.mjs",
+		"docs:public-safety": "node scripts/validate-public-docs.mjs",
 		"validate:docs": "pnpm run docs:public-safety && pnpm run docs:links && pnpm run docs:build",
 		"smoke:sdk": "tsx scripts/smoke-sdk.ts",
 		"smoke:sdk:devtools:all": "node scripts/smoke-sdk-devtools-all.mjs",
@@ -145,10 +143,11 @@
 		"ajv": "^8.20.0",
 		"dotenv-cli": "^11.0.0",
 		"js-yaml": "^4.2.0",
+		"jsonc-parser": "^3.3.1",
 		"knip": "^6.6.1",
 		"rimraf": "^6.0.0",
 		"supabase": "^2.89.1",
-		"tsx": "^4.21.0",
+		"tsx": "^4.23.13",
 		"turbo": "^2.10.8"
 	},
 	"pnpm": {

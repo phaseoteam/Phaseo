@@ -42,11 +42,12 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 9.6,
+      "score": 4.1,
       "is_self_reported": false,
-      "other_info": "Ling-flash-2.0; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Ling-flash-2.0; Artificial Analysis ID 882a5da3-94ca-4602-8693-c45970df17e2; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ling-flash-2-0",
-      "rank": 384
+      "rank": 428
     }
   ],
   "family_id": null,

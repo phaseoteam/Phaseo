@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PriceCard } from "@pipeline/pricing/types";
 import { computeVideoPricedUsage } from "./video-pricing";
+import { buildVideoPricingRequestOptions } from "./video-request-options";
 
 function makeCard(rules: Array<Record<string, unknown>>): PriceCard {
 	return {
@@ -17,13 +18,73 @@ function makeCard(rules: Array<Record<string, unknown>>): PriceCard {
 	};
 }
 
-function loadLtxCard(model: string): PriceCard {
+function loadCatalogCard(provider: string, model: string): PriceCard {
 	const pricingPath = path.resolve(
 		process.cwd(),
-		`../../packages/data/catalog/src/data/pricing/ltx/${model}/video.generate/pricing.json`,
+		`../../packages/data/catalog/src/data/pricing/${provider}/${model}/video.generate/pricing.json`,
 	);
 	return JSON.parse(fs.readFileSync(pricingPath, "utf8")) as PriceCard;
 }
+
+function loadLtxCard(model: string): PriceCard {
+	return loadCatalogCard("ltx", model);
+}
+
+describe("video primary pricing coverage", () => {
+	const imageRule = { meter: "input_image", unit: "image", unit_size: 1, price_per_unit: "0.01", currency: "USD", pricing_plan: "standard", match: [] };
+	it("does not settle just the reference image when the output resolution has no price", () => {
+		const card = makeCard([imageRule, {
+			meter: "output_video_seconds", unit: "second", unit_size: 1, price_per_unit: "0.1",
+			currency: "USD", pricing_plan: "standard", match: [{ path: "resolution", op: "eq", value: "720p" }],
+		}]);
+		expect(() => computeVideoPricedUsage({
+			card, model: "test", seconds: 8, requestOptions: { resolution: "4k", input_image_count: 1 },
+		})).toThrow("pricing_rule_missing:output_video_seconds");
+	});
+	it.each([undefined, "audio-to-video"])("preserves reference charges when falling back to a clip price for mode %s", (mode) => {
+		const card = makeCard([imageRule, {
+			meter: "output_video", unit: "video", unit_size: 1, price_per_unit: "0.28",
+			currency: "USD", pricing_plan: "standard", match: [],
+		}]);
+		const priced = computeVideoPricedUsage({
+			card, model: "test", seconds: 6, requestOptions: { input_image_count: 2, mode, input_audio_seconds: 6 },
+		}) as any;
+		expect(priced.pricing.total_nanos).toBe(300_000_000);
+	});
+});
+
+describe("Vertex Veo bills seconds rather than whole clips", () => {
+	it.each([
+		["google-veo-3.1-fast", "720p", false, 4, 0.32],
+		["google-veo-3.1-fast", "720p", false, 8, 0.64],
+		["google-veo-3.1-fast", "1080p", true, 8, 0.96],
+		["google-veo-3.1", "4k", true, 8, 4.8],
+	] as const)("%s %s audio=%s: %s seconds costs $%s", (model, resolution, audio, seconds, usd) => {
+		const priced = computeVideoPricedUsage({
+			card: loadCatalogCard("google-vertex", model), model, seconds,
+			requestOptions: buildVideoPricingRequestOptions({ resolution, audio, outputCount: 1 }),
+		}) as any;
+		expect(priced.pricing.total_nanos).toBe(Math.round(usd * 1e9));
+	});
+});
+
+describe("BytePlus published video token rates", () => {
+	// https://www.byteplus.com/en/product/modelark, checked 2026-09-06.
+	it.each([
+		["bytedance-seedance-2.0", "720p", 0, 7],
+		["bytedance-seedance-2.0", "720p", 2, 4.3],
+		["bytedance-seedance-2.0", "1080p", 0, 7.7],
+		["bytedance-seedance-2.0", "1080p", 2, 4.7],
+		["bytedance-seedance-2.0-mini-260615", "720p", 0, 3.5],
+		["bytedance-seedance-2.0-mini-260615", "720p", 2, 2.1],
+	] as const)("%s at %s with %s input seconds costs $%s per million tokens", (model, resolution, inputSeconds, usd) => {
+		const priced = computeVideoPricedUsage({
+			card: loadCatalogCard("byteplus", model), model, seconds: 8,
+			requestOptions: { resolution, input_video_seconds: inputSeconds, total_tokens: 1_000_000 },
+		}) as any;
+		expect(priced.pricing.total_nanos).toBe(Math.round(usd * 1e9));
+	});
+});
 
 function makeSeedanceCard(): PriceCard {
 	return {
@@ -58,6 +119,37 @@ function makeSeedanceCard(): PriceCard {
 		] as any,
 	};
 }
+
+// Published generation and audio-input rates: https://docs.ltx.io/pricing (2026-09-06).
+describe("LTX documented resolution pricing", () => {
+	const resolutions = ["1280x720", "1920x1080", "2560x1440", "3840x2160"];
+	const rates = [
+		{ model: "ltx-2-3-fast", output: [0.03, 0.06, 0.12, 0.24], audio: null },
+		{ model: "ltx-2-3-pro", output: [0.04, 0.08, 0.16, 0.32], audio: [0.06, 0.10, 0.18, 0.34] },
+		{ model: "ltx-2-5-fast", output: [0.09, 0.13, 0.19, 0.30], audio: [0.09, 0.13, 0.19, 0.30] },
+		{ model: "ltx-2-5-pro", output: [0.12, 0.17, 0.25, 0.39], audio: [0.12, 0.17, 0.25, 0.39] },
+	];
+	for (const { model, output, audio } of rates) {
+		for (const [index, landscape] of resolutions.entries()) {
+			for (const resolution of [landscape, landscape.split("x").reverse().join("x")]) {
+				it(`${model} ${resolution} bills six output seconds`, () => {
+					const priced = computeVideoPricedUsage({
+						card: loadLtxCard(model), model, seconds: 6, requestOptions: { resolution },
+					}) as any;
+					expect(priced.pricing.total_nanos).toBe(Math.round(output[index] * 6 * 1e9));
+				});
+				if (audio) it(`${model} ${resolution} bills source audio without double charging output`, () => {
+					const priced = computeVideoPricedUsage({
+						card: loadLtxCard(model), model, seconds: 8,
+						requestOptions: { resolution, mode: "audio-to-video", input_audio_seconds: 2.5 },
+					}) as any;
+					expect(priced.pricing.total_nanos).toBe(Math.round(audio[index] * 2.5 * 1e9));
+					expect(priced.pricing.lines.map((line: any) => line.dimension)).toEqual(["input_audio_seconds"]);
+				});
+			}
+		}
+	}
+});
 
 describe("video-pricing", () => {
 	it("prices LTX requests from the canonical catalogue card", () => {

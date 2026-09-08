@@ -6,6 +6,7 @@ import type {
 import { getCatalogPricingSummariesCached } from "@/lib/fetchers/models/getCatalogPricingSummaries";
 import { withMissingCatalogPricing } from "@/lib/models/withMissingCatalogPricing";
 import { publicSWRFetcher } from "@/lib/swr/publicFetcher";
+import { fetchAuthenticatedPrivateModels } from "@/lib/swr/privateModels";
 
 type PublicModelsResponse = {
 	models: ModelsPageModel[];
@@ -58,6 +59,19 @@ async function fetchModelsPageDataForVersion(
 
 	if (!firstPage.facets) {
 		throw new Error("Models API response did not include filter facets");
+	}
+	const privateModels = await fetchAuthenticatedPrivateModels<ModelsPageModel>("page");
+	if (privateModels.length > 0) {
+		const privateIds = new Set(privateModels.map((model) => model.model_id));
+		models = [...privateModels, ...models.filter((model) => !privateIds.has(model.model_id))];
+		const addFacet = (options: Array<{ value: string; count: number }>, value: string) => {
+			const existing = options.find((option) => option.value === value);
+			if (existing) existing.count += privateModels.length;
+			else options.push({ value, count: privateModels.length });
+		};
+		firstPage.facets.statusCounts.active += privateModels.length;
+		addFacet(firstPage.facets.creatorOptions, "Private");
+		addFacet(firstPage.facets.tierOptions, "private");
 	}
 
 	return { models, facets: firstPage.facets };

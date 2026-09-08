@@ -315,11 +315,39 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 47.7,
+      "score": 36.7,
       "is_self_reported": false,
-      "other_info": "Gemini 3.1 Pro Preview; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemini 3.1 Pro Preview; Artificial Analysis ID bbd93ebe-80da-4594-bb19-61e69d0331df; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-1-pro-preview",
-      "rank": 35
+      "rank": 73
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 68.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemini 3.1 Pro Preview; Artificial Analysis ID bbd93ebe-80da-4594-bb19-61e69d0331df; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-1-pro-preview",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 10.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemini 3.1 Pro Preview; Artificial Analysis ID bbd93ebe-80da-4594-bb19-61e69d0331df; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-1-pro-preview",
+      "rank": 99
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 879.63,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemini 3.1 Pro Preview; Artificial Analysis ID bbd93ebe-80da-4594-bb19-61e69d0331df; Intelligence Index v4.3; USD 0.335 per task",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-1-pro-preview",
+      "rank": 52
     }
   ],
   "page_notice": null,

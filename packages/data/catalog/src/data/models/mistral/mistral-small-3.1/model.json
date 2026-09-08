@@ -102,11 +102,39 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 14.9,
+      "score": 10.3,
       "is_self_reported": false,
-      "other_info": "Mistral Small 3.1; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Small 3.1; Artificial Analysis ID 24ac5b00-5f03-4c47-8e37-522d1195383e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-small-3-1",
-      "rank": 299
+      "rank": 334
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 26.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Small 3.1; Artificial Analysis ID 24ac5b00-5f03-4c47-8e37-522d1195383e; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-small-3-1",
+      "rank": 173
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 2.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Small 3.1; Artificial Analysis ID 24ac5b00-5f03-4c47-8e37-522d1195383e; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-small-3-1",
+      "rank": 121
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 38.11,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Small 3.1; Artificial Analysis ID 24ac5b00-5f03-4c47-8e37-522d1195383e; Intelligence Index v4.3; USD 0.0381 per task",
+      "source_link": "https://artificialanalysis.ai/models/mistral-small-3-1",
+      "rank": 7
     }
   ],
   "family_id": null,

@@ -26,6 +26,7 @@ import type { ProviderExecuteArgs } from "@providers/types";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import type { ProviderExecutor } from "@executors/types";
 import { saveVideoJobMeta } from "@core/video-jobs";
+import { configureVideoSubmission, beginVideoSubmission, observeVideoSubmissionResponse, canReleaseVideoSubmission } from "@executors/_shared/video-submission";
 import { isInsufficientVideoReservationStatus, reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import {
@@ -732,6 +733,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	if (isVideoGeneration) {
 		try {
 			const reserved = await reserveVideoGenerationCredits({
+				keyId: args.apiKeyId,
+				authMethod: args.meta.authMethod,
+				onReservationDenied: args.onReservationDenied,
 				workspaceId: args.workspaceId,
 				videoId: args.requestId,
 				providerId: args.providerId,
@@ -779,6 +783,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	const releaseVideoReservationOnFailure = async () => {
+		if (!canReleaseVideoSubmission(args)) return;
 		if (!reservationId) return;
 		try {
 			await releaseWalletReservation({
@@ -848,7 +853,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	let adapterResult: Awaited<ReturnType<typeof executeProviderEndpoint>>;
 	try {
+		if (isVideoGeneration) {
+			configureVideoSubmission(args, { model: providerModel, reservationId, reservationStatus, reservedNanos });
+			await beginVideoSubmission(args);
+		}
 		adapterResult = await executeProviderEndpoint(args.endpoint, args.providerId, providerArgs);
+		if (isVideoGeneration) await observeVideoSubmissionResponse(args, adapterResult.upstream);
 	} catch (error) {
 		if (isVideoGeneration) await releaseVideoReservationOnFailure();
 		throw error;

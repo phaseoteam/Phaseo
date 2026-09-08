@@ -9,6 +9,7 @@ import { Timer } from "../telemetry/timer";
 import { dispatchBackground, ensureRuntimeForBackground, getSupabaseAdmin } from "@/runtime/env";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT } from "@/core/byok";
 import { getProviderPricingKey } from "../before/context.shared";
+import { selectVideoProviderOptions } from "@core/video-provider-options";
 
 export type PipelineTiming = {
 	timer: Timer;
@@ -116,7 +117,7 @@ const SINGLE_PROVIDER_FAILURE_RETRIES = 0;
 // credential must not be silently retained while being impossible to attempt.
 export const MAX_BYOK_CREDENTIAL_ATTEMPTS = BYOK_KEYS_PER_PROVIDER_LIMIT;
 
-export type CredentialAttemptPhase = "priority_byok" | "gateway" | "fallback_byok";
+export type CredentialAttemptPhase = "priority_byok" | "balanced_byok" | "gateway" | "fallback_byok";
 
 export function buildCredentialAttemptPlan(
 	rankedProviders: any[],
@@ -126,9 +127,9 @@ export function buildCredentialAttemptPlan(
 	phase: CredentialAttemptPhase;
 	credential: { kind: "gateway" } | { kind: "byok"; key: ByokKeyMeta };
 }> {
-	const modeForKey = (key: ByokKeyMeta): "priority" | "fallback" =>
+	const modeForKey = (key: ByokKeyMeta): "priority" | "balanced" | "fallback" =>
 		key.routingMode ?? (key.alwaysUse ? "priority" : "fallback");
-	const keysForMode = (routed: any, mode: "priority" | "fallback") =>
+	const keysForMode = (routed: any, mode: "priority" | "balanced" | "fallback") =>
 		(routed.candidate.byokMeta ?? [])
 			.filter((key: ByokKeyMeta) => modeForKey(key) === mode)
 			.sort((a: ByokKeyMeta, b: ByokKeyMeta) =>
@@ -136,7 +137,9 @@ export function buildCredentialAttemptPlan(
 			)
 			.map((key: ByokKeyMeta) => ({
 				routed,
-				phase: mode === "priority" ? "priority_byok" as const : "fallback_byok" as const,
+				phase: mode === "priority"
+					? "priority_byok" as const
+					: mode === "balanced" ? "balanced_byok" as const : "fallback_byok" as const,
 				credential: { kind: "byok" as const, key },
 			}));
 
@@ -149,12 +152,16 @@ export function buildCredentialAttemptPlan(
 			.flatMap((routed) => keysForMode(routed, "fallback"))
 			.slice(0, remainingByokAttempts);
 
-	const gatewayAttempts = limitedPriorityAttempts.length === 0 || options.allowManagedFallback === true
-		? rankedProviders.map((routed) => ({
+	const balancedAttempts = rankedProviders.flatMap((routed) => {
+		const keys = keysForMode(routed, "balanced");
+		return keys.length ? keys : [{
 			routed,
 			phase: "gateway" as const,
 			credential: { kind: "gateway" as const },
-		}))
+		}];
+	});
+	const gatewayAttempts = limitedPriorityAttempts.length === 0 || options.allowManagedFallback === true
+		? balancedAttempts
 		: [];
 
 	return [
@@ -539,6 +546,11 @@ export async function doRequestWithIR(
 			}
 			return result;
 		}
+		if ("response" in result && result.response) return result.response;
+		if ("stopFallback" in result && result.stopFallback) {
+			anyPricingFound = true;
+			break;
+		}
 
 		if ("skip" in result && result.skip === "no_pricing") {
 			continue;
@@ -590,7 +602,7 @@ async function attemptProviderWithIR(
 	attemptNumber: number,
 	credential: { kind: "gateway" } | { kind: "byok"; key: ByokKeyMeta },
 	credentialPhase: CredentialAttemptPhase,
-): Promise<{ ok: true; result: IRRequestResult } | { ok: false; skip?: string }> {
+): Promise<{ ok: true; result: IRRequestResult } | { ok: false; skip?: string; stopFallback?: boolean; response?: Response }> {
 	const attemptErrors: Array<Record<string, unknown>> = (ctx.attemptErrors ??= []);
 	const attemptPrefix = `attempt_${attemptNumber}`;
 	const attemptStartedAtEpochMs = Date.now();
@@ -662,7 +674,8 @@ async function attemptProviderWithIR(
 			candidate.pricingCard = pricingCard;
 		}
 	}
-	if (!pricingCard) {
+	if (!pricingCard || (pricingCard.currency && pricingCard.currency.toUpperCase() !== "USD") ||
+		pricingCard.rules.some((rule) => rule.currency && rule.currency.toUpperCase() !== "USD")) {
 		attemptErrors.push({
 			...credentialLog,
 			provider: candidate.providerId,
@@ -760,7 +773,9 @@ async function attemptProviderWithIR(
 						modelForReasoning,
 					},
 				)
-				: ir,
+				: normalizedCapability === "video.generate"
+					? selectVideoProviderOptions(ir as IRVideoGenerationRequest, candidate.providerId)
+					: ir,
 		);
 		if (credential.kind === "gateway" && !ctx.testingMode) {
 			const reservationTokens = estimateProviderTokenReservation({
@@ -808,16 +823,20 @@ async function attemptProviderWithIR(
 			}
 			providerRateLimitReservation = rateLimit.reservation;
 		}
+		let reservationDenial: import("@core/video-reservations").VideoReservationDenial | undefined;
 		const buildExecutorArgs = () =>
 			({
 				ir: normalizedIr,
 				requestId: ctx.requestId,
 				workspaceId: ctx.workspaceId,
 				providerId: candidate.providerId,
+				apiKeyId: ctx.keyId,
+				onReservationDenied: (denial) => { reservationDenial = denial; },
 				endpoint: ctx.endpoint,
 				protocol: ctx.protocol as any,
 				capability: ctx.capability,
 				providerModelSlug,
+				privateEndpoint: candidate.privateEndpoint ?? null,
 				capabilityParams: candidate.capabilityParams,
 				maxInputTokens: candidate.maxInputTokens,
 				maxOutputTokens: candidate.maxOutputTokens,
@@ -850,7 +869,9 @@ async function attemptProviderWithIR(
 
 		const executeWithRetry = async () => {
 			let lastErr: unknown = null;
-			const maxRetries = allowSingleProviderRetry
+			// Async creates have no cross-provider idempotency guarantee. A lost
+			// response can still represent a running, billable provider job.
+			const maxRetries = normalizedCapability === "video.generate" ? 0 : allowSingleProviderRetry
 				? SINGLE_PROVIDER_FAILURE_RETRIES
 				: MAX_RETRYABLE_EXECUTOR_RETRIES;
 			for (let retryAttempt = 0; retryAttempt <= maxRetries; retryAttempt += 1) {
@@ -884,6 +905,19 @@ async function attemptProviderWithIR(
 			executeWithRetry(),
 		);
 		const upstreamTiming = upstreamTracker.snapshot();
+		if (reservationDenial && upstreamTiming.upstreamRequestCount === 0) {
+			await releaseManagedProviderReservation(providerRateLimitReservation);
+			dispatchProviderHealthBackground(() => onCallEnd(ctx.endpoint, {
+				provider: candidate.providerId, model: baseModel, ok: false,
+				healthImpact: "neutral", latency_ms: Math.round(performance.now() - attemptStartedAt),
+			}));
+			return { ok: false, response: new Response(JSON.stringify({
+				error: reservationDenial.code, reason: reservationDenial.reason,
+				error_type: "user", error_origin: "user",
+				description: "The video request was rejected by your credit or spending limits before provider submission.",
+				request_id: ctx.requestId,
+			}), { status: reservationDenial.status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }) };
+		}
 		const selectedUpstreamTiming = upstreamTracker.timing.timingFor(executorResult.upstream);
 		executorResult.timing = {
 			...(executorResult.timing ?? {}),
@@ -1097,7 +1131,15 @@ async function attemptProviderWithIR(
 				upstream_media_count: executorResult.timing?.upstreamMediaCount ?? null,
 				retry_delay_ms: executorResult.timing?.transientRetryDelayMs ?? null,
 			});
-			return { ok: false };
+			return {
+				ok: false,
+				stopFallback: normalizedCapability === "video.generate" && (
+					// A dispatched create owns a durable job and reservation lifecycle.
+					// Do not reuse that job for a second provider after rejection either.
+					upstreamTracker.snapshot().upstreamRequestCount > 0 ||
+					executorResult.upstream.status >= 500 || executorResult.upstream.status === 408
+				),
+			};
 		}
 
 		// Build result
@@ -1243,6 +1285,6 @@ async function attemptProviderWithIR(
 				await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
 			}
 		});
-		return { ok: false };
+		return { ok: false, stopFallback: ctx.capability === "video.generate" };
 	}
 }

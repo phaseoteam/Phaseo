@@ -169,6 +169,8 @@ client = Phaseo(
 )
 ```
 
+For completed Anthropic batches, `client.batches.stream_results(batch_id)` yields original JSONL byte chunks without buffering the whole download. Write chunks to your output file and close the iterator if stopping early. The configured HTTP timeout applies; downloading does not add inference charges.
+
 ## Environment variables
 
 - `PHASEO_API_KEY` (required unless passed in code)

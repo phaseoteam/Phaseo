@@ -42,7 +42,9 @@ PRICING_MONITOR_ENABLED = "false"
 ENTERPRISE_INVOICING_ENABLED = "false"
 
 [triggers]
-crons = ["* * * * *"]
+# This staging deployment shares the production database. Scheduled consumers
+# must remain disabled until staging has an isolated database and credentials.
+crons = []
 
 [placement]
 mode = "smart"

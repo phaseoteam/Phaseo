@@ -124,11 +124,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 12.2,
+      "score": 6.4,
       "is_self_reported": false,
-      "other_info": "Llama 3.3 Nemotron Super 49B v1 (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Llama 3.3 Nemotron Super 49B v1 (Reasoning); Artificial Analysis ID 1a8ba535-df18-459b-ad40-3199191296d7; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/llama-3-3-nemotron-super-49b-reasoning",
-      "rank": 343
+      "rank": 391
     }
   ],
   "family_id": null,

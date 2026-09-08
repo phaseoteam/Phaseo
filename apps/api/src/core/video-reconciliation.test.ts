@@ -209,6 +209,15 @@ describe("video-reconciliation provider polling", () => {
 		);
 	});
 
+	it.each(["queued", "running", "succeeded", "failed", "cancelled"])("polls MiniMax H3 V2 %s and preserves authoritative reference usage", async (status) => {
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ task: { status, model: "MiniMax-H3", duration: 6, resolution: "768P", usage: { input_seconds: 12, input_audio_seconds: 3, input_image_count: 7 } } }))));
+		const result = await fetchVideoProviderStatus(makeBaseJob({ provider: "minimax", model: "MiniMax-H3", nativeId: "h3_task", meta: { provider: "minimax", inputVideoSeconds: 2 } }));
+		expect(globalThis.fetch).toHaveBeenCalledWith("https://api.minimax.io/v2/query/video_generation/h3_task", expect.any(Object));
+		expect(result?.status).toBe(({ queued: "queued", running: "in_progress", succeeded: "completed", failed: "failed", cancelled: "cancelled" } as Record<string, string>)[status]);
+		expect(result?.requestOptions).toMatchObject({ input_audio_seconds: 3, video_params: { input_video_seconds: 12, input_image_count: 7 } });
+		expect(result?.metaPatch).toMatchObject({ inputVideoSeconds: 12 });
+	});
+
 	it("polls alibaba/wan status using stored providerTaskId", async () => {
 		const taskId = "dashscope-task-123";
 		const job = makeBaseJob({

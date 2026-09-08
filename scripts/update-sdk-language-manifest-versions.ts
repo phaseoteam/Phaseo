@@ -69,6 +69,64 @@ async function syncRubyVersion(version: string): Promise<void> {
   }
 }
 
+async function syncRustVersion(packageDirectory: string, version: string, label: string): Promise<void> {
+  const cargoPath = path.join(ROOT, "packages", "sdk", packageDirectory, "Cargo.toml");
+  const updated = await replaceInFile(
+    cargoPath,
+    /(\[package\][\s\S]*?^version\s*=\s*")[^"]+("$)/m,
+    (match) => `${match[1]}${version}${match[2]}`,
+  );
+  if (updated) {
+    console.log(`[sdk-sync] Updated ${label} Cargo package version to ${version}`);
+  } else {
+    console.log(`[sdk-sync] ${label} Cargo package version already up to date`);
+  }
+}
+
+async function syncCargoLockPackageVersion(
+  packageDirectory: string,
+  packageName: string,
+  version: string,
+): Promise<void> {
+  const lockPath = path.join(ROOT, "packages", "sdk", packageDirectory, "Cargo.lock");
+  const escapedPackageName = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const updated = await replaceInFile(
+    lockPath,
+    new RegExp(`(\\[\\[package\\]\\]\\s+name = "${escapedPackageName}"\\s+version = ")[^"]+("$)`, "m"),
+    (match) => `${match[1]}${version}${match[2]}`,
+  );
+  if (updated) {
+    console.log(`[sdk-sync] Updated ${packageName} Cargo.lock package version to ${version}`);
+  } else {
+    console.log(`[sdk-sync] ${packageName} Cargo.lock package version already up to date`);
+  }
+}
+
+async function syncRustPackage(
+  packageDirectory: string,
+  packageName: string,
+  version: string,
+  label: string,
+): Promise<void> {
+  await syncRustVersion(packageDirectory, version, label);
+  await syncCargoLockPackageVersion(packageDirectory, packageName, version);
+}
+
+async function syncAgentRustDependencyVersion(version: string): Promise<void> {
+  const cargoPath = path.join(ROOT, "packages", "sdk", "agent-sdk-rust", "Cargo.toml");
+  const updated = await replaceInFile(
+    cargoPath,
+    /^(phaseo\s*=\s*\{[^\r\n]*?version\s*=\s*")[^"]+("[^\r\n]*\})$/m,
+    (match) => `${match[1]}${version}${match[2]}`,
+  );
+  if (updated) {
+    console.log(`[sdk-sync] Updated Rust Agent SDK phaseo dependency to ${version}`);
+  } else {
+    console.log("[sdk-sync] Rust Agent SDK phaseo dependency already up to date");
+  }
+  await syncCargoLockPackageVersion("agent-sdk-rust", "phaseo", version);
+}
+
 async function syncTypeScriptTelemetryVersion(version: string): Promise<void> {
   const sdkRoot = path.join(ROOT, "packages", "sdk", "sdk-ts", "src");
   const indexPath = path.join(sdkRoot, "index.ts");
@@ -183,15 +241,21 @@ async function syncRubyTelemetryVersion(version: string): Promise<void> {
 
 async function syncAgentTelemetryVersion(version: string): Promise<void> {
   const devtoolsPath = path.join(ROOT, "packages", "sdk", "agent-sdk-ts", "src", "devtools.ts");
-  const updated = await replaceInFile(
+  const gatewayClientPath = path.join(ROOT, "packages", "sdk", "agent-sdk-ts", "src", "adapters", "gateway-client.ts");
+  const devtoolsUpdated = await replaceInFile(
     devtoolsPath,
     /const AGENT_SDK_VERSION = "([^"]+)"/m,
     () => `const AGENT_SDK_VERSION = "${version}"`,
   );
-  if (updated) {
-    console.log(`[sdk-sync] Updated agent SDK telemetry version to ${version}`);
+  const gatewayClientUpdated = await replaceInFile(
+    gatewayClientPath,
+    /"X-Phaseo-Client-Version": "([^"]+)"/m,
+    () => `"X-Phaseo-Client-Version": "${version}"`,
+  );
+  if (devtoolsUpdated || gatewayClientUpdated) {
+    console.log(`[sdk-sync] Updated agent SDK client versions to ${version}`);
   } else {
-    console.log("[sdk-sync] Agent SDK telemetry version already up to date");
+    console.log("[sdk-sync] Agent SDK client versions already up to date");
   }
 }
 
@@ -238,6 +302,14 @@ async function syncAll(): Promise<void> {
       apply: syncRubyTelemetryVersion,
     },
     {
+      packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-rust", "package.json"),
+      apply: (version) => syncRustPackage("sdk-rust", "phaseo", version, "Rust SDK"),
+    },
+    {
+      packageJsonPath: path.join(ROOT, "packages", "sdk", "agent-sdk-rust", "package.json"),
+      apply: (version) => syncRustPackage("agent-sdk-rust", "phaseo-agent", version, "Rust Agent SDK"),
+    },
+    {
       packageJsonPath: path.join(ROOT, "packages", "sdk", "agent-sdk-ts", "package.json"),
       apply: syncAgentTelemetryVersion,
     },
@@ -250,6 +322,14 @@ async function syncAll(): Promise<void> {
     }
     await config.apply(pkg.version);
   }
+
+  const rustSdkPackage = await readJson<{ version?: string }>(
+    path.join(ROOT, "packages", "sdk", "sdk-rust", "package.json"),
+  );
+  if (!rustSdkPackage.version) {
+    throw new Error("Missing version in packages/sdk/sdk-rust/package.json");
+  }
+  await syncAgentRustDependencyVersion(rustSdkPackage.version);
 }
 
 syncAll().catch((error) => {

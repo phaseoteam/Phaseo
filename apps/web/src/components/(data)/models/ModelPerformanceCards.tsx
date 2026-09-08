@@ -57,7 +57,7 @@ const METRICS: MetricDefinition[] = [
 	{
 		metric: "endToEnd",
 		valueKey: "avgEndToEndMs",
-		label: "End-to-end latency",
+		label: "End-to-End Latency",
 		description: "Total time from request start until the complete response is returned.",
 	},
 ];
@@ -80,6 +80,21 @@ export function selectMetricData(
 	)
 		? cardData
 		: detailData;
+}
+
+export function hasQualityMetricData(
+	metric: "toolCallErrorPct" | "structuredOutputErrorPct" | "cacheHitRatePct",
+	qualitySeries: ModelPerformanceQualityPoint[],
+) {
+	return qualitySeries.some((point) => {
+		if (metric === "toolCallErrorPct") {
+			return point[metric] != null && !point.toolCallHistoricalDefault;
+		}
+		if (metric === "structuredOutputErrorPct") {
+			return point[metric] != null && !point.structuredOutputHistoricalDefault;
+		}
+		return point[metric] != null;
+	});
 }
 
 interface ModelPerformanceCardsProps {
@@ -121,6 +136,20 @@ export default function ModelPerformanceCards({
 			cardData,
 			false,
 		);
+	const qualityMetrics = [
+		{
+			title: "Tool Call Errors",
+			metric: "toolCallErrorPct" as const,
+		},
+		{
+			title: "Structured Response Errors",
+			metric: "structuredOutputErrorPct" as const,
+		},
+		{
+			title: "Cache Hit Rate",
+			metric: "cacheHitRatePct" as const,
+		},
+	].filter(({ metric }) => hasQualityMetricData(metric, qualitySeries));
 	return (
 		<div className="space-y-4">
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -171,23 +200,18 @@ export default function ModelPerformanceCards({
 				))}
 			</div>
 
-			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-				<ModelQualityTrendChart
-					title="Tool call errors"
-					data={qualitySeries}
-					metric="toolCallErrorPct"
-				/>
-				<ModelQualityTrendChart
-					title="Structured response errors"
-					data={qualitySeries}
-					metric="structuredOutputErrorPct"
-				/>
-				<ModelQualityTrendChart
-					title="Cache hit rate"
-					data={qualitySeries}
-					metric="cacheHitRatePct"
-				/>
-			</div>
+			{qualityMetrics.length > 0 ? (
+				<div className="grid items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
+					{qualityMetrics.map(({ title, metric }) => (
+						<ModelQualityTrendChart
+							key={metric}
+							title={title}
+							data={qualitySeries}
+							metric={metric}
+						/>
+					))}
+				</div>
+			) : null}
 
 			{!hasHourly ? (
 				<p className="text-xs text-muted-foreground">

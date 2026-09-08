@@ -102,12 +102,16 @@ function sourceForRow(row: DiscoveryRow): JsonObject | null {
 	} : null;
 }
 
-function simpleNonTokenPricing(
+export function simpleNonTokenPricing(
 	providerId: string,
 	modelDetails: JsonObject,
 	capabilityId: string,
 ): { meters: Record<string, number>; ruleOptions: Record<string, PricingRuleOptions> } | null {
 	if (providerId === "orcarouter") {
+		// Video discovery prices are headline rates, not complete task prices.
+		// H3 uses request_unit=second; Kling also varies by duration, mode and audio.
+		// Preserve the reviewed, conditional catalog instead of importing a flat request fee.
+		if (capabilityId === "video.generate") return null;
 		const pricing = asRecord(modelDetails.pricing);
 		const requestPrice = Number(pricing?.request);
 		if (Number.isFinite(requestPrice) && requestPrice >= 0) return {

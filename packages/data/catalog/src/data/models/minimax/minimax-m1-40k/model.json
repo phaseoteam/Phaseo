@@ -172,11 +172,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 14.5,
+      "score": 8.5,
       "is_self_reported": false,
-      "other_info": "MiniMax M1 40k; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "MiniMax M1 40k; Artificial Analysis ID 385376b1-9815-47dd-83cc-85aac34f247d; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/minimax-m1-40k",
-      "rank": 306
+      "rank": 353
     }
   ],
   "family_id": null,

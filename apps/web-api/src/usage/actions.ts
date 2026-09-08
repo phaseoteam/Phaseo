@@ -59,7 +59,7 @@ function toLookupCacheKey(ids: string[]): string {
 }
 
 async function fetchUsageMetadata(args: { models?: string[]; providers?: string[]; apps?: string[] }): Promise<{
-	modelMetadataEntries: Array<[string, { organisationId: string; organisationName: string; organisationColour?: string | null; modelName?: string }]>;
+	modelMetadataEntries: Array<[string, { organisationId: string; organisationName: string; organisationColour?: string | null; canonicalModelId?: string; modelName?: string }]>;
 	providerNameEntries: Array<[string, string]>;
 	providerMetadataEntries: Array<[string, ProviderMetadataEntry]>;
 	appMetadataEntries: Array<[string, AppMetadata]>;
@@ -246,6 +246,7 @@ export interface RoutingDecisionRow {
 export type SerializableModelMetadataEntry = {
 	organisationId: string;
 	organisationName: string;
+	canonicalModelId?: string;
 	modelName?: string;
 };
 
@@ -976,7 +977,7 @@ const fetchOrganizationColorsCached = cache(async (
 
 /**
  * Fetch model metadata for filters
- * Returns a map of model_id -> { organisationId, organisationName, modelName? }
+ * Returns a map of model_id -> display metadata plus its canonical catalog ID.
  */
 export async function fetchModelMetadata(
 	modelIds: string[]
@@ -986,6 +987,7 @@ export async function fetchModelMetadata(
 		{
 			organisationId: string;
 			organisationName: string;
+			canonicalModelId?: string;
 			modelName?: string;
 		}
 	>
@@ -1001,6 +1003,7 @@ const fetchModelMetadataCached = cache(async (
 		{
 			organisationId: string;
 			organisationName: string;
+			canonicalModelId?: string;
 			modelName?: string;
 		}
 	>
@@ -1029,6 +1032,7 @@ const fetchModelMetadataCached = cache(async (
 		{
 			organisationId: string;
 			organisationName: string;
+			canonicalModelId?: string;
 			modelName?: string;
 		}
 	>();
@@ -1038,6 +1042,7 @@ const fetchModelMetadataCached = cache(async (
 		value: {
 			organisationId: string;
 			organisationName: string;
+			canonicalModelId?: string;
 			modelName?: string;
 		},
 		source?: string,
@@ -1057,8 +1062,12 @@ const fetchModelMetadataCached = cache(async (
 			});
 			return;
 		}
-		if (!existing.modelName && value.modelName) {
-			metadataMap.set(key, { ...existing, modelName: value.modelName });
+		if ((!existing.modelName && value.modelName) || (!existing.canonicalModelId && value.canonicalModelId)) {
+			metadataMap.set(key, {
+				...existing,
+				...(existing.modelName || !value.modelName ? {} : { modelName: value.modelName }),
+				...(existing.canonicalModelId || !value.canonicalModelId ? {} : { canonicalModelId: value.canonicalModelId }),
+			});
 			metadataDebugLog({
 				stage: "add",
 				source: source ?? "unknown",
@@ -1151,6 +1160,7 @@ const fetchModelMetadataCached = cache(async (
 			const value = {
 				organisationId,
 				organisationName,
+				canonicalModelId: typeof m?.model_id === "string" ? m.model_id : undefined,
 				modelName: typeof m?.name === "string" ? m.name : undefined,
 			};
 
@@ -1210,7 +1220,12 @@ const fetchModelMetadataCached = cache(async (
 			typeof apiModel?.name === "string" && apiModel.name.trim().length > 0
 				? apiModel.name
 				: undefined;
-		const value = { organisationId, organisationName, modelName };
+		const value = {
+			organisationId,
+			organisationName,
+			canonicalModelId: typeof apiModel?.model_id === "string" ? apiModel.model_id : apiModelId,
+			modelName,
+		};
 		for (const variant of normalizeApiId(apiModelId)) {
 			addMetadata(variant, value, `v2_models:model_slug:${apiModelId}`);
 		}
@@ -1420,10 +1435,15 @@ const fetchModelMetadataCached = cache(async (
 				canonicalModel.organisation.name
 					? canonicalModel.organisation.name
 					: matchedMetadata?.organisationName ?? organisationId;
+			const canonicalModelId =
+				typeof canonicalModel?.model_id === "string" && canonicalModel.model_id.trim().length > 0
+					? canonicalModel.model_id
+					: matchedMetadata?.canonicalModelId ?? canonicalId ?? internalModelId ?? apiId ?? undefined;
 
 			const value = {
 				organisationId,
 				organisationName,
+				canonicalModelId,
 				modelName:
 					typeof canonicalModel?.name === "string" && canonicalModel.name.trim().length > 0
 						? canonicalModel.name
@@ -3043,6 +3063,7 @@ export interface AsyncJobRow {
 	settled_cost_usd: number | null;
 	charged: boolean | null;
 	billing_reason: string | null;
+	submission_state: string | null;
 	job_failure_category: string | null;
 	job_failure_provider: string | null;
 	job_failure_hint: string | null;
@@ -3270,7 +3291,7 @@ function buildWebhookSummary(meta: Record<string, unknown> | null | undefined): 
 	};
 }
 
-function toAsyncJobRow(
+export function toAsyncJobRow(
 	row: Record<string, unknown>,
 	options?: { includeWithoutWebhook?: boolean },
 ): AsyncJobRow | null {
@@ -3326,6 +3347,7 @@ function toAsyncJobRow(
 					? ["1", "true", "yes", "on"].includes(meta.charged.toLowerCase())
 					: null,
 		billing_reason: normalizeText(meta?.billingReason ?? meta?.billing_reason),
+		submission_state: normalizeText(meta?.submissionState),
 		job_failure_category:
 			failureDiagnostics.job_provider_failure_diagnostics?.category ?? null,
 		job_failure_provider:

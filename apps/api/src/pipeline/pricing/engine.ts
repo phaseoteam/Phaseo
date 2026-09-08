@@ -3,6 +3,7 @@
 // How: Exposes helpers used by before/execute/after orchestration.
 
 import { parseUsdToNanos, formatUsdFromNanosExact, nanosToCentsCeil } from "./money";
+import { requiresExplicitServiceTier } from "./service-tiers";
 import { matchesConditions, shallowMerge, evaluateConditions } from "./conditions";
 import type { PriceCard, PriceRule, PricingBreakdownLine, PricingDimensionKey, PricingResult, PricingTimestampBasis } from "./types";
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage, resolveRequestCountUsage } from "@core/usage-normalization";
@@ -568,16 +569,31 @@ function resolveRulePrice(rule: PriceRule, requestOptions?: Record<string, any>)
 }
 
 function priceWithRule(qty: number, rule: PriceRule, requestOptions?: Record<string, any>) {
-    const unitSize = rule.unit_size > 0 ? rule.unit_size : 1;
+    const unitSize = Number(rule.unit_size);
+    if (!Number.isFinite(unitSize) || unitSize <= 0) {
+        throw new Error("pricing_invalid_unit_size");
+    }
+    if (rule.currency && rule.currency.toUpperCase() !== "USD") {
+        throw new Error("pricing_unsupported_currency");
+    }
     const includedQuantity = Number.isFinite(rule.included_quantity)
         ? Math.max(0, Number(rule.included_quantity))
         : 0;
     const resolvedPrice = resolveRulePrice(rule, requestOptions);
+    const numericPrice = Number(resolvedPrice.price_per_unit);
+    if ((typeof resolvedPrice.price_per_unit !== "string" && typeof resolvedPrice.price_per_unit !== "number") ||
+        String(resolvedPrice.price_per_unit).trim() === "" || !Number.isFinite(numericPrice) || numericPrice < 0) {
+        throw new Error("pricing_invalid_unit_price");
+    }
     // Pro-rate by unit size (e.g. 8 tokens at a per-1M-token rate).
     const billableUnits = Math.max(0, qty - includedQuantity) / unitSize;
     const unitPriceNanos = parseUsdToNanos(resolvedPrice.price_per_unit);
+    if (numericPrice > 0 && unitPriceNanos === 0) throw new Error("pricing_unit_price_below_precision");
     // Keep nanos integral to avoid floating precision drift downstream.
     const lineNanos = Math.round(billableUnits * unitPriceNanos);
+    if (!Number.isSafeInteger(unitPriceNanos) || !Number.isSafeInteger(lineNanos) || lineNanos < 0) {
+        throw new Error("pricing_amount_out_of_range");
+    }
 
     logPricingDebug("priceWithRule", {
         quantity: qty,
@@ -643,6 +659,14 @@ export function computeBillSummary(
     requestOptions?: Record<string, any>,
     pricingPlan: string = "standard"
 ): PricingResult {
+    if (card.currency && card.currency.toUpperCase() !== "USD") {
+        throw new Error("pricing_unsupported_currency");
+    }
+    // A card for another service tier is not a free price card. Check before
+    // walking meters, which may include informational, non-billable counters.
+    if (requiresExplicitServiceTier(card) && !card.rules.some((rule) => rule.pricing_plan === pricingPlan)) {
+        throw new Error(`pricing_plan_missing:${pricingPlan}`);
+    }
     const { meters, context: usageContext } = splitUsage(usageRaw, card);
     const ctx = { ...(requestOptions ?? {}), ...(usageContext ?? {}) };
 
@@ -661,6 +685,7 @@ export function computeBillSummary(
     });
 
     const lines: PricingBreakdownLine[] = [];
+    const unmatchedConfiguredMeters: string[] = [];
     const matchContext = { ...ctx, ...meters };
 
     const findCandidatesForPlanAndMeter = (plan: string, meter: PricingDimensionKey): PriceRule[] =>
@@ -681,7 +706,9 @@ export function computeBillSummary(
             const requestedPlanDefinesMeter = card.rules.some(
                 (rule) => rule.pricing_plan === pricingPlan && rule.meter === dim,
             );
-            if (requestedPlanDefinesMeter) {
+            // Batch settlement must retain the hold when its pricing dimensions
+            // do not match. Selecting an unrelated tier can charge the wrong rate.
+            if (requestedPlanDefinesMeter && pricingPlan !== "batch") {
                 candidates = card.rules
                     .filter((rule) =>
                         (rule.pricing_plan === pricingPlan || rule.pricing_plan === "standard") &&
@@ -699,7 +726,7 @@ export function computeBillSummary(
             }
             if (conservativeCoverageFallback) {
                 resolvedPlan = pricingPlan;
-            } else {
+            } else if (!requestedPlanDefinesMeter || pricingPlan !== "batch") {
                 const fallbackCandidates = findCandidatesForPlanAndMeter("standard", dim);
                 if (fallbackCandidates.length) {
                     candidates = fallbackCandidates;
@@ -753,6 +780,7 @@ export function computeBillSummary(
                 pricingPlan: resolvedPlan,
                 requestedPricingPlan: pricingPlan,
             });
+            if (card.rules.some((rule) => rule.meter === dim)) unmatchedConfiguredMeters.push(dim);
             continue;
         }
 
@@ -827,6 +855,13 @@ export function computeBillSummary(
     }
 
     const totalNanos = lines.reduce((sum, line: any) => sum + (line.line_nanos ?? parseUsdToNanos(line.line_cost_usd)), 0);
+    // A partial bill (even a free matched line) cannot cover unmatched usage.
+    // Preserve the empty-lines sentinel: async callers use it to reject
+    // reservations or retain holds when there is no matching price at all.
+    if (lines.length > 0 && unmatchedConfiguredMeters.length > 0) {
+        throw new Error(`pricing_rule_missing:${unmatchedConfiguredMeters.join(",")}`);
+    }
+    if (!Number.isSafeInteger(totalNanos)) throw new Error("pricing_amount_out_of_range");
     const centsCeil = nanosToCentsCeil(totalNanos);
 
     logPricingDebug("summary_totals", {

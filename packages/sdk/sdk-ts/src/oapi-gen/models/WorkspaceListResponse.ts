@@ -4,7 +4,7 @@ export interface WorkspaceListResponse {
     created_by: string | null;
     id: string;
     name: string | null;
-    slug: string | null;
+    slug?: string | null;
     updated_at: string | null;
   }[];
   total_count: number;

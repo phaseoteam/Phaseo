@@ -4,7 +4,7 @@
     "provider_api_model_id": "ovhcloud:meta/llama-3.3-70b",
     "provider_model_slug": "Meta-Llama-3_3-70B-Instruct",
     "internal_model_id": "meta/llama-3.3-70b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -27,8 +27,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": [
         "eu"
@@ -108,7 +108,7 @@
     "provider_api_model_id": "ovhcloud:openai/gpt-oss-120b",
     "provider_model_slug": "gpt-oss-120b",
     "internal_model_id": "openai/gpt-oss-120b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -131,8 +131,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": [
         "eu"
@@ -264,7 +264,7 @@
     "provider_api_model_id": "ovhcloud:qwen/qwen3-embedding-8b",
     "provider_model_slug": "Qwen3-Embedding-8B",
     "internal_model_id": "qwen/qwen3-embedding-8b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "embeddings",
@@ -287,8 +287,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": [
         "FR"
@@ -388,7 +388,7 @@
     "provider_api_model_id": "ovhcloud:qwen/qwen3.5-9b",
     "provider_model_slug": "Qwen3.5-9B",
     "internal_model_id": "qwen/qwen3.5-9b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -411,8 +411,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": [
         "eu"
@@ -492,7 +492,7 @@
     "provider_api_model_id": "ovhcloud:baai/bge-m3",
     "provider_model_slug": "bge-m3",
     "internal_model_id": "baai/bge-m3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "fp16",
     "input_modalities": "text",
     "output_modalities": "embeddings",
@@ -513,8 +513,8 @@
       "output_modalities": ["embeddings"],
       "modes": []
     }],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": { "execution": ["FR"], "data": ["FR"] },
     "service_tiers": [],
     "api": { "formats": ["openai-embeddings"], "endpoint": "/v1/embeddings", "deployment": null },
@@ -532,7 +532,7 @@
     "provider_api_model_id": "ovhcloud:baai/bge-multilingual-gemma2",
     "provider_model_slug": "bge-multilingual-gemma2",
     "internal_model_id": "baai/bge-multilingual-gemma2",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "fp16",
     "input_modalities": "text",
     "output_modalities": "embeddings",
@@ -553,8 +553,8 @@
       "output_modalities": ["embeddings"],
       "modes": []
     }],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": { "execution": ["FR"], "data": ["FR"] },
     "service_tiers": [],
     "api": { "formats": ["openai-embeddings"], "endpoint": "/v1/embeddings", "deployment": null },
@@ -572,7 +572,7 @@
     "provider_api_model_id": "ovhcloud:qwen/qwen3-guard-gen-8b",
     "provider_model_slug": "Qwen3Guard-Gen-8B",
     "internal_model_id": "qwen/qwen3-guard-gen-8b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "fp16",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -593,8 +593,8 @@
       "output_modalities": ["text"],
       "modes": []
     }],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": { "execution": ["FR"], "data": ["FR"] },
     "service_tiers": ["free"],
     "api": { "formats": ["openai-chat-completions"], "endpoint": "/v1/chat/completions", "deployment": null },
@@ -612,7 +612,7 @@
     "provider_api_model_id": "ovhcloud:qwen/qwen3-guard-gen-0.6b",
     "provider_model_slug": "Qwen3Guard-Gen-0.6B",
     "internal_model_id": "qwen/qwen3-guard-gen-0.6b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "fp16",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -633,8 +633,8 @@
       "output_modalities": ["text"],
       "modes": []
     }],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": { "execution": ["FR"], "data": ["FR"] },
     "service_tiers": ["free"],
     "api": { "formats": ["openai-chat-completions"], "endpoint": "/v1/chat/completions", "deployment": null },
@@ -652,7 +652,7 @@
     "provider_api_model_id": "ovhcloud:openai/whisper-large-v3",
     "provider_model_slug": "whisper-large-v3",
     "internal_model_id": "openai/whisper-large-v3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "fp16",
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -673,8 +673,8 @@
       "output_modalities": ["text"],
       "modes": []
     }],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": { "execution": ["FR"], "data": ["FR"] },
     "service_tiers": [],
     "api": { "formats": ["openai-audio-transcription"], "endpoint": "/v1/audio/transcriptions", "deployment": null },
@@ -690,7 +690,7 @@
     "provider_api_model_id": "ovhcloud:openai/whisper-large-v3-turbo",
     "provider_model_slug": "whisper-large-v3-turbo",
     "internal_model_id": "openai/whisper-large-v3-turbo",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "fp16",
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -711,8 +711,8 @@
       "output_modalities": ["text"],
       "modes": []
     }],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": { "execution": ["FR"], "data": ["FR"] },
     "service_tiers": [],
     "api": { "formats": ["openai-audio-transcription"], "endpoint": "/v1/audio/transcriptions", "deployment": null },

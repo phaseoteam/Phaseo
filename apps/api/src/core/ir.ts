@@ -640,9 +640,11 @@ export type IRVideoGenerationRequest = {
 		raw?: Record<string, any>;
 	}>;
 	providerParams?: Record<string, any>;
+	providerOptions?: Record<string, Record<string, any>>;
 	outputAccess?: "bytes" | "signed_url" | "both";
 	webhook?: {
-		url: string;
+		endpointId?: string | null;
+		url?: string;
 		secret?: string;
 		events?: string[];
 	};

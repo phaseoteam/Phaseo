@@ -293,11 +293,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 27.6,
+      "score": 17.2,
       "is_self_reported": false,
-      "other_info": "Claude 3.7 Sonnet (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
-      "source_link": "https://artificialanalysis.ai/models/claude-3-7-sonnet-thinking",
-      "rank": 171
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude 3.7 Sonnet (Non-reasoning); Artificial Analysis ID d925845d-39ad-4de3-8495-f176b79828c0; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-3-7-sonnet",
+      "rank": 238
     }
   ],
   "page_notice": null,

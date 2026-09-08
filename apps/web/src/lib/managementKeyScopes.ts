@@ -5,6 +5,7 @@ export const CONTROL_SCOPES = [
 	"workspaces:read", "workspaces:write", "workspaces:delete", "keys:read", "keys:write", "keys:delete",
 	"presets:read", "presets:write", "presets:delete", "settings:read", "settings:write",
 	"provider_credentials:read", "provider_credentials:write", "provider_credentials:delete",
+	"private_models:read", "private_models:write", "private_models:delete",
 	"guardrails:read", "guardrails:write", "guardrails:delete", "management_keys:read", "management_keys:write", "management_keys:delete",
 	"oauth_clients:read", "oauth_clients:write", "oauth_clients:delete",
 ] as const;

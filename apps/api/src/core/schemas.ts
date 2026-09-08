@@ -1777,6 +1777,9 @@ const VideoMediaInputReferenceSchema = z.object({
 }).strict();
 
 const VideoInputReferenceSchema = z.union([VideoImageInputReferenceSchema, VideoMediaInputReferenceSchema]);
+const VideoFrameImageSchema = VideoImageInputReferenceSchema.omit({ role: true, reference_type: true }).extend({
+	frame_type: z.enum(["first_frame", "last_frame"]),
+});
 
 const VideoOutputConfigSchema = z.object({
 	access: z.enum(["bytes", "signed_url", "both"]).default("both"),
@@ -1798,6 +1801,28 @@ const VideoWebhookSchema = z.object({
 });
 
 const VIDEO_PROVIDER_CONTROLLED_KEYS = new Set([
+	"imageurl", "imageurls", "videourl", "videourls", "audiourl", "audiourls",
+	"imageuri", "videouri", "audiouri", "endimageurl", "firstframeimage", "lastframeimage",
+	"firstframe", "lastframe", "referenceimage", "referencevideo", "referenceaudio",
+	"inputimage", "inputvideo", "inputaudio", "inputreference", "inputreferences",
+	"promptimage", "promptvideo", "frameimages", "quality", "n", "numvideos", "numframes",
+	"inputresolution", "inputvideoseconds", "inputaudioseconds", "inputimagecount", "inputvideocount",
+	"totaltokens",
+	"generate_audio",
+	"generateaudio",
+	"audio",
+	"reference_images",
+	"referenceimages",
+	"reference_videos",
+	"referencevideos",
+	"reference_audios",
+	"referenceaudios",
+	"image",
+	"video",
+	"input_image",
+	"input_video",
+	"last_image",
+	"last_frame",
 	"request",
 	"model",
 	"prompt",
@@ -1886,7 +1911,9 @@ export const VideoGenerationSchema = z.object({
 	person_generation: z.string().optional(),
 	resize_mode: z.string().optional(),
 	input_references: z.array(VideoInputReferenceSchema).optional(),
+	frame_images: z.array(VideoFrameImageSchema).min(1).max(2).optional(),
 	provider_params: VideoProviderParamsSchema.optional(),
+	provider_options: z.record(z.string(), VideoProviderParamsSchema).optional(),
 	output: VideoOutputConfigSchema.optional(),
 	webhook: VideoWebhookSchema.optional(),
 	echo_upstream_request: z.boolean().optional(),
@@ -1895,7 +1922,19 @@ export const VideoGenerationSchema = z.object({
 	provider: ProviderRoutingSchema,
 	routing: ProviderRoutingSchema,
 }).strict().superRefine((obj, ctx) => {
-	const hasImageInput = obj.input_reference != null || obj.input_references?.some((reference) => reference.type === "image_url");
+	if (obj.provider_params && obj.provider_options) {
+		ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["provider_options"], message: "Use provider_options or provider_params, not both" });
+	}
+	if (obj.seconds !== undefined && obj.duration !== undefined && Number(obj.seconds) !== obj.duration) {
+		ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["duration"], message: "duration must match seconds when both are supplied" });
+	}
+	if (obj.frame_images) {
+		const roles = obj.frame_images.map((frame) => frame.frame_type);
+		if (new Set(roles).size !== roles.length || obj.input_reference != null || obj.input_references?.some((reference) => reference.role === "first_frame" || reference.role === "last_frame")) {
+			ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["frame_images"], message: "Supply each frame once using frame_images or input references" });
+		}
+	}
+	const hasImageInput = obj.input_reference != null || obj.frame_images?.length || obj.input_references?.some((reference) => reference.type === "image_url");
 	if (!obj.prompt.trim() && !hasImageInput) {
 		ctx.addIssue({
 			code: z.ZodIssueCode.custom,

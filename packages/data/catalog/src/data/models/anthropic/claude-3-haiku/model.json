@@ -77,11 +77,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 3.5,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Claude 3 Haiku; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude 3 Haiku; Artificial Analysis ID 1fc54cef-d179-48b1-a27d-046874e9b208; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-3-haiku",
-      "rank": 518
+      "rank": 513
     }
   ],
   "page_notice": null,

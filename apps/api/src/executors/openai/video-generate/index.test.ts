@@ -57,7 +57,7 @@ vi.mock("@core/wallet-reservations", () => ({
 vi.mock("@core/video-jobs", () => ({
 	saveVideoJobMeta: vi.fn(async (...args: unknown[]) => {
 		state.saveVideoJobMetaCalls.push(args);
-		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
+		if (state.saveVideoJobMetaError && (args[2] as any).submissionState !== "submitting") throw state.saveVideoJobMetaError;
 	}),
 }));
 
@@ -362,13 +362,7 @@ describe("openai video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(state.releaseCalls).toEqual([
-			{
-				workspaceId: "team_test",
-				reservationId: "video_hold:req_openai_video_test",
-				releaseRefId: "req_openai_video_test",
-			},
-		]);
+		expect(state.releaseCalls).toEqual([]);
 	});
 
 	it("fails the gateway response when OpenAI video metadata cannot be persisted", async () => {
@@ -405,7 +399,7 @@ describe("openai video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(state.saveVideoJobMetaCalls).toHaveLength(1);
+		expect(state.saveVideoJobMetaCalls).toHaveLength(2);
 		expect(state.releaseCalls).toEqual([]);
 	});
 

@@ -29,6 +29,9 @@ const ACTION_LABELS: Record<string, string> = {
 	"provider_credential.updated": "Provider credential updated",
 	"provider_credential.deleted": "Provider credential deleted",
 	"provider_credential.reordered": "Provider credentials reordered",
+	"private_model.created": "Private model created",
+	"private_model.updated": "Private model updated",
+	"private_model.deleted": "Private model deleted",
 };
 
 function actorLabel(event: WorkspaceAuditEvent) {

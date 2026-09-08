@@ -376,6 +376,9 @@ const (
 	// Model ID: google/gemini-3.7-flash
 	// Model page: https://phaseo.app/models/google/gemini-3.7-flash
 	ModelIDGoogleGemini37Flash gen.ModelId = "google/gemini-3.7-flash"
+	// Model ID: google/gemini-3.8-flash
+	// Model page: https://phaseo.app/models/google/gemini-3.8-flash
+	ModelIDGoogleGemini38Flash gen.ModelId = "google/gemini-3.8-flash"
 	// Model ID: google/gemini-embedding-001
 	// Model page: https://phaseo.app/models/google/gemini-embedding-001
 	ModelIDGoogleGeminiEmbedding001 gen.ModelId = "google/gemini-embedding-001"
@@ -1818,6 +1821,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDGoogleGemini35FlashLite,
 	ModelIDGoogleGemini36Flash,
 	ModelIDGoogleGemini37Flash,
+	ModelIDGoogleGemini38Flash,
 	ModelIDGoogleGeminiEmbedding001,
 	ModelIDGoogleGeminiEmbedding2,
 	ModelIDGoogleGeminiRoboticsEr2Preview,

@@ -10,7 +10,7 @@ frontendProfileAvatarsRouter.get("/profile-avatars/*", async (c) => {
 	const routePrefix = "/api/_web/profile-avatars/";
 	const pathname = new URL(c.req.url).pathname;
 	const key = pathname.startsWith(routePrefix) ? pathname.slice(routePrefix.length) : "";
-	if (!key.startsWith("avatars/") || key.includes("..")) return c.json({ error: "not_found" }, 404);
+	if ((!key.startsWith("avatars/") && !key.startsWith("workspaces/")) || key.includes("..")) return c.json({ error: "not_found" }, 404);
 
 	const object = await bucket.get(key);
 	if (!object) return c.json({ error: "not_found" }, 404);

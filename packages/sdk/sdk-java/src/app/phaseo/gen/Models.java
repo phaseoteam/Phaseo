@@ -91,6 +91,7 @@ public final class Models {
 	}
 
 	public static class AnthropicTool {
+		public Boolean async;
 		public String description;
 		public Object input_schema;
 		public String name;
@@ -418,6 +419,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> prompts;
 		public Object provider;
+		public Object provider_options;
 		public java.util.List<Object> requests;
 		public String session_id;
 		public String system;
@@ -496,6 +498,7 @@ public final class Models {
 		public String provider;
 		public Object request_counts;
 		public String request_id;
+		public String results_url;
 		public String session_id;
 		public String status;
 		public Object usage;
@@ -944,6 +947,7 @@ public final class Models {
 	}
 
 	public static class FunctionToolDefinition {
+		public Boolean async;
 		public Object function;
 		public Object type;
 	}
@@ -2213,6 +2217,79 @@ public final class Models {
 	public static class PresetVisibility {
 	}
 
+	public static class PrivateModel {
+		public String base_url;
+		public String catalog_model_id;
+		public Integer context_length;
+		public String created_at;
+		public String created_by;
+		public String credential_prefix;
+		public String credential_suffix;
+		public String custom_provider_name;
+		public String custom_provider_url;
+		public String description;
+		public Boolean enabled;
+		public String host_provider_id;
+		public String id;
+		public java.util.List<String> input_modalities;
+		public String local_slug;
+		public Integer max_output_tokens;
+		public String model_id;
+		public String name;
+		public java.util.List<String> output_modalities;
+		public Object routing_policy;
+		public Boolean supports_responses;
+		public String updated_at;
+		public String upstream_model_id;
+		public String workspace_id;
+	}
+
+	public static class PrivateModelCreateRequest {
+		public String base_url;
+		public Integer context_length;
+		public String credential;
+		public String custom_provider_name;
+		public String custom_provider_url;
+		public String description;
+		public Boolean enabled;
+		public String host_provider_id;
+		public Integer max_output_tokens;
+		public String model_reference;
+		public String name;
+		public Object routing_policy;
+		public Boolean supports_responses;
+		public String upstream_model_id;
+	}
+
+	public static class PrivateModelDeleteResponse {
+		public Boolean deleted;
+	}
+
+	public static class PrivateModelListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class PrivateModelResponse {
+		public Object data;
+	}
+
+	public static class PrivateModelUpdateRequest {
+		public String base_url;
+		public Integer context_length;
+		public String credential;
+		public String custom_provider_name;
+		public String custom_provider_url;
+		public String description;
+		public Boolean enabled;
+		public String host_provider_id;
+		public Integer max_output_tokens;
+		public String model_reference;
+		public String name;
+		public Object routing_policy;
+		public Boolean supports_responses;
+		public String upstream_model_id;
+	}
+
 	public static class Provider {
 		public String api_provider_id;
 		public String api_provider_name;
@@ -2585,6 +2662,7 @@ public final class Models {
 		public Integer compression_quality;
 		public Integer duration;
 		public Boolean enhance_prompt;
+		public java.util.List<Object> frame_images;
 		public Boolean generate_audio;
 		public Double input_audio_duration;
 		public java.util.List<Object> input_references;
@@ -2595,6 +2673,7 @@ public final class Models {
 		public String person_generation;
 		public String prompt;
 		public Object provider;
+		public Object provider_options;
 		public Object provider_params;
 		public String resize_mode;
 		public String resolution;

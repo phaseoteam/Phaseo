@@ -15,7 +15,7 @@ import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { fetchOnboardingInitialData } from "@/lib/fetchers/internal/fetchOnboardingInitialData";
 
 export const metadata = {
-	title: "Developer onboarding - Phaseo",
+	title: "Developer onboarding",
 	robots: {
 		index: false,
 		follow: false,

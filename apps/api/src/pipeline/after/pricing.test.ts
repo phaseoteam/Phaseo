@@ -154,6 +154,22 @@ function activateDeepSeekV4ProPeakWindows(card: PriceCard): PriceCard {
 }
 
 describe("after/pricing calculatePricing", () => {
+    it.each([
+        [{}, { service_tier: "priority" }],
+        [{ service_tier: "default" }, { service_tier: "fast" }],
+        [{ serviceTier: "standard" }, { serviceTier: "priority" }],
+    ])("bills an explicitly requested dedicated priority route with usage %j", (observed, body) => {
+        const card: PriceCard = { ...TTS_CARD, provider: "fireworks", model: "z-ai/glm-5.3",
+            rules: [{ ...TTS_CARD.rules[0], pricing_plan: "priority", price_per_unit: "2" }] };
+        const result = calculatePricing({ input_text_tokens: 1_000_000, ...observed }, card, body);
+        expect(result.totalNanos).toBe(2_000_000_000);
+    });
+
+    it("rejects default billing against a priority-only card", () => {
+        const card: PriceCard = { ...TTS_CARD, rules: [{ ...TTS_CARD.rules[0], pricing_plan: "priority" }] };
+        expect(() => calculatePricing({ input_text_tokens: 1_000 }, card, {})).toThrow("pricing_plan_missing:standard");
+    });
+
 	beforeEach(() => {
 		loadPriceCardMock.mockReset();
 	});

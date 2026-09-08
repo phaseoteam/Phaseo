@@ -148,7 +148,7 @@ export async function UsageLogsContent({
 	forcedJobKind?: "video" | "batch";
 }) {
 	const rawSearchParams = await searchParams;
-	const sp = selectedView ? { ...rawSearchParams, view: selectedView } : rawSearchParams;
+	const sp: Record<string, string | string[] | undefined> = { ...rawSearchParams, ...(selectedView ? { view: selectedView } : {}), ...(forcedJobKind ? { job_kind: forcedJobKind } : {}) };
 	const initialData = await fetchSettingsUsageLogsInitialData(sp);
 
 	if (!initialData.signedIn || initialData.loadState === "unauthorized") redirect("/sign-in");

@@ -110,6 +110,7 @@ import { executor as switchpointText } from "./switchpoint/text-generate";
 import { executor as upstageText } from "./upstage/text-generate";
 import { executor as waferText } from "./wafer/text-generate";
 import { executor as tencentCloudText } from "./tencent-cloud/text-generate";
+import { executor as privateModelText } from "./private-model/text-generate";
 
 // Embeddings executors (migrated providers only)
 import { executor as openaiEmbeddings } from "./openai/embeddings";
@@ -177,6 +178,9 @@ export function normalizeCapability(capability: string): Capability {
 }
 
 export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
+	"private-model": {
+		"text.generate": privateModelText,
+	},
 	openai: {
 		"text.generate": openaiText,
 		embeddings: openaiEmbeddings,

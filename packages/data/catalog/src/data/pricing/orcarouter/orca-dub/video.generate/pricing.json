@@ -6,19 +6,19 @@
   "capability_id": "video.generate",
   "rules": [
     {
-      "meter": "requests",
-      "unit": "request",
-      "unit_size": 1,
+      "meter": "input_video_seconds",
+      "unit": "second",
+      "unit_size": 60,
       "price_per_unit": 0.6,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "OrcaRouter published price per request.",
+      "note": "OrcaRouter publishes $0.60 per minute of source video (request_unit=minute). Route remains disabled pending live billing verification.",
       "match": [],
       "priority": 100,
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": "https://api.orcarouter.ai/v1/models"
     }
   ],
   "regions": [],

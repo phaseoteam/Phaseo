@@ -415,6 +415,7 @@ type BatchRequest struct {
 	Model *string `json:"model,omitempty"`
 	Prompts *[]string `json:"prompts,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Requests *[]map[string]interface{} `json:"requests,omitempty"`
 	SessionId *string `json:"session_id,omitempty"`
 	System *string `json:"system,omitempty"`
@@ -493,6 +494,7 @@ type BatchResponse struct {
 	Provider *string `json:"provider,omitempty"`
 	RequestCounts *map[string]interface{} `json:"request_counts,omitempty"`
 	RequestId *string `json:"request_id,omitempty"`
+	ResultsUrl *string `json:"results_url,omitempty"`
 	SessionId *string `json:"session_id,omitempty"`
 	Status *string `json:"status,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
@@ -505,8 +507,11 @@ type BenchmarkId string
 const (
 	BenchmarkId2BenchRetail BenchmarkId = "2-bench-retail"
 	BenchmarkId2BenchTelecom BenchmarkId = "2-bench-telecom"
+	BenchmarkIdAaAgenticIndexV4 BenchmarkId = "aa-agentic-index-v4"
 	BenchmarkIdAaBriefcase BenchmarkId = "aa-briefcase"
+	BenchmarkIdAaCodingIndexV4 BenchmarkId = "aa-coding-index-v4"
 	BenchmarkIdAaIndex BenchmarkId = "aa-index"
+	BenchmarkIdAaIntelligenceIndexCostV4 BenchmarkId = "aa-intelligence-index-cost-v4"
 	BenchmarkIdAaIntelligenceIndexV4 BenchmarkId = "aa-intelligence-index-v4"
 	BenchmarkIdAaLcr BenchmarkId = "aa-lcr"
 	BenchmarkIdAaOmniscience BenchmarkId = "aa-omniscience"
@@ -2218,7 +2223,6 @@ const (
 	KnownModelIdArceeAiTrinityLargeThinking KnownModelId = "arcee-ai/trinity-large-thinking"
 	KnownModelIdArceeAiTrinityMini KnownModelId = "arcee-ai/trinity-mini"
 	KnownModelIdBaaiBgeM3 KnownModelId = "baai/bge-m3"
-	KnownModelIdBaaiBgeMultilingualGemma2 KnownModelId = "baai/bge-multilingual-gemma2"
 	KnownModelIdBaaiBgeRerankerV2M3 KnownModelId = "baai/bge-reranker-v2-m3"
 	KnownModelIdBaiduCobuddy KnownModelId = "baidu/cobuddy"
 	KnownModelIdBaiduErnie45300bA47b KnownModelId = "baidu/ernie-4.5-300b-a47b"
@@ -2390,17 +2394,13 @@ const (
 	KnownModelIdMinimaxMinimaxM25 KnownModelId = "minimax/minimax-m2.5"
 	KnownModelIdMinimaxMinimaxM25Highspeed KnownModelId = "minimax/minimax-m2.5-highspeed"
 	KnownModelIdMinimaxMinimaxM27 KnownModelId = "minimax/minimax-m2.7"
-	KnownModelIdMinimaxMinimaxM27Free KnownModelId = "minimax/minimax-m2.7:free"
 	KnownModelIdMinimaxMinimaxM3 KnownModelId = "minimax/minimax-m3"
-	KnownModelIdMinimaxMinimaxM3Free KnownModelId = "minimax/minimax-m3:free"
 	KnownModelIdMinimaxMusic26 KnownModelId = "minimax/music-2.6"
 	KnownModelIdMinimaxMusic30 KnownModelId = "minimax/music-3.0"
-	KnownModelIdMinimaxMusic30Free KnownModelId = "minimax/music-3.0:free"
 	KnownModelIdMinimaxSpeech26Hd KnownModelId = "minimax/speech-2.6-hd"
 	KnownModelIdMinimaxSpeech26Turbo KnownModelId = "minimax/speech-2.6-turbo"
 	KnownModelIdMinimaxSpeech28Hd KnownModelId = "minimax/speech-2.8-hd"
 	KnownModelIdMinimaxSpeech28Turbo KnownModelId = "minimax/speech-2.8-turbo"
-	KnownModelIdMinimaxSpeech28Free KnownModelId = "minimax/speech-2.8:free"
 	KnownModelIdMistralCodestral KnownModelId = "mistral/codestral"
 	KnownModelIdMistralCodestralEmbed KnownModelId = "mistral/codestral-embed"
 	KnownModelIdMistralDevstral2 KnownModelId = "mistral/devstral-2"
@@ -2500,6 +2500,7 @@ const (
 	KnownModelIdOpenaiGpt56Terra KnownModelId = "openai/gpt-5.6-terra"
 	KnownModelIdOpenaiGpt56TerraPro KnownModelId = "openai/gpt-5.6-terra-pro"
 	KnownModelIdOpenaiGpt6Astra KnownModelId = "openai/gpt-6-astra"
+	KnownModelIdOpenaiGpt6AstraPro KnownModelId = "openai/gpt-6-astra-pro"
 	KnownModelIdOpenaiGptImage1 KnownModelId = "openai/gpt-image-1"
 	KnownModelIdOpenaiGptImage1Mini KnownModelId = "openai/gpt-image-1-mini"
 	KnownModelIdOpenaiGptImage15 KnownModelId = "openai/gpt-image-1.5"
@@ -2511,6 +2512,8 @@ const (
 	KnownModelIdOpenaiGptRealtime KnownModelId = "openai/gpt-realtime"
 	KnownModelIdOpenaiGptRealtime15 KnownModelId = "openai/gpt-realtime-1.5"
 	KnownModelIdOpenaiGptRealtime2 KnownModelId = "openai/gpt-realtime-2"
+	KnownModelIdOpenaiGptRealtime21 KnownModelId = "openai/gpt-realtime-2.1"
+	KnownModelIdOpenaiGptRealtime21Mini KnownModelId = "openai/gpt-realtime-2.1-mini"
 	KnownModelIdOpenaiGptTranscribe KnownModelId = "openai/gpt-transcribe"
 	KnownModelIdOpenaiO1 KnownModelId = "openai/o1"
 	KnownModelIdOpenaiO1Mini KnownModelId = "openai/o1-mini"
@@ -2592,8 +2595,6 @@ const (
 	KnownModelIdQwenQwen3CoderPlus20250923 KnownModelId = "qwen/qwen3-coder-plus-2025-09-23"
 	KnownModelIdQwenQwen3Embedding06b KnownModelId = "qwen/qwen3-embedding-0.6b"
 	KnownModelIdQwenQwen3Embedding8b KnownModelId = "qwen/qwen3-embedding-8b"
-	KnownModelIdQwenQwen3GuardGen06b KnownModelId = "qwen/qwen3-guard-gen-0.6b"
-	KnownModelIdQwenQwen3GuardGen8b KnownModelId = "qwen/qwen3-guard-gen-8b"
 	KnownModelIdQwenQwen3Max KnownModelId = "qwen/qwen3-max"
 	KnownModelIdQwenQwen3Max20250923 KnownModelId = "qwen/qwen3-max-2025-09-23"
 	KnownModelIdQwenQwen3Max20260123 KnownModelId = "qwen/qwen3-max-2026-01-23"
@@ -2719,6 +2720,7 @@ const (
 	KnownModelIdVoyageVoyageMultilingual2 KnownModelId = "voyage/voyage-multilingual-2"
 	KnownModelIdVoyageVoyageMultimodal3 KnownModelId = "voyage/voyage-multimodal-3"
 	KnownModelIdVoyageVoyageMultimodal35 KnownModelId = "voyage/voyage-multimodal-3.5"
+	KnownModelIdXAiGrokVoiceThinkFast20 KnownModelId = "x-ai/grok-voice-think-fast-2.0"
 	KnownModelIdXiaomiMimoV25 KnownModelId = "xiaomi/mimo-v2.5"
 	KnownModelIdXiaomiMimoV25Asr KnownModelId = "xiaomi/mimo-v2.5-asr"
 	KnownModelIdXiaomiMimoV25Pro KnownModelId = "xiaomi/mimo-v2.5-pro"
@@ -3567,6 +3569,79 @@ const (
 )
 
 
+type PrivateModel struct {
+	BaseUrl string `json:"base_url"`
+	CatalogModelId *string `json:"catalog_model_id,omitempty"`
+	ContextLength *int `json:"context_length,omitempty"`
+	CreatedAt *string `json:"created_at,omitempty"`
+	CreatedBy *string `json:"created_by,omitempty"`
+	CredentialPrefix *string `json:"credential_prefix,omitempty"`
+	CredentialSuffix *string `json:"credential_suffix,omitempty"`
+	CustomProviderName *string `json:"custom_provider_name,omitempty"`
+	CustomProviderUrl *string `json:"custom_provider_url,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Enabled bool `json:"enabled"`
+	HostProviderId *string `json:"host_provider_id,omitempty"`
+	Id string `json:"id"`
+	InputModalities *[]string `json:"input_modalities,omitempty"`
+	LocalSlug *string `json:"local_slug,omitempty"`
+	MaxOutputTokens *int `json:"max_output_tokens,omitempty"`
+	ModelId string `json:"model_id"`
+	Name string `json:"name"`
+	OutputModalities *[]string `json:"output_modalities,omitempty"`
+	RoutingPolicy *string `json:"routing_policy,omitempty"`
+	SupportsResponses bool `json:"supports_responses"`
+	UpdatedAt *string `json:"updated_at,omitempty"`
+	UpstreamModelId string `json:"upstream_model_id"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type PrivateModelCreateRequest struct {
+	BaseUrl string `json:"base_url"`
+	ContextLength *int `json:"context_length,omitempty"`
+	Credential string `json:"credential"`
+	CustomProviderName *string `json:"custom_provider_name,omitempty"`
+	CustomProviderUrl *string `json:"custom_provider_url,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+	HostProviderId *string `json:"host_provider_id,omitempty"`
+	MaxOutputTokens *int `json:"max_output_tokens,omitempty"`
+	ModelReference string `json:"model_reference"`
+	Name string `json:"name"`
+	RoutingPolicy *string `json:"routing_policy,omitempty"`
+	SupportsResponses *bool `json:"supports_responses,omitempty"`
+	UpstreamModelId string `json:"upstream_model_id"`
+}
+
+type PrivateModelDeleteResponse struct {
+	Deleted bool `json:"deleted"`
+}
+
+type PrivateModelListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type PrivateModelResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type PrivateModelUpdateRequest struct {
+	BaseUrl *string `json:"base_url,omitempty"`
+	ContextLength *int `json:"context_length,omitempty"`
+	Credential *string `json:"credential,omitempty"`
+	CustomProviderName *string `json:"custom_provider_name,omitempty"`
+	CustomProviderUrl *string `json:"custom_provider_url,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+	HostProviderId *string `json:"host_provider_id,omitempty"`
+	MaxOutputTokens *int `json:"max_output_tokens,omitempty"`
+	ModelReference *string `json:"model_reference,omitempty"`
+	Name *string `json:"name,omitempty"`
+	RoutingPolicy *string `json:"routing_policy,omitempty"`
+	SupportsResponses *bool `json:"supports_responses,omitempty"`
+	UpstreamModelId *string `json:"upstream_model_id,omitempty"`
+}
+
 type Provider struct {
 	ApiProviderId *string `json:"api_provider_id,omitempty"`
 	ApiProviderName *string `json:"api_provider_name,omitempty"`
@@ -3940,6 +4015,7 @@ type VideoGenerationRequest struct {
 	CompressionQuality *int `json:"compression_quality,omitempty"`
 	Duration *int `json:"duration,omitempty"`
 	EnhancePrompt *bool `json:"enhance_prompt,omitempty"`
+	FrameImages *[]map[string]interface{} `json:"frame_images,omitempty"`
 	GenerateAudio *bool `json:"generate_audio,omitempty"`
 	InputAudioDuration *float64 `json:"input_audio_duration,omitempty"`
 	InputReferences *[]interface{} `json:"input_references,omitempty"`
@@ -3950,6 +4026,7 @@ type VideoGenerationRequest struct {
 	PersonGeneration *string `json:"person_generation,omitempty"`
 	Prompt string `json:"prompt"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	ProviderParams *map[string]interface{} `json:"provider_params,omitempty"`
 	ResizeMode *string `json:"resize_mode,omitempty"`
 	Resolution *string `json:"resolution,omitempty"`
@@ -4112,7 +4189,7 @@ type Workspace struct {
 	CreatedBy *string `json:"created_by"`
 	Id string `json:"id"`
 	Name *string `json:"name"`
-	Slug *string `json:"slug"`
+	Slug *string `json:"slug,omitempty"`
 	UpdatedAt *string `json:"updated_at"`
 }
 

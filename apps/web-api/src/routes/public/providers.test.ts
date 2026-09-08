@@ -43,22 +43,57 @@ describe("public provider routes", () => {
 		expect(requestedUrls.some((url) => url.includes("v2_model_provider_routes") || url.includes("v2_models") || url.includes("v2_providers"))).toBe(false);
 	});
 
-	it("does not expose telemetry for a provider that has only stealth routes", async () => {
+	it("keeps a stealth-only provider addressable without exposing its routes or telemetry", async () => {
 		const requestedUrls: string[] = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			requestedUrls.push(url);
+			if (url.includes("v2_providers")) {
+				return new Response(JSON.stringify({ provider_slug: "secret-provider" }), { status: 200 });
+			}
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 
-		const response = await app.request(
-			"https://phaseo.app/api/_web/api-providers/secret-provider/top-models",
-			{},
-			env,
-		);
+		const [models, topModels, updates] = await Promise.all([
+			app.request("https://phaseo.app/api/_web/api-providers/secret-provider/models", {}, env),
+			app.request("https://phaseo.app/api/_web/api-providers/secret-provider/top-models", {}, env),
+			app.request("https://phaseo.app/api/_web/api-providers/secret-provider/updates", {}, env),
+		]);
 
-		expect(response.status).toBe(404);
+		expect(models.status).toBe(200);
+		await expect(models.json()).resolves.toEqual({ models: [] });
+		expect(topModels.status).toBe(200);
+		await expect(topModels.json()).resolves.toEqual({ models: [] });
+		expect(updates.status).toBe(200);
+		await expect(updates.json()).resolves.toEqual({ newModels: [], recentModels: [], recentTokens: 0 });
 		expect(requestedUrls.some((url) => url.includes("get_top_models_stats_tokens"))).toBe(false);
+		expect(requestedUrls.some((url) => url.includes("get_provider_token_usage"))).toBe(false);
+	});
+
+	it("keeps known providers without model routes addressable with empty resources", async () => {
+		const requestedUrls: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			requestedUrls.push(url);
+			if (url.includes("v2_providers")) {
+				return new Response(JSON.stringify({ provider_slug: "featherless" }), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const [models, metrics] = await Promise.all([
+			app.request("https://phaseo.app/api/_web/api-providers/featherless/models", {}, env),
+			app.request("https://phaseo.app/api/_web/api-providers/featherless/metrics?hours=24", {}, env),
+		]);
+
+		expect(models.status).toBe(200);
+		await expect(models.json()).resolves.toEqual({ models: [] });
+		expect(metrics.status).toBe(200);
+		await expect(metrics.json()).resolves.toMatchObject({
+			summary: { requests24h: 0, successful24h: 0 },
+			timeseries: { latency: [], throughput: [] },
+		});
+		expect(requestedUrls.some((url) => url.includes("v2_providers"))).toBe(true);
 	});
 
 	it("keeps legitimate inactive providers addressable", async () => {

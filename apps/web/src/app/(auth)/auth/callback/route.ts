@@ -80,7 +80,21 @@ export async function GET(request: Request) {
 		);
 	}
 
-	const supabaseUser = await createClient();
+	const pendingCookies: Array<{
+		name: string;
+		value: string;
+		options?: Parameters<NextResponse["cookies"]["set"]>[2];
+	}> = [];
+	const supabaseUser = await createClient({
+		onSetCookies: (cookies) => pendingCookies.push(...cookies),
+	});
+	const redirectWithSession = (target: string | URL) => {
+		const response = NextResponse.redirect(new URL(target, url));
+		for (const cookie of pendingCookies) {
+			response.cookies.set(cookie.name, cookie.value, cookie.options);
+		}
+		return response;
+	};
 
 	if (type !== "email") {
 		if (!code) {
@@ -98,7 +112,7 @@ export async function GET(request: Request) {
 				status: (exchangeErr as { status?: number }).status,
 				code: (exchangeErr as { code?: string }).code,
 			});
-			return NextResponse.redirect(
+			return redirectWithSession(
 				buildAuthErrorRedirectUrl(
 					request.url,
 					exchangeErr.message || DEFAULT_AUTH_ERROR_MESSAGE,
@@ -115,7 +129,7 @@ export async function GET(request: Request) {
 		if (type === "email") {
 			return buildHashPreservingAuthErrorResponse(request.url);
 		}
-		return NextResponse.redirect(
+		return redirectWithSession(
 			buildAuthErrorRedirectUrl(request.url, DEFAULT_AUTH_ERROR_MESSAGE),
 		);
 	}
@@ -133,13 +147,13 @@ export async function GET(request: Request) {
 			source: "auth_callback",
 			deferTask: (task) => after(task),
 		});
-		return NextResponse.redirect(new URL(result.redirectPath, url));
+		return redirectWithSession(result.redirectPath);
 	} catch (error) {
 		console.error("Failed to finalize post-login state during auth callback", {
 			userId: user.id,
 			error: error instanceof Error ? error.message : String(error),
 		});
-		return NextResponse.redirect(
+		return redirectWithSession(
 			buildAuthErrorRedirectUrl(
 				request.url,
 				"Your account was created, but we could not finish setting up your workspace. Please contact support.",

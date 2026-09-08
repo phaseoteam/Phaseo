@@ -48,6 +48,8 @@ import {
 	fetchFrontendOrganisationModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
 	Carousel,
 	CarouselContent,
@@ -84,6 +86,8 @@ type ModelOverviewSectionsProps = {
 	status?: string | null;
 	isGatewayActive?: boolean;
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
+	isPrivateModel?: boolean;
+	privateProviders?: ProviderPricing[];
 };
 
 export type ModelSectionSharedProps = {
@@ -217,7 +221,8 @@ export async function ModelProvidersSection({
 	creatorOrganisationId,
 	creatorOrganisationName,
 	description = "API providers, route pricing, availability, and recent reliability signals.",
-}: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null; creatorOrganisationName?: string | null; description?: string | null }) {
+	providersOverride,
+}: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null; creatorOrganisationName?: string | null; description?: string | null; providersOverride?: ProviderPricing[] }) {
 	await connection();
 	return (
 		<ModelPricing
@@ -229,6 +234,7 @@ export async function ModelProvidersSection({
 			modelName={modelName}
 			creatorOrganisationId={creatorOrganisationId}
 			creatorOrganisationName={creatorOrganisationName}
+			providersOverride={providersOverride}
 		/>
 	);
 }
@@ -1276,10 +1282,13 @@ export default function ModelOverviewSections({
 	status,
 	isGatewayActive = true,
 	performancePromise,
+	isPrivateModel = false,
+	privateProviders,
 }: ModelOverviewSectionsProps) {
 	const hasInternalModelData = Boolean(model);
 	const isRetired = status === "Retired";
 	const showVerification = supportsProvenanceVerification(model?.output_types);
+
 
 	if (isRetired) {
 		return (
@@ -1412,6 +1421,7 @@ export default function ModelOverviewSections({
 							modelName={model?.name}
 							creatorOrganisationId={model?.organisation_id}
 							creatorOrganisationName={model?.organisation?.name}
+							providersOverride={privateProviders}
 							description="API providers, route pricing, availability, and recent reliability signals."
 						/>
 					</Suspense>
@@ -1430,7 +1440,7 @@ export default function ModelOverviewSections({
 						performancePromise={performancePromise}
 					/>
 				</Suspense>
-			<Section id="pricing">
+			{!isPrivateModel ? <Section id="pricing">
 				<SectionHeader
 					title="Pricing"
 					description="Weighted provider pricing over the last 30 days, with recent route pricing history below."
@@ -1441,7 +1451,7 @@ export default function ModelOverviewSections({
 						includeHidden={includeHidden}
 					/>
 				</Suspense>
-			</Section>
+			</Section> : null}
 			{showBenchmarks ? (
 				<Section id="benchmarks">
 					<SectionHeader title="Benchmarks" />

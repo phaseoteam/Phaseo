@@ -27,7 +27,17 @@
     }
   ],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 19.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "o4-mini (high); Artificial Analysis ID 84b49308-6b93-47aa-a4f6-776ee1a1e8cd; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/o4-mini",
+      "rank": 223
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": "language",

@@ -184,10 +184,19 @@ export function routeAccessScope(row: Record<string, any>, providerIsExternal = 
     return phaseoStatus(row, providerIsExternal) === "testing" ? "internal" : "public";
 }
 
+function providerAvailabilityAllowsRouting(row: Record<string, any>): boolean {
+    const availability = providerAvailabilityStatus(row);
+    if (["available", "preview", "limited_access"].includes(availability)) return true;
+    if (availability !== "deprecated") return false;
+
+    const effectiveTo = Date.parse(String(row.effective_to ?? ""));
+    return Number.isFinite(effectiveTo) && effectiveTo > Date.now();
+}
+
 export function phaseoRoutingEnabled(row: Record<string, any>, providerIsExternal = false): boolean {
     return phaseoStatus(row, providerIsExternal) === "enabled"
         && routeAccessScope(row, providerIsExternal) === "public"
-        && ["available", "preview", "limited_access"].includes(providerAvailabilityStatus(row))
+        && providerAvailabilityAllowsRouting(row)
         && !["disabled", "retired"].includes(normalizedStatus(row.routing_status));
 }
 
@@ -632,6 +641,20 @@ export function stalePricingSkuIds(
         .map(row => String(row.sku_id));
 }
 
+export function stalePricingMeterIds(
+    existingMeters: Record<string, any>[],
+    desiredMeterKeys: Set<string>,
+    refreshedSkuIds: Set<string>,
+    protectedPricingSourceKeys: Set<string>,
+): string[] {
+    return existingMeters
+        .filter(row => row.metadata?.source === "json" && row.billable !== false)
+        .filter(row => refreshedSkuIds.has(String(row.sku_id)))
+        .filter(row => !desiredMeterKeys.has(`${row.sku_id}:${row.meter_key}`))
+        .filter(row => !protectedPricingSourceKeys.has(String(row.metadata?.source_key ?? "")))
+        .map(row => String(row.sku_meter_id));
+}
+
 export function staleRouteVariantIds(
     existingRows: Record<string, any>[],
     desiredVariantKeys: Set<string>,
@@ -661,7 +684,7 @@ export function isProtectedProviderModel(
     return providerModelId !== "" && protectedRouteIds.has(providerModelId);
 }
 
-function sourceJsonMaps(): {
+export function sourceJsonMaps(): {
     organisations: Record<string, any>[];
     models: Map<string, Record<string, any>>;
     modelVariants: Map<string, Record<string, any>>;
@@ -756,6 +779,7 @@ function sourceJsonMaps(): {
                             other_info: result.other_info ?? null,
                             source_link: result.source_link ?? null,
                             rank: result.rank ?? null,
+                            updated_at: result.updated_at ?? null,
                             occur_idx: index,
                             variant: result.variant ?? null,
                             result_key: resultKey,
@@ -1602,6 +1626,7 @@ export async function syncV2Catalogue(): Promise<void> {
             unit: rule.unit ?? "unit",
             unit_quantity: rule.unit_size ?? 1,
             price_nanos: Number(rule.price_per_unit ?? 0) * 1_000_000_000,
+            billable: true,
             display_label: meter,
             display_unit: `${rule.unit_size ?? 1} ${rule.unit ?? "unit"}`,
             metadata: v2PricingMeterMetadata(rule),
@@ -1643,6 +1668,25 @@ export async function syncV2Catalogue(): Promise<void> {
     }
     await upsertChunks(supa, "v2_meter_definitions", [...meterDefinitions.values()], "meter_key");
     await upsertChunks(supa, "v2_pricing_sku_meters", meterRows, "sku_id,meter_key");
+
+    // A changed billing unit can retain the same SKU. Retire its old JSON
+    // meters so they cannot be billed alongside the replacement meter.
+    // Preserve the row for historical request references and admin overrides.
+    const existingMeterRows = await fetchAll(
+        supa, "v2_pricing_sku_meters", "sku_meter_id,sku_id,meter_key,billable,metadata",
+    );
+    const staleMeterIds = stalePricingMeterIds(
+        existingMeterRows,
+        new Set(meterRows.map(row => `${row.sku_id}:${row.meter_key}`)),
+        new Set(meterRows.map(row => String(row.sku_id))),
+        protectedCatalogueKeys.get("pricing_rule") ?? new Set<string>(),
+    );
+    for (const ids of chunk(staleMeterIds, 200)) {
+        assertOk(
+            await supa.from("v2_pricing_sku_meters").update({ billable: false }).in("sku_meter_id", ids),
+            "v2 sync retire stale pricing meters",
+        );
+    }
 
     const desiredSkuKeys = new Set(pricingRows.map(row => `${row.provider_model_id}:${row.sku_code}:${row.version}`));
     const protectedPricingSourceKeys = protectedCatalogueKeys.get("pricing_rule") ?? new Set<string>();

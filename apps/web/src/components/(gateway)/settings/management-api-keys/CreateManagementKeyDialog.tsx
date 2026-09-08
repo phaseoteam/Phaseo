@@ -162,8 +162,8 @@ export default function CreateManagementKeyDialog({
 				</Button>
 			</DialogTrigger>
 
-			<DialogContent>
-				<DialogHeader>
+			<DialogContent className="gap-5 sm:max-w-lg">
+				<DialogHeader className="gap-2">
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
 						Create Management API Key
@@ -171,14 +171,14 @@ export default function CreateManagementKeyDialog({
 					<DialogDescription>
 						Choose the minimum access this management API key needs.
 					</DialogDescription>
-					<DialogDescription className="mt-2 text-sm text-red-600">
-						This key will be shown only <strong>once</strong> and grants
-						elevated privileges. Store it securely.
-					</DialogDescription>
+					<p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm leading-5 text-amber-700 dark:text-amber-400">
+						The key is shown only once and grants elevated privileges.
+						Store it securely.
+					</p>
 				</DialogHeader>
 
 				{!plainKey ? (
-					<form onSubmit={onCreate} className="space-y-4">
+					<form onSubmit={onCreate} className="space-y-5">
 						{workspaces && workspaces.length > 1 ? (
 							<DropdownMenu>
 								<DropdownMenuTrigger render={<Button
@@ -272,23 +272,21 @@ export default function CreateManagementKeyDialog({
 						</DialogFooter>
 					</form>
 				) : (
-					<div className="space-y-4">
-						<div className="font-mono break-all select-all rounded-lg p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">
+					<div className="space-y-5">
+						<div className="select-all break-all rounded-lg border border-amber-300 bg-amber-100/70 p-3 font-mono text-xs leading-5 dark:border-amber-700 dark:bg-amber-900/30 sm:text-sm">
 							{plainKey}
 						</div>
-						<div className="flex items-center gap-2">
-							<div className="text-sm text-amber-700 dark:text-amber-400 font-bold">
-								This key will not be shown again and grants elevated
-								privileges. Keep this code secret at all times.
-							</div>
-						</div>
+						<p className="text-sm leading-5 text-amber-700 dark:text-amber-400">
+							This key will not be shown again and grants elevated privileges.
+							Keep it secret.
+						</p>
 						<SecretRevealActions
 							secret={plainKey}
 							name={name || "AI Stats management API key"}
 							kind="management-key"
 							enableTest={false}
 						/>
-						<DialogFooter>
+						<DialogFooter className="pt-1">
 							<DialogClose asChild>
 								<Button onClick={onClose}>Done</Button>
 							</DialogClose>

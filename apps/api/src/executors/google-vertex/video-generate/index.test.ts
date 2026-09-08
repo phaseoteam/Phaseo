@@ -30,7 +30,7 @@ vi.mock("@core/video-reservations", () => ({
 
 vi.mock("@core/video-jobs", () => ({
 	saveVideoJobMeta: (...args: unknown[]) => {
-		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
+		if (state.saveVideoJobMetaError && (args[2] as any).submissionState !== "submitting") throw state.saveVideoJobMetaError;
 		return saveVideoJobMetaMock(...args);
 	},
 }));
@@ -228,11 +228,11 @@ describe("google-vertex video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
 		expect(state.releaseCalls).toEqual([]);
 	});
 
-	it("releases a held reservation when Vertex returns success without an operation name", async () => {
+	it("retains a held reservation when Vertex returns success without an operation name", async () => {
 		state.reservationResult = {
 			reservationId: "video_hold:req_google_vertex_video_test",
 			held: true,
@@ -262,13 +262,7 @@ describe("google-vertex video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(state.releaseCalls).toEqual([
-			{
-				workspaceId: "team_test",
-				reservationId: "video_hold:req_google_vertex_video_test",
-				releaseRefId: "req_google_vertex_video_test",
-			},
-		]);
+		expect(state.releaseCalls).toEqual([]);
 	});
 
 	it("does not submit upstream when reservation pricing dimensions are missing", async () => {

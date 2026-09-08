@@ -6,30 +6,69 @@
   "capability_id": "video.generate",
   "rules": [
     {
-      "meter": "output_video_seconds",
-      "unit": "second",
-      "unit_size": 1,
-      "price_per_unit": 0,
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Pricing placeholder pending BytePlus ModelArk billing publication for Seedance 2.0 Mini.",
-      "match": [],
+      "match": [
+        {
+          "path": "input_video_seconds",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "conditions": [
+        {
+          "path": "input_video_seconds",
+          "op": "eq",
+          "value": 0
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-06-15T00:00:00Z",
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null
+      "effective_from": "2026-09-06T00:00:00Z",
+      "source": "https://www.byteplus.com/en/product/modelark"
+    },
+    {
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [
+        {
+          "path": "input_video_seconds",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "conditions": [
+        {
+          "path": "input_video_seconds",
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "source": "https://www.byteplus.com/en/product/modelark"
     }
   ],
   "regions": [],
   "service_tiers": [
     "standard"
   ],
-  "sources": [],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://www.byteplus.com/en/product/modelark"
+    }
+  ],
   "verification": {
-    "status": "unverified",
-    "checked_at": null,
-    "notes": null
+    "status": "verified",
+    "checked_at": "2026-09-06T00:00:00Z",
+    "notes": "Token rates verified against the official ModelArk price table. Route enablement still requires live billing validation."
   }
 }

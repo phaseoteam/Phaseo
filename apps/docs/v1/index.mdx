@@ -1,195 +1,40 @@
 ---
 title: "Start Here"
-description: "Choose the right Phaseo docs path for your first request, migration, SDK setup, or production rollout."
+description: "Make your first request, connect an application, or find the reference you need."
 icon: "house"
 ---
 
-Use this page when you know what you want to build, but not which Phaseo docs page to open first.
-
-Phaseo gives you one API for model access, provider routing, pricing, usage tracking, and async AI workflows.
-
-If you are new to Phaseo, start with one successful request. If you already have an AI integration, jump to the migration or SDK path that matches your app.
-
-## First successful request
-
-For a new integration, use this path:
-
-1. Create an API key in the dashboard.
-2. Send one request to a current text model.
-3. Read the model output from the response.
-4. Move into the SDK, routing, or production guide that matches your next step.
-
-## First request
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-5.6-sol",
-    "input": "Reply with: docs ready",
-    "temperature": 0
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "openai/gpt-5.6-sol",
-  input: "Reply with: docs ready",
-  temperature: 0,
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "openai/gpt-5.6-sol",
-        "input": "Reply with: docs ready",
-        "temperature": 0,
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-If that works, continue with the [Quickstart](./quickstart) for the full first-request walkthrough.
-
----
-
-## Choose your path
-
-If you already have an integration or toolchain, start from the closest match instead of reading the docs from the top.
+Use Phaseo to call models from multiple providers through one API, control routing, and track usage and costs.
 
 <Columns cols={2}>
-	<Card title="I'm coming from OpenAI" icon="arrow-right-left" href="./migration-guides/from-openai">
-		Keep the OpenAI-compatible shape, swap the base URL and key, and verify model support.
-	</Card>
-	<Card title="I'm coming from OpenRouter" icon="arrow-right-left" href="./migration-guides/from-openrouter">
-		Move your existing routing setup over with parity checks and staged rollout guidance.
-	</Card>
-	<Card title="I'm sending raw HTTP requests" icon="globe" href="./quickstart">
-		Start from cURL and the Responses API, then move into the endpoint reference when needed.
-	</Card>
-	<Card title="I'm using the TypeScript SDK" icon="file-code-2" href="./sdk-reference/typescript/overview">
-		Use the TypeScript client as your main entry point for Responses, chat, images, audio, and more.
-	</Card>
-	<Card title="I'm using the Python SDK" icon="snake" href="./sdk-reference/python/overview">
-		Start from the Python client if your integration lives in scripts, workers, backends, or notebooks.
-	</Card>
-	<Card title="I'm using the AI SDK" icon="sparkles" href="./sdk-reference/sdk/ai-sdk">
-		Connect Vercel AI SDK apps to Phaseo without rebuilding your prompt or model flow.
-	</Card>
-	<Card title="I'm using Codex or Claude Code" icon="bot" href="./guides/integrations/index">
-		Set up the gateway, Docs MCP, and coding-agent integrations from one place.
-	</Card>
-	<Card title="I just need examples" icon="code" href="./guides/examples">
-		Jump straight to copy-paste requests and sample projects if you already know the basics.
-	</Card>
+  <Card title="Make your first request" icon="rocket" href="./quickstart.mdx">
+    Create a key, send a request, and read the result.
+  </Card>
+  <Card title="Migrate an application" icon="arrow-right-left" href="./migration-guides/index.mdx">
+    Update an existing provider or gateway integration.
+  </Card>
+  <Card title="Connect a coding assistant" icon="terminal" href="./guides/integrations/coding-assistants.mdx">
+    Configure Codex, Claude Code, Cursor, or another assistant.
+  </Card>
+  <Card title="Build with an SDK" icon="package" href="./sdk-reference/typescript/overview.mdx">
+    Choose your language from the Client SDKs menu.
+  </Card>
 </Columns>
 
----
+## Build and operate
 
-## Common jobs
+| Task | Documentation |
+| --- | --- |
+| Look up a request field or endpoint | [API Reference](./api-reference/introduction.mdx) |
+| Run a starter application | [Examples](./guides/examples.mdx) |
+| Implement a specific workflow | [Cookbook](./cookbook/index.mdx) |
+| Choose providers and fallbacks | [Routing](./guides/routing-and-fallbacks.mdx) |
+| Process video or batch jobs | [Async jobs and webhooks](./guides/async-video-and-batch.mdx) |
+| Build a tool-using agent | [Agent SDK](./sdk-reference/agent-sdk/overview.mdx) |
+| Diagnose a failed request | [Errors and debugging](./api-reference/errors.mdx) |
 
-Choose the job closest to what you need right now.
+## Choose a model
 
-<Columns cols={2}>
-	<Card title="Make my first request" icon="rocket" href="./quickstart">
-		Start with one successful text request, then learn where to read output and debug failures.
-	</Card>
-	<Card title="Use an SDK" icon="package" href="./sdk-reference/typescript/overview">
-		Pick the client SDK that matches your stack and start from real wrapper examples.
-	</Card>
-	<Card title="Connect a coding agent" icon="bot" href="./guides/integrations/index">
-		Set up Codex, Claude Code, OpenCode, or Docs MCP against Phaseo.
-	</Card>
-	<Card title="Migrate an existing integration" icon="arrow-right-left" href="./migration-guides/index">
-		Move from OpenAI, OpenRouter, Anthropic, Vercel, LiteLLM, or another gateway.
-	</Card>
-	<Card title="Control routing and providers" icon="route" href="./guides/routing-and-fallbacks">
-		Choose provider order, ranking, regional offers, presets, and failover behavior.
-	</Card>
-</Columns>
+[Browse models](https://phaseo.app/models) or [compare them](https://phaseo.app/compare). Catalog entries can include models that are not routable; check Gateway availability before integrating. See [How Phaseo Works](./developers/introduction.mdx) for models, providers, and billing.
 
----
-
-## Core pages
-
-<Columns cols={2}>
-	<Card title="Quickstart" icon="rocket" href="./quickstart">
-		The shortest path from signup to first successful request.
-	</Card>
-	<Card title="API Reference" icon="server" href="./api-reference/introduction">
-		Base URL, auth, endpoint families, and endpoint-by-endpoint request details.
-	</Card>
-	<Card title="Examples" icon="code" href="./guides/examples">
-		Copy-paste requests and sample projects across common workflows.
-	</Card>
-	<Card title="Cookbook" icon="chef-hat" href="./cookbook/index">
-		Scenario-driven recipes for routing, presets, async jobs, search, and agent workflows.
-	</Card>
-	<Card title="Authentication" icon="key" href="./developers/authentication">
-		Key format, bearer headers, and common auth mistakes.
-	</Card>
-	<Card title="Error Handling" icon="triangle-alert" href="./api-reference/errors">
-		Understand failed requests quickly and fix the common causes.
-	</Card>
-</Columns>
-
----
-
-## If you are using agents
-
-Phaseo is set up to work well with coding agents and AI tools, not just humans reading docs in a browser.
-
-Start here:
-
-<Columns cols={2}>
-	<Card title="Docs MCP" icon="plug-zap" href="./guides/integrations/docs-mcp">
-		Let Codex, Claude Code, Cursor, or VS Code search the live Phaseo docs while they work.
-	</Card>
-	<Card title="skill.md" icon="file-text" href="https://phaseo.app/docs/skill.md">
-		Capability summary for agents that need to understand what Phaseo can do and how requests work.
-	</Card>
-	<Card title="Integrations" icon="plug" href="./guides/integrations/index">
-		Set up coding tools and editor workflows around the gateway.
-	</Card>
-	<Card title="Agent SDK" icon="bot" href="./sdk-reference/agent-sdk/overview">
-		Build tool-using, gateway-backed agent loops across the supported SDK languages.
-	</Card>
-</Columns>
-
----
-
-## Explore models and providers
-
-Use the data surfaces when you need to choose before you build:
-
-<Columns cols={2}>
-	<Card
-		title="Browse Models"
-		icon="database"
-		href="https://phaseo.app/models"
-	>
-		Start with models that have an active Gateway route, then expand the Gateway Status filter when you need broader catalog research.
-	</Card>
-	<Card
-		title="Compare Models"
-		icon="diff"
-		href="https://phaseo.app/compare"
-	>
-		Compare performance, cost, and metadata side by side before you commit to one route.
-	</Card>
-</Columns>
+For documentation access inside an assistant, connect [Docs MCP](./guides/integrations/docs-mcp.mdx) or read the [agent capability summary](https://phaseo.app/docs/skill.md).

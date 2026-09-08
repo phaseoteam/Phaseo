@@ -437,11 +437,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 19.2,
+      "score": 12.9,
       "is_self_reported": false,
-      "other_info": "o3-mini; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "o3-mini; Artificial Analysis ID 2dad8957-4c16-4e74-bf2d-8b21514e0ae9; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/o3-mini",
-      "rank": 248
+      "rank": 292
     }
   ],
   "page_notice": null,

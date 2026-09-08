@@ -473,7 +473,7 @@ async function fetchGoogleAiStudioVideoStatus(job: VideoJobRecord): Promise<Vide
 		});
 		if (isGoogleOperationsGetAuthFailure(res.status, bodyJson)) {
 			return {
-				status: "failed",
+				status: "in_progress",
 				providerId,
 				model: String(job.model ?? job.meta?.model ?? "").trim() || undefined,
 				seconds: toPositiveNumber(job.meta?.seconds),
@@ -770,7 +770,15 @@ async function fetchMiniMaxVideoStatus(job: VideoJobRecord): Promise<VideoProvid
 		requestOptions: buildVideoPricingRequestOptions({
 			resolution: task.resolution ?? task.size ?? job.meta?.resolution,
 			quality: task.quality ?? job.meta?.quality,
+			input_image_count: task.usage?.input_image_count ?? job.meta?.inputImageCount,
+			input_video_seconds: task.usage?.input_seconds ?? job.meta?.inputVideoSeconds,
+			input_audio_seconds: task.usage?.input_audio_seconds ?? job.meta?.inputAudioSeconds,
 		}),
+		metaPatch: {
+			inputImageCount: task.usage?.input_image_count ?? job.meta?.inputImageCount,
+			inputVideoSeconds: task.usage?.input_seconds ?? job.meta?.inputVideoSeconds,
+			inputAudioSeconds: task.usage?.input_audio_seconds ?? job.meta?.inputAudioSeconds,
+		},
 		raw: json,
 	};
 }

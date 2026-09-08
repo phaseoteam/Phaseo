@@ -137,6 +137,8 @@ function renderClient(): string {
 		"\t\treq = urllib.request.Request(url, data=payload, headers=request_headers, method=method.upper())",
 		"\t\twith urllib.request.urlopen(req) as resp:",
 		"\t\t\traw = resp.read().decode(\"utf-8\")",
+		"\t\t\tif resp.headers.get_content_type() == \"application/x-ndjson\":",
+		"\t\t\t\treturn raw",
 		"\t\t\tif not raw:",
 		"\t\t\t\treturn None",
 		"\t\t\ttry:",
@@ -380,10 +382,10 @@ function isModelLifecycleObject(schema: IRSchema): boolean {
 }
 
 function sanitizeIdentifier(name: string): string {
-	if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
-		return name;
-	}
-	return name.replace(/[^A-Za-z0-9_]/g, "_");
+	const sanitized = /^[A-Za-z_][A-Za-z0-9_]*$/.test(name)
+		? name
+		: name.replace(/[^A-Za-z0-9_]/g, "_");
+	return PYTHON_KEYWORDS.has(sanitized) ? `${sanitized}_` : sanitized;
 }
 
 const PYTHON_KEYWORDS = new Set([

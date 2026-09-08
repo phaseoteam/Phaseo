@@ -1,5 +1,6 @@
 import type { ModelProviderDailyPoint } from "@/lib/fetchers/models/getModelPerformance";
-import { selectMetricData } from "./ModelPerformanceCards";
+import type { ModelPerformanceQualityPoint } from "@/lib/fetchers/models/getModelPerformance";
+import { hasQualityMetricData, selectMetricData } from "./ModelPerformanceCards";
 
 function point(
 	provider: string,
@@ -55,5 +56,53 @@ describe("selectMetricData", () => {
 				true,
 			),
 		).toBe(cardData);
+	});
+});
+
+describe("hasQualityMetricData", () => {
+	const qualityPoint: ModelPerformanceQualityPoint = {
+		bucket: "2026-08-08T00:00:00.000Z",
+		toolCallSuccessPct: null,
+		toolCallErrorPct: null,
+		structuredOutputSuccessPct: null,
+		structuredOutputErrorPct: null,
+		cacheHitRatePct: null,
+		requests: 1,
+	};
+
+	it("hides metrics without telemetry", () => {
+		expect(hasQualityMetricData("toolCallErrorPct", [qualityPoint])).toBe(false);
+		expect(hasQualityMetricData("structuredOutputErrorPct", [qualityPoint])).toBe(false);
+		expect(hasQualityMetricData("cacheHitRatePct", [qualityPoint])).toBe(false);
+	});
+
+	it("does not treat historical zero defaults as validated error data", () => {
+		expect(
+			hasQualityMetricData("toolCallErrorPct", [
+				{ ...qualityPoint, toolCallErrorPct: 0, toolCallHistoricalDefault: true },
+			]),
+		).toBe(false);
+		expect(
+			hasQualityMetricData("structuredOutputErrorPct", [
+				{
+					...qualityPoint,
+					structuredOutputErrorPct: 0,
+					structuredOutputHistoricalDefault: true,
+				},
+			]),
+		).toBe(false);
+	});
+
+	it("shows metrics with real telemetry, including a measured zero", () => {
+		expect(
+			hasQualityMetricData("toolCallErrorPct", [
+				{ ...qualityPoint, toolCallErrorPct: 0 },
+			]),
+		).toBe(true);
+		expect(
+			hasQualityMetricData("cacheHitRatePct", [
+				{ ...qualityPoint, cacheHitRatePct: 0 },
+			]),
+		).toBe(true);
 	});
 });

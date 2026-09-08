@@ -19,6 +19,7 @@ import {
 export type VideoJobMeta = {
 	provider: string;
 	providerTaskId?: string | null;
+	submissionState?: "submitting" | "accepted" | "unknown" | "rejected";
 	ltxEndpoint?: "text-to-video" | "image-to-video" | "audio-to-video" | null;
 	requestId?: string | null;
 	sessionId?: string | null;
@@ -156,6 +157,9 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (camelInputImageCount != null) out.inputImageCount = camelInputImageCount;
 	const snakeInputImageCount = toNonNegativeInteger(source.input_image_count);
 	if (snakeInputImageCount != null) out.inputImageCount = snakeInputImageCount;
+	if (["submitting", "accepted", "unknown", "rejected"].includes(String(source.submissionState))) {
+		out.submissionState = source.submissionState as VideoJobMeta["submissionState"];
+	}
 	if (typeof source.inputVideoCount === "number") out.inputVideoCount = source.inputVideoCount;
 	if (typeof source.input_video_count === "number") out.inputVideoCount = source.input_video_count;
 	if (typeof source.inputVideoSeconds === "number") out.inputVideoSeconds = source.inputVideoSeconds;
@@ -306,7 +310,9 @@ export async function saveVideoJobMeta(
 	_ttlSeconds?: number,
 ): Promise<void> {
 	if (!workspaceId || !videoId) return;
-	const payload = { ...meta, createdAt: meta.createdAt ?? Date.now() };
+	const payload = { ...meta, createdAt: meta.createdAt ?? Date.now(),
+		...((nativeId || meta.providerTaskId) && !meta.submissionState ? { submissionState: "accepted" as const } : {}),
+	};
 	const existing = await getAsyncOperation(workspaceId, "video", videoId);
 	if (existing) {
 		const safeMetaPatch = { ...payload } as Record<string, unknown>;
@@ -439,6 +445,7 @@ export async function listPendingVideoJobs(
 			const status = String(record.status ?? "").toLowerCase();
 			return (
 				status === "" ||
+				status === "pending" ||
 				status === "queued" ||
 				status === "in_progress" ||
 				status === "processing" ||
@@ -485,7 +492,7 @@ export async function listTeamVideoJobs(args: {
 export async function setVideoJobStatus(
 	workspaceId: string,
 	videoId: string,
-	status: "queued" | "in_progress" | "completed" | "failed" | "cancelled" | "expired",
+	status: "pending" | "queued" | "in_progress" | "completed" | "failed" | "cancelled" | "expired",
 	metaPatch?: Record<string, unknown>,
 ): Promise<void> {
 	await setAsyncOperationStatus({

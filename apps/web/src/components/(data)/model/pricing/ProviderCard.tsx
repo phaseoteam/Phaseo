@@ -82,6 +82,7 @@ import {
 } from "@/components/(data)/model/pricing/providerPlanRouting";
 import {
 	formatProviderOfferDisplayName,
+	resolveProviderDisplayName,
 } from "@/lib/providers/providerOffers";
 import {
 	chooseGatewayStatus,
@@ -1714,6 +1715,7 @@ export default function ProviderCard({
 		[pricingTimeMs, provider, selectedPlan]
 	);
 	const tablePlan = defaultPlan;
+	const isCustomerManagedPricing = provider.provider_models.some((model) => model.id.startsWith("private-model:"));
 	const tableSec = useMemo(
 		() => buildProviderSections(provider, tablePlan, pricingTimeMs),
 		[pricingTimeMs, provider, tablePlan],
@@ -2251,9 +2253,7 @@ export default function ProviderCard({
 				candidate.provider.api_provider_id,
 				{
 					id: candidate.provider.api_provider_id,
-					name:
-						candidate.provider.api_provider_name ||
-						candidate.provider.api_provider_id,
+					name: resolveProviderDisplayName({ providerId: candidate.provider.api_provider_id, providerName: candidate.provider.api_provider_name || candidate.provider.api_provider_id, offerLabel: candidate.provider.offer_label, offerScope: candidate.provider.offer_scope }),
 				},
 			]),
 		).values(),
@@ -2263,7 +2263,7 @@ export default function ProviderCard({
 			candidate.provider.api_provider_id,
 			{
 				id: candidate.provider.api_provider_id,
-				name: candidate.provider.api_provider_name || candidate.provider.api_provider_id,
+				name: resolveProviderDisplayName({ providerId: candidate.provider.api_provider_id, providerName: candidate.provider.api_provider_name || candidate.provider.api_provider_id, offerLabel: candidate.provider.offer_label, offerScope: candidate.provider.offer_scope }),
 			},
 		]),
 	);
@@ -2552,7 +2552,12 @@ export default function ProviderCard({
 	).filter(
 		(value): value is string => typeof value === "string" && value.trim().length > 0,
 	);
-	const pricingPrimaryContent = !hasPlanPricing ? (
+	const pricingPrimaryContent = isCustomerManagedPricing ? (
+		<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 px-3 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/30">
+			<div className="font-semibold text-foreground">Customer managed</div>
+			<p className="mt-1 text-xs leading-5 text-muted-foreground">Upstream inference costs are billed directly by your deployment provider.</p>
+		</div>
+	) : !hasPlanPricing ? (
 		isInternalTestingProvider ? (
 			<div className="rounded-xl border border-sky-200/80 bg-sky-50/60 px-3 py-2.5 text-xs text-sky-900 dark:border-sky-900/70 dark:bg-sky-950/30 dark:text-sky-100">
 				<div className="inline-flex items-center gap-1.5 font-semibold">
@@ -3082,12 +3087,10 @@ export default function ProviderCard({
 						</div>
 					</div>
 				</TableCell>
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-					{renderTablePriceSummary(tableInputPriceSummary, tablePlanTheme.accent)}
-				</TableCell>
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-					{renderTablePriceSummary(tableOutputPriceSummary, tablePlanTheme.accent)}
-				</TableCell>
+				{isCustomerManagedPricing ? <TableCell colSpan={2} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">Customer managed</TableCell> : <>
+					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableInputPriceSummary, tablePlanTheme.accent)}</TableCell>
+					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableOutputPriceSummary, tablePlanTheme.accent)}</TableCell>
+				</>}
 				{showCacheReadColumn && tableCacheReadPriceSummary ? (
 					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
 						{renderTablePriceSummary(tableCacheReadPriceSummary, tablePlanTheme.accent)}

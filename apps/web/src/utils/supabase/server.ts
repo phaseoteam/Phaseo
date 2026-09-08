@@ -7,7 +7,9 @@ type CookieToSet = {
     options?: CookieOptions
 }
 
-export async function createClient() {
+export async function createClient(options?: {
+    onSetCookies?: (cookies: CookieToSet[]) => void
+}) {
     const cookieStore = await cookies()
 
     return createServerClient(
@@ -20,6 +22,7 @@ export async function createClient() {
                     return cookieStore.getAll()
                 },
                 setAll(cookiesToSet: CookieToSet[]) {
+                    options?.onSetCookies?.(cookiesToSet)
                     try {
                         cookiesToSet.forEach(({ name, value, options }: CookieToSet) =>
                             cookieStore.set(name, value, options)

@@ -1,16 +1,19 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { load } from "js-yaml";
 
 const REPOSITORY_ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const TEXT_EXTENSIONS = new Set([".json", ".md", ".mdx", ".ts", ".tsx", ".yaml", ".yml"]);
-const PUBLIC_OPENAPI_PATH = resolve(REPOSITORY_ROOT, "apps/docs/openapi/v1/openapi.public.yaml");
+const OPENAPI_PATH = resolve(REPOSITORY_ROOT, "apps/docs/openapi/v1/openapi.yaml");
 const DOCS_CONFIG_PATH = resolve(REPOSITORY_ROOT, "apps/docs/docs.json");
 
 const ALLOWED_ENGINEERING_DOCS = new Set([
 	"apps/api/docs/database-driven-provider-adapters.md",
 	"apps/api/docs/executor-capability-matrix.md",
+	"apps/api/docs/gateway-performance-20260905.json",
+	"apps/api/docs/gateway-performance-20260905.md",
 	"apps/api/docs/params-jsonb-schema.md",
 	"apps/api/docs/provider-executor-architecture.md",
 	"apps/api/docs/public-documentation-policy.md",
@@ -62,16 +65,14 @@ const FORBIDDEN_CONTENT = [
 
 const PROHIBITED_PUBLIC_PATHS = [
 	/^apps\/docs\/v1\/api-reference\/async-lifecycle-updates\.mdx$/,
-	/^apps\/docs\/v1\/api-reference\/endpoint\/(?:realtime|video(?:-|\.)|batches(?:-|\.))/,
-	/^apps\/docs\/v1\/cookbook\/(?:async-batch-webhooks|async-video-webhooks|choose-a-video-generation-model|generate-and-download-a-video-from-text|generate-video-from-audio|send-provider-specific-video-options|use-image-inputs-for-video-generation)\.mdx$/,
+	/^apps\/docs\/v1\/api-reference\/endpoint\/realtime/,
 	/^apps\/docs\/v1\/developers\/gateway-architecture\//,
 	/^apps\/docs\/v1\/guides\/gateway-rollout-checklists\.mdx$/,
-	/^apps\/docs\/v1\/sdk-reference\/[^/]+\/(?:batches|video-generation)\.mdx$/,
 	/^apps\/mcp\/submission\//,
 	/^apps\/web-api\/SCIM_PRODUCTION\.md$/,
 	/^packages\/sdk\/[^/]*(?:AUDIT|CHECKLIST|DECK|REVIEW|ROADMAP|ROLLOUT)[^/]*\.md$/i,
 ];
-const PROHIBITED_OPENAPI_PATHS = [
+const PREVIEW_OPENAPI_PATHS = [
 	/^\/videos(?:\/|$)/,
 	/^\/video\/generations(?:\/|$)/,
 	/^\/batches(?:\/|$)/,
@@ -106,17 +107,66 @@ const pathGuardFiles = PUBLIC_PATH_GUARD_ROOTS.flatMap((root) =>
 const errors = [];
 
 const docsConfig = JSON.parse(readFileSync(DOCS_CONFIG_PATH, "utf8"));
-if (docsConfig?.api?.openapi !== "openapi/v1/openapi.public.yaml") {
-	errors.push("apps/docs/docs.json: must publish the scrubbed public OpenAPI specification");
+// Use canonical asset names, not React export aliases that Mintlify cannot render.
+const webRequire = createRequire(resolve(REPOSITORY_ROOT, "apps/web/package.json"));
+const lucideRoot = resolve(webRequire.resolve("lucide-react/package.json"), "..");
+const lucideIcons = new Set(readdirSync(join(lucideRoot, "dist/esm/icons"))
+	.filter((file) => /\.(?:js|mjs)$/.test(file))
+	.map((file) => file.replace(/\.(?:js|mjs)$/, "")));
+
+function validateIcon(icon, location) {
+	if (typeof icon !== "string" || !icon) {
+		errors.push(`${location}: main sidebar pages require an icon`);
+	} else if (icon.startsWith("/")) {
+		if (!existsSync(resolve(REPOSITORY_ROOT, "apps/docs", icon.slice(1)))) {
+			errors.push(`${location}: missing icon asset ${icon}`);
+		}
+	} else if (!lucideIcons.has(icon)) {
+		errors.push(`${location}: ${icon} is not a canonical Lucide icon name`);
+	}
 }
 
-if (!existsSync(PUBLIC_OPENAPI_PATH)) {
-	errors.push("apps/docs/openapi/v1/openapi.public.yaml: generated public specification is missing");
+function navigationPages(value, pages = new Set()) {
+	if (Array.isArray(value)) {
+		for (const child of value) navigationPages(child, pages);
+	} else if (value && typeof value === "object") {
+		if (value.icon) validateIcon(value.icon, `navigation ${value.group ?? value.tab ?? value.dropdown ?? "entry"}`);
+		for (const [key, child] of Object.entries(value)) {
+			if (key === "pages" && Array.isArray(child)) {
+				for (const page of child) if (typeof page === "string") pages.add(page);
+			}
+			navigationPages(child, pages);
+		}
+	}
+	return pages;
+}
+
+for (const page of navigationPages(docsConfig.navigation)) {
+	const file = resolve(REPOSITORY_ROOT, "apps/docs", `${page}.mdx`);
+	if (!existsSync(file)) continue;
+	const frontmatter = readFileSync(file, "utf8").match(/^---\r?\n([\s\S]*?)\r?\n---/);
+	const metadata = frontmatter ? load(frontmatter[1]) : null;
+	if (!metadata?.openapi) validateIcon(metadata?.icon, page);
+}
+
+if (docsConfig?.api?.openapi !== "openapi/v1/openapi.yaml") {
+	errors.push("apps/docs/docs.json: must use the canonical SDK OpenAPI specification");
+}
+
+if (!existsSync(OPENAPI_PATH)) {
+	errors.push("apps/docs/openapi/v1/openapi.yaml: canonical specification is missing");
 } else {
-	const publicOpenapi = load(readFileSync(PUBLIC_OPENAPI_PATH, "utf8"));
-	for (const path of Object.keys(publicOpenapi?.paths ?? {})) {
-		if (PROHIBITED_OPENAPI_PATHS.some((pattern) => pattern.test(path))) {
-			errors.push(`apps/docs/openapi/v1/openapi.public.yaml: contains internal path ${path}`);
+	const openapi = load(readFileSync(OPENAPI_PATH, "utf8"));
+	for (const [path, item] of Object.entries(openapi?.paths ?? {})) {
+		for (const method of ["get", "post", "put", "patch", "delete", "head", "options", "trace"]) {
+			const operation = item?.[method];
+			if (!operation) continue;
+			if ((item["x-internal"] === true || operation["x-internal"] === true) && operation["x-excluded"] !== true) {
+				errors.push(`${method.toUpperCase()} ${path}: internal operations must use x-excluded for Mintlify`);
+			}
+			if (PREVIEW_OPENAPI_PATHS.some((pattern) => pattern.test(path)) && operation["x-beta"] !== true) {
+				errors.push(`${method.toUpperCase()} ${path}: preview operations must retain x-beta`);
+			}
 		}
 	}
 }

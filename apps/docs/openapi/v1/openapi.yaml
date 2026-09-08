@@ -1039,6 +1039,7 @@ paths:
       tags:
         - Gateway
       operationId: markRealtimeSessionConnected
+      x-excluded: true
       summary: Mark realtime session connected
       description: >-
         Records that the upstream realtime relay connection has been
@@ -1064,6 +1065,7 @@ paths:
       tags:
         - Gateway
       operationId: extendRealtimeSession
+      x-excluded: true
       summary: Extend realtime session credit hold
       description: Extends the reserved credit for an active realtime audio session.
       parameters:
@@ -1100,6 +1102,7 @@ paths:
       tags:
         - Gateway
       operationId: updateRealtimeSessionUsage
+      x-excluded: true
       summary: Update realtime session usage
       description: Records the latest metered usage for an active realtime audio session.
       parameters:
@@ -2078,6 +2081,94 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}/results:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchResults
+      summary: Download batch results
+      description: >-
+        Streams complete provider-native result rows as JSONL for a terminal
+        batch owned by the authenticated workspace. Combines success and error
+        files, converts inline outputs, and follows provider result pagination.
+        Use a Phaseo API key. Downloads do not submit inference or add usage
+        charges. Existing file endpoints remain available. Inline rows are
+        limited to 8 MiB; interrupted downloads must be discarded and downloaded
+        again. Limited to 10 download attempts per workspace per batch in a
+        rolling 30-minute window, shared across API keys and aliases. Failed or
+        cancelled upstream attempts count. A 429 response includes Retry-After
+        in seconds.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Original provider JSONL results
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Batch preview access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Batch results are not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Batch download limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              description: Seconds until another download is allowed
+              schema:
+                type: integer
+        '501':
+          description: Direct results downloads are not supported for this provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Provider results could not be retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Download admission temporarily unavailable; retry after 30 seconds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
   /batches/{batch_id}/requests:
     get:
       x-beta: true
@@ -4125,6 +4216,137 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProviderCredentialDeleteResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /private-models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPrivateModels
+      summary: List private models
+      description: >-
+        Lists private model metadata for the authenticated workspace. Requires
+        `private_models:read` and an owner or admin identity.
+      responses:
+        '200':
+          description: Private models
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelListResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createPrivateModel
+      summary: Create a private model
+      description: >-
+        Creates a workspace-only OpenAI-compatible model endpoint. Requires
+        `private_models:write` and an owner or admin identity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateModelCreateRequest'
+      responses:
+        '201':
+          description: Private model created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /private-models/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getPrivateModel
+      summary: Get a private model
+      description: >-
+        Returns endpoint metadata for one private model in the authenticated
+        workspace without returning its credential.
+      responses:
+        '200':
+          description: Private model metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updatePrivateModel
+      summary: Update a private model
+      description: >-
+        Updates private model metadata or replaces its write-only encrypted
+        credential.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateModelUpdateRequest'
+      responses:
+        '200':
+          description: Private model updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePrivateModel
+      summary: Delete a private model
+      description: >-
+        Permanently deletes a private model owned by the authenticated
+        workspace. Repeated deletion is safe.
+      responses:
+        '200':
+          description: Private model deleted or already absent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateModelDeleteResponse'
         default:
           description: Request failed
           content:
@@ -7155,6 +7377,94 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /batch/{id}/results:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchResultsAlias
+      summary: Download batch results (alias)
+      description: >-
+        Streams complete provider-native result rows as JSONL for a terminal
+        batch owned by the authenticated workspace. Combines success and error
+        files, converts inline outputs, and follows provider result pagination.
+        Use a Phaseo API key. Downloads do not submit inference or add usage
+        charges. Existing file endpoints remain available. Inline rows are
+        limited to 8 MiB; interrupted downloads must be discarded and downloaded
+        again. Limited to 10 download attempts per workspace per batch in a
+        rolling 30-minute window, shared across API keys and aliases. Failed or
+        cancelled upstream attempts count. A 429 response includes Retry-After
+        in seconds.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Original provider JSONL results
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Batch preview access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Batch results are not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Batch download limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              description: Seconds until another download is allowed
+              schema:
+                type: integer
+        '501':
+          description: Direct results downloads are not supported for this provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Provider results could not be retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Download admission temporarily unavailable; retry after 30 seconds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
   /batch/{id}/requests:
     get:
       x-beta: true
@@ -10831,14 +11141,60 @@ components:
             HTTPS image, audio, or video inputs used to condition generation.
             Supported types, roles, counts, and combinations depend on the
             selected model. Check GET /videos/models before submitting a job.
+            The singular input_reference compatibility alias, omitted from this
+            schema, accepts a multipart image or an object containing exactly
+            one of file_id or image_url. Support depends on the provider.
           items:
             $ref: '#/components/schemas/VideoInputReference'
+        frame_images:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >-
+            HTTPS first/last frame images. Each frame_type may appear once. Do
+            not also supply input_reference or frame roles in input_references.
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - type
+              - frame_type
+              - image_url
+            properties:
+              type:
+                type: string
+                enum:
+                  - image_url
+              frame_type:
+                type: string
+                enum:
+                  - first_frame
+                  - last_frame
+              image_url:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+                    format: uri
         provider_params:
           type: object
           additionalProperties: true
           description: >-
             Provider-specific extensions only. Complete request passthrough and
             duplicate routing, prompt, callback, or billing fields are rejected.
+        provider_options:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+          description: >-
+            Extensions keyed by canonical provider ID (for example atlascloud or
+            byteplus). Only the selected provider's options are forwarded.
+            Cannot be combined with provider_params. Routing, prompt, callback,
+            duration, resolution, and output-count fields must use validated
+            top-level fields.
         output:
           $ref: '#/components/schemas/VideoOutputConfig'
         webhook:
@@ -11827,6 +12183,16 @@ components:
     BatchRequest:
       type: object
       properties:
+        provider_options:
+          type: object
+          description: >-
+            Extensions scoped by canonical provider ID. OpenAI accepts
+            output_expires_after; Mistral accepts metadata. Only the selected
+            provider's options are applied. Do not duplicate an option at the
+            top level. Options cannot override priced rows, models or files.
+          additionalProperties:
+            type: object
+            additionalProperties: true
         model:
           type: string
           description: >-
@@ -12105,6 +12471,15 @@ components:
           format: uri
           nullable: true
           description: Reserved for compatibility; currently always null.
+        results_url:
+          type: string
+          format: uri
+          nullable: true
+          description: >-
+            Authenticated Phaseo JSONL download URL for terminal supported
+            batches. Null while processing. A terminal batch may have no output.
+            Use an API key from the owning workspace; provider retention limits
+            apply.
         output_file_id:
           type: string
         error_file_id:
@@ -12483,8 +12858,11 @@ components:
       enum:
         - 2-bench-retail
         - 2-bench-telecom
+        - aa-agentic-index-v4
         - aa-briefcase
+        - aa-coding-index-v4
         - aa-index
+        - aa-intelligence-index-cost-v4
         - aa-intelligence-index-v4
         - aa-lcr
         - aa-omniscience
@@ -13758,7 +14136,7 @@ components:
       required:
         - id
         - name
-        - slug
+        - model_id
         - created_by
         - created_at
         - updated_at
@@ -17332,6 +17710,268 @@ components:
       enum:
         - priority
         - fallback
+    PrivateModel:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - model_id
+        - name
+        - base_url
+        - upstream_model_id
+        - supports_responses
+        - enabled
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        model_id:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._:-]{0,126}$
+          description: >-
+            Workspace-visible owner/model slug used in normal inference
+            requests.
+          readOnly: true
+        local_slug:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9._:-]{0,126}$
+          description: Workspace-local slug used to derive the model identity.
+          readOnly: true
+        catalog_model_id:
+          type: string
+          nullable: true
+          pattern: ^[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._:-]{0,126}$
+          description: Catalogue model this endpoint is attached to, when any.
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          nullable: true
+          maxLength: 500
+        base_url:
+          type: string
+          format: uri
+          description: Workspace-confidential HTTPS endpoint base URL.
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        supports_responses:
+          type: boolean
+        enabled:
+          type: boolean
+        input_modalities:
+          type: array
+          items:
+            type: string
+        output_modalities:
+          type: array
+          items:
+            type: string
+        context_length:
+          type: integer
+          nullable: true
+          minimum: 1
+        max_output_tokens:
+          type: integer
+          nullable: true
+          minimum: 1
+        host_provider_id:
+          type: string
+          nullable: true
+          description: Existing Phaseo provider that operates the deployment.
+        custom_provider_name:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 120
+        custom_provider_url:
+          type: string
+          nullable: true
+          format: uri
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+        credential_prefix:
+          type: string
+          nullable: true
+        credential_suffix:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+      additionalProperties: false
+    PrivateModelCreateRequest:
+      type: object
+      required:
+        - model_reference
+        - name
+        - base_url
+        - upstream_model_id
+        - credential
+      properties:
+        model_reference:
+          type: string
+          description: >-
+            An exact catalogue model ID to attach this endpoint as a provider,
+            or a short slug for automatic matching/workspace namespacing.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+        base_url:
+          type: string
+          format: uri
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        credential:
+          type: string
+          minLength: 8
+          writeOnly: true
+        supports_responses:
+          type: boolean
+          default: false
+        enabled:
+          type: boolean
+          default: true
+        context_length:
+          type: integer
+          minimum: 1
+          nullable: true
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        host_provider_id:
+          type: string
+          nullable: true
+          description: Existing Phaseo provider that operates the deployment.
+        custom_provider_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        custom_provider_url:
+          type: string
+          format: uri
+          nullable: true
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+          default: preferred
+      additionalProperties: false
+    PrivateModelUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        model_reference:
+          type: string
+          description: >-
+            An exact catalogue model ID to attach this endpoint as a provider,
+            or a short slug for automatic matching/workspace namespacing.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        base_url:
+          type: string
+          format: uri
+        upstream_model_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        credential:
+          type: string
+          minLength: 8
+          writeOnly: true
+        supports_responses:
+          type: boolean
+        enabled:
+          type: boolean
+        context_length:
+          type: integer
+          minimum: 1
+          nullable: true
+        max_output_tokens:
+          type: integer
+          minimum: 1
+          nullable: true
+        host_provider_id:
+          type: string
+          nullable: true
+        custom_provider_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          nullable: true
+        custom_provider_url:
+          type: string
+          format: uri
+          nullable: true
+        routing_policy:
+          type: string
+          enum:
+            - preferred
+            - balanced
+            - fallback
+      additionalProperties: false
+    PrivateModelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PrivateModel'
+      additionalProperties: false
+    PrivateModelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivateModel'
+      additionalProperties: false
+    PrivateModelDeleteResponse:
+      type: object
+      required:
+        - deleted
+      properties:
+        deleted:
+          type: boolean
+      additionalProperties: false
     ProviderCredential:
       type: object
       required:
@@ -19783,7 +20423,6 @@ components:
         - arcee-ai/trinity-large-thinking
         - arcee-ai/trinity-mini
         - baai/bge-m3
-        - baai/bge-multilingual-gemma2
         - baai/bge-reranker-v2-m3
         - baidu/cobuddy
         - baidu/ernie-4.5-300b-a47b
@@ -19955,17 +20594,13 @@ components:
         - minimax/minimax-m2.5
         - minimax/minimax-m2.5-highspeed
         - minimax/minimax-m2.7
-        - minimax/minimax-m2.7:free
         - minimax/minimax-m3
-        - minimax/minimax-m3:free
         - minimax/music-2.6
         - minimax/music-3.0
-        - minimax/music-3.0:free
         - minimax/speech-2.6-hd
         - minimax/speech-2.6-turbo
         - minimax/speech-2.8-hd
         - minimax/speech-2.8-turbo
-        - minimax/speech-2.8:free
         - mistral/codestral
         - mistral/codestral-embed
         - mistral/devstral-2
@@ -20065,6 +20700,7 @@ components:
         - openai/gpt-5.6-terra
         - openai/gpt-5.6-terra-pro
         - openai/gpt-6-astra
+        - openai/gpt-6-astra-pro
         - openai/gpt-image-1
         - openai/gpt-image-1-mini
         - openai/gpt-image-1.5
@@ -20076,6 +20712,8 @@ components:
         - openai/gpt-realtime
         - openai/gpt-realtime-1.5
         - openai/gpt-realtime-2
+        - openai/gpt-realtime-2.1
+        - openai/gpt-realtime-2.1-mini
         - openai/gpt-transcribe
         - openai/o1
         - openai/o1-mini
@@ -20157,8 +20795,6 @@ components:
         - qwen/qwen3-coder-plus-2025-09-23
         - qwen/qwen3-embedding-0.6b
         - qwen/qwen3-embedding-8b
-        - qwen/qwen3-guard-gen-0.6b
-        - qwen/qwen3-guard-gen-8b
         - qwen/qwen3-max
         - qwen/qwen3-max-2025-09-23
         - qwen/qwen3-max-2026-01-23
@@ -20284,6 +20920,7 @@ components:
         - voyage/voyage-multilingual-2
         - voyage/voyage-multimodal-3
         - voyage/voyage-multimodal-3.5
+        - x-ai/grok-voice-think-fast-2.0
         - xiaomi/mimo-v2.5
         - xiaomi/mimo-v2.5-asr
         - xiaomi/mimo-v2.5-pro

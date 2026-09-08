@@ -117,6 +117,7 @@ export function validateCiSecretBoundaries(workflow) {
 	if (
 		!deployJob.includes("- migrate-production") ||
 		!deployCondition.includes("needs.migrate-production.result == 'success'") ||
+		!deployCondition.includes("vars.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true'") ||
 		!deployCondition.includes("needs.check-paths.outputs.migrations-changed != 'true'")
 	) {
 		throw new Error("production application deploys must remain gated by database migrations");

@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { loadPriceCard } from "@pipeline/pricing";
+import { requiresExplicitServiceTier } from "../pricing/service-tiers";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 import type { PriceCard } from "../pricing/types";
 import { getProviderPricingKey, ROUTABLE_CAPABILITY_STATUSES, isWithinEffectiveWindow } from "./context.shared";
@@ -392,7 +393,8 @@ export async function applyServiceTierRouting(args: {
     const requestedPlan = normalizeRequestedPlan(requestedTier);
     if (!requestedPlan) {
 		const candidates = args.candidates.filter((candidate) =>
-			!isTierDedicatedOffer(candidate, "priority") && !isTierSiblingModel(candidate, "priority")
+			!isTierDedicatedOffer(candidate, "priority") && !isTierSiblingModel(candidate, "priority") &&
+			!requiresExplicitServiceTier(candidate.pricingCard)
 		);
         return {
             candidates,
@@ -405,7 +407,8 @@ export async function applyServiceTierRouting(args: {
 					providerId: candidate.providerId,
 					apiModelId: candidate.apiModelId ?? null,
 					providerModelSlug: candidate.providerModelSlug ?? null,
-					reason: "service_tier_priority_required",
+					reason: isTierDedicatedOffer(candidate, "priority") || isTierSiblingModel(candidate, "priority")
+						? "service_tier_priority_required" : "service_tier_standard_unsupported",
 				})),
                 remappedProviders: [],
             },

@@ -4,6 +4,9 @@ import React from "react";
 import Link from "next/link";
 import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { formatArtificialAnalysisScore, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import {
 	formatBenchmarkScore,
 	normalizeBenchmarkScoreValue,
@@ -38,6 +41,9 @@ export default function ModelsUsingBenchmarkClient({
 	isLowerBetter,
 }: ClientProps) {
 	const [openRows, setOpenRows] = React.useState<Record<string, boolean>>({});
+	const [search, setSearch] = React.useState("");
+	const [limit, setLimit] = React.useState(25);
+	const filteredModels = models.filter((model) => `${model.name} ${model.organisation?.display_name ?? ""}`.toLowerCase().includes(search.toLowerCase()));
 
 	function formatScoreDisplay(r: any) {
 		const rawScore = r?.score ?? "N/A";
@@ -50,6 +56,7 @@ export default function ModelsUsingBenchmarkClient({
 			isPercentage
 		);
 		if (parsed !== null) {
+			if (isArtificialAnalysisBenchmark(benchmarkId)) return formatArtificialAnalysisScore(benchmarkId, parsed);
 			return formatBenchmarkScore({
 				value: parsed,
 				isPercentage,
@@ -93,12 +100,13 @@ export default function ModelsUsingBenchmarkClient({
 
 	return (
 		<div className="space-y-4">
-			<div>
+			<div className="flex flex-wrap items-center justify-between gap-3">
 				<h3 className="text-lg font-semibold">
-					Models Using This Benchmark
+					Model results
 				</h3>
+				<Input aria-label="Search benchmark results" placeholder="Search models" value={search} onChange={(event) => { setSearch(event.target.value); setLimit(25); }} className="sm:max-w-xs" />
 			</div>
-			{models.length > 0 ? (
+			{filteredModels.length > 0 ? (
 				<div className="overflow-x-auto">
 					<table className="min-w-full overflow-hidden rounded-2xl border border-zinc-200 text-sm shadow-xs dark:border-zinc-800">
 						<thead className="bg-zinc-100 dark:bg-zinc-800">
@@ -121,7 +129,7 @@ export default function ModelsUsingBenchmarkClient({
 							</tr>
 						</thead>
 						<tbody>
-							{models.map((model: any) => {
+							{filteredModels.slice(0, limit).map((model: any) => {
 								const sorted = sortResults(
 									model.benchmark_results || [],
 									isLowerBetter
@@ -368,10 +376,10 @@ export default function ModelsUsingBenchmarkClient({
 				</div>
 			) : (
 				<p className="text-muted-foreground">
-					No models currently using this benchmark in our database.
+					{search ? "No models match your search." : "No results available for this benchmark yet."}
 				</p>
 			)}
+			{filteredModels.length > limit ? <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + 25)}>Show more results ({limit} of {filteredModels.length})</Button> : null}
 		</div>
 	);
 }
-

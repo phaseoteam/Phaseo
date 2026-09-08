@@ -16,6 +16,8 @@ Use this page to find the correct API path before opening an endpoint reference.
 | Keep an existing OpenAI-compatible integration | [`POST /chat/completions`](./endpoint/chat-completions) |
 | Browse models and providers | [`GET /models`](./endpoint/models) and [`GET /providers`](./endpoint/providers) |
 | Create music or manage files | [`POST /music/generations`](./endpoint/music-generate) and [`POST /files`](./endpoint/files) |
+| Generate video (Beta) | [`POST /videos`](./endpoint/video-create) |
+| Submit a batch or download results (Beta) | [`POST /batches`](./endpoint/batches-create) and [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## Base URL
 
@@ -34,14 +36,16 @@ Use the OpenAPI file if you want to import the API into Postman, Hoppscotch, or 
 <Card
 	title="Phaseo Gateway OpenAPI"
 	icon="list-bullet"
-	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.public.yaml"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
 	View the specification file
 </Card>
 
+The documentation and SDKs use this same specification. Video and Batch endpoints are labelled **Beta**; workspace preview access is still required.
+
 ## Authentication
 
-Most endpoints require a standard gateway API key. Management endpoints require a management API key created in the dashboard.
+Use a standard Gateway API key for inference and a management API key with the appropriate permissions for administration. See [Authentication](../developers/authentication.mdx) and [Management API Keys](../developers/management-api-keys.mdx).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
@@ -53,21 +57,15 @@ If authentication fails, the API returns `401`.
 
 | Resource | What it does |
 | --- | --- |
-| Responses API | Generate model responses with tools, structured output, and multimodal input. |
-| Chat Completions | Keep an existing OpenAI-compatible chat integration. |
-| Anthropic Messages | Keep an Anthropic-compatible Messages integration. |
-| Embeddings | Create vector representations for search, retrieval, and classification. |
-| Images | Generate or edit images. |
-| Text-to-Speech | Generate spoken audio from text. |
-| Speech-to-Text | Transcribe or translate audio. |
-| Music Generation | Create music jobs and inspect their status. |
-| Files | Upload and retrieve inputs for supported API workflows. |
-| Models, Providers, and Endpoints | Discover what is available through the Gateway. |
-| Pricing, Activity, and Generations | Estimate cost and inspect request outcomes. |
-| API Keys and Workspaces | Manage programmatic access and workspace resources. |
+| Inference | Generate text, images, audio, and embeddings; rerank, moderate, or parse content. Start with [Responses](./endpoint/responses.mdx). |
+| Async Jobs & Files | Submit [video](./endpoint/video-create.mdx) or [batch](./endpoint/batches-create.mdx) jobs, transfer files, and configure webhooks. |
+| Models & Pricing | Discover [models](./endpoint/models.mdx), provider offers, and [estimated costs](./endpoint/pricing-calculate.mdx). |
+| Routing & Policies | Configure presets, provider credentials, private models, and [guardrails](./endpoint/guardrails.mdx). |
+| Usage & Monitoring | Inspect [logs](./endpoint/logs-list.mdx), activity, analytics, evaluations, and service health. |
+| Workspace Management | Manage [workspaces](./endpoint/workspaces-list.mdx), keys, budgets, identities, and integrations. |
 
 ## Billing and rate limits
 
-- Phaseo does not apply its own rate limits. Limits are enforced by upstream providers.
+- Handle provider throttling and applicable access policies using the [rate-limit guide](./limits.mdx).
 - Paid requests require enough wallet balance to pass the preflight credit check.
 - Free models with `:free` do not require deposited credits.

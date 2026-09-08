@@ -100,6 +100,24 @@ describe("batch credit reservations", () => {
 		expect(loadPriceCardMock).toHaveBeenCalledWith("spacex-ai", "grok-4.3", "text.generate");
 	});
 
+	it("prices a normalized OpenAI Pro batch using its public model alias", async () => {
+		loadPriceCardMock.mockImplementation(async (_provider: string, model: string) =>
+			model === "openai/gpt-6-astra-pro" ? { provider: "openai", model, rules: [] } : null,
+		);
+		await reserveBatchCredits({
+			workspaceId: "ws_1",
+			apiKeyId: "key_1",
+			requestId: "req_astra_pro",
+			providerId: "openai",
+			requests: [{
+				endpoint: "/v1/responses",
+				model: "openai/gpt-6-astra-pro",
+				body: { model: "gpt-6-astra", input: "hello", max_output_tokens: 8 },
+			}],
+		});
+		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-6-astra-pro", "text.generate");
+	});
+
 	it("quotes OVHcloud embeddings with its documented 50% Batch discount", async () => {
 		loadPriceCardMock.mockResolvedValue({
 			provider: "ovhcloud",

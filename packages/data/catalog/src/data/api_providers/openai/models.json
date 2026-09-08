@@ -9913,8 +9913,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -9931,9 +9931,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T12:00:00Z",
+      "notes": "Verified setup, two-turn audio, usage pricing and hold release through the Phaseo relay on 2026-09-07; workspace Realtime preview gate remains required."
     },
     "rate_limits": []
   },
@@ -9965,8 +9965,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -9983,9 +9983,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T12:00:00Z",
+      "notes": "Verified setup, two-turn audio, usage pricing and hold release through the Phaseo relay on 2026-09-07; workspace Realtime preview gate remains required."
     },
     "rate_limits": []
   },
@@ -9994,7 +9994,7 @@
     "provider_api_model_id": "openai:openai/gpt-realtime-2.1",
     "provider_model_slug": "gpt-realtime-2.1",
     "internal_model_id": "openai/gpt-realtime-2.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,audio",
     "output_modalities": "text,audio",
@@ -10018,7 +10018,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -10035,9 +10035,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-11T04:31:15.029+00:00",
-      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+      "status": "verified",
+      "checked_at": "2026-09-07T12:00:00Z",
+      "notes": "Verified setup, two-turn audio, usage pricing and hold release through the Phaseo relay on 2026-09-07; workspace Realtime preview gate remains required."
     },
     "rate_limits": []
   },
@@ -10046,7 +10046,7 @@
     "provider_api_model_id": "openai:openai/gpt-realtime-2.1-mini",
     "provider_model_slug": "gpt-realtime-2.1-mini",
     "internal_model_id": "openai/gpt-realtime-2.1-mini",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,audio",
     "output_modalities": "text,audio",
@@ -10070,7 +10070,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -10087,9 +10087,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-11T04:31:15.029+00:00",
-      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+      "status": "verified",
+      "checked_at": "2026-09-07T12:00:00Z",
+      "notes": "Verified setup, two-turn audio, usage pricing and hold release through the Phaseo relay on 2026-09-07; workspace Realtime preview gate remains required."
     },
     "rate_limits": []
   },
@@ -13202,6 +13202,7 @@
         "params": [
           { "param_id": "max_tokens", "provider_min": null, "provider_max": 128000, "provider_default": null, "notes": null },
           { "param_id": "reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "values": ["low", "medium", "high", "xhigh", "max"], "notes": null },
+          { "param_id": "reasoning.mode", "provider_min": null, "provider_max": null, "provider_default": "standard", "values": ["standard", "pro"], "notes": null },
           { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
           { "param_id": "structured_outputs", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
           { "param_id": "tools", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Responses API function and custom tools support async: true." },
@@ -13247,7 +13248,7 @@
     ],
     "routing_status": "active",
     "routable": true,
-    "provider_status": "limited_access",
+    "provider_status": "available",
     "phaseo_status": "enabled",
     "access_scope": "public",
     "regions": { "execution": ["global"], "data": ["global"] },
@@ -13255,6 +13256,88 @@
     "api": { "formats": ["responses", "chat_completions"], "endpoint": null, "deployment": null },
     "sources": ["https://openai.com/index/gpt-6-astra/", "https://developers.openai.com/api/docs/models/gpt-6-astra"],
     "verification": { "status": "verified", "checked_at": "2026-09-04T00:00:00Z", "notes": "OpenAI documents the model contract and API model ID. Phaseo routing is enabled for OpenAI accounts included in the limited-access rollout." },
+    "rate_limits": [
+      { "scope": "usage_tier", "tier": 1, "requests_per_minute": 500, "tokens_per_minute": 500000, "batch_queue_limit_tokens": 1500000 },
+      { "scope": "usage_tier", "tier": 2, "requests_per_minute": 5000, "tokens_per_minute": 1000000, "batch_queue_limit_tokens": 3000000 },
+      { "scope": "usage_tier", "tier": 3, "requests_per_minute": 5000, "tokens_per_minute": 2000000, "batch_queue_limit_tokens": 100000000 },
+      { "scope": "usage_tier", "tier": 4, "requests_per_minute": 10000, "tokens_per_minute": 4000000, "batch_queue_limit_tokens": 200000000 },
+      { "scope": "usage_tier", "tier": 5, "requests_per_minute": 15000, "tokens_per_minute": 40000000, "batch_queue_limit_tokens": 15000000000 }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-6-astra-pro",
+    "provider_api_model_id": "openai:openai/gpt-6-astra-pro",
+    "provider_model_slug": "gpt-6-astra-pro",
+    "internal_model_id": "openai/gpt-6-astra-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-09-03T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          { "param_id": "max_tokens", "provider_min": null, "provider_max": 128000, "provider_default": null, "notes": null },
+          { "param_id": "reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "values": ["low", "medium", "high", "xhigh", "max"], "notes": null },
+          { "param_id": "reasoning.mode", "provider_min": null, "provider_max": null, "provider_default": "pro", "values": ["standard", "pro"], "notes": null },
+          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "structured_outputs", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "tools", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Responses API function and custom tools support async: true." },
+          { "param_id": "tool_choice", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "reasoning_effort", "provider_min": null, "provider_max": null, "provider_default": null, "values": ["low", "medium", "high", "xhigh", "max"], "notes": null },
+          { "param_id": "prompt_cache_key", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "prompt_cache_options", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Supports explicit prompt caching with ttl: 30m." },
+          { "param_id": "stream", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": false,
+        "attachment": true,
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["text"],
+        "modes": []
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": ["/v1/responses", "/v1/chat/completions"],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": ["24h"],
+            "default": "24h"
+          }
+        },
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "provider_status": "available",
+    "phaseo_status": "enabled",
+    "access_scope": "public",
+    "regions": { "execution": ["global"], "data": ["global"] },
+    "service_tiers": ["standard", "flex", "priority", "batch"],
+    "api": { "formats": ["responses", "chat_completions"], "endpoint": null, "deployment": null },
+    "sources": ["https://openai.com/index/gpt-6-astra/", "https://developers.openai.com/api/docs/models/gpt-6-astra"],
+    "verification": { "status": "verified", "checked_at": "2026-09-04T00:00:00Z", "notes": "Phaseo exposes a Pro variant over OpenAI's documented gpt-6-astra API model with reasoning.mode set to pro." },
     "rate_limits": [
       { "scope": "usage_tier", "tier": 1, "requests_per_minute": 500, "tokens_per_minute": 500000, "batch_queue_limit_tokens": 1500000 },
       { "scope": "usage_tier", "tier": 2, "requests_per_minute": 5000, "tokens_per_minute": 1000000, "batch_queue_limit_tokens": 3000000 },

@@ -16,6 +16,9 @@ vi.mock("@/runtime/env", () => ({
 
 import {
 	claimAsyncOperationsForReconciliation,
+	claimAsyncWebhookDelivery,
+	listPendingAsyncWebhookDeliveries,
+	recordAsyncWebhookDeliveryResult,
 	updateAsyncOperationReconciliation,
 } from "./async-operations";
 
@@ -25,6 +28,30 @@ describe("async operation reconciliation storage", () => {
 		rpcMock.mockReset();
 		updateMock.mockReset();
 		eqMock.mockReset();
+	});
+
+	it("discovers due pending deliveries and expired first-attempt claims", async () => {
+		const query: Record<string, any> = {};
+		for (const method of ["select", "or", "in", "not", "neq", "order"]) query[method] = vi.fn(() => query);
+		query.limit = vi.fn(async () => ({ data: [{ workspace_id: "ws", kind: "batch", internal_id: "b", delivery_key: "batch.completed", event_type: "batch.completed", phase: "completed" }], error: null }));
+		fromMock.mockReturnValue(query);
+		const records = await listPendingAsyncWebhookDeliveries();
+		expect(records).toHaveLength(1);
+		const filter = query.or.mock.calls[0][0] as string;
+		expect(filter).toContain("and(status.eq.pending,next_attempt_at.lte.");
+		expect(filter).toContain("and(status.eq.claimed,claimed_at.lte.");
+		const cutoff = filter.split("claimed_at.lte.")[1].slice(0, -1);
+		expect(Date.now() - Date.parse(cutoff)).toBeGreaterThanOrEqual(300_000);
+		expect(Date.now() - Date.parse(cutoff)).toBeLessThan(301_000);
+	});
+
+	it("persists first-attempt identity and fences result writes with the claim token", async () => {
+		rpcMock.mockResolvedValue({ data: true, error: null });
+		const identity = { workspaceId: "ws", kind: "video" as const, internalId: "v", deliveryKey: "video.progress:50", claimToken: "owner" };
+		await claimAsyncWebhookDelivery({ ...identity, eventType: "video.progress", phase: "progress", progress: 50 });
+		expect(rpcMock).toHaveBeenLastCalledWith("claim_gateway_async_webhook_delivery", expect.objectContaining({ p_event_type: "video.progress", p_phase: "progress", p_progress: 50, p_claim_token: "owner" }));
+		await recordAsyncWebhookDeliveryResult({ ...identity, attempt: { status: "delivered" } });
+		expect(rpcMock).toHaveBeenLastCalledWith("record_gateway_async_webhook_result", expect.objectContaining({ p_claim_token: "owner" }));
 	});
 
 	it("claims due operations through the private reconciliation RPC", async () => {

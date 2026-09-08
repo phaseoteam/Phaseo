@@ -464,7 +464,7 @@ async function loadPresetFeedbackData(filters: Filters) {
 	const presets = (presetsData ?? []) as PresetRow[];
 	const presetIds = presets.map((preset) => preset.id);
 
-	let feedback: FeedbackRow[] = [];
+	const feedback: FeedbackRow[] = [];
 	let feedbackTruncated = false;
 	if (presetIds.length > 0) {
 		const pageSize = 1_000;

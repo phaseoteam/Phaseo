@@ -26,7 +26,17 @@
       "value": "Available through Requesty as deepinfra/Qwen/Qwen2.5-72B-Instruct."
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 3.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen2.5 Instruct 72B; Artificial Analysis ID b4f7d7a4-869a-4ee7-b17a-4046cd1e79fd; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen2-5-72b-instruct",
+      "rank": 434
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

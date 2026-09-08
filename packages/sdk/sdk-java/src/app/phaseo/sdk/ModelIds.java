@@ -376,6 +376,9 @@ public final class ModelIds {
     /** Model ID: <code>google/gemini-3.7-flash</code>. Model page: https://phaseo.app/models/google/gemini-3.7-flash */
     public static final String GOOGLE_GEMINI_3_7_FLASH = "google/gemini-3.7-flash";
 
+    /** Model ID: <code>google/gemini-3.8-flash</code>. Model page: https://phaseo.app/models/google/gemini-3.8-flash */
+    public static final String GOOGLE_GEMINI_3_8_FLASH = "google/gemini-3.8-flash";
+
     /** Model ID: <code>google/gemini-embedding-001</code>. Model page: https://phaseo.app/models/google/gemini-embedding-001 */
     public static final String GOOGLE_GEMINI_EMBEDDING_001 = "google/gemini-embedding-001";
 

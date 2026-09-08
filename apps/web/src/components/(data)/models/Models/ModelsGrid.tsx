@@ -161,6 +161,8 @@ function ModelsGridContent({
 	}, [rows.length, columns]);
 
 	if (virtualRows.length > 0) {
+		// The virtualizer's last stable measurement is an imperative cache, not render state.
+		// eslint-disable-next-line react-hooks/refs
 		lastNonEmptyVirtualRowsRef.current = virtualRows;
 	}
 
@@ -199,7 +201,9 @@ function ModelsGridContent({
 		);
 	}
 
+	// Reading the imperative cache avoids a blank frame while the virtualizer recalculates.
 	const rowsToRender =
+		// eslint-disable-next-line react-hooks/refs
 		virtualRows.length > 0 ? virtualRows : lastNonEmptyVirtualRowsRef.current;
 
 	return (

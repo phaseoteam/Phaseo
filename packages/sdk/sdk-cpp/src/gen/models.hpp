@@ -94,6 +94,7 @@ struct AnthropicMessagesResponse {
 };
 
 struct AnthropicTool {
+	std::optional<bool> async;
 	std::string description;
 	std::map<std::string, std::any> input_schema;
 	std::string name;
@@ -420,6 +421,7 @@ struct BatchRequest {
 	std::string model;
 	std::vector<std::string> prompts;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::vector<std::map<std::string, std::any>> requests;
 	std::string session_id;
 	std::string system;
@@ -498,6 +500,7 @@ struct BatchResponse {
 	std::string provider;
 	std::map<std::string, std::any> request_counts;
 	std::string request_id;
+	std::optional<std::string> results_url;
 	std::string session_id;
 	std::string status;
 	std::map<std::string, std::any> usage;
@@ -944,6 +947,7 @@ struct FileUploadRequest {
 };
 
 struct FunctionToolDefinition {
+	std::optional<bool> async;
 	std::map<std::string, std::any> function;
 	std::any type;
 };
@@ -2198,6 +2202,79 @@ struct PresetVersionResponse {
 
 using PresetVisibility = std::any;
 
+struct PrivateModel {
+	std::string base_url;
+	std::optional<std::string> catalog_model_id;
+	std::optional<int> context_length;
+	std::optional<std::string> created_at;
+	std::optional<std::string> created_by;
+	std::optional<std::string> credential_prefix;
+	std::optional<std::string> credential_suffix;
+	std::optional<std::string> custom_provider_name;
+	std::optional<std::string> custom_provider_url;
+	std::optional<std::string> description;
+	bool enabled;
+	std::optional<std::string> host_provider_id;
+	std::string id;
+	std::vector<std::string> input_modalities;
+	std::string local_slug;
+	std::optional<int> max_output_tokens;
+	std::string model_id;
+	std::string name;
+	std::vector<std::string> output_modalities;
+	std::any routing_policy;
+	bool supports_responses;
+	std::optional<std::string> updated_at;
+	std::string upstream_model_id;
+	std::string workspace_id;
+};
+
+struct PrivateModelCreateRequest {
+	std::string base_url;
+	std::optional<int> context_length;
+	std::string credential;
+	std::optional<std::string> custom_provider_name;
+	std::optional<std::string> custom_provider_url;
+	std::string description;
+	std::optional<bool> enabled;
+	std::optional<std::string> host_provider_id;
+	std::optional<int> max_output_tokens;
+	std::string model_reference;
+	std::string name;
+	std::any routing_policy;
+	std::optional<bool> supports_responses;
+	std::string upstream_model_id;
+};
+
+struct PrivateModelDeleteResponse {
+	bool deleted;
+};
+
+struct PrivateModelListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct PrivateModelResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct PrivateModelUpdateRequest {
+	std::string base_url;
+	std::optional<int> context_length;
+	std::string credential;
+	std::optional<std::string> custom_provider_name;
+	std::optional<std::string> custom_provider_url;
+	std::optional<std::string> description;
+	std::optional<bool> enabled;
+	std::optional<std::string> host_provider_id;
+	std::optional<int> max_output_tokens;
+	std::string model_reference;
+	std::string name;
+	std::any routing_policy;
+	std::optional<bool> supports_responses;
+	std::string upstream_model_id;
+};
+
 struct Provider {
 	std::string api_provider_id;
 	std::optional<std::string> api_provider_name;
@@ -2565,6 +2642,7 @@ struct VideoGenerationRequest {
 	std::optional<int> compression_quality;
 	std::optional<int> duration;
 	std::optional<bool> enhance_prompt;
+	std::vector<std::map<std::string, std::any>> frame_images;
 	std::optional<bool> generate_audio;
 	std::optional<double> input_audio_duration;
 	std::vector<std::any> input_references;
@@ -2575,6 +2653,7 @@ struct VideoGenerationRequest {
 	std::string person_generation;
 	std::string prompt;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> provider_params;
 	std::string resize_mode;
 	std::string resolution;

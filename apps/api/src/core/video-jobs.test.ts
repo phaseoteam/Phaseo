@@ -28,6 +28,13 @@ describe("video-jobs", () => {
 		upsertAsyncOperationMock.mockReset();
 	});
 
+	it("keeps pre-submission journals available to the reconciler", async () => {
+		claimAsyncOperationsForReconciliationMock.mockResolvedValue([{ workspaceId: "ws", kind: "video", internalId: "video", provider: "minimax", status: "pending", meta: { submissionState: "submitting", reservationId: "hold" } }]);
+		const jobs = await listPendingVideoJobs();
+		expect(jobs).toHaveLength(1);
+		expect(jobs[0].meta).toMatchObject({ submissionState: "submitting", reservationId: "hold" });
+	});
+
 	it("reads metadata from DB", async () => {
 		getAsyncOperationMock.mockResolvedValue({
 			workspaceId: "team_1",
@@ -91,6 +98,7 @@ describe("video-jobs", () => {
 			nativeId: "native_vid_5",
 			provider: "openai",
 			model: "sora-2",
+			meta: expect.objectContaining({ submissionState: "accepted" }),
 			nextReconcileAt: expect.any(String),
 		}));
 	});

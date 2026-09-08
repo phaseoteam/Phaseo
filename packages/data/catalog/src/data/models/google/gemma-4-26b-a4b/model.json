@@ -121,11 +121,21 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 26.1,
+      "score": 19.2,
       "is_self_reported": false,
-      "other_info": "Gemma 4 26B A4B (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemma 4 26B A4B (Reasoning); Artificial Analysis ID 6e1b44ff-c227-496b-aef4-19b70cd18c76; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-4-26b-a4b",
-      "rank": 179
+      "rank": 222
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 39.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemma 4 26B A4B (Reasoning); Artificial Analysis ID 6e1b44ff-c227-496b-aef4-19b70cd18c76; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemma-4-26b-a4b",
+      "rank": 142
     }
   ],
   "family_id": null,

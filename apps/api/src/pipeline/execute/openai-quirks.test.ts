@@ -55,7 +55,10 @@ describe("openai reasoning effort quirks", () => {
 	it("supports Astra efforts without none or minimal", () => {
 		expectSupports("gpt-6-astra", ["low", "medium", "high", "xhigh", "max"]);
 		expectSupports("openai/gpt-6-astra", ["low", "medium", "high", "xhigh", "max"]);
+		expectSupports("gpt-6-astra-pro", ["low", "medium", "high", "xhigh", "max"]);
+		expectSupports("openai/gpt-6-astra-pro", ["low", "medium", "high", "xhigh", "max"]);
 		expect(validateOpenAIReasoningEffort("gpt-6-astra", "max")).toBeNull();
+		expect(validateOpenAIReasoningEffort("gpt-6-astra-pro", "max")).toBeNull();
 		expect(validateOpenAIReasoningEffort("gpt-6-astra", "none")).toContain("does not support");
 	});
 });

@@ -18,6 +18,7 @@ import ModelPageNotice from "./ModelPageNotice";
 import ModelStickyHeader from "./ModelStickyHeader";
 import { UseModelSheet } from "./UseModelSheet";
 import ModelStatusBanner from "./overview/ModelStatusBanner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AccountPolicyNotice from "../AccountPolicyNotice";
 import { resolveModelDescription } from "@/lib/models/modelDescription";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
@@ -37,6 +38,7 @@ interface ModelDetailShellProps {
 	includeHidden?: boolean;
 	header?: ModelOverviewHeader;
 	modelOverview?: ModelOverviewPage | null;
+	requestedAlias?: string;
 }
 
 function getVisibleTabKeys(modelStatus?: string | null): string[] {
@@ -72,6 +74,7 @@ export default async function ModelDetailShell({
 	includeHidden = false,
 	header: prefetchedHeader,
 	modelOverview: prefetchedModelOverview,
+	requestedAlias,
 }: ModelDetailShellProps) {
 	const isFreeRouter = isFreeRouterModelId(modelId);
 	const [header, modelOverview, modelPageNotice, gatewayMetadata] = isFreeRouter
@@ -148,14 +151,19 @@ export default async function ModelDetailShell({
 					<div className="flex w-full items-start gap-4">
 						<div className="flex shrink-0 items-center justify-center">
 							<div className="relative flex h-10 w-10 items-center justify-center rounded-xl border md:h-16 md:w-16">
-								<div className="relative h-8 w-8 md:h-12 md:w-12">
+								{header.is_private || header.organisation.logo_url ? (
+									<Avatar className="size-full rounded-md after:rounded-md">
+										{header.organisation.logo_url ? <AvatarImage src={header.organisation.logo_url} alt={`${header.organisation.name} logo`} className="rounded-md object-cover" /> : null}
+										<AvatarFallback className="rounded-md">{header.organisation.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+									</Avatar>
+								) : <div className="relative h-8 w-8 md:h-12 md:w-12">
 									<Logo
 										id={header.organisation_id}
 										alt={header.name}
 										className="object-contain"
 										fill
 									/>
-								</div>
+								</div>}
 							</div>
 						</div>
 						<div className="flex min-w-0 flex-1 flex-col justify-center">
@@ -178,6 +186,7 @@ export default async function ModelDetailShell({
 					defaultIdentifier={header.model_id}
 					aliases={header.aliases}
 					variants={header.variants}
+					requestedAlias={requestedAlias}
 				/>
 							</div>
 						</div>

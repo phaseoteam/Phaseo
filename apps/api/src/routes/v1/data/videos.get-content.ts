@@ -6,6 +6,7 @@ import { validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { readResponsePreview } from "@core/bounded-stream";
 import { fetchVideoProviderStatus } from "@core/video-reconciliation";
+import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 
 import * as videoHelpers from "./videos.helpers";
 
@@ -142,7 +143,11 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {
 		});
 	}
 	const videoMeta = ownedVideo.meta;
-	if ((ownedVideo.record.provider ?? videoMeta?.provider) === "fal") {
+	const reconciledProvider = ownedVideo.record.provider ?? videoMeta?.provider;
+	if (videoMeta?.submissionState === "submitting" || videoMeta?.submissionState === "unknown") {
+		return err("not_ready", { reason: "video_submission_pending", video_id: id });
+	}
+	if (reconciledProvider === "fal" || reconciledProvider === "ltx" || reconciledProvider === "novita") {
 		const polled = await fetchVideoProviderStatus(ownedVideo.record);
 		const downloadUrl = normalizeText(polled?.metaPatch?.downloadUrl ?? videoMeta?.downloadUrl);
 		if (polled?.status === "failed") {
@@ -150,7 +155,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {
 				auth: authValue,
 				videoId: id,
 				videoMeta,
-				providerId: "fal",
+				providerId: reconciledProvider,
 				status: "failed",
 				model: ownedVideo.record.model,
 			});
@@ -161,7 +166,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {
 				auth: authValue,
 				videoId: id,
 				videoMeta,
-				providerId: "fal",
+				providerId: reconciledProvider,
 				status: "cancelled",
 				model: ownedVideo.record.model,
 			});
@@ -178,10 +183,11 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {
 				auth: authValue,
 				videoId: id,
 				videoMeta,
-				providerId: "fal",
+				providerId: reconciledProvider,
 				status: "completed",
 				model: ownedVideo.record.model,
 				seconds: polled.seconds,
+				requestOptions: polled.requestOptions,
 				metaPatch: polled.metaPatch,
 			});
 		}
@@ -389,22 +395,6 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {
 			const upstreamBody = await readResponsePreview(res.clone(), 1200).catch(() => "");
 			const upstreamJson = await res.clone().json().catch(() => null);
 			if (isGoogleOperationsGetAuthFailure(res.status, upstreamJson)) {
-				await finalizeVideoStatusIfTerminal({
-					auth: authValue,
-					videoId: id,
-					videoMeta,
-					providerId: videoMeta?.provider ?? "google-ai-studio",
-					status: "failed",
-					model: videoMeta?.model ?? null,
-					seconds: toFiniteNumber(videoMeta?.seconds),
-					resolution: videoMeta?.resolution ?? null,
-					quality: videoMeta?.quality ?? null,
-					metaPatch: {
-						googleOperationName: operationName,
-						googlePollingAuthUnsupported: true,
-						googlePollingAuthFailureAt: new Date().toISOString(),
-					},
-				});
 				return err("upstream_error", {
 					reason: "google_operation_auth_unsupported",
 					request_id: authValue.requestId,
@@ -737,6 +727,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {
 		const providerId = videoMeta?.provider ?? MINIMAX_PROVIDER_ID;
 		const model = String(task?.model ?? task?.data?.model ?? videoMeta?.model ?? "").trim();
 		await finalizeVideoStatusIfTerminal({
+			requestOptions: buildVideoPricingRequestOptions({ input_image_count: task?.usage?.input_image_count ?? videoMeta?.inputImageCount, input_video_seconds: task?.usage?.input_seconds ?? videoMeta?.inputVideoSeconds, input_audio_seconds: task?.usage?.input_audio_seconds ?? videoMeta?.inputAudioSeconds }),
 			auth: authValue,
 			videoId: id,
 			videoMeta,

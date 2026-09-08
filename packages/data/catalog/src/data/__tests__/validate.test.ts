@@ -468,16 +468,19 @@ describe('api provider model safety checks', () => {
         );
     });
 
-    test('Astra keeps its documented OpenAI contract and pricing while routing limited-access accounts', () => {
+    test('Astra keeps its documented OpenAI contract and pricing while available', () => {
         const row = readProviderModels('openai').find(
             (candidate: any) => candidate.internal_model_id === 'openai/gpt-6-astra'
+        );
+        const proRow = readProviderModels('openai').find(
+            (candidate: any) => candidate.internal_model_id === 'openai/gpt-6-astra-pro'
         );
 
         expect(row).toMatchObject({
             is_active_gateway: true,
             routable: true,
             routing_status: 'active',
-            provider_status: 'limited_access',
+            provider_status: 'available',
             phaseo_status: 'enabled',
             context_length: 1050000,
             max_output_tokens: 128000,
@@ -487,6 +490,34 @@ describe('api provider model safety checks', () => {
                 expect.objectContaining({
                     capability_id: 'text.generate',
                     status: 'active',
+                    params: expect.arrayContaining([
+                        expect.objectContaining({
+                            param_id: 'reasoning.mode',
+                            provider_default: 'standard',
+                            values: ['standard', 'pro'],
+                        }),
+                    ]),
+                }),
+            ])
+        );
+        expect(proRow).toMatchObject({
+            api_model_id: 'openai/gpt-6-astra-pro',
+            provider_model_slug: 'gpt-6-astra-pro',
+            internal_model_id: 'openai/gpt-6-astra-pro',
+            is_active_gateway: true,
+            routable: true,
+        });
+        expect(proRow?.capabilities).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    capability_id: 'text.generate',
+                    params: expect.arrayContaining([
+                        expect.objectContaining({
+                            param_id: 'reasoning.mode',
+                            provider_default: 'pro',
+                            values: ['standard', 'pro'],
+                        }),
+                    ]),
                 }),
             ])
         );
@@ -520,6 +551,46 @@ describe('api provider model safety checks', () => {
                 }),
             ])
         );
+        const proPricingPath = path.join(
+            DATA_ROOT,
+            'pricing',
+            'openai',
+            'openai-gpt-6-astra-pro',
+            'text.generate',
+            'pricing.json'
+        );
+        const proPricing = JSON.parse(fs.readFileSync(proPricingPath, 'utf8'));
+        expect(proPricing).toMatchObject({
+            key: 'openai:openai/gpt-6-astra-pro:text.generate',
+            api_model_id: 'openai/gpt-6-astra-pro',
+            capability_id: 'text.generate',
+        });
+        expect(proPricing.rules).toHaveLength(pricing.rules.length);
+    });
+
+    test('Astra distinguishes upstream cloud availability from Phaseo routability', () => {
+        const azureRow = readProviderModels('azure').find(
+            (candidate: any) => candidate.internal_model_id === 'openai/gpt-6-astra'
+        );
+        const bedrockRow = readProviderModels('amazon-bedrock').find(
+            (candidate: any) => candidate.internal_model_id === 'openai/gpt-6-astra'
+        );
+
+        expect(azureRow).toMatchObject({
+            provider_status: 'available',
+            phaseo_status: 'planned',
+            routing_status: 'active',
+            is_active_gateway: false,
+            routable: false,
+            service_tiers: [],
+        });
+        expect(bedrockRow).toMatchObject({
+            provider_status: 'unknown',
+            phaseo_status: 'planned',
+            routing_status: 'disabled',
+            is_active_gateway: false,
+            routable: false,
+        });
     });
 
     it('rejects internal routes whose Phaseo integration is not testing or enabled', () => {

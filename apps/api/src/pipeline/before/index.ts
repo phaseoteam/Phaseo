@@ -629,6 +629,9 @@ export async function beforeRequest(
     const contextTelemetry = context.contextTelemetry ?? null;
     const contextTimingSpans = {
         context_total: contextTelemetry?.totalMs,
+        context_preset_access: contextTelemetry?.presetAccessMs,
+        context_private_model: contextTelemetry?.privateModelMs,
+        context_byok_hydration: contextTelemetry?.byokHydrationMs,
         context_key_version: contextTelemetry?.keyVersionMs,
         context_cache_read: contextTelemetry?.cacheReadMs,
         context_credit_refresh: contextTelemetry?.creditRefreshMs,

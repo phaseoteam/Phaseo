@@ -5,6 +5,7 @@ import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
 import { workspaceHasAddon } from "@/billing/workspaceAddons";
+import { requestAwareAvatarUrl } from "./settings-profile-avatar";
 
 const emptyTeams = {
 	teams: [], membersByTeam: {}, invitesByTeam: {}, requestsByTeam: {},
@@ -136,7 +137,7 @@ accountSettingsTeamsRouter.get("/teams", async (c) => {
 	if (!accessibleIds.length) return c.json({ ...emptyTeams, currentUserId: user.id, personalTeamId: defaultWorkspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
 	const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
 	const [teamsResult, membersResult, invitesResult, requestsResult, walletsResult, ssoResult] = await Promise.all([
-		client.from("workspaces").select("id,name,publisher_handle").in("id", accessibleIds),
+		client.from("workspaces").select("id,name,publisher_handle,logo_url").in("id", accessibleIds),
 		client.from("workspace_members").select("workspace_id,user_id,role").in("workspace_id", accessibleIds),
 		client.from("workspace_invites").select("*,users(display_name)").in("workspace_id", accessibleIds).or(`expires_at.is.null,expires_at.gte.${sevenDaysAgo}`),
 		client.from("workspace_join_requests").select("id,workspace_id,requester_user_id,status,created_at,decided_at,teams:workspaces(name),requester:users!workspace_join_requests_requester_user_id_fkey(user_id,display_name),decider:users!workspace_join_requests_decided_by_fkey(user_id,display_name)").in("workspace_id", accessibleIds).or(`decided_at.is.null,decided_at.gte.${sevenDaysAgo}`),
@@ -144,7 +145,7 @@ accountSettingsTeamsRouter.get("/teams", async (c) => {
 		client.from("workspace_settings").select("workspace_id,sso_enabled,sso_enforced,sso_mode,sso_provider_identifier,sso_domains").in("workspace_id", accessibleIds),
 	]);
 	if ([teamsResult, membersResult, invitesResult, requestsResult, walletsResult, ssoResult].some((result) => result.error)) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const teams = (teamsResult.data ?? []).map((row) => ({ id: String(row.id), name: String(row.name), publisherHandle: String(row.publisher_handle ?? "").trim() || null })).filter((row) => row.id && row.name);
+	const teams = (teamsResult.data ?? []).map((row) => ({ id: String(row.id), name: String(row.name), publisherHandle: String(row.publisher_handle ?? "").trim() || null, logoUrl: requestAwareAvatarUrl(c.env, c.req.raw, row.logo_url) })).filter((row) => row.id && row.name);
 	const memberRows = membersResult.data ?? [];
 	const memberIds = Array.from(new Set(memberRows.map((row) => String(row.user_id ?? "")).filter(Boolean)));
 	const usersResult = memberIds.length ? await client.from("users").select("user_id,display_name").in("user_id", memberIds) : { data: [], error: null };

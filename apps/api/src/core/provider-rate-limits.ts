@@ -142,6 +142,7 @@ export function estimateProviderTokenReservation(args: {
 
 type CachedConfig = { expiresAt: number; value: ProviderRateLimitConfig | null };
 const configCache = new Map<string, CachedConfig>();
+const configInflight = new Map<string, Promise<ProviderRateLimitConfig | null>>();
 
 function finitePositive(value: unknown): number | null {
 	const parsed = Number(value);
@@ -167,16 +168,26 @@ async function loadConfig(providerId: string): Promise<ProviderRateLimitConfig |
 	const now = Date.now();
 	const cached = configCache.get(providerId);
 	if (cached && cached.expiresAt > now) return cached.value;
+	const inflight = configInflight.get(providerId);
+	if (inflight) return inflight;
 
-	const { data, error } = await getSupabaseAdmin()
-		.from("provider_rate_limits")
-		.select("provider_id,requests_per_minute,requests_per_day,tokens_per_minute,tokens_per_day,headroom_bps,enabled")
-		.eq("provider_id", providerId)
-		.maybeSingle();
-	if (error) throw new Error(`provider_rate_limit_config_error:${error.message ?? "unknown"}`);
-	const value = data ? parseProviderRateLimitConfig(data as Record<string, unknown>) : null;
-	configCache.set(providerId, { expiresAt: now + CONFIG_CACHE_TTL_MS, value });
-	return value;
+	const loader = (async () => {
+		const { data, error } = await getSupabaseAdmin()
+			.from("provider_rate_limits")
+			.select("provider_id,requests_per_minute,requests_per_day,tokens_per_minute,tokens_per_day,headroom_bps,enabled")
+			.eq("provider_id", providerId)
+			.maybeSingle();
+		if (error) throw new Error(`provider_rate_limit_config_error:${error.message ?? "unknown"}`);
+		const value = data ? parseProviderRateLimitConfig(data as Record<string, unknown>) : null;
+		configCache.set(providerId, { expiresAt: now + CONFIG_CACHE_TTL_MS, value });
+		return value;
+	})();
+	configInflight.set(providerId, loader);
+	try {
+		return await loader;
+	} finally {
+		configInflight.delete(providerId);
+	}
 }
 
 type ProviderRateLimitStub = {

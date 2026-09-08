@@ -27,7 +27,7 @@ vi.mock("@core/video-reservations", () => ({
 
 vi.mock("@core/video-jobs", () => ({
 	saveVideoJobMeta: (...args: unknown[]) => {
-		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
+		if (state.saveVideoJobMetaError && (args[2] as any).submissionState !== "submitting") throw state.saveVideoJobMetaError;
 		return saveVideoJobMetaMock(...args);
 	},
 }));
@@ -276,7 +276,7 @@ describe("non-text adapter bridge", () => {
 		);
 	});
 
-	it("releases a held video reservation when compat video success omits native id", async () => {
+	it("retains a held video reservation when compat video success omits native id", async () => {
 		state.reservationResult = {
 			reservationId: "video_hold:req_bridge_video_1",
 			held: true,
@@ -321,14 +321,8 @@ describe("non-text adapter bridge", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
-		expect(state.releaseCalls).toEqual([
-			{
-				workspaceId: "team_test",
-				reservationId: "video_hold:req_bridge_video_1",
-				releaseRefId: "req_bridge_video_1",
-			},
-		]);
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
+		expect(state.releaseCalls).toEqual([]);
 	});
 
 	it("fails the compat video response when async job metadata cannot be persisted", async () => {
@@ -380,7 +374,7 @@ describe("non-text adapter bridge", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
 		expect(state.releaseCalls).toEqual([]);
 	});
 

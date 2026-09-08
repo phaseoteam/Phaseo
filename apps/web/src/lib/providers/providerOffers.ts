@@ -5,10 +5,12 @@ const REGIONAL_SUFFIXES = ["-eu", "-us"] as const;
 const KNOWN_PROVIDER_DISPLAY_NAME_OVERRIDES = new Map<string, string>([
     ["openai", "OpenAI"],
     ["openai-eu", "OpenAI"],
+	["openrouter", "OpenRouter"],
     ["anthropic", "Anthropic"],
     ["anthropic-us", "Anthropic"],
     ["anthropic-aws", "Claude Platform for AWS"],
     ["anthropic-aws-us", "Claude Platform for AWS"],
+	["private-model", "Private endpoint"],
 ]);
 const KNOWN_PROVIDER_LOGO_ID_OVERRIDES = new Map<string, string>([
     ["anthropic-aws", "aws"],
@@ -60,7 +62,7 @@ export function formatProviderOfferDisplayName(args: {
     offerLabel?: string | null;
     offerScope?: ProviderOfferScope | null;
 }): string {
-    const providerName = resolveProviderDisplayName({
+    const providerName = resolveProviderBaseName({
         providerId: args.providerId,
         providerName: args.providerName,
     });
@@ -71,10 +73,12 @@ export function formatProviderOfferDisplayName(args: {
 
     if (!providerName) return "";
     if (!offerLabel) return providerName;
-    if (offerScope === "global" && explicitOfferLabel) return providerName;
-    if (offerScope === "regional" || (!explicitOfferLabel && inferredRegionalLabel)) {
+    if (offerScope === "global" && explicitOfferLabel && !inferredRegionalLabel) return providerName;
+    if (offerScope === "regional" || inferredRegionalLabel) {
         const regionalLabel = normalizeRegionalOfferLabel(providerName, offerLabel);
-        return regionalLabel ? `${providerName} (${regionalLabel})` : providerName;
+        if (providerName.toLowerCase().endsWith(`(${regionalLabel.toLowerCase()})`)) return providerName;
+        const baseName = providerName.replace(new RegExp(`(?:\\s+|-)${escapeRegExp(regionalLabel)}$`, "i"), "").trim();
+        return regionalLabel ? `${baseName || providerName} (${regionalLabel})` : providerName;
     }
     if (
         args.providerId &&
@@ -85,10 +89,23 @@ export function formatProviderOfferDisplayName(args: {
         return providerName;
     }
 
+    if (providerName.toLowerCase().endsWith(` ${offerLabel.toLowerCase()}`)) return providerName;
     return `${providerName} ${offerLabel}`;
 }
 
 export function resolveProviderDisplayName(args: {
+    providerId?: string | null;
+    providerName: string;
+    offerLabel?: string | null;
+    offerScope?: ProviderOfferScope | null;
+}): string {
+    return formatProviderOfferDisplayName({
+        ...args,
+        offerLabel: args.offerScope === "regional" ? args.offerLabel : undefined,
+    });
+}
+
+function resolveProviderBaseName(args: {
     providerId?: string | null;
     providerName: string;
 }): string {

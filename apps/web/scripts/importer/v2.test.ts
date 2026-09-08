@@ -28,6 +28,7 @@ import {
     staleModelSlugs,
     explicitlyRetiredAliasSlugs,
     stalePricingSkuIds,
+    stalePricingMeterIds,
     staleRouteVariantIds,
     stealthRouteIds,
     isProtectedProviderModel,
@@ -224,6 +225,19 @@ describe("stealth catalogue protection", () => {
         )).toEqual(["public-result"]);
     });
 
+    it("retires replaced JSON meters without touching historical, admin or protected pricing", () => {
+        const meter = { sku_id: "refreshed", metadata: { source: "json" }, billable: true };
+        expect(stalePricingMeterIds([
+            { ...meter, sku_meter_id: "old", meter_key: "requests" },
+            { ...meter, sku_meter_id: "current", meter_key: "input_video_seconds" },
+            { ...meter, sku_meter_id: "admin", meter_key: "custom", metadata: { source: "admin" } },
+            { ...meter, sku_meter_id: "protected", meter_key: "protected", metadata: { source: "json", source_key: "override" } },
+            { ...meter, sku_meter_id: "other-sku", sku_id: "unrefreshed", meter_key: "requests" },
+            { ...meter, sku_meter_id: "retired", meter_key: "old", billable: false },
+        ], new Set(["refreshed:input_video_seconds"]), new Set(["refreshed"]), new Set(["override"])))
+            .toEqual(["old"]);
+    });
+
     it("preserves protected pricing rules and route SKUs", () => {
         expect(stalePricingSkuIds(
             [
@@ -390,6 +404,31 @@ describe("explicit catalogue statuses", () => {
         };
         expect(phaseoStatus(offer)).toBe("unsupported");
         expect(routeAccessScope(offer)).toBe("public");
+        expect(phaseoRoutingEnabled(offer)).toBe(false);
+    });
+
+    it("keeps deprecated provider routes routable until their retirement window ends", () => {
+        const offer = {
+            provider_status: "deprecated",
+            phaseo_status: "enabled",
+            routing_status: "deprecated",
+            effective_to: "2099-01-01T00:00:00Z",
+            is_active_gateway: true,
+            routable: true,
+        };
+        expect(providerAvailabilityStatus(offer)).toBe("deprecated");
+        expect(phaseoRoutingEnabled(offer)).toBe(true);
+    });
+
+    it("disables deprecated provider routes after their retirement window ends", () => {
+        const offer = {
+            provider_status: "deprecated",
+            phaseo_status: "enabled",
+            routing_status: "deprecated",
+            effective_to: "2000-01-01T00:00:00Z",
+            is_active_gateway: true,
+            routable: true,
+        };
         expect(phaseoRoutingEnabled(offer)).toBe(false);
     });
 

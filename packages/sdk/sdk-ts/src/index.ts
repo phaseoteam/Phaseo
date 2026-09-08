@@ -434,6 +434,8 @@ export class Phaseo {
     create: async (req: BatchCreateRequest): Promise<BatchResponse> => this.createBatch(req),
     list: async (params: Record<string, unknown> = {}): Promise<BatchListResponse> => this.listBatches(params),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
+    streamResults: (batchId: string, options: { signal?: AbortSignal } = {}): Promise<ReadableStream<Uint8Array>> =>
+      this.streamBatchResults(batchId, options),
     cancel: async (batchId: string): Promise<BatchResponse> => this.cancelBatch(batchId),
     listRequests: async (batchId: string, options: BatchRequestListOptions = {}): Promise<BatchRequestRowsResponse> =>
       this.listBatchRequests(batchId, options),
@@ -994,6 +996,19 @@ export class Phaseo {
       () => req,
       extractBatchMetadata
     );
+  }
+
+  /** Stream batch JSONL without buffering. Cancel the stream or signal to stop downloading. */
+  async streamBatchResults(batchId: string, options: { signal?: AbortSignal } = {}): Promise<ReadableStream<Uint8Array>> {
+    const res = await this.fetchImpl(`${this.basePath}/batches/${encodeURIComponent(batchId)}/results`, {
+      method: "GET",
+      headers: { ...this.headers, Accept: "application/x-ndjson" },
+      signal: options.signal,
+      redirect: "error",
+    });
+    if (!res.ok) throw createHttpError(res, await res.text());
+    if (!res.body) throw new Error("Batch results response has no body");
+    return res.body;
   }
 
   getBatch(batchId: string): Promise<BatchResponse> {

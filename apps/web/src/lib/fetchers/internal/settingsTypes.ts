@@ -319,6 +319,7 @@ export type SettingsCreditsInitialData = {
 			id: string;
 		}>;
 	};
+	workspaceId: string | null;
 	wallet: {
 		stripe_customer_id?: string | null;
 		balance_bigint?: number | null;
@@ -552,7 +553,7 @@ export type WorkspacePrivacySettings = {
 };
 
 export type TeamsSettingsData = {
-	teams: Array<{ id: string; name: string }>;
+	teams: Array<{ id: string; name: string; publisherHandle?: string | null; logoUrl?: string | null }>;
 	membersByTeam: Record<string, any[]>;
 	invitesByTeam: Record<string, any[]>;
 	requestsByTeam: Record<string, any[]>;

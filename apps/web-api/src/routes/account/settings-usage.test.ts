@@ -7,6 +7,128 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account usage settings routes", () => {
+	it("resolves provider model slugs to canonical model metadata", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.includes("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.includes("v2_model_provider_routes")) {
+				return Response.json([{
+					model_id: "google/veo-3.1-fast",
+					api_model_id: "google/veo-3.1-fast",
+					provider_model_id: "veo-route-1",
+					provider_model_slug: "veo-3.1-fast-generate-001",
+				}]);
+			}
+			if (url.includes("v2_models")) {
+				return Response.json([{
+					model_id: "google/veo-3.1-fast",
+					name: "Veo 3.1 Fast",
+					organisation_id: "google",
+					organisation: { name: "Google" },
+				}]);
+			}
+			return Response.json([]);
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/usage/metadata?workspaceId=workspace-1&models=veo-3.1-fast-generate-001",
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+		expect(response.status).toBe(200);
+		const payload = await response.json() as any;
+		expect(payload.modelMetadataEntries).toEqual(expect.arrayContaining([
+			["veo-3.1-fast-generate-001", expect.objectContaining({
+				canonicalModelId: "google/veo-3.1-fast",
+				modelName: "Veo 3.1 Fast",
+				organisationId: "google",
+			})],
+		]));
+	});
+
+	it("scopes ambiguous provider aliases before selecting canonical metadata", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.includes("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.includes("v2_model_provider_routes")) {
+				return Response.json([
+					{ provider_slug: "pioneer", api_model_id: "anthropic/claude-opus-5-fast", model_id: "anthropic/claude-opus-5-fast", provider_model_slug: "claude-opus-5-fast" },
+					{ provider_slug: "venice", api_model_id: "anthropic/claude-opus-5", model_id: "anthropic/claude-opus-5", provider_model_slug: "claude-opus-5-fast" },
+				]);
+			}
+			if (url.includes("v2_models")) {
+				return Response.json([
+					{ model_id: "anthropic/claude-opus-5-fast", name: "Claude Opus 5 Fast", organisation_id: "anthropic", organisation: { name: "Anthropic" } },
+					{ model_id: "anthropic/claude-opus-5", name: "Claude Opus 5", organisation_id: "anthropic", organisation: { name: "Anthropic" } },
+				]);
+			}
+			return Response.json([]);
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/usage/metadata?workspaceId=workspace-1&models=claude-opus-5-fast&providers=venice",
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+		expect(response.status).toBe(200);
+		const payload = await response.json() as any;
+		expect(payload.modelMetadataEntries).toEqual(expect.arrayContaining([
+			["claude-opus-5-fast", expect.objectContaining({ canonicalModelId: "anthropic/claude-opus-5" })],
+		]));
+	});
+
+	it("scopes realtime session history to the authorized workspace and selects no secrets", async () => {
+		let query: URL | undefined;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "member" }]);
+			if (url.pathname.includes("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.includes("gateway_realtime_sessions")) { query = url; return Response.json([{ session_id: "rt_test", status: "billing_unresolved", reserved_nanos: 5000000000 }]); }
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/realtime?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cache-control")).toBe("private, no-store");
+		expect(query?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
+		expect(query?.searchParams.get("select")).not.toMatch(/metadata|secret|error_message/);
+		expect(await response.json()).toMatchObject({ sessions: [{ status: "billing_unresolved" }] });
+	});
+	it("denies realtime history to nonmembers before querying sessions", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			return Response.json(url.includes("/auth/v1/user") ? { id: "outsider" } : []);
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/realtime?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(403);
+		expect(fetchMock.mock.calls.some(([url]) => String(url).includes("gateway_realtime_sessions"))).toBe(false);
+	});
+	it.each(["video", "batch"])("filters %s jobs before limiting and returns safe normalized logging fields", async (kind) => {
+		let jobUrl = "";
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }));
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]));
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]));
+			if (url.includes("gateway_async_operations")) {
+				jobUrl = url;
+				return new Response(JSON.stringify([{ kind, internal_id: "job", status: "completed", created_at: "2026-09-06T10:00:00Z", updated_at: "2026-09-06T10:01:00Z", meta: { billingReason: "unexpected_zero_cost", submissionState: "accepted", providerSecret: "do-not-expose", webhook: { url: "https://receiver.test/hook", secret: "do-not-expose" }, webhookAttempts: [{ event_type: `${kind}.completed`, status: "scheduled_retry", attempt_number: 1, max_attempts: 4, tried_at: "2026-09-06T10:01:00Z", response_status: 503 }] } }]));
+			}
+			return new Response("[]");
+		}));
+		const response = await app.request(`https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=jobs&job_kind=${kind}`, { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		expect(new URL(jobUrl).searchParams.getAll("kind")).toContain(`eq.${kind}`);
+		const payload = await response.json() as any;
+		expect(payload.data.recentJobs[0]).toMatchObject({ kind, billing_reason: "unexpected_zero_cost", submission_state: "accepted", webhook: { attempt_count: 1, last_attempt_status: "scheduled_retry" } });
+		expect(JSON.stringify(payload)).not.toContain("do-not-expose");
+		expect(payload.data.recentJobs[0]).not.toHaveProperty("meta");
+	});
 	it("sorts flattened upstream attempts globally by start time", () => {
 		const attempts = sortUpstreamRequestsNewestFirst([
 			{ request_id: "request-a", attempt_number: 2, created_at: "2026-07-17T00:00:10Z" },
@@ -101,7 +223,7 @@ describe("account usage settings routes", () => {
 		expect(requestedUnfilteredLabelFacets).toBe(true);
 		await expect(labeledLogs.json()).resolves.toMatchObject({ view: "logs", data: { labelSummary: { key: "team", value: "support", requestCount: 1, totalCostNanos: 1000, isSampled: false } } });
 		await expect(upstream.json()).resolves.toMatchObject({ view: "upstream", data: { availableKeys: [{ id: "key-1", name: "Production" }], upstreamRequests: [{ id: "upstream-2", request_id: "G-test", attempt_number: 2 }, { id: "upstream-1", request_id: "G-test", attempt_number: 1 }], providerMetadataEntries: [["openai", { name: "OpenAI" }]], providerNameEntries: [["openai", "OpenAI"]] } });
-		await expect(jobs.json()).resolves.toMatchObject({ view: "jobs", data: { recentJobs: [{ internal_id: "job-1", webhook: { status: "delivered" } }], jobProviders: ["openai"] } });
+		await expect(jobs.json()).resolves.toMatchObject({ view: "jobs", data: { recentJobs: [{ internal_id: "job-1", webhook: { configured: true, attempt_count: 0 } }], jobProviders: ["openai"] } });
 		await expect(sessions.json()).resolves.toMatchObject({ view: "sessions", data: { sessions: [{ session_id: "session-1", request_count: 1, total_cost_nanos: 1000 }], sessionAppIds: ["app-1"] } });
 		await expect(detail.json()).resolves.toMatchObject({ data: { request: { request_id: "request-1" }, providerNames: [["openai", "OpenAI"]] } });
 	});

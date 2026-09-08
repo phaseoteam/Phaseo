@@ -33,7 +33,7 @@ const PHASEO_CLI_SCOPES = [
 	"pricing:read", "credits:read", "activity:read", "analytics:read", "generations:read",
 	"workspaces:read", "workspaces:write", "workspaces:delete", "keys:read", "keys:write",
 	"keys:delete", "presets:read", "presets:write", "presets:delete", "settings:read",
-	"settings:write", "provider_credentials:read", "provider_credentials:write", "provider_credentials:delete",
+	"settings:write", "provider_credentials:read", "provider_credentials:write", "provider_credentials:delete", "private_models:read", "private_models:write", "private_models:delete",
 	"guardrails:read", "guardrails:write", "guardrails:delete",
 	"management_keys:read", "management_keys:write", "management_keys:delete",
 	"oauth_clients:read", "oauth_clients:write", "oauth_clients:delete",
@@ -1186,6 +1186,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 		context.client.from("wallets").select("stripe_customer_id").eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("credit_ledger")
 			.select("id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at")
+			// Usage debits belong in usage logs; filter before the billing history limit.
+			.or("kind.is.null,kind.not.in.(charge,usage)")
 			.eq("workspace_id", workspaceId).order("event_time", { ascending: false }).limit(250),
 	]);
 	if (walletResult.error || transactionsResult.error) {

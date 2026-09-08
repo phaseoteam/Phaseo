@@ -251,6 +251,7 @@ function renderOperations(operations: IROperation[]): string {
 }
 
 function renderOperation(operation: IROperation): string {
+	const isJsonl = operation.responses.some((response) => Number(response.status) >= 200 && Number(response.status) < 300 && response.contentType === "application/x-ndjson");
 	const pathParams = operation.params.filter((param) => param.in === "path");
 	const pathTemplate = renderPathTemplate(operation.path, pathParams);
 	return [
@@ -258,7 +259,7 @@ function renderOperation(operation: IROperation): string {
 		"{",
 		"\t$path = $path ?? [];",
 		`\t$resolvedPath = ${pathTemplate};`,
-		`\treturn $client->request("${operation.method.toUpperCase()}", $resolvedPath, $query, $headers, $body);`,
+		`\treturn $client->${isJsonl ? "requestRaw" : "request"}("${operation.method.toUpperCase()}", $resolvedPath, $query, $headers, $body);`,
 		"}"
 	].join("\n");
 }

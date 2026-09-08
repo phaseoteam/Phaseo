@@ -456,7 +456,7 @@ async function resolveBatchPriceCard(args: {
 					);
 					return { capability, pricingPlan: hasBatch ? "batch" : "free", card };
 				}
-				if (card && isImageBatchEndpoint(args.endpoint)) {
+				if (card && args.providerId === OPENAI_BATCH_PROVIDER_ID && isImageBatchEndpoint(args.endpoint)) {
 					const derived = deriveOpenAiImageBatchPriceCard(card);
 					if (derived && Array.isArray((derived as any).rules)) {
 						return { capability, pricingPlan: "batch", card: derived };
@@ -763,6 +763,15 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		const endpoint = extractRequestEndpoint(requestEntry, meta.endpoint);
 		const usage = body.usage;
 		const videoEndpoint = isVideoBatchEndpoint(endpoint);
+		if (videoEndpoint) {
+			const videoStatus = String(body.status ?? "").toLowerCase();
+			if (["failed", "cancelled", "canceled", "expired"].includes(videoStatus)) {
+				rowCostsByIndex[index] = 0;
+				pricedResponses += 1;
+				continue;
+			}
+			if (videoStatus !== "completed") return { ok: false, reason: "video_output_not_terminal" };
+		}
 		const imageEndpoint = isImageBatchEndpoint(endpoint);
 		const moderationEndpoint = isModerationBatchEndpoint(endpoint);
 		if ((!usage || typeof usage !== "object") && !videoEndpoint && !imageEndpoint && !moderationEndpoint) {
@@ -933,7 +942,11 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 	}
 	status = status === "canceled" ? "cancelled" : status;
 
-	const finalizedAt = new Date().toISOString();
+	const previousFinalizedAt = record.meta.finalizedAt;
+	const finalizedAt = isTerminalBatchStatus(currentStatus) &&
+		typeof previousFinalizedAt === "string" && Number.isFinite(Date.parse(previousFinalizedAt))
+		? previousFinalizedAt
+		: new Date().toISOString();
 	const finalizedAtMs = Date.parse(finalizedAt);
 	const providerDispatchedAtMs = Number(record.meta.providerDispatchedAtMs);
 	const generationMs = Number.isFinite(providerDispatchedAtMs)
@@ -1056,6 +1069,17 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		};
 	}
 
+	if (settlement.costNanos === 0 && Number(record.meta.reservedNanos) > 0 && record.meta.keySource !== "byok" && Number(settlement.pricedUsage.requests) > 0) {
+		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+			...completionTimingPatch, finalizedAt, charged: false, billingReason: "unexpected_zero_cost",
+			pricedUsage: settlement.pricedUsage, pricingBreakdown: settlement.pricingBreakdown,
+		});
+		if (record.meta.billingReason !== "unexpected_zero_cost") await emitGatewayOperationalFailure({
+			workflow: "batch_finalization", workspaceId: args.workspaceId, resourceId: args.batchId,
+			reason: "unexpected_zero_cost", error: new Error("Successful batch rows priced at zero despite a paid reservation; hold retained"),
+		});
+		return { status, charged: false, billed: false, reason: "unexpected_zero_cost" };
+	}
 	let settlementReason = settlement.reason;
 	let reservationStatus: string | null = null;
 	let chargeApplied = settlement.costNanos <= 0;

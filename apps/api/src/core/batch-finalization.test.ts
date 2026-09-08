@@ -289,6 +289,18 @@ vi.mock("@core/wallet-reservations", () => ({
 }));
 
 describe("batch-finalization", () => {
+	it("preserves completion time and duration when an already billed batch is read again", async () => {
+		resetState();
+		state.alreadyBilled = true;
+		const finalizedAt = "2026-09-06T10:00:30.000Z";
+		state.record = { status: "completed", meta: {
+			provider: "openai", finalizedAt, providerDispatchedAtMs: Date.parse("2026-09-06T10:00:00.000Z"),
+		} };
+		const { finalizeBatchJob } = await import("./batch-finalization");
+		await finalizeBatchJob({ workspaceId: "ws_test", batchId: "batch_test", status: "completed" });
+		expect(state.statusCalls[0]?.metaPatch).toMatchObject({ finalizedAt, durationMs: 30000, generationMs: 30000 });
+		expect(state.walletCalls).toHaveLength(0);
+	});
 	beforeEach(() => {
 		resetState();
 		vi.unstubAllGlobals();
@@ -1009,6 +1021,20 @@ describe("batch-finalization", () => {
 		});
 	});
 
+	it("retains a paid batch hold when successful rows unexpectedly become free", async () => {
+		state.record = { workspaceId: "ws", batchId: "batch", status: "completed", meta: {
+			provider: "openai", endpoint: "/v1/moderations", outputFileId: "file", reservationId: "hold",
+			reservedNanos: 100_000_000, reservationStatus: "held", requestCounts: { total: 1, completed: 1, failed: 0 },
+		} };
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ response: { status_code: 200, body: { model: "openai/omni-moderation", results: [{ flagged: false }] } } }))));
+		const { finalizeBatchJob } = await import("./batch-finalization");
+		const result = await finalizeBatchJob({ workspaceId: "ws", batchId: "batch", status: "completed" });
+		expect(result).toMatchObject({ billed: false, charged: false, reason: "unexpected_zero_cost" });
+		expect(state.walletCalls).toEqual([]);
+		expect(state.markCalls).toEqual([]);
+		expect(state.statusCalls.at(-1)?.metaPatch.billingReason).toBe("unexpected_zero_cost");
+	});
+
 	it("charges completed image batches from output image count and input request options", async () => {
 		state.record = {
 			workspaceId: "ws_batch_test",
@@ -1717,7 +1743,7 @@ describe("batch-finalization", () => {
 		});
 	});
 
-	it("settles completed video batches from output rows and matching input request metadata", async () => {
+	it.each(["completed", "failed", "expired", "in_progress"])("settles video batch rows according to their %s generation status", async (videoStatus) => {
 		state.captureResult = {
 			status: "captured",
 			applied: true,
@@ -1763,7 +1789,7 @@ describe("batch-finalization", () => {
 								body: {
 									id: "video_out_123",
 									model: "openai/sora-2",
-									status: "completed",
+									status: videoStatus,
 									seconds: 6,
 								},
 							},
@@ -1794,6 +1820,17 @@ describe("batch-finalization", () => {
 			batchId: "batch_video_123",
 			status: "completed",
 		});
+		if (videoStatus !== "completed") {
+			expect(state.chargeCalls).toEqual([]);
+			expect(state.walletCalls.some((call: any) => Number(call.actualNanos) > 0)).toBe(false);
+			if (videoStatus === "in_progress") {
+				expect(result.billed).toBe(false);
+				expect(state.walletCalls).toEqual([]);
+			} else {
+				expect(result.billed).toBe(true);
+			}
+			return;
+		}
 
 		expect(result).toEqual({
 			status: "completed",
