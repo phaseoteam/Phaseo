@@ -16,10 +16,51 @@ const env = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("fetchModelsPageCatalogue", () => {
+	it("loads more than 1,000 models with one catalogue RPC", async () => {
+		const rows = Array.from({ length: 2001 }, (_, index) => ({
+			model_id: `test/model-${index}`, name: `Model ${index}`,
+		}));
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => new Response(
+			JSON.stringify(String(input).includes("get_public_models_page_payload") ? rows : []),
+		));
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await fetchModelsPageCatalogue(env);
+		expect(result.models).toHaveLength(2001);
+		const calls = fetchMock.mock.calls.filter(([input]) => String(input).includes("get_public_models_page_payload"));
+		expect(calls).toHaveLength(1);
+		expect(String(calls[0][0])).not.toContain("offset=");
+	});
+
+	it("rejects malformed catalogue payloads rather than caching an empty success", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => new Response(
+			String(input).includes("get_public_models_page_payload") ? "null" : "[]",
+		)));
+		await expect(fetchModelsPageCatalogue(env)).rejects.toThrow("Invalid models catalogue payload");
+	});
+
+	it("starts weekly metrics before the unfiltered catalogue finishes", async () => {
+		let releaseRows!: () => void;
+		const rowsReady = new Promise<void>((resolve) => { releaseRows = resolve; });
+		let metricsStarted!: () => void;
+		const metricsReady = new Promise<void>((resolve) => { metricsStarted = resolve; });
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("get_public_models_page_payload")) await rowsReady;
+			if (String(input).includes("get_v2_public_model_weekly_metrics")) metricsStarted();
+			return new Response("[]", { status: 200 });
+		}));
+		const catalogue = fetchModelsPageCatalogue(env);
+		try {
+			await metricsReady;
+		} finally {
+			releaseRows();
+		}
+		await expect(catalogue).resolves.toMatchObject({ models: [], pricingComplete: true });
+	});
+
 	it("filters organisation rows after the JSON catalogue RPC returns", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
-			if (url.includes("get_public_models_page_rows")) {
+			if (url.includes("get_public_models_page_payload")) {
 				return new Response(JSON.stringify([
 					{ model_id: "adept/fuyu-8b", organisation_id: "adept", name: "Fuyu 8b" },
 					{ model_id: "openai/gpt-test", organisation_id: "openai", name: "GPT Test" },

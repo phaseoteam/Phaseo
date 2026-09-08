@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import { PRIVATE_NO_STORE_HEADERS, publicCacheHeaders } from "./cache";
 
 describe("cache policy helpers", () => {
+	it("keeps a week of edge staleness out of the browser cache", () => {
+		const headers = publicCacheHeaders({
+			edgeTtlSeconds: 300,
+			staleWhileRevalidateSeconds: 604800,
+			staleIfErrorSeconds: 604800,
+			browserTtlSeconds: 0,
+			browserStaleWhileRevalidateSeconds: 0,
+		});
+		expect(headers["Cache-Control"]).toBe("public, max-age=0, s-maxage=300");
+		expect(headers["Cloudflare-CDN-Cache-Control"]).toBe("public, max-age=300, stale-while-revalidate=604800, stale-if-error=604800");
+	});
+
 	it("makes anonymous data cacheable for browsers and Workers Cache", () => {
 		expect(publicCacheHeaders({ edgeTtlSeconds: 30, staleWhileRevalidateSeconds: 60 })).toEqual({
 			"Cache-Control": "public, max-age=60, s-maxage=30, stale-while-revalidate=60",

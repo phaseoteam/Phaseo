@@ -498,7 +498,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		? context.client.from("v2_request_facts").select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", timeRange.from).lte("occurred_at", timeRange.to).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
 		: null;
 	const [rollupResult, keysResult, facetsResult, labelFacetFactsResult, labelSummaryFactsResult] = await Promise.all([
-		context.client.from("v2_web_private_usage_daily").select("canonical_model_id,provider,app_id").eq("workspace_id", workspaceId).gte("bucket_15m", timeRange.from).lte("bucket_15m", timeRange.to),
+		context.client.rpc("get_private_usage_facets", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to }),
 		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
 		context.client.rpc("get_gateway_request_facets", {
 			p_workspace_id: workspaceId,
@@ -509,6 +509,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		labelFacetFactsQuery,
 		labelSummaryFactsQuery,
 	]);
+	if (rollupResult.error || !Array.isArray(rollupResult.data)) return c.json({ error: "usage_facets_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const requestRows = requestsResult.data ?? [];
 	const hasMoreRequests = requestRows.length > pageSize;
 	const visibleRequestRows = requestRows.slice(0, pageSize);

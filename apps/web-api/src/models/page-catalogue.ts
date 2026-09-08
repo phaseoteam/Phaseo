@@ -307,28 +307,16 @@ export type ModelsPageQuery = {
 };
 
 async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
-	const rows: Row[] = [];
-	const client = getDataClient(env);
-	for (let offset = 0; ; offset += 1_000) {
-		let request = (
-			query.region || query.serviceTier
-				? client.rpc(
-					"get_v2_public_models_page_rows",
-					{ p_region: query.region ?? null, p_service_tier: query.serviceTier ?? null },
-				)
-				: client.rpc("get_public_models_page_rows")
-		);
-		const result = await request.range(offset, offset + 999);
-		if (result.error) throw result.error;
-		const pageRows = (result.data ?? []) as Row[];
-		rows.push(...(
-			query.organisationId
-				? pageRows.filter((row) => String(row.organisation_id ?? "") === query.organisationId)
-				: pageRows
-		));
-		if ((result.data?.length ?? 0) < 1_000) break;
-	}
-	return rows;
+	const { data, error } = await getDataClient(env).rpc("get_public_models_page_payload", {
+		p_region: query.region || null,
+		p_service_tier: query.serviceTier || null,
+		p_organisation_id: query.organisationId || null,
+	});
+	if (error) throw error;
+	if (!Array.isArray(data)) throw new Error("Invalid models catalogue payload");
+	return query.organisationId
+		? data.filter((row: Row) => String(row.organisation_id ?? "") === query.organisationId)
+		: data;
 }
 
 async function weeklyMetrics(env: Env, modelIds?: string[]): Promise<WeeklyMetricRow[]> {
@@ -376,13 +364,13 @@ export async function fetchModelsPageCatalogue(
 	query: ModelsPageQuery = {},
 	_catalogueVersion: "v1" | "v2" = "v2",
 ): Promise<{ models: Row[]; pricingComplete: boolean }> {
-	const databaseRows = await databasePageRows(env, query);
-	const modelWeeklyMetrics = await weeklyMetrics(
-		env,
-		query.organisationId
-			? databaseRows.map((row) => String(row.model_id ?? "")).filter(Boolean)
-			: undefined,
-	);
+	const rowsPromise = databasePageRows(env, query);
+	const metricsPromise = query.organisationId
+		? rowsPromise.then((rows) => weeklyMetrics(
+			env, rows.map((row) => String(row.model_id ?? "")).filter(Boolean),
+		))
+		: weeklyMetrics(env);
+	const [databaseRows, modelWeeklyMetrics] = await Promise.all([rowsPromise, metricsPromise]);
 	return {
 		models: attachModelsPageVariants(mergeModelWeeklyMetrics(
 		databaseRows

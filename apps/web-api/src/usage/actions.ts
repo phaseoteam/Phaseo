@@ -1590,89 +1590,16 @@ export async function fetchFunStats(
 		};
 	}
 
-	const { data: rows } = await supabase
-		.from("v2_web_private_usage_daily")
-		.select(
-			"canonical_model_id, provider, requests, total_cost_nanos, latency_sum_ms, latency_samples",
-		)
-		.eq("workspace_id", workspaceId)
-		.gte("bucket_15m", timeRange.from)
-		.lte("bucket_15m", timeRange.to);
-
-	if (!rows || rows.length === 0) {
-		return {
-			topModel: null,
-			topProvider: null,
-			mostExpensive: null,
-			fastestModel: null,
-		};
+	const { data, error } = await supabase.rpc("get_private_usage_summary", {
+		p_workspace_id: workspaceId,
+		p_from: timeRange.from,
+		p_to: timeRange.to,
+	});
+	if (error) throw error;
+	if (!data || typeof data !== "object" || Array.isArray(data)) {
+		throw new Error("usage_summary_invalid");
 	}
-
-	// Top model by requests
-	const modelCounts = new Map<string, number>();
-	rows.forEach((r: any) => {
-		const model = r.canonical_model_id || "unknown";
-		const requests = Number(r.requests ?? 0) || 0;
-		modelCounts.set(model, (modelCounts.get(model) || 0) + requests);
-	});
-	const topModelEntry = Array.from(modelCounts.entries()).sort((a, b) => b[1] - a[1])[0];
-	const topModel = topModelEntry
-		? { name: topModelEntry[0], requests: topModelEntry[1] }
-		: null;
-
-	// Top provider by requests
-	const providerCounts = new Map<string, number>();
-	rows.forEach((r: any) => {
-		const provider = r.provider || "unknown";
-		const requests = Number(r.requests ?? 0) || 0;
-		providerCounts.set(provider, (providerCounts.get(provider) || 0) + requests);
-	});
-	const topProviderEntry = Array.from(providerCounts.entries()).sort((a, b) => b[1] - a[1])[0];
-	const topProvider = topProviderEntry
-		? { name: topProviderEntry[0], requests: topProviderEntry[1] }
-		: null;
-
-	// Most expensive model
-	const modelCosts = new Map<string, number>();
-	rows.forEach((r: any) => {
-		const model = r.canonical_model_id || "unknown";
-		const cost = Number(r.total_cost_nanos ?? 0) / 1e9;
-		modelCosts.set(model, (modelCosts.get(model) || 0) + cost);
-	});
-	const mostExpensiveEntry = Array.from(modelCosts.entries()).sort((a, b) => b[1] - a[1])[0];
-	const mostExpensive = mostExpensiveEntry
-		? { name: mostExpensiveEntry[0], cost: mostExpensiveEntry[1] }
-		: null;
-
-	// Fastest model (average latency)
-	const modelLatencySums = new Map<string, { sum: number; samples: number }>();
-	rows.forEach((r: any) => {
-		const model = r.canonical_model_id || "unknown";
-		const latencySum = Number(r.latency_sum_ms ?? 0) || 0;
-		const latencySamples = Number(r.latency_samples ?? 0) || 0;
-		if (latencySamples <= 0 || latencySum <= 0) return;
-		const current = modelLatencySums.get(model) ?? { sum: 0, samples: 0 };
-		current.sum += latencySum;
-		current.samples += latencySamples;
-		modelLatencySums.set(model, current);
-	});
-	const modelAvgLatencies = Array.from(modelLatencySums.entries())
-		.map(([model, values]) => ({
-			model,
-			avg: values.samples > 0 ? values.sum / values.samples : Number.POSITIVE_INFINITY,
-		}))
-		.filter((entry) => Number.isFinite(entry.avg) && entry.avg > 0)
-		.sort((a, b) => a.avg - b.avg);
-	const fastestModel = modelAvgLatencies[0]
-		? { name: modelAvgLatencies[0].model, speedMs: Math.round(modelAvgLatencies[0].avg) }
-		: null;
-
-	return {
-		topModel,
-		topProvider,
-		mostExpensive,
-		fastestModel,
-	};
+	return data as FunStatsResult;
 }
 
 /**
@@ -2153,40 +2080,30 @@ export async function fetchChartData(
 		);
 	};
 
-	// Fetch current period data (aggregated)
-	const { data: rows, error: rollupError } = await supabase.rpc(
-		"get_usage_chart_rollup",
-		{
-			p_team: workspaceId,
-			p_from: params.timeRange.from,
-			p_to: params.timeRange.to,
-			p_bucket: bucketKey,
-			p_key_id: params.keyFilter ?? null,
-		},
-	);
-	if (rollupError) {
-		console.error("Error fetching usage rollup:", rollupError);
-	}
-
-	// Fetch previous period for comparison (aggregated)
+	// Both periods are independent; fetch them concurrently.
 	const fromDate = new Date(params.timeRange.from);
 	const toDate = new Date(params.timeRange.to);
 	const windowMs = toDate.getTime() - fromDate.getTime();
 	const prevFrom = new Date(fromDate.getTime() - windowMs).toISOString();
 	const prevTo = fromDate.toISOString();
-	const { data: prevRows, error: prevError } = await supabase.rpc(
-		"get_usage_chart_rollup",
-		{
+	const [{ data: rows, error: rollupError }, { data: prevRows, error: prevError }] = await Promise.all([
+		supabase.rpc("get_usage_chart_rollup", {
+			p_team: workspaceId,
+			p_from: params.timeRange.from,
+			p_to: params.timeRange.to,
+			p_bucket: bucketKey,
+			p_key_id: params.keyFilter ?? null,
+		}),
+		supabase.rpc("get_usage_chart_rollup", {
 			p_team: workspaceId,
 			p_from: prevFrom,
 			p_to: prevTo,
 			p_bucket: bucketKey,
 			p_key_id: params.keyFilter ?? null,
-		},
-	);
-	if (prevError) {
-		console.error("Error fetching usage rollup (prev):", prevError);
-	}
+		}),
+	]);
+	if (rollupError) console.error("Error fetching usage rollup:", rollupError);
+	if (prevError) console.error("Error fetching usage rollup (prev):", prevError);
 	let currentRows = (rows ?? []) as any[];
 	if (params.forceLive) {
 		const liveRows = await fetchGatewayRequestFallbackRows(

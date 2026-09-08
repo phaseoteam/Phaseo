@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { requireUser } from "@/auth/requireUser";
-import { getDataClient } from "@/data/supabase";
+import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import {
@@ -231,6 +231,8 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/preview", asy
 accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const userClient = getAuthenticatedDataClient(c.env, c.req.raw);
+	if (!userClient) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const rateLimitResponse = await enforceOnboardingRateLimit(c, user.id);
 	if (rateLimitResponse) return rateLimitResponse;
 	const rawBody = await c.req.json().catch(() => null);
@@ -304,7 +306,7 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		if (!verified.data) return responseError(c, "This ownership proof has already been used.", 409);
 	}
 	try {
-		if (!await reserveProviderSubmissionSlot(client, user.id)) {
+		if (!await reserveProviderSubmissionSlot(userClient, user.id)) {
 			return c.json({ ok: false, error: "rate_limited", message: "Provider onboarding submissions are limited to five per user per day." }, 429, PRIVATE_NO_STORE_HEADERS);
 		}
 	} catch {
