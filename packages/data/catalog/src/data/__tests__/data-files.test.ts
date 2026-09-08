@@ -283,6 +283,14 @@ describe('Aliases', () => {
       expect(modelIds.has(j.resolved_model_id)).toBe(true);
     });
   }
+
+  test('OpenAI image aliases resolve to GPT Image 2.5 Flare', () => {
+    for (const aliasDirectory of ['openai-gpt-image-latest', 'openai-gpt-image-2.5']) {
+      const alias = readJson(path.join(aliasesDir, aliasDirectory, 'alias.json'));
+      expect(alias.resolved_api_model_id).toBe('openai/gpt-image-2.5-flare');
+      expect(alias.resolved_model_id).toBe('openai/gpt-image-2.5-flare');
+    }
+  });
 });
 
 // API Providers ----------------------------------------------------------

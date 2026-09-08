@@ -87,7 +87,21 @@ describe("OpenAI image edit schema", () => {
 			prompt: "edit",
 			quality: "max",
 		}).success).toBe(false);
+		expect(ImagesEditSchema.safeParse({
+			model: "spacex-ai/grok-imagine-image-2.0",
+			image: "image",
+			prompt: "edit",
+			quality: "xhigh",
+		}).success).toBe(false);
 	});
+
+	it.each(["openai/gpt-image-2.5-flare", "openai/gpt-image-2.5-sunburst"])(
+		"validates GPT Image 2.5 edit dimensions for %s",
+		(model) => {
+			expect(ImagesEditSchema.safeParse({ model, image: "image", prompt: "edit", size: "2048x1152" }).success).toBe(true);
+			expect(ImagesEditSchema.safeParse({ model, image: "image", prompt: "edit", size: "1025x1024" }).success).toBe(false);
+		},
+	);
 
 	it("enforces image count, prompt, and output compression constraints", () => {
 		expect(ImagesEditSchema.safeParse({

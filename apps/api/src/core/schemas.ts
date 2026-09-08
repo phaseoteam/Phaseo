@@ -1173,6 +1173,32 @@ function validateMiniMaxImageRequest(
     });
 }
 
+function validateGptImage2Size(
+    request: { size?: string },
+    model: string | undefined,
+    ctx: z.RefinementCtx,
+): void {
+    if (!model || !/^gpt-image-2(?:\.5)?(?:$|-)/.test(model)) return;
+    if (!request.size || request.size === "auto") return;
+    const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
+    if (!dimensions) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["size"], message: "GPT Image 2 size must be auto or WIDTHxHEIGHT" });
+        return;
+    }
+    const width = Number(dimensions[1]);
+    const height = Number(dimensions[2]);
+    const shortEdge = Math.min(width, height);
+    const longEdge = Math.max(width, height);
+    const pixels = width * height;
+    if (width % 16 !== 0 || height % 16 !== 0 || longEdge > 3840 || longEdge / shortEdge > 3 || pixels < 655_360 || pixels > 8_294_400) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["size"],
+            message: "GPT Image 2 dimensions must be multiples of 16, at most 3840px per edge, within a 3:1 ratio, and between 655360 and 8294400 pixels",
+        });
+    }
+}
+
 // Images Generation schema
 export const ImagesGenerationSchema = z.object({
     model: z.string().min(1),
@@ -1228,26 +1254,7 @@ export const ImagesGenerationSchema = z.object({
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["background"], message: "transparent backgrounds require png or webp output_format" });
     }
 
-    const isGptImage2 = /^gpt-image-2(?:\.5)?(?:$|-)/.test(model);
-    if (!isGptImage2) return;
-    if (!request.size || request.size === "auto") return;
-    const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
-    if (!dimensions) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["size"], message: "gpt-image-2 size must be auto or WIDTHxHEIGHT" });
-        return;
-    }
-    const width = Number(dimensions[1]);
-    const height = Number(dimensions[2]);
-    const shortEdge = Math.min(width, height);
-    const longEdge = Math.max(width, height);
-    const pixels = width * height;
-    if (width % 16 !== 0 || height % 16 !== 0 || longEdge > 3840 || longEdge / shortEdge > 3 || pixels < 655_360 || pixels > 8_294_400) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["size"],
-            message: "gpt-image-2 dimensions must be multiples of 16, at most 3840px per edge, within a 3:1 ratio, and between 655360 and 8294400 pixels",
-        });
-    }
+    validateGptImage2Size(request, model, ctx);
 });
 export type ImagesGenerationRequest = z.infer<typeof ImagesGenerationSchema>;
 
@@ -1324,7 +1331,7 @@ export const ImagesEditSchema = z.object({
     const model = body.model.split("/").pop()?.toLowerCase();
     const isDallE2 = model === "dall-e-2";
     const isGptImage = model?.startsWith("gpt-image-") || model === "chatgpt-image-latest";
-    const isGptImage25 = model?.startsWith("gpt-image-2.5-");
+    const isGptImage25 = model != null && /^gpt-image-2\.5(?:$|-)/.test(model);
     const isGrokImagineImage2 = model === "grok-imagine-image-2.0";
     if (isGrokImagineImage2) {
         const size = body.size?.toLowerCase();
@@ -1376,13 +1383,14 @@ export const ImagesEditSchema = z.object({
             message: "GPT Image quality must be low, medium, high, or auto",
         });
     }
-    if (isGptImage && !isGptImage25 && (body.quality === "xhigh" || body.quality === "max")) {
+    if (!isGptImage25 && (body.quality === "xhigh" || body.quality === "max")) {
         ctx.addIssue({
             code: "custom",
             path: ["quality"],
             message: "GPT Image xhigh and max quality require a GPT Image 2.5 model",
         });
     }
+    validateGptImage2Size(body, model, ctx);
     if (isGptImage && body.response_format != null) {
         ctx.addIssue({
             code: "custom",
