@@ -67,6 +67,7 @@ export function isMajorError(msg: string): boolean {
         /pricing.*mixed aggregate and detailed.*meters/i,
         /pricing.*non-positive price/i,
         /pricing.*unit_size.*invalid/i,
+        /pricing.*token meter.*unit must be/i,
         /pricing.*bill mode.*invalid/i,
         /pricing.*billing timestamp basis.*invalid/i,
         /pricing.*time window/i,
@@ -187,6 +188,11 @@ export function checkPricingEntrySafety(p: any): string[] {
             }
 
             metersInEntry.add(meter);
+            if (meter.split('_').includes('tokens') && r?.unit !== undefined && r.unit !== 'token') {
+                errs.push(
+                    `pricing: token meter '${meter}' unit must be 'token' for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}`
+                );
+            }
             const unit_size = parseNumericValue(r?.unit_size);
             if (unit_size === undefined || unit_size <= 0) {
                 errs.push(
