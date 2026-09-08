@@ -3,7 +3,7 @@
   "organisation_id": "nex-agi",
   "name": "Nex N2.5 Mini",
   "status": "Available",
-  "previous_model_id": null,
+  "previous_model_id": "nex-agi/nex-n2-mini",
   "description": "Nex N2.5 Mini builds on Qwen3.5-35B-A3B-Base, an efficient hybrid vision-language sparse Mixture-of-Experts model, with Nex AGI's agent-focused post-training for high-speed instruction following, real-time tool execution, computer use, web browsing, and cost-effective deployment.",
   "announced_date": "2026-09-08T00:00:00Z",
   "release_date": "2026-09-08T00:00:00Z",
