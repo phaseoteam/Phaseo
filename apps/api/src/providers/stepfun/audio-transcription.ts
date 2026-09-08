@@ -4,6 +4,7 @@ import { AudioTranscriptionSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "../types";
 import { resolveOpenAITransport } from "../shared/openai-transport";
 import { exec as legacyTranscription } from "../openai/endpoints/audio-transcription";
+import { upstreamTestHeaders } from "../shared/testing";
 
 const configSchema = z.object({
     enable_itn: z.boolean().optional(),
@@ -73,7 +74,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     if (duration == null || !Number.isFinite(duration) || duration <= 0) throw new Error("stepfun_audio_duration_unavailable");
     let binary = "";
     for (let index = 0; index < bytes.length; index += 8192) binary += String.fromCharCode(...bytes.subarray(index, index + 8192));
-    const { keyInfo, url, headers } = resolveOpenAITransport(args, "/audio/asr/sse", { Accept: "text/event-stream" });
+    const { keyInfo, url, headers } = resolveOpenAITransport(args, "/audio/asr/sse", { Accept: "text/event-stream", ...upstreamTestHeaders(args.meta) });
     const upstream = await (args.upstreamTiming?.fetch ?? fetch)(url, { method: "POST", headers, body: JSON.stringify({ audio: { data: btoa(binary), input: { format, transcription: { model, language: body.language, hotwords: body.keywords ?? body.context_bias, prompt: body.prompt, enable_itn: config.enable_itn } } } }) });
     const bill = { cost_cents: 0, currency: "USD", usage: undefined as any, upstream_id: upstream.headers.get("x-request-id") };
     if (!upstream.ok || !upstream.body) return { kind: "completed", upstream, bill, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };

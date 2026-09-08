@@ -2,6 +2,7 @@ import { z } from "zod";
 import { AudioSpeechSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "../types";
 import { resolveOpenAITransport } from "../shared/openai-transport";
+import { upstreamTestHeaders } from "../shared/testing";
 
 const configSchema = z.object({
     volume: z.number().min(0.1).max(2).optional(),
@@ -18,7 +19,7 @@ export function countStepSpeechCharacters(input: string): number {
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const body = AudioSpeechSchema.parse(args.body);
     const options = configSchema.parse(body.config?.stepfun ?? {});
-    const { keyInfo, url, headers } = resolveOpenAITransport(args, "/audio/speech");
+    const { keyInfo, url, headers } = resolveOpenAITransport(args, "/audio/speech", upstreamTestHeaders(args.meta));
     const format = body.response_format ?? body.format ?? "mp3";
     const model = args.providerModelSlug || body.model;
     const param = typeof body.voice !== "string" || !body.voice ? "voice"

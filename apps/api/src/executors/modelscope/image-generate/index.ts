@@ -4,6 +4,7 @@ import type { ExecutorResult, ProviderExecutor } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { imageInputUrl, imageResultData, unsupportedImageOption } from "@executors/_shared/image-results";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 
 export const executor: ProviderExecutor = async (args) => {
 	const ir = args.ir as IRImageGenerationRequest;
@@ -26,7 +27,7 @@ export const executor: ProviderExecutor = async (args) => {
 	const loras = ir.rawRequest?.config?.modelscope?.loras ?? ir.rawRequest?.loras;
 	if (loras !== undefined) body.loras = loras;
 	const base = (env.MODELSCOPE_BASE_URL || "https://api-inference.modelscope.cn/v1").replace(/\/+$/, "").replace(/\/v1$/, "");
-	const headers = { Authorization: `Bearer ${key.key}`, "Content-Type": "application/json" };
+	const headers = { Authorization: `Bearer ${key.key}`, "Content-Type": "application/json", ...upstreamTestHeaders(args.meta) };
 	let upstream = await (args.upstreamTiming?.fetch ?? fetch)(`${base}/v1/images/generations`, { method: "POST", headers: { ...headers, "X-ModelScope-Async-Mode": "true" }, body: JSON.stringify(body) });
 	let rawResponse: any = await upstream.clone().json().catch(() => null);
 	const errorResult = (): ExecutorResult => ({ kind: "completed", upstream, rawResponse, bill: { cost_cents: 0, currency: "USD" }, keySource: key.source, byokKeyId: key.byokId });

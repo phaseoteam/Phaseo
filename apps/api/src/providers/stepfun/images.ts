@@ -3,6 +3,7 @@ import { ImagesEditSchema, ImagesGenerationSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "../types";
 import { resolveOpenAITransport } from "../shared/openai-transport";
 import { resolveUploadableFromString } from "../openai/endpoints/uploadable";
+import { upstreamTestHeaders } from "../shared/testing";
 
 const optionsSchema = z.object({
     steps: z.coerce.number().int().min(1).max(50).optional(),
@@ -30,7 +31,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         : !isEdit2 && (options.text_mode !== undefined || options.negative_prompt !== undefined) ? "text_mode/negative_prompt"
         : body.response_format && !["url", "b64_json"].includes(body.response_format) ? "response_format" : undefined;
     if (param) return { kind: "completed", upstream: Response.json({ error: { type: "invalid_request_error", param, message: `Unsupported StepFun image ${param}.` } }, { status: 400 }), bill: { cost_cents: 0, currency: "USD" } };
-    const { keyInfo, url, headers } = resolveOpenAITransport(args, edit ? "/images/edits" : "/images/generations");
+    const { keyInfo, url, headers } = resolveOpenAITransport(args, edit ? "/images/edits" : "/images/generations", upstreamTestHeaders(args.meta));
     const size = !edit && isEdit2 && body.size ? body.size.split("x").reverse().join("x") : body.size;
     const request = { model, prompt: body.prompt, size: edit && isEdit2 ? undefined : size, response_format: body.response_format, ...options };
     let payload: BodyInit;

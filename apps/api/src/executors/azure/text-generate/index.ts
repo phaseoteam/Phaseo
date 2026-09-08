@@ -12,6 +12,7 @@ import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/t
 import { azureDeployment, azureHeaders, azureMaiUrl, azureOpenAIV1Url, azureUrl, resolveAzureConfig, resolveAzureCredential, usesAzureV1 } from "@providers/azure/config";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { executeAnthropic } from "@executors/anthropic/text-generate";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
 	return cherryPickIRParams(ir, args.capabilityParams);
@@ -80,7 +81,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const res = await fetchUpstream(args, url, {
 		method: "POST",
-		headers: azureHeaders(keyInfo.key, keyInfo.authType),
+		headers: { ...azureHeaders(keyInfo.key, keyInfo.authType), ...upstreamTestHeaders(args.meta) },
 		body: requestBody,
 	});
 	const selectedDispatchAtMs = args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now();
