@@ -13,13 +13,6 @@
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "nex-agi/nex-n2-pro",
-  "variants": [
-    {
-      "model_id": "nex-agi/nex-n2-pro:free",
-      "name": "Nex N2 Pro (Free)",
-      "variant_kind": "free"
-    }
-  ],
   "links": [
     {
       "title": "Weights",
