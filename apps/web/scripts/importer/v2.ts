@@ -1,6 +1,6 @@
 import { assertOk, client, isDryRun, logWrite } from "./supa";
 import { chunk } from "./util";
-import { deleteStaleModels } from "./stale-models";
+import { retireCatalogueRows } from "./retirement";
 import { DATA_ROOT, DIR_ALIASES } from "./paths";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -1366,12 +1366,13 @@ export async function syncV2Catalogue(): Promise<void> {
             .map(row => String(row.provider_api_model_id ?? ""))
             .filter(Boolean),
     );
-    const existingRouteRows = await fetchAll(supa, "v2_model_provider_routes", "provider_model_id,metadata");
-    await deleteByIds(
+    const existingRouteRows = await fetchAll(supa, "v2_model_provider_routes", "provider_model_id,metadata,status,routing_enabled,effective_from,effective_to");
+    const staleRouteIds = new Set(staleJsonProviderRouteIds(existingRouteRows, desiredRouteIds, excludedRouteIds, protectedRouteIds));
+    await retireCatalogueRows(
         supa,
         "v2_model_provider_routes",
-        "provider_model_id",
-        staleJsonProviderRouteIds(existingRouteRows, desiredRouteIds, excludedRouteIds, protectedRouteIds),
+        ["provider_model_id"],
+        existingRouteRows.filter(row => staleRouteIds.has(String(row.provider_model_id))),
     );
 
     await upsertChunks(supa, "v2_route_capabilities", uniqueRows(capabilities
@@ -1403,6 +1404,7 @@ export async function syncV2Catalogue(): Promise<void> {
         model_slug: canonicalModelSlug(row.api_model_id),
         alias_type: row.channel ?? "public",
         enabled: row.is_enabled !== false,
+        effective_to: null,
         metadata: { source: "json", legacy_api_model_id: row.api_model_id, legacy_channel: row.channel ?? null },
     }));
     const freeVariantAliasRows = providerModels.flatMap(row => {
@@ -1419,6 +1421,7 @@ export async function syncV2Catalogue(): Promise<void> {
             model_slug: modelSlug,
             alias_type: "provider",
             enabled: true,
+            effective_to: null,
             metadata: {
                 source: "json",
                 provider_model_id: row.provider_api_model_id,
@@ -1436,12 +1439,13 @@ export async function syncV2Catalogue(): Promise<void> {
         [...v2AliasRows.values()],
         "alias_slug",
     );
-    const existingAliasRows = await fetchAll(supa, "v2_model_aliases", "alias_slug");
-    await deleteByIds(
+    const existingAliasRows = await fetchAll(supa, "v2_model_aliases", "alias_slug,enabled,effective_from,effective_to");
+    const retiredAliasSlugs = new Set(explicitlyRetiredAliasSlugs(existingAliasRows, RETIRED_CATALOGUE_ALIAS_SLUGS));
+    await retireCatalogueRows(
         supa,
         "v2_model_aliases",
-        "alias_slug",
-        explicitlyRetiredAliasSlugs(existingAliasRows, RETIRED_CATALOGUE_ALIAS_SLUGS),
+        ["alias_slug"],
+        existingAliasRows.filter(row => retiredAliasSlugs.has(String(row.alias_slug))),
     );
 
     const routeByProviderModelId = new Map<string, Record<string, any>>();
@@ -1559,7 +1563,8 @@ export async function syncV2Catalogue(): Promise<void> {
 
     const routesForVariants = await fetchAll(supa, "v2_model_provider_routes", "provider_model_id,provider_slug,status,routing_enabled,regions");
     const variantRows = routesForVariants
-        .filter(route => !protectedRouteIds.has(String(route.provider_model_id)))
+        .filter(route => !protectedRouteIds.has(String(route.provider_model_id))
+            && !staleRouteIds.has(String(route.provider_model_id)))
         .flatMap(route => {
             const regions = asTextArray(route.regions)
                 .filter(region => region !== "global");
@@ -1610,7 +1615,7 @@ export async function syncV2Catalogue(): Promise<void> {
         "v2 sync refresh pricing variant links",
     );
 
-    const skuRows = await fetchAll(supa, "v2_pricing_skus", "sku_id,provider_model_id,sku_code,version,metadata");
+    const skuRows = await fetchAll(supa, "v2_pricing_skus", "sku_id,provider_model_id,sku_code,version,metadata,status,effective_from,effective_to");
     const skuByCode = new Map(skuRows.map(row => [`${row.provider_model_id}:${row.sku_code}:${row.version}`, row.sku_id]));
     const meterRowsByKey = new Map<string, Record<string, any>>();
     for (const rule of pricingRules) {
@@ -1696,13 +1701,13 @@ export async function syncV2Catalogue(): Promise<void> {
 
     const desiredSkuKeys = new Set(pricingRows.map(row => `${row.provider_model_id}:${row.sku_code}:${row.version}`));
     const protectedPricingSourceKeys = protectedCatalogueKeys.get("pricing_rule") ?? new Set<string>();
-    const staleSkuIds = stalePricingSkuIds(
+    const staleSkuIds = new Set(stalePricingSkuIds(
         skuRows,
         desiredSkuKeys,
         protectedPricingSourceKeys,
         protectedRouteIds,
-    );
-    await deleteByIds(supa, "v2_pricing_skus", "sku_id", staleSkuIds);
+    ));
+    await retireCatalogueRows(supa, "v2_pricing_skus", ["sku_id"], skuRows.filter(row => staleSkuIds.has(String(row.sku_id))));
 
     assertOk(
         await supa.from("v2_catalogue_backfill_issues").delete().eq("source_type", "pricing_rule"),
@@ -1714,14 +1719,15 @@ export async function syncV2Catalogue(): Promise<void> {
 
     await upsertChunks(supa, "v2_benchmarks", benchmarkRows, "benchmark_id");
 
-    await upsertChunks(supa, "v2_benchmark_results", benchmarkPreflight.rows, "result_id");
+    await upsertChunks(supa, "v2_benchmark_results", benchmarkPreflight.rows.map(row => ({ ...row, effective_to: null })), "result_id");
     const desiredBenchmarkResultIds = new Set(benchmarkPreflight.rows.map(row => String(row.result_id)));
-    const existingBenchmarkResults = await fetchAll(supa, "v2_benchmark_results", "result_id,model_slug");
-    await deleteByIds(
+    const existingBenchmarkResults = await fetchAll(supa, "v2_benchmark_results", "result_id,model_slug,effective_to");
+    const staleResultIds = new Set(staleBenchmarkResultIds(existingBenchmarkResults, desiredBenchmarkResultIds, protectedModelSlugs));
+    await retireCatalogueRows(
         supa,
         "v2_benchmark_results",
-        "result_id",
-        staleBenchmarkResultIds(existingBenchmarkResults, desiredBenchmarkResultIds, protectedModelSlugs),
+        ["result_id"],
+        existingBenchmarkResults.filter(row => staleResultIds.has(String(row.result_id))),
     );
 
     const subscriptionPlanRows = source.subscriptionPlans.flatMap(plan =>
@@ -1756,6 +1762,7 @@ export async function syncV2Catalogue(): Promise<void> {
                     model_info: model.model_info ?? {},
                     rate_limit: model.rate_limit ?? {},
                     other_info: model.other_info ?? {},
+                    effective_to: null,
                 }];
             }),
         ),
@@ -1778,19 +1785,26 @@ export async function syncV2Catalogue(): Promise<void> {
 
     const desiredSubscriptionPlanUuids = new Set(subscriptionPlanRows.map(row => String(row.plan_uuid)));
     const protectedSubscriptionPlanUuids = protectedCatalogueKeys.get("subscription-plans") ?? new Set<string>();
+    const existingSubscriptionPlans = await fetchAll(supa, "v2_subscription_plans", "plan_uuid");
+    // Keep plan parents as history; they have no retirement column. End-date
+    // their removed model memberships, including those of removed plans.
+    const reconciledPlanUuids = new Set([
+        ...desiredSubscriptionPlanUuids,
+        ...staleSubscriptionPlanUuids(existingSubscriptionPlans, desiredSubscriptionPlanUuids, protectedSubscriptionPlanUuids),
+    ]);
     const existingSubscriptionPlanModels = await fetchAll(
         supa,
         "v2_subscription_plan_models",
-        "plan_uuid,model_slug",
+        "plan_uuid,model_slug,effective_to",
     );
-    await deleteByCompositeRows(
+    await retireCatalogueRows(
         supa,
         "v2_subscription_plan_models",
         ["plan_uuid", "model_slug"],
         staleSubscriptionPlanChildRows(
             existingSubscriptionPlanModels,
             subscriptionPlanModelRows,
-            desiredSubscriptionPlanUuids,
+            reconciledPlanUuids,
             protectedSubscriptionPlanUuids,
             ["plan_uuid", "model_slug"],
             protectedModelSlugs,
@@ -1813,23 +1827,14 @@ export async function syncV2Catalogue(): Promise<void> {
             ["plan_uuid", "feature_name"],
         ),
     );
-    const existingSubscriptionPlans = await fetchAll(supa, "v2_subscription_plans", "plan_uuid");
-    await deleteByIds(
-        supa,
-        "v2_subscription_plans",
-        "plan_uuid",
-        staleSubscriptionPlanUuids(
-            existingSubscriptionPlans,
-            desiredSubscriptionPlanUuids,
-            protectedSubscriptionPlanUuids,
-        ),
-    );
-
     const desiredModelSlugs = new Set([...canonicalModelRows, ...variantModelRows].map(row => String(row.model_slug)));
-    const existingModels = await fetchAll(supa, "v2_models", "model_slug,metadata");
-    await deleteStaleModels(
+    const existingModels = await fetchAll(supa, "v2_models", "model_slug,metadata,hidden,status,catalogue_status,retired_at");
+    const retiredModelSlugs = new Set(staleModelSlugs(existingModels, desiredModelSlugs, protectedModelSlugs));
+    await retireCatalogueRows(
         supa,
-        staleModelSlugs(existingModels, desiredModelSlugs, protectedModelSlugs),
+        "v2_models",
+        ["model_slug"],
+        existingModels.filter(row => retiredModelSlugs.has(String(row.model_slug))),
     );
 
     const preflightIssues = [...modelPreflight.issues, ...benchmarkPreflight.issues];
