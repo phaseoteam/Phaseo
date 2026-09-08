@@ -45,7 +45,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 27.9,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "GPT-5.1 Codex (high); Artificial Analysis ID 04d023f3-025c-4d78-9571-53edda3eaf2a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-1-codex",
       "rank": 137

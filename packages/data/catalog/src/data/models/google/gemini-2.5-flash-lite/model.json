@@ -40,10 +40,21 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
       "other_info": "Gemini 2.5 Flash-Lite (Non-reasoning); Artificial Analysis ID 1d81aa1c-64c8-442a-9c41-81b37e407b91; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-2-5-flash-lite",
       "rank": 499
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 5.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
+      "other_info": "Gemini 2.5 Flash-Lite (Reasoning); Artificial Analysis ID f4e8194a-d0e6-48eb-92be-4307de5aeeec; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-2-5-flash-lite-reasoning",
+      "rank": 404
     }
   ],
   "page_notice": null,

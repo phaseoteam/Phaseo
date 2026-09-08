@@ -40,9 +40,30 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
+      "score": 46.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "Gemini 3.8 Flash (medium); Artificial Analysis ID 744fa3c1-42a7-4995-b138-fb6be11f463c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash-medium",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 74.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "Gemini 3.8 Flash (medium); Artificial Analysis ID 744fa3c1-42a7-4995-b138-fb6be11f463c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash-medium",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
       "score": 47.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "Gemini 3.8 Flash (high); Artificial Analysis ID 8a999846-4c1d-4ce7-a8b7-1310a7166fd7; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash",
       "rank": 28
@@ -51,7 +72,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 76.3,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "Gemini 3.8 Flash (high); Artificial Analysis ID 8a999846-4c1d-4ce7-a8b7-1310a7166fd7; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash",
       "rank": 18
@@ -60,7 +82,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 41.2,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "Gemini 3.8 Flash (high); Artificial Analysis ID 8a999846-4c1d-4ce7-a8b7-1310a7166fd7; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash",
       "rank": 41
@@ -69,10 +92,41 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 1077.95,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "Gemini 3.8 Flash (high); Artificial Analysis ID 8a999846-4c1d-4ce7-a8b7-1310a7166fd7; Intelligence Index v4.3; USD 0.738 per task",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash",
       "rank": 56
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 41,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "Gemini 3.8 Flash (low); Artificial Analysis ID f6db039b-0f3b-485c-9d7f-982988e44f26; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash-low",
+      "rank": 57
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 73.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "Gemini 3.8 Flash (low); Artificial Analysis ID f6db039b-0f3b-485c-9d7f-982988e44f26; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash-low",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 33.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "Gemini 3.8 Flash (low); Artificial Analysis ID f6db039b-0f3b-485c-9d7f-982988e44f26; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-8-flash-low",
+      "rank": 54
     }
   ],
   "family_id": null,

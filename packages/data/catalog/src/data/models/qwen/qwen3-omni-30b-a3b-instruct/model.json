@@ -84,7 +84,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Qwen3 Omni 30B A3B Instruct; Artificial Analysis ID 0b226b82-1462-4860-bf1a-f8aed7024791; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-omni-30b-a3b-instruct",
       "rank": 513

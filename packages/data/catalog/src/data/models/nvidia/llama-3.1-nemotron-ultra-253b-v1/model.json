@@ -122,7 +122,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 3.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Llama 3.1 Nemotron Ultra 253B v1 (Reasoning); Artificial Analysis ID cf095603-72b6-47f8-8ee1-09a42890f92a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/llama-3-1-nemotron-ultra-253b-v1-reasoning",
       "rank": 446

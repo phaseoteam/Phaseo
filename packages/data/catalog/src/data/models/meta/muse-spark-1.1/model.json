@@ -133,7 +133,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 41.2,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
       "other_info": "Muse Spark 1.1 (xhigh); Artificial Analysis ID d61493e2-43ff-460c-9054-eaf6ba317360; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/muse-spark-1-1",
       "rank": 54
@@ -142,7 +143,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 71.3,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
       "other_info": "Muse Spark 1.1 (xhigh); Artificial Analysis ID d61493e2-43ff-460c-9054-eaf6ba317360; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/muse-spark-1-1",
       "rank": 48
@@ -151,7 +153,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 27.8,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
       "other_info": "Muse Spark 1.1 (xhigh); Artificial Analysis ID d61493e2-43ff-460c-9054-eaf6ba317360; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/muse-spark-1-1",
       "rank": 67
@@ -160,7 +163,8 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 788.76,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
       "other_info": "Muse Spark 1.1 (xhigh); Artificial Analysis ID d61493e2-43ff-460c-9054-eaf6ba317360; Intelligence Index v4.3; USD 0.5821 per task",
       "source_link": "https://artificialanalysis.ai/models/muse-spark-1-1",
       "rank": 46

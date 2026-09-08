@@ -303,7 +303,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 23.7,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "o3; Artificial Analysis ID 16c5b637-8bce-4252-81f2-1b87a36a4e4c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/o3",
       "rank": 185

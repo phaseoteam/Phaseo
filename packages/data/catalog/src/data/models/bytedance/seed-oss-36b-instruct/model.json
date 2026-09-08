@@ -20,7 +20,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 12.2,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Seed-OSS-36B-Instruct; Artificial Analysis ID 5c6533f3-75a2-4109-b9a9-3623afc6b86a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/seed-oss-36b-instruct",
       "rank": 302

@@ -388,7 +388,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 26.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Qwen3.5 397B A17B (Reasoning); Artificial Analysis ID 0e66bae9-41f1-42fc-9276-ce8cb6f72919; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-5-397b-a17b",
       "rank": 163
@@ -397,7 +398,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 48.2,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Qwen3.5 397B A17B (Reasoning); Artificial Analysis ID 0e66bae9-41f1-42fc-9276-ce8cb6f72919; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-5-397b-a17b",
       "rank": 117
@@ -406,10 +408,21 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 10.6,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Qwen3.5 397B A17B (Reasoning); Artificial Analysis ID 0e66bae9-41f1-42fc-9276-ce8cb6f72919; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-5-397b-a17b",
       "rank": 97
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 25.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "Qwen3.5 397B A17B (Non-reasoning); Artificial Analysis ID 30ef2a79-e800-4165-9f13-2a338f120db7; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-5-397b-a17b-non-reasoning",
+      "rank": 172
     }
   ],
   "family_id": null,

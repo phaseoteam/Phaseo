@@ -146,9 +146,20 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
+      "score": 7.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "Gemma 4 12B (Non-reasoning); Artificial Analysis ID 025ec6b6-df4a-449f-9a03-24e4388d6863; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemma-4-12b-non-reasoning",
+      "rank": 374
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
       "score": 15.6,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Gemma 4 12B (Reasoning); Artificial Analysis ID feb02d3b-ff8d-4ed4-b165-13f8d4a7192c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-4-12b",
       "rank": 255
@@ -157,7 +168,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 31,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Gemma 4 12B (Reasoning); Artificial Analysis ID feb02d3b-ff8d-4ed4-b165-13f8d4a7192c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-4-12b",
       "rank": 162

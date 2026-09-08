@@ -20,7 +20,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Tiny Aya Global; Artificial Analysis ID 81444bc8-72f9-4a2d-ad43-27e3f0d2f461; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/tiny-aya-global",
       "rank": 513

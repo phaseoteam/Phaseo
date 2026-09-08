@@ -46,7 +46,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 45.2,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "Gemini 3.7 Flash (high); Artificial Analysis ID b2331108-72ed-415a-82d1-188633875bbc; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash",
       "rank": 39
@@ -55,7 +56,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 76.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "Gemini 3.7 Flash (high); Artificial Analysis ID b2331108-72ed-415a-82d1-188633875bbc; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash",
       "rank": 23
@@ -64,7 +66,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 36.6,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "Gemini 3.7 Flash (high); Artificial Analysis ID b2331108-72ed-415a-82d1-188633875bbc; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash",
       "rank": 51
@@ -73,9 +76,50 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 687.92,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "Gemini 3.7 Flash (high); Artificial Analysis ID b2331108-72ed-415a-82d1-188633875bbc; Intelligence Index v4.3; USD 0.5484 per task",
       "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 41.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "Gemini 3.7 Flash (low); Artificial Analysis ID ddfdaf64-3f8e-40a6-a492-608ee83a1351; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash-low",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 71,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "Gemini 3.7 Flash (low); Artificial Analysis ID ddfdaf64-3f8e-40a6-a492-608ee83a1351; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash-low",
+      "rank": 50
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 43.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "Gemini 3.7 Flash (medium); Artificial Analysis ID eb0d4272-7204-42b9-b875-8866fed58548; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash-medium",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 71.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "Gemini 3.7 Flash (medium); Artificial Analysis ID eb0d4272-7204-42b9-b875-8866fed58548; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gemini-3-7-flash-medium",
       "rank": 43
     }
   ],

@@ -314,10 +314,51 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 29,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "Claude Sonnet 4.6 (Non-reasoning, High Effort); Artificial Analysis ID 2e40e695-3cec-43da-83f9-615af30b8e91; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-sonnet-4-6",
       "rank": 129
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 38.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
+      "other_info": "Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort); Artificial Analysis ID df8d14e0-3997-4e4d-b4ad-9c047acc9c69; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-sonnet-4-6-adaptive",
+      "rank": 64
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 63,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
+      "other_info": "Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort); Artificial Analysis ID df8d14e0-3997-4e4d-b4ad-9c047acc9c69; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-sonnet-4-6-adaptive",
+      "rank": 71
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 33.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
+      "other_info": "Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort); Artificial Analysis ID df8d14e0-3997-4e4d-b4ad-9c047acc9c69; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-sonnet-4-6-adaptive",
+      "rank": 55
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 27.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "Claude Sonnet 4.6 (Non-reasoning, Low Effort); Artificial Analysis ID f2e21112-192e-4aed-ae82-68ca3b38e667; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-sonnet-4-6-non-reasoning-low-effort",
+      "rank": 143
     }
   ],
   "page_notice": null,

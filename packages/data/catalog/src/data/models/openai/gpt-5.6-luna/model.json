@@ -68,9 +68,40 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
+      "score": 25.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "GPT-5.6 Luna (low); Artificial Analysis ID 050c61cd-cddc-463a-a30a-a82aaa37be59; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-low",
+      "rank": 165
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 44.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "GPT-5.6 Luna (low); Artificial Analysis ID 050c61cd-cddc-463a-a30a-a82aaa37be59; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-low",
+      "rank": 129
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 18,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "GPT-5.6 Luna (low); Artificial Analysis ID 050c61cd-cddc-463a-a30a-a82aaa37be59; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-low",
+      "rank": 87
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
       "score": 43.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "GPT-5.6 Luna (max); Artificial Analysis ID 426d24c8-49ae-482a-b4a8-20f1c53f21c1; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna",
       "rank": 45
@@ -79,7 +110,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 71.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "GPT-5.6 Luna (max); Artificial Analysis ID 426d24c8-49ae-482a-b4a8-20f1c53f21c1; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna",
       "rank": 47
@@ -88,7 +120,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 42.9,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "GPT-5.6 Luna (max); Artificial Analysis ID 426d24c8-49ae-482a-b4a8-20f1c53f21c1; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna",
       "rank": 34
@@ -97,10 +130,141 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 213.83,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "GPT-5.6 Luna (max); Artificial Analysis ID 426d24c8-49ae-482a-b4a8-20f1c53f21c1; Intelligence Index v4.3; USD 0.0969 per task",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna",
       "rank": 25
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 30.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "GPT-5.6 Luna (medium); Artificial Analysis ID 58b812bf-8498-46db-b834-f43ccc614b61; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-medium",
+      "rank": 118
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 50.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "GPT-5.6 Luna (medium); Artificial Analysis ID 58b812bf-8498-46db-b834-f43ccc614b61; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-medium",
+      "rank": 110
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 25.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "GPT-5.6 Luna (medium); Artificial Analysis ID 58b812bf-8498-46db-b834-f43ccc614b61; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-medium",
+      "rank": 71
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 41.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
+      "other_info": "GPT-5.6 Luna (xhigh); Artificial Analysis ID 87110ff0-1f79-41b4-9976-eda250597317; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-xhigh",
+      "rank": 50
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 68.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
+      "other_info": "GPT-5.6 Luna (xhigh); Artificial Analysis ID 87110ff0-1f79-41b4-9976-eda250597317; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-xhigh",
+      "rank": 59
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 39.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
+      "other_info": "GPT-5.6 Luna (xhigh); Artificial Analysis ID 87110ff0-1f79-41b4-9976-eda250597317; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-xhigh",
+      "rank": 44
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 119.26,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
+      "other_info": "GPT-5.6 Luna (xhigh); Artificial Analysis ID 87110ff0-1f79-41b4-9976-eda250597317; Intelligence Index v4.3; USD 0.0574 per task",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-xhigh",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 37.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "GPT-5.6 Luna (high); Artificial Analysis ID aa55297e-8fbf-4372-b4ab-9b068dc6396c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-high",
+      "rank": 68
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 63.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "GPT-5.6 Luna (high); Artificial Analysis ID aa55297e-8fbf-4372-b4ab-9b068dc6396c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-high",
+      "rank": 70
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 35.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "GPT-5.6 Luna (high); Artificial Analysis ID aa55297e-8fbf-4372-b4ab-9b068dc6396c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-high",
+      "rank": 52
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 19.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "GPT-5.6 Luna (Non-reasoning); Artificial Analysis ID dc64f856-3ded-497d-9527-d41d31267ed5; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-non-reasoning",
+      "rank": 220
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 39.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "GPT-5.6 Luna (Non-reasoning); Artificial Analysis ID dc64f856-3ded-497d-9527-d41d31267ed5; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-non-reasoning",
+      "rank": 142
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 15.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "GPT-5.6 Luna (Non-reasoning); Artificial Analysis ID dc64f856-3ded-497d-9527-d41d31267ed5; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-6-luna-non-reasoning",
+      "rank": 94
     }
   ],
   "page_notice": null,

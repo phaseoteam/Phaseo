@@ -212,7 +212,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 7.8,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Qwen3 Next 80B A3B Instruct; Artificial Analysis ID 2698f6c6-e436-47ce-a583-dbc25596c571; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-next-80b-a3b-instruct",
       "rank": 364

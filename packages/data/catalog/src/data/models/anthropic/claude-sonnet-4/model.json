@@ -239,7 +239,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 22.2,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Claude 4 Sonnet (Reasoning); Artificial Analysis ID a7564055-f8ba-4c4b-9e2d-060f61263645; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-4-sonnet-thinking",
       "rank": 199
@@ -248,10 +249,21 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 37.6,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Claude 4 Sonnet (Reasoning); Artificial Analysis ID a7564055-f8ba-4c4b-9e2d-060f61263645; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-4-sonnet-thinking",
       "rank": 147
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 19.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "Claude 4 Sonnet (Non-reasoning); Artificial Analysis ID d034dafe-463d-4c50-956f-84fca657b26f; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-4-sonnet",
+      "rank": 223
     }
   ],
   "page_notice": null,

@@ -30,7 +30,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 13.5,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "North Mini Code; Artificial Analysis ID 1e9907e0-ffac-4595-b006-962e4f1da7cf; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/north-mini-code",
       "rank": 284
@@ -39,7 +40,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 36.5,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "North Mini Code; Artificial Analysis ID 1e9907e0-ffac-4595-b006-962e4f1da7cf; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/north-mini-code",
       "rank": 149
@@ -48,7 +50,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 1.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "North Mini Code; Artificial Analysis ID 1e9907e0-ffac-4595-b006-962e4f1da7cf; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/north-mini-code",
       "rank": 127

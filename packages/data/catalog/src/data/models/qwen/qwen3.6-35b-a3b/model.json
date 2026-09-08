@@ -38,9 +38,30 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
+      "score": 17.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "Qwen3.6 35B A3B (Non-reasoning); Artificial Analysis ID 66938aab-78fa-49d7-8461-b48b6833e837; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-6-35b-a3b-non-reasoning",
+      "rank": 240
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 28.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "Qwen3.6 35B A3B (Non-reasoning); Artificial Analysis ID 66938aab-78fa-49d7-8461-b48b6833e837; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-6-35b-a3b-non-reasoning",
+      "rank": 168
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
       "score": 26.2,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Qwen3.6 35B A3B (Reasoning); Artificial Analysis ID 8665ca00-c687-44c7-875c-22618cb31c4f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-6-35b-a3b",
       "rank": 161
@@ -49,7 +70,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 41.9,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Qwen3.6 35B A3B (Reasoning); Artificial Analysis ID 8665ca00-c687-44c7-875c-22618cb31c4f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-6-35b-a3b",
       "rank": 137
@@ -58,7 +80,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 15.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Qwen3.6 35B A3B (Reasoning); Artificial Analysis ID 8665ca00-c687-44c7-875c-22618cb31c4f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-6-35b-a3b",
       "rank": 95

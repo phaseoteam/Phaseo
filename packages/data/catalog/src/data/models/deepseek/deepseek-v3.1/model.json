@@ -146,9 +146,20 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
+      "score": 14.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
+      "other_info": "DeepSeek V3.1 (Reasoning); Artificial Analysis ID 198b717f-42c8-4ab7-a699-ae9373d669d3; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/deepseek-v3-1-reasoning",
+      "rank": 270
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
       "score": 14.8,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
       "other_info": "DeepSeek V3.1 (Non-reasoning); Artificial Analysis ID fb65266f-5a7d-403c-85d5-ccdf0d1ca838; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/deepseek-v3-1",
       "rank": 267
