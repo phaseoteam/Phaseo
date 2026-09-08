@@ -31,7 +31,7 @@ import type {
 } from "@/lib/fetchers/gateway/marketplaceTypes";
 import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import type { ModelAppUsage } from "@/lib/fetchers/models/getModelApps";
-import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
+import type { ModelBenchmarkHighlight, ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
 import getModelGatewayMetadata, {
 	type ModelGatewayMetadata,
 } from "@/lib/fetchers/models/getModelGatewayMetadata";
@@ -527,6 +527,13 @@ export async function fetchFrontendModelBenchmarkHighlights(
 ): Promise<ModelBenchmarkHighlight[]> {
 	const payload = await fetchOptionalPublicWebApi<{ highlights: ModelBenchmarkHighlight[] }>(`/api/_web/models/${encodeURIComponent(modelId)}/benchmarks`);
 	return payload?.highlights ?? [];
+}
+
+export async function fetchFrontendModelBenchmarkResults(
+	modelId: string,
+): Promise<ModelBenchmarkResult[]> {
+	const payload = await fetchOptionalPublicWebApi<{ results: ModelBenchmarkResult[] }>(`/api/_web/models/${encodeURIComponent(modelId)}/benchmarks`);
+	return payload?.results ?? [];
 }
 
 export async function fetchFrontendAPIProviders(): Promise<APIProviderCard[]> {

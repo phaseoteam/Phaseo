@@ -5,20 +5,20 @@ import type {
 } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { ModelBenchmarksGrid } from "./ModelBenchmarksGrid";
 import { ModelBenchmarksTable } from "./ModelBenchmarksTable";
-import {
-	ArtificialAnalysisBenchmarks,
-	isArtificialAnalysisBenchmark,
-} from "./ArtificialAnalysisBenchmarks";
+import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
 
 type Props = {
 	highlightCards: ModelBenchmarkHighlight[];
 	benchmarkTableData?: Record<string, ModelBenchmarkResult[]>;
+	benchmarkResults?: ModelBenchmarkResult[];
 	mode?: "summary" | "full";
 };
 
 export default function ModelBenchmarks({
 	highlightCards,
 	benchmarkTableData,
+	benchmarkResults = [],
 	mode = "full",
 }: Props) {
 	const showFull = mode === "full";
@@ -29,7 +29,7 @@ export default function ModelBenchmarks({
 
 	return (
 		<div className="space-y-8">
-			<ArtificialAnalysisBenchmarks highlights={highlightCards} />
+			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} />
 			{otherHighlights.length > 0 || !hasArtificialAnalysis ? (
 				<section className="space-y-3">
 					{hasArtificialAnalysis ? (

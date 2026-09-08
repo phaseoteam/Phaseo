@@ -38,6 +38,7 @@ import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerf
 import {
 	fetchFrontendModelApps,
 	fetchFrontendModelBenchmarkHighlights,
+	fetchFrontendModelBenchmarkResults,
 	fetchFrontendModelGatewayMetadata,
 	fetchFrontendModelHeader,
 	fetchFrontendModelOverview,
@@ -612,11 +613,16 @@ export async function ModelBenchmarksSection({
 	includeHidden,
 	hideWhenEmpty = false,
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
-	const [benchmarkHighlights, pendingApiRelease] = await Promise.all([
+	const [benchmarkHighlights, benchmarkResults, pendingApiRelease] = await Promise.all([
 		withOptionalSectionTimeout(
 			fetchFrontendModelBenchmarkHighlights(modelId),
 			[],
 			"benchmark highlights"
+		),
+		withOptionalSectionTimeout(
+			fetchFrontendModelBenchmarkResults(modelId),
+			[],
+			"benchmark results"
 		),
 		withOptionalSectionTimeout(
 			fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
@@ -635,6 +641,7 @@ export async function ModelBenchmarksSection({
 			{benchmarkHighlights.length > 0 ? (
 				<ModelBenchmarks
 					highlightCards={benchmarkHighlights}
+					benchmarkResults={benchmarkResults}
 					mode="summary"
 				/>
 			) : (
