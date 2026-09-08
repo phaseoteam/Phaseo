@@ -45,3 +45,21 @@ it("buffers native ASR SSE and bills PCM duration rather than token counts", asy
         expect(result.kind === "completed" && (result.ir as any).text).toBe("Hi");
     } finally { mock.restore(); }
 });
+
+it.each(["audio/flac", "audio/aac", "audio/x-m4a", "audio/mp4", "video/mp4", "audio/webm", "video/webm"])("rejects unsupported %s transcription audio before upload", async mime => {
+    const mock = installFetchMock([]);
+    try {
+        const result = await resolveProviderExecutor("stepfun", "audio.transcription")!(args("audio.transcription", "stepaudio-2.5-asr", { file: new Blob([new Uint8Array(64)], { type: mime }) }));
+        expect(result.upstream.status).toBe(400);
+        expect(mock.calls).toHaveLength(0);
+    } finally { mock.restore(); }
+});
+
+it("rejects a declared transcription format that conflicts with the upload", async () => {
+    const mock = installFetchMock([]);
+    try {
+        const result = await resolveProviderExecutor("stepfun", "audio.transcription")!(args("audio.transcription", "stepaudio-2.5-asr", { file: new Blob([new Uint8Array(64)], { type: "audio/mpeg" }), rawRequest: { config: { stepfun: { format: { type: "wav" } } } } }));
+        expect(result.upstream.status).toBe(400);
+        expect(mock.calls).toHaveLength(0);
+    } finally { mock.restore(); }
+});

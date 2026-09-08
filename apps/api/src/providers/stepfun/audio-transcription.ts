@@ -51,8 +51,18 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const param = unsupported ?? (body.prompt && model !== "stepaudio-2-asr-pro" ? "prompt" : body.response_format && !["json", "text"].includes(body.response_format) ? "response_format" : undefined);
     if (param) return { kind: "completed", upstream: Response.json({ error: { type: "invalid_request_error", param, message: `Unsupported StepFun transcription ${param}.` } }, { status: 400 }), bill: { cost_cents: 0, currency: "USD" } };
     const file = body.file!;
+    const mime = file.type.toLowerCase().split(";")[0].trim();
+    const formats: Record<string, "wav" | "mp3" | "ogg" | "pcm"> = {
+        "audio/wav": "wav", "audio/x-wav": "wav", "audio/wave": "wav", "audio/vnd.wave": "wav",
+        "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mpga": "mp3",
+        "audio/ogg": "ogg", "application/ogg": "ogg", "audio/opus": "ogg", "audio/pcm": "pcm",
+    };
+    const inferredType = formats[mime];
+    const format = config.format ?? (inferredType ? { type: inferredType } : undefined);
+    if (!format || (mime && mime !== "application/octet-stream" && !inferredType) || (inferredType && inferredType !== format.type)) {
+        return { kind: "completed", upstream: Response.json({ error: { type: "invalid_request_error", param: "file", message: "StepFun transcription requires WAV, MP3, OGG, or explicitly configured PCM audio with a matching format." } }, { status: 400 }), bill: { cost_cents: 0, currency: "USD" } };
+    }
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const format = config.format ?? { type: /ogg|opus/i.test(file.type) ? "ogg" : /mpeg|mp3/i.test(file.type) ? "mp3" : "wav" };
     let duration: number | undefined;
     if (format.type === "pcm") {
         if (!format.rate || !format.bits || !format.channel) throw new Error("stepfun_pcm_format_requires_rate_bits_channel");

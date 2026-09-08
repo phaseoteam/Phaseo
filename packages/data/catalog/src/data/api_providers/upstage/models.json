@@ -594,9 +594,7 @@
           "text"
         ],
         "modes": [
-          "standard",
-          "enhanced",
-          "auto"
+          "standard"
         ]
       }
     ],
