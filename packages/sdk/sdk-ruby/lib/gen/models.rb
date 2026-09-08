@@ -2057,15 +2057,27 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     ImageModerationInput = Struct.new(:image_url, :type, keyword_init: true)
+    # @!attribute [rw] background
+    #   @return [String, nil]
     # @!attribute [rw] image
     #   @return [String]
+    # @!attribute [rw] input_fidelity
+    #   @return [String, nil]
     # @!attribute [rw] mask
     #   @return [String, nil]
     # @!attribute [rw] meta
     #   @return [Boolean, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] moderation
+    #   @return [String, nil]
     # @!attribute [rw] n
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_compression
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_format
+    #   @return [String, nil]
+    # @!attribute [rw] partial_images
     #   @return [Integer, nil]
     # @!attribute [rw] prompt
     #   @return [String]
@@ -2077,19 +2089,31 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] size
     #   @return [String, nil]
+    # @!attribute [rw] stream
+    #   @return [Boolean, nil]
     # @!attribute [rw] usage
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ImagesEditRequest = Struct.new(:image, :mask, :meta, :model, :n, :prompt, :provider, :quality, :resolution, :size, :usage, :user, keyword_init: true)
+    ImagesEditRequest = Struct.new(:background, :image, :input_fidelity, :mask, :meta, :model, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :size, :stream, :usage, :user, keyword_init: true)
     # @!attribute [rw] created
     #   @return [Integer, nil]
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>, nil]
     ImagesEditResponse = Struct.new(:created, :data, keyword_init: true)
+    # @!attribute [rw] background
+    #   @return [String, nil]
     # @!attribute [rw] model
     #   @return [String]
+    # @!attribute [rw] moderation
+    #   @return [String, nil]
     # @!attribute [rw] n
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_compression
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_format
+    #   @return [String, nil]
+    # @!attribute [rw] partial_images
     #   @return [Integer, nil]
     # @!attribute [rw] prompt
     #   @return [String]
@@ -2103,11 +2127,13 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] size
     #   @return [String, nil]
+    # @!attribute [rw] stream
+    #   @return [Boolean, nil]
     # @!attribute [rw] style
     #   @return [String, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ImagesGenerationRequest = Struct.new(:model, :n, :prompt, :provider, :quality, :resolution, :response_format, :size, :style, :user, keyword_init: true)
+    ImagesGenerationRequest = Struct.new(:background, :model, :moderation, :n, :output_compression, :output_format, :partial_images, :prompt, :provider, :quality, :resolution, :response_format, :size, :stream, :style, :user, keyword_init: true)
     # @!attribute [rw] created
     #   @return [Integer, nil]
     # @!attribute [rw] data

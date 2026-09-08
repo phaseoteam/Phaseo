@@ -2142,16 +2142,23 @@ type ImageModerationInput struct {
 }
 
 type ImagesEditRequest struct {
+	Background *string `json:"background,omitempty"`
 	Image string `json:"image"`
+	InputFidelity *string `json:"input_fidelity,omitempty"`
 	Mask *string `json:"mask,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
 	Model string `json:"model"`
+	Moderation *string `json:"moderation,omitempty"`
 	N *int `json:"n,omitempty"`
+	OutputCompression *int `json:"output_compression,omitempty"`
+	OutputFormat *string `json:"output_format,omitempty"`
+	PartialImages *int `json:"partial_images,omitempty"`
 	Prompt string `json:"prompt"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Quality *string `json:"quality,omitempty"`
 	Resolution *string `json:"resolution,omitempty"`
 	Size *string `json:"size,omitempty"`
+	Stream *bool `json:"stream,omitempty"`
 	Usage *bool `json:"usage,omitempty"`
 	User *string `json:"user,omitempty"`
 }
@@ -2162,14 +2169,20 @@ type ImagesEditResponse struct {
 }
 
 type ImagesGenerationRequest struct {
+	Background *string `json:"background,omitempty"`
 	Model string `json:"model"`
+	Moderation *string `json:"moderation,omitempty"`
 	N *int `json:"n,omitempty"`
+	OutputCompression *int `json:"output_compression,omitempty"`
+	OutputFormat *string `json:"output_format,omitempty"`
+	PartialImages *int `json:"partial_images,omitempty"`
 	Prompt string `json:"prompt"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Quality *string `json:"quality,omitempty"`
 	Resolution *string `json:"resolution,omitempty"`
 	ResponseFormat *string `json:"response_format,omitempty"`
 	Size *string `json:"size,omitempty"`
+	Stream *bool `json:"stream,omitempty"`
 	Style *string `json:"style,omitempty"`
 	User *string `json:"user,omitempty"`
 }

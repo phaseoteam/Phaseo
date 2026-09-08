@@ -1430,16 +1430,23 @@ public final class Models {
 	}
 
 	public static class ImagesEditRequest {
+		public Object background;
 		public String image;
+		public Object input_fidelity;
 		public String mask;
 		public Boolean meta;
 		public String model;
+		public Object moderation;
 		public Integer n;
+		public Integer output_compression;
+		public Object output_format;
+		public Integer partial_images;
 		public String prompt;
 		public Object provider;
 		public Object quality;
 		public String resolution;
 		public String size;
+		public Boolean stream;
 		public Boolean usage;
 		public String user;
 	}
@@ -1450,14 +1457,20 @@ public final class Models {
 	}
 
 	public static class ImagesGenerationRequest {
+		public Object background;
 		public String model;
+		public Object moderation;
 		public Integer n;
+		public Integer output_compression;
+		public Object output_format;
+		public Integer partial_images;
 		public String prompt;
 		public Object provider;
 		public String quality;
 		public String resolution;
 		public String response_format;
 		public String size;
+		public Boolean stream;
 		public String style;
 		public String user;
 	}

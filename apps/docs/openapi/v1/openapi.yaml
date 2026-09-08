@@ -11005,6 +11005,33 @@ components:
           maximum: 10
         quality:
           type: string
+        stream:
+          type: boolean
+        partial_images:
+          type: integer
+          minimum: 0
+          maximum: 3
+        output_format:
+          type: string
+          enum:
+            - png
+            - jpeg
+            - webp
+        output_compression:
+          type: integer
+          minimum: 0
+          maximum: 100
+        background:
+          type: string
+          enum:
+            - transparent
+            - opaque
+            - auto
+        moderation:
+          type: string
+          enum:
+            - auto
+            - low
         response_format:
           type: string
         style:
@@ -11067,6 +11094,38 @@ components:
           description: >-
             Image rendering quality. xhigh and max are available only for GPT
             Image 2.5 models.
+        stream:
+          type: boolean
+        partial_images:
+          type: integer
+          minimum: 0
+          maximum: 3
+        output_format:
+          type: string
+          enum:
+            - png
+            - jpeg
+            - webp
+        output_compression:
+          type: integer
+          minimum: 0
+          maximum: 100
+        background:
+          type: string
+          enum:
+            - transparent
+            - opaque
+            - auto
+        moderation:
+          type: string
+          enum:
+            - auto
+            - low
+        input_fidelity:
+          type: string
+          enum:
+            - high
+            - low
         user:
           type: string
         meta:

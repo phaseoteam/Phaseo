@@ -2523,16 +2523,28 @@ class ImageModerationInput
 
 class ImagesEditRequest
 {
+	/** @var string|null */
+	public $background;
 	/** @var string */
 	public $image;
+	/** @var string|null */
+	public $input_fidelity;
 	/** @var string|null */
 	public $mask;
 	/** @var bool|null */
 	public $meta;
 	/** @var string */
 	public $model;
+	/** @var string|null */
+	public $moderation;
 	/** @var int|null */
 	public $n;
+	/** @var int|null */
+	public $output_compression;
+	/** @var string|null */
+	public $output_format;
+	/** @var int|null */
+	public $partial_images;
 	/** @var string */
 	public $prompt;
 	/** @var array<string, mixed>|null */
@@ -2543,6 +2555,8 @@ class ImagesEditRequest
 	public $resolution;
 	/** @var string|null */
 	public $size;
+	/** @var bool|null */
+	public $stream;
 	/** @var bool|null */
 	public $usage;
 	/** @var string|null */
@@ -2559,10 +2573,20 @@ class ImagesEditResponse
 
 class ImagesGenerationRequest
 {
+	/** @var string|null */
+	public $background;
 	/** @var string */
 	public $model;
+	/** @var string|null */
+	public $moderation;
 	/** @var int|null */
 	public $n;
+	/** @var int|null */
+	public $output_compression;
+	/** @var string|null */
+	public $output_format;
+	/** @var int|null */
+	public $partial_images;
 	/** @var string */
 	public $prompt;
 	/** @var array<string, mixed>|null */
@@ -2575,6 +2599,8 @@ class ImagesGenerationRequest
 	public $response_format;
 	/** @var string|null */
 	public $size;
+	/** @var bool|null */
+	public $stream;
 	/** @var string|null */
 	public $style;
 	/** @var string|null */

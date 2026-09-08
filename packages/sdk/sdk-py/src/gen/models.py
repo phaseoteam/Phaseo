@@ -1274,16 +1274,23 @@ class ImageModerationInput(TypedDict):
 	type: Literal["image_url"]
 
 class ImagesEditRequest(TypedDict):
+	background: NotRequired[Literal["transparent", "opaque", "auto"]]
 	image: str
+	input_fidelity: NotRequired[Literal["high", "low"]]
 	mask: NotRequired[str]
 	meta: NotRequired[bool]
 	model: str
+	moderation: NotRequired[Literal["auto", "low"]]
 	n: NotRequired[int]
+	output_compression: NotRequired[int]
+	output_format: NotRequired[Literal["png", "jpeg", "webp"]]
+	partial_images: NotRequired[int]
 	prompt: str
 	provider: NotRequired[ProviderRoutingOptions]
 	quality: NotRequired[Literal["standard", "low", "medium", "high", "xhigh", "max", "auto"]]
 	resolution: NotRequired[str]
 	size: NotRequired[str]
+	stream: NotRequired[bool]
 	usage: NotRequired[bool]
 	user: NotRequired[str]
 
@@ -1292,14 +1299,20 @@ class ImagesEditResponse(TypedDict):
 	data: NotRequired[List[Image]]
 
 class ImagesGenerationRequest(TypedDict):
+	background: NotRequired[Literal["transparent", "opaque", "auto"]]
 	model: str
+	moderation: NotRequired[Literal["auto", "low"]]
 	n: NotRequired[int]
+	output_compression: NotRequired[int]
+	output_format: NotRequired[Literal["png", "jpeg", "webp"]]
+	partial_images: NotRequired[int]
 	prompt: str
 	provider: NotRequired[ProviderRoutingOptions]
 	quality: NotRequired[str]
 	resolution: NotRequired[str]
 	response_format: NotRequired[str]
 	size: NotRequired[str]
+	stream: NotRequired[bool]
 	style: NotRequired[str]
 	user: NotRequired[str]
 
