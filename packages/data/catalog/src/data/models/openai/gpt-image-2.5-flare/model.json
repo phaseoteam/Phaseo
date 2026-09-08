@@ -1,0 +1,69 @@
+{
+  "model_id": "openai/gpt-image-2.5-flare",
+  "organisation_id": "openai",
+  "name": "GPT Image 2.5 Flare",
+  "status": "Available",
+  "previous_model_id": "openai/gpt-image-2",
+  "description": "GPT Image 2.5 Flare is OpenAI's fast, high-quality default for everyday image generation and editing. Choose it when iteration speed matters; it supports reference-image and multi-turn edits, transparent backgrounds, custom dimensions up to 4K, and quality levels through max.",
+  "announced_date": "2026-09-08T00:00:00",
+  "release_date": "2026-09-08T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "image",
+  "api_model_id": "openai/gpt-image-2.5-flare",
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://openai.com/index/introducing-chatgpt-images-2-5/"
+    },
+    {
+      "title": "Pricing",
+      "kind": "pricing",
+      "url": "https://developers.openai.com/api/docs/pricing#image-generation"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "image",
+  "knowledge_cutoff": null,
+  "limits": { "context": null, "input": null, "output": null },
+  "modalities": { "input": ["text", "image/*"], "output": ["image/*"] },
+  "reasoning": { "supported": null, "options": [] },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://openai.com/index/introducing-chatgpt-images-2-5/",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Official launch announcement confirming API availability, positioning, and image generation and editing improvements."
+    },
+    {
+      "kind": "pricing",
+      "url": "https://developers.openai.com/api/docs/pricing#image-generation",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Official API pricing reference."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Availability and capabilities verified against OpenAI's launch announcement."
+  },
+  "last_updated": "2026-09-08T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

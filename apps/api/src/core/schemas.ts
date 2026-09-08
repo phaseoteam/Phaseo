@@ -1209,8 +1209,11 @@ export const ImagesGenerationSchema = z.object({
     if (request.prompt.length > 32_000) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["prompt"], message: "GPT Image prompts must be at most 32000 characters" });
     }
-    if (request.quality && !["auto", "low", "medium", "high"].includes(request.quality)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["quality"], message: "GPT Image quality must be auto, low, medium, or high" });
+    const qualityValues = /^gpt-image-2\.5(?:$|-)/.test(model)
+        ? ["auto", "low", "medium", "high", "xhigh", "max"]
+        : ["auto", "low", "medium", "high"];
+    if (request.quality && !qualityValues.includes(request.quality)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["quality"], message: `GPT Image quality must be ${qualityValues.join(", ")}` });
     }
     if (request.response_format !== undefined) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["response_format"], message: "response_format is not supported by GPT Image models" });
@@ -1225,7 +1228,7 @@ export const ImagesGenerationSchema = z.object({
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["background"], message: "transparent backgrounds require png or webp output_format" });
     }
 
-    const isGptImage2 = /^gpt-image-2(?:$|-)/.test(model);
+    const isGptImage2 = /^gpt-image-2(?:\.5)?(?:$|-)/.test(model);
     if (!isGptImage2) return;
     if (!request.size || request.size === "auto") return;
     const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
@@ -1285,7 +1288,7 @@ export const ImagesEditSchema = z.object({
     size: z.string().optional(),
     resolution: z.string().min(1).optional(),
     n: ImageEditOptionalInteger(1, 10),
-    quality: z.enum(["standard", "low", "medium", "high", "auto"]).optional(),
+    quality: z.enum(["standard", "low", "medium", "high", "xhigh", "max", "auto"]).optional(),
     stream: ImageEditOptionalBoolean,
     partial_images: ImageEditOptionalInteger(0, 3),
     response_format: z.enum(["url", "b64_json"]).optional(),
@@ -1321,6 +1324,7 @@ export const ImagesEditSchema = z.object({
     const model = body.model.split("/").pop()?.toLowerCase();
     const isDallE2 = model === "dall-e-2";
     const isGptImage = model?.startsWith("gpt-image-") || model === "chatgpt-image-latest";
+    const isGptImage25 = model?.startsWith("gpt-image-2.5-");
     const isGrokImagineImage2 = model === "grok-imagine-image-2.0";
     if (isGrokImagineImage2) {
         const size = body.size?.toLowerCase();
@@ -1370,6 +1374,13 @@ export const ImagesEditSchema = z.object({
             code: "custom",
             path: ["quality"],
             message: "GPT Image quality must be low, medium, high, or auto",
+        });
+    }
+    if (isGptImage && !isGptImage25 && (body.quality === "xhigh" || body.quality === "max")) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["quality"],
+            message: "GPT Image xhigh and max quality require a GPT Image 2.5 model",
         });
     }
     if (isGptImage && body.response_format != null) {

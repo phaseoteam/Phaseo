@@ -9589,27 +9589,52 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "openai/gpt-image-2.5",
-    "provider_api_model_id": "openai:openai/gpt-image-2.5",
-    "provider_model_slug": "gpt-image-2.5",
-    "internal_model_id": "openai/gpt-image-2.5",
-    "is_active_gateway": false,
+    "api_model_id": "openai/gpt-image-2.5-flare",
+    "provider_api_model_id": "openai:openai/gpt-image-2.5-flare",
+    "provider_model_slug": "gpt-image-2.5-flare",
+    "internal_model_id": "openai/gpt-image-2.5-flare",
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2026-09-08T00:00:00",
     "effective_to": null,
-    "capabilities": [],
-    "provider_status": "unknown",
-    "phaseo_status": "planned",
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": {"prompt":{"type":"string","max_length":32000},"size":{"type":"string","values":["auto","1024x1024","1536x1024","1024x1536"],"dimension_multiple_of":16,"max_width":3840,"max_height":3840,"max_aspect_ratio":"3:1","min_pixels":655360,"max_pixels":8294400,"notes":"Also accepts arbitrary WIDTHxHEIGHT values satisfying the documented constraints."},"background":{"type":"enum","values":["transparent","opaque","auto"],"default":"auto","notes":"Transparent output requires PNG or WebP."},"moderation":{"type":"enum","values":["low","auto"],"default":"auto"},"n":{"type":"integer","min":1,"max":10},"output_compression":{"type":"integer","min":0,"max":100,"default":100,"notes":"Supported only for JPEG and WebP output."},"output_format":{"type":"enum","values":["png","jpeg","webp"],"default":"png"},"partial_images":{"type":"integer","min":0,"max":3,"notes":"Requires stream=true."},"quality":{"type":"enum","values":["low","medium","high","xhigh","max","auto"],"default":"auto"},"stream":{"type":"boolean","default":false},"user":{"type":"string"}},
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": {"image":{"type":"image_or_array","required":true,"max_items":16,"max_file_size_mb":50,"formats":["png","webp","jpg","jpeg"]},"mask":{"type":"image","max_file_size_mb":4,"formats":["png"]},"prompt":{"type":"string","max_length":32000},"size":{"type":"string","values":["auto","1024x1024","1536x1024","1024x1536"],"dimension_multiple_of":16,"max_width":3840,"max_height":3840,"max_aspect_ratio":"3:1","min_pixels":655360,"max_pixels":8294400,"notes":"Also accepts arbitrary WIDTHxHEIGHT values satisfying the documented constraints."},"background":{"type":"enum","values":["transparent","opaque","auto"],"default":"auto","notes":"Transparent output requires PNG or WebP."},"moderation":{"type":"enum","values":["low","auto"],"default":"auto"},"n":{"type":"integer","min":1,"max":10},"output_compression":{"type":"integer","min":0,"max":100,"default":100,"notes":"Supported only for JPEG and WebP output."},"output_format":{"type":"enum","values":["png","jpeg","webp"],"default":"png"},"partial_images":{"type":"integer","min":0,"max":3,"notes":"Requires stream=true."},"quality":{"type":"enum","values":["low","medium","high","xhigh","max","auto"],"default":"auto"},"stream":{"type":"boolean","default":false},"user":{"type":"string"},"input_fidelity":{"type":"enum","values":["low","high"],"default":"low"}},
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
     "access_scope": "public",
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": ["global"],
+      "data": ["global"]
     },
     "service_tiers": [],
     "api": {
@@ -9617,11 +9642,66 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [{"kind":"announcement","url":"https://openai.com/index/introducing-chatgpt-images-2-5/","accessed_at":"2026-09-08T00:00:00Z","notes":"Official announcement confirms API availability and generation and editing support."}],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": "OpenAI GPT Image 2.5 is being tracked as an unverified provider mapping; no official API listing or request contract has been confirmed. Do not present this as a coming-soon offer until OpenAI confirms it."
+      "status": "verified",
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "API availability and image generation and editing support verified against OpenAI's launch announcement. Request parameters follow the current GPT Image API contract."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-image-2.5-sunburst",
+    "provider_api_model_id": "openai:openai/gpt-image-2.5-sunburst",
+    "provider_model_slug": "gpt-image-2.5-sunburst",
+    "internal_model_id": "openai/gpt-image-2.5-sunburst",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-09-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": {"prompt":{"type":"string","max_length":32000},"size":{"type":"string","values":["auto","1024x1024","1536x1024","1024x1536"],"dimension_multiple_of":16,"max_width":3840,"max_height":3840,"max_aspect_ratio":"3:1","min_pixels":655360,"max_pixels":8294400,"notes":"Also accepts arbitrary WIDTHxHEIGHT values satisfying the documented constraints."},"background":{"type":"enum","values":["transparent","opaque","auto"],"default":"auto","notes":"Transparent output requires PNG or WebP."},"moderation":{"type":"enum","values":["low","auto"],"default":"auto"},"n":{"type":"integer","min":1,"max":10},"output_compression":{"type":"integer","min":0,"max":100,"default":100,"notes":"Supported only for JPEG and WebP output."},"output_format":{"type":"enum","values":["png","jpeg","webp"],"default":"png"},"partial_images":{"type":"integer","min":0,"max":3,"notes":"Requires stream=true."},"quality":{"type":"enum","values":["low","medium","high","xhigh","max","auto"],"default":"auto"},"stream":{"type":"boolean","default":false},"user":{"type":"string"}},
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": {"image":{"type":"image_or_array","required":true,"max_items":16,"max_file_size_mb":50,"formats":["png","webp","jpg","jpeg"]},"mask":{"type":"image","max_file_size_mb":4,"formats":["png"]},"prompt":{"type":"string","max_length":32000},"size":{"type":"string","values":["auto","1024x1024","1536x1024","1024x1536"],"dimension_multiple_of":16,"max_width":3840,"max_height":3840,"max_aspect_ratio":"3:1","min_pixels":655360,"max_pixels":8294400,"notes":"Also accepts arbitrary WIDTHxHEIGHT values satisfying the documented constraints."},"background":{"type":"enum","values":["transparent","opaque","auto"],"default":"auto","notes":"Transparent output requires PNG or WebP."},"moderation":{"type":"enum","values":["low","auto"],"default":"auto"},"n":{"type":"integer","min":1,"max":10},"output_compression":{"type":"integer","min":0,"max":100,"default":100,"notes":"Supported only for JPEG and WebP output."},"output_format":{"type":"enum","values":["png","jpeg","webp"],"default":"png"},"partial_images":{"type":"integer","min":0,"max":3,"notes":"Requires stream=true."},"quality":{"type":"enum","values":["low","medium","high","xhigh","max","auto"],"default":"auto"},"stream":{"type":"boolean","default":false},"user":{"type":"string"},"input_fidelity":{"type":"enum","values":["low","high"],"default":"low"}},
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "access_scope": "public",
+    "routing_status": "active",
+    "routable": true,
+    "regions": {"execution":["global"],"data":["global"]},
+    "service_tiers": [],
+    "api": {"formats":[],"endpoint":null,"deployment":null},
+    "sources": [{"kind":"announcement","url":"https://openai.com/index/introducing-chatgpt-images-2-5/","accessed_at":"2026-09-08T00:00:00Z","notes":"Official announcement confirms API availability and generation and editing support."}],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "API availability and image generation and editing support verified against OpenAI's launch announcement. Request parameters follow the current GPT Image API contract."
     },
     "rate_limits": []
   },
