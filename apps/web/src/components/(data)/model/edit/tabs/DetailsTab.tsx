@@ -163,6 +163,7 @@ export default function DetailsTab({
   const [detailValues, setDetailValues] = useState<Record<DetailFieldKey, string>>(createEmptyDetailValues())
   const [linkValues, setLinkValues] = useState<Record<LinkFieldKey, string>>(createEmptyLinkValues())
   const [preservedLinks, setPreservedLinks] = useState<ModelLink[]>([])
+  const [loaded, setLoaded] = useState(false)
   const onDetailsChangeRef = useRef(onDetailsChange)
   const onLinksChangeRef = useRef(onLinksChange)
 
@@ -213,12 +214,14 @@ export default function DetailsTab({
       }
       setLinkValues(nextLinks)
       setPreservedLinks(preservedLinkRows)
+      setLoaded(true)
     }
 
     void fetchData()
   }, [modelId])
 
   useEffect(() => {
+    if (!loaded) return
     const payload: ModelDetail[] = DETAIL_FIELDS
       .map((field) => ({
         id: field.key,
@@ -228,9 +231,10 @@ export default function DetailsTab({
       .filter((row) => row.detail_value.length > 0)
 
     onDetailsChangeRef.current?.(payload)
-  }, [detailValues])
+  }, [detailValues, loaded])
 
   useEffect(() => {
+    if (!loaded) return
     const editableLinks: ModelLink[] = LINK_FIELDS
       .map((field) => ({
         id: field.key,
@@ -251,7 +255,7 @@ export default function DetailsTab({
     ]
 
     onLinksChangeRef.current?.(payload)
-  }, [linkValues, preservedLinks])
+  }, [linkValues, preservedLinks, loaded])
 
   return (
     <div className="space-y-5">

@@ -178,6 +178,7 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 			client
 				.from("v2_benchmark_results")
 				.select("benchmark_id,model_slug,score_numeric,rank")
+                .or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 				.in("benchmark_id", [...RANKING_BENCHMARK_IDS])
 				.not("score_numeric", "is", null)
 				.limit(2_000),

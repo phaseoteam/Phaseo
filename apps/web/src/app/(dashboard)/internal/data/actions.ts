@@ -260,6 +260,17 @@ export async function deleteOrganisationAction(organisationId: string) {
 	revalidatePath("/internal/data/organisations");
 }
 
+function providerOfferFields(formData: FormData) {
+  return {
+    ...(formData.has("offer_scope") ? { offer_scope: requiredString(formData.get("offer_scope"), "offer_scope") } : {}),
+    ...(formData.has("offer_label") ? { offer_label: optionalString(formData.get("offer_label")) } : {}),
+    ...(formData.has("parent_provider_slug") ? { parent_provider_slug: optionalString(formData.get("parent_provider_slug")) } : {}),
+    ...(formData.has("base_url") ? { base_url: optionalString(formData.get("base_url")) } : {}),
+    ...(formData.has("residency_mode") ? { residency_mode: requiredString(formData.get("residency_mode"), "residency_mode") } : {}),
+    ...(formData.has("default_data_regions") ? { default_data_regions: optionalStringArray(formData.get("default_data_regions")) } : {}),
+  };
+}
+
 // react-doctor-disable-next-line
 export async function createAPIProviderAction(formData: FormData) {
 	const apiProviderId = requiredString(formData.get("api_provider_id"), "api_provider_id");
@@ -279,6 +290,7 @@ export async function createAPIProviderAction(formData: FormData) {
 
 	await callCatalogMutation("/api/account/models/catalog/providers", "POST", {
 		api_provider_id: apiProviderId,
+        ...providerOfferFields(formData),
 		api_provider_name: apiProviderName,
 		description: optionalString(formData.get("description")),
 		link: optionalString(formData.get("link")),
@@ -294,7 +306,7 @@ export async function createAPIProviderAction(formData: FormData) {
 		data_policy_contract_notes: optionalString(
 			formData.get("data_policy_contract_notes"),
 		),
-		status: "Active",
+		status: optionalString(formData.get("status")) ?? "active",
 	});
 	await submitIndexNowUrls(
 		getIndexNowProviderUrls(apiProviderId),
@@ -318,6 +330,8 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 		formData.get("data_policy_contract_mode"),
 	);
 	await callCatalogMutation(`/api/account/models/catalog/providers/${encodeURIComponent(apiProviderId)}`, "PUT", {
+            ...providerOfferFields(formData),
+            ...(formData.has("status") ? { status: optionalString(formData.get("status")) } : {}),
 			api_provider_name: requiredString(formData.get("api_provider_name"), "api_provider_name"),
 			description: optionalString(formData.get("description")),
 			link: optionalString(formData.get("link")),
@@ -784,11 +798,11 @@ export async function deleteModelAction(modelId: string) {
 
 // react-doctor-disable-next-line
 export async function revalidateSingleModelDataAction(modelId: string) {
-	await revalidateCloudflare(["web-api-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-notices", "web-api-search"]);
 	revalidateModelDataOnlyTags({ modelId });
 	revalidatePath(`/internal/data/models/edit/${modelId}`);
 	revalidatePath("/models");
 	revalidatePath(`/models/${modelId}`);
+	await revalidateCloudflare(["web-api-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-notices", "web-api-search"]);
 
 	return { ok: true as const, message: "Model data cache revalidated." };
 }

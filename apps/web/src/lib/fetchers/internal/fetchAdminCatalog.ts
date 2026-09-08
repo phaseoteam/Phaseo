@@ -21,9 +21,10 @@ export function fetchAdminCatalogOverview() {
 	return fetchAdminCatalogPath<AdminCatalogOverview>("/api/account/models/catalog/overview");
 }
 
-export function fetchAdminCatalogList(resource: "models" | "organisations" | "providers" | "benchmarks", args: { q?: string; page?: number; pageSize?: number } = {}) {
+export function fetchAdminCatalogList(resource: "models" | "organisations" | "providers" | "benchmarks", args: { q?: string; page?: number; pageSize?: number; attention?: string } = {}) {
 	const query = new URLSearchParams({ resource, page: String(args.page ?? 1), pageSize: String(args.pageSize ?? 100) });
 	if (args.q) query.set("q", args.q);
+	if (args.attention) query.set("attention", args.attention);
 	return fetchAdminCatalogPath<{ rows: any[]; count: number }>(`/api/account/models/catalog/list?${query.toString()}`);
 }
 
@@ -33,4 +34,12 @@ export function fetchAdminCatalogRecord(resource: "organisation" | "provider" | 
 
 export function fetchAdminModelFormOptions() {
 	return fetchAdminCatalogPath<{ organisations: any[]; providers: any[]; families: any[]; benchmarks: any[]; previousModels: any[]; subscriptionPlans: any[] }>("/api/account/models/catalog/model-form-options");
+}
+
+export type ProviderFormOptions = {
+  providers: Array<{ provider_slug: string; name: string; provider_family_slug: string | null; offer_scope: string; offer_label: string | null }>;
+  regions: Array<{ provider_slug: string; region_code: string; display_name: string | null }>;
+};
+export function fetchAdminProviderFormOptions() {
+  return fetchAdminCatalogPath<ProviderFormOptions>("/api/account/models/catalog/provider-form-options");
 }

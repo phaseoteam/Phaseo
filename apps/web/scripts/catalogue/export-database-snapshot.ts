@@ -1,7 +1,8 @@
 /* eslint-disable no-console -- scheduled export reports per-table progress */
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { client } from "../importer/supa";
+import { excludeStealthRows } from "./exportSnapshotPrivacy";
 
 const PAGE_SIZE = 1_000;
 const OUTPUT_DIR = resolve(process.cwd(), "../../packages/data/catalog/generated/database-v2");
@@ -36,13 +37,12 @@ function stableRowKey(row: Record<string, unknown>): string {
 	return JSON.stringify(stableValue(row));
 }
 
-async function fetchTable(table: TableName, snapshotStartedAt: string): Promise<Record<string, unknown>[]> {
+async function fetchTable(table: TableName): Promise<Record<string, unknown>[]> {
 	const supabase = client();
 	const rows: Record<string, unknown>[] = [];
 	for (let from = 0; ; from += PAGE_SIZE) {
 		let query: any = supabase.from(table).select("*");
 		for (const column of TABLES[table]) query = query.order(column, { ascending: true });
-		if (!["v2_subscription_plan_models", "v2_subscription_plan_features"].includes(table)) query = query.lte("updated_at", snapshotStartedAt);
 		const result = await query.range(from, from + PAGE_SIZE - 1);
 		if (result.error) throw new Error(`Failed to export ${table}: ${result.error.message}`);
 		const page = (result.data ?? []) as Record<string, unknown>[];
@@ -57,27 +57,18 @@ async function fetchTable(table: TableName, snapshotStartedAt: string): Promise<
 }
 
 async function main() {
-	const snapshotStartedAt = new Date().toISOString();
-	await rm(OUTPUT_DIR, { recursive: true, force: true });
-	await mkdir(OUTPUT_DIR, { recursive: true });
-	const stealthModelSlugs = new Set<string>();
-	const stealthRouteIds = new Set<string>();
-	const stealthSkuIds = new Set<string>();
+	// An updated_at cutoff is not a database snapshot: it drops rows changed
+	// during export and legacy rows with null timestamps. Export the full tables.
+	// Collect every table before writing so a failed query preserves the prior export.
+	const snapshots = new Map<TableName, Record<string, unknown>[]>();
 	for (const table of Object.keys(TABLES) as TableName[]) {
-		let rows = await fetchTable(table, snapshotStartedAt);
-		for (const row of rows) {
-			if (row.is_stealth !== true) continue;
-			if (typeof row.model_slug === "string") stealthModelSlugs.add(row.model_slug);
-			if (typeof row.provider_model_id === "string") stealthRouteIds.add(row.provider_model_id);
-		}
-		if (table === "v2_pricing_skus") for (const row of rows) if (stealthRouteIds.has(String(row.provider_model_id))) stealthSkuIds.add(String(row.sku_id));
-		rows = rows.filter((row) => row.is_stealth !== true)
-			.filter((row) => !stealthModelSlugs.has(String(row.model_slug ?? "")))
-			.filter((row) => !stealthRouteIds.has(String(row.provider_model_id ?? "")))
-			.filter((row) => !stealthSkuIds.has(String(row.sku_id ?? "")))
-			.filter((row) => table !== "v2_catalogue_source_overrides" || (!stealthModelSlugs.has(String(row.source_key ?? "")) && !stealthRouteIds.has(String(row.source_key ?? ""))));
-		await writeFile(resolve(OUTPUT_DIR, `${table}.json`), `${JSON.stringify(rows, null, 2)}\n`, "utf8");
+		snapshots.set(table, await fetchTable(table));
+	}
+	const publicSnapshots = excludeStealthRows(snapshots);
+	await mkdir(OUTPUT_DIR, { recursive: true });
+	for (const [table, rows] of publicSnapshots) {
 		console.log(`Exported ${table}: ${rows.length} rows`);
+		await writeFile(resolve(OUTPUT_DIR, `${table}.json`), `${JSON.stringify(rows, null, 2)}\n`, "utf8");
 	}
 	await writeFile(resolve(OUTPUT_DIR, "README.md"), "# Generated database catalogue snapshot\n\nThis directory is generated from the production v2 catalogue tables. Edit catalogue data in the admin UI, not in these files. The daily snapshot workflow opens or updates a reviewable pull request when database state changes.\n", "utf8");
 }

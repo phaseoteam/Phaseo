@@ -3,6 +3,9 @@
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const resources = [
 	{ value: "models", label: "Models" },
@@ -33,13 +36,14 @@ export function CatalogSearch() {
 		<form className="flex flex-col gap-2 sm:flex-row" onSubmit={(event) => { event.preventDefault(); const value = query.trim(); router.push(`/internal/data/${resource}${value ? `?q=${encodeURIComponent(value)}` : ""}`); }}>
 			<div className="relative min-w-0 flex-1">
 				<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-				<input ref={inputRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a record by name or ID" aria-label="Find a catalog record" className="h-10 w-full rounded-md border bg-background pl-9 pr-12 text-sm shadow-xs outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30" />
+				<Input ref={inputRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a record by name or ID" aria-label="Find a catalog record" className="h-11 w-full pl-9 pr-12 text-base sm:text-sm" />
 				<kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">/</kbd>
 			</div>
-			<select value={resource} onChange={(event) => setResource(event.target.value as typeof resource)} aria-label="Record type" className="h-10 rounded-md border bg-background px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30">
-				{resources.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-			</select>
-			<button type="submit" className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/80">Search</button>
+			<Select value={resource} onValueChange={(value) => setResource(value as typeof resource)}>
+				<SelectTrigger aria-label="Record type" className="min-h-11 w-full sm:w-44"><SelectValue>{resources.find((item) => item.value === resource)?.label}</SelectValue></SelectTrigger>
+				<SelectContent>{resources.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
+			</Select>
+			<Button type="submit" className="min-h-11">Search</Button>
 		</form>
 	);
 }

@@ -10,7 +10,7 @@ const CANONICAL_SERVICE_TIERS = ["standard", "priority", "batch", "flex"] as con
 
 const catalogMutationSchemas = {
 	organisations: z.object({ organisation_id: z.string().trim().min(1).optional(), name: z.string().trim().min(1), description: z.string().nullable().optional(), country_code: z.string().trim().min(2).max(3).nullable().optional(), colour: z.string().nullable().optional(), social_links: z.array(z.object({ platform: z.string().trim().min(1), url: z.url() })).default([]) }),
-	providers: z.object({ api_provider_id: z.string().trim().min(1).optional(), api_provider_name: z.string().trim().min(1), description: z.string().nullable().optional(), link: z.string().nullable().optional(), country_code: z.string().trim().min(2).max(3).nullable().optional(), default_execution_regions: z.array(z.string().trim().min(1)).optional(), byok_available: z.boolean().optional(), prompt_training_policy: z.string().nullable().optional(), prompt_training_notes: z.string().nullable().optional(), prompt_training_source_url: z.string().nullable().optional(), data_policy_tier: z.string().nullable().optional(), data_policy_confidence: z.string().nullable().optional(), data_policy_contract_mode: z.string().nullable().optional(), data_policy_contract_notes: z.string().nullable().optional(), status: z.string().nullable().optional() }),
+	providers: z.object({ parent_provider_slug: z.string().trim().min(1).nullable().optional(), offer_scope: z.enum(["global", "regional", "specialized"]).optional(), offer_label: z.string().trim().nullable().optional(), base_url: z.url().nullable().optional(), residency_mode: z.enum(["unknown", "provider_managed", "customer_selectable", "account_selected"]).optional(), default_data_regions: z.array(z.string().trim().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/)).max(100).nullable().optional(), api_provider_id: z.string().trim().min(1).optional(), api_provider_name: z.string().trim().min(1), description: z.string().nullable().optional(), link: z.string().nullable().optional(), country_code: z.string().trim().min(2).max(3).nullable().optional(), default_execution_regions: z.array(z.string().trim().min(1)).optional(), byok_available: z.boolean().optional(), prompt_training_policy: z.string().nullable().optional(), prompt_training_notes: z.string().nullable().optional(), prompt_training_source_url: z.string().nullable().optional(), data_policy_tier: z.string().nullable().optional(), data_policy_confidence: z.string().nullable().optional(), data_policy_contract_mode: z.string().nullable().optional(), data_policy_contract_notes: z.string().nullable().optional(), status: z.string().nullable().optional() }),
 	benchmarks: z.object({ id: z.string().trim().min(1).optional(), name: z.string().trim().min(1), category: z.string().nullable().optional(), link: z.string().nullable().optional(), ascending_order: z.boolean().nullable().optional() }),
 	"subscription-plans": z.object({ plan_uuid: z.uuid().optional(), plan_id: z.string().trim().min(1), name: z.string().trim().min(1), organisation_id: z.string().nullable().optional(), description: z.string().nullable().optional(), frequency: z.string().nullable().optional(), price: z.number().finite().nullable().optional(), currency: z.string().nullable().optional(), link: z.string().nullable().optional(), other_info: z.record(z.string(), z.unknown()).default({}) }),
 	models: z.object({ modelId: z.string().trim().min(1).optional(), name: z.string().trim().min(1), organisationId: z.string().trim().min(1).optional(), familyId: z.string().nullable().optional(), status: z.string().nullable().optional(), hidden: z.boolean().optional(), inputTypes: z.union([z.string(), z.array(z.string())]).nullable().optional(), outputTypes: z.union([z.string(), z.array(z.string())]).nullable().optional(), announcementDate: z.string().nullable().optional(), releaseDate: z.string().nullable().optional(), deprecationDate: z.string().nullable().optional(), retirementDate: z.string().nullable().optional(), license: z.string().nullable().optional(), previousModelId: z.string().nullable().optional() }),
@@ -73,6 +73,7 @@ const modelGraphSchema = z.object({
 }).passthrough();
 
 const providerRouteSchema = z.object({
+	is_stealth: z.boolean().optional(),
 	provider_model_id: z.string().trim().min(1).optional(),
 	provider_slug: z.string().trim().min(1),
 	provider_model_slug: z.string().trim().min(1),
@@ -254,19 +255,41 @@ accountModelsRouter.get("/catalog/list", async (c) => {
 	const configs: Record<string, { table: string; select: string; search: string[] }> = {
 		models: { table: "v2_models", select: "model_id:model_slug,name,created_at", search: ["model_slug", "name"] },
 		organisations: { table: "v2_labs", select: "organisation_id:lab_slug,name,created_at", search: ["lab_slug", "name"] },
-		providers: { table: "v2_providers", select: "api_provider_id:provider_slug,api_provider_name:name,created_at", search: ["provider_slug", "name"] },
+		providers: { table: "v2_providers", select: "api_provider_id:provider_slug,api_provider_name:name,provider_family_slug,offer_scope,offer_label,created_at", search: ["provider_slug", "name"] },
 		benchmarks: { table: "v2_benchmarks", select: "id:benchmark_id,name,category,created_at", search: ["benchmark_id", "name", "category"] },
 	};
 	const config = configs[c.req.query("resource") ?? ""];
 	if (!config) return c.json({ error: "invalid_resource" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const page = Math.max(1, Number.parseInt(c.req.query("page") ?? "1", 10) || 1);
 	const pageSize = Math.min(100, Math.max(1, Number.parseInt(c.req.query("pageSize") ?? "100", 10) || 100));
-	const search = (c.req.query("q") ?? "").trim().replace(/[(),]/g, " ");
+	const searchTerms = (c.req.query("q") ?? "").slice(0, 200).match(/[\p{L}\p{N}]+/gu) ?? [];
 	let query = client.from(config.table).select(config.select, { count: "exact" }).order("created_at", { ascending: false }).range((page - 1) * pageSize, page * pageSize - 1);
-	if (search) query = query.or(config.search.map((column) => `${column}.ilike.%${search}%`).join(","));
+	if (searchTerms.length) {
+		// Match words in either display names or IDs, regardless of separators.
+		// Only letters and numbers enter PostgREST's filter expression.
+		query = query.or(config.search.map((column) => searchTerms.length === 1
+			? `${column}.ilike.%${searchTerms[0]}%`
+			: `and(${searchTerms.map((term) => `${column}.ilike.%${term}%`).join(",")})`).join(","));
+	}
+	if (c.req.query("resource") === "models") {
+		const attention = c.req.query("attention");
+		if (attention === "hidden") query = query.eq("hidden", true);
+		if (attention === "missing-organisation") query = query.is("lab_slug", null);
+	}
 	const result = await query;
 	if (result.error) return c.json({ error: "admin_catalog_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ rows: result.data ?? [], count: result.count ?? 0, page, pageSize }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountModelsRouter.get("/catalog/provider-form-options", async (c) => {
+  const admin = await requireAdminContext(c.req.raw, c.env);
+  if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+  const [providers, regions] = await Promise.all([
+    admin.context.client.from("v2_providers").select("provider_slug,name,provider_family_slug,offer_scope,offer_label").order("name"),
+    admin.context.client.from("v2_provider_regions").select("provider_slug,region_code,display_name,status").neq("status", "disabled").order("display_name"),
+  ]);
+  if (providers.error || regions.error) return c.json({ error: "provider_options_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+  return c.json({ providers: providers.data ?? [], regions: regions.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.get("/catalog/model-form-options", async (c) => {
@@ -276,14 +299,14 @@ accountModelsRouter.get("/catalog/model-form-options", async (c) => {
 	if (!client) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const [organisations, providers, families, benchmarks, previousModels, subscriptionPlans] = await Promise.all([
 		client.from("v2_labs").select("organisation_id:lab_slug,name").order("name", { ascending: true }),
-		client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name").order("name", { ascending: true }),
+		client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_slug,offer_label,offer_scope").order("name", { ascending: true }),
 		client.from("v2_model_families").select("family_id:family_slug,family_name:name").order("name", { ascending: true }),
 		client.from("v2_benchmarks").select("id:benchmark_id,name").order("name", { ascending: true }),
 		client.from("v2_models").select("model_id:model_slug,name").order("name", { ascending: true }).limit(500),
-		client.from("v2_subscription_plans").select("plan_uuid,plan_id,name,frequency,price,currency").order("name", { ascending: true }).order("frequency", { ascending: true }).limit(1200),
+		client.from("v2_subscription_plans").select("plan_uuid,plan_id,name,frequency,price,currency,organisation_id:lab_slug").order("name", { ascending: true }).order("frequency", { ascending: true }).limit(1200),
 	]);
 	if ([organisations, providers, families, benchmarks, previousModels, subscriptionPlans].some((result) => result.error)) return c.json({ error: "admin_catalog_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ organisations: organisations.data ?? [], providers: providers.data ?? [], families: families.data ?? [], benchmarks: benchmarks.data ?? [], previousModels: previousModels.data ?? [], subscriptionPlans: subscriptionPlans.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ organisations: organisations.data ?? [], providers: (providers.data ?? []).map((provider) => ({ ...provider, api_provider_name: [provider.api_provider_name, provider.offer_label].filter(Boolean).join(" · ") })), families: families.data ?? [], benchmarks: benchmarks.data ?? [], previousModels: previousModels.data ?? [], subscriptionPlans: subscriptionPlans.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.get("/catalog/record", async (c) => {
@@ -306,7 +329,7 @@ accountModelsRouter.get("/catalog/record", async (c) => {
 			return c.json({ row: data ? { ...data, colour: data.metadata?.colour ?? null } : null, links: links.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
 		}
 		const configs: Record<string, { table: string; select: string; column: string }> = {
-			provider: { table: "v2_providers", select: "api_provider_id:provider_slug,api_provider_name:name,base_url,country_code,default_execution_regions,byok_available,metadata", column: "provider_slug" },
+			provider: { table: "v2_providers", select: "api_provider_id:provider_slug,api_provider_name:name,base_url,country_code,default_execution_regions,default_data_regions,residency_mode,provider_family_slug,offer_scope,offer_label,status,routing_enabled,routable,byok_available,metadata", column: "provider_slug" },
 			benchmark: { table: "v2_benchmarks", select: "id:benchmark_id,name,category,link,ascending_order", column: "benchmark_id" },
 			model: { table: "v2_models", select: "model_id:model_slug,name", column: "model_slug" },
 		};
@@ -317,7 +340,7 @@ accountModelsRouter.get("/catalog/record", async (c) => {
 		if (resource === "provider" && result.data) {
 			const data = result.data as Record<string, any>;
 			const metadata = data.metadata && typeof data.metadata === "object" ? data.metadata : {};
-			return c.json({ row: { ...data, description: metadata.description ?? null, link: metadata.link ?? data.base_url ?? null, default_execution_regions: Array.isArray(data.default_execution_regions) ? data.default_execution_regions : [], byok_available: data.byok_available === true, prompt_training_policy: metadata.prompt_training_policy ?? null } }, 200, PRIVATE_NO_STORE_HEADERS);
+			return c.json({ row: { ...data, description: metadata.description ?? null, link: metadata.link ?? data.base_url ?? null, default_execution_regions: Array.isArray(data.default_execution_regions) ? data.default_execution_regions : [], byok_available: data.byok_available === true, prompt_training_policy: metadata.prompt_training_policy ?? null, prompt_training_notes: metadata.prompt_training_notes ?? null, prompt_training_source_url: metadata.prompt_training_source_url ?? null } }, 200, PRIVATE_NO_STORE_HEADERS);
 		}
 		return c.json({ row: result.data ?? null }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
@@ -336,7 +359,7 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 		const alias = await client.from("v2_model_aliases").select("model_slug").eq("alias_slug", requestedModelId).eq("enabled", true).maybeSingle();
 		if (alias.error) throw alias.error;
 		const modelId = alias.data?.model_slug ?? requestedModelId;
-		const [model, links, details, notice, aliases, successors, history, pricingSource, plans] = await Promise.all([
+		const [model, links, details, notice, aliases, successors, history, pricingSource, plans, benchmarks, rowHistory] = await Promise.all([
 			client.from("v2_models").select("*,lab:v2_labs(*)").eq("model_slug", modelId).maybeSingle(),
 			client.from("v2_model_links").select("link_kind,title,url,metadata").eq("model_slug", modelId),
 			client.from("v2_model_details").select("detail_name,detail_value,detail_order").eq("model_slug", modelId).order("detail_order"),
@@ -345,7 +368,9 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 			client.from("v2_models").select("model_slug,name,status").contains("metadata", { previous_model_id: modelId }).order("model_slug"),
 			client.from("v2_catalogue_admin_changes").select("change_id,resource_type,action,before_state,after_state,created_at").eq("resource_id", modelId).order("created_at", { ascending: false }).limit(100),
 			fetchModelPricingSources(c.env, [modelId], true),
-			client.rpc("get_v2_model_subscription_plans", { p_model_slug: modelId }),
+			client.from("v2_subscription_plan_models").select("*,plan:v2_subscription_plans(*)").eq("model_slug", modelId),
+            client.from("v2_benchmark_results").select("*,id:result_id").eq("model_slug", modelId),
+            client.from("v2_catalogue_row_history").select("change_id:event_id,resource_type:table_name,action:operation,before_state,after_state,created_at:recorded_at").eq("model_slug", modelId).neq("operation", "BASELINE").order("event_id", { ascending: false }).limit(100),
 		]);
 		if (model.error) throw model.error;
 		if (links.error) throw links.error;
@@ -355,9 +380,12 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 		if (successors.error) throw successors.error;
 		if (history.error) throw history.error;
 		if (plans.error) throw plans.error;
+        if (benchmarks.error) throw benchmarks.error;
+        if (rowHistory.error) throw rowHistory.error;
 		const rawModel = model.data as Record<string, any> | null;
 		const editorModel = rawModel ? {
 			...rawModel,
+            benchmark_results: benchmarks.data ?? [],
 			model_id: rawModel.model_slug,
 			organisation_id: rawModel.lab_slug,
 			family_id: rawModel.family_slug,
@@ -370,7 +398,7 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 			license: rawModel.metadata?.license ?? null,
 			previous_model_id: rawModel.metadata?.previous_model_id ?? null,
 		} : null;
-		return c.json({ source: { requestedModelId, canonicalApiId: modelId, internalModelId: modelId, model: editorModel, links: links.data ?? [], details: details.data ?? [], notice: notice.data ?? null, aliases: aliases.data ?? [], successors: successors.data ?? [], history: history.data ?? [], providerRows: pricingSource.providerRows, pricingRules: pricingSource.pricingRows, subscriptionPlans: plans.data ?? [] } }, 200, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ source: { requestedModelId, canonicalApiId: modelId, internalModelId: modelId, model: editorModel, links: links.data ?? [], details: details.data ?? [], notice: notice.data ?? null, aliases: aliases.data ?? [], successors: successors.data ?? [], history: [...(history.data ?? []), ...(rowHistory.data ?? []).map((entry) => ({ ...entry, change_id: `row-${entry.change_id}` }))].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 100), providerRows: pricingSource.providerRows, pricingRules: pricingSource.pricingRows, subscriptionPlans: (plans.data ?? []).map((relation) => ({ ...relation.plan, effective_to: relation.effective_to, model_info: { model_info: relation.model_info, rate_limit: relation.rate_limit, other_info: relation.other_info } })) } }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		console.error("[web-api/account/models] source failed", { requestedModelId, error });
 		return c.json({ error: "admin_model_source_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -388,7 +416,10 @@ async function runCatalogMutation(c: any, resource: keyof typeof catalogMutation
 	}
 	const resourceId = id ?? String(payload.organisation_id ?? payload.api_provider_id ?? payload.id ?? payload.plan_uuid ?? payload.modelId ?? "");
 	if (!resourceId) return c.json({ error: "invalid_catalogue_id" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const result = await admin.context.client.rpc("mutate_v2_admin_catalogue", { p_actor_user_id: admin.context.user.id, p_resource_type: resource, p_action: action, p_resource_id: resourceId, p_payload: payload });
+	if (action === "delete") return c.json({ error: "catalogue_history_preserved", message: "Saved records cannot be deleted. Set an end date instead." }, 405, PRIVATE_NO_STORE_HEADERS);
+	const result = resource === "providers"
+    ? await admin.context.client.rpc("mutate_v2_admin_provider_offer", { p_actor_user_id: admin.context.user.id, p_action: action, p_provider_slug: resourceId, p_payload: payload })
+    : await admin.context.client.rpc("mutate_v2_admin_catalogue", { p_actor_user_id: admin.context.user.id, p_resource_type: resource, p_action: action, p_resource_id: resourceId, p_payload: payload });
 	if (result.error) return c.json({ error: "admin_catalogue_mutation_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ success: true, record: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 }
@@ -424,7 +455,7 @@ accountModelsRouter.get("/:modelId/pricing-editor", async (c) => {
 
 		const routes = await client
 			.from("v2_model_provider_routes")
-			.select("provider_model_id,provider_slug,provider_model_slug,status,provider_availability_status,phaseo_status,access_scope,routing_enabled,input_modalities,output_modalities,regions,context_length,max_output_tokens,effective_from,effective_to,metadata")
+			.select("provider_model_id,provider_slug,provider_model_slug,is_stealth,status,provider_availability_status,phaseo_status,access_scope,routing_enabled,input_modalities,output_modalities,regions,context_length,max_output_tokens,effective_from,effective_to,metadata")
 			.eq("model_slug", modelId)
 			.order("provider_slug", { ascending: true });
 		if (routes.error) throw routes.error;
@@ -456,17 +487,28 @@ accountModelsRouter.get("/:modelId/pricing-editor", async (c) => {
 				? client.from("v2_route_capabilities").select("provider_model_id,capability_id,status").in("provider_model_id", providerModelIds).neq("status", "disabled").order("capability_id", { ascending: true })
 				: Promise.resolve({ data: [], error: null }),
 			client.from("v2_meter_definitions").select("meter_key,display_name,modality,direction,unit,default_unit_quantity,status").neq("status", "disabled").order("display_name", { ascending: true }),
-			client.from("v2_providers").select("provider_slug,name,status,routing_enabled,routable,base_url,metadata").neq("status", "disabled").order("name", { ascending: true }),
+			client.from("v2_providers").select("provider_slug,name,provider_family_slug,offer_label,offer_scope,status,routing_enabled,routable,base_url,residency_mode,default_execution_regions,default_data_regions,metadata").neq("status", "disabled").order("name", { ascending: true }),
 		]);
 		if ([serviceTiers, regions, capabilities, meterDefinitions, providers].some((result) => result.error)) throw new Error("Pricing reference data unavailable");
 
 		const returnedTiers = new Map((serviceTiers.data ?? []).map((tier) => [tier.service_tier_slug, tier]));
 		const canonicalServiceTiers = CANONICAL_SERVICE_TIERS.map((slug) => returnedTiers.get(slug) ?? { service_tier_slug: slug, display_name: slug[0].toUpperCase() + slug.slice(1), status: "active" });
-		return c.json({ model: model.data, routes: routes.data ?? [], skus: skus.data ?? [], meters: meters.data ?? [], serviceTiers: canonicalServiceTiers, regions: regions.data ?? [], capabilities: capabilities.data ?? [], meterDefinitions: meterDefinitions.data ?? [], providers: providers.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ model: model.data, routes: routes.data ?? [], skus: skus.data ?? [], meters: meters.data ?? [], serviceTiers: canonicalServiceTiers, regions: regions.data ?? [], capabilities: capabilities.data ?? [], meterDefinitions: meterDefinitions.data ?? [], providers: (providers.data ?? []).map((provider) => ({ ...provider, name: [provider.name, provider.offer_label].filter(Boolean).join(" · ") })) }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		console.error("[web-api/account/models] pricing editor source failed", { modelId, error });
 		return c.json({ error: "admin_pricing_source_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
+});
+
+accountModelsRouter.put("/catalog/providers/:providerId/residency", async (c) => {
+  const admin = await requireAdminContext(c.req.raw, c.env);
+  if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+  const regions = z.array(z.string().trim().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/)).max(100).nullable();
+  const parsed = z.object({ residency_mode: z.enum(["unknown", "provider_managed", "customer_selectable", "account_selected"]), default_execution_regions: regions, default_data_regions: regions }).safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "invalid_residency_policy" }, 400, PRIVATE_NO_STORE_HEADERS);
+  const result = await admin.context.client.rpc("mutate_v2_admin_provider_residency", { p_actor_user_id: admin.context.user.id, p_provider_slug: c.req.param("providerId"), p_policy: parsed.data });
+  if (result.error) return c.json({ error: "admin_residency_save_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+  return c.json({ provider: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.put("/:modelId/provider-routes", async (c) => {
@@ -482,8 +524,8 @@ accountModelsRouter.put("/:modelId/provider-routes", async (c) => {
 accountModelsRouter.put("/:modelId/notice", async (c) => {
 	const admin = await requireAdminContext(c.req.raw, c.env);
 	if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
-	const body = await c.req.json().catch(() => null);
-	const parsed = body === null ? { success: true as const, data: null } : modelNoticeSchema.safeParse(body);
+	const body = await c.req.json().catch(() => undefined);
+	const parsed = modelNoticeSchema.nullable().safeParse(body);
 	if (!parsed.success) return c.json({ error: "invalid_model_notice", issues: parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await admin.context.client.rpc("mutate_v2_admin_model_notice", { p_actor_user_id: admin.context.user.id, p_model_slug: c.req.param("modelId"), p_notice: parsed.data });
 	if (result.error) return c.json({ error: "admin_model_notice_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
@@ -520,22 +562,23 @@ accountModelsRouter.put("/:modelId/pricing-editor", async (c) => {
 });
 
 accountModelsRouter.delete("/:modelId/pricing-editor/:skuId", async (c) => {
-	const admin = await requireAdminContext(c.req.raw, c.env);
-	if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
-	const skuId = z.uuid().safeParse(c.req.param("skuId"));
-	if (!skuId.success) return c.json({ error: "invalid_sku_id" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const modelId = c.req.param("modelId");
-	const result = await admin.context.client.rpc("mutate_v2_admin_pricing_sku", {
-		p_actor_user_id: admin.context.user.id,
-		p_model_slug: modelId,
-		p_action: "delete",
-		p_sku: { sku_id: skuId.data },
-	});
-	if (result.error) {
-		console.error("[web-api/account/models] pricing delete failed", { modelId, skuId: skuId.data, error: result.error });
-		return c.json({ error: "admin_pricing_delete_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	}
-	return c.json({ pricing: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+ const admin = await requireAdminContext(c.req.raw, c.env);
+ if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+ return c.json({ error: "catalogue_history_preserved", message: "Prices cannot be deleted. Set an end date instead." }, 405, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountModelsRouter.post("/:modelId/pricing-editor/:skuId/end-date", async (c) => {
+ const admin = await requireAdminContext(c.req.raw, c.env);
+ if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+ const skuId = z.uuid().safeParse(c.req.param("skuId"));
+ const body = z.object({ effective_to: z.iso.datetime({ offset: true }) }).safeParse(await c.req.json().catch(() => null));
+ if (!skuId.success || !body.success) return c.json({ error: "invalid_end_date" }, 400, PRIVATE_NO_STORE_HEADERS);
+ const result = await admin.context.client.rpc("mutate_v2_admin_pricing_sku", {
+  p_actor_user_id: admin.context.user.id, p_model_slug: c.req.param("modelId"),
+  p_action: "end_date", p_sku: { sku_id: skuId.data, effective_to: body.data.effective_to },
+ });
+ if (result.error) return c.json({ error: "admin_pricing_end_date_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+ return c.json({ pricing: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.all("*", async (c) => {

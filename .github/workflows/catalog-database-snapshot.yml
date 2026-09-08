@@ -3,7 +3,7 @@ name: Catalog Database Snapshot
 on:
     workflow_dispatch:
     schedule:
-        - cron: "17 3 * * *"
+        - cron: "0 0 * * *"
 
 concurrency:
     group: catalog-database-snapshot
@@ -50,6 +50,14 @@ jobs:
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
                   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
               run: pnpm --filter @phaseo/web catalog:export:database
+
+            - name: Preserve this daily snapshot
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+              with:
+                  name: catalog-database-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: packages/data/catalog/generated/database-v2/
+                  if-no-files-found: error
+                  retention-days: 90
 
             - name: Resolve snapshot branch
               id: snapshot-branch

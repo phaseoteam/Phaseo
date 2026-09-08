@@ -10,6 +10,7 @@
 		"packages/*/*"
 	],
 	"scripts": {
+		"test:catalogue-history": "node scripts/tests/catalogue-history.mjs",
 		"dev": "turbo run dev --parallel",
 		"dev:cloudflare-web": "node scripts/dev-cloudflare-web.mjs",
 		"build": "turbo run build",
@@ -139,6 +140,7 @@
 	"devDependencies": {
 		"@changesets/changelog-github": "^1.0.0",
 		"@changesets/cli": "^3.0.1",
+		"@electric-sql/pglite": "0.5.8",
 		"@stoplight/spectral-cli": "^6.16.3",
 		"ajv": "^8.20.0",
 		"dotenv-cli": "^11.0.0",
@@ -186,7 +188,8 @@
 			"@mintlify/previewing>tar": "7.5.19"
 		},
 		"patchedDependencies": {
-			"statsig-node-lite@0.5.2": "patches/statsig-node-lite@0.5.2.patch"
+			"statsig-node-lite@0.5.2": "patches/statsig-node-lite@0.5.2.patch",
+			"next-navigation-guard@0.2.0": "patches/next-navigation-guard@0.2.0.patch"
 		}
 	}
 }
