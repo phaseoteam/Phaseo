@@ -188,7 +188,7 @@ export function checkPricingEntrySafety(p: any): string[] {
             }
 
             metersInEntry.add(meter);
-            if (meter.endsWith('_tokens') && r?.unit !== undefined && r.unit !== 'token') {
+            if (meter.split('_').includes('tokens') && r?.unit !== undefined && r.unit !== 'token') {
                 errs.push(
                     `pricing: token meter '${meter}' unit must be 'token' for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}`
                 );

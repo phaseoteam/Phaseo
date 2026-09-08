@@ -10,7 +10,10 @@ describe("pricing token units", () => {
         rules: [{ meter, unit, unit_size: 1000000, price_per_unit: 0 }],
     });
 
-    test.each(["input_text_tokens", "output_text_tokens", "cached_write_text_tokens"])(
+    test.each([
+        "input_text_tokens", "output_text_tokens", "cached_write_text_tokens",
+        "cached_write_text_tokens_5m", "cached_write_text_tokens_1h", "total_tokens",
+    ])(
         "rejects noncanonical units for %s before import", meter => {
             const errors = checkPricingEntrySafety(entry(meter, "tokens"));
             expect(errors).toContainEqual(expect.stringContaining("unit must be 'token'"));
