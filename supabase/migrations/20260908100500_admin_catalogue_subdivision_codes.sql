@@ -10,6 +10,12 @@ begin
     into v_definition;
   v_original := v_definition;
 
+  -- This production migration was applied twice under separate versions.
+  -- A full replay reaches this version with the function already updated.
+  if position('subdivision_code' in v_definition) > 0 then
+    return;
+  end if;
+
   v_definition := replace(
     v_definition,
     $old$insert into public.v2_labs (lab_slug,name,country_code,description,status,metadata,updated_at)$old$,
