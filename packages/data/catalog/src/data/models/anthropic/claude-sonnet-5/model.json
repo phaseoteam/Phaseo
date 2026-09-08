@@ -233,7 +233,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 45.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Sonnet 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID 23c86e4a-c769-43c0-a056-79e3cd15834f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-sonnet-5",
       "rank": 40
@@ -242,7 +243,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 71.5,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Sonnet 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID 23c86e4a-c769-43c0-a056-79e3cd15834f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-sonnet-5",
       "rank": 43
@@ -251,7 +253,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 44.5,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Sonnet 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID 23c86e4a-c769-43c0-a056-79e3cd15834f; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-sonnet-5",
       "rank": 31
@@ -260,10 +263,31 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 5312.58,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Sonnet 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID 23c86e4a-c769-43c0-a056-79e3cd15834f; Intelligence Index v4.3; USD 3.3141 per task",
       "source_link": "https://artificialanalysis.ai/models/claude-sonnet-5",
       "rank": 86
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 33.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "Claude Sonnet 5 (Non-reasoning, High Effort); Artificial Analysis ID d58b9ada-fd9d-4fff-a086-242034657963; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-sonnet-5-non-reasoning",
+      "rank": 89
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 66.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "Claude Sonnet 5 (Non-reasoning, High Effort); Artificial Analysis ID d58b9ada-fd9d-4fff-a086-242034657963; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-sonnet-5-non-reasoning",
+      "rank": 63
     }
   ],
   "model_type": null,

@@ -75,10 +75,21 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 16.6,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "GLM-4.7-Flash (Reasoning); Artificial Analysis ID 2c4394a2-b443-470a-908e-5c4a271b780c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-4-7-flash",
       "rank": 245
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 9.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "GLM-4.7-Flash (Non-reasoning); Artificial Analysis ID c8673741-5e1a-46a1-9e4f-710a5c920982; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/glm-4-7-flash-non-reasoning",
+      "rank": 339
     }
   ],
   "family_id": null,

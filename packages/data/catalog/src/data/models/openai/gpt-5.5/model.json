@@ -429,7 +429,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 45.6,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
       "other_info": "GPT-5.5 (xhigh); Artificial Analysis ID 1f054429-397e-4fdb-9e71-67bc92c1735e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-5",
       "rank": 36
@@ -438,7 +439,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 74.9,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
       "other_info": "GPT-5.5 (xhigh); Artificial Analysis ID 1f054429-397e-4fdb-9e71-67bc92c1735e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-5",
       "rank": 28
@@ -447,10 +449,121 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 37.5,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
       "other_info": "GPT-5.5 (xhigh); Artificial Analysis ID 1f054429-397e-4fdb-9e71-67bc92c1735e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-5",
       "rank": 50
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 41.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "GPT-5.5 (medium); Artificial Analysis ID 6b79f899-e3c0-45f6-923c-243faccdb2fc; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-medium",
+      "rank": 54
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 71.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "GPT-5.5 (medium); Artificial Analysis ID 6b79f899-e3c0-45f6-923c-243faccdb2fc; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-medium",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 30.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "GPT-5.5 (medium); Artificial Analysis ID 6b79f899-e3c0-45f6-923c-243faccdb2fc; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-medium",
+      "rank": 61
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 1200.75,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "GPT-5.5 (medium); Artificial Analysis ID 6b79f899-e3c0-45f6-923c-243faccdb2fc; Intelligence Index v4.3; USD 0.6578 per task",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-medium",
+      "rank": 59
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 27.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "GPT-5.5 (Non-reasoning); Artificial Analysis ID 6f1a7562-6e96-46ac-af4f-6ba5a7a3da96; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-non-reasoning",
+      "rank": 145
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 56.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "GPT-5.5 (Non-reasoning); Artificial Analysis ID 6f1a7562-6e96-46ac-af4f-6ba5a7a3da96; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-non-reasoning",
+      "rank": 92
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 44.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "GPT-5.5 (high); Artificial Analysis ID b13c1257-d746-4027-8fc8-4892dc14701c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-high",
+      "rank": 43
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 71.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "GPT-5.5 (high); Artificial Analysis ID b13c1257-d746-4027-8fc8-4892dc14701c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-high",
+      "rank": 42
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 35.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "GPT-5.5 (high); Artificial Analysis ID b13c1257-d746-4027-8fc8-4892dc14701c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-high",
+      "rank": 53
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 35.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "GPT-5.5 (low); Artificial Analysis ID c77cfe51-f4a0-4692-9dee-5061ef667f23; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-low",
+      "rank": 80
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 60.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "GPT-5.5 (low); Artificial Analysis ID c77cfe51-f4a0-4692-9dee-5061ef667f23; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-5-low",
+      "rank": 77
     }
   ],
   "page_notice": null,

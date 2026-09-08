@@ -359,7 +359,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 18.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "GPT-5 mini (high); Artificial Analysis ID 29855680-7469-43eb-8b88-cd3fb1d99da3; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-mini",
       "rank": 231
@@ -368,7 +369,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 15.6,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "GPT-5 mini (high); Artificial Analysis ID 29855680-7469-43eb-8b88-cd3fb1d99da3; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-mini",
       "rank": 213
@@ -377,10 +379,31 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 9,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "GPT-5 mini (high); Artificial Analysis ID 29855680-7469-43eb-8b88-cd3fb1d99da3; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-mini",
       "rank": 103
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 8.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "minimal",
+      "other_info": "GPT-5 mini (minimal); Artificial Analysis ID bc26bfdb-4923-4442-a6ca-e77392923581; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-mini-minimal",
+      "rank": 355
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 24.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "GPT-5 mini (medium); Artificial Analysis ID c3274a19-6d3c-4d01-ab9b-5055a0a40429; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-mini-medium",
+      "rank": 181
     }
   ],
   "page_notice": null,

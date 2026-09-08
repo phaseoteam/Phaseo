@@ -193,9 +193,20 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "NVIDIA Nemotron 3 Nano 30B A3B (Non-reasoning); Artificial Analysis ID 23b379f7-18df-492a-9fc1-a56c5a5b9cfc; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-nano-30b-a3b",
+      "rank": 491
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
       "score": 8.6,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "NVIDIA Nemotron 3 Nano 30B A3B (Reasoning); Artificial Analysis ID 76dcf6ef-39ea-4be0-b693-b88da25b4caf; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-nano-30b-a3b-reasoning",
       "rank": 351
@@ -204,7 +215,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 14.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "NVIDIA Nemotron 3 Nano 30B A3B (Reasoning); Artificial Analysis ID 76dcf6ef-39ea-4be0-b693-b88da25b4caf; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-nano-30b-a3b-reasoning",
       "rank": 217
@@ -213,7 +225,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "NVIDIA Nemotron 3 Nano 30B A3B (Reasoning); Artificial Analysis ID 76dcf6ef-39ea-4be0-b693-b88da25b4caf; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-nano-30b-a3b-reasoning",
       "rank": 130

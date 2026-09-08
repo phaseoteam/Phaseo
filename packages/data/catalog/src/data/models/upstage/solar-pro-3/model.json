@@ -119,7 +119,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 9.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Solar Pro 3; Artificial Analysis ID b89c4faf-219e-4171-a1aa-e3bd2fd0a924; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
       "rank": 342
@@ -128,7 +129,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 16.2,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Solar Pro 3; Artificial Analysis ID b89c4faf-219e-4171-a1aa-e3bd2fd0a924; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
       "rank": 211
@@ -137,7 +139,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 1.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Solar Pro 3; Artificial Analysis ID b89c4faf-219e-4171-a1aa-e3bd2fd0a924; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
       "rank": 123
@@ -146,7 +149,8 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 154.65,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Solar Pro 3; Artificial Analysis ID b89c4faf-219e-4171-a1aa-e3bd2fd0a924; Intelligence Index v4.3; USD 0.0966 per task",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
       "rank": 20

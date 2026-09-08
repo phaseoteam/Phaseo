@@ -31,7 +31,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 10.9,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
       "other_info": "Grok 4.1 Fast (Non-reasoning); Artificial Analysis ID 49fd01f9-887d-4479-b8ce-771a81ecef4e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/grok-4-1-fast",
       "rank": 322

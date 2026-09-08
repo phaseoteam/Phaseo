@@ -31,7 +31,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 11.9,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Qwen3 Coder 480B A35B Instruct; Artificial Analysis ID 093883ed-f5fc-443b-8e18-afbfb166699e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-coder-480b-a35b-instruct",
       "rank": 305

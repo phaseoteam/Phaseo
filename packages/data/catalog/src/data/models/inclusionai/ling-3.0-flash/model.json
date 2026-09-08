@@ -56,7 +56,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 27.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Ling 3.0 Flash; Artificial Analysis ID e33dc369-ae81-40e0-8c4e-28b002d02197; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ling-3-0-flash",
       "rank": 143
@@ -65,7 +66,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 50.6,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Ling 3.0 Flash; Artificial Analysis ID e33dc369-ae81-40e0-8c4e-28b002d02197; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ling-3-0-flash",
       "rank": 111
@@ -74,7 +76,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 21.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Ling 3.0 Flash; Artificial Analysis ID e33dc369-ae81-40e0-8c4e-28b002d02197; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ling-3-0-flash",
       "rank": 82
@@ -83,7 +86,8 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 75.78,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Ling 3.0 Flash; Artificial Analysis ID e33dc369-ae81-40e0-8c4e-28b002d02197; Intelligence Index v4.3; USD 0.0306 per task",
       "source_link": "https://artificialanalysis.ai/models/ling-3-0-flash",
       "rank": 10

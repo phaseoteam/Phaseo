@@ -20,7 +20,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Mistral Saba; Artificial Analysis ID 7a7b52f6-fdef-4dae-9203-58c710ccc81d; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-saba",
       "rank": 513

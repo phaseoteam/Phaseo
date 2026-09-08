@@ -410,10 +410,21 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 30.8,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "Claude Opus 4.6 (Non-reasoning, High Effort); Artificial Analysis ID 4386585e-71b4-4a0c-8a63-afb333419cd6; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-4-6",
       "rank": 115
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 36.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
+      "other_info": "Claude Opus 4.6 (Adaptive Reasoning, Max Effort); Artificial Analysis ID 53c98840-47af-49aa-94e6-469fb17e9a1b; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-4-6-adaptive",
+      "rank": 75
     }
   ],
   "page_notice": null,

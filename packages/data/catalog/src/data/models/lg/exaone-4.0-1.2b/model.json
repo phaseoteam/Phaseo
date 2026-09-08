@@ -223,9 +223,20 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
       "other_info": "Exaone 4.0 1.2B (Non-reasoning); Artificial Analysis ID 8273650d-40e5-45ee-aeda-df71de784164; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/exaone-4-0-1-2b",
+      "rank": 513
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
+      "other_info": "Exaone 4.0 1.2B (Reasoning); Artificial Analysis ID d734e2ce-5cf8-467f-8148-586d02671333; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/exaone-4-0-1-2b-reasoning",
       "rank": 513
     }
   ],

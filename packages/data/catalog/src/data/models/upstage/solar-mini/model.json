@@ -35,7 +35,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Solar Mini; Artificial Analysis ID d97713f2-afa6-4f8d-b2f3-ac89a24c4d6c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/solar-mini",
       "rank": 513

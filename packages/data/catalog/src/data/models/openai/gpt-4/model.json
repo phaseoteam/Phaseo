@@ -58,7 +58,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1.5,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "GPT-4; Artificial Analysis ID 6a7c0e25-1dcb-4b15-8495-a8536a9da051; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4",
       "rank": 497
@@ -67,7 +68,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 13.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "GPT-4; Artificial Analysis ID 6a7c0e25-1dcb-4b15-8495-a8536a9da051; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4",
       "rank": 223

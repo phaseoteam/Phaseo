@@ -238,9 +238,130 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
+      "score": 53.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Xhigh Effort); Artificial Analysis ID 1305c921-7aaa-4d6d-99b5-99b3acf15e19; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-xhigh",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 77,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Xhigh Effort); Artificial Analysis ID 1305c921-7aaa-4d6d-99b5-99b3acf15e19; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-xhigh",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 55.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Xhigh Effort); Artificial Analysis ID 1305c921-7aaa-4d6d-99b5-99b3acf15e19; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-xhigh",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 4299.22,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Xhigh Effort); Artificial Analysis ID 1305c921-7aaa-4d6d-99b5-99b3acf15e19; Intelligence Index v4.3; USD 3.3586 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-xhigh",
+      "rank": 84
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 43.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Low Effort); Artificial Analysis ID 20928ba9-3a3f-415f-9519-b84ff64ecf34; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-low",
+      "rank": 44
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 66.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Low Effort); Artificial Analysis ID 20928ba9-3a3f-415f-9519-b84ff64ecf34; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-low",
+      "rank": 62
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 37.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Low Effort); Artificial Analysis ID 20928ba9-3a3f-415f-9519-b84ff64ecf34; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-low",
+      "rank": 49
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 811.23,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "low",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Low Effort); Artificial Analysis ID 20928ba9-3a3f-415f-9519-b84ff64ecf34; Intelligence Index v4.3; USD 0.6358 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-low",
+      "rank": 48
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 52,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, High Effort); Artificial Analysis ID 712be54a-77ae-41b2-9a58-21181479d6ee; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-high",
+      "rank": 13
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 76.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, High Effort); Artificial Analysis ID 712be54a-77ae-41b2-9a58-21181479d6ee; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-high",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 52.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, High Effort); Artificial Analysis ID 712be54a-77ae-41b2-9a58-21181479d6ee; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-high",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 3016.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, High Effort); Artificial Analysis ID 712be54a-77ae-41b2-9a58-21181479d6ee; Intelligence Index v4.3; USD 2.4436 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-high",
+      "rank": 80
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
       "score": 54.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Opus 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID b8fc61f7-5e9a-49e6-8547-6ac56db24627; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-5",
       "rank": 6
@@ -249,7 +370,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 78,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Opus 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID b8fc61f7-5e9a-49e6-8547-6ac56db24627; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-5",
       "rank": 5
@@ -258,7 +380,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 56.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Opus 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID b8fc61f7-5e9a-49e6-8547-6ac56db24627; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-5",
       "rank": 3
@@ -267,10 +390,51 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 5545.57,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Opus 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID b8fc61f7-5e9a-49e6-8547-6ac56db24627; Intelligence Index v4.3; USD 4.2053 per task",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-5",
       "rank": 87
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 49.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Medium Effort); Artificial Analysis ID ff51be8f-e362-4a7e-9043-687ba15de207; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-medium",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 74.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Medium Effort); Artificial Analysis ID ff51be8f-e362-4a7e-9043-687ba15de207; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-medium",
+      "rank": 31
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 47.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Medium Effort); Artificial Analysis ID ff51be8f-e362-4a7e-9043-687ba15de207; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-medium",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 1688.44,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Medium Effort); Artificial Analysis ID ff51be8f-e362-4a7e-9043-687ba15de207; Intelligence Index v4.3; USD 1.3614 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5-medium",
+      "rank": 69
     }
   ],
   "family_id": null,

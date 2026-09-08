@@ -333,9 +333,30 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
+      "score": 2.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "minimal",
+      "other_info": "GPT-5 nano (minimal); Artificial Analysis ID 05e45a36-b5c6-47a1-8adb-9ddc19add5b3; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-nano-minimal",
+      "rank": 477
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 12.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "GPT-5 nano (medium); Artificial Analysis ID 8eb02396-f231-4189-ae15-05f7facebd9b; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-nano-medium",
+      "rank": 292
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
       "score": 13.7,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "high",
       "other_info": "GPT-5 nano (high); Artificial Analysis ID e18e5e6a-5a31-4c0b-b80b-ac401392f446; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-nano",
       "rank": 283

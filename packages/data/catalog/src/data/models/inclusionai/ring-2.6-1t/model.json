@@ -26,7 +26,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 23.7,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Ring-2.6-1T; Artificial Analysis ID eb4ba465-3fcd-4065-9fe2-e8225e7b2c6c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ring-2-6-1t",
       "rank": 185
@@ -35,7 +36,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 42.8,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Ring-2.6-1T; Artificial Analysis ID eb4ba465-3fcd-4065-9fe2-e8225e7b2c6c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ring-2-6-1t",
       "rank": 135
@@ -44,7 +46,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 13,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Ring-2.6-1T; Artificial Analysis ID eb4ba465-3fcd-4065-9fe2-e8225e7b2c6c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/ring-2-6-1t",
       "rank": 96

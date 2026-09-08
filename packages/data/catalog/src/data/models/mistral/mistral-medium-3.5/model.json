@@ -98,7 +98,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 22.7,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Mistral Medium 3.5; Artificial Analysis ID dd059b25-d82a-4ead-82a4-4adceaaec48b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-medium-3-5",
       "rank": 194
@@ -107,7 +108,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 46.9,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Mistral Medium 3.5; Artificial Analysis ID dd059b25-d82a-4ead-82a4-4adceaaec48b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-medium-3-5",
       "rank": 118
@@ -116,7 +118,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 9.4,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Mistral Medium 3.5; Artificial Analysis ID dd059b25-d82a-4ead-82a4-4adceaaec48b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-medium-3-5",
       "rank": 102

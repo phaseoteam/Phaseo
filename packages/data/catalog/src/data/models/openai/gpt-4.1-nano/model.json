@@ -158,7 +158,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 4.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "GPT-4.1 nano; Artificial Analysis ID 72c358fd-7d45-4d68-89aa-699743710924; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4-1-nano",
       "rank": 428
@@ -167,7 +168,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 11.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "GPT-4.1 nano; Artificial Analysis ID 72c358fd-7d45-4d68-89aa-699743710924; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4-1-nano",
       "rank": 229

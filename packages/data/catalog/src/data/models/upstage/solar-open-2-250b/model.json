@@ -28,7 +28,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 29,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Solar Open2 250B; Artificial Analysis ID 7eabd8ca-bf43-4d56-b3df-efd1c4eebfb0; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/solar-open2-250b",
       "rank": 129
@@ -37,7 +38,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 45,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Solar Open2 250B; Artificial Analysis ID 7eabd8ca-bf43-4d56-b3df-efd1c4eebfb0; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/solar-open2-250b",
       "rank": 127

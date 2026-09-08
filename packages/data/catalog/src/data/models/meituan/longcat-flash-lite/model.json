@@ -20,7 +20,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 11.2,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "LongCat Flash Lite; Artificial Analysis ID 6056731b-c705-455b-aa0d-43cbf29b1054; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/longcat-flash-lite",
       "rank": 316

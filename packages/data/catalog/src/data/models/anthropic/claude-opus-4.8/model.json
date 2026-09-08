@@ -188,7 +188,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 47.8,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Opus 4.8 (Adaptive Reasoning, Max Effort); Artificial Analysis ID 992b7b84-5069-4c6a-9295-834252553d50; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-4-8",
       "rank": 26
@@ -197,7 +198,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 74.3,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Opus 4.8 (Adaptive Reasoning, Max Effort); Artificial Analysis ID 992b7b84-5069-4c6a-9295-834252553d50; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-4-8",
       "rank": 31
@@ -206,7 +208,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 42.8,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Opus 4.8 (Adaptive Reasoning, Max Effort); Artificial Analysis ID 992b7b84-5069-4c6a-9295-834252553d50; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-4-8",
       "rank": 35
@@ -215,7 +218,8 @@
       "benchmark_id": "aa-intelligence-index-cost-v4",
       "score": 4564.75,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "max",
       "other_info": "Claude Opus 4.8 (Adaptive Reasoning, Max Effort); Artificial Analysis ID 992b7b84-5069-4c6a-9295-834252553d50; Intelligence Index v4.3; USD 2.595 per task",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-4-8",
       "rank": 85

@@ -668,10 +668,31 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 22.6,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "Qwen3.5 35B A3B (Reasoning); Artificial Analysis ID 46d8315e-1630-463f-ab62-84185fa0faab; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-5-35b-a3b",
       "rank": 197
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 17,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "Qwen3.5 35B A3B (Non-reasoning); Artificial Analysis ID eebfef01-709e-4ffe-b72f-0db75ef2434b; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-5-35b-a3b-non-reasoning",
+      "rank": 242
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 37,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "Qwen3.5 35B A3B (Non-reasoning); Artificial Analysis ID eebfef01-709e-4ffe-b72f-0db75ef2434b; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-5-35b-a3b-non-reasoning",
+      "rank": 148
     }
   ],
   "family_id": null,

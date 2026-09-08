@@ -68,7 +68,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 15.8,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "K-EXAONE (Reasoning); Artificial Analysis ID 715e05fb-1313-441c-bf1d-8651c752a841; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/k-exaone",
       "rank": 252
@@ -77,10 +78,21 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 32.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "reasoning",
       "other_info": "K-EXAONE (Reasoning); Artificial Analysis ID 715e05fb-1313-441c-bf1d-8651c752a841; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/k-exaone",
       "rank": 159
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 10.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "K-EXAONE (Non-reasoning); Artificial Analysis ID 9cc377dc-67ae-4042-bafc-0466b5f05089; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/k-exaone-non-reasoning",
+      "rank": 324
     }
   ],
   "family_id": null,

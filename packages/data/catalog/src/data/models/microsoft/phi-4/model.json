@@ -199,7 +199,8 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": null,
       "other_info": "Phi-4; Artificial Analysis ID ee708f92-374e-4123-b900-e22d7b2afc19; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/phi-4",
       "rank": 513

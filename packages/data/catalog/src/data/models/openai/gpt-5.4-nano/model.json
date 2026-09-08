@@ -182,9 +182,30 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
+      "score": 23.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "medium",
+      "other_info": "GPT-5.4 nano (medium); Artificial Analysis ID 8869f28a-a6ff-487f-8d32-93fe335fdda5; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-4-nano-medium",
+      "rank": 187
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 11.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "none",
+      "other_info": "GPT-5.4 nano (Non-Reasoning); Artificial Analysis ID c298d1a8-606c-4971-8613-ccdaaf941043; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-5-4-nano-non-reasoning",
+      "rank": 313
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
       "score": 30.9,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
       "other_info": "GPT-5.4 nano (xhigh); Artificial Analysis ID d4fc3f33-f2b0-4da1-88ee-f1f82bd4de31; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-4-nano",
       "rank": 113
@@ -193,7 +214,8 @@
       "benchmark_id": "aa-coding-index-v4",
       "score": 56.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
       "other_info": "GPT-5.4 nano (xhigh); Artificial Analysis ID d4fc3f33-f2b0-4da1-88ee-f1f82bd4de31; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-4-nano",
       "rank": 94
@@ -202,7 +224,8 @@
       "benchmark_id": "aa-agentic-index-v4",
       "score": 17.9,
       "is_self_reported": false,
-      "updated_at": "2026-09-07T23:53:19.135Z",
+      "updated_at": "2026-09-08T09:16:11.571Z",
+      "variant": "xhigh",
       "other_info": "GPT-5.4 nano (xhigh); Artificial Analysis ID d4fc3f33-f2b0-4da1-88ee-f1f82bd4de31; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-4-nano",
       "rank": 88
