@@ -244,7 +244,8 @@ export function applyReasoningParams(args: {
 			args.providerId === "deepseek" &&
 			(
 				deepseekModel === "deepseek-v4-pro" ||
-				deepseekModel === "deepseek-v4-flash"
+				deepseekModel === "deepseek-v4-flash" ||
+				deepseekModel === "deepseek-v4.1-flash-expires-on-0910"
 			) &&
 			typeof reasoning.effort === "string" &&
 			reasoning.effort !== "none" &&
