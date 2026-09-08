@@ -17,6 +17,7 @@ env:
     MODEL_DISCOVERY_STATE_BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
 
 permissions:
+    actions: read
     contents: read
 
 jobs:
@@ -26,37 +27,69 @@ jobs:
         if: >-
             github.event_name == 'workflow_dispatch' ||
             (github.event.workflow_run.event == 'push' &&
-            github.event.workflow_run.conclusion == 'success' &&
             github.event.workflow_run.head_branch == 'main')
         steps:
+            - name: Confirm importer completed
+              id: importer-gate
+              if: github.event_name == 'workflow_run'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  CI_RUN_ID: ${{ github.event.workflow_run.id }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  importer_conclusion="$(gh api \
+                    "/repos/${GITHUB_REPOSITORY}/actions/runs/${CI_RUN_ID}/jobs?per_page=100" \
+                    --jq '.jobs[] | select(.name == "Run importer on main") | .conclusion' | tail -n 1)"
+                  if [[ "${importer_conclusion}" != "success" ]]; then
+                    echo "Importer conclusion: ${importer_conclusion:-not found}; skipping model notifications."
+                    echo "should_check=false" >> "${GITHUB_OUTPUT}"
+                    exit 0
+                  fi
+                  echo "Importer completed successfully; running model notifications."
+                  echo "should_check=true" >> "${GITHUB_OUTPUT}"
+
+            - name: Enable manual discovery run
+              id: manual-gate
+              if: github.event_name == 'workflow_dispatch'
+              shell: bash
+              run: echo "should_check=true" >> "${GITHUB_OUTPUT}"
+
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+              if: steps.importer-gate.outputs.should_check == 'true' || steps.manual-gate.outputs.should_check == 'true'
               with:
                   ref: ${{ github.event.workflow_run.head_sha || github.sha }}
                   fetch-depth: 0
                   persist-credentials: false
 
             - name: Setup pnpm
+              if: steps.importer-gate.outputs.should_check == 'true' || steps.manual-gate.outputs.should_check == 'true'
               uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
               with:
                   version: 10.33.0
                   run_install: false
 
             - name: Setup Node.js
+              if: steps.importer-gate.outputs.should_check == 'true' || steps.manual-gate.outputs.should_check == 'true'
               uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
             - name: Restore lockfile (guard setup-node cache mutation)
+              if: steps.importer-gate.outputs.should_check == 'true' || steps.manual-gate.outputs.should_check == 'true'
               run: git checkout -- pnpm-lock.yaml
 
             - name: Install dependencies
+              if: steps.importer-gate.outputs.should_check == 'true' || steps.manual-gate.outputs.should_check == 'true'
               run: pnpm install --frozen-lockfile
 
             - name: Ensure state directory exists
+              if: steps.importer-gate.outputs.should_check == 'true' || steps.manual-gate.outputs.should_check == 'true'
               run: mkdir -p scripts/model-discovery/state
 
             - name: Restore internal model state cache
               id: internal-model-state-cache
+              if: steps.importer-gate.outputs.should_check == 'true' || steps.manual-gate.outputs.should_check == 'true'
               uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
                   path: scripts/model-discovery/state
@@ -65,6 +98,7 @@ jobs:
                       internal-model-state-${{ env.MODEL_DISCOVERY_STATE_BRANCH }}-
 
             - name: Check for internal models
+              if: steps.importer-gate.outputs.should_check == 'true' || steps.manual-gate.outputs.should_check == 'true'
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal-public.ts \
                     --discord-role-id "1377690778478055584" \
@@ -72,7 +106,7 @@ jobs:
                     --skip-hf
 
             - name: Save internal model state cache
-              if: always()
+              if: always() && (steps.importer-gate.outputs.should_check == 'true' || steps.manual-gate.outputs.should_check == 'true')
               uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
                   path: scripts/model-discovery/state
