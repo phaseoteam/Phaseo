@@ -2961,6 +2961,95 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "inclusionai/ling-3.0-flash-vl",
+    "provider_api_model_id": "deepinfra:inclusionai/ling-3.0-flash-vl",
+    "provider_model_slug": "inclusionAI/Ling-3.0-flash-VL",
+    "internal_model_id": "inclusionai/ling-3.0-flash-vl",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP16",
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-09-08T09:33:35Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "min_p",
+          "stop",
+          "stop_token_ids",
+          "frequency_penalty",
+          "presence_penalty",
+          "repetition_penalty",
+          "top_k",
+          "seed",
+          "response_format",
+          "tools",
+          "tool_choice",
+          "reasoning_effort",
+          "reasoning",
+          "prompt_cache_key"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": "serverless"
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.deepinfra.com/models/inclusionAI/Ling-3.0-flash-VL",
+        "accessed_at": "2026-09-08T09:33:35Z",
+        "notes": "DeepInfra's first-party model detail reports the active FP16 route, 131K context, 32K maximum output, multimodal input, tools, reasoning, structured output, and current token pricing."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/inclusionAI/Ling-3.0-flash-VL/schema/openai-chat-completions",
+        "accessed_at": "2026-09-08T09:33:35Z",
+        "notes": "OpenAI-compatible schema accepts image_url and video_url content parts for user messages."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-08T09:33:35Z",
+      "notes": "Exact route ID, active public lifecycle, limits, modalities, OpenAI-compatible chat schema, capabilities, and token pricing verified against DeepInfra's first-party model detail and schema endpoints."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "meta/llama-3-8b",
     "provider_api_model_id": "deepinfra:meta/llama-3-8b",
     "provider_model_slug": "meta-llama/Meta-Llama-3-8B-Instruct",
