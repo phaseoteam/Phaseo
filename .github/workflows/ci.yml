@@ -10,7 +10,7 @@ on:
     workflow_dispatch:
         inputs:
             deploy_production:
-                description: "Deploy main after confirming production migrations are already applied"
+                description: "Apply pending production migrations and deploy main"
                 required: false
                 type: boolean
                 default: false
@@ -237,7 +237,8 @@ jobs:
             always() &&
             needs.check-paths.result == 'success' &&
             (needs.check-paths.outputs.migrations-changed == 'true' ||
-            (github.event_name == 'push' &&
+            ((github.event_name == 'push' ||
+            (github.event_name == 'workflow_dispatch' && inputs.deploy_production == true)) &&
             github.ref == 'refs/heads/main' &&
             vars.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true'))
         permissions:
@@ -260,7 +261,8 @@ jobs:
             - migration-validation
         if: >-
             always() &&
-            github.event_name == 'push' &&
+            (github.event_name == 'push' ||
+            (github.event_name == 'workflow_dispatch' && inputs.deploy_production == true)) &&
             github.ref == 'refs/heads/main' &&
             needs.check-paths.result == 'success' &&
             needs.migration-validation.result == 'success' &&
@@ -505,7 +507,8 @@ jobs:
             needs.check-paths.outputs.data-changed == 'true' &&
             needs.check-paths.outputs.migrations-changed != 'true' &&
             (needs.migrate-production.result == 'success' || needs.migrate-production.result == 'skipped')) ||
-            (github.event_name == 'workflow_dispatch' && inputs.importer_mode != 'skip'))
+            (github.event_name == 'workflow_dispatch' && inputs.importer_mode != 'skip' &&
+            (inputs.deploy_production != true || needs.migrate-production.result == 'success')))
         env:
             SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
             NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -920,7 +923,8 @@ jobs:
             github.ref == 'refs/heads/main' &&
             needs.apps.result == 'success' &&
             needs.check-paths.result == 'success' &&
-            github.event_name == 'push' &&
+            (github.event_name == 'push' ||
+            (github.event_name == 'workflow_dispatch' && inputs.deploy_production == true)) &&
             ((vars.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true' &&
             needs.migrate-production.result == 'success') ||
             (vars.ENABLE_PRODUCTION_DB_MIGRATIONS != 'true' &&
