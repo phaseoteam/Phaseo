@@ -151,6 +151,22 @@ describe("video-finalization", () => {
 		expect(markVideoJobBilledMock).not.toHaveBeenCalled();
 	});
 
+	it("uses only persisted DeepInfra cost and never captures the estimate when cost is absent", async () => {
+		const meta = { provider: "deepinfra", model: "google/veo-3.1", seconds: 8, keySource: "gateway", reservationId: "hold", reservedNanos: 3200000000, reservationStatus: "held" };
+		getVideoJobMetaMock.mockResolvedValue(meta);
+		loadPriceCardMock.mockResolvedValue({ rules: [{ meter: "deepinfra_cost_usd" }] });
+		const args = { workspaceId: "ws", videoId: "video", providerId: "deepinfra", status: "completed" as const, model: "google/veo-3.1", seconds: 8, requestOptions: { deepinfra_cost_usd: 0.01 } };
+		expect((await finalizeVideoJob(args)).reason).toBe("native_cost_missing");
+		expect(computeBillMock).not.toHaveBeenCalled();
+		expect(captureWalletReservationMock).not.toHaveBeenCalled();
+		getVideoJobMetaMock.mockResolvedValue({ ...meta, deepinfraNativeCostUsd: 1.2 });
+		computeBillMock.mockReturnValue({ pricing: { total_nanos: 1200000000 } });
+		applyByokServiceFeeMock.mockResolvedValue({ totalNanos: 1200000000, pricedUsage: { pricing: { total_nanos: 1200000000 } } });
+		settleWalletReservationMock.mockResolvedValue({ status: "insufficient_funds", applied: false, alreadyApplied: false });
+		await finalizeVideoJob(args);
+		expect(computeBillMock).toHaveBeenCalledWith({ deepinfra_cost_usd: 1.2 }, expect.anything(), expect.anything());
+	});
+
 	it("does not legacy-charge when reservation is already released", async () => {
 		captureWalletReservationMock.mockResolvedValue({
 			applied: false,

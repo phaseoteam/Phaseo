@@ -1,1 +1,62 @@
-{"key":"upstage:upstage/document-parse:ocr","api_provider_id":"upstage","provider_slug":"upstage","api_model_id":"upstage/document-parse","capability_id":"ocr","rules":[{"meter":"input_pages","unit":"page","unit_size":1,"price_per_unit":0.01,"currency":"USD","pricing_plan":"standard","note":"Document Parse Standard mode.","match":[{"key":"mode","operator":"eq","value":"standard"}],"priority":110,"region":null,"cache_duration_seconds":null,"conditions":[],"source":null},{"meter":"input_pages","unit":"page","unit_size":1,"price_per_unit":0.03,"currency":"USD","pricing_plan":"standard","note":"Document Parse Enhanced mode.","match":[{"key":"mode","operator":"eq","value":"enhanced"}],"priority":110,"region":null,"cache_duration_seconds":null,"conditions":[],"source":null}],"regions":[],"service_tiers":["standard"],"sources":[{"kind":"pricing","url":"https://www.upstage.ai/pricing/api","accessed_at":"2026-08-24T00:00:00Z","notes":"Official pricing lists Standard at $0.01/page and Enhanced at $0.03/page; Auto selects per page."}],"verification":{"status":"verified","checked_at":"2026-08-24T00:00:00Z","notes":"Mode-specific page pricing verified."}}
+{
+  "key": "upstage:upstage/document-parse:ocr",
+  "api_provider_id": "upstage",
+  "provider_slug": "upstage",
+  "api_model_id": "upstage/document-parse",
+  "capability_id": "ocr",
+  "rules": [
+    {
+      "meter": "input_pages",
+      "unit": "page",
+      "unit_size": 1,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Document Parse Standard mode.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "input_pages",
+      "unit": "page",
+      "unit_size": 1,
+      "price_per_unit": 0.03,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Document Parse Enhanced mode.",
+      "match": [
+        {
+          "key": "mode",
+          "operator": "eq",
+          "value": "enhanced"
+        }
+      ],
+      "priority": 110,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://www.upstage.ai/pricing/api",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official pricing lists Standard at $0.01/page and Enhanced at $0.03/page; Auto selects per page."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Mode-specific page pricing verified."
+  }
+}

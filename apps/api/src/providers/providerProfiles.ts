@@ -121,7 +121,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			"image.generate": true,
 			"image.edit": false,
 			"audio.speech": true,
-			"audio.transcription": false,
+			"audio.transcription": true,
 			"audio.translations": false,
 			"video.generate": true,
 		},
@@ -132,7 +132,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			"image.generate": false,
 			"image.edit": false,
 			"audio.speech": false,
-			"audio.transcription": false,
+			"audio.transcription": true,
 			"audio.translations": false,
 			"video.generate": true,
 		},
@@ -414,12 +414,12 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "novita",
 		aliases: ["novitaai", "novita-ai"],
 		adapterBackedOverrides: {
+			"video.generate": true,
 			"image.generate": false,
 			"image.edit": false,
 			"audio.speech": false,
 			"audio.transcription": false,
 			"audio.translations": false,
-			"video.generate": false,
 		},
 		text: {
 			paramPolicy: {
@@ -1059,7 +1059,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "upstage",
-		textOnly: true,
+		adapterBackedOverrides: { ocr: true },
 		text: {
 			paramPolicy: {
 				supportedParams: [

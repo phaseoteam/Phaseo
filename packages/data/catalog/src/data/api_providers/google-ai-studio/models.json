@@ -5905,7 +5905,7 @@
     "provider_api_model_id": "google-ai-studio:google/gemini-3.5-transcribe",
     "provider_model_slug": "gemini-3.5-transcribe",
     "internal_model_id": "google/gemini-3.5-transcribe",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -5913,34 +5913,68 @@
     "max_output_tokens": 32000,
     "effective_from": "2026-08-26T00:00:00",
     "effective_to": null,
-    "capabilities": [{
-      "capability_id": "audio.transcription",
-      "status": "active",
-      "params": [],
-      "reasoning": false,
-      "tool_call": false,
-      "structured_output": false,
-      "temperature": null,
-      "attachment": true,
-      "input_modalities": ["audio"],
-      "output_modalities": ["text"],
-      "modes": []
-    }],
-    "routing_status": null,
-    "routable": false,
-    "regions": { "execution": ["global"], "data": ["global"] },
-    "service_tiers": ["standard"],
-    "api": { "formats": ["google.generateContent"], "endpoint": ":generateContent", "deployment": null },
-    "sources": [{
-      "kind": "api_reference",
-      "url": "https://deepmind.google/models/gemini-audio/ai-transcription/",
-      "accessed_at": "2026-08-26T00:00:00Z",
-      "notes": "Google DeepMind documents the transcription model and Google AI Studio distribution; the Gemini API model index publishes the exact endpoint."
-    }],
+    "capabilities": [
+      {
+        "capability_id": "audio.transcription",
+        "status": "active",
+        "params": [
+          "file",
+          "file_url",
+          "language",
+          "languages",
+          "keywords",
+          "context_bias",
+          "diarize",
+          "enable_diarization",
+          "timestamp_granularities",
+          "response_format"
+        ],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": false,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "audio"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "google.generateContent"
+      ],
+      "endpoint": "/v1beta/interactions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "api_reference",
+        "url": "https://deepmind.google/models/gemini-audio/ai-transcription/",
+        "accessed_at": "2026-08-26T00:00:00Z",
+        "notes": "Google DeepMind documents the transcription model and Google AI Studio distribution; the Gemini API model index publishes the exact endpoint."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-26T00:00:00Z",
-      "notes": "Exact model ID, modalities, limits, generateContent route, and pricing verified against Google's current model and pricing pages; gateway routing remains disabled because no Google audio-transcription executor is registered."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native Interactions API adapter, inline audio up to 14 MB, transcription controls and returned token usage verified against official documentation and deterministic fixtures. No live inference test."
     },
     "rate_limits": []
   },

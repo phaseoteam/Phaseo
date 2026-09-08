@@ -94,6 +94,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     moonshotai: createOpenAICompatibleAdapter("moonshotai"),
     "moonshotai-turbo": createOpenAICompatibleAdapter("moonshotai-turbo"),
     morph: createOpenAICompatibleAdapter("morph"),
+    modelscope: createOpenAICompatibleAdapter("modelscope"),
     morpheus: createOpenAICompatibleAdapter("morpheus"),
     "nebius-token-factory": createOpenAICompatibleAdapter("nebius-token-factory"),
     "nebius-token-factory-eu-north-1": createOpenAICompatibleAdapter("nebius-token-factory-eu-north-1"),

@@ -1635,6 +1635,7 @@ export const AudioTranscriptionSchema = z.object({
     const model = body.model.split("/").pop()?.toLowerCase() ?? "";
     const isMistralTranscription = body.model.toLowerCase().startsWith("mistral/") || model.startsWith("voxtral-");
     const isGptTranscribe = model === "gpt-transcribe";
+    const isStepTranscription = ["stepaudio-2.5-asr", "stepaudio-2-asr-pro", "step-asr-1.1-stream"].includes(model);
     const isDiarize = model === "gpt-4o-transcribe-diarize";
     const isMorpheusTranscription = body.model.toLowerCase().startsWith("morpheus/");
 	const isXAiTranscription = model === "grok-transcribe";
@@ -1676,8 +1677,8 @@ export const AudioTranscriptionSchema = z.object({
     if (body.languages && !isGptTranscribe) {
         ctx.addIssue({ code: "custom", path: ["languages"], message: "languages is only supported by gpt-transcribe" });
     }
-	if (body.keywords && !isGptTranscribe && !isXAiTranscription && !isElevenLabsTranscription && !isMetaTranscription) {
-        ctx.addIssue({ code: "custom", path: ["keywords"], message: "keywords is only supported by gpt-transcribe" });
+	if (body.keywords && !isGptTranscribe && !isXAiTranscription && !isElevenLabsTranscription && !isMetaTranscription && !isStepTranscription) {
+        ctx.addIssue({ code: "custom", path: ["keywords"], message: "keywords is not supported by this transcription model" });
     }
     if (body.language && body.languages) {
         ctx.addIssue({ code: "custom", path: ["languages"], message: "Send either language or languages, not both" });

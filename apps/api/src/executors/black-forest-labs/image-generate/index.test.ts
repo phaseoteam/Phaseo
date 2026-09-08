@@ -48,6 +48,19 @@ afterEach(() => {
 });
 
 describe("black-forest-labs image executor", () => {
+	it("rejects five Klein references before submitting", async () => {
+		globalThis.fetch = vi.fn();
+		const result = await execute(baseArgs({ providerModelSlug: "flux-2-klein-4b", ir: { model: "flux-2-klein-4b", prompt: "Edit", image: Array.from({ length: 5 }, (_, n) => `https://example.com/${n}.png`) } }));
+		expect(result.upstream?.status).toBe(400);
+		expect(globalThis.fetch).not.toHaveBeenCalled();
+	});
+	it("does not accept a completed image without settled credit usage", async () => {
+		globalThis.fetch = vi.fn().mockResolvedValueOnce(Response.json({ id: "job", polling_url: "https://api.bfl.ai/v1/get_result?id=job" }))
+			.mockResolvedValueOnce(Response.json({ status: "Ready", result: { sample: "https://example.com/out.png" } }));
+		const result = await execute(baseArgs());
+		expect(result.upstream?.status).toBe(502);
+		expect(result.ir).toBeUndefined();
+	});
 	it("submits + polls BFL jobs and returns b64_json when requested", async () => {
 		globalThis.fetch = vi.fn()
 			.mockResolvedValueOnce(new Response(JSON.stringify({
@@ -117,6 +130,7 @@ describe("black-forest-labs image executor", () => {
 			.mockResolvedValueOnce(new Response(JSON.stringify({
 				id: "job_3",
 				status: "Ready",
+				cost: 4.5,
 				result: { sample: "https://cdn.bfl.ai/results/job_3.png" },
 			}), { status: 200, headers: { "Content-Type": "application/json" } })) as any;
 

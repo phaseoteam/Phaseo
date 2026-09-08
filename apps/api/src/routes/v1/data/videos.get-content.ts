@@ -147,7 +147,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {
 	if (videoMeta?.submissionState === "submitting" || videoMeta?.submissionState === "unknown") {
 		return err("not_ready", { reason: "video_submission_pending", video_id: id });
 	}
-	if (reconciledProvider === "fal" || reconciledProvider === "ltx" || reconciledProvider === "novita") {
+	if (reconciledProvider === "fal" || reconciledProvider === "ltx" || reconciledProvider === "novita" || reconciledProvider === "black-forest-labs" || reconciledProvider === "deepinfra") {
 		const polled = await fetchVideoProviderStatus(ownedVideo.record);
 		const downloadUrl = normalizeText(polled?.metaPatch?.downloadUrl ?? videoMeta?.downloadUrl);
 		if (polled?.status === "failed") {

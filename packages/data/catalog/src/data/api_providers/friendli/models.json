@@ -52,7 +52,7 @@
     "provider_api_model_id": "friendli:deepseek-ai/DeepSeek-V3.2",
     "provider_model_slug": "deepseek-ai/DeepSeek-V3.2",
     "internal_model_id": "deepseek/deepseek-v3.2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -125,8 +125,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -137,11 +137,17 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "pricing",
+        "url": "https://friendli.ai/pricing",
+        "accessed_at": "2026-09-07T21:35:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T21:35:00Z",
+      "notes": "Current serverless availability and published pricing verified against FriendliAI primary sources; gateway execution supports the documented endpoint."
     },
     "rate_limits": []
   },
@@ -150,7 +156,7 @@
     "provider_api_model_id": "friendli:google/gemma-4-31B-it",
     "provider_model_slug": "google/gemma-4-31B-it",
     "internal_model_id": "google/gemma-4-31b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -173,8 +179,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -185,11 +191,17 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "pricing",
+        "url": "https://friendli.ai/pricing",
+        "accessed_at": "2026-09-07T21:35:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T21:35:00Z",
+      "notes": "Current serverless availability and published pricing verified against FriendliAI primary sources; gateway execution supports the documented endpoint."
     },
     "rate_limits": []
   },
@@ -492,7 +504,7 @@
     "provider_api_model_id": "friendli:MiniMaxAI/MiniMax-M2.5",
     "provider_model_slug": "MiniMaxAI/MiniMax-M2.5",
     "internal_model_id": "minimax/minimax-m2.5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -565,8 +577,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -577,11 +589,17 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "pricing",
+        "url": "https://friendli.ai/pricing",
+        "accessed_at": "2026-09-07T21:35:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T21:35:00Z",
+      "notes": "Current serverless availability and published pricing verified against FriendliAI primary sources; gateway execution supports the documented endpoint."
     },
     "rate_limits": []
   },
@@ -786,7 +804,7 @@
     "provider_api_model_id": "friendli:zai-org/GLM-5.1",
     "provider_model_slug": "zai-org/GLM-5.1",
     "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -859,8 +877,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -871,11 +889,17 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "pricing",
+        "url": "https://friendli.ai/pricing",
+        "accessed_at": "2026-09-07T21:35:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T21:35:00Z",
+      "notes": "Current serverless availability and published pricing verified against FriendliAI primary sources; gateway execution supports the documented endpoint."
     },
     "rate_limits": []
   },
@@ -884,7 +908,7 @@
     "provider_api_model_id": "friendli:zai-org/GLM-5.2",
     "provider_model_slug": "zai-org/GLM-5.2",
     "internal_model_id": "z-ai/glm-5.2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -907,8 +931,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -919,11 +943,17 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "pricing",
+        "url": "https://friendli.ai/pricing",
+        "accessed_at": "2026-09-07T21:35:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T21:35:00Z",
+      "notes": "Current serverless availability and published pricing verified against FriendliAI primary sources; gateway execution supports the documented endpoint."
     },
     "rate_limits": []
   },
@@ -955,7 +985,7 @@
     "provider_api_model_id": "friendli:openai/whisper-large-v3",
     "provider_model_slug": "openai/whisper-large-v3",
     "internal_model_id": "openai/whisper-large-v3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -963,14 +993,62 @@
     "max_output_tokens": null,
     "effective_from": "2026-04-01T00:00:00Z",
     "effective_to": null,
-    "capabilities": [{"capability_id":"audio.transcription","status":"active","params":[],"reasoning":null,"tool_call":null,"structured_output":null,"temperature":null,"attachment":true,"input_modalities":null,"output_modalities":null,"modes":[]}],
-    "routing_status": "disabled",
-    "routable": false,
-    "regions": {"execution":null,"data":null},
-    "service_tiers": ["standard"],
-    "api": {"formats":["openai_audio_transcriptions"],"endpoint":"https://api.friendli.ai/serverless/v1/audio/transcriptions","deployment":"serverless"},
-    "sources": [{"kind":"provider_models","url":"https://friendli.ai/models?products=SERVERLESS","accessed_at":"2026-08-24T00:00:00Z","notes":"Live Model APIs catalog, exact ID and audio-to-text modality."},{"kind":"documentation","url":"https://friendli.ai/docs/openapi/model-apis/audio-transcriptions","accessed_at":"2026-08-24T00:00:00Z","notes":"Official multipart transcription endpoint and streaming/non-streaming behavior."},{"kind":"pricing","url":"https://friendli.ai/pricing#model-apis-pricing","accessed_at":"2026-08-24T00:00:00Z","notes":"Live per-audio-minute price."}],
-    "verification": {"status":"verified","checked_at":"2026-08-24T00:00:00Z","notes":"Exact serverless ID, modality, endpoint, release date and published pricing verified against FriendliAI primary sources."},
+    "capabilities": [
+      {
+        "capability_id": "audio.transcription",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai_audio_transcriptions"
+      ],
+      "endpoint": "https://api.friendli.ai/serverless/v1/audio/transcriptions",
+      "deployment": "serverless"
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://friendli.ai/models?products=SERVERLESS",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live Model APIs catalog, exact ID and audio-to-text modality."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://friendli.ai/docs/openapi/model-apis/audio-transcriptions",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Official multipart transcription endpoint and streaming/non-streaming behavior."
+      },
+      {
+        "kind": "pricing",
+        "url": "https://friendli.ai/pricing#model-apis-pricing",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Live per-audio-minute price."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07T21:35:00Z",
+      "notes": "Current serverless availability and published pricing verified against FriendliAI primary sources; gateway execution supports the documented endpoint."
+    },
     "rate_limits": []
   },
   {
@@ -979,7 +1057,7 @@
     "provider_api_model_id": "friendli:zai-org/GLM-5.3",
     "provider_model_slug": "zai-org/GLM-5.3",
     "internal_model_id": "z-ai/glm-5.3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -987,29 +1065,69 @@
     "max_output_tokens": 1048576,
     "effective_from": "2026-08-28T00:00:00Z",
     "effective_to": null,
-    "capabilities": [{
-      "capability_id": "text.generate",
-      "status": "active",
-      "params": ["max_tokens", "temperature", "top_p", "stop", "response_format", "tools", "tool_choice", "reasoning_effort"],
-      "reasoning": true,
-      "tool_call": true,
-      "structured_output": true,
-      "temperature": true,
-      "attachment": false,
-      "input_modalities": ["text"],
-      "output_modalities": ["text"],
-      "modes": []
-    }],
-    "routing_status": "disabled",
-    "routable": false,
-    "regions": {"execution": null, "data": null},
-    "service_tiers": ["standard"],
-    "api": {"formats":["openai_chat_completions"],"endpoint":"https://api.friendli.ai/serverless/v1/chat/completions","deployment":"serverless"},
-    "sources": [
-      {"kind":"provider_models","url":"https://api.friendli.ai/serverless/v1/models","accessed_at":"2026-08-28T00:00:00Z","notes":"FriendliAI's live models endpoint lists exact serverless model ID zai-org/GLM-5.3 with text input and output, a 1,048,576-token context and completion limit, reasoning, tools, parallel tools, and structured output."},
-      {"kind":"pricing","url":"https://friendli.ai/pricing#model-apis-pricing","accessed_at":"2026-08-28T00:00:00Z","notes":"Official rate card lists $1.40 input, $0.26 cached input, and $4.40 output per million tokens."}
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "response_format",
+          "tools",
+          "tool_choice",
+          "reasoning_effort"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
     ],
-    "verification": {"status":"verified","checked_at":"2026-08-28T00:00:00Z","notes":"Exact model ID, serverless availability, limits, capabilities, API protocol, and token pricing verified against FriendliAI primary sources."},
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat_completions"
+      ],
+      "endpoint": "https://api.friendli.ai/serverless/v1/chat/completions",
+      "deployment": "serverless"
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.friendli.ai/serverless/v1/models",
+        "accessed_at": "2026-08-28T00:00:00Z",
+        "notes": "FriendliAI's live models endpoint lists exact serverless model ID zai-org/GLM-5.3 with text input and output, a 1,048,576-token context and completion limit, reasoning, tools, parallel tools, and structured output."
+      },
+      {
+        "kind": "pricing",
+        "url": "https://friendli.ai/pricing#model-apis-pricing",
+        "accessed_at": "2026-08-28T00:00:00Z",
+        "notes": "Official rate card lists $1.40 input, $0.26 cached input, and $4.40 output per million tokens."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07T21:35:00Z",
+      "notes": "Current serverless availability and published pricing verified against FriendliAI primary sources; gateway execution supports the documented endpoint."
+    },
     "rate_limits": []
   },
   {
@@ -1018,7 +1136,7 @@
     "provider_api_model_id": "friendli:zai-org/GLM-5.3-Flash",
     "provider_model_slug": "zai-org/GLM-5.3-Flash",
     "internal_model_id": "z-ai/glm-5.3-flash",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -1026,29 +1144,70 @@
     "max_output_tokens": null,
     "effective_from": "2026-08-27T00:00:00Z",
     "effective_to": null,
-    "capabilities": [{
-      "capability_id": "text.generate",
-      "status": "active",
-      "params": ["max_tokens", "temperature", "top_p", "stop", "response_format", "tools", "tool_choice"],
-      "reasoning": true,
-      "tool_call": true,
-      "structured_output": true,
-      "temperature": true,
-      "attachment": true,
-      "input_modalities": ["text", "image", "video"],
-      "output_modalities": ["text"],
-      "modes": []
-    }],
-    "routing_status": "disabled",
-    "routable": false,
-    "regions": {"execution": null, "data": null},
-    "service_tiers": ["standard"],
-    "api": {"formats":["openai_chat_completions"],"endpoint":"https://api.friendli.ai/serverless/v1/chat/completions","deployment":"serverless"},
-    "sources": [
-      {"kind":"provider_models","url":"https://friendli.ai/models?products=SERVERLESS","accessed_at":"2026-08-28T00:00:00Z","notes":"Live FriendliAI catalog lists exact serverless model ID zai-org/GLM-5.3-Flash with text, image, and video inputs and text output."},
-      {"kind":"pricing","url":"https://friendli.ai/pricing#model-apis-pricing","accessed_at":"2026-08-28T00:00:00Z","notes":"Official rate card lists $0.15 input, $0.03 cached input, and $0.50 output per million tokens."}
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "response_format",
+          "tools",
+          "tool_choice"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
     ],
-    "verification": {"status":"verified","checked_at":"2026-08-28T00:00:00Z","notes":"Exact model ID, serverless availability, modalities, API protocol, and token pricing verified against FriendliAI primary sources."},
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat_completions"
+      ],
+      "endpoint": "https://api.friendli.ai/serverless/v1/chat/completions",
+      "deployment": "serverless"
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://friendli.ai/models?products=SERVERLESS",
+        "accessed_at": "2026-08-28T00:00:00Z",
+        "notes": "Live FriendliAI catalog lists exact serverless model ID zai-org/GLM-5.3-Flash with text, image, and video inputs and text output."
+      },
+      {
+        "kind": "pricing",
+        "url": "https://friendli.ai/pricing#model-apis-pricing",
+        "accessed_at": "2026-08-28T00:00:00Z",
+        "notes": "Official rate card lists $0.15 input, $0.03 cached input, and $0.50 output per million tokens."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07T21:35:00Z",
+      "notes": "Current serverless availability and published pricing verified against FriendliAI primary sources; gateway execution supports the documented endpoint."
+    },
     "rate_limits": []
   }
 ]

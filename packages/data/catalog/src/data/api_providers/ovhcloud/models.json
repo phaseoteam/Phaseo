@@ -764,41 +764,395 @@
     "rate_limits": [{ "requests": 400, "window": "minute", "scope": "provider_model", "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/qwen-2-5-vl-72b-instruct/" }]
   },
   {
-    "api_model_id": "stability-ai/stable-diffusion-xl-base-1.0", "provider_api_model_id": "ovhcloud:stability-ai/stable-diffusion-xl-base-1.0", "provider_model_slug": "stable-diffusion-xl-base-v10", "internal_model_id": "stability-ai/stable-diffusion-xl-base-1.0",
-    "is_active_gateway": false, "quantization_scheme": "fp32", "input_modalities": "text", "output_modalities": "image", "context_length": null, "max_output_tokens": null, "effective_from": null, "effective_to": null,
-    "capabilities": [{ "capability_id": "image.generate", "status": "disabled", "params": ["prompt", "size"], "reasoning": false, "tool_call": false, "structured_output": false, "temperature": false, "attachment": false, "input_modalities": ["text"], "output_modalities": ["image"], "modes": [] }],
-    "routing_status": "disabled", "routable": false, "regions": { "execution": ["FR"], "data": ["FR"] }, "service_tiers": ["free"],
-    "api": { "formats": ["openai-images"], "endpoint": "/v1/images/generations", "deployment": null },
-    "sources": [{ "kind": "documentation", "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/stable-diffusion-xl/", "accessed_at": "2026-08-23T00:00:00Z", "notes": "Official page documents the unified OpenAI-compatible image generation route and free pricing." }],
-    "verification": { "status": "verified", "checked_at": "2026-08-23T00:00:00Z", "notes": "Catalogued but intentionally not routable until an OVHcloud image executor is registered." },
-    "rate_limits": [{ "requests": 400, "window": "minute", "scope": "provider_model", "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/stable-diffusion-xl/" }]
+    "api_model_id": "stability-ai/stable-diffusion-xl-base-1.0",
+    "provider_api_model_id": "ovhcloud:stability-ai/stable-diffusion-xl-base-1.0",
+    "provider_model_slug": "stable-diffusion-xl-base-v10",
+    "internal_model_id": "stability-ai/stable-diffusion-xl-base-1.0",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp32",
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [
+          "prompt",
+          "negative_prompt",
+          "n",
+          "size",
+          "response_format"
+        ],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": false,
+        "temperature": false,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "image"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "FR"
+      ],
+      "data": [
+        "FR"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "ovhcloud.native"
+      ],
+      "endpoint": "https://stable-diffusion-xl.endpoints.kepler.ai.cloud.ovh.net/api/text2image",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/stable-diffusion-xl/",
+        "accessed_at": "2026-08-23T00:00:00Z",
+        "notes": "Official page documents the unified OpenAI-compatible image generation route and free pricing."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-23T00:00:00Z",
+      "notes": "Native text2image API with 1024x1024 binary image output normalized to base64; no live inference test."
+    },
+    "rate_limits": [
+      {
+        "requests": 400,
+        "window": "minute",
+        "scope": "provider_model",
+        "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/stable-diffusion-xl/"
+      }
+    ]
   },
   {
-    "api_model_id": "nvidia/riva-tts-en-us", "provider_api_model_id": "ovhcloud:nvidia/riva-tts-en-us", "provider_model_slug": "nvr-tts-en-us", "internal_model_id": "nvidia/riva-tts-en-us",
-    "is_active_gateway": false, "quantization_scheme": "fp32", "input_modalities": "text", "output_modalities": "audio", "context_length": null, "max_output_tokens": null, "effective_from": null, "effective_to": null,
-    "capabilities": [{ "capability_id": "audio.speech", "status": "disabled", "params": ["text", "voice_name", "language_code", "sample_rate_hz", "encoding"], "reasoning": false, "tool_call": false, "structured_output": false, "temperature": false, "attachment": false, "input_modalities": ["text"], "output_modalities": ["audio"], "modes": [] }],
-    "routing_status": "disabled", "routable": false, "regions": { "execution": ["FR"], "data": ["FR"] }, "service_tiers": ["free"], "api": { "formats": ["ovh-riva-tts"], "endpoint": "/api/v1/tts/text_to_audio", "deployment": null },
-    "sources": [{ "kind": "documentation", "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-en-us/", "accessed_at": "2026-08-23T00:00:00Z", "notes": "Provider-specific Riva HTTP contract; retained disabled until a gateway adapter exists." }], "verification": { "status": "verified", "checked_at": "2026-08-23T00:00:00Z", "notes": "Catalogued but intentionally not routable." }, "rate_limits": [{ "requests": 400, "window": "minute", "scope": "provider_model", "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-en-us/" }]
+    "api_model_id": "nvidia/riva-tts-en-us",
+    "provider_api_model_id": "ovhcloud:nvidia/riva-tts-en-us",
+    "provider_model_slug": "nvr-tts-en-us",
+    "internal_model_id": "nvidia/riva-tts-en-us",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp32",
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [
+          "input",
+          "voice",
+          "response_format"
+        ],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": false,
+        "temperature": false,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "audio"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "FR"
+      ],
+      "data": [
+        "FR"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "ovh-riva-tts"
+      ],
+      "endpoint": "/api/v1/tts/text_to_audio",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-en-us/",
+        "accessed_at": "2026-08-23T00:00:00Z",
+        "notes": "Provider-specific Riva HTTP contract; retained disabled until a gateway adapter exists."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native Riva text_to_audio endpoint, locale, voice and binary output mapping verified against official documentation and deterministic fixtures; no live inference test."
+    },
+    "rate_limits": [
+      {
+        "requests": 400,
+        "window": "minute",
+        "scope": "provider_model",
+        "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-en-us/"
+      }
+    ]
   },
   {
-    "api_model_id": "nvidia/riva-tts-de-de", "provider_api_model_id": "ovhcloud:nvidia/riva-tts-de-de", "provider_model_slug": "nvr-tts-de-de", "internal_model_id": "nvidia/riva-tts-de-de",
-    "is_active_gateway": false, "quantization_scheme": "fp32", "input_modalities": "text", "output_modalities": "audio", "context_length": null, "max_output_tokens": null, "effective_from": null, "effective_to": null,
-    "capabilities": [{ "capability_id": "audio.speech", "status": "disabled", "params": ["text", "voice_name", "language_code", "sample_rate_hz", "encoding"], "reasoning": false, "tool_call": false, "structured_output": false, "temperature": false, "attachment": false, "input_modalities": ["text"], "output_modalities": ["audio"], "modes": [] }],
-    "routing_status": "disabled", "routable": false, "regions": { "execution": ["FR"], "data": ["FR"] }, "service_tiers": ["free"], "api": { "formats": ["ovh-riva-tts"], "endpoint": "/api/v1/tts/text_to_audio", "deployment": null },
-    "sources": [{ "kind": "documentation", "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-de-de/", "accessed_at": "2026-08-23T00:00:00Z", "notes": "Provider-specific Riva HTTP contract; retained disabled until a gateway adapter exists." }], "verification": { "status": "verified", "checked_at": "2026-08-23T00:00:00Z", "notes": "Catalogued but intentionally not routable." }, "rate_limits": [{ "requests": 400, "window": "minute", "scope": "provider_model", "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-de-de/" }]
+    "api_model_id": "nvidia/riva-tts-de-de",
+    "provider_api_model_id": "ovhcloud:nvidia/riva-tts-de-de",
+    "provider_model_slug": "nvr-tts-de-de",
+    "internal_model_id": "nvidia/riva-tts-de-de",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp32",
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [
+          "input",
+          "voice",
+          "response_format"
+        ],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": false,
+        "temperature": false,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "audio"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "FR"
+      ],
+      "data": [
+        "FR"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "ovh-riva-tts"
+      ],
+      "endpoint": "/api/v1/tts/text_to_audio",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-de-de/",
+        "accessed_at": "2026-08-23T00:00:00Z",
+        "notes": "Provider-specific Riva HTTP contract; retained disabled until a gateway adapter exists."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native Riva text_to_audio endpoint, locale, voice and binary output mapping verified against official documentation and deterministic fixtures; no live inference test."
+    },
+    "rate_limits": [
+      {
+        "requests": 400,
+        "window": "minute",
+        "scope": "provider_model",
+        "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-de-de/"
+      }
+    ]
   },
   {
-    "api_model_id": "nvidia/riva-tts-es-es", "provider_api_model_id": "ovhcloud:nvidia/riva-tts-es-es", "provider_model_slug": "nvr-tts-es-es", "internal_model_id": "nvidia/riva-tts-es-es",
-    "is_active_gateway": false, "quantization_scheme": "fp32", "input_modalities": "text", "output_modalities": "audio", "context_length": null, "max_output_tokens": null, "effective_from": null, "effective_to": null,
-    "capabilities": [{ "capability_id": "audio.speech", "status": "disabled", "params": ["text", "voice_name", "language_code", "sample_rate_hz", "encoding"], "reasoning": false, "tool_call": false, "structured_output": false, "temperature": false, "attachment": false, "input_modalities": ["text"], "output_modalities": ["audio"], "modes": [] }],
-    "routing_status": "disabled", "routable": false, "regions": { "execution": ["FR"], "data": ["FR"] }, "service_tiers": ["free"], "api": { "formats": ["ovh-riva-tts"], "endpoint": "/api/v1/tts/text_to_audio", "deployment": null },
-    "sources": [{ "kind": "documentation", "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-es-es/", "accessed_at": "2026-08-23T00:00:00Z", "notes": "Provider-specific Riva HTTP contract; retained disabled until a gateway adapter exists." }], "verification": { "status": "verified", "checked_at": "2026-08-23T00:00:00Z", "notes": "Catalogued but intentionally not routable." }, "rate_limits": [{ "requests": 400, "window": "minute", "scope": "provider_model", "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-es-es/" }]
+    "api_model_id": "nvidia/riva-tts-es-es",
+    "provider_api_model_id": "ovhcloud:nvidia/riva-tts-es-es",
+    "provider_model_slug": "nvr-tts-es-es",
+    "internal_model_id": "nvidia/riva-tts-es-es",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp32",
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [
+          "input",
+          "voice",
+          "response_format"
+        ],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": false,
+        "temperature": false,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "audio"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "FR"
+      ],
+      "data": [
+        "FR"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "ovh-riva-tts"
+      ],
+      "endpoint": "/api/v1/tts/text_to_audio",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-es-es/",
+        "accessed_at": "2026-08-23T00:00:00Z",
+        "notes": "Provider-specific Riva HTTP contract; retained disabled until a gateway adapter exists."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native Riva text_to_audio endpoint, locale, voice and binary output mapping verified against official documentation and deterministic fixtures; no live inference test."
+    },
+    "rate_limits": [
+      {
+        "requests": 400,
+        "window": "minute",
+        "scope": "provider_model",
+        "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-es-es/"
+      }
+    ]
   },
   {
-    "api_model_id": "nvidia/riva-tts-it-it", "provider_api_model_id": "ovhcloud:nvidia/riva-tts-it-it", "provider_model_slug": "nvr-tts-it-it", "internal_model_id": "nvidia/riva-tts-it-it",
-    "is_active_gateway": false, "quantization_scheme": "fp32", "input_modalities": "text", "output_modalities": "audio", "context_length": null, "max_output_tokens": null, "effective_from": null, "effective_to": null,
-    "capabilities": [{ "capability_id": "audio.speech", "status": "disabled", "params": ["text", "voice_name", "language_code", "sample_rate_hz", "encoding"], "reasoning": false, "tool_call": false, "structured_output": false, "temperature": false, "attachment": false, "input_modalities": ["text"], "output_modalities": ["audio"], "modes": [] }],
-    "routing_status": "disabled", "routable": false, "regions": { "execution": ["FR"], "data": ["FR"] }, "service_tiers": ["free"], "api": { "formats": ["ovh-riva-tts"], "endpoint": "/api/v1/tts/text_to_audio", "deployment": null },
-    "sources": [{ "kind": "documentation", "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-it-it/", "accessed_at": "2026-08-23T00:00:00Z", "notes": "Provider-specific Riva HTTP contract; retained disabled until a gateway adapter exists." }], "verification": { "status": "verified", "checked_at": "2026-08-23T00:00:00Z", "notes": "Catalogued but intentionally not routable." }, "rate_limits": [{ "requests": 400, "window": "minute", "scope": "provider_model", "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-it-it/" }]
+    "api_model_id": "nvidia/riva-tts-it-it",
+    "provider_api_model_id": "ovhcloud:nvidia/riva-tts-it-it",
+    "provider_model_slug": "nvr-tts-it-it",
+    "internal_model_id": "nvidia/riva-tts-it-it",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp32",
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [
+          "input",
+          "voice",
+          "response_format"
+        ],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": false,
+        "temperature": false,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "audio"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "FR"
+      ],
+      "data": [
+        "FR"
+      ]
+    },
+    "service_tiers": [
+      "free"
+    ],
+    "api": {
+      "formats": [
+        "ovh-riva-tts"
+      ],
+      "endpoint": "/api/v1/tts/text_to_audio",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-it-it/",
+        "accessed_at": "2026-08-23T00:00:00Z",
+        "notes": "Provider-specific Riva HTTP contract; retained disabled until a gateway adapter exists."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native Riva text_to_audio endpoint, locale, voice and binary output mapping verified against official documentation and deterministic fixtures; no live inference test."
+    },
+    "rate_limits": [
+      {
+        "requests": 400,
+        "window": "minute",
+        "scope": "provider_model",
+        "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-it-it/"
+      }
+    ]
   }
 ]

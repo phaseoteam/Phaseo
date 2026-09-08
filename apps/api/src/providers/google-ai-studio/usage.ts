@@ -69,14 +69,17 @@ export function normalizeGoogleUsage(meta: UsageMetadata | undefined): UsageShap
     applyModalityCounts(usage, meta.candidatesTokensDetails, "output");
 
     // Fallback to coarse counts if detailed modalities absent.
-    if (meta.promptTokenCount != null) usage.input_text_tokens = usage.input_text_tokens ?? meta.promptTokenCount;
-    if (meta.toolUsePromptTokenCount != null) usage.input_text_tokens = (usage.input_text_tokens ?? 0) + meta.toolUsePromptTokenCount;
-    if (meta.cachedContentTokenCount != null) usage.cached_read_text_tokens = usage.cached_read_text_tokens ?? meta.cachedContentTokenCount;
+    if (meta.promptTokenCount != null) usage.input_text_tokens = usage.input_text_tokens ?? Math.max(0, meta.promptTokenCount
+        - (usage.input_image_tokens ?? 0) - (usage.input_audio_tokens ?? 0) - (usage.input_video_tokens ?? 0));
+    if (meta.toolUsePromptTokenCount != null && !meta.toolUsePromptTokensDetails?.length) usage.input_text_tokens = (usage.input_text_tokens ?? 0) + meta.toolUsePromptTokenCount;
+    if (meta.cachedContentTokenCount != null) usage.cached_read_text_tokens = usage.cached_read_text_tokens ?? Math.max(0, meta.cachedContentTokenCount
+        - (usage.cached_read_image_tokens ?? 0) - (usage.cached_read_audio_tokens ?? 0) - (usage.cached_read_video_tokens ?? 0));
     if (typeof usage.cached_read_text_tokens === "number" && usage.cached_read_text_tokens > 0) {
         (usage as Record<string, any>).cached_read_tokens_are_subset_of_input = true;
     }
 
-    if (meta.candidatesTokenCount != null) usage.output_text_tokens = usage.output_text_tokens ?? meta.candidatesTokenCount;
+    if (meta.candidatesTokenCount != null) usage.output_text_tokens = usage.output_text_tokens ?? Math.max(0, meta.candidatesTokenCount
+        - (usage.output_image_tokens ?? 0) - (usage.output_audio_tokens ?? 0) - (usage.output_video_tokens ?? 0));
     if (meta.thoughtsTokenCount != null) usage.reasoning_tokens = meta.thoughtsTokenCount;
 
     if (meta.totalTokenCount != null) usage.total_tokens = meta.totalTokenCount;
@@ -158,4 +161,3 @@ export function googleUsageMetadataToIRUsage(meta: UsageMetadata | undefined): I
 
     return irUsage;
 }
-

@@ -2260,7 +2260,7 @@
     "provider_api_model_id": "alibaba-cloud:qwen/qwen-image",
     "provider_model_slug": "qwen-image",
     "internal_model_id": "qwen/qwen-image",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "image",
@@ -2272,34 +2272,49 @@
       {
         "capability_id": "image.generate",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "params": [
+          "prompt",
+          "n",
+          "response_format",
+          "seed",
+          "negative_prompt",
+          "prompt_extend",
+          "watermark",
+          "size"
+        ],
+        "input_modalities": "text",
+        "output_modalities": "image",
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "alibaba.native"
+      ],
+      "endpoint": "/api/v1/services/aigc/multimodal-generation/generation",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.alibabacloud.com/help/en/model-studio/qwen-image-api",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Native synchronous Qwen image API."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official API contract and deterministic IR mapping checks; no live inference test."
     },
     "rate_limits": []
   },
@@ -2308,7 +2323,7 @@
     "provider_api_model_id": "alibaba-cloud:qwen/qwen-image-edit",
     "provider_model_slug": "qwen-image-edit",
     "internal_model_id": "qwen/qwen-image-edit",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -2320,34 +2335,49 @@
       {
         "capability_id": "image.edit",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "params": [
+          "prompt",
+          "n",
+          "response_format",
+          "seed",
+          "negative_prompt",
+          "prompt_extend",
+          "watermark",
+          "image"
+        ],
+        "input_modalities": "text,image",
+        "output_modalities": "image",
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "alibaba.native"
+      ],
+      "endpoint": "/api/v1/services/aigc/multimodal-generation/generation",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.alibabacloud.com/help/en/model-studio/qwen-image-edit-api",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Native synchronous Qwen image API."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official API contract and deterministic IR mapping checks; no live inference test."
     },
     "rate_limits": []
   },
@@ -2356,32 +2386,62 @@
     "provider_api_model_id": "alibaba-cloud:qwen/qwen-image-edit-2025-10-30",
     "provider_model_slug": "qwen-image-edit-plus-2025-10-30",
     "internal_model_id": "qwen/qwen-image-edit",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "image",
+    "input_modalities": "text,image",
     "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
-    "routable": false,
+    "capabilities": [
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "prompt",
+          "n",
+          "response_format",
+          "seed",
+          "negative_prompt",
+          "prompt_extend",
+          "watermark",
+          "image",
+          "size"
+        ],
+        "input_modalities": "text,image",
+        "output_modalities": "image",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "alibaba.native"
+      ],
+      "endpoint": "/api/v1/services/aigc/multimodal-generation/generation",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.alibabacloud.com/help/en/model-studio/qwen-image-edit-api",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Native synchronous Qwen image API."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official API contract and deterministic IR mapping checks; no live inference test."
     },
     "rate_limits": []
   },
@@ -2390,32 +2450,62 @@
     "provider_api_model_id": "alibaba-cloud:qwen/qwen-image-edit-2025-12-15",
     "provider_model_slug": "qwen-image-edit-plus-2025-12-15",
     "internal_model_id": "qwen/qwen-image-edit",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "image",
+    "input_modalities": "text,image",
     "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
-    "routable": false,
+    "capabilities": [
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "prompt",
+          "n",
+          "response_format",
+          "seed",
+          "negative_prompt",
+          "prompt_extend",
+          "watermark",
+          "image",
+          "size"
+        ],
+        "input_modalities": "text,image",
+        "output_modalities": "image",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "alibaba.native"
+      ],
+      "endpoint": "/api/v1/services/aigc/multimodal-generation/generation",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.alibabacloud.com/help/en/model-studio/qwen-image-edit-api",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Native synchronous Qwen image API."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official API contract and deterministic IR mapping checks; no live inference test."
     },
     "rate_limits": []
   },
@@ -2424,32 +2514,62 @@
     "provider_api_model_id": "alibaba-cloud:qwen/qwen-image-edit-max",
     "provider_model_slug": "qwen-image-edit-max-2026-01-16",
     "internal_model_id": "qwen/qwen-image-edit-max",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
-    "routable": false,
+    "capabilities": [
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "prompt",
+          "n",
+          "response_format",
+          "seed",
+          "negative_prompt",
+          "prompt_extend",
+          "watermark",
+          "image",
+          "size"
+        ],
+        "input_modalities": "text,image",
+        "output_modalities": "image",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "alibaba.native"
+      ],
+      "endpoint": "/api/v1/services/aigc/multimodal-generation/generation",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.alibabacloud.com/help/en/model-studio/qwen-image-edit-api",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Native synchronous Qwen image API."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official API contract and deterministic IR mapping checks; no live inference test."
     },
     "rate_limits": []
   },
@@ -2457,8 +2577,8 @@
     "api_model_id": "qwen/qwen-image-max",
     "provider_api_model_id": "alibaba-cloud:qwen/qwen-image-max",
     "provider_model_slug": "qwen-image-max-2025-12-30",
-    "internal_model_id": "",
-    "is_active_gateway": false,
+    "internal_model_id": "qwen/qwen-image-max",
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "image",
@@ -2466,24 +2586,53 @@
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
-    "routable": false,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [
+          "prompt",
+          "n",
+          "response_format",
+          "seed",
+          "negative_prompt",
+          "prompt_extend",
+          "watermark",
+          "size"
+        ],
+        "input_modalities": "text",
+        "output_modalities": "image",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "alibaba.native"
+      ],
+      "endpoint": "/api/v1/services/aigc/multimodal-generation/generation",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.alibabacloud.com/help/en/model-studio/qwen-image-api",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Native synchronous Qwen image API."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official API contract and deterministic IR mapping checks; no live inference test."
     },
     "rate_limits": []
   },
@@ -2491,8 +2640,8 @@
     "api_model_id": "qwen/qwen-image-plus",
     "provider_api_model_id": "alibaba-cloud:qwen/qwen-image-plus",
     "provider_model_slug": "qwen-image-plus-2026-01-09",
-    "internal_model_id": "",
-    "is_active_gateway": false,
+    "internal_model_id": "qwen/qwen-image-plus",
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "image",
@@ -2500,24 +2649,53 @@
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
-    "routable": false,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [
+          "prompt",
+          "n",
+          "response_format",
+          "seed",
+          "negative_prompt",
+          "prompt_extend",
+          "watermark",
+          "size"
+        ],
+        "input_modalities": "text",
+        "output_modalities": "image",
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "alibaba.native"
+      ],
+      "endpoint": "/api/v1/services/aigc/multimodal-generation/generation",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.alibabacloud.com/help/en/model-studio/qwen-image-api",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Native synchronous Qwen image API."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official API contract and deterministic IR mapping checks; no live inference test."
     },
     "rate_limits": []
   },

@@ -20,7 +20,7 @@ const KNOWN_METERS = new Set<string>([
     "cached_write_text_tokens", "cached_write_text_tokens_5m", "cached_write_text_tokens_1h",
     "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",
     "cached_read_text_tokens", "cached_read_image_tokens", "cached_read_video_tokens", "cached_read_audio_tokens",
-    "embedding_tokens", "bfl_credits",
+    "embedding_tokens", "bfl_credits", "deepinfra_cost_usd",
     "server_tool_web_search_requests", "server_tool_web_search_extra_results", "server_tool_web_fetch_requests", "server_tool_advisor_requests",
     "server_tool_image_generation_requests", "server_tool_apply_patch_requests",
     "native_web_search_requests", "native_web_fetch_requests",

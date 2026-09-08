@@ -591,9 +591,9 @@
   {
     "api_model_id": "anthropic/claude-opus-4",
     "provider_api_model_id": "google-vertex:anthropic/claude-opus-4",
-    "provider_model_slug": "claude-opus-4@20250514",
+    "provider_model_slug": "claude-opus-4",
     "internal_model_id": "anthropic/claude-opus-4",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -687,8 +687,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -703,20 +703,27 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native Claude model identifier and publisher endpoint."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official Vertex native Claude model ID and global endpoint verified; streaming/nonstreaming IR contract covered by deterministic tests. Account model enablement and quota required; no authenticated model-specific inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "anthropic/claude-opus-4.1",
     "provider_api_model_id": "google-vertex:anthropic/claude-opus-4.1",
-    "provider_model_slug": "claude-opus-4-1@20250805",
+    "provider_model_slug": "claude-opus-4-1",
     "internal_model_id": "anthropic/claude-opus-4.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -803,8 +810,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -819,20 +826,27 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native Claude model identifier and publisher endpoint."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official Vertex native Claude model ID and global endpoint verified; streaming/nonstreaming IR contract covered by deterministic tests. Account model enablement and quota required; no authenticated model-specific inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "anthropic/claude-opus-4.5",
     "provider_api_model_id": "google-vertex:anthropic/claude-opus-4.5",
-    "provider_model_slug": "claude-opus-4-5@20251101",
+    "provider_model_slug": "claude-opus-4-5",
     "internal_model_id": "anthropic/claude-opus-4.5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -926,8 +940,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -942,20 +956,27 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native Claude model identifier and publisher endpoint."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official Vertex native Claude model ID and global endpoint verified; streaming/nonstreaming IR contract covered by deterministic tests. Account model enablement and quota required; no authenticated model-specific inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "anthropic/claude-opus-4.6",
     "provider_api_model_id": "google-vertex:anthropic/claude-opus-4.6",
-    "provider_model_slug": "claude-opus-4-6@20260219",
+    "provider_model_slug": "claude-opus-4-6",
     "internal_model_id": "anthropic/claude-opus-4.6",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1056,8 +1077,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -1072,11 +1093,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native Claude model identifier and publisher endpoint."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official Vertex native Claude model ID and global endpoint verified; streaming/nonstreaming IR contract covered by deterministic tests. Account model enablement and quota required; no authenticated model-specific inference performed."
     },
     "rate_limits": []
   },
@@ -1085,7 +1113,7 @@
     "provider_api_model_id": "google-vertex:anthropic/claude-opus-4.7",
     "provider_model_slug": "claude-opus-4-7",
     "internal_model_id": "anthropic/claude-opus-4.7",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1172,8 +1200,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -1188,11 +1216,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native Claude model identifier and publisher endpoint."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official Vertex native Claude model ID and global endpoint verified; streaming/nonstreaming IR contract covered by deterministic tests. Account model enablement and quota required; no authenticated model-specific inference performed."
     },
     "rate_limits": []
   },
@@ -1201,7 +1236,7 @@
     "provider_api_model_id": "google-vertex:anthropic/claude-opus-4.8",
     "provider_model_slug": "claude-opus-4-8",
     "internal_model_id": "anthropic/claude-opus-4.8",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,pdf",
     "output_modalities": "text",
@@ -1288,8 +1323,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -1304,11 +1339,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native Claude model identifier and publisher endpoint."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official Vertex native Claude model ID and global endpoint verified; streaming/nonstreaming IR contract covered by deterministic tests. Account model enablement and quota required; no authenticated model-specific inference performed."
     },
     "rate_limits": []
   },
@@ -1431,9 +1473,9 @@
   {
     "api_model_id": "anthropic/claude-sonnet-4",
     "provider_api_model_id": "google-vertex:anthropic/claude-sonnet-4",
-    "provider_model_slug": "claude-sonnet-4@20250514",
+    "provider_model_slug": "claude-sonnet-4",
     "internal_model_id": "anthropic/claude-sonnet-4",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1527,8 +1569,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -1543,20 +1585,27 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native Claude model identifier and publisher endpoint."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official Vertex native Claude model ID and global endpoint verified; streaming/nonstreaming IR contract covered by deterministic tests. Account model enablement and quota required; no authenticated model-specific inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "google-vertex:anthropic/claude-sonnet-4.5",
-    "provider_model_slug": "claude-sonnet-4-5@20250929",
+    "provider_model_slug": "claude-sonnet-4-5",
     "internal_model_id": "anthropic/claude-sonnet-4.5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1657,8 +1706,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -1673,20 +1722,27 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native Claude model identifier and publisher endpoint."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official Vertex native Claude model ID and global endpoint verified; streaming/nonstreaming IR contract covered by deterministic tests. Account model enablement and quota required; no authenticated model-specific inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "google-vertex:anthropic/claude-sonnet-4.6",
-    "provider_model_slug": "claude-sonnet-4-6@20260219",
+    "provider_model_slug": "claude-sonnet-4-6",
     "internal_model_id": "anthropic/claude-sonnet-4.6",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1787,8 +1843,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -1803,11 +1859,18 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native Claude model identifier and publisher endpoint."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official Vertex native Claude model ID and global endpoint verified; streaming/nonstreaming IR contract covered by deterministic tests. Account model enablement and quota required; no authenticated model-specific inference performed."
     },
     "rate_limits": []
   },
@@ -3558,20 +3621,20 @@
   {
     "api_model_id": "z-ai/glm-4.7",
     "provider_api_model_id": "google-vertex:z-ai/glm-4.7",
-    "provider_model_slug": "z-ai/glm-4.7",
+    "provider_model_slug": "zai-org/glm-4.7-maas",
     "internal_model_id": "z-ai/glm-4.7",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "unknown",
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 200000,
     "max_output_tokens": 128000,
     "effective_from": "2026-08-12T00:00:00Z",
-    "effective_to": null,
+    "effective_to": "2026-10-21T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -3599,16 +3662,22 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
+      "execution": [
+        "global"
+      ],
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/endpoints/openapi/chat/completions",
       "deployment": null
     },
     "sources": [
@@ -3617,32 +3686,38 @@
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
         "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/maas/call-open-model-apis",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native managed OpenAI wire contract."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official managed open-model identifier, region and pricing verified; native reasoning and streaming IR fixture tests pass. Account enablement and quota required; no authenticated inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3.2",
     "provider_api_model_id": "google-vertex:deepseek/deepseek-v3.2",
-    "provider_model_slug": "deepseek/deepseek-v3.2",
+    "provider_model_slug": "deepseek-ai/deepseek-v3.2-maas",
     "internal_model_id": "deepseek/deepseek-v3.2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "unknown",
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 163840,
     "max_output_tokens": 65536,
     "effective_from": "2026-08-12T00:00:00Z",
-    "effective_to": null,
+    "effective_to": "2026-10-21T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -3672,16 +3747,22 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
+      "execution": [
+        "global"
+      ],
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/endpoints/openapi/chat/completions",
       "deployment": null
     },
     "sources": [
@@ -3690,32 +3771,38 @@
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
         "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/maas/call-open-model-apis",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native managed OpenAI wire contract."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official managed open-model identifier, region and pricing verified; native reasoning and streaming IR fixture tests pass. Account enablement and quota required; no authenticated inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2-thinking",
     "provider_api_model_id": "google-vertex:moonshotai/kimi-k2-thinking",
-    "provider_model_slug": "moonshotai/kimi-k2-thinking",
+    "provider_model_slug": "moonshotai/kimi-k2-thinking-maas",
     "internal_model_id": "moonshotai/kimi-k2-thinking",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "unknown",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 262144,
     "max_output_tokens": 262144,
     "effective_from": "2026-08-12T00:00:00Z",
-    "effective_to": null,
+    "effective_to": "2026-10-21T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -3745,16 +3832,22 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
+      "execution": [
+        "global"
+      ],
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/endpoints/openapi/chat/completions",
       "deployment": null
     },
     "sources": [
@@ -3763,32 +3856,38 @@
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
         "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/maas/call-open-model-apis",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native managed OpenAI wire contract."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official managed open-model identifier, region and pricing verified; native reasoning and streaming IR fixture tests pass. Account enablement and quota required; no authenticated inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m2",
     "provider_api_model_id": "google-vertex:minimax/minimax-m2",
-    "provider_model_slug": "minimax/minimax-m2",
+    "provider_model_slug": "minimaxai/minimax-m2-maas",
     "internal_model_id": "minimax/minimax-m2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "unknown",
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 196608,
     "max_output_tokens": 196608,
     "effective_from": "2026-08-12T00:00:00Z",
-    "effective_to": null,
+    "effective_to": "2026-10-21T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -3818,16 +3917,22 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
+      "execution": [
+        "global"
+      ],
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/endpoints/openapi/chat/completions",
       "deployment": null
     },
     "sources": [
@@ -3836,12 +3941,18 @@
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
         "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/maas/call-open-model-apis",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native managed OpenAI wire contract."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official managed open-model identifier, region and pricing verified; native reasoning and streaming IR fixture tests pass. Account enablement and quota required; no authenticated inference performed."
     },
     "rate_limits": []
   },
@@ -3911,20 +4022,20 @@
   {
     "api_model_id": "qwen/qwen3-next-80b-a3b-thinking",
     "provider_api_model_id": "google-vertex:qwen/qwen3-next-80b-a3b-thinking",
-    "provider_model_slug": "qwen/qwen3-next-80b-a3b-thinking",
+    "provider_model_slug": "qwen/qwen3-next-80b-a3b-thinking-maas",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "unknown",
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 262144,
     "max_output_tokens": 262144,
     "effective_from": "2026-08-12T00:00:00Z",
-    "effective_to": null,
+    "effective_to": "2026-10-21T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -3954,16 +4065,22 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
+      "execution": [
+        "global"
+      ],
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/endpoints/openapi/chat/completions",
       "deployment": null
     },
     "sources": [
@@ -3972,32 +4089,38 @@
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
         "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/maas/call-open-model-apis",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native managed OpenAI wire contract."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official managed open-model identifier, region and pricing verified; native reasoning and streaming IR fixture tests pass. Account enablement and quota required; no authenticated inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
     "provider_api_model_id": "google-vertex:qwen/qwen3-next-80b-a3b-instruct",
-    "provider_model_slug": "qwen/qwen3-next-80b-a3b-instruct",
+    "provider_model_slug": "qwen/qwen3-next-80b-a3b-instruct-maas",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "unknown",
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 262144,
     "max_output_tokens": 262144,
     "effective_from": "2026-08-12T00:00:00Z",
-    "effective_to": null,
+    "effective_to": "2026-10-21T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "structured_outputs",
           "response_format",
@@ -4025,16 +4148,22 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
+      "execution": [
+        "global"
+      ],
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/endpoints/openapi/chat/completions",
       "deployment": null
     },
     "sources": [
@@ -4043,21 +4172,27 @@
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
         "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/maas/call-open-model-apis",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native managed OpenAI wire contract."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official managed open-model identifier, region and pricing verified; native reasoning and streaming IR fixture tests pass. Account enablement and quota required; no authenticated inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "google-vertex:openai/gpt-oss-120b",
-    "provider_model_slug": "openai/gpt-oss-120b",
+    "provider_model_slug": "openai/gpt-oss-120b-maas",
     "internal_model_id": "openai/gpt-oss-120b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "unknown",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -4068,7 +4203,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -4092,16 +4227,22 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
+      "execution": [
+        "global"
+      ],
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/endpoints/openapi/chat/completions",
       "deployment": null
     },
     "sources": [
@@ -4110,32 +4251,38 @@
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
         "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/maas/call-open-model-apis",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native managed OpenAI wire contract."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official managed open-model identifier, region and pricing verified; native reasoning and streaming IR fixture tests pass. Account enablement and quota required; no authenticated inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "openai/gpt-oss-20b",
     "provider_api_model_id": "google-vertex:openai/gpt-oss-20b",
-    "provider_model_slug": "openai/gpt-oss-20b",
+    "provider_model_slug": "openai/gpt-oss-20b-maas",
     "internal_model_id": "openai/gpt-oss-20b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "unknown",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 131072,
     "max_output_tokens": 32768,
     "effective_from": "2026-08-12T00:00:00Z",
-    "effective_to": null,
+    "effective_to": "2026-10-21T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -4159,16 +4306,22 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
+      "execution": [
+        "us-central1"
+      ],
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/endpoints/openapi/chat/completions",
       "deployment": null
     },
     "sources": [
@@ -4177,32 +4330,38 @@
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
         "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/maas/call-open-model-apis",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native managed OpenAI wire contract."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official managed open-model identifier, region and pricing verified; native reasoning and streaming IR fixture tests pass. Account enablement and quota required; no authenticated inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-coder",
     "provider_api_model_id": "google-vertex:qwen/qwen3-coder",
-    "provider_model_slug": "qwen/qwen3-coder",
+    "provider_model_slug": "qwen/qwen3-coder-480b-a35b-instruct-maas",
     "internal_model_id": "qwen/qwen3-coder",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "unknown",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 262144,
     "max_output_tokens": 65536,
     "effective_from": "2026-08-12T00:00:00Z",
-    "effective_to": null,
+    "effective_to": "2026-10-21T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "structured_outputs",
           "response_format",
@@ -4230,16 +4389,22 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
+      "execution": [
+        "global"
+      ],
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/endpoints/openapi/chat/completions",
       "deployment": null
     },
     "sources": [
@@ -4248,32 +4413,38 @@
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
         "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/maas/call-open-model-apis",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native managed OpenAI wire contract."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official managed open-model identifier, region and pricing verified; native reasoning and streaming IR fixture tests pass. Account enablement and quota required; no authenticated inference performed."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-235b-a22b-2507",
     "provider_api_model_id": "google-vertex:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": "qwen/qwen3-235b-a22b-2507",
+    "provider_model_slug": "qwen/qwen3-235b-a22b-instruct-2507-maas",
     "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "unknown",
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 262144,
     "max_output_tokens": 16384,
     "effective_from": "2026-08-12T00:00:00Z",
-    "effective_to": null,
+    "effective_to": "2026-10-21T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "structured_outputs",
           "response_format",
@@ -4301,16 +4472,22 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
-      "execution": null,
+      "execution": [
+        "global"
+      ],
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/endpoints/openapi/chat/completions",
       "deployment": null
     },
     "sources": [
@@ -4319,12 +4496,18 @@
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
         "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/maas/call-open-model-apis",
+        "accessed_at": "2026-09-07T23:00:00Z",
+        "notes": "Native managed OpenAI wire contract."
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T23:00:00Z",
+      "notes": "Official managed open-model identifier, region and pricing verified; native reasoning and streaming IR fixture tests pass. Account enablement and quota required; no authenticated inference performed."
     },
     "rate_limits": []
   },
@@ -4407,7 +4590,7 @@
     "provider_api_model_id": "google-vertex:google/gemini-3.5-transcribe",
     "provider_model_slug": "gemini-3.5-transcribe-preview",
     "internal_model_id": "google/gemini-3.5-transcribe",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -4415,34 +4598,57 @@
     "max_output_tokens": 32000,
     "effective_from": "2026-08-26T00:00:00",
     "effective_to": null,
-    "capabilities": [{
-      "capability_id": "audio.transcription",
-      "status": "active",
-      "params": [],
-      "reasoning": false,
-      "tool_call": false,
-      "structured_output": false,
-      "temperature": null,
-      "attachment": true,
-      "input_modalities": ["audio"],
-      "output_modalities": ["text"],
-      "modes": []
-    }],
-    "routing_status": null,
-    "routable": false,
-    "regions": { "execution": ["global"], "data": ["global"] },
-    "service_tiers": ["standard"],
-    "api": { "formats": ["google.generateContent"], "endpoint": ":generateContent", "deployment": "global" },
-    "sources": [{
-      "kind": "api_reference",
-      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-transcribe",
-      "accessed_at": "2026-08-26T00:00:00Z",
-      "notes": "Google's model documentation defines the canonical transcription capability; Vertex provider slug: gemini-3.5-transcribe-preview."
-    }],
+    "capabilities": [
+      {
+        "capability_id": "audio.transcription",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": false,
+        "structured_output": false,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": [
+          "audio"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "google.generateContent"
+      ],
+      "endpoint": ":generateContent",
+      "deployment": "global"
+    },
+    "sources": [
+      {
+        "kind": "api_reference",
+        "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-transcribe",
+        "accessed_at": "2026-08-26T00:00:00Z",
+        "notes": "Google's model documentation defines the canonical transcription capability; Vertex provider slug: gemini-3.5-transcribe-preview."
+      }
+    ],
     "verification": {
-      "status": "partial",
+      "status": "verified",
       "checked_at": "2026-08-26T00:00:00Z",
-      "notes": "Canonical capability, limits, and Vertex/Agent Platform pricing are verified from Google's current documentation. The Vertex preview provider slug was supplied by the requester and is not separately published in the public model index; gateway routing remains disabled until a Vertex transcription executor is registered."
+      "notes": "Native generateContent transcription contract and preview slug verified against the Google Cloud model reference on 2026-09-07. Global-only executor has deterministic request, transcription, word timestamp, and billing coverage; live inference requires project access and OAuth credentials."
     },
     "rate_limits": []
   },

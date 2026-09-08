@@ -69,20 +69,54 @@ export const ModelIds = {
   ARCEE_AI_TRINITY_MINI: "arcee-ai/trinity-mini",
   /** Model ID: `baai/bge-m3`. Model page: https://phaseo.app/models/baai/bge-m3 */
   BAAI_BGE_M3: "baai/bge-m3",
-  /** Model ID: `baai/bge-multilingual-gemma2`. Model page: https://phaseo.app/models/baai/bge-multilingual-gemma2 */
-  BAAI_BGE_MULTILINGUAL_GEMMA2: "baai/bge-multilingual-gemma2",
   /** Model ID: `baai/bge-reranker-v2-m3`. Model page: https://phaseo.app/models/baai/bge-reranker-v2-m3 */
   BAAI_BGE_RERANKER_V2_M3: "baai/bge-reranker-v2-m3",
   /** Model ID: `baidu/cobuddy`. Model page: https://phaseo.app/models/baidu/cobuddy */
   BAIDU_COBUDDY: "baidu/cobuddy",
+  /** Model ID: `baidu/ernie-4.5-0.3b`. Model page: https://phaseo.app/models/baidu/ernie-4.5-0.3b */
+  BAIDU_ERNIE_4_5_0_3B: "baidu/ernie-4.5-0.3b",
+  /** Model ID: `baidu/ernie-4.5-21b-a3b`. Model page: https://phaseo.app/models/baidu/ernie-4.5-21b-a3b */
+  BAIDU_ERNIE_4_5_21B_A3B: "baidu/ernie-4.5-21b-a3b",
   /** Model ID: `baidu/ernie-4.5-300b-a47b`. Model page: https://phaseo.app/models/baidu/ernie-4.5-300b-a47b */
   BAIDU_ERNIE_4_5_300B_A47B: "baidu/ernie-4.5-300b-a47b",
+  /** Model ID: `baidu/ernie-4.5-turbo`. Model page: https://phaseo.app/models/baidu/ernie-4.5-turbo */
+  BAIDU_ERNIE_4_5_TURBO: "baidu/ernie-4.5-turbo",
+  /** Model ID: `baidu/ernie-4.5-vl-28b-a3b`. Model page: https://phaseo.app/models/baidu/ernie-4.5-vl-28b-a3b */
+  BAIDU_ERNIE_4_5_VL_28B_A3B: "baidu/ernie-4.5-vl-28b-a3b",
   /** Model ID: `baidu/ernie-4.5-vl-424b-a47b`. Model page: https://phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b */
   BAIDU_ERNIE_4_5_VL_424B_A47B: "baidu/ernie-4.5-vl-424b-a47b",
+  /** Model ID: `baidu/ernie-5.0`. Model page: https://phaseo.app/models/baidu/ernie-5.0 */
+  BAIDU_ERNIE_5_0: "baidu/ernie-5.0",
+  /** Model ID: `baidu/ernie-5.1`. Model page: https://phaseo.app/models/baidu/ernie-5.1 */
+  BAIDU_ERNIE_5_1: "baidu/ernie-5.1",
+  /** Model ID: `baidu/ernie-x1.1`. Model page: https://phaseo.app/models/baidu/ernie-x1.1 */
+  BAIDU_ERNIE_X1_1: "baidu/ernie-x1.1",
   /** Model ID: `black-forest-labs/flux-1-dev`. Model page: https://phaseo.app/models/black-forest-labs/flux-1-dev */
   BLACK_FOREST_LABS_FLUX_1_DEV: "black-forest-labs/flux-1-dev",
+  /** Model ID: `black-forest-labs/flux-1-kontext-max`. Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-max */
+  BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX: "black-forest-labs/flux-1-kontext-max",
+  /** Model ID: `black-forest-labs/flux-1-kontext-pro`. Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-pro */
+  BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO: "black-forest-labs/flux-1-kontext-pro",
   /** Model ID: `black-forest-labs/flux-1-schnell`. Model page: https://phaseo.app/models/black-forest-labs/flux-1-schnell */
   BLACK_FOREST_LABS_FLUX_1_SCHNELL: "black-forest-labs/flux-1-schnell",
+  /** Model ID: `black-forest-labs/flux-1.1-pro`. Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro */
+  BLACK_FOREST_LABS_FLUX_1_1_PRO: "black-forest-labs/flux-1.1-pro",
+  /** Model ID: `black-forest-labs/flux-1.1-pro-ultra`. Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro-ultra */
+  BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA: "black-forest-labs/flux-1.1-pro-ultra",
+  /** Model ID: `black-forest-labs/flux-2-dev`. Model page: https://phaseo.app/models/black-forest-labs/flux-2-dev */
+  BLACK_FOREST_LABS_FLUX_2_DEV: "black-forest-labs/flux-2-dev",
+  /** Model ID: `black-forest-labs/flux-2-flex`. Model page: https://phaseo.app/models/black-forest-labs/flux-2-flex */
+  BLACK_FOREST_LABS_FLUX_2_FLEX: "black-forest-labs/flux-2-flex",
+  /** Model ID: `black-forest-labs/flux-2-klein-4b`. Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-4b */
+  BLACK_FOREST_LABS_FLUX_2_KLEIN_4B: "black-forest-labs/flux-2-klein-4b",
+  /** Model ID: `black-forest-labs/flux-2-klein-9b`. Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-9b */
+  BLACK_FOREST_LABS_FLUX_2_KLEIN_9B: "black-forest-labs/flux-2-klein-9b",
+  /** Model ID: `black-forest-labs/flux-2-max`. Model page: https://phaseo.app/models/black-forest-labs/flux-2-max */
+  BLACK_FOREST_LABS_FLUX_2_MAX: "black-forest-labs/flux-2-max",
+  /** Model ID: `black-forest-labs/flux-2-pro`. Model page: https://phaseo.app/models/black-forest-labs/flux-2-pro */
+  BLACK_FOREST_LABS_FLUX_2_PRO: "black-forest-labs/flux-2-pro",
+  /** Model ID: `black-forest-labs/flux-3-video`. Model page: https://phaseo.app/models/black-forest-labs/flux-3-video */
+  BLACK_FOREST_LABS_FLUX_3_VIDEO: "black-forest-labs/flux-3-video",
   /** Model ID: `bytedance/seed-1.6`. Model page: https://phaseo.app/models/bytedance/seed-1.6 */
   BYTEDANCE_SEED_1_6: "bytedance/seed-1.6",
   /** Model ID: `bytedance/seed-1.6-2025-10-15`. Model page: https://phaseo.app/models/bytedance/seed-1.6-2025-10-15 */
@@ -121,6 +155,8 @@ export const ModelIds = {
   BYTEDANCE_SEED_OSS_36B_INSTRUCT: "bytedance/seed-oss-36b-instruct",
   /** Model ID: `bytedance/seed-translation`. Model page: https://phaseo.app/models/bytedance/seed-translation */
   BYTEDANCE_SEED_TRANSLATION: "bytedance/seed-translation",
+  /** Model ID: `bytedance/seedance-1.5-pro`. Model page: https://phaseo.app/models/bytedance/seedance-1.5-pro */
+  BYTEDANCE_SEEDANCE_1_5_PRO: "bytedance/seedance-1.5-pro",
   /** Model ID: `bytedance/seedance-2.0`. Model page: https://phaseo.app/models/bytedance/seedance-2.0 */
   BYTEDANCE_SEEDANCE_2_0: "bytedance/seedance-2.0",
   /** Model ID: `bytedance/seedance-2.0-fast`. Model page: https://phaseo.app/models/bytedance/seedance-2.0-fast */
@@ -129,6 +165,8 @@ export const ModelIds = {
   BYTEDANCE_SEEDANCE_2_0_MINI_260615: "bytedance/seedance-2.0-mini-260615",
   /** Model ID: `bytedance/seedream-5.0-pro`. Model page: https://phaseo.app/models/bytedance/seedream-5.0-pro */
   BYTEDANCE_SEEDREAM_5_0_PRO: "bytedance/seedream-5.0-pro",
+  /** Model ID: `bytedance/ui-tars-1.5-7b`. Model page: https://phaseo.app/models/bytedance/ui-tars-1.5-7b */
+  BYTEDANCE_UI_TARS_1_5_7B: "bytedance/ui-tars-1.5-7b",
   /** Model ID: `cohere/command-a`. Model page: https://phaseo.app/models/cohere/command-a */
   COHERE_COMMAND_A: "cohere/command-a",
   /** Model ID: `cohere/command-r`. Model page: https://phaseo.app/models/cohere/command-r */
@@ -197,6 +235,8 @@ export const ModelIds = {
   DEEPSEEK_DEEPSEEK_V4_PRO: "deepseek/deepseek-v4-pro",
   /** Model ID: `deepseek/deepseek-v4-pro-0813`. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
   DEEPSEEK_DEEPSEEK_V4_PRO_0813: "deepseek/deepseek-v4-pro-0813",
+  /** Model ID: `early-access/ea-29b-a4b`. Model page: https://phaseo.app/models/early-access/ea-29b-a4b */
+  EARLY_ACCESS_EA_29B_A4B: "early-access/ea-29b-a4b",
   /** Model ID: `eleven-labs/eleven-flash-v2`. Model page: https://phaseo.app/models/eleven-labs/eleven-flash-v2 */
   ELEVEN_LABS_ELEVEN_FLASH_V2: "eleven-labs/eleven-flash-v2",
   /** Model ID: `eleven-labs/eleven-flash-v2.5`. Model page: https://phaseo.app/models/eleven-labs/eleven-flash-v2.5 */
@@ -215,6 +255,8 @@ export const ModelIds = {
   ELEVEN_LABS_SCRIBE_V2: "eleven-labs/scribe-v2",
   /** Model ID: `essential-ai/rnj-1`. Model page: https://phaseo.app/models/essential-ai/rnj-1 */
   ESSENTIAL_AI_RNJ_1: "essential-ai/rnj-1",
+  /** Model ID: `google/embeddinggemma-300m`. Model page: https://phaseo.app/models/google/embeddinggemma-300m */
+  GOOGLE_EMBEDDINGGEMMA_300M: "google/embeddinggemma-300m",
   /** Model ID: `google/gemini-2.5-flash`. Model page: https://phaseo.app/models/google/gemini-2.5-flash */
   GOOGLE_GEMINI_2_5_FLASH: "google/gemini-2.5-flash",
   /** Model ID: `google/gemini-2.5-flash-image`. Model page: https://phaseo.app/models/google/gemini-2.5-flash-image */
@@ -245,6 +287,8 @@ export const ModelIds = {
   GOOGLE_GEMINI_3_5_FLASH: "google/gemini-3.5-flash",
   /** Model ID: `google/gemini-3.5-flash-lite`. Model page: https://phaseo.app/models/google/gemini-3.5-flash-lite */
   GOOGLE_GEMINI_3_5_FLASH_LITE: "google/gemini-3.5-flash-lite",
+  /** Model ID: `google/gemini-3.5-transcribe`. Model page: https://phaseo.app/models/google/gemini-3.5-transcribe */
+  GOOGLE_GEMINI_3_5_TRANSCRIBE: "google/gemini-3.5-transcribe",
   /** Model ID: `google/gemini-3.6-flash`. Model page: https://phaseo.app/models/google/gemini-3.6-flash */
   GOOGLE_GEMINI_3_6_FLASH: "google/gemini-3.6-flash",
   /** Model ID: `google/gemini-3.7-flash`. Model page: https://phaseo.app/models/google/gemini-3.7-flash */
@@ -261,12 +305,16 @@ export const ModelIds = {
   GOOGLE_GEMMA_3_12B: "google/gemma-3-12b",
   /** Model ID: `google/gemma-3-27b`. Model page: https://phaseo.app/models/google/gemma-3-27b */
   GOOGLE_GEMMA_3_27B: "google/gemma-3-27b",
+  /** Model ID: `google/gemma-3-27b-it`. Model page: https://phaseo.app/models/google/gemma-3-27b-it */
+  GOOGLE_GEMMA_3_27B_IT: "google/gemma-3-27b-it",
   /** Model ID: `google/gemma-3-4b`. Model page: https://phaseo.app/models/google/gemma-3-4b */
   GOOGLE_GEMMA_3_4B: "google/gemma-3-4b",
   /** Model ID: `google/gemma-4-12b`. Model page: https://phaseo.app/models/google/gemma-4-12b */
   GOOGLE_GEMMA_4_12B: "google/gemma-4-12b",
   /** Model ID: `google/gemma-4-26b-a4b`. Model page: https://phaseo.app/models/google/gemma-4-26b-a4b */
   GOOGLE_GEMMA_4_26B_A4B: "google/gemma-4-26b-a4b",
+  /** Model ID: `google/gemma-4-26b-a4b-it`. Model page: https://phaseo.app/models/google/gemma-4-26b-a4b-it */
+  GOOGLE_GEMMA_4_26B_A4B_IT: "google/gemma-4-26b-a4b-it",
   /** Model ID: `google/gemma-4-26b-a4b:free`. Model page: https://phaseo.app/models/google/gemma-4-26b-a4b%3Afree */
   GOOGLE_GEMMA_4_26B_A4B_FREE: "google/gemma-4-26b-a4b:free",
   /** Model ID: `google/gemma-4-31b`. Model page: https://phaseo.app/models/google/gemma-4-31b */
@@ -291,6 +339,8 @@ export const ModelIds = {
   GOOGLE_VEO_3_1_LITE_PREVIEW: "google/veo-3.1-lite-preview",
   /** Model ID: `google/veo-3.1-preview`. Model page: https://phaseo.app/models/google/veo-3.1-preview */
   GOOGLE_VEO_3_1_PREVIEW: "google/veo-3.1-preview",
+  /** Model ID: `hexgrad/kokoro-82m`. Model page: https://phaseo.app/models/hexgrad/kokoro-82m */
+  HEXGRAD_KOKORO_82M: "hexgrad/kokoro-82m",
   /** Model ID: `ibm/granite-4.1-8b`. Model page: https://phaseo.app/models/ibm/granite-4.1-8b */
   IBM_GRANITE_4_1_8B: "ibm/granite-4.1-8b",
   /** Model ID: `ibm/granite-4.2-30b`. Model page: https://phaseo.app/models/ibm/granite-4.2-30b */
@@ -347,8 +397,12 @@ export const ModelIds = {
   LTX_2_5_FAST: "ltx-2-5-fast",
   /** Model ID: `ltx-2-5-pro`. Model page: https://phaseo.app/models/ltx-2-5-pro */
   LTX_2_5_PRO: "ltx-2-5-pro",
+  /** Model ID: `medaibase/antangelmed`. Model page: https://phaseo.app/models/medaibase/antangelmed */
+  MEDAIBASE_ANTANGELMED: "medaibase/antangelmed",
   /** Model ID: `meituan/longcat-2.0`. Model page: https://phaseo.app/models/meituan/longcat-2.0 */
   MEITUAN_LONGCAT_2_0: "meituan/longcat-2.0",
+  /** Model ID: `meituan/longcat-flash-lite`. Model page: https://phaseo.app/models/meituan/longcat-flash-lite */
+  MEITUAN_LONGCAT_FLASH_LITE: "meituan/longcat-flash-lite",
   /** Model ID: `meta/llama-3.1-70b`. Model page: https://phaseo.app/models/meta/llama-3.1-70b */
   META_LLAMA_3_1_70B: "meta/llama-3.1-70b",
   /** Model ID: `meta/llama-3.1-8b`. Model page: https://phaseo.app/models/meta/llama-3.1-8b */
@@ -357,6 +411,8 @@ export const ModelIds = {
   META_LLAMA_3_2_3B: "meta/llama-3.2-3b",
   /** Model ID: `meta/llama-3.3-70b`. Model page: https://phaseo.app/models/meta/llama-3.3-70b */
   META_LLAMA_3_3_70B: "meta/llama-3.3-70b",
+  /** Model ID: `meta/llama-3.3-70b-instruct`. Model page: https://phaseo.app/models/meta/llama-3.3-70b-instruct */
+  META_LLAMA_3_3_70B_INSTRUCT: "meta/llama-3.3-70b-instruct",
   /** Model ID: `meta/llama-4-maverick`. Model page: https://phaseo.app/models/meta/llama-4-maverick */
   META_LLAMA_4_MAVERICK: "meta/llama-4-maverick",
   /** Model ID: `meta/llama-4-scout`. Model page: https://phaseo.app/models/meta/llama-4-scout */
@@ -413,18 +469,12 @@ export const ModelIds = {
   MINIMAX_MINIMAX_M2_5_HIGHSPEED: "minimax/minimax-m2.5-highspeed",
   /** Model ID: `minimax/minimax-m2.7`. Model page: https://phaseo.app/models/minimax/minimax-m2.7 */
   MINIMAX_MINIMAX_M2_7: "minimax/minimax-m2.7",
-  /** Model ID: `minimax/minimax-m2.7:free`. Model page: https://phaseo.app/models/minimax/minimax-m2.7%3Afree */
-  MINIMAX_MINIMAX_M2_7_FREE: "minimax/minimax-m2.7:free",
   /** Model ID: `minimax/minimax-m3`. Model page: https://phaseo.app/models/minimax/minimax-m3 */
   MINIMAX_MINIMAX_M3: "minimax/minimax-m3",
-  /** Model ID: `minimax/minimax-m3:free`. Model page: https://phaseo.app/models/minimax/minimax-m3%3Afree */
-  MINIMAX_MINIMAX_M3_FREE: "minimax/minimax-m3:free",
   /** Model ID: `minimax/music-2.6`. Model page: https://phaseo.app/models/minimax/music-2.6 */
   MINIMAX_MUSIC_2_6: "minimax/music-2.6",
   /** Model ID: `minimax/music-3.0`. Model page: https://phaseo.app/models/minimax/music-3.0 */
   MINIMAX_MUSIC_3_0: "minimax/music-3.0",
-  /** Model ID: `minimax/music-3.0:free`. Model page: https://phaseo.app/models/minimax/music-3.0%3Afree */
-  MINIMAX_MUSIC_3_0_FREE: "minimax/music-3.0:free",
   /** Model ID: `minimax/speech-2.6-hd`. Model page: https://phaseo.app/models/minimax/speech-2.6-hd */
   MINIMAX_SPEECH_2_6_HD: "minimax/speech-2.6-hd",
   /** Model ID: `minimax/speech-2.6-turbo`. Model page: https://phaseo.app/models/minimax/speech-2.6-turbo */
@@ -433,8 +483,6 @@ export const ModelIds = {
   MINIMAX_SPEECH_2_8_HD: "minimax/speech-2.8-hd",
   /** Model ID: `minimax/speech-2.8-turbo`. Model page: https://phaseo.app/models/minimax/speech-2.8-turbo */
   MINIMAX_SPEECH_2_8_TURBO: "minimax/speech-2.8-turbo",
-  /** Model ID: `minimax/speech-2.8:free`. Model page: https://phaseo.app/models/minimax/speech-2.8%3Afree */
-  MINIMAX_SPEECH_2_8_FREE: "minimax/speech-2.8:free",
   /** Model ID: `mistral/codestral`. Model page: https://phaseo.app/models/mistral/codestral */
   MISTRAL_CODESTRAL: "mistral/codestral",
   /** Model ID: `mistral/codestral-embed`. Model page: https://phaseo.app/models/mistral/codestral-embed */
@@ -467,6 +515,8 @@ export const ModelIds = {
   MISTRAL_MINISTRAL_3_0_8B: "mistral/ministral-3.0-8b",
   /** Model ID: `mistral/mistral-embed`. Model page: https://phaseo.app/models/mistral/mistral-embed */
   MISTRAL_MISTRAL_EMBED: "mistral/mistral-embed",
+  /** Model ID: `mistral/mistral-large-2.0`. Model page: https://phaseo.app/models/mistral/mistral-large-2.0 */
+  MISTRAL_MISTRAL_LARGE_2_0: "mistral/mistral-large-2.0",
   /** Model ID: `mistral/mistral-large-2.1`. Model page: https://phaseo.app/models/mistral/mistral-large-2.1 */
   MISTRAL_MISTRAL_LARGE_2_1: "mistral/mistral-large-2.1",
   /** Model ID: `mistral/mistral-large-3`. Model page: https://phaseo.app/models/mistral/mistral-large-3 */
@@ -491,6 +541,8 @@ export const ModelIds = {
   MISTRAL_MISTRAL_SMALL_24B_2501: "mistral/mistral-small-24b-2501",
   /** Model ID: `mistral/mistral-small-3.2`. Model page: https://phaseo.app/models/mistral/mistral-small-3.2 */
   MISTRAL_MISTRAL_SMALL_3_2: "mistral/mistral-small-3.2",
+  /** Model ID: `mistral/mistral-small-3.2-24b-instruct`. Model page: https://phaseo.app/models/mistral/mistral-small-3.2-24b-instruct */
+  MISTRAL_MISTRAL_SMALL_3_2_24B_INSTRUCT: "mistral/mistral-small-3.2-24b-instruct",
   /** Model ID: `mistral/mistral-small-4`. Model page: https://phaseo.app/models/mistral/mistral-small-4 */
   MISTRAL_MISTRAL_SMALL_4: "mistral/mistral-small-4",
   /** Model ID: `mistral/ocr-3`. Model page: https://phaseo.app/models/mistral/ocr-3 */
@@ -519,6 +571,8 @@ export const ModelIds = {
   MOONSHOTAI_KIMI_K2_6: "moonshotai/kimi-k2.6",
   /** Model ID: `moonshotai/kimi-k2.7-code`. Model page: https://phaseo.app/models/moonshotai/kimi-k2.7-code */
   MOONSHOTAI_KIMI_K2_7_CODE: "moonshotai/kimi-k2.7-code",
+  /** Model ID: `moonshotai/kimi-k2.7-code-highspeed`. Model page: https://phaseo.app/models/moonshotai/kimi-k2.7-code-highspeed */
+  MOONSHOTAI_KIMI_K2_7_CODE_HIGHSPEED: "moonshotai/kimi-k2.7-code-highspeed",
   /** Model ID: `moonshotai/kimi-k3`. Model page: https://phaseo.app/models/moonshotai/kimi-k3 */
   MOONSHOTAI_KIMI_K3: "moonshotai/kimi-k3",
   /** Model ID: `moonshotai/kimi-k3-fast`. Model page: https://phaseo.app/models/moonshotai/kimi-k3-fast */
@@ -553,6 +607,14 @@ export const ModelIds = {
   NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B: "nvidia/nvidia-nemotron-3-nano-30b-a3b",
   /** Model ID: `nvidia/nvidia-nemotron-nano-12b-v2-vl`. Model page: https://phaseo.app/models/nvidia/nvidia-nemotron-nano-12b-v2-vl */
   NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL: "nvidia/nvidia-nemotron-nano-12b-v2-vl",
+  /** Model ID: `nvidia/riva-tts-de-de`. Model page: https://phaseo.app/models/nvidia/riva-tts-de-de */
+  NVIDIA_RIVA_TTS_DE_DE: "nvidia/riva-tts-de-de",
+  /** Model ID: `nvidia/riva-tts-en-us`. Model page: https://phaseo.app/models/nvidia/riva-tts-en-us */
+  NVIDIA_RIVA_TTS_EN_US: "nvidia/riva-tts-en-us",
+  /** Model ID: `nvidia/riva-tts-es-es`. Model page: https://phaseo.app/models/nvidia/riva-tts-es-es */
+  NVIDIA_RIVA_TTS_ES_ES: "nvidia/riva-tts-es-es",
+  /** Model ID: `nvidia/riva-tts-it-it`. Model page: https://phaseo.app/models/nvidia/riva-tts-it-it */
+  NVIDIA_RIVA_TTS_IT_IT: "nvidia/riva-tts-it-it",
   /** Model ID: `openai/babbage-002`. Model page: https://phaseo.app/models/openai/babbage-002 */
   OPENAI_BABBAGE_002: "openai/babbage-002",
   /** Model ID: `openai/chat-latest`. Model page: https://phaseo.app/models/openai/chat-latest */
@@ -631,6 +693,10 @@ export const ModelIds = {
   OPENAI_GPT_5_6_TERRA: "openai/gpt-5.6-terra",
   /** Model ID: `openai/gpt-5.6-terra-pro`. Model page: https://phaseo.app/models/openai/gpt-5.6-terra-pro */
   OPENAI_GPT_5_6_TERRA_PRO: "openai/gpt-5.6-terra-pro",
+  /** Model ID: `openai/gpt-6-astra`. Model page: https://phaseo.app/models/openai/gpt-6-astra */
+  OPENAI_GPT_6_ASTRA: "openai/gpt-6-astra",
+  /** Model ID: `openai/gpt-6-astra-pro`. Model page: https://phaseo.app/models/openai/gpt-6-astra-pro */
+  OPENAI_GPT_6_ASTRA_PRO: "openai/gpt-6-astra-pro",
   /** Model ID: `openai/gpt-image-1`. Model page: https://phaseo.app/models/openai/gpt-image-1 */
   OPENAI_GPT_IMAGE_1: "openai/gpt-image-1",
   /** Model ID: `openai/gpt-image-1-mini`. Model page: https://phaseo.app/models/openai/gpt-image-1-mini */
@@ -653,6 +719,10 @@ export const ModelIds = {
   OPENAI_GPT_REALTIME_1_5: "openai/gpt-realtime-1.5",
   /** Model ID: `openai/gpt-realtime-2`. Model page: https://phaseo.app/models/openai/gpt-realtime-2 */
   OPENAI_GPT_REALTIME_2: "openai/gpt-realtime-2",
+  /** Model ID: `openai/gpt-realtime-2.1`. Model page: https://phaseo.app/models/openai/gpt-realtime-2.1 */
+  OPENAI_GPT_REALTIME_2_1: "openai/gpt-realtime-2.1",
+  /** Model ID: `openai/gpt-realtime-2.1-mini`. Model page: https://phaseo.app/models/openai/gpt-realtime-2.1-mini */
+  OPENAI_GPT_REALTIME_2_1_MINI: "openai/gpt-realtime-2.1-mini",
   /** Model ID: `openai/gpt-transcribe`. Model page: https://phaseo.app/models/openai/gpt-transcribe */
   OPENAI_GPT_TRANSCRIBE: "openai/gpt-transcribe",
   /** Model ID: `openai/o1`. Model page: https://phaseo.app/models/openai/o1 */
@@ -687,6 +757,8 @@ export const ModelIds = {
   OPENAI_WHISPER_LARGE_V3: "openai/whisper-large-v3",
   /** Model ID: `openai/whisper-large-v3-turbo`. Model page: https://phaseo.app/models/openai/whisper-large-v3-turbo */
   OPENAI_WHISPER_LARGE_V3_TURBO: "openai/whisper-large-v3-turbo",
+  /** Model ID: `opencompass/compassjudger-1-32b-instruct`. Model page: https://phaseo.app/models/opencompass/compassjudger-1-32b-instruct */
+  OPENCOMPASS_COMPASSJUDGER_1_32B_INSTRUCT: "opencompass/compassjudger-1-32b-instruct",
   /** Model ID: `perplexity/pplx-embed-v1-0.6b`. Model page: https://phaseo.app/models/perplexity/pplx-embed-v1-0.6b */
   PERPLEXITY_PPLX_EMBED_V1_0_6B: "perplexity/pplx-embed-v1-0.6b",
   /** Model ID: `perplexity/pplx-embed-v1-4b`. Model page: https://phaseo.app/models/perplexity/pplx-embed-v1-4b */
@@ -709,6 +781,18 @@ export const ModelIds = {
   QWEN_QWEN_FLASH_CHARACTER: "qwen/qwen-flash-character",
   /** Model ID: `qwen/qwen-image`. Model page: https://phaseo.app/models/qwen/qwen-image */
   QWEN_QWEN_IMAGE: "qwen/qwen-image",
+  /** Model ID: `qwen/qwen-image-edit`. Model page: https://phaseo.app/models/qwen/qwen-image-edit */
+  QWEN_QWEN_IMAGE_EDIT: "qwen/qwen-image-edit",
+  /** Model ID: `qwen/qwen-image-edit-2025-10-30`. Model page: https://phaseo.app/models/qwen/qwen-image-edit-2025-10-30 */
+  QWEN_QWEN_IMAGE_EDIT_2025_10_30: "qwen/qwen-image-edit-2025-10-30",
+  /** Model ID: `qwen/qwen-image-edit-2025-12-15`. Model page: https://phaseo.app/models/qwen/qwen-image-edit-2025-12-15 */
+  QWEN_QWEN_IMAGE_EDIT_2025_12_15: "qwen/qwen-image-edit-2025-12-15",
+  /** Model ID: `qwen/qwen-image-edit-max`. Model page: https://phaseo.app/models/qwen/qwen-image-edit-max */
+  QWEN_QWEN_IMAGE_EDIT_MAX: "qwen/qwen-image-edit-max",
+  /** Model ID: `qwen/qwen-image-max`. Model page: https://phaseo.app/models/qwen/qwen-image-max */
+  QWEN_QWEN_IMAGE_MAX: "qwen/qwen-image-max",
+  /** Model ID: `qwen/qwen-image-plus`. Model page: https://phaseo.app/models/qwen/qwen-image-plus */
+  QWEN_QWEN_IMAGE_PLUS: "qwen/qwen-image-plus",
   /** Model ID: `qwen/qwen-max`. Model page: https://phaseo.app/models/qwen/qwen-max */
   QWEN_QWEN_MAX: "qwen/qwen-max",
   /** Model ID: `qwen/qwen-mt-flash`. Model page: https://phaseo.app/models/qwen/qwen-mt-flash */
@@ -799,6 +883,12 @@ export const ModelIds = {
   QWEN_QWEN3_4B: "qwen/qwen3-4b",
   /** Model ID: `qwen/qwen3-8b`. Model page: https://phaseo.app/models/qwen/qwen3-8b */
   QWEN_QWEN3_8B: "qwen/qwen3-8b",
+  /** Model ID: `qwen/qwen3-asr-0.6b`. Model page: https://phaseo.app/models/qwen/qwen3-asr-0.6b */
+  QWEN_QWEN3_ASR_0_6B: "qwen/qwen3-asr-0.6b",
+  /** Model ID: `qwen/qwen3-asr-1.7b`. Model page: https://phaseo.app/models/qwen/qwen3-asr-1.7b */
+  QWEN_QWEN3_ASR_1_7B: "qwen/qwen3-asr-1.7b",
+  /** Model ID: `qwen/qwen3-coder`. Model page: https://phaseo.app/models/qwen/qwen3-coder */
+  QWEN_QWEN3_CODER: "qwen/qwen3-coder",
   /** Model ID: `qwen/qwen3-coder-30b-a3b`. Model page: https://phaseo.app/models/qwen/qwen3-coder-30b-a3b */
   QWEN_QWEN3_CODER_30B_A3B: "qwen/qwen3-coder-30b-a3b",
   /** Model ID: `qwen/qwen3-coder-480b-a35b`. Model page: https://phaseo.app/models/qwen/qwen3-coder-480b-a35b */
@@ -813,12 +903,10 @@ export const ModelIds = {
   QWEN_QWEN3_CODER_PLUS_2025_09_23: "qwen/qwen3-coder-plus-2025-09-23",
   /** Model ID: `qwen/qwen3-embedding-0.6b`. Model page: https://phaseo.app/models/qwen/qwen3-embedding-0.6b */
   QWEN_QWEN3_EMBEDDING_0_6B: "qwen/qwen3-embedding-0.6b",
+  /** Model ID: `qwen/qwen3-embedding-4b`. Model page: https://phaseo.app/models/qwen/qwen3-embedding-4b */
+  QWEN_QWEN3_EMBEDDING_4B: "qwen/qwen3-embedding-4b",
   /** Model ID: `qwen/qwen3-embedding-8b`. Model page: https://phaseo.app/models/qwen/qwen3-embedding-8b */
   QWEN_QWEN3_EMBEDDING_8B: "qwen/qwen3-embedding-8b",
-  /** Model ID: `qwen/qwen3-guard-gen-0.6b`. Model page: https://phaseo.app/models/qwen/qwen3-guard-gen-0.6b */
-  QWEN_QWEN3_GUARD_GEN_0_6B: "qwen/qwen3-guard-gen-0.6b",
-  /** Model ID: `qwen/qwen3-guard-gen-8b`. Model page: https://phaseo.app/models/qwen/qwen3-guard-gen-8b */
-  QWEN_QWEN3_GUARD_GEN_8B: "qwen/qwen3-guard-gen-8b",
   /** Model ID: `qwen/qwen3-max`. Model page: https://phaseo.app/models/qwen/qwen3-max */
   QWEN_QWEN3_MAX: "qwen/qwen3-max",
   /** Model ID: `qwen/qwen3-max-2025-09-23`. Model page: https://phaseo.app/models/qwen/qwen3-max-2025-09-23 */
@@ -843,6 +931,16 @@ export const ModelIds = {
   QWEN_QWEN3_OMNI_30B_A3B_THINKING: "qwen/qwen3-omni-30b-a3b-thinking",
   /** Model ID: `qwen/qwen3-reranker`. Model page: https://phaseo.app/models/qwen/qwen3-reranker */
   QWEN_QWEN3_RERANKER: "qwen/qwen3-reranker",
+  /** Model ID: `qwen/qwen3-reranker-0.6b`. Model page: https://phaseo.app/models/qwen/qwen3-reranker-0.6b */
+  QWEN_QWEN3_RERANKER_0_6B: "qwen/qwen3-reranker-0.6b",
+  /** Model ID: `qwen/qwen3-reranker-4b`. Model page: https://phaseo.app/models/qwen/qwen3-reranker-4b */
+  QWEN_QWEN3_RERANKER_4B: "qwen/qwen3-reranker-4b",
+  /** Model ID: `qwen/qwen3-reranker-8b`. Model page: https://phaseo.app/models/qwen/qwen3-reranker-8b */
+  QWEN_QWEN3_RERANKER_8B: "qwen/qwen3-reranker-8b",
+  /** Model ID: `qwen/qwen3-tts`. Model page: https://phaseo.app/models/qwen/qwen3-tts */
+  QWEN_QWEN3_TTS: "qwen/qwen3-tts",
+  /** Model ID: `qwen/qwen3-tts-voicedesign`. Model page: https://phaseo.app/models/qwen/qwen3-tts-voicedesign */
+  QWEN_QWEN3_TTS_VOICEDESIGN: "qwen/qwen3-tts-voicedesign",
   /** Model ID: `qwen/qwen3-vl-235b-a22b`. Model page: https://phaseo.app/models/qwen/qwen3-vl-235b-a22b */
   QWEN_QWEN3_VL_235B_A22B: "qwen/qwen3-vl-235b-a22b",
   /** Model ID: `qwen/qwen3-vl-235b-a22b-instruct`. Model page: https://phaseo.app/models/qwen/qwen3-vl-235b-a22b-instruct */
@@ -863,6 +961,8 @@ export const ModelIds = {
   QWEN_QWEN3_VL_8B: "qwen/qwen3-vl-8b",
   /** Model ID: `qwen/qwen3-vl-8b-instruct`. Model page: https://phaseo.app/models/qwen/qwen3-vl-8b-instruct */
   QWEN_QWEN3_VL_8B_INSTRUCT: "qwen/qwen3-vl-8b-instruct",
+  /** Model ID: `qwen/qwen3-vl-8b-thinking`. Model page: https://phaseo.app/models/qwen/qwen3-vl-8b-thinking */
+  QWEN_QWEN3_VL_8B_THINKING: "qwen/qwen3-vl-8b-thinking",
   /** Model ID: `qwen/qwen3-vl-flash-2025-10-15`. Model page: https://phaseo.app/models/qwen/qwen3-vl-flash-2025-10-15 */
   QWEN_QWEN3_VL_FLASH_2025_10_15: "qwen/qwen3-vl-flash-2025-10-15",
   /** Model ID: `qwen/qwen3-vl-flash-2026-01-22`. Model page: https://phaseo.app/models/qwen/qwen3-vl-flash-2026-01-22 */
@@ -939,6 +1039,8 @@ export const ModelIds = {
   REKA_FLASH: "reka-flash",
   /** Model ID: `reka-flash-research`. Model page: https://phaseo.app/models/reka-flash-research */
   REKA_FLASH_RESEARCH: "reka-flash-research",
+  /** Model ID: `relace/relace-rank`. Model page: https://phaseo.app/models/relace/relace-rank */
+  RELACE_RELACE_RANK: "relace/relace-rank",
   /** Model ID: `relace/relace-search`. Model page: https://phaseo.app/models/relace/relace-search */
   RELACE_RELACE_SEARCH: "relace/relace-search",
   /** Model ID: `sakana/fugu-ultra`. Model page: https://phaseo.app/models/sakana/fugu-ultra */
@@ -963,14 +1065,70 @@ export const ModelIds = {
   SPACEX_AI_GROK_IMAGINE_IMAGE: "spacex-ai/grok-imagine-image",
   /** Model ID: `spacex-ai/grok-imagine-image-2.0`. Model page: https://phaseo.app/models/spacex-ai/grok-imagine-image-2.0 */
   SPACEX_AI_GROK_IMAGINE_IMAGE_2_0: "spacex-ai/grok-imagine-image-2.0",
+  /** Model ID: `spacex-ai/grok-imagine-video`. Model page: https://phaseo.app/models/spacex-ai/grok-imagine-video */
+  SPACEX_AI_GROK_IMAGINE_VIDEO: "spacex-ai/grok-imagine-video",
+  /** Model ID: `spacex-ai/grok-imagine-video-1.5`. Model page: https://phaseo.app/models/spacex-ai/grok-imagine-video-1.5 */
+  SPACEX_AI_GROK_IMAGINE_VIDEO_1_5: "spacex-ai/grok-imagine-video-1.5",
   /** Model ID: `spacex-ai/grok-transcribe`. Model page: https://phaseo.app/models/spacex-ai/grok-transcribe */
   SPACEX_AI_GROK_TRANSCRIBE: "spacex-ai/grok-transcribe",
   /** Model ID: `spacex-ai/grok-tts`. Model page: https://phaseo.app/models/spacex-ai/grok-tts */
   SPACEX_AI_GROK_TTS: "spacex-ai/grok-tts",
+  /** Model ID: `stability-ai/stable-diffusion-xl-base-1.0`. Model page: https://phaseo.app/models/stability-ai/stable-diffusion-xl-base-1.0 */
+  STABILITY_AI_STABLE_DIFFUSION_XL_BASE_1_0: "stability-ai/stable-diffusion-xl-base-1.0",
+  /** Model ID: `stepfun/step-1-32k`. Model page: https://phaseo.app/models/stepfun/step-1-32k */
+  STEPFUN_STEP_1_32K: "stepfun/step-1-32k",
+  /** Model ID: `stepfun/step-1-8k`. Model page: https://phaseo.app/models/stepfun/step-1-8k */
+  STEPFUN_STEP_1_8K: "stepfun/step-1-8k",
+  /** Model ID: `stepfun/step-1o-audio`. Model page: https://phaseo.app/models/stepfun/step-1o-audio */
+  STEPFUN_STEP_1O_AUDIO: "stepfun/step-1o-audio",
+  /** Model ID: `stepfun/step-1o-turbo-vision`. Model page: https://phaseo.app/models/stepfun/step-1o-turbo-vision */
+  STEPFUN_STEP_1O_TURBO_VISION: "stepfun/step-1o-turbo-vision",
+  /** Model ID: `stepfun/step-1o-vision-32k`. Model page: https://phaseo.app/models/stepfun/step-1o-vision-32k */
+  STEPFUN_STEP_1O_VISION_32K: "stepfun/step-1o-vision-32k",
+  /** Model ID: `stepfun/step-1v-32k`. Model page: https://phaseo.app/models/stepfun/step-1v-32k */
+  STEPFUN_STEP_1V_32K: "stepfun/step-1v-32k",
+  /** Model ID: `stepfun/step-1v-8k`. Model page: https://phaseo.app/models/stepfun/step-1v-8k */
+  STEPFUN_STEP_1V_8K: "stepfun/step-1v-8k",
+  /** Model ID: `stepfun/step-1x-edit`. Model page: https://phaseo.app/models/stepfun/step-1x-edit */
+  STEPFUN_STEP_1X_EDIT: "stepfun/step-1x-edit",
+  /** Model ID: `stepfun/step-1x-medium`. Model page: https://phaseo.app/models/stepfun/step-1x-medium */
+  STEPFUN_STEP_1X_MEDIUM: "stepfun/step-1x-medium",
+  /** Model ID: `stepfun/step-2-16k`. Model page: https://phaseo.app/models/stepfun/step-2-16k */
+  STEPFUN_STEP_2_16K: "stepfun/step-2-16k",
+  /** Model ID: `stepfun/step-2-16k-exp`. Model page: https://phaseo.app/models/stepfun/step-2-16k-exp */
+  STEPFUN_STEP_2_16K_EXP: "stepfun/step-2-16k-exp",
+  /** Model ID: `stepfun/step-2-mini`. Model page: https://phaseo.app/models/stepfun/step-2-mini */
+  STEPFUN_STEP_2_MINI: "stepfun/step-2-mini",
+  /** Model ID: `stepfun/step-2x-large`. Model page: https://phaseo.app/models/stepfun/step-2x-large */
+  STEPFUN_STEP_2X_LARGE: "stepfun/step-2x-large",
+  /** Model ID: `stepfun/step-3`. Model page: https://phaseo.app/models/stepfun/step-3 */
+  STEPFUN_STEP_3: "stepfun/step-3",
   /** Model ID: `stepfun/step-3.5-flash`. Model page: https://phaseo.app/models/stepfun/step-3.5-flash */
   STEPFUN_STEP_3_5_FLASH: "stepfun/step-3.5-flash",
   /** Model ID: `stepfun/step-3.7-flash`. Model page: https://phaseo.app/models/stepfun/step-3.7-flash */
   STEPFUN_STEP_3_7_FLASH: "stepfun/step-3.7-flash",
+  /** Model ID: `stepfun/step-asr`. Model page: https://phaseo.app/models/stepfun/step-asr */
+  STEPFUN_STEP_ASR: "stepfun/step-asr",
+  /** Model ID: `stepfun/step-asr-1.1-stream`. Model page: https://phaseo.app/models/stepfun/step-asr-1.1-stream */
+  STEPFUN_STEP_ASR_1_1_STREAM: "stepfun/step-asr-1.1-stream",
+  /** Model ID: `stepfun/step-audio-2`. Model page: https://phaseo.app/models/stepfun/step-audio-2 */
+  STEPFUN_STEP_AUDIO_2: "stepfun/step-audio-2",
+  /** Model ID: `stepfun/step-audio-r1.1`. Model page: https://phaseo.app/models/stepfun/step-audio-r1.1 */
+  STEPFUN_STEP_AUDIO_R1_1: "stepfun/step-audio-r1.1",
+  /** Model ID: `stepfun/step-image-edit-2`. Model page: https://phaseo.app/models/stepfun/step-image-edit-2 */
+  STEPFUN_STEP_IMAGE_EDIT_2: "stepfun/step-image-edit-2",
+  /** Model ID: `stepfun/step-r1-v-mini`. Model page: https://phaseo.app/models/stepfun/step-r1-v-mini */
+  STEPFUN_STEP_R1_V_MINI: "stepfun/step-r1-v-mini",
+  /** Model ID: `stepfun/step-tts-2`. Model page: https://phaseo.app/models/stepfun/step-tts-2 */
+  STEPFUN_STEP_TTS_2: "stepfun/step-tts-2",
+  /** Model ID: `stepfun/step-tts-mini`. Model page: https://phaseo.app/models/stepfun/step-tts-mini */
+  STEPFUN_STEP_TTS_MINI: "stepfun/step-tts-mini",
+  /** Model ID: `stepfun/stepaudio-2-asr-pro`. Model page: https://phaseo.app/models/stepfun/stepaudio-2-asr-pro */
+  STEPFUN_STEPAUDIO_2_ASR_PRO: "stepfun/stepaudio-2-asr-pro",
+  /** Model ID: `stepfun/stepaudio-2.5-asr`. Model page: https://phaseo.app/models/stepfun/stepaudio-2.5-asr */
+  STEPFUN_STEPAUDIO_2_5_ASR: "stepfun/stepaudio-2.5-asr",
+  /** Model ID: `stepfun/stepaudio-2.5-tts`. Model page: https://phaseo.app/models/stepfun/stepaudio-2.5-tts */
+  STEPFUN_STEPAUDIO_2_5_TTS: "stepfun/stepaudio-2.5-tts",
   /** Model ID: `tencent/hunyuan-a13b-instruct`. Model page: https://phaseo.app/models/tencent/hunyuan-a13b-instruct */
   TENCENT_HUNYUAN_A13B_INSTRUCT: "tencent/hunyuan-a13b-instruct",
   /** Model ID: `tencent/hy3`. Model page: https://phaseo.app/models/tencent/hy3 */
@@ -981,10 +1139,18 @@ export const ModelIds = {
   TENCENT_HY3_FREE: "tencent/hy3:free",
   /** Model ID: `tencent/hy4-preview`. Model page: https://phaseo.app/models/tencent/hy4-preview */
   TENCENT_HY4_PREVIEW: "tencent/hy4-preview",
+  /** Model ID: `thedrummer/cydonia-24b-v4.1`. Model page: https://phaseo.app/models/thedrummer/cydonia-24b-v4.1 */
+  THEDRUMMER_CYDONIA_24B_V4_1: "thedrummer/cydonia-24b-v4.1",
+  /** Model ID: `thedrummer/skyfall-36b-v2`. Model page: https://phaseo.app/models/thedrummer/skyfall-36b-v2 */
+  THEDRUMMER_SKYFALL_36B_V2: "thedrummer/skyfall-36b-v2",
   /** Model ID: `thinking-machines/inkling`. Model page: https://phaseo.app/models/thinking-machines/inkling */
   THINKING_MACHINES_INKLING: "thinking-machines/inkling",
   /** Model ID: `thinking-machines/inkling-small`. Model page: https://phaseo.app/models/thinking-machines/inkling-small */
   THINKING_MACHINES_INKLING_SMALL: "thinking-machines/inkling-small",
+  /** Model ID: `upstage/document-ocr`. Model page: https://phaseo.app/models/upstage/document-ocr */
+  UPSTAGE_DOCUMENT_OCR: "upstage/document-ocr",
+  /** Model ID: `upstage/document-parse`. Model page: https://phaseo.app/models/upstage/document-parse */
+  UPSTAGE_DOCUMENT_PARSE: "upstage/document-parse",
   /** Model ID: `upstage/solar-embedding-1-large-passage`. Model page: https://phaseo.app/models/upstage/solar-embedding-1-large-passage */
   UPSTAGE_SOLAR_EMBEDDING_1_LARGE_PASSAGE: "upstage/solar-embedding-1-large-passage",
   /** Model ID: `upstage/solar-embedding-1-large-query`. Model page: https://phaseo.app/models/upstage/solar-embedding-1-large-query */
@@ -1069,6 +1235,8 @@ export const ModelIds = {
   VOYAGE_VOYAGE_MULTIMODAL_3: "voyage/voyage-multimodal-3",
   /** Model ID: `voyage/voyage-multimodal-3.5`. Model page: https://phaseo.app/models/voyage/voyage-multimodal-3.5 */
   VOYAGE_VOYAGE_MULTIMODAL_3_5: "voyage/voyage-multimodal-3.5",
+  /** Model ID: `x-ai/grok-voice-think-fast-2.0`. Model page: https://phaseo.app/models/x-ai/grok-voice-think-fast-2.0 */
+  X_AI_GROK_VOICE_THINK_FAST_2_0: "x-ai/grok-voice-think-fast-2.0",
   /** Model ID: `xiaomi/mimo-v2.5`. Model page: https://phaseo.app/models/xiaomi/mimo-v2.5 */
   XIAOMI_MIMO_V2_5: "xiaomi/mimo-v2.5",
   /** Model ID: `xiaomi/mimo-v2.5-asr`. Model page: https://phaseo.app/models/xiaomi/mimo-v2.5-asr */

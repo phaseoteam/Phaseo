@@ -24,6 +24,7 @@ import { LIQUID_AI_API_KEY_ENVS } from "../liquid-ai/config";
 import { MISTRAL_API_KEY_ENVS } from "../mistral/config";
 import { MOONSHOT_API_KEY_ENVS } from "../moonshotai/config";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
+import { deepInfraMediaUrl } from "../deepinfra/config";
 
 function configError(code: string): Error & { code: string } {
 	const error = new Error(code) as Error & { code: string };
@@ -157,6 +158,10 @@ export function openAICompatUrl(providerId: string, path: string): string {
 	const canonicalProviderId = normalizeProviderId(providerId);
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	const requestedSuffix = normalizePathSegment(path);
+	if (canonicalProviderId === "deepinfra") {
+		const mediaUrl = deepInfraMediaUrl(config.baseUrl ?? "", requestedSuffix);
+		if (mediaUrl) return mediaUrl;
+	}
 	// Perplexity's hosted Sonar surface is Chat-shaped, but its canonical
 	// endpoint is /v1/sonar rather than OpenAI's /v1/chat/completions.
 	const suffix = canonicalProviderId === "perplexity" && requestedSuffix === "/chat/completions"
@@ -236,7 +241,7 @@ export function openAICompatHeaders(
 	};
 }
 
-export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
+export function resolveOpenAICompatKey(args: Pick<ProviderExecuteArgs, "providerId" | "byokMeta"> & { forceGatewayKey?: boolean }): ResolvedKey {
 	const providerId = normalizeProviderId(args.providerId);
 	const normalizedArgs = providerId === args.providerId ? args : { ...args, providerId };
 	if (providerId === "weights-and-biases") {

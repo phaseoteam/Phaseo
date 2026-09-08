@@ -26,10 +26,17 @@
   "service_tiers": [
     "standard"
   ],
-  "sources": [],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+      "accessed_at": "2026-09-07T00:00:00Z",
+      "notes": "Published provider pricing; no live inference call."
+    }
+  ],
   "verification": {
-    "status": "unverified",
-    "checked_at": null,
-    "notes": null
+    "status": "verified",
+    "checked_at": "2026-09-07T00:00:00Z",
+    "notes": "Verified against official published prices; no live inference test."
   }
 }

@@ -4,7 +4,7 @@
     "provider_api_model_id": "modelscope:deepseek-ai/DeepSeek-V4-Flash-0731",
     "provider_model_slug": "deepseek-ai/DeepSeek-V4-Flash-0731",
     "internal_model_id": "deepseek/deepseek-v4-flash-0731",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -28,7 +28,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -37,7 +37,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -55,8 +57,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -65,7 +67,7 @@
     "provider_api_model_id": "modelscope:deepseek-ai/DeepSeek-V4-Pro",
     "provider_model_slug": "deepseek-ai/DeepSeek-V4-Pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -89,7 +91,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -98,7 +100,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -116,8 +120,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -126,7 +130,7 @@
     "provider_api_model_id": "modelscope:deepseek-ai/DeepSeek-V4-Pro-0813",
     "provider_model_slug": "deepseek-ai/DeepSeek-V4-Pro-0813",
     "internal_model_id": "deepseek/deepseek-v4-pro-0813",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -150,7 +154,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -159,7 +163,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -177,8 +183,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -187,7 +193,7 @@
     "provider_api_model_id": "modelscope:early-access/EA-29B-A4B",
     "provider_model_slug": "early-access/EA-29B-A4B",
     "internal_model_id": "early-access/ea-29b-a4b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -211,7 +217,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -220,7 +226,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -238,8 +246,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -248,7 +256,7 @@
     "provider_api_model_id": "modelscope:MedAIBase/AntAngelMed",
     "provider_model_slug": "MedAIBase/AntAngelMed",
     "internal_model_id": "medaibase/antangelmed",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -272,7 +280,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -281,7 +289,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -299,8 +309,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -309,7 +319,7 @@
     "provider_api_model_id": "modelscope:meituan-longcat/LongCat-Flash-Lite",
     "provider_model_slug": "meituan-longcat/LongCat-Flash-Lite",
     "internal_model_id": "meituan/longcat-flash-lite",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -333,7 +343,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -342,7 +352,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -360,8 +372,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -370,7 +382,7 @@
     "provider_api_model_id": "modelscope:MiniMax/MiniMax-M1-80k",
     "provider_model_slug": "MiniMax/MiniMax-M1-80k",
     "internal_model_id": "minimax/minimax-m1-80k",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -394,7 +406,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -403,7 +415,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -421,8 +435,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -431,7 +445,7 @@
     "provider_api_model_id": "modelscope:MiniMax/MiniMax-M3",
     "provider_model_slug": "MiniMax/MiniMax-M3",
     "internal_model_id": "minimax/minimax-m3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -455,7 +469,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -464,7 +478,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -482,8 +498,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -492,7 +508,7 @@
     "provider_api_model_id": "modelscope:mistralai/Mistral-Large-Instruct-2407",
     "provider_model_slug": "mistralai/Mistral-Large-Instruct-2407",
     "internal_model_id": "mistral/mistral-large-2.0",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -516,7 +532,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -525,7 +541,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -543,8 +561,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -553,7 +571,7 @@
     "provider_api_model_id": "modelscope:MusePublic/Qwen-Image-Edit",
     "provider_model_slug": "MusePublic/Qwen-Image-Edit",
     "internal_model_id": "qwen/qwen-image-edit",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -563,9 +581,14 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "image.generate",
+        "capability_id": "image.edit",
         "status": "active",
-        "params": [],
+        "params": [
+          "prompt",
+          "image",
+          "n",
+          "response_format"
+        ],
         "reasoning": null,
         "tool_call": false,
         "structured_output": null,
@@ -577,7 +600,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -586,10 +609,12 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
-        "openai_compatible"
+        "modelscope.native"
       ],
       "endpoint": "/v1/images/generations",
       "deployment": null
@@ -604,8 +629,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -614,7 +639,7 @@
     "provider_api_model_id": "modelscope:opencompass/CompassJudger-1-32B-Instruct",
     "provider_model_slug": "opencompass/CompassJudger-1-32B-Instruct",
     "internal_model_id": "opencompass/compassjudger-1-32b-instruct",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -638,7 +663,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -647,7 +672,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -665,8 +692,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -675,7 +702,7 @@
     "provider_api_model_id": "modelscope:PaddlePaddle/ERNIE-4.5-0.3B-PT",
     "provider_model_slug": "PaddlePaddle/ERNIE-4.5-0.3B-PT",
     "internal_model_id": "baidu/ernie-4.5-0.3b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -699,7 +726,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -708,7 +735,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -726,8 +755,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -736,7 +765,7 @@
     "provider_api_model_id": "modelscope:PaddlePaddle/ERNIE-4.5-21B-A3B-PT",
     "provider_model_slug": "PaddlePaddle/ERNIE-4.5-21B-A3B-PT",
     "internal_model_id": "baidu/ernie-4.5-21b-a3b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -760,7 +789,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -769,7 +798,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -787,8 +818,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -797,7 +828,7 @@
     "provider_api_model_id": "modelscope:PaddlePaddle/ERNIE-4.5-300B-A47B-PT",
     "provider_model_slug": "PaddlePaddle/ERNIE-4.5-300B-A47B-PT",
     "internal_model_id": "baidu/ernie-4.5-300b-a47b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -821,7 +852,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -830,7 +861,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -848,8 +881,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -858,7 +891,7 @@
     "provider_api_model_id": "modelscope:PaddlePaddle/ERNIE-4.5-VL-28B-A3B-PT",
     "provider_model_slug": "PaddlePaddle/ERNIE-4.5-VL-28B-A3B-PT",
     "internal_model_id": "baidu/ernie-4.5-vl-28b-a3b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -882,7 +915,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -891,7 +924,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -909,8 +944,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -919,7 +954,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen-Image-Edit",
     "provider_model_slug": "Qwen/Qwen-Image-Edit",
     "internal_model_id": "qwen/qwen-image-edit",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -929,9 +964,14 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "image.generate",
+        "capability_id": "image.edit",
         "status": "active",
-        "params": [],
+        "params": [
+          "prompt",
+          "image",
+          "n",
+          "response_format"
+        ],
         "reasoning": null,
         "tool_call": false,
         "structured_output": null,
@@ -943,7 +983,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -952,10 +992,12 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
-        "openai_compatible"
+        "modelscope.native"
       ],
       "endpoint": "/v1/images/generations",
       "deployment": null
@@ -970,8 +1012,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -980,7 +1022,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-14B",
     "provider_model_slug": "Qwen/Qwen3-14B",
     "internal_model_id": "qwen/qwen3-14b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1004,7 +1046,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1013,7 +1055,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1031,8 +1075,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1041,7 +1085,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-235B-A22B",
     "provider_model_slug": "Qwen/Qwen3-235B-A22B",
     "internal_model_id": "qwen/qwen3-235b-a22b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1065,7 +1109,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1074,7 +1118,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1092,8 +1138,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1102,7 +1148,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-235B-A22B-Instruct-2507",
     "provider_model_slug": "Qwen/Qwen3-235B-A22B-Instruct-2507",
     "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1126,7 +1172,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1135,7 +1181,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1153,8 +1201,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1163,7 +1211,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-235B-A22B-Thinking-2507",
     "provider_model_slug": "Qwen/Qwen3-235B-A22B-Thinking-2507",
     "internal_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1187,7 +1235,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1196,7 +1244,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1214,8 +1264,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1224,7 +1274,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-30B-A3B",
     "provider_model_slug": "Qwen/Qwen3-30B-A3B",
     "internal_model_id": "qwen/qwen3-30b-a3b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1248,7 +1298,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1257,7 +1307,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1275,8 +1327,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1285,7 +1337,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-30B-A3B-Thinking-2507",
     "provider_model_slug": "Qwen/Qwen3-30B-A3B-Thinking-2507",
     "internal_model_id": "qwen/qwen3-30b-a3b-thinking-2507",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1309,7 +1361,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1318,7 +1370,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1336,8 +1390,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1346,7 +1400,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-4B",
     "provider_model_slug": "Qwen/Qwen3-4B",
     "internal_model_id": "qwen/qwen3-4b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1370,7 +1424,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1379,7 +1433,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1397,8 +1453,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1407,7 +1463,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-8B",
     "provider_model_slug": "Qwen/Qwen3-8B",
     "internal_model_id": "qwen/qwen3-8b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1431,7 +1487,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1440,7 +1496,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1458,8 +1516,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1468,7 +1526,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-Coder-30B-A3B-Instruct",
     "provider_model_slug": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
     "internal_model_id": "qwen/qwen3-coder-30b-a3b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1492,7 +1550,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1501,7 +1559,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1519,8 +1579,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1529,7 +1589,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-Next-80B-A3B-Instruct",
     "provider_model_slug": "Qwen/Qwen3-Next-80B-A3B-Instruct",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1553,7 +1613,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1562,7 +1622,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1580,8 +1642,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1590,7 +1652,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-Next-80B-A3B-Thinking",
     "provider_model_slug": "Qwen/Qwen3-Next-80B-A3B-Thinking",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1614,7 +1676,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1623,7 +1685,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1641,8 +1705,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1651,7 +1715,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-VL-235B-A22B-Instruct",
     "provider_model_slug": "Qwen/Qwen3-VL-235B-A22B-Instruct",
     "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1675,7 +1739,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1684,7 +1748,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1702,8 +1768,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1712,7 +1778,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-VL-8B-Instruct",
     "provider_model_slug": "Qwen/Qwen3-VL-8B-Instruct",
     "internal_model_id": "qwen/qwen3-vl-8b-instruct",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1736,7 +1802,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1745,7 +1811,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1763,8 +1831,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1773,7 +1841,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3-VL-8B-Thinking",
     "provider_model_slug": "Qwen/Qwen3-VL-8B-Thinking",
     "internal_model_id": "qwen/qwen3-vl-8b-thinking",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1797,7 +1865,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1806,7 +1874,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1824,8 +1894,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1834,7 +1904,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3.5-122B-A10B",
     "provider_model_slug": "Qwen/Qwen3.5-122B-A10B",
     "internal_model_id": "qwen/qwen3.5-122b-a10b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -1858,7 +1928,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1867,7 +1937,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1885,8 +1957,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1895,7 +1967,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3.5-27B",
     "provider_model_slug": "Qwen/Qwen3.5-27B",
     "internal_model_id": "qwen/qwen3.5-27b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -1919,7 +1991,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1928,7 +2000,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -1946,8 +2020,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -1956,7 +2030,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3.5-35B-A3B",
     "provider_model_slug": "Qwen/Qwen3.5-35B-A3B",
     "internal_model_id": "qwen/qwen3.5-35b-a3b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -1980,7 +2054,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1989,7 +2063,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -2007,8 +2083,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -2017,7 +2093,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3.5-397B-A17B",
     "provider_model_slug": "Qwen/Qwen3.5-397B-A17B",
     "internal_model_id": "qwen/qwen3.5-397b-a17b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -2041,7 +2117,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2050,7 +2126,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -2068,8 +2146,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -2078,7 +2156,7 @@
     "provider_api_model_id": "modelscope:Qwen/Qwen3.8-27B",
     "provider_model_slug": "Qwen/Qwen3.8-27B",
     "internal_model_id": "qwen/qwen3.8-27b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -2102,7 +2180,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2111,7 +2189,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -2129,8 +2209,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -2139,7 +2219,7 @@
     "provider_api_model_id": "modelscope:stepfun-ai/Step-3.5-Flash",
     "provider_model_slug": "stepfun-ai/Step-3.5-Flash",
     "internal_model_id": "stepfun/step-3.5-flash",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2163,7 +2243,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2172,7 +2252,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -2190,8 +2272,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -2200,7 +2282,7 @@
     "provider_api_model_id": "modelscope:stepfun-ai/Step-3.7-Flash",
     "provider_model_slug": "stepfun-ai/Step-3.7-Flash",
     "internal_model_id": "stepfun/step-3.7-flash",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -2224,7 +2306,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2233,7 +2315,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -2251,8 +2335,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -2261,7 +2345,7 @@
     "provider_api_model_id": "modelscope:Tencent-Hunyuan/Hy3",
     "provider_model_slug": "Tencent-Hunyuan/Hy3",
     "internal_model_id": "tencent/hy3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2285,7 +2369,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2294,7 +2378,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -2312,8 +2398,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -2322,7 +2408,7 @@
     "provider_api_model_id": "modelscope:ZhipuAI/GLM-4.7-Flash",
     "provider_model_slug": "ZhipuAI/GLM-4.7-Flash",
     "internal_model_id": "z-ai/glm-4.7-flash",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2346,7 +2432,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2355,7 +2441,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -2373,8 +2461,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -2383,7 +2471,7 @@
     "provider_api_model_id": "modelscope:ZhipuAI/GLM-5.2",
     "provider_model_slug": "ZhipuAI/GLM-5.2",
     "internal_model_id": "z-ai/glm-5.2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2407,7 +2495,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2416,7 +2504,9 @@
         "CN"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [
         "openai_compatible"
@@ -2434,8 +2524,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Present in the official live API-Inference model-list response; service is free, dynamically limited, non-commercial, and not Phaseo-routable."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   },
@@ -2497,6 +2587,73 @@
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
       "notes": "Removed from the live API-Inference model list by this audit; historical route remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen-image",
+    "provider_api_model_id": "modelscope:Qwen/Qwen-Image",
+    "provider_model_slug": "Qwen/Qwen-Image",
+    "internal_model_id": "qwen/qwen-image",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-09-07T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [
+          "prompt",
+          "n",
+          "response_format"
+        ],
+        "reasoning": null,
+        "tool_call": false,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "CN"
+      ],
+      "data": [
+        "CN"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "modelscope.native"
+      ],
+      "endpoint": "/v1/images/generations",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.modelscope.cn/models/qwen/qwen-image",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Official ModelScope API-Inference example; no live inference test."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official provider API contract; no live inference test. Free non-commercial service requires a verified ModelScope account and is subject to dynamic provider quotas."
     },
     "rate_limits": []
   }
