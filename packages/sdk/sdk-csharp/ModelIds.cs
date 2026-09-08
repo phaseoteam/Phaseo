@@ -72,20 +72,54 @@ namespace PhaseoSdk
         public const string ArceeAiTrinityMini = "arcee-ai/trinity-mini";
         /// <summary>Model ID: <c>baai/bge-m3</c>. Model page: https://phaseo.app/models/baai/bge-m3</summary>
         public const string BaaiBgeM3 = "baai/bge-m3";
-        /// <summary>Model ID: <c>baai/bge-multilingual-gemma2</c>. Model page: https://phaseo.app/models/baai/bge-multilingual-gemma2</summary>
-        public const string BaaiBgeMultilingualGemma2 = "baai/bge-multilingual-gemma2";
         /// <summary>Model ID: <c>baai/bge-reranker-v2-m3</c>. Model page: https://phaseo.app/models/baai/bge-reranker-v2-m3</summary>
         public const string BaaiBgeRerankerV2M3 = "baai/bge-reranker-v2-m3";
         /// <summary>Model ID: <c>baidu/cobuddy</c>. Model page: https://phaseo.app/models/baidu/cobuddy</summary>
         public const string BaiduCobuddy = "baidu/cobuddy";
+        /// <summary>Model ID: <c>baidu/ernie-4.5-0.3b</c>. Model page: https://phaseo.app/models/baidu/ernie-4.5-0.3b</summary>
+        public const string BaiduErnie4503b = "baidu/ernie-4.5-0.3b";
+        /// <summary>Model ID: <c>baidu/ernie-4.5-21b-a3b</c>. Model page: https://phaseo.app/models/baidu/ernie-4.5-21b-a3b</summary>
+        public const string BaiduErnie4521bA3b = "baidu/ernie-4.5-21b-a3b";
         /// <summary>Model ID: <c>baidu/ernie-4.5-300b-a47b</c>. Model page: https://phaseo.app/models/baidu/ernie-4.5-300b-a47b</summary>
         public const string BaiduErnie45300bA47b = "baidu/ernie-4.5-300b-a47b";
+        /// <summary>Model ID: <c>baidu/ernie-4.5-turbo</c>. Model page: https://phaseo.app/models/baidu/ernie-4.5-turbo</summary>
+        public const string BaiduErnie45Turbo = "baidu/ernie-4.5-turbo";
+        /// <summary>Model ID: <c>baidu/ernie-4.5-vl-28b-a3b</c>. Model page: https://phaseo.app/models/baidu/ernie-4.5-vl-28b-a3b</summary>
+        public const string BaiduErnie45Vl28bA3b = "baidu/ernie-4.5-vl-28b-a3b";
         /// <summary>Model ID: <c>baidu/ernie-4.5-vl-424b-a47b</c>. Model page: https://phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b</summary>
         public const string BaiduErnie45Vl424bA47b = "baidu/ernie-4.5-vl-424b-a47b";
+        /// <summary>Model ID: <c>baidu/ernie-5.0</c>. Model page: https://phaseo.app/models/baidu/ernie-5.0</summary>
+        public const string BaiduErnie50 = "baidu/ernie-5.0";
+        /// <summary>Model ID: <c>baidu/ernie-5.1</c>. Model page: https://phaseo.app/models/baidu/ernie-5.1</summary>
+        public const string BaiduErnie51 = "baidu/ernie-5.1";
+        /// <summary>Model ID: <c>baidu/ernie-x1.1</c>. Model page: https://phaseo.app/models/baidu/ernie-x1.1</summary>
+        public const string BaiduErnieX11 = "baidu/ernie-x1.1";
         /// <summary>Model ID: <c>black-forest-labs/flux-1-dev</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-1-dev</summary>
         public const string BlackForestLabsFlux1Dev = "black-forest-labs/flux-1-dev";
+        /// <summary>Model ID: <c>black-forest-labs/flux-1-kontext-max</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-max</summary>
+        public const string BlackForestLabsFlux1KontextMax = "black-forest-labs/flux-1-kontext-max";
+        /// <summary>Model ID: <c>black-forest-labs/flux-1-kontext-pro</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-pro</summary>
+        public const string BlackForestLabsFlux1KontextPro = "black-forest-labs/flux-1-kontext-pro";
         /// <summary>Model ID: <c>black-forest-labs/flux-1-schnell</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-1-schnell</summary>
         public const string BlackForestLabsFlux1Schnell = "black-forest-labs/flux-1-schnell";
+        /// <summary>Model ID: <c>black-forest-labs/flux-1.1-pro</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro</summary>
+        public const string BlackForestLabsFlux11Pro = "black-forest-labs/flux-1.1-pro";
+        /// <summary>Model ID: <c>black-forest-labs/flux-1.1-pro-ultra</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro-ultra</summary>
+        public const string BlackForestLabsFlux11ProUltra = "black-forest-labs/flux-1.1-pro-ultra";
+        /// <summary>Model ID: <c>black-forest-labs/flux-2-dev</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-2-dev</summary>
+        public const string BlackForestLabsFlux2Dev = "black-forest-labs/flux-2-dev";
+        /// <summary>Model ID: <c>black-forest-labs/flux-2-flex</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-2-flex</summary>
+        public const string BlackForestLabsFlux2Flex = "black-forest-labs/flux-2-flex";
+        /// <summary>Model ID: <c>black-forest-labs/flux-2-klein-4b</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-4b</summary>
+        public const string BlackForestLabsFlux2Klein4b = "black-forest-labs/flux-2-klein-4b";
+        /// <summary>Model ID: <c>black-forest-labs/flux-2-klein-9b</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-9b</summary>
+        public const string BlackForestLabsFlux2Klein9b = "black-forest-labs/flux-2-klein-9b";
+        /// <summary>Model ID: <c>black-forest-labs/flux-2-max</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-2-max</summary>
+        public const string BlackForestLabsFlux2Max = "black-forest-labs/flux-2-max";
+        /// <summary>Model ID: <c>black-forest-labs/flux-2-pro</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-2-pro</summary>
+        public const string BlackForestLabsFlux2Pro = "black-forest-labs/flux-2-pro";
+        /// <summary>Model ID: <c>black-forest-labs/flux-3-video</c>. Model page: https://phaseo.app/models/black-forest-labs/flux-3-video</summary>
+        public const string BlackForestLabsFlux3Video = "black-forest-labs/flux-3-video";
         /// <summary>Model ID: <c>bytedance/seed-1.6</c>. Model page: https://phaseo.app/models/bytedance/seed-1.6</summary>
         public const string BytedanceSeed16 = "bytedance/seed-1.6";
         /// <summary>Model ID: <c>bytedance/seed-1.6-2025-10-15</c>. Model page: https://phaseo.app/models/bytedance/seed-1.6-2025-10-15</summary>
@@ -124,6 +158,8 @@ namespace PhaseoSdk
         public const string BytedanceSeedOss36bInstruct = "bytedance/seed-oss-36b-instruct";
         /// <summary>Model ID: <c>bytedance/seed-translation</c>. Model page: https://phaseo.app/models/bytedance/seed-translation</summary>
         public const string BytedanceSeedTranslation = "bytedance/seed-translation";
+        /// <summary>Model ID: <c>bytedance/seedance-1.5-pro</c>. Model page: https://phaseo.app/models/bytedance/seedance-1.5-pro</summary>
+        public const string BytedanceSeedance15Pro = "bytedance/seedance-1.5-pro";
         /// <summary>Model ID: <c>bytedance/seedance-2.0</c>. Model page: https://phaseo.app/models/bytedance/seedance-2.0</summary>
         public const string BytedanceSeedance20 = "bytedance/seedance-2.0";
         /// <summary>Model ID: <c>bytedance/seedance-2.0-fast</c>. Model page: https://phaseo.app/models/bytedance/seedance-2.0-fast</summary>
@@ -132,6 +168,8 @@ namespace PhaseoSdk
         public const string BytedanceSeedance20Mini260615 = "bytedance/seedance-2.0-mini-260615";
         /// <summary>Model ID: <c>bytedance/seedream-5.0-pro</c>. Model page: https://phaseo.app/models/bytedance/seedream-5.0-pro</summary>
         public const string BytedanceSeedream50Pro = "bytedance/seedream-5.0-pro";
+        /// <summary>Model ID: <c>bytedance/ui-tars-1.5-7b</c>. Model page: https://phaseo.app/models/bytedance/ui-tars-1.5-7b</summary>
+        public const string BytedanceUiTars157b = "bytedance/ui-tars-1.5-7b";
         /// <summary>Model ID: <c>cohere/command-a</c>. Model page: https://phaseo.app/models/cohere/command-a</summary>
         public const string CohereCommandA = "cohere/command-a";
         /// <summary>Model ID: <c>cohere/command-r</c>. Model page: https://phaseo.app/models/cohere/command-r</summary>
@@ -200,6 +238,8 @@ namespace PhaseoSdk
         public const string DeepseekDeepseekV4Pro = "deepseek/deepseek-v4-pro";
         /// <summary>Model ID: <c>deepseek/deepseek-v4-pro-0813</c>. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813</summary>
         public const string DeepseekDeepseekV4Pro0813 = "deepseek/deepseek-v4-pro-0813";
+        /// <summary>Model ID: <c>early-access/ea-29b-a4b</c>. Model page: https://phaseo.app/models/early-access/ea-29b-a4b</summary>
+        public const string EarlyAccessEa29bA4b = "early-access/ea-29b-a4b";
         /// <summary>Model ID: <c>eleven-labs/eleven-flash-v2</c>. Model page: https://phaseo.app/models/eleven-labs/eleven-flash-v2</summary>
         public const string ElevenLabsElevenFlashV2 = "eleven-labs/eleven-flash-v2";
         /// <summary>Model ID: <c>eleven-labs/eleven-flash-v2.5</c>. Model page: https://phaseo.app/models/eleven-labs/eleven-flash-v2.5</summary>
@@ -218,6 +258,8 @@ namespace PhaseoSdk
         public const string ElevenLabsScribeV2 = "eleven-labs/scribe-v2";
         /// <summary>Model ID: <c>essential-ai/rnj-1</c>. Model page: https://phaseo.app/models/essential-ai/rnj-1</summary>
         public const string EssentialAiRnj1 = "essential-ai/rnj-1";
+        /// <summary>Model ID: <c>google/embeddinggemma-300m</c>. Model page: https://phaseo.app/models/google/embeddinggemma-300m</summary>
+        public const string GoogleEmbeddinggemma300m = "google/embeddinggemma-300m";
         /// <summary>Model ID: <c>google/gemini-2.5-flash</c>. Model page: https://phaseo.app/models/google/gemini-2.5-flash</summary>
         public const string GoogleGemini25Flash = "google/gemini-2.5-flash";
         /// <summary>Model ID: <c>google/gemini-2.5-flash-image</c>. Model page: https://phaseo.app/models/google/gemini-2.5-flash-image</summary>
@@ -248,6 +290,8 @@ namespace PhaseoSdk
         public const string GoogleGemini35Flash = "google/gemini-3.5-flash";
         /// <summary>Model ID: <c>google/gemini-3.5-flash-lite</c>. Model page: https://phaseo.app/models/google/gemini-3.5-flash-lite</summary>
         public const string GoogleGemini35FlashLite = "google/gemini-3.5-flash-lite";
+        /// <summary>Model ID: <c>google/gemini-3.5-transcribe</c>. Model page: https://phaseo.app/models/google/gemini-3.5-transcribe</summary>
+        public const string GoogleGemini35Transcribe = "google/gemini-3.5-transcribe";
         /// <summary>Model ID: <c>google/gemini-3.6-flash</c>. Model page: https://phaseo.app/models/google/gemini-3.6-flash</summary>
         public const string GoogleGemini36Flash = "google/gemini-3.6-flash";
         /// <summary>Model ID: <c>google/gemini-3.7-flash</c>. Model page: https://phaseo.app/models/google/gemini-3.7-flash</summary>
@@ -264,12 +308,16 @@ namespace PhaseoSdk
         public const string GoogleGemma312b = "google/gemma-3-12b";
         /// <summary>Model ID: <c>google/gemma-3-27b</c>. Model page: https://phaseo.app/models/google/gemma-3-27b</summary>
         public const string GoogleGemma327b = "google/gemma-3-27b";
+        /// <summary>Model ID: <c>google/gemma-3-27b-it</c>. Model page: https://phaseo.app/models/google/gemma-3-27b-it</summary>
+        public const string GoogleGemma327bIt = "google/gemma-3-27b-it";
         /// <summary>Model ID: <c>google/gemma-3-4b</c>. Model page: https://phaseo.app/models/google/gemma-3-4b</summary>
         public const string GoogleGemma34b = "google/gemma-3-4b";
         /// <summary>Model ID: <c>google/gemma-4-12b</c>. Model page: https://phaseo.app/models/google/gemma-4-12b</summary>
         public const string GoogleGemma412b = "google/gemma-4-12b";
         /// <summary>Model ID: <c>google/gemma-4-26b-a4b</c>. Model page: https://phaseo.app/models/google/gemma-4-26b-a4b</summary>
         public const string GoogleGemma426bA4b = "google/gemma-4-26b-a4b";
+        /// <summary>Model ID: <c>google/gemma-4-26b-a4b-it</c>. Model page: https://phaseo.app/models/google/gemma-4-26b-a4b-it</summary>
+        public const string GoogleGemma426bA4bIt = "google/gemma-4-26b-a4b-it";
         /// <summary>Model ID: <c>google/gemma-4-26b-a4b:free</c>. Model page: https://phaseo.app/models/google/gemma-4-26b-a4b%3Afree</summary>
         public const string GoogleGemma426bA4bFree = "google/gemma-4-26b-a4b:free";
         /// <summary>Model ID: <c>google/gemma-4-31b</c>. Model page: https://phaseo.app/models/google/gemma-4-31b</summary>
@@ -294,6 +342,8 @@ namespace PhaseoSdk
         public const string GoogleVeo31LitePreview = "google/veo-3.1-lite-preview";
         /// <summary>Model ID: <c>google/veo-3.1-preview</c>. Model page: https://phaseo.app/models/google/veo-3.1-preview</summary>
         public const string GoogleVeo31Preview = "google/veo-3.1-preview";
+        /// <summary>Model ID: <c>hexgrad/kokoro-82m</c>. Model page: https://phaseo.app/models/hexgrad/kokoro-82m</summary>
+        public const string HexgradKokoro82m = "hexgrad/kokoro-82m";
         /// <summary>Model ID: <c>ibm/granite-4.1-8b</c>. Model page: https://phaseo.app/models/ibm/granite-4.1-8b</summary>
         public const string IbmGranite418b = "ibm/granite-4.1-8b";
         /// <summary>Model ID: <c>ibm/granite-4.2-30b</c>. Model page: https://phaseo.app/models/ibm/granite-4.2-30b</summary>
@@ -350,8 +400,12 @@ namespace PhaseoSdk
         public const string Ltx25Fast = "ltx-2-5-fast";
         /// <summary>Model ID: <c>ltx-2-5-pro</c>. Model page: https://phaseo.app/models/ltx-2-5-pro</summary>
         public const string Ltx25Pro = "ltx-2-5-pro";
+        /// <summary>Model ID: <c>medaibase/antangelmed</c>. Model page: https://phaseo.app/models/medaibase/antangelmed</summary>
+        public const string MedaibaseAntangelmed = "medaibase/antangelmed";
         /// <summary>Model ID: <c>meituan/longcat-2.0</c>. Model page: https://phaseo.app/models/meituan/longcat-2.0</summary>
         public const string MeituanLongcat20 = "meituan/longcat-2.0";
+        /// <summary>Model ID: <c>meituan/longcat-flash-lite</c>. Model page: https://phaseo.app/models/meituan/longcat-flash-lite</summary>
+        public const string MeituanLongcatFlashLite = "meituan/longcat-flash-lite";
         /// <summary>Model ID: <c>meta/llama-3.1-70b</c>. Model page: https://phaseo.app/models/meta/llama-3.1-70b</summary>
         public const string MetaLlama3170b = "meta/llama-3.1-70b";
         /// <summary>Model ID: <c>meta/llama-3.1-8b</c>. Model page: https://phaseo.app/models/meta/llama-3.1-8b</summary>
@@ -360,6 +414,8 @@ namespace PhaseoSdk
         public const string MetaLlama323b = "meta/llama-3.2-3b";
         /// <summary>Model ID: <c>meta/llama-3.3-70b</c>. Model page: https://phaseo.app/models/meta/llama-3.3-70b</summary>
         public const string MetaLlama3370b = "meta/llama-3.3-70b";
+        /// <summary>Model ID: <c>meta/llama-3.3-70b-instruct</c>. Model page: https://phaseo.app/models/meta/llama-3.3-70b-instruct</summary>
+        public const string MetaLlama3370bInstruct = "meta/llama-3.3-70b-instruct";
         /// <summary>Model ID: <c>meta/llama-4-maverick</c>. Model page: https://phaseo.app/models/meta/llama-4-maverick</summary>
         public const string MetaLlama4Maverick = "meta/llama-4-maverick";
         /// <summary>Model ID: <c>meta/llama-4-scout</c>. Model page: https://phaseo.app/models/meta/llama-4-scout</summary>
@@ -416,18 +472,12 @@ namespace PhaseoSdk
         public const string MinimaxMinimaxM25Highspeed = "minimax/minimax-m2.5-highspeed";
         /// <summary>Model ID: <c>minimax/minimax-m2.7</c>. Model page: https://phaseo.app/models/minimax/minimax-m2.7</summary>
         public const string MinimaxMinimaxM27 = "minimax/minimax-m2.7";
-        /// <summary>Model ID: <c>minimax/minimax-m2.7:free</c>. Model page: https://phaseo.app/models/minimax/minimax-m2.7%3Afree</summary>
-        public const string MinimaxMinimaxM27Free = "minimax/minimax-m2.7:free";
         /// <summary>Model ID: <c>minimax/minimax-m3</c>. Model page: https://phaseo.app/models/minimax/minimax-m3</summary>
         public const string MinimaxMinimaxM3 = "minimax/minimax-m3";
-        /// <summary>Model ID: <c>minimax/minimax-m3:free</c>. Model page: https://phaseo.app/models/minimax/minimax-m3%3Afree</summary>
-        public const string MinimaxMinimaxM3Free = "minimax/minimax-m3:free";
         /// <summary>Model ID: <c>minimax/music-2.6</c>. Model page: https://phaseo.app/models/minimax/music-2.6</summary>
         public const string MinimaxMusic26 = "minimax/music-2.6";
         /// <summary>Model ID: <c>minimax/music-3.0</c>. Model page: https://phaseo.app/models/minimax/music-3.0</summary>
         public const string MinimaxMusic30 = "minimax/music-3.0";
-        /// <summary>Model ID: <c>minimax/music-3.0:free</c>. Model page: https://phaseo.app/models/minimax/music-3.0%3Afree</summary>
-        public const string MinimaxMusic30Free = "minimax/music-3.0:free";
         /// <summary>Model ID: <c>minimax/speech-2.6-hd</c>. Model page: https://phaseo.app/models/minimax/speech-2.6-hd</summary>
         public const string MinimaxSpeech26Hd = "minimax/speech-2.6-hd";
         /// <summary>Model ID: <c>minimax/speech-2.6-turbo</c>. Model page: https://phaseo.app/models/minimax/speech-2.6-turbo</summary>
@@ -436,8 +486,6 @@ namespace PhaseoSdk
         public const string MinimaxSpeech28Hd = "minimax/speech-2.8-hd";
         /// <summary>Model ID: <c>minimax/speech-2.8-turbo</c>. Model page: https://phaseo.app/models/minimax/speech-2.8-turbo</summary>
         public const string MinimaxSpeech28Turbo = "minimax/speech-2.8-turbo";
-        /// <summary>Model ID: <c>minimax/speech-2.8:free</c>. Model page: https://phaseo.app/models/minimax/speech-2.8%3Afree</summary>
-        public const string MinimaxSpeech28Free = "minimax/speech-2.8:free";
         /// <summary>Model ID: <c>mistral/codestral</c>. Model page: https://phaseo.app/models/mistral/codestral</summary>
         public const string MistralCodestral = "mistral/codestral";
         /// <summary>Model ID: <c>mistral/codestral-embed</c>. Model page: https://phaseo.app/models/mistral/codestral-embed</summary>
@@ -470,6 +518,8 @@ namespace PhaseoSdk
         public const string MistralMinistral308b = "mistral/ministral-3.0-8b";
         /// <summary>Model ID: <c>mistral/mistral-embed</c>. Model page: https://phaseo.app/models/mistral/mistral-embed</summary>
         public const string MistralMistralEmbed = "mistral/mistral-embed";
+        /// <summary>Model ID: <c>mistral/mistral-large-2.0</c>. Model page: https://phaseo.app/models/mistral/mistral-large-2.0</summary>
+        public const string MistralMistralLarge20 = "mistral/mistral-large-2.0";
         /// <summary>Model ID: <c>mistral/mistral-large-2.1</c>. Model page: https://phaseo.app/models/mistral/mistral-large-2.1</summary>
         public const string MistralMistralLarge21 = "mistral/mistral-large-2.1";
         /// <summary>Model ID: <c>mistral/mistral-large-3</c>. Model page: https://phaseo.app/models/mistral/mistral-large-3</summary>
@@ -494,6 +544,8 @@ namespace PhaseoSdk
         public const string MistralMistralSmall24b2501 = "mistral/mistral-small-24b-2501";
         /// <summary>Model ID: <c>mistral/mistral-small-3.2</c>. Model page: https://phaseo.app/models/mistral/mistral-small-3.2</summary>
         public const string MistralMistralSmall32 = "mistral/mistral-small-3.2";
+        /// <summary>Model ID: <c>mistral/mistral-small-3.2-24b-instruct</c>. Model page: https://phaseo.app/models/mistral/mistral-small-3.2-24b-instruct</summary>
+        public const string MistralMistralSmall3224bInstruct = "mistral/mistral-small-3.2-24b-instruct";
         /// <summary>Model ID: <c>mistral/mistral-small-4</c>. Model page: https://phaseo.app/models/mistral/mistral-small-4</summary>
         public const string MistralMistralSmall4 = "mistral/mistral-small-4";
         /// <summary>Model ID: <c>mistral/ocr-3</c>. Model page: https://phaseo.app/models/mistral/ocr-3</summary>
@@ -522,6 +574,8 @@ namespace PhaseoSdk
         public const string MoonshotaiKimiK26 = "moonshotai/kimi-k2.6";
         /// <summary>Model ID: <c>moonshotai/kimi-k2.7-code</c>. Model page: https://phaseo.app/models/moonshotai/kimi-k2.7-code</summary>
         public const string MoonshotaiKimiK27Code = "moonshotai/kimi-k2.7-code";
+        /// <summary>Model ID: <c>moonshotai/kimi-k2.7-code-highspeed</c>. Model page: https://phaseo.app/models/moonshotai/kimi-k2.7-code-highspeed</summary>
+        public const string MoonshotaiKimiK27CodeHighspeed = "moonshotai/kimi-k2.7-code-highspeed";
         /// <summary>Model ID: <c>moonshotai/kimi-k3</c>. Model page: https://phaseo.app/models/moonshotai/kimi-k3</summary>
         public const string MoonshotaiKimiK3 = "moonshotai/kimi-k3";
         /// <summary>Model ID: <c>moonshotai/kimi-k3-fast</c>. Model page: https://phaseo.app/models/moonshotai/kimi-k3-fast</summary>
@@ -556,6 +610,14 @@ namespace PhaseoSdk
         public const string NvidiaNvidiaNemotron3Nano30bA3b = "nvidia/nvidia-nemotron-3-nano-30b-a3b";
         /// <summary>Model ID: <c>nvidia/nvidia-nemotron-nano-12b-v2-vl</c>. Model page: https://phaseo.app/models/nvidia/nvidia-nemotron-nano-12b-v2-vl</summary>
         public const string NvidiaNvidiaNemotronNano12bV2Vl = "nvidia/nvidia-nemotron-nano-12b-v2-vl";
+        /// <summary>Model ID: <c>nvidia/riva-tts-de-de</c>. Model page: https://phaseo.app/models/nvidia/riva-tts-de-de</summary>
+        public const string NvidiaRivaTtsDeDe = "nvidia/riva-tts-de-de";
+        /// <summary>Model ID: <c>nvidia/riva-tts-en-us</c>. Model page: https://phaseo.app/models/nvidia/riva-tts-en-us</summary>
+        public const string NvidiaRivaTtsEnUs = "nvidia/riva-tts-en-us";
+        /// <summary>Model ID: <c>nvidia/riva-tts-es-es</c>. Model page: https://phaseo.app/models/nvidia/riva-tts-es-es</summary>
+        public const string NvidiaRivaTtsEsEs = "nvidia/riva-tts-es-es";
+        /// <summary>Model ID: <c>nvidia/riva-tts-it-it</c>. Model page: https://phaseo.app/models/nvidia/riva-tts-it-it</summary>
+        public const string NvidiaRivaTtsItIt = "nvidia/riva-tts-it-it";
         /// <summary>Model ID: <c>openai/babbage-002</c>. Model page: https://phaseo.app/models/openai/babbage-002</summary>
         public const string OpenaiBabbage002 = "openai/babbage-002";
         /// <summary>Model ID: <c>openai/chat-latest</c>. Model page: https://phaseo.app/models/openai/chat-latest</summary>
@@ -634,6 +696,10 @@ namespace PhaseoSdk
         public const string OpenaiGpt56Terra = "openai/gpt-5.6-terra";
         /// <summary>Model ID: <c>openai/gpt-5.6-terra-pro</c>. Model page: https://phaseo.app/models/openai/gpt-5.6-terra-pro</summary>
         public const string OpenaiGpt56TerraPro = "openai/gpt-5.6-terra-pro";
+        /// <summary>Model ID: <c>openai/gpt-6-astra</c>. Model page: https://phaseo.app/models/openai/gpt-6-astra</summary>
+        public const string OpenaiGpt6Astra = "openai/gpt-6-astra";
+        /// <summary>Model ID: <c>openai/gpt-6-astra-pro</c>. Model page: https://phaseo.app/models/openai/gpt-6-astra-pro</summary>
+        public const string OpenaiGpt6AstraPro = "openai/gpt-6-astra-pro";
         /// <summary>Model ID: <c>openai/gpt-image-1</c>. Model page: https://phaseo.app/models/openai/gpt-image-1</summary>
         public const string OpenaiGptImage1 = "openai/gpt-image-1";
         /// <summary>Model ID: <c>openai/gpt-image-1-mini</c>. Model page: https://phaseo.app/models/openai/gpt-image-1-mini</summary>
@@ -656,6 +722,10 @@ namespace PhaseoSdk
         public const string OpenaiGptRealtime15 = "openai/gpt-realtime-1.5";
         /// <summary>Model ID: <c>openai/gpt-realtime-2</c>. Model page: https://phaseo.app/models/openai/gpt-realtime-2</summary>
         public const string OpenaiGptRealtime2 = "openai/gpt-realtime-2";
+        /// <summary>Model ID: <c>openai/gpt-realtime-2.1</c>. Model page: https://phaseo.app/models/openai/gpt-realtime-2.1</summary>
+        public const string OpenaiGptRealtime21 = "openai/gpt-realtime-2.1";
+        /// <summary>Model ID: <c>openai/gpt-realtime-2.1-mini</c>. Model page: https://phaseo.app/models/openai/gpt-realtime-2.1-mini</summary>
+        public const string OpenaiGptRealtime21Mini = "openai/gpt-realtime-2.1-mini";
         /// <summary>Model ID: <c>openai/gpt-transcribe</c>. Model page: https://phaseo.app/models/openai/gpt-transcribe</summary>
         public const string OpenaiGptTranscribe = "openai/gpt-transcribe";
         /// <summary>Model ID: <c>openai/o1</c>. Model page: https://phaseo.app/models/openai/o1</summary>
@@ -690,6 +760,8 @@ namespace PhaseoSdk
         public const string OpenaiWhisperLargeV3 = "openai/whisper-large-v3";
         /// <summary>Model ID: <c>openai/whisper-large-v3-turbo</c>. Model page: https://phaseo.app/models/openai/whisper-large-v3-turbo</summary>
         public const string OpenaiWhisperLargeV3Turbo = "openai/whisper-large-v3-turbo";
+        /// <summary>Model ID: <c>opencompass/compassjudger-1-32b-instruct</c>. Model page: https://phaseo.app/models/opencompass/compassjudger-1-32b-instruct</summary>
+        public const string OpencompassCompassjudger132bInstruct = "opencompass/compassjudger-1-32b-instruct";
         /// <summary>Model ID: <c>perplexity/pplx-embed-v1-0.6b</c>. Model page: https://phaseo.app/models/perplexity/pplx-embed-v1-0.6b</summary>
         public const string PerplexityPplxEmbedV106b = "perplexity/pplx-embed-v1-0.6b";
         /// <summary>Model ID: <c>perplexity/pplx-embed-v1-4b</c>. Model page: https://phaseo.app/models/perplexity/pplx-embed-v1-4b</summary>
@@ -712,6 +784,18 @@ namespace PhaseoSdk
         public const string QwenQwenFlashCharacter = "qwen/qwen-flash-character";
         /// <summary>Model ID: <c>qwen/qwen-image</c>. Model page: https://phaseo.app/models/qwen/qwen-image</summary>
         public const string QwenQwenImage = "qwen/qwen-image";
+        /// <summary>Model ID: <c>qwen/qwen-image-edit</c>. Model page: https://phaseo.app/models/qwen/qwen-image-edit</summary>
+        public const string QwenQwenImageEdit = "qwen/qwen-image-edit";
+        /// <summary>Model ID: <c>qwen/qwen-image-edit-2025-10-30</c>. Model page: https://phaseo.app/models/qwen/qwen-image-edit-2025-10-30</summary>
+        public const string QwenQwenImageEdit20251030 = "qwen/qwen-image-edit-2025-10-30";
+        /// <summary>Model ID: <c>qwen/qwen-image-edit-2025-12-15</c>. Model page: https://phaseo.app/models/qwen/qwen-image-edit-2025-12-15</summary>
+        public const string QwenQwenImageEdit20251215 = "qwen/qwen-image-edit-2025-12-15";
+        /// <summary>Model ID: <c>qwen/qwen-image-edit-max</c>. Model page: https://phaseo.app/models/qwen/qwen-image-edit-max</summary>
+        public const string QwenQwenImageEditMax = "qwen/qwen-image-edit-max";
+        /// <summary>Model ID: <c>qwen/qwen-image-max</c>. Model page: https://phaseo.app/models/qwen/qwen-image-max</summary>
+        public const string QwenQwenImageMax = "qwen/qwen-image-max";
+        /// <summary>Model ID: <c>qwen/qwen-image-plus</c>. Model page: https://phaseo.app/models/qwen/qwen-image-plus</summary>
+        public const string QwenQwenImagePlus = "qwen/qwen-image-plus";
         /// <summary>Model ID: <c>qwen/qwen-max</c>. Model page: https://phaseo.app/models/qwen/qwen-max</summary>
         public const string QwenQwenMax = "qwen/qwen-max";
         /// <summary>Model ID: <c>qwen/qwen-mt-flash</c>. Model page: https://phaseo.app/models/qwen/qwen-mt-flash</summary>
@@ -802,6 +886,12 @@ namespace PhaseoSdk
         public const string QwenQwen34b = "qwen/qwen3-4b";
         /// <summary>Model ID: <c>qwen/qwen3-8b</c>. Model page: https://phaseo.app/models/qwen/qwen3-8b</summary>
         public const string QwenQwen38b = "qwen/qwen3-8b";
+        /// <summary>Model ID: <c>qwen/qwen3-asr-0.6b</c>. Model page: https://phaseo.app/models/qwen/qwen3-asr-0.6b</summary>
+        public const string QwenQwen3Asr06b = "qwen/qwen3-asr-0.6b";
+        /// <summary>Model ID: <c>qwen/qwen3-asr-1.7b</c>. Model page: https://phaseo.app/models/qwen/qwen3-asr-1.7b</summary>
+        public const string QwenQwen3Asr17b = "qwen/qwen3-asr-1.7b";
+        /// <summary>Model ID: <c>qwen/qwen3-coder</c>. Model page: https://phaseo.app/models/qwen/qwen3-coder</summary>
+        public const string QwenQwen3Coder = "qwen/qwen3-coder";
         /// <summary>Model ID: <c>qwen/qwen3-coder-30b-a3b</c>. Model page: https://phaseo.app/models/qwen/qwen3-coder-30b-a3b</summary>
         public const string QwenQwen3Coder30bA3b = "qwen/qwen3-coder-30b-a3b";
         /// <summary>Model ID: <c>qwen/qwen3-coder-480b-a35b</c>. Model page: https://phaseo.app/models/qwen/qwen3-coder-480b-a35b</summary>
@@ -816,12 +906,10 @@ namespace PhaseoSdk
         public const string QwenQwen3CoderPlus20250923 = "qwen/qwen3-coder-plus-2025-09-23";
         /// <summary>Model ID: <c>qwen/qwen3-embedding-0.6b</c>. Model page: https://phaseo.app/models/qwen/qwen3-embedding-0.6b</summary>
         public const string QwenQwen3Embedding06b = "qwen/qwen3-embedding-0.6b";
+        /// <summary>Model ID: <c>qwen/qwen3-embedding-4b</c>. Model page: https://phaseo.app/models/qwen/qwen3-embedding-4b</summary>
+        public const string QwenQwen3Embedding4b = "qwen/qwen3-embedding-4b";
         /// <summary>Model ID: <c>qwen/qwen3-embedding-8b</c>. Model page: https://phaseo.app/models/qwen/qwen3-embedding-8b</summary>
         public const string QwenQwen3Embedding8b = "qwen/qwen3-embedding-8b";
-        /// <summary>Model ID: <c>qwen/qwen3-guard-gen-0.6b</c>. Model page: https://phaseo.app/models/qwen/qwen3-guard-gen-0.6b</summary>
-        public const string QwenQwen3GuardGen06b = "qwen/qwen3-guard-gen-0.6b";
-        /// <summary>Model ID: <c>qwen/qwen3-guard-gen-8b</c>. Model page: https://phaseo.app/models/qwen/qwen3-guard-gen-8b</summary>
-        public const string QwenQwen3GuardGen8b = "qwen/qwen3-guard-gen-8b";
         /// <summary>Model ID: <c>qwen/qwen3-max</c>. Model page: https://phaseo.app/models/qwen/qwen3-max</summary>
         public const string QwenQwen3Max = "qwen/qwen3-max";
         /// <summary>Model ID: <c>qwen/qwen3-max-2025-09-23</c>. Model page: https://phaseo.app/models/qwen/qwen3-max-2025-09-23</summary>
@@ -846,6 +934,16 @@ namespace PhaseoSdk
         public const string QwenQwen3Omni30bA3bThinking = "qwen/qwen3-omni-30b-a3b-thinking";
         /// <summary>Model ID: <c>qwen/qwen3-reranker</c>. Model page: https://phaseo.app/models/qwen/qwen3-reranker</summary>
         public const string QwenQwen3Reranker = "qwen/qwen3-reranker";
+        /// <summary>Model ID: <c>qwen/qwen3-reranker-0.6b</c>. Model page: https://phaseo.app/models/qwen/qwen3-reranker-0.6b</summary>
+        public const string QwenQwen3Reranker06b = "qwen/qwen3-reranker-0.6b";
+        /// <summary>Model ID: <c>qwen/qwen3-reranker-4b</c>. Model page: https://phaseo.app/models/qwen/qwen3-reranker-4b</summary>
+        public const string QwenQwen3Reranker4b = "qwen/qwen3-reranker-4b";
+        /// <summary>Model ID: <c>qwen/qwen3-reranker-8b</c>. Model page: https://phaseo.app/models/qwen/qwen3-reranker-8b</summary>
+        public const string QwenQwen3Reranker8b = "qwen/qwen3-reranker-8b";
+        /// <summary>Model ID: <c>qwen/qwen3-tts</c>. Model page: https://phaseo.app/models/qwen/qwen3-tts</summary>
+        public const string QwenQwen3Tts = "qwen/qwen3-tts";
+        /// <summary>Model ID: <c>qwen/qwen3-tts-voicedesign</c>. Model page: https://phaseo.app/models/qwen/qwen3-tts-voicedesign</summary>
+        public const string QwenQwen3TtsVoicedesign = "qwen/qwen3-tts-voicedesign";
         /// <summary>Model ID: <c>qwen/qwen3-vl-235b-a22b</c>. Model page: https://phaseo.app/models/qwen/qwen3-vl-235b-a22b</summary>
         public const string QwenQwen3Vl235bA22b = "qwen/qwen3-vl-235b-a22b";
         /// <summary>Model ID: <c>qwen/qwen3-vl-235b-a22b-instruct</c>. Model page: https://phaseo.app/models/qwen/qwen3-vl-235b-a22b-instruct</summary>
@@ -866,6 +964,8 @@ namespace PhaseoSdk
         public const string QwenQwen3Vl8b = "qwen/qwen3-vl-8b";
         /// <summary>Model ID: <c>qwen/qwen3-vl-8b-instruct</c>. Model page: https://phaseo.app/models/qwen/qwen3-vl-8b-instruct</summary>
         public const string QwenQwen3Vl8bInstruct = "qwen/qwen3-vl-8b-instruct";
+        /// <summary>Model ID: <c>qwen/qwen3-vl-8b-thinking</c>. Model page: https://phaseo.app/models/qwen/qwen3-vl-8b-thinking</summary>
+        public const string QwenQwen3Vl8bThinking = "qwen/qwen3-vl-8b-thinking";
         /// <summary>Model ID: <c>qwen/qwen3-vl-flash-2025-10-15</c>. Model page: https://phaseo.app/models/qwen/qwen3-vl-flash-2025-10-15</summary>
         public const string QwenQwen3VlFlash20251015 = "qwen/qwen3-vl-flash-2025-10-15";
         /// <summary>Model ID: <c>qwen/qwen3-vl-flash-2026-01-22</c>. Model page: https://phaseo.app/models/qwen/qwen3-vl-flash-2026-01-22</summary>
@@ -942,6 +1042,8 @@ namespace PhaseoSdk
         public const string RekaFlash = "reka-flash";
         /// <summary>Model ID: <c>reka-flash-research</c>. Model page: https://phaseo.app/models/reka-flash-research</summary>
         public const string RekaFlashResearch = "reka-flash-research";
+        /// <summary>Model ID: <c>relace/relace-rank</c>. Model page: https://phaseo.app/models/relace/relace-rank</summary>
+        public const string RelaceRelaceRank = "relace/relace-rank";
         /// <summary>Model ID: <c>relace/relace-search</c>. Model page: https://phaseo.app/models/relace/relace-search</summary>
         public const string RelaceRelaceSearch = "relace/relace-search";
         /// <summary>Model ID: <c>sakana/fugu-ultra</c>. Model page: https://phaseo.app/models/sakana/fugu-ultra</summary>
@@ -966,14 +1068,70 @@ namespace PhaseoSdk
         public const string SpacexAiGrokImagineImage = "spacex-ai/grok-imagine-image";
         /// <summary>Model ID: <c>spacex-ai/grok-imagine-image-2.0</c>. Model page: https://phaseo.app/models/spacex-ai/grok-imagine-image-2.0</summary>
         public const string SpacexAiGrokImagineImage20 = "spacex-ai/grok-imagine-image-2.0";
+        /// <summary>Model ID: <c>spacex-ai/grok-imagine-video</c>. Model page: https://phaseo.app/models/spacex-ai/grok-imagine-video</summary>
+        public const string SpacexAiGrokImagineVideo = "spacex-ai/grok-imagine-video";
+        /// <summary>Model ID: <c>spacex-ai/grok-imagine-video-1.5</c>. Model page: https://phaseo.app/models/spacex-ai/grok-imagine-video-1.5</summary>
+        public const string SpacexAiGrokImagineVideo15 = "spacex-ai/grok-imagine-video-1.5";
         /// <summary>Model ID: <c>spacex-ai/grok-transcribe</c>. Model page: https://phaseo.app/models/spacex-ai/grok-transcribe</summary>
         public const string SpacexAiGrokTranscribe = "spacex-ai/grok-transcribe";
         /// <summary>Model ID: <c>spacex-ai/grok-tts</c>. Model page: https://phaseo.app/models/spacex-ai/grok-tts</summary>
         public const string SpacexAiGrokTts = "spacex-ai/grok-tts";
+        /// <summary>Model ID: <c>stability-ai/stable-diffusion-xl-base-1.0</c>. Model page: https://phaseo.app/models/stability-ai/stable-diffusion-xl-base-1.0</summary>
+        public const string StabilityAiStableDiffusionXlBase10 = "stability-ai/stable-diffusion-xl-base-1.0";
+        /// <summary>Model ID: <c>stepfun/step-1-32k</c>. Model page: https://phaseo.app/models/stepfun/step-1-32k</summary>
+        public const string StepfunStep132k = "stepfun/step-1-32k";
+        /// <summary>Model ID: <c>stepfun/step-1-8k</c>. Model page: https://phaseo.app/models/stepfun/step-1-8k</summary>
+        public const string StepfunStep18k = "stepfun/step-1-8k";
+        /// <summary>Model ID: <c>stepfun/step-1o-audio</c>. Model page: https://phaseo.app/models/stepfun/step-1o-audio</summary>
+        public const string StepfunStep1oAudio = "stepfun/step-1o-audio";
+        /// <summary>Model ID: <c>stepfun/step-1o-turbo-vision</c>. Model page: https://phaseo.app/models/stepfun/step-1o-turbo-vision</summary>
+        public const string StepfunStep1oTurboVision = "stepfun/step-1o-turbo-vision";
+        /// <summary>Model ID: <c>stepfun/step-1o-vision-32k</c>. Model page: https://phaseo.app/models/stepfun/step-1o-vision-32k</summary>
+        public const string StepfunStep1oVision32k = "stepfun/step-1o-vision-32k";
+        /// <summary>Model ID: <c>stepfun/step-1v-32k</c>. Model page: https://phaseo.app/models/stepfun/step-1v-32k</summary>
+        public const string StepfunStep1v32k = "stepfun/step-1v-32k";
+        /// <summary>Model ID: <c>stepfun/step-1v-8k</c>. Model page: https://phaseo.app/models/stepfun/step-1v-8k</summary>
+        public const string StepfunStep1v8k = "stepfun/step-1v-8k";
+        /// <summary>Model ID: <c>stepfun/step-1x-edit</c>. Model page: https://phaseo.app/models/stepfun/step-1x-edit</summary>
+        public const string StepfunStep1xEdit = "stepfun/step-1x-edit";
+        /// <summary>Model ID: <c>stepfun/step-1x-medium</c>. Model page: https://phaseo.app/models/stepfun/step-1x-medium</summary>
+        public const string StepfunStep1xMedium = "stepfun/step-1x-medium";
+        /// <summary>Model ID: <c>stepfun/step-2-16k</c>. Model page: https://phaseo.app/models/stepfun/step-2-16k</summary>
+        public const string StepfunStep216k = "stepfun/step-2-16k";
+        /// <summary>Model ID: <c>stepfun/step-2-16k-exp</c>. Model page: https://phaseo.app/models/stepfun/step-2-16k-exp</summary>
+        public const string StepfunStep216kExp = "stepfun/step-2-16k-exp";
+        /// <summary>Model ID: <c>stepfun/step-2-mini</c>. Model page: https://phaseo.app/models/stepfun/step-2-mini</summary>
+        public const string StepfunStep2Mini = "stepfun/step-2-mini";
+        /// <summary>Model ID: <c>stepfun/step-2x-large</c>. Model page: https://phaseo.app/models/stepfun/step-2x-large</summary>
+        public const string StepfunStep2xLarge = "stepfun/step-2x-large";
+        /// <summary>Model ID: <c>stepfun/step-3</c>. Model page: https://phaseo.app/models/stepfun/step-3</summary>
+        public const string StepfunStep3 = "stepfun/step-3";
         /// <summary>Model ID: <c>stepfun/step-3.5-flash</c>. Model page: https://phaseo.app/models/stepfun/step-3.5-flash</summary>
         public const string StepfunStep35Flash = "stepfun/step-3.5-flash";
         /// <summary>Model ID: <c>stepfun/step-3.7-flash</c>. Model page: https://phaseo.app/models/stepfun/step-3.7-flash</summary>
         public const string StepfunStep37Flash = "stepfun/step-3.7-flash";
+        /// <summary>Model ID: <c>stepfun/step-asr</c>. Model page: https://phaseo.app/models/stepfun/step-asr</summary>
+        public const string StepfunStepAsr = "stepfun/step-asr";
+        /// <summary>Model ID: <c>stepfun/step-asr-1.1-stream</c>. Model page: https://phaseo.app/models/stepfun/step-asr-1.1-stream</summary>
+        public const string StepfunStepAsr11Stream = "stepfun/step-asr-1.1-stream";
+        /// <summary>Model ID: <c>stepfun/step-audio-2</c>. Model page: https://phaseo.app/models/stepfun/step-audio-2</summary>
+        public const string StepfunStepAudio2 = "stepfun/step-audio-2";
+        /// <summary>Model ID: <c>stepfun/step-audio-r1.1</c>. Model page: https://phaseo.app/models/stepfun/step-audio-r1.1</summary>
+        public const string StepfunStepAudioR11 = "stepfun/step-audio-r1.1";
+        /// <summary>Model ID: <c>stepfun/step-image-edit-2</c>. Model page: https://phaseo.app/models/stepfun/step-image-edit-2</summary>
+        public const string StepfunStepImageEdit2 = "stepfun/step-image-edit-2";
+        /// <summary>Model ID: <c>stepfun/step-r1-v-mini</c>. Model page: https://phaseo.app/models/stepfun/step-r1-v-mini</summary>
+        public const string StepfunStepR1VMini = "stepfun/step-r1-v-mini";
+        /// <summary>Model ID: <c>stepfun/step-tts-2</c>. Model page: https://phaseo.app/models/stepfun/step-tts-2</summary>
+        public const string StepfunStepTts2 = "stepfun/step-tts-2";
+        /// <summary>Model ID: <c>stepfun/step-tts-mini</c>. Model page: https://phaseo.app/models/stepfun/step-tts-mini</summary>
+        public const string StepfunStepTtsMini = "stepfun/step-tts-mini";
+        /// <summary>Model ID: <c>stepfun/stepaudio-2-asr-pro</c>. Model page: https://phaseo.app/models/stepfun/stepaudio-2-asr-pro</summary>
+        public const string StepfunStepaudio2AsrPro = "stepfun/stepaudio-2-asr-pro";
+        /// <summary>Model ID: <c>stepfun/stepaudio-2.5-asr</c>. Model page: https://phaseo.app/models/stepfun/stepaudio-2.5-asr</summary>
+        public const string StepfunStepaudio25Asr = "stepfun/stepaudio-2.5-asr";
+        /// <summary>Model ID: <c>stepfun/stepaudio-2.5-tts</c>. Model page: https://phaseo.app/models/stepfun/stepaudio-2.5-tts</summary>
+        public const string StepfunStepaudio25Tts = "stepfun/stepaudio-2.5-tts";
         /// <summary>Model ID: <c>tencent/hunyuan-a13b-instruct</c>. Model page: https://phaseo.app/models/tencent/hunyuan-a13b-instruct</summary>
         public const string TencentHunyuanA13bInstruct = "tencent/hunyuan-a13b-instruct";
         /// <summary>Model ID: <c>tencent/hy3</c>. Model page: https://phaseo.app/models/tencent/hy3</summary>
@@ -984,10 +1142,18 @@ namespace PhaseoSdk
         public const string TencentHy3Free = "tencent/hy3:free";
         /// <summary>Model ID: <c>tencent/hy4-preview</c>. Model page: https://phaseo.app/models/tencent/hy4-preview</summary>
         public const string TencentHy4Preview = "tencent/hy4-preview";
+        /// <summary>Model ID: <c>thedrummer/cydonia-24b-v4.1</c>. Model page: https://phaseo.app/models/thedrummer/cydonia-24b-v4.1</summary>
+        public const string ThedrummerCydonia24bV41 = "thedrummer/cydonia-24b-v4.1";
+        /// <summary>Model ID: <c>thedrummer/skyfall-36b-v2</c>. Model page: https://phaseo.app/models/thedrummer/skyfall-36b-v2</summary>
+        public const string ThedrummerSkyfall36bV2 = "thedrummer/skyfall-36b-v2";
         /// <summary>Model ID: <c>thinking-machines/inkling</c>. Model page: https://phaseo.app/models/thinking-machines/inkling</summary>
         public const string ThinkingMachinesInkling = "thinking-machines/inkling";
         /// <summary>Model ID: <c>thinking-machines/inkling-small</c>. Model page: https://phaseo.app/models/thinking-machines/inkling-small</summary>
         public const string ThinkingMachinesInklingSmall = "thinking-machines/inkling-small";
+        /// <summary>Model ID: <c>upstage/document-ocr</c>. Model page: https://phaseo.app/models/upstage/document-ocr</summary>
+        public const string UpstageDocumentOcr = "upstage/document-ocr";
+        /// <summary>Model ID: <c>upstage/document-parse</c>. Model page: https://phaseo.app/models/upstage/document-parse</summary>
+        public const string UpstageDocumentParse = "upstage/document-parse";
         /// <summary>Model ID: <c>upstage/solar-embedding-1-large-passage</c>. Model page: https://phaseo.app/models/upstage/solar-embedding-1-large-passage</summary>
         public const string UpstageSolarEmbedding1LargePassage = "upstage/solar-embedding-1-large-passage";
         /// <summary>Model ID: <c>upstage/solar-embedding-1-large-query</c>. Model page: https://phaseo.app/models/upstage/solar-embedding-1-large-query</summary>
@@ -1072,6 +1238,8 @@ namespace PhaseoSdk
         public const string VoyageVoyageMultimodal3 = "voyage/voyage-multimodal-3";
         /// <summary>Model ID: <c>voyage/voyage-multimodal-3.5</c>. Model page: https://phaseo.app/models/voyage/voyage-multimodal-3.5</summary>
         public const string VoyageVoyageMultimodal35 = "voyage/voyage-multimodal-3.5";
+        /// <summary>Model ID: <c>x-ai/grok-voice-think-fast-2.0</c>. Model page: https://phaseo.app/models/x-ai/grok-voice-think-fast-2.0</summary>
+        public const string XAiGrokVoiceThinkFast20 = "x-ai/grok-voice-think-fast-2.0";
         /// <summary>Model ID: <c>xiaomi/mimo-v2.5</c>. Model page: https://phaseo.app/models/xiaomi/mimo-v2.5</summary>
         public const string XiaomiMimoV25 = "xiaomi/mimo-v2.5";
         /// <summary>Model ID: <c>xiaomi/mimo-v2.5-asr</c>. Model page: https://phaseo.app/models/xiaomi/mimo-v2.5-asr</summary>
