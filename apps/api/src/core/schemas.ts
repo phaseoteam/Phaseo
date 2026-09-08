@@ -1173,12 +1173,16 @@ function validateMiniMaxImageRequest(
     });
 }
 
+function isGptImage25Model(model: string | undefined): boolean {
+    return model === "gpt-image-latest" || (model != null && /^gpt-image-2\.5(?:$|-)/.test(model));
+}
+
 function validateGptImage2Size(
     request: { size?: string },
     model: string | undefined,
     ctx: z.RefinementCtx,
 ): void {
-    if (!model || !/^gpt-image-2(?:\.5)?(?:$|-)/.test(model)) return;
+    if (!model || (!/^gpt-image-2(?:\.5)?(?:$|-)/.test(model) && model !== "gpt-image-latest")) return;
     if (!request.size || request.size === "auto") return;
     const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
     if (!dimensions) {
@@ -1235,7 +1239,7 @@ export const ImagesGenerationSchema = z.object({
     if (request.prompt.length > 32_000) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["prompt"], message: "GPT Image prompts must be at most 32000 characters" });
     }
-    const qualityValues = /^gpt-image-2\.5(?:$|-)/.test(model)
+    const qualityValues = isGptImage25Model(model)
         ? ["auto", "low", "medium", "high", "xhigh", "max"]
         : ["auto", "low", "medium", "high"];
     if (request.quality && !qualityValues.includes(request.quality)) {
@@ -1331,7 +1335,7 @@ export const ImagesEditSchema = z.object({
     const model = body.model.split("/").pop()?.toLowerCase();
     const isDallE2 = model === "dall-e-2";
     const isGptImage = model?.startsWith("gpt-image-") || model === "chatgpt-image-latest";
-    const isGptImage25 = model != null && /^gpt-image-2\.5(?:$|-)/.test(model);
+    const isGptImage25 = isGptImage25Model(model);
     const isGrokImagineImage2 = model === "grok-imagine-image-2.0";
     if (isGrokImagineImage2) {
         const size = body.size?.toLowerCase();

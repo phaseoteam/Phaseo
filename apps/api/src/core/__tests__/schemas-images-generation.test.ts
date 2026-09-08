@@ -42,6 +42,15 @@ describe("OpenAI image generation schema", () => {
 		},
 	);
 
+	it.each(["xhigh", "max"])("accepts %s quality through the GPT Image latest alias", (quality) => {
+		expect(ImagesGenerationSchema.safeParse({
+			model: "openai/gpt-image-latest",
+			prompt: "A lighthouse in a storm",
+			quality,
+			size: "2048x1152",
+		}).success).toBe(true);
+	});
+
 	it("rejects GPT Image 2.5-only quality levels for earlier GPT Image models", () => {
 		expect(ImagesGenerationSchema.safeParse({
 			model: "openai/gpt-image-2",

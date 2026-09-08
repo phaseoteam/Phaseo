@@ -80,6 +80,16 @@ describe("OpenAI image edit schema", () => {
 		},
 	);
 
+	it.each(["xhigh", "max"])("accepts %s quality through the GPT Image latest alias", (quality) => {
+		expect(ImagesEditSchema.safeParse({
+			model: "openai/gpt-image-latest",
+			image: "image",
+			prompt: "Refine the lighting",
+			quality,
+			size: "2048x1152",
+		}).success).toBe(true);
+	});
+
 	it("rejects GPT Image 2.5-only edit quality for earlier GPT Image models", () => {
 		expect(ImagesEditSchema.safeParse({
 			model: "openai/gpt-image-2",

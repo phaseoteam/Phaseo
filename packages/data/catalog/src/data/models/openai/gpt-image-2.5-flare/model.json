@@ -39,7 +39,7 @@
     "tool_call": null,
     "structured_output": null,
     "temperature": null,
-    "streaming": null,
+    "streaming": true,
     "web_search": null
   },
   "open_weights": null,
