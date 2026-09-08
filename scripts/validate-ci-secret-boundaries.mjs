@@ -60,7 +60,11 @@ export function validateCiSecretBoundaries(workflow) {
 		!productionMigrationCondition.includes("github.event_name == 'push'") ||
 		!productionMigrationCondition.includes("github.ref == 'refs/heads/main'")
 	) {
-		throw new Error("migrate-production must only run for pushes to main");
+		throw new Error("migrate-production must restrict production releases to main");
+	}
+	if (productionMigrationCondition.includes("workflow_dispatch") &&
+		!productionMigrationCondition.includes("inputs.deploy_production == true")) {
+		throw new Error("manual production migrations must require the deploy_production opt-in");
 	}
 
 	if (
