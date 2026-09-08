@@ -532,6 +532,9 @@ public final class ModelIds {
     /** Model ID: <code>inception/mercury-2</code>. Model page: https://phaseo.app/models/inception/mercury-2 */
     public static final String INCEPTION_MERCURY_2 = "inception/mercury-2";
 
+    /** Model ID: <code>inception/mercury-2.5</code>. Model page: https://phaseo.app/models/inception/mercury-2.5 */
+    public static final String INCEPTION_MERCURY_2_5 = "inception/mercury-2.5";
+
     /** Model ID: <code>inception/mercury-edit-2</code>. Model page: https://phaseo.app/models/inception/mercury-edit-2 */
     public static final String INCEPTION_MERCURY_EDIT_2 = "inception/mercury-edit-2";
 

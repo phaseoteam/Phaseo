@@ -531,6 +531,9 @@ inline constexpr std::string_view IBM_GRANITE_4_2_8B = "ibm/granite-4.2-8b";
 // Model ID: inception/mercury-2
 // Model page: https://phaseo.app/models/inception/mercury-2
 inline constexpr std::string_view INCEPTION_MERCURY_2 = "inception/mercury-2";
+// Model ID: inception/mercury-2.5
+// Model page: https://phaseo.app/models/inception/mercury-2.5
+inline constexpr std::string_view INCEPTION_MERCURY_2_5 = "inception/mercury-2.5";
 // Model ID: inception/mercury-edit-2
 // Model page: https://phaseo.app/models/inception/mercury-edit-2
 inline constexpr std::string_view INCEPTION_MERCURY_EDIT_2 = "inception/mercury-edit-2";
@@ -1956,7 +1959,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 649> ALL = {
+inline constexpr std::array<std::string_view, 650> ALL = {
 	AI21_JAMBA_1_5_LARGE,
 	AI21_JAMBA_1_5_MINI,
 	AION_LABS_AION_2_0,
@@ -2132,6 +2135,7 @@ inline constexpr std::array<std::string_view, 649> ALL = {
 	IBM_GRANITE_4_2_3B,
 	IBM_GRANITE_4_2_8B,
 	INCEPTION_MERCURY_2,
+	INCEPTION_MERCURY_2_5,
 	INCEPTION_MERCURY_EDIT_2,
 	INCLUSIONAI_LING_2_6_1T,
 	INCLUSIONAI_LING_2_6_FLASH,

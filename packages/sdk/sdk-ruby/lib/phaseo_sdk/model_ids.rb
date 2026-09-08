@@ -528,6 +528,9 @@ module PhaseoSdk
     # Model ID: inception/mercury-2
     # Model page: https://phaseo.app/models/inception/mercury-2
     INCEPTION_MERCURY_2 = "inception/mercury-2"
+    # Model ID: inception/mercury-2.5
+    # Model page: https://phaseo.app/models/inception/mercury-2.5
+    INCEPTION_MERCURY_2_5 = "inception/mercury-2.5"
     # Model ID: inception/mercury-edit-2
     # Model page: https://phaseo.app/models/inception/mercury-edit-2
     INCEPTION_MERCURY_EDIT_2 = "inception/mercury-edit-2"
@@ -2130,6 +2133,7 @@ module PhaseoSdk
     ModelIds::IBM_GRANITE_4_2_3B,
     ModelIds::IBM_GRANITE_4_2_8B,
     ModelIds::INCEPTION_MERCURY_2,
+    ModelIds::INCEPTION_MERCURY_2_5,
     ModelIds::INCEPTION_MERCURY_EDIT_2,
     ModelIds::INCLUSIONAI_LING_2_6_1T,
     ModelIds::INCLUSIONAI_LING_2_6_FLASH,

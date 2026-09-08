@@ -356,6 +356,8 @@ namespace PhaseoSdk
         public const string IbmGranite428b = "ibm/granite-4.2-8b";
         /// <summary>Model ID: <c>inception/mercury-2</c>. Model page: https://phaseo.app/models/inception/mercury-2</summary>
         public const string InceptionMercury2 = "inception/mercury-2";
+        /// <summary>Model ID: <c>inception/mercury-2.5</c>. Model page: https://phaseo.app/models/inception/mercury-2.5</summary>
+        public const string InceptionMercury25 = "inception/mercury-2.5";
         /// <summary>Model ID: <c>inception/mercury-edit-2</c>. Model page: https://phaseo.app/models/inception/mercury-edit-2</summary>
         public const string InceptionMercuryEdit2 = "inception/mercury-edit-2";
         /// <summary>Model ID: <c>inclusionai/ling-2.6-1t</c>. Model page: https://phaseo.app/models/inclusionai/ling-2.6-1t</summary>

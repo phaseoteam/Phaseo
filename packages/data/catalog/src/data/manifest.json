@@ -515,7 +515,8 @@
     ],
     "inception": [
       "inception/mercury-2",
-      "inception/mercury-edit-2"
+      "inception/mercury-edit-2",
+      "inception/mercury-2.5"
     ],
     "inclusionai": [
       "inclusionai/ring-1t-2.5",
