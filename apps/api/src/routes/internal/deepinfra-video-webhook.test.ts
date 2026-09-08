@@ -10,6 +10,7 @@ const request = () => new Request(`https://api.phaseo.app/internal/video-webhook
 const payload = { request_id: "native", inference_status: { status: "succeeded", cost: 1.2 }, results: { status: "ok", videos: ["/outputs/video.mp4"] } };
 beforeEach(async () => {
 	vi.resetAllMocks();
+	mocks.finalize.mockImplementation(async ({ status }) => ({ status }));
 	mocks.get.mockResolvedValue({ provider: "deepinfra", model: "google/veo-3.1", status: "queued", nativeId: "native", meta: { provider: "deepinfra", seconds: 8, deepinfraCallbackHash: await deepinfraTokenHash(token) } });
 });
 describe("DeepInfra video callbacks", () => {
@@ -33,5 +34,13 @@ describe("DeepInfra video callbacks", () => {
 		expect((await handleDeepinfraVideoWebhook(request(), JSON.stringify({ ...payload, inference_status: { status: "succeeded" } }))).status).toBe(400);
 		expect((await handleDeepinfraVideoWebhook(request(), JSON.stringify({ request_id: "native", inference_status: { status: "failed", cost: 0 } }))).status).toBe(200);
 		expect(mocks.finalize).toHaveBeenCalledWith(expect.objectContaining({ status: "failed" }));
+	});
+	it("notifies the stored terminal status when a stale callback disagrees", async () => {
+		const job = await mocks.get();
+		mocks.get.mockResolvedValue({ ...job, status: "completed" });
+		mocks.finalize.mockResolvedValue({ status: "completed", charged: false, reason: "already_billed" });
+		await handleDeepinfraVideoWebhook(request(), JSON.stringify({ request_id: "native", inference_status: { status: "failed" } }));
+		expect(mocks.save).not.toHaveBeenCalled();
+		expect(mocks.dispatch).toHaveBeenCalledWith({ workspaceId: "ws", videoId: "job", eventType: "video.completed" });
 	});
 });

@@ -25,7 +25,10 @@ export async function handleDeepinfraVideoWebhook(req: Request, rawBody: string)
 		await saveVideoJobMeta(workspaceId, videoId, { ...job.meta, providerTaskId: payload.request_id, submissionState: "accepted",
 			...(result.status === "completed" ? { deepinfraNativeCostUsd: result.cost, downloadUrl: result.downloadUrl } : {}) }, payload.request_id, result.status);
 	}
-	await finalizeVideoJob({ workspaceId, videoId, providerId: "deepinfra", status: result.status, model: job.model, seconds: job.meta.seconds, isByok: job.meta.keySource === "byok" });
-	dispatchVideoWebhookEventInBackground({ workspaceId, videoId, eventType: result.status === "completed" ? "video.completed" : result.status === "cancelled" ? "video.cancelled" : "video.failed" });
+	const finalized = await finalizeVideoJob({ workspaceId, videoId, providerId: "deepinfra", status: result.status, model: job.model, seconds: job.meta.seconds, isByok: job.meta.keySource === "byok" });
+	// Finalization preserves the stored terminal state when a stale callback disagrees.
+	if (finalized.status === "completed" || finalized.status === "failed" || finalized.status === "cancelled" || finalized.status === "expired") {
+		dispatchVideoWebhookEventInBackground({ workspaceId, videoId, eventType: `video.${finalized.status}` });
+	}
 	return respond(200);
 }
