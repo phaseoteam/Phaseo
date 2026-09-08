@@ -134,8 +134,8 @@ export default async function Page({
 				</>
 			)}
 			<BenchmarkDetailShell benchmark={benchmark} tocItems={isArtificialAnalysisBenchmark(benchmark.id)
-				? [{ id: "summary", label: "Summary" }, { id: "model-results", label: "Model results" }, { id: "progress", label: "Progress" }]
-				: [{ id: "summary", label: "Summary" }, { id: "progress", label: "Progress" }, { id: "model-results", label: "Model results" }]}>
+				? [{ id: "summary", label: "Summary" }, { id: "model-results", label: "Model Results" }, { id: "progress", label: "Progress" }]
+				: [{ id: "summary", label: "Summary" }, { id: "progress", label: "Progress" }, { id: "model-results", label: "Model Results" }]}>
 				<BenchmarkOverview benchmark={benchmark} />
 			</BenchmarkDetailShell>
 		</>

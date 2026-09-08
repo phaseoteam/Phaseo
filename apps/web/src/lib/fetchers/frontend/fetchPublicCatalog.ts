@@ -993,6 +993,7 @@ export type PublicBenchmarkRankingEntry = {
 	organisation_id: string | null;
 	organisation_name: string | null;
 	organisation_colour?: string | null;
+	release_date?: string | null;
 	score: number;
 	rank: number;
 	configurations?: Array<{

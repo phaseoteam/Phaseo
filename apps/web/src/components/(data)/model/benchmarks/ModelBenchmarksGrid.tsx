@@ -6,6 +6,7 @@ import { ChevronDown, ExternalLink, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 
@@ -15,8 +16,8 @@ function BenchmarkRow({ item }: { item: ModelBenchmarkHighlight }) {
 		<div className="flex min-h-14 items-center gap-3 py-2">
 			<div className="min-w-0 flex-1"><Link href={`/benchmarks/${item.benchmarkId}`} className="text-sm font-medium hover:underline">{item.benchmarkName}</Link>{item.isSelfReported ? <span className="ml-2 text-xs text-muted-foreground">Self-reported</span> : null}</div>
 			<span className="shrink-0 text-sm font-semibold tabular-nums">{item.scoreDisplay}</span>
-			{item.sourceLink ? <Button asChild variant="ghost" size="icon-sm"><a href={item.sourceLink} target="_blank" rel="noreferrer" aria-label={`Open source for ${item.benchmarkName}`}><ExternalLink /></a></Button> : null}
-			{item.otherInfo ? <CollapsibleTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={`Show details for ${item.benchmarkName}`} className={open ? "text-foreground" : "text-muted-foreground"}><Info /></Button></CollapsibleTrigger> : null}
+			{item.sourceLink ? <Tooltip><TooltipTrigger asChild><Button asChild variant="ghost" size="icon-sm"><a href={item.sourceLink} target="_blank" rel="noreferrer" aria-label={`Open source for ${item.benchmarkName}`}><ExternalLink /></a></Button></TooltipTrigger><TooltipContent>Open {item.benchmarkName} source</TooltipContent></Tooltip> : null}
+			{item.otherInfo ? <Tooltip><TooltipTrigger asChild><CollapsibleTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={`${open ? "Hide" : "Show"} details for ${item.benchmarkName}`} className={open ? "text-foreground" : "text-muted-foreground"}><Info /></Button></CollapsibleTrigger></TooltipTrigger><TooltipContent>{open ? "Hide" : "Show"} benchmark details</TooltipContent></Tooltip> : null}
 		</div>
 		{item.otherInfo ? <CollapsibleContent className="pb-3 pr-20 text-xs leading-5 text-muted-foreground">{item.otherInfo}</CollapsibleContent> : null}
 	</Collapsible>;

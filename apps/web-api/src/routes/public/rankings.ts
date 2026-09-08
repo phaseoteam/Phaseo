@@ -6,7 +6,15 @@ import { withPublicCache } from "@/http/cache";
 const LIVE_CACHE = { edgeTtlSeconds: 15 * 60, staleWhileRevalidateSeconds: 15 * 60, cacheTags: ["web-api-rankings"] } as const;
 const META_CACHE = { edgeTtlSeconds: 60 * 60, staleWhileRevalidateSeconds: 24 * 60 * 60, cacheTags: ["web-api-ranking-metadata"] } as const;
 
-const RANKING_BENCHMARK_IDS: string[] = ["aa-intelligence-index-v4", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v4"];
+const RANKING_BENCHMARK_FAMILIES = ["aa-intelligence-index-v", "aa-coding-index-v", "aa-agentic-index-v", "aa-intelligence-index-cost-v"] as const;
+const RANKING_BENCHMARK_IDS = RANKING_BENCHMARK_FAMILIES.flatMap((family) => [`${family}5`, `${family}4`]);
+
+function activeRankingBenchmarkIds(scores: Array<{ benchmark_id: string }>) {
+	const withScores = new Set(scores.map((row) => row.benchmark_id));
+	return RANKING_BENCHMARK_FAMILIES.map((family) =>
+		RANKING_BENCHMARK_IDS.find((id) => id.startsWith(family) && withScores.has(id)) ?? `${family}4`,
+	);
+}
 
 function bounded(value: string | undefined, fallback: number, max: number) {
 	const parsed = Math.round(Number(value));
@@ -186,19 +194,21 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 			if ((page.data ?? []).length < 500) break;
 		}
 		const modelIds = [...new Set(scores.map((row) => row.model_slug))];
-		const models = new Map<string, { model_name: string; organisation_id: string | null; organisation_name: string | null; organisation_colour: string | null }>();
+		const models = new Map<string, { model_name: string; organisation_id: string | null; organisation_name: string | null; organisation_colour: string | null; release_date: string | null }>();
 		for (let offset = 0; offset < modelIds.length; offset += 200) {
 			const result = await client.from("v2_models")
-				.select("model_slug,name,lab_slug,lab:v2_labs!v2_models_lab_slug_fkey(name,colour)")
+				.select("model_slug,name,lab_slug,release_date:released_at,lab:v2_labs!v2_models_lab_slug_fkey(name,colour)")
 				.in("model_slug", modelIds.slice(offset, offset + 200)).eq("hidden", false);
 			if (result.error) throw result.error;
 			for (const row of result.data ?? []) {
 				const lab = Array.isArray(row.lab) ? row.lab[0] : row.lab;
-				models.set(row.model_slug, { model_name: row.name ?? row.model_slug, organisation_id: row.lab_slug ?? null, organisation_name: lab?.name ?? row.lab_slug ?? null, organisation_colour: lab?.colour ?? null });
+				models.set(row.model_slug, { model_name: row.name ?? row.model_slug, organisation_id: row.lab_slug ?? null, organisation_name: lab?.name ?? row.lab_slug ?? null, organisation_colour: lab?.colour ?? null, release_date: row.release_date ?? null });
 			}
 		}
-		const order = new Map(RANKING_BENCHMARK_IDS.map((id, index) => [id, index]));
+		const activeIds = activeRankingBenchmarkIds(scores);
+		const order = new Map(activeIds.map((id, index) => [id, index]));
 		const benchmarks = (benchmarkResult.data ?? [])
+			.filter((benchmark) => activeIds.includes(benchmark.benchmark_id))
 			.sort((left, right) => (order.get(left.benchmark_id) ?? 99) - (order.get(right.benchmark_id) ?? 99))
 			.map((benchmark) => {
 				const lowerIsBetter = benchmark.ascending_order === false;
