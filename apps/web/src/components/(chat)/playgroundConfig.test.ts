@@ -4,14 +4,14 @@ import {
 } from "./playgroundConfig";
 
 const CURRENT_FEATURED_MODEL_IDS = [
-	"z-ai/glm-5.2",
+	"z-ai/glm-5.3",
 	"moonshotai/kimi-k3",
-	"anthropic/claude-fable-5",
+	"anthropic/claude-fable-5.1",
 	"minimax/minimax-m3",
 	"anthropic/claude-opus-5",
-	"spacex-ai/grok-4.5",
-	"openai/gpt-5.6-sol",
-	"google/gemini-3.6-flash",
+	"spacex-ai/grok-4.6",
+	"openai/gpt-6-astra",
+	"google/gemini-3.8-flash",
 ];
 
 describe("chat featured models", () => {
