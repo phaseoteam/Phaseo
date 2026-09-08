@@ -23,13 +23,13 @@
   "limits": {
     "context": null,
     "input": null,
-    "output": [
-      "rerank"
-    ]
+    "output": null
   },
   "modalities": {
     "input": null,
-    "output": null
+    "output": [
+      "rerank"
+    ]
   },
   "reasoning": {
     "supported": null,
