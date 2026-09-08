@@ -66,6 +66,7 @@ import type {
 	APIProviderCard as APIProviderCardType,
 	ProviderModalityKey,
 } from "@/lib/fetchers/api-providers/providerDataTypes";
+import { formatLocation } from "@/lib/locations";
 
 interface APIProvidersDisplayProps {
 	providers: APIProviderCardType[];
@@ -597,7 +598,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 										const isExternal = String(provider.provider_status ?? "").trim().toLowerCase() === "external";
 										return <TableRow key={provider.api_provider_id} className="hover:bg-muted/35">
 											<TableCell className="py-0"><Link href={`/api-providers/${provider.api_provider_id}`} prefetch={false} className="inline-flex h-11 min-w-0 items-center gap-2 font-medium leading-none hover:underline hover:underline-offset-4"><span className="relative size-6 shrink-0"><Logo id={provider.api_provider_id} alt={provider.api_provider_name} fill className="object-contain" /></span><span className="flex min-w-0 items-center gap-1.5"><span className="truncate">{provider.api_provider_name}</span>{isExternal ? <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300"><ArrowUpRight className="size-3" />External</span> : null}</span></Link></TableCell>
-											<TableCell>{provider.country_code ? <Link href={`/countries/${provider.country_code.toLowerCase()}`} prefetch={false} className="inline-flex items-center gap-2 hover:underline hover:underline-offset-4"><Image src={`/flags/${provider.country_code.toLowerCase()}.svg`} alt="" width={16} height={12} className="h-3 w-4 object-cover" />{countryLabel(provider.country_code)}</Link> : "—"}</TableCell>
+											<TableCell>{provider.country_code ? <Link href={`/countries/${provider.country_code.toLowerCase()}`} prefetch={false} className="inline-flex items-center gap-2 hover:underline hover:underline-offset-4"><Image src={`/flags/${provider.country_code.toLowerCase()}.svg`} alt="" width={16} height={12} className="h-3 w-4 object-cover" />{formatLocation(provider.country_code, provider.subdivision_code) ?? countryLabel(provider.country_code)}</Link> : "—"}</TableCell>
 											<TableCell className="text-center tabular-nums">{provider.total_models.toLocaleString()}</TableCell>
 											<TableCell className="text-center tabular-nums">{provider.free_models ? provider.free_models.toLocaleString() : "—"}</TableCell>
 											<TableCell><div className="flex items-center gap-1.5">{supported.map(({ value, icon: Icon, label }) => <ProviderModalityBadge key={value} label={label} modality={value} icon={Icon} inputCount={provider.modality_support[value]?.input ?? 0} outputCount={provider.modality_support[value]?.output ?? 0} />)}</div></TableCell>

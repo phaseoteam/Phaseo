@@ -92,7 +92,7 @@ publicOrganisationsRouter.get("/organisations/:organisationId/header", async (c)
 	try {
 		const { data, error } = await getDataClient(c.env)
 			.from("v2_labs")
-			.select("lab_slug,name,country_code")
+			.select("lab_slug,name,country_code,subdivision_code")
 			.eq("lab_slug", organisationId)
 			.maybeSingle();
 		if (error) throw error;
@@ -101,6 +101,7 @@ publicOrganisationsRouter.get("/organisations/:organisationId/header", async (c)
 			organisation_id: data.lab_slug,
 			name: data.name ?? "",
 			country_code: data.country_code ?? null,
+			subdivision_code: data.subdivision_code ?? null,
 		} }), {
 			...ORGANISATION_CACHE,
 			cacheTags: cacheTags(organisationId, "headers"),
@@ -142,7 +143,7 @@ publicOrganisationsRouter.get("/organisations/:organisationId", async (c) => {
 		const [organisationResult, catalogue, linksResult] = await Promise.all([
 			client
 				.from("v2_labs")
-				.select("lab_slug,name,country_code,description,metadata,updated_at")
+				.select("lab_slug,name,country_code,subdivision_code,description,metadata,updated_at")
 				.eq("lab_slug", organisationId)
 				.maybeSingle(),
 			fetchModelsPageCatalogue(c.env, { organisationId }, "v2"),
@@ -175,6 +176,7 @@ publicOrganisationsRouter.get("/organisations/:organisationId", async (c) => {
 			organisation_id: organisationRow.lab_slug ?? organisationId,
 			name: organisationRow.name ?? organisationId,
 			country_code: organisationRow.country_code ?? null,
+			subdivision_code: organisationRow.subdivision_code ?? null,
 			description: organisationRow.description ?? null,
 			colour: typeof organisationMetadata.colour === "string" ? organisationMetadata.colour : null,
 			updated_at: organisationRow.updated_at ?? null,

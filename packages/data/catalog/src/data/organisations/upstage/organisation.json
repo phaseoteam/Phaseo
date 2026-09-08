@@ -2,6 +2,7 @@
   "organisation_id": "upstage",
   "name": "Upstage",
   "country_code": "KR",
+  "subdivision_code": "KR-11",
   "description": "Upstage is a South Korean AI company with its registered/business address in Seoul. Its mission is to improve work productivity by building cost-effective enterprise AI, including large language models (e.g., Solar) and document AI/OCR systems that automate and scale knowledge work.",
   "colour": "#5b52ff",
   "organisation_links": [

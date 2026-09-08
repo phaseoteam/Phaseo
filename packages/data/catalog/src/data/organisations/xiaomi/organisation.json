@@ -2,6 +2,7 @@
   "organisation_id": "xiaomi",
   "name": "Xiaomi",
   "country_code": "CN",
+  "subdivision_code": "CN-BJ",
   "description": "Xiaomi is a consumer-electronics and smart-manufacturing company with its campus/corporate address in Beijing, China. Smartphones and AIoT products are at its core; its mission is to build amazing products with honest prices so everyone can enjoy a better life through innovative technology.",
   "colour": "#FF6900",
   "organisation_links": [

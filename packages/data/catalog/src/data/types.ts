@@ -5,6 +5,7 @@ export interface Organisation {
     name: string;
     website: string | null;
     country_code: string | null;
+    subdivision_code: string | null;
     description: string | null;
     colour: string | null;
     created_at: string;
@@ -32,6 +33,7 @@ export interface Provider {
     name: string;
     website: string | null;
     country_code: string | null;
+    subdivision_code?: string | null;
     description: string | null;
     colour: string | null;
     socials: SocialLink[];        // instead of individual nullable fields
@@ -59,6 +61,8 @@ export interface BenchmarkResult {
 export interface APIProvider {
     api_provider_id: string;
     api_provider_name: string;
+    country_code?: string | null;
+    subdivision_code?: string | null;
     description: string | null;
     link: string | null;
     provider_family_id?: string | null;
