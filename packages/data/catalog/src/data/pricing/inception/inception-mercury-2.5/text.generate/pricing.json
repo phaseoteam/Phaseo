@@ -1,0 +1,74 @@
+{
+  "key": "inception:inception/mercury-2.5:text.generate",
+  "api_provider_id": "inception",
+  "provider_slug": "inception",
+  "api_model_id": "inception/mercury-2.5",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.02,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.inceptionlabs.ai/models"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.inceptionlabs.ai/models"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.75,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.inceptionlabs.ai/models"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://www.inceptionlabs.ai/models",
+      "accessed_at": "2026-09-06T00:00:00Z",
+      "notes": "Official Mercury 2.5 pricing: $0.20/M input, $0.02/M cached input, and $0.75/M output tokens."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-06T00:00:00Z",
+    "notes": "Pricing verified against Inception's public model page; rules become effective with the direct Inception GA launch on 2026-09-07."
+  }
+}

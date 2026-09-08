@@ -23,6 +23,7 @@ const OUTPUT_DETAILED_METERS = new Set<string>([
 const REASONING_PARAM_NAMES = new Set<string>(['reasoning', 'reasoning_effort']);
 const KNOWN_REASONING_EFFORTS = new Set<string>([
     'none',
+    'instant',
     'minimal',
     'low',
     'medium',
