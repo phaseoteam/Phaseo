@@ -127,6 +127,29 @@ describe("applyByokServiceFee", () => {
 		expect(result.pricedUsage.pricing.byok_reference_total_nanos).toBe(baseCost);
 	});
 
+	it("increments a batch atomically and charges only rows beyond the free boundary", async () => {
+		rpcMock.mockResolvedValue({
+			data: [{ month_start: "2026-02-01T00:00:00+00:00", request_count: BYOK_MONTHLY_FREE_REQUESTS + 2 }],
+			error: null,
+		});
+		const result = await applyByokServiceFee({
+			workspaceId: "team_1",
+			isByok: true,
+			requestCount: 4,
+			baseCostNanos: 1_000,
+			baseCostsNanos: [100, 200, 300, 400],
+			pricedUsage: { pricing: { total_nanos: 1_000, currency: "USD" } },
+		});
+
+		expect(rpcMock).toHaveBeenCalledWith("increment_workspace_byok_monthly_request_count_by", {
+			p_workspace_id: "team_1",
+			p_now: expect.any(String),
+			p_request_count: 4,
+		});
+		expect(result.chargedCostsNanos).toEqual([0, 0, 8, 10]);
+		expect(result.totalNanos).toBe(18);
+	});
+
 	it("previews the next completed-request count without incrementing reservations", async () => {
 		maybeSingleMock.mockResolvedValue({
 			data: { month_start: "2026-02-01T00:00:00+00:00", request_count: BYOK_MONTHLY_FREE_REQUESTS },

@@ -6,6 +6,7 @@ import {
 import { reserveWalletCredits } from "@core/wallet-reservations";
 import { computeBill } from "@pipeline/pricing/engine";
 import { loadPriceCard } from "@pipeline/pricing/loader";
+import { BYOK_SERVICE_FEE_RATE } from "@pipeline/pricing/byok-fee";
 import { normalizeBatchEndpoint } from "@core/batch-endpoints";
 
 export const BATCH_RESERVATION_PREFIX = "batch_hold:";
@@ -198,6 +199,7 @@ export async function reserveBatchCredits(args: {
 	apiKeyId: string;
 	requestId: string;
 	providerId: string;
+	isByok?: boolean;
 	requests: BatchReservationRequest[];
 }): Promise<{
 	reservationId: string;
@@ -217,6 +219,7 @@ export async function reserveBatchCredits(args: {
 		inputTokenUpperBound += quote.inputTokenUpperBound;
 		outputTokenUpperBound += quote.outputTokenUpperBound;
 	}
+	if (args.isByok) reservedNanos = Math.ceil(reservedNanos * BYOK_SERVICE_FEE_RATE);
 	if (reservedNanos <= 0) throw new Error("batch_reservation_zero_cost");
 	const reservationId = `${BATCH_RESERVATION_PREFIX}${args.requestId}`;
 	const result = await reserveWalletCredits({

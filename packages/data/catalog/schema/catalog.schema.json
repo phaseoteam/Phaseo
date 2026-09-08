@@ -256,6 +256,7 @@
         "api_base_url": { "type": ["string", "null"], "format": "uri" },
         "docs_url": { "type": ["string", "null"], "format": "uri" },
         "auth_env": { "type": ["array", "null"], "items": { "type": "string" } },
+		"credential_mode": { "type": "string", "enum": ["managed_and_byok", "byok_only"] },
         "api_formats": { "type": "array", "items": { "type": "string" } },
         "service_tiers": { "type": "array", "items": { "type": "string" } },
         "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
@@ -287,6 +288,7 @@
         "provider_model_slug": { "type": ["string", "null"], "minLength": 1 },
         "internal_model_id": { "type": ["string", "null"] },
         "is_active_gateway": { "type": "boolean" },
+		"credential_mode": { "type": "string", "enum": ["managed_and_byok", "byok_only"] },
         "input_modalities": { "type": ["string", "array", "null"] },
         "output_modalities": { "type": ["string", "array", "null"] },
         "capabilities": { "type": "array", "items": { "$ref": "#/$defs/capability" } }

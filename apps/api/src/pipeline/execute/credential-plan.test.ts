@@ -95,6 +95,19 @@ describe("credential attempt plan", () => {
 		expect(plan.map((attempt) => attempt.phase)).toEqual(["priority_byok", "fallback_byok"]);
 	});
 
+	it("never creates a managed attempt for a BYOK-only provider", () => {
+		const provider = {
+			candidate: {
+				providerId: "provider-a",
+				credentialMode: "byok_only",
+				byokMeta: [key("fallback", "fallback", 0)],
+			},
+		};
+		const plan = buildCredentialAttemptPlan([provider], { allowManagedFallback: true });
+		expect(plan.map((attempt) => attempt.phase)).toEqual(["fallback_byok"]);
+		expect(buildCredentialAttemptPlan([{ candidate: { ...provider.candidate, byokMeta: [] } }], { allowManagedFallback: true })).toEqual([]);
+	});
+
 	it("caps total BYOK attempts without removing the managed provider attempt", () => {
 		const provider = {
 			candidate: {

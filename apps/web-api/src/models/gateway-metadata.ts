@@ -205,6 +205,15 @@ export async function fetchGatewayMetadataSource(env: Env, modelId: string): Pro
 			}
 		}
 		const uniqueProviders = [...new Map(providers.map((provider, index) => [id(provider.api_provider_id) ?? `provider-${index}`, provider])).values()];
+		const providerIds = uniqueProviders.map((provider) => id(provider.api_provider_id)).filter((value): value is string => value !== null);
+		if (providerIds.length > 0) {
+			const modes = await client.from("v2_providers").select("provider_slug,credential_mode").in("provider_slug", providerIds);
+			if (modes.error) throw modes.error;
+			const modeByProvider = new Map(rows(modes.data).map((row) => [id(row.provider_slug), row.credential_mode]));
+			for (const provider of uniqueProviders) {
+				provider.credential_mode = modeByProvider.get(id(provider.api_provider_id)) === "byok_only" ? "byok_only" : "managed_and_byok";
+			}
+		}
 		const aliasResult = await client.rpc("get_v2_model_aliases", { p_model_slug: modelId });
 		const aliases = !aliasResult.error
 			? rows(aliasResult.data).flatMap((alias) => id(alias.alias_slug) ? [{ api_model_id: modelId, alias_slug: id(alias.alias_slug)! }] : [])

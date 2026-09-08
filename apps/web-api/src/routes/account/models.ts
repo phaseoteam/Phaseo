@@ -66,6 +66,7 @@ const modelGraphSchema = z.object({
 	status: z.string().nullable().optional(), hidden: z.boolean().optional(), license: z.string().nullable().optional(),
 	announcement_date: z.string().nullable().optional(), release_date: z.string().nullable().optional(), deprecation_date: z.string().nullable().optional(), retirement_date: z.string().nullable().optional(),
 	input_types: z.string().nullable().optional(), output_types: z.string().nullable().optional(), previous_model_id: z.string().nullable().optional(), family_id: z.string().nullable().optional(),
+	replacement_model_id: z.string().nullable().optional(),
 	model_details: z.array(z.object({ detail_name: z.string().trim().min(1), detail_value: z.unknown() })).optional(),
 	links: z.array(z.object({ platform: z.string().optional(), kind: z.string().optional(), title: z.string().optional(), url: z.url() })).optional(),
 	benchmark_results: z.array(z.record(z.string(), z.unknown())).optional(), subscription_plan_models: z.array(z.record(z.string(), z.unknown())).optional(),
@@ -440,6 +441,14 @@ accountModelsRouter.put("/:modelId/graph", async (c) => {
 	if (!parsed.success || parsed.data.modelId !== c.req.param("modelId")) return c.json({ error: "invalid_model_graph", issues: parsed.success ? [] : parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await admin.context.client.rpc("mutate_v2_admin_model_graph", { p_actor_user_id: admin.context.user.id, p_model_slug: parsed.data.modelId, p_payload: parsed.data });
 	if (result.error) return c.json({ ok: false, error: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+	if (Object.prototype.hasOwnProperty.call(parsed.data, "replacement_model_id")) {
+		const successor = await admin.context.client.rpc("set_v2_model_recommended_successor", {
+			p_actor_user_id: admin.context.user.id,
+			p_model_slug: parsed.data.modelId,
+			p_replacement_model_slug: parsed.data.replacement_model_id,
+		});
+		if (successor.error) return c.json({ ok: false, error: successor.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+	}
 	return c.json({ ok: true, graph: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

@@ -160,6 +160,11 @@ export async function runBatchReconciliationJob(args?: {
 			jobsErrored: 0,
 		};
 		const providerId = job.provider ?? job.meta?.provider ?? OPENAI_BATCH_PROVIDER_ID;
+		const credentialContext = {
+			workspaceId: job.workspaceId,
+			keySource: job.meta?.keySource,
+			byokKeyId: job.meta?.byokKeyId,
+		};
 		const currentStatus = String(job.status ?? job.meta?.status ?? "").toLowerCase();
 		try {
 			if (currentStatus === "submitting" && !job.nativeId && !job.meta?.nativeBatchId) {
@@ -186,6 +191,7 @@ export async function runBatchReconciliationJob(args?: {
 					batchId: job.batchId,
 					providerId,
 					requestId: job.requestId,
+					credentialContext,
 					reservationId: job.meta?.reservationId ?? null,
 				});
 				return counts;
@@ -263,7 +269,7 @@ export async function runBatchReconciliationJob(args?: {
 				nativeId: job.nativeId,
 				meta: job.meta,
 			});
-			const payload = await fetchProviderBatchStatus(providerId, nativeBatchId);
+			const payload = await fetchProviderBatchStatus(providerId, nativeBatchId, credentialContext);
 			if (!payload) {
 				await updateBatchJobReconciliation({
 					workspaceId: job.workspaceId,

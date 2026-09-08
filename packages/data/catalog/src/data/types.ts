@@ -140,6 +140,7 @@ export interface APIProvider {
     api_base_url?: string | null;
     docs_url?: string | null;
     auth_env?: string[] | null;
+	credential_mode?: "managed_and_byok" | "byok_only";
     api_formats?: string[];
     service_tiers?: string[];
     sources?: SourceMetadata[];

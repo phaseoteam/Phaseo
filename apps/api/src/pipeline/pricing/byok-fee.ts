@@ -17,7 +17,9 @@ type ByokFeeArgs = {
 	workspaceId: string;
 	isByok: boolean;
 	countRequest?: boolean;
+	requestCount?: number;
 	baseCostNanos: number;
+	baseCostsNanos?: number[];
 	pricedUsage: any;
 	currencyHint?: string;
 };
@@ -30,6 +32,7 @@ type ByokFeeResult = {
 	byokFeeNanos: number;
 	byokMonthlyRequestCount: number | null;
 	byokFreeRequestsRemaining: number | null;
+	chargedCostsNanos: number[] | null;
 };
 
 type ByokCounterResolution = {
@@ -82,6 +85,7 @@ function utcMonthStartIso(nowIso: string): string {
 async function readByokCounter(
 	workspaceId: string,
 	nowIso: string,
+	requestIncrement: number,
 	source: "fallback_read" | "preview_read",
 	lastRpcError: unknown = null,
 ): Promise<ByokCounterResolution> {
@@ -97,7 +101,7 @@ async function readByokCounter(
 		const row = data as ByokCounterRow | null;
 		const existingCount = coerceRequestCount(row?.request_count) ?? 0;
 		return {
-			requestCount: existingCount + 1,
+			requestCount: existingCount + requestIncrement,
 			monthStart: typeof row?.month_start === "string" ? row.month_start : monthStartIso,
 			source,
 		};
@@ -111,18 +115,24 @@ async function readByokCounter(
 	}
 }
 
-async function resolveByokCounter(workspaceId: string, countRequest: boolean): Promise<ByokCounterResolution> {
+async function resolveByokCounter(workspaceId: string, countRequest: boolean, requestIncrement: number): Promise<ByokCounterResolution> {
 	const supabase = getSupabaseAdmin();
 	const nowIso = new Date().toISOString();
-	if (!countRequest) return readByokCounter(workspaceId, nowIso, "preview_read");
+	if (!countRequest) return readByokCounter(workspaceId, nowIso, requestIncrement, "preview_read");
 	let lastError: unknown = null;
 
 	for (let attempt = 1; attempt <= COUNTER_RPC_MAX_ATTEMPTS; attempt++) {
 		try {
-			const { data, error } = await supabase.rpc("increment_workspace_byok_monthly_request_count", {
-				p_workspace_id: workspaceId,
-				p_now: nowIso,
-			});
+			const { data, error } = requestIncrement === 1
+				? await supabase.rpc("increment_workspace_byok_monthly_request_count", {
+					p_workspace_id: workspaceId,
+					p_now: nowIso,
+				})
+				: await supabase.rpc("increment_workspace_byok_monthly_request_count_by", {
+					p_workspace_id: workspaceId,
+					p_now: nowIso,
+					p_request_count: requestIncrement,
+				});
 			if (error) throw error;
 			const row = extractByokCounterRow(data);
 			const requestCount = coerceRequestCount(row?.request_count);
@@ -144,7 +154,7 @@ async function resolveByokCounter(workspaceId: string, countRequest: boolean): P
 	}
 
 	// Fallback read path: approximate count by reading current row and treating this call as +1.
-	return readByokCounter(workspaceId, nowIso, "fallback_read", lastError);
+	return readByokCounter(workspaceId, nowIso, requestIncrement, "fallback_read", lastError);
 }
 
 function buildByokFeeLine(feeNanos: number) {
@@ -219,10 +229,12 @@ export async function applyByokServiceFee(args: ByokFeeArgs): Promise<ByokFeeRes
 			byokFeeNanos: 0,
 			byokMonthlyRequestCount: null,
 			byokFreeRequestsRemaining: null,
+			chargedCostsNanos: null,
 		};
 	}
 
-	const counter = await resolveByokCounter(args.workspaceId, args.countRequest !== false);
+	const requestIncrement = Math.max(1, Math.trunc(args.requestCount ?? 1));
+	const counter = await resolveByokCounter(args.workspaceId, args.countRequest !== false, requestIncrement);
 	const requestCount = counter.requestCount;
 	const monthStart = counter.monthStart;
 	if (counter.source === "unavailable") {
@@ -232,11 +244,19 @@ export async function applyByokServiceFee(args: ByokFeeArgs): Promise<ByokFeeRes
 		});
 	}
 
-	const feeApplies = requestCount == null
-		? true
-		: requestCount > BYOK_MONTHLY_FREE_REQUESTS;
-	const percentageFeeNanos = Math.max(0, Math.round(baseTotalNanos * BYOK_SERVICE_FEE_RATE));
-	const byokFeeNanos = feeApplies ? percentageFeeNanos : 0;
+	const baseCosts = args.baseCostsNanos?.map(normalizeNanos);
+	const freeInThisCall = requestCount == null
+		? 0
+		: Math.min(requestIncrement, Math.max(0, BYOK_MONTHLY_FREE_REQUESTS - (requestCount - requestIncrement)));
+	const chargedCostsNanos = baseCosts
+		? baseCosts.map((cost, index) => index < freeInThisCall ? 0 : Math.max(0, Math.round(cost * BYOK_SERVICE_FEE_RATE)))
+		: null;
+	const feeEligibleBaseNanos = baseCosts
+		? baseCosts.slice(freeInThisCall).reduce((sum, cost) => sum + cost, 0)
+		: freeInThisCall >= requestIncrement ? 0 : baseTotalNanos;
+	const byokFeeNanos = chargedCostsNanos
+		? chargedCostsNanos.reduce((sum, cost) => sum + cost, 0)
+		: Math.max(0, Math.round(feeEligibleBaseNanos * BYOK_SERVICE_FEE_RATE));
 	const chargedNanos = byokFeeNanos;
 	const chargedCents = Math.trunc(chargedNanos / NANOS_PER_CENT);
 	const freeRemaining = requestCount == null
@@ -276,5 +296,6 @@ export async function applyByokServiceFee(args: ByokFeeArgs): Promise<ByokFeeRes
 		byokFeeNanos,
 		byokMonthlyRequestCount: requestCount,
 		byokFreeRequestsRemaining: freeRemaining,
+		chargedCostsNanos,
 	};
 }

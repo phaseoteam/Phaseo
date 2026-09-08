@@ -1519,9 +1519,13 @@ export async function fetchGatewayContext(args: {
             const providerStatusQuery = providerIds.length
                 ? supabase
                     .from("v2_providers")
-                    .select("provider_slug,status,routing_enabled,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,data_policy_variant,stream_cancellation_support,stream_cancellation_stops_provider_billing,stream_cancellation_usage_recovery,stream_cancellation_evidence_kind,stream_cancellation_source_url,metadata")
+                    .select("provider_slug,status,routing_enabled,credential_mode,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,data_policy_variant,stream_cancellation_support,stream_cancellation_stops_provider_billing,stream_cancellation_usage_recovery,stream_cancellation_evidence_kind,stream_cancellation_source_url,metadata")
                     .in("provider_slug", providerIds)
                 : Promise.resolve({ data: [], error: null } as any);
+			const routeCredentialModeQuery = providerIds.length
+				? supabase.from("v2_model_provider_routes").select("provider_slug,credential_mode")
+					.in("provider_slug", providerIds).eq("model_slug", parsed.resolvedModel ?? args.model)
+				: Promise.resolve({ data: [], error: null } as any);
 
             const settingsQuery = (async () => {
                 const columns = "routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,privacy_zdr_only,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,io_logging_enabled,io_logging_include_provider_payloads,data_contribution_enabled,data_contribution_policy_version,data_contribution_sample_rate_bps,data_contribution_classifier_sample_rate_bps,data_contribution_discount_bps,response_healing_enabled,response_healing_locked,response_healing_mode";
@@ -1546,9 +1550,10 @@ export async function fetchGatewayContext(args: {
                     .maybeSingle();
             })();
 
-            const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
+            const [settingsResult, providerStatusResult, routeCredentialModeResult, teamResult] = await Promise.all([
                 settingsQuery,
                 providerStatusQuery,
+				routeCredentialModeQuery,
                 supabase
                     .from("workspaces")
                     .select("billing_mode")
@@ -1565,6 +1570,9 @@ export async function fetchGatewayContext(args: {
             if (providerStatusResult?.error) {
                 throw new Error(`provider_status_enrichment_failed:${providerStatusResult.error.message ?? "unknown"}`);
             }
+			if (routeCredentialModeResult?.error) {
+				throw new Error(`route_credential_mode_enrichment_failed:${routeCredentialModeResult.error.message ?? "unknown"}`);
+			}
             if (teamResult?.error || !teamResult?.data) {
                 throw new Error(`workspace_billing_enrichment_failed:${teamResult?.error?.message ?? "missing"}`);
             }
@@ -1629,6 +1637,7 @@ export async function fetchGatewayContext(args: {
             };
 
             const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
+			const credentialModeByProvider = new Map<string, GatewayProviderSnapshot["credentialMode"]>();
             const routingStatusByProvider = new Map<string, RoutingStatus>();
             const providerFamilyByProvider = new Map<string, string | null>();
             const offerScopeByProvider = new Map<string, GatewayProviderSnapshot["offerScope"]>();
@@ -1662,6 +1671,7 @@ export async function fetchGatewayContext(args: {
                         providerId,
                         normalizeProviderStatus(row.status),
                     );
+					credentialModeByProvider.set(providerId, row.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok");
                     routingStatusByProvider.set(
                         providerId,
                         row.routing_enabled === true ? "active" : "disabled",
@@ -1758,6 +1768,11 @@ export async function fetchGatewayContext(args: {
                     );
                 }
             }
+			for (const row of routeCredentialModeResult?.data ?? []) {
+				if (row?.credential_mode === "byok_only" && typeof row?.provider_slug === "string") {
+					credentialModeByProvider.set(row.provider_slug, "byok_only");
+				}
+			}
 
             parsed.providers = (parsed.providers ?? []).map((provider) => {
                 const residency = getProviderResidencyMetadata({
@@ -1766,6 +1781,7 @@ export async function fetchGatewayContext(args: {
                 });
                 return {
                     ...provider,
+					credentialMode: credentialModeByProvider.get(provider.providerId) ?? provider.credentialMode ?? "managed_and_byok",
                     providerFamilyId:
                         providerFamilyByProvider.get(provider.providerId) ??
                         provider.providerFamilyId ??

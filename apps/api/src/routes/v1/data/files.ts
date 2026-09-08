@@ -28,6 +28,7 @@ import {
 	OPENAI_BATCH_PROVIDER_ID,
 	parseUpstreamJson,
 } from "@core/batch-provider-adapters";
+import { resolveBatchSubmissionCredential } from "@core/batch-credentials";
 
 // OpenAI accepts Batch input JSONL files up to 200 MB (distinct from the
 // general Files API's larger per-file ceiling).
@@ -202,6 +203,28 @@ async function handleUpload(req: Request) {
 	const providerResolution = resolveUploadProvider(req);
 	if (providerResolution.ok === false) return providerResolution.response;
 	const providerId = providerResolution.providerId;
+	const uploadModel =
+		toText(new URL(req.url).searchParams.get("model")) ??
+		toText(req.headers.get("x-phaseo-model")) ??
+		toText(req.headers.get("x-ai-stats-model")) ??
+		"batch";
+	let credential;
+	try {
+		credential = (await resolveBatchSubmissionCredential({
+			workspaceId: auth.workspaceId,
+			providerId,
+			apiKeyId: auth.apiKeyId,
+			model: uploadModel,
+		})).credential;
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : "batch_provider_credentials_unavailable";
+		return err(reason === "byok_credentials_required" ? "validation_error" : "gateway_error", {
+			reason,
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+			provider: providerId,
+		});
+	}
 	const maxUploadBytes = providerId === "moonshotai"
 		? MAX_MOONSHOT_BATCH_FILE_UPLOAD_BYTES
 		: providerId === "parasail"
@@ -255,6 +278,7 @@ async function handleUpload(req: Request) {
 			method: "POST",
 			body: uploadBody,
 			contentType: req.headers.get("content-type"),
+			credential,
 		});
 	} catch (error) {
 		await finishUploadClaim({ workspaceId: auth.workspaceId, uploadId: requestId, status: "failed" });
@@ -282,8 +306,8 @@ async function handleUpload(req: Request) {
 				purpose: toText(payload?.purpose),
 				filename: toText(payload?.filename),
 				bytes: typeof payload?.bytes === "number" ? payload.bytes : uploadBody.byteLength,
-				keySource: "gateway",
-				byokKeyId: null,
+				keySource: credential.source,
+				byokKeyId: credential.byokKeyId,
 			});
 			await finishUploadClaim({
 				workspaceId: auth.workspaceId,
@@ -295,6 +319,7 @@ async function handleUpload(req: Request) {
 			await fetchProviderBatchApi(providerId, {
 				endpointPath: buildProviderFileDeletePath(providerId, fileId),
 				method: "DELETE",
+				credential,
 			}).catch(() => null);
 			await finishUploadClaim({
 				workspaceId: auth.workspaceId,
@@ -368,9 +393,15 @@ async function handleRetrieve(req: Request, id: string) {
 	}
 
 	const providerId = owned.provider || OPENAI_BATCH_PROVIDER_ID;
+	const credentialContext = {
+		workspaceId: auth.workspaceId,
+		keySource: owned.keySource,
+		byokKeyId: owned.byokKeyId,
+	};
 	const upstream = await fetchProviderBatchApi(providerId, {
 		endpointPath: buildProviderFileMetadataPath(providerId, fileId),
 		method: "GET",
+		credentialContext,
 	});
 	const payload = await parseUpstreamJson(upstream);
 	if (upstream.ok && payload) {
@@ -421,7 +452,11 @@ async function handleRetrieveContent(req: Request, id: string) {
 	}
 
 	const providerId = owned.provider || OPENAI_BATCH_PROVIDER_ID;
-	const upstream = await fetchProviderFileContent(providerId, fileId);
+	const upstream = await fetchProviderFileContent(providerId, fileId, {
+		workspaceId: auth.workspaceId,
+		keySource: owned.keySource,
+		byokKeyId: owned.byokKeyId,
+	});
 	return proxyResponse(upstream);
 }
 

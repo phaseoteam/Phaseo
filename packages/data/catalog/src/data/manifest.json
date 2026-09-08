@@ -293,7 +293,8 @@
       "deepseek/deepseek-v3",
       "deepseek/deepseek-v3-turbo",
       "deepseek/deepseek-r1-distill-llama-70b",
-      "deepseek/deepseek-v4.1-flash-beta"
+      "deepseek/deepseek-v4.1-flash-beta",
+      "deepseek/deepseek-v4.1-flash"
     ],
     "eleven-labs": [
       "eleven-labs/eleven-english-sts-v2",
