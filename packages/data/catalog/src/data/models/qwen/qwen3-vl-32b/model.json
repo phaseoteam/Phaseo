@@ -20,7 +20,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 11.9,
       "is_self_reported": false,
-      "updated_at": "2026-09-08T09:16:11.571Z",
+      "updated_at": "2026-09-08T10:38:34.750Z",
       "variant": "reasoning",
       "other_info": "Qwen3 VL 32B (Reasoning); Artificial Analysis ID d370fcbf-c4a1-41a2-abc4-d204fcc3fcbf; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-vl-32b-reasoning",
