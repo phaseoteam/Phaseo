@@ -60,21 +60,23 @@ export default async function BenchmarkDetailShell({
 			</main>
 		);
 	}
+	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmark.id);
+	const artificialAnalysisMetric = benchmark.name?.replace(/^Artificial Analysis\s*/i, "").trim() || benchmark.id;
 
 	return (
 		<main className="flex flex-col">
-			<EntityStickyHeader kind="benchmark" id={benchmark.id} name={benchmark.name ?? benchmark.id} observeId="benchmark-detail-primary-header" baseHref={`/benchmarks/${benchmark.id}`} navigation={[]} />
+			<EntityStickyHeader kind="benchmark" id={benchmark.id} name={artificialAnalysis ? "Artificial Analysis" : benchmark.name ?? benchmark.id} observeId="benchmark-detail-primary-header" baseHref={`/benchmarks/${benchmark.id}`} navigation={[]} />
 			<div className="container mx-auto px-4 py-6 md:py-8">
 				<div id="benchmark-detail-primary-header" className="mb-6 flex w-full items-start justify-between gap-4">
 					<div className="flex min-w-0 items-center gap-4">
 						<div className="flex size-14 shrink-0 items-center justify-center rounded-md border border-border/70 bg-card/40">
-							{isArtificialAnalysisBenchmark(benchmark.id) ? <ArtificialAnalysisLogo size={32} /> : <Trophy className="size-7 text-muted-foreground" />}
+							{artificialAnalysis ? <ArtificialAnalysisLogo size={32} /> : <Trophy className="size-7 text-muted-foreground" />}
 						</div>
 						<div className="min-w-0">
 							<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-								{benchmark.name ?? benchmark.id}
+								{artificialAnalysis ? "Artificial Analysis" : benchmark.name ?? benchmark.id}
 							</h1>
-							<p className="mt-1.5 text-sm text-muted-foreground">{isArtificialAnalysisBenchmark(benchmark.id) ? "Independent evaluations by Artificial Analysis" : "AI benchmark results and model performance"}</p>
+							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? `${artificialAnalysisMetric} · Independent evaluations` : "AI benchmark results and model performance"}</p>
 						</div>
 					</div>
 					<BenchmarkEditButton benchmarkId={benchmark.id} />

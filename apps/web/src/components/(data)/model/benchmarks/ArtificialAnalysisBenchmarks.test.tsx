@@ -4,10 +4,15 @@ import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
 import ModelBenchmarks from "./ModelBenchmarks";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 
+jest.mock("@number-flow/react", () => ({
+	__esModule: true,
+	default: ({ value }: { value: number }) => String(value),
+}));
+
 const highlight = (benchmarkId: string, score: number): ModelBenchmarkHighlight => ({
 	benchmarkId, benchmarkName: benchmarkId, score, scoreDisplay: String(score), totalModels: 100,
 	rank: 1, isPercentage: false, isSelfReported: false,
-	otherInfo: "Example (high); Intelligence Index v4.3", sourceLink: "https://artificialanalysis.ai/models/example",
+	otherInfo: `Example (high); Intelligence Index v${benchmarkId.endsWith("v5") ? "5" : "4.3"}`, sourceLink: "https://artificialanalysis.ai/models/example",
 });
 
 describe("Artificial Analysis benchmark panel", () => {
@@ -21,10 +26,18 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(html).not.toContain("42.5%");
 		expect(html).toContain(">0<");
 		expect(html).toContain("$123.45");
-		expect(html).toContain("Not available");
-		expect(html).toContain("Example (high)");
+		expect(html).toContain("—");
 		expect(html).toContain("Source: Artificial Analysis");
-		expect(html).toContain("Full Intelligence Index evaluation");
+	});
+	it("renders V5 scores under their separate benchmark IDs", () => {
+		const html = renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[
+			highlight("aa-intelligence-index-v4", 42.5),
+			highlight("aa-intelligence-index-v5", 55),
+			highlight("aa-intelligence-index-cost-v5", 98.75),
+		]} />);
+		expect(html).toContain("55");
+		expect(html).toContain("$98.75");
+		expect(html).toContain("v4.3 / v5");
 	});
 	it("does not create a panel for models without AA scores", () => {
 		expect(renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[highlight("mmlu", 89)]} />)).toBe("");
@@ -34,8 +47,9 @@ describe("Artificial Analysis benchmark panel", () => {
 		const html = renderToStaticMarkup(<ModelBenchmarks highlightCards={[
 			highlight("mmlu", 89), highlight("aa-intelligence-index-v4", 42),
 		]} />);
-		expect(html.indexOf("Artificial Analysis")).toBeLessThan(html.indexOf("Other benchmarks"));
-		expect(html).toContain("mmlu");
+		expect(html.indexOf("Artificial Analysis")).toBeLessThan(html.indexOf("Other Benchmarks"));
+		expect(html).toContain('aria-expanded="false"');
+		expect(html).toContain("Other Benchmarks");
 		expect(html).toContain("Benchmark table");
 	});
 });

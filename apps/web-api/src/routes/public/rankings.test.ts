@@ -217,7 +217,8 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
   const info = "Test configuration; Intelligence Index v4.3";
   const rows = [
     ...Array.from({length: 500}, (_, index) => ({ benchmark_id: ids[0], model_slug: `test/model-${index}`, score_numeric: index, other_info: info })),
-    { benchmark_id: ids[0], model_slug: "test/last", score_numeric: 900, other_info: info },
+    { benchmark_id: ids[0], model_slug: "test/last", score_numeric: 900, other_info: info, variant: "max", result_key: "last:max" },
+	{ benchmark_id: ids[0], model_slug: "test/last", score_numeric: 850, other_info: info, variant: "high", result_key: "last:high" },
     { benchmark_id: ids[0], model_slug: "test/hidden", score_numeric: 1000, other_info: info },
     { benchmark_id: ids[0], model_slug: "test/old", score_numeric: 1200, other_info: "Intelligence Index v4.1.1" },
     { benchmark_id: ids[3], model_slug: "test/last", score_numeric: 10.25, other_info: info },
@@ -233,8 +234,9 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
     }
     if (url.pathname.endsWith('/v2_models')) {
       expect(url.searchParams.get('hidden')).toBe('eq.false');
+	  expect(url.searchParams.get('select')).toContain('release_date:released_at');
       const requested = url.searchParams.get('model_slug') ?? '';
-      return new Response(JSON.stringify([...new Set(rows.map(row=>row.model_slug))].filter(id=>id !== 'test/hidden' && requested.includes(id + ',') || id !== 'test/hidden' && requested.includes(id + ')')).map(id=>({ model_slug: id, name: id, lab_slug:'test', lab:{name:'Test'} }))));
+	  return new Response(JSON.stringify([...new Set(rows.map(row=>row.model_slug))].filter(id=>id !== 'test/hidden' && requested.includes(id + ',') || id !== 'test/hidden' && requested.includes(id + ')')).map(id=>({ model_slug: id, name: id, lab_slug:'test', release_date:'2026-09-01', lab:{name:'Test',colour:'#123456'} }))));
     }
     return new Response('[]');
   });
@@ -244,6 +246,7 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
   const { benchmarks } = await response.json() as any;
   expect(benchmarks).toHaveLength(4);
   expect(benchmarks[0].entries[0]).toMatchObject({ model_id:'test/last', score:900, rank:1, other_info:info });
+	expect(benchmarks[0].entries[0]).toMatchObject({ organisation_colour:'#123456', release_date:'2026-09-01', configurations:[{variant:'max',score:900},{variant:'high',score:850}] });
   expect(benchmarks[0].entries.some((entry:any)=>['test/old','test/hidden'].includes(entry.model_id))).toBe(false);
   expect(benchmarks[3].lower_is_better).toBe(true);
   expect(benchmarks[3].entries.map((entry:any)=>[entry.score,entry.rank])).toEqual([[0,1],[0,1],[10.25,3]]);

@@ -1,9 +1,12 @@
 export const METRICS = [
-	{ id: "aa-intelligence-index-v4", name: "Artificial Analysis Intelligence Index v4", field: "artificial_analysis_intelligence_index", higherBetter: true },
-	{ id: "aa-coding-index-v4", name: "Artificial Analysis Coding Index v4", field: "artificial_analysis_coding_index", higherBetter: true },
-	{ id: "aa-agentic-index-v4", name: "Artificial Analysis Agentic Index v4", field: "artificial_analysis_agentic_index", higherBetter: true },
-	{ id: "aa-intelligence-index-cost-v4", name: "Artificial Analysis Evaluation Cost (USD)", field: "total_cost", higherBetter: false },
+	{ id: "aa-intelligence-index", name: "Artificial Analysis Intelligence Index", field: "artificial_analysis_intelligence_index", higherBetter: true },
+	{ id: "aa-coding-index", name: "Artificial Analysis Coding Index", field: "artificial_analysis_coding_index", higherBetter: true },
+	{ id: "aa-agentic-index", name: "Artificial Analysis Agentic Index", field: "artificial_analysis_agentic_index", higherBetter: true },
+	{ id: "aa-intelligence-index-cost", name: "Artificial Analysis Evaluation Cost (USD)", field: "total_cost", higherBetter: false },
 ] as const;
+
+const supportedMajorVersions = new Set([4, 5]);
+const benchmarkId = (metric: typeof METRICS[number], version: number) => `${metric.id}-v${Math.floor(version)}`;
 export type SourceModel = {
 	id: string; name: string; slug: string;
 	model_creator: { id: string; name: string };
@@ -60,7 +63,7 @@ export async function fetchModels(apiKey: string, fetcher: typeof fetch = fetch)
 		});
 		if (!response.ok) throw new Error(`Artificial Analysis returned HTTP ${response.status} on page ${page}; no data was written.`);
 		const body = await response.json();
-		if (!finite(body.intelligence_index_version) || Math.floor(body.intelligence_index_version) !== 4) throw new Error("Unsupported Intelligence Index version. Add a new benchmark family before importing a new major version.");
+		if (!finite(body.intelligence_index_version) || !supportedMajorVersions.has(Math.floor(body.intelligence_index_version))) throw new Error("Unsupported Intelligence Index version. Add a new benchmark family before importing a new major version.");
 		version ??= body.intelligence_index_version;
 		if (version !== body.intelligence_index_version || body.pagination?.page !== page || typeof body.pagination?.has_more !== "boolean" || !Array.isArray(body.data)) throw new Error("Invalid or inconsistent Artificial Analysis pagination/version; no data was written.");
 		for (const model of body.data) {
@@ -163,7 +166,7 @@ export function resultsFor(source: SourceModel, version: number, allSources: Sou
 		const scores = allSources.map((entry) => metricValue(entry, metric)).filter(finite);
 		const rank = 1 + scores.filter((other) => metric.higherBetter ? other > score : other < score).length;
 		const perTask = source.artificial_analysis_intelligence_index_cost?.cost_per_task?.total_cost;
-		return [{ benchmark_id: metric.id, score, is_self_reported: false, updated_at, variant: reasoningVariant(source),
+		return [{ benchmark_id: benchmarkId(metric, version), score, is_self_reported: false, updated_at, variant: reasoningVariant(source),
 			other_info: `${source.name}; Artificial Analysis ID ${source.id}; Intelligence Index v${version}${metric.field === "total_cost" && finite(perTask) ? `; USD ${perTask} per task` : ""}`,
 			source_link: `https://artificialanalysis.ai/models/${source.slug}`, rank }];
 	});
@@ -171,7 +174,7 @@ export function resultsFor(source: SourceModel, version: number, allSources: Sou
 export function resultsForConfigurations(sources: SourceModel[], version: number, allSources: SourceModel[], updated_at = new Date().toISOString()) {
 	return sources.flatMap((source) => resultsFor(source, version, allSources, updated_at));
 }
-export function mergeResults(model: CatalogModel, results: Array<Record<string, unknown>>) {
-	const managed = new Set<string>(METRICS.map((metric) => metric.id));
+export function mergeResults(model: CatalogModel, results: Array<Record<string, unknown>>, version: number) {
+	const managed = new Set(METRICS.map((metric) => benchmarkId(metric, version)));
 	return [...(model.benchmarks ?? []).filter((result) => !managed.has(String(result.benchmark_id))), ...results];
 }

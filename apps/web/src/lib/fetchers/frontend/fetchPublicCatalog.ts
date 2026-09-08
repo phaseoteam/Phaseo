@@ -31,7 +31,7 @@ import type {
 } from "@/lib/fetchers/gateway/marketplaceTypes";
 import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import type { ModelAppUsage } from "@/lib/fetchers/models/getModelApps";
-import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
+import type { ModelBenchmarkHighlight, ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
 import getModelGatewayMetadata, {
 	type ModelGatewayMetadata,
 } from "@/lib/fetchers/models/getModelGatewayMetadata";
@@ -529,6 +529,13 @@ export async function fetchFrontendModelBenchmarkHighlights(
 	return payload?.highlights ?? [];
 }
 
+export async function fetchFrontendModelBenchmarkResults(
+	modelId: string,
+): Promise<ModelBenchmarkResult[]> {
+	const payload = await fetchOptionalPublicWebApi<{ results: ModelBenchmarkResult[] }>(`/api/_web/models/${encodeURIComponent(modelId)}/benchmarks`);
+	return payload?.results ?? [];
+}
+
 export async function fetchFrontendAPIProviders(): Promise<APIProviderCard[]> {
 	const payload = await fetchPublicWebApi<{ providers: APIProviderCard[] }>("/api/_web/api-providers");
 	return payload.providers.map((provider) => ({ ...provider, api_provider_name: resolveProviderDisplayName({ providerId: provider.api_provider_id, providerName: provider.api_provider_name }) }));
@@ -985,8 +992,18 @@ export type PublicBenchmarkRankingEntry = {
 	model_name: string;
 	organisation_id: string | null;
 	organisation_name: string | null;
+	organisation_colour?: string | null;
+	release_date?: string | null;
 	score: number;
 	rank: number;
+	configurations?: Array<{
+		variant: string | null;
+		result_key: string | null;
+		score: number;
+		other_info: string | null;
+		source_link: string | null;
+		updated_at: string | null;
+	}>;
 };
 
 export type PublicBenchmarkRanking = {

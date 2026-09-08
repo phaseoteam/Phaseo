@@ -6,6 +6,7 @@ import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatArtificialAnalysisScore, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import {
 	formatBenchmarkScore,
@@ -34,6 +35,18 @@ function formatReportedDate(value?: string | null) {
 	return reportedDateFormatter.format(parsed);
 }
 
+function configurationLabel(result: any) {
+	const variant = typeof result?.variant === "string" ? result.variant : null;
+	if (variant === "none") return "Non-reasoning";
+	if (variant === "xhigh") return "Xhigh";
+	if (variant) return variant.charAt(0).toUpperCase() + variant.slice(1);
+	const description = typeof result?.other_info === "string" ? result.other_info.split(";")[0] : "";
+	const detail = description.match(/\((.+)\)$/)?.[1] ?? "";
+	if (/max effort/i.test(detail)) return "Max";
+	const namedEffort = detail.match(/\b(none|low|medium|high|xhigh|max)\b/i)?.[1];
+	return namedEffort ? (namedEffort.toLowerCase() === "none" ? "Non-reasoning" : namedEffort.charAt(0).toUpperCase() + namedEffort.slice(1).toLowerCase()) : "Default";
+}
+
 export default function ModelsUsingBenchmarkClient({
 	models,
 	benchmarkId,
@@ -42,8 +55,20 @@ export default function ModelsUsingBenchmarkClient({
 }: ClientProps) {
 	const [openRows, setOpenRows] = React.useState<Record<string, boolean>>({});
 	const [search, setSearch] = React.useState("");
+	const [configuration, setConfiguration] = React.useState("all");
 	const [limit, setLimit] = React.useState(25);
 	const filteredModels = models.filter((model) => `${model.name} ${model.organisation?.display_name ?? ""}`.toLowerCase().includes(search.toLowerCase()));
+	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmarkId);
+	const allArtificialAnalysisRows = models.flatMap((model) => (model.benchmark_results || []).map((result: any) => ({ model, result })));
+	const configurations = [...new Set(allArtificialAnalysisRows.map(({ result }) => configurationLabel(result)))].sort();
+	const artificialAnalysisRows = allArtificialAnalysisRows.filter(({ result }) => configuration === "all" || configurationLabel(result) === configuration).sort((left, right) => {
+		const difference = Number(left.result.score) - Number(right.result.score);
+		return isLowerBetter ? difference : -difference;
+	}).map((row, index, rows) => ({
+		...row,
+		rank: index > 0 && Number(rows[index - 1].result.score) === Number(row.result.score) ? rows.slice(0, index).findIndex((item) => Number(item.result.score) === Number(row.result.score)) + 1 : index + 1,
+	}));
+	const visibleArtificialAnalysisRows = artificialAnalysisRows.filter(({ model }) => `${model.name} ${model.organisation?.display_name ?? ""}`.toLowerCase().includes(search.toLowerCase()));
 
 	function formatScoreDisplay(r: any) {
 		const rawScore = r?.score ?? "N/A";
@@ -102,11 +127,47 @@ export default function ModelsUsingBenchmarkClient({
 		<div className="space-y-4">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<h3 className="text-lg font-semibold">
-					Model results
+					Model Results
 				</h3>
-				<Input aria-label="Search benchmark results" placeholder="Search models" value={search} onChange={(event) => { setSearch(event.target.value); setLimit(25); }} className="sm:max-w-xs" />
+				<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+					{artificialAnalysis ? <Select value={configuration} onValueChange={(value) => { setConfiguration(value); setLimit(25); }}><SelectTrigger aria-label="Filter Results by Configuration" className="sm:w-48"><SelectValue>{configuration === "all" ? "All Configurations" : configuration}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">All Configurations</SelectItem>{configurations.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select> : null}
+					<Input aria-label="Search Benchmark Results" placeholder="Search Models" value={search} onChange={(event) => { setSearch(event.target.value); setLimit(25); }} className="sm:w-64" />
+				</div>
 			</div>
-			{filteredModels.length > 0 ? (
+			{visibleArtificialAnalysisRows.length > 0 && artificialAnalysis ? (
+				<div className="overflow-hidden rounded-xl border">
+					<div className="overflow-x-auto">
+						<table className="min-w-[580px] w-full text-sm">
+							<thead className="border-b bg-muted/40 text-xs text-muted-foreground">
+								<tr>
+									<th className="w-14 px-4 py-3 text-left font-medium">Rank</th>
+									<th className="px-3 py-3 text-left font-medium">Model</th>
+									<th className="w-24 px-3 py-3 text-right font-medium">Score</th>
+									<th className="w-32 px-3 py-3 text-left font-medium">Released</th>
+									<th className="w-14 px-3 py-3"><span className="sr-only">Source</span></th>
+								</tr>
+							</thead>
+							<tbody className="divide-y">
+								{visibleArtificialAnalysisRows.slice(0, limit).map(({ model, result, rank }, index) => {
+									const organisationLabel = model.organisation?.display_name || model.organisation?.name || "Unknown";
+									const configuration = configurationLabel(result);
+									return <tr key={result.id ?? `${model.id}-${configuration}-${index}`} className="transition-colors hover:bg-muted/25">
+											<td className="px-4 py-3 font-medium tabular-nums text-muted-foreground">{rank}</td>
+											<td className="px-3 py-3"><div className="flex items-center gap-3">
+												<span className="relative size-7 shrink-0 overflow-hidden rounded-md bg-muted"><Logo id={model.organisation?.organisation_id ?? model.id} alt="" fill className="object-contain p-1" /></span>
+												<div className="min-w-0"><Link href={`/models/${model.id}`} className="block truncate font-medium hover:underline">{model.name} <span className="text-muted-foreground">({configuration})</span></Link><span className="block truncate text-xs text-muted-foreground">{organisationLabel}</span></div>
+											</div></td>
+											<td className="px-3 py-3 text-right font-semibold tabular-nums">{formatScoreDisplay(result)}</td>
+											<td className="px-3 py-3 text-muted-foreground">{formatReportedDate(model.reported_date)}</td>
+											<td className="px-3 py-3 text-right">{result.source_link ? <Button asChild variant="ghost" size="icon-sm"><a href={result.source_link} target="_blank" rel="noreferrer" aria-label={`Open source for ${model.name} ${configuration}`}><ExternalLink /></a></Button> : null}</td>
+										</tr>
+									;
+								})}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			) : filteredModels.length > 0 ? (
 				<div className="overflow-x-auto">
 					<table className="min-w-full overflow-hidden rounded-2xl border border-zinc-200 text-sm shadow-xs dark:border-zinc-800">
 						<thead className="bg-zinc-100 dark:bg-zinc-800">
@@ -379,7 +440,7 @@ export default function ModelsUsingBenchmarkClient({
 					{search ? "No models match your search." : "No results available for this benchmark yet."}
 				</p>
 			)}
-			{filteredModels.length > limit ? <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + 25)}>Show more results ({limit} of {filteredModels.length})</Button> : null}
+			{(artificialAnalysis ? visibleArtificialAnalysisRows.length : filteredModels.length) > limit ? <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + 25)}>Show more results ({limit} of {artificialAnalysis ? visibleArtificialAnalysisRows.length : filteredModels.length})</Button> : null}
 		</div>
 	);
 }

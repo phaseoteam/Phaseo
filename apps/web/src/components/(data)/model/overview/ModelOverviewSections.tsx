@@ -38,6 +38,7 @@ import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerf
 import {
 	fetchFrontendModelApps,
 	fetchFrontendModelBenchmarkHighlights,
+	fetchFrontendModelBenchmarkResults,
 	fetchFrontendModelGatewayMetadata,
 	fetchFrontendModelHeader,
 	fetchFrontendModelOverview,
@@ -47,6 +48,7 @@ import {
 	fetchFrontendModelUsageDailyBreakdown,
 	fetchFrontendOrganisationModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchFrontendRankingBenchmarks } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
@@ -612,11 +614,21 @@ export async function ModelBenchmarksSection({
 	includeHidden,
 	hideWhenEmpty = false,
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
-	const [benchmarkHighlights, pendingApiRelease] = await Promise.all([
+	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, pendingApiRelease] = await Promise.all([
 		withOptionalSectionTimeout(
 			fetchFrontendModelBenchmarkHighlights(modelId),
 			[],
 			"benchmark highlights"
+		),
+		withOptionalSectionTimeout(
+			fetchFrontendModelBenchmarkResults(modelId),
+			[],
+			"benchmark results"
+		),
+		withOptionalSectionTimeout(
+			fetchFrontendRankingBenchmarks().then((payload) => payload.benchmarks),
+			[],
+			"benchmark rankings"
 		),
 		withOptionalSectionTimeout(
 			fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
@@ -635,6 +647,9 @@ export async function ModelBenchmarksSection({
 			{benchmarkHighlights.length > 0 ? (
 				<ModelBenchmarks
 					highlightCards={benchmarkHighlights}
+					benchmarkResults={benchmarkResults}
+					benchmarkRankings={benchmarkRankings}
+					modelId={modelId}
 					mode="summary"
 				/>
 			) : (

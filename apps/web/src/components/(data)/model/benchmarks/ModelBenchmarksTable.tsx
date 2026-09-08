@@ -5,13 +5,14 @@ import Link from "next/link";
 import { ExternalLink, ChevronDown, ChevronRight } from "lucide-react";
 
 import type { ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
+import { isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 
 interface ModelBenchmarksTableProps {
 	grouped: Record<string, ModelBenchmarkResult[]>;
 }
 
 function getScoreDisplay(result: ModelBenchmarkResult) {
-	if (result.benchmark_id === "aa-intelligence-index-cost-v4" && result.score != null) {
+	if (isArtificialAnalysisCostBenchmark(result.benchmark_id) && result.score != null) {
 		return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(result.score);
 	}
 	if (result.benchmark.max_score != null && result.score != null) {
