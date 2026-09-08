@@ -1,0 +1,90 @@
+{
+  "key": "deepseek:deepseek/deepseek-v4.1-flash-beta:text.generate",
+  "api_provider_id": "deepseek",
+  "provider_slug": "deepseek",
+  "api_model_id": "deepseek/deepseek-v4.1-flash-beta",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.22,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Off-peak price; peak windows apply on weekdays only.",
+      "match": [],
+      "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
+      "time_windows": [
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "01:00", "end_time": "04:00", "price_per_unit": 0.44 },
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "06:00", "end_time": "10:00", "price_per_unit": 0.44 }
+      ],
+      "effective_from": "2026-09-08T00:00:00Z",
+      "effective_to": "2026-09-10T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.007,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Off-peak price; peak windows apply on weekdays only.",
+      "match": [],
+      "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
+      "time_windows": [
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "01:00", "end_time": "04:00", "price_per_unit": 0.014 },
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "06:00", "end_time": "10:00", "price_per_unit": 0.014 }
+      ],
+      "effective_from": "2026-09-08T00:00:00Z",
+      "effective_to": "2026-09-10T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.66,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Off-peak price; peak windows apply on weekdays only.",
+      "match": [],
+      "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
+      "time_windows": [
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "01:00", "end_time": "04:00", "price_per_unit": 1.32 },
+        { "label": "peak", "timezone": "UTC", "days_of_week": ["mon", "tue", "wed", "thu", "fri"], "start_time": "06:00", "end_time": "10:00", "price_per_unit": 1.32 }
+      ],
+      "effective_from": "2026-09-08T00:00:00Z",
+      "effective_to": "2026-09-10T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+    }
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Matches the current DeepSeek V4 Flash pricing, including weekday peak windows."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Copied from the current DeepSeek V4 Flash price schedule for the temporary beta deployment."
+  }
+}
