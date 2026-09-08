@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { fetchModels, matchModel, matchModels, mergeResults, resultsFor, type SourceModel } from "./core";
+import { fetchModels, matchModel, matchModels, mergeResults, reasoningVariant, resultsFor, resultsForConfigurations, type SourceModel } from "./core";
 import { writeBenchmarks } from "./catalog";
 
 const source = (overrides: Partial<SourceModel> = {}): SourceModel => ({
@@ -69,6 +69,24 @@ test("ambiguous source variants require a stable ID mapping, not the highest sco
 	assert.equal(matchModel(model, sources, { ...config, models: { [model.model_id]: null } }).status, "excluded");
 });
 
+test("an explicit mapping retains every reasoning configuration in the source family", () => {
+	const variants = [
+		source({ id: "aa-low", name: "Example 1 (low)", slug: "example-1-low" }),
+		source({ id: "aa-high", name: "Example 1 (high)", slug: "example-1-high" }),
+		source({ id: "aa-max", name: "Example 1 (Adaptive Reasoning, Max Effort)", slug: "example-1-max" }),
+		source({ id: "aa-preview", name: "Example 1 (Preview)", slug: "example-1-preview" }),
+	];
+	const match = matchModel(model, variants, { ...config, models: { [model.model_id]: "aa-high" } });
+	assert.deepEqual(match.sources.map((item) => item.id), ["aa-low", "aa-high", "aa-max"]);
+	assert.deepEqual(match.sources.map(reasoningVariant), ["low", "high", "max"]);
+});
+
+test("reasoning variants come from configuration labels without misreading family names", () => {
+	assert.equal(reasoningVariant(source({ name: "Claude Sonnet (Non-reasoning, Low Effort)", slug: "claude-sonnet" })), "low");
+	assert.equal(reasoningVariant(source({ name: "Example 1", slug: "example-1-xhigh" })), "xhigh");
+	assert.equal(reasoningVariant(source({ name: "Mistral Medium 3.5", slug: "mistral-medium-3-5" })), null);
+});
+
 test("slug/name variant disagreements require an explicit mapping", () => {
 	const variant = source({ name: "Example 1 (high)" });
 	for (const candidate of [model, { ...model, model_id: "openai/example-1-high", name: "Example 1 (high)" }]) {
@@ -82,6 +100,18 @@ test("a source shared by catalog aliases requires explicit mapping", () => {
 	const mapped = matchModels([model, alias], [source()], { ...config, models: { [model.model_id]: "aa-1" } });
 	assert.deepEqual(mapped.map((match) => match.status), ["matched", "ambiguous"]);
 	assert.throws(() => matchModels([model, alias], [source()], { ...config, models: { [model.model_id]: "aa-1", [alias.model_id]: "aa-1" } }), /only one explicit/);
+});
+
+test("an explicit family mapping prevents a configuration variant mapping to another catalog model", () => {
+	const variants = [
+		source({ id: "aa-low", name: "Example 1 (low)", slug: "example-1-low" }),
+		source({ id: "aa-high", name: "Example 1 (high)", slug: "example-1-high" }),
+	];
+	const highModel = { ...model, model_id: "openai/example-1-high", name: "Example 1 (high)" };
+	const matches = matchModels([model, highModel], variants, { ...config, models: { [model.model_id]: "aa-low" } });
+	assert.equal(matches[0].status, "matched");
+	assert.equal(matches[0].sources.length, 2);
+	assert.equal(matches[1].status, "ambiguous");
 });
 
 test("catalog writes preserve surrounding compact JSON, newline style and snapshot time", () => {
@@ -109,6 +139,21 @@ test("imports zero, skips null, preserves exact cost and records evaluation prov
 	const cost = results.find((row) => row.benchmark_id === "aa-intelligence-index-cost-v4")!;
 	assert.equal(cost.score, 12.34);
 	assert.match(cost.other_info, /aa-1; Intelligence Index v4.3; USD 0.05 per task/);
+});
+test("stores the normalized reasoning configuration on every metric result", () => {
+	const rows = resultsFor(source({ name: "Example 1 (xhigh)", slug: "example-1-xhigh" }), 4.3, [source()]);
+	assert.ok(rows.length > 0);
+	assert.ok(rows.every((row) => row.variant === "xhigh"));
+});
+test("retains every metric result for every reasoning configuration", () => {
+	const configurations = [
+		source({ id: "aa-low", name: "Example 1 (low)", slug: "example-1-low" }),
+		source({ id: "aa-max", name: "Example 1 (max)", slug: "example-1-max" }),
+	];
+	const rows = resultsForConfigurations(configurations, 4.3, configurations);
+	assert.equal(rows.length, 6);
+	assert.deepEqual(new Set(rows.map((row) => row.variant)), new Set(["low", "max"]));
+	assert.equal(rows.filter((row) => row.benchmark_id === "aa-intelligence-index-v4").length, 2);
 });
 test("ranks costs lower-first, intelligence higher-first, and ties equally", () => {
 	const cheaper = source({ id: "aa-2", artificial_analysis_intelligence_index_cost: { total_cost: 1 } });
