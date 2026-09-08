@@ -353,6 +353,8 @@ export const ModelIds = {
   IBM_GRANITE_4_2_8B: "ibm/granite-4.2-8b",
   /** Model ID: `inception/mercury-2`. Model page: https://phaseo.app/models/inception/mercury-2 */
   INCEPTION_MERCURY_2: "inception/mercury-2",
+  /** Model ID: `inception/mercury-2.5`. Model page: https://phaseo.app/models/inception/mercury-2.5 */
+  INCEPTION_MERCURY_2_5: "inception/mercury-2.5",
   /** Model ID: `inception/mercury-edit-2`. Model page: https://phaseo.app/models/inception/mercury-edit-2 */
   INCEPTION_MERCURY_EDIT_2: "inception/mercury-edit-2",
   /** Model ID: `inclusionai/ling-2.6-1t`. Model page: https://phaseo.app/models/inclusionai/ling-2.6-1t */

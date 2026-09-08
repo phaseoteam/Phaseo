@@ -528,6 +528,9 @@ pub mod model_ids {
     /// Model ID: `inception/mercury-2`.
     /// Model page: https://phaseo.app/models/inception/mercury-2
     pub const INCEPTION_MERCURY_2: &str = "inception/mercury-2";
+    /// Model ID: `inception/mercury-2.5`.
+    /// Model page: https://phaseo.app/models/inception/mercury-2.5
+    pub const INCEPTION_MERCURY_2_5: &str = "inception/mercury-2.5";
     /// Model ID: `inception/mercury-edit-2`.
     /// Model page: https://phaseo.app/models/inception/mercury-edit-2
     pub const INCEPTION_MERCURY_EDIT_2: &str = "inception/mercury-edit-2";
@@ -2130,6 +2133,7 @@ pub mod model_ids {
         IBM_GRANITE_4_2_3B,
         IBM_GRANITE_4_2_8B,
         INCEPTION_MERCURY_2,
+        INCEPTION_MERCURY_2_5,
         INCEPTION_MERCURY_EDIT_2,
         INCLUSIONAI_LING_2_6_1T,
         INCLUSIONAI_LING_2_6_FLASH,

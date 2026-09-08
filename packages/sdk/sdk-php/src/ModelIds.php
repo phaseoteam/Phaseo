@@ -533,6 +533,9 @@ final class ModelIds
     /** Model ID: inception/mercury-2. Model page: https://phaseo.app/models/inception/mercury-2 */
     public const INCEPTION_MERCURY_2 = 'inception/mercury-2';
 
+    /** Model ID: inception/mercury-2.5. Model page: https://phaseo.app/models/inception/mercury-2.5 */
+    public const INCEPTION_MERCURY_2_5 = 'inception/mercury-2.5';
+
     /** Model ID: inception/mercury-edit-2. Model page: https://phaseo.app/models/inception/mercury-edit-2 */
     public const INCEPTION_MERCURY_EDIT_2 = 'inception/mercury-edit-2';
 

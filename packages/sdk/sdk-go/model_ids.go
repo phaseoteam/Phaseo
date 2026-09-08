@@ -532,6 +532,9 @@ const (
 	// Model ID: inception/mercury-2
 	// Model page: https://phaseo.app/models/inception/mercury-2
 	ModelIDInceptionMercury2 gen.ModelId = "inception/mercury-2"
+	// Model ID: inception/mercury-2.5
+	// Model page: https://phaseo.app/models/inception/mercury-2.5
+	ModelIDInceptionMercury25 gen.ModelId = "inception/mercury-2.5"
 	// Model ID: inception/mercury-edit-2
 	// Model page: https://phaseo.app/models/inception/mercury-edit-2
 	ModelIDInceptionMercuryEdit2 gen.ModelId = "inception/mercury-edit-2"
@@ -2134,6 +2137,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDIbmGranite423b,
 	ModelIDIbmGranite428b,
 	ModelIDInceptionMercury2,
+	ModelIDInceptionMercury25,
 	ModelIDInceptionMercuryEdit2,
 	ModelIDInclusionaiLing261t,
 	ModelIDInclusionaiLing26Flash,
