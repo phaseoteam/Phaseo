@@ -13,4 +13,3 @@ grant insert (id, name, slug, owner_user_id, created_at, updated_at, publisher_h
 grant update (name, slug, updated_at, publisher_handle, logo_url)
   on public.workspaces to authenticated;
 notify pgrst, 'reload schema';
-

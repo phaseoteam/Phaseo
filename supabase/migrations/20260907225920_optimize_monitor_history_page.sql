@@ -80,4 +80,3 @@ AS $function$
     case when e.endpoint is null or btrim(e.endpoint) = '' then 0 else 1 end asc,
     e.event_id asc;
 $function$
-

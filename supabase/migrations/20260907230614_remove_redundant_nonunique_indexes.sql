@@ -11,4 +11,3 @@ drop index if exists public.gateway_dynamic_route_keys_route_idx;
 drop index if exists public.v2_execution_plans_runtime_lookup_idx;
 drop index if exists public.v2_request_attempts_request_idx;
 drop index if exists public.v2_request_routing_decisions_request_idx;
-

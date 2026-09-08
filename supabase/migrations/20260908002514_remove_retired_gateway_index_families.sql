@@ -22,4 +22,3 @@ DROP INDEX public.gateway_requests_api_model_created_idx;
 DROP INDEX public.gateway_requests_pricing_plan_created_idx;
 DROP INDEX public.gateway_requests_trace_data_gin_idx;
 DROP INDEX public.gateway_upstream_requests_parent_sequence_idx;
-

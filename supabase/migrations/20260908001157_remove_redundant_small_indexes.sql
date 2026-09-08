@@ -12,4 +12,3 @@ DROP INDEX public.byok_keys_workspace_provider_idx;
 DROP INDEX public.oauth_authorizations_user_id_idx;
 DROP INDEX public.presets_workspace_id_idx;
 DROP INDEX public.workspace_broadcast_destinations_workspace_id_idx;
-

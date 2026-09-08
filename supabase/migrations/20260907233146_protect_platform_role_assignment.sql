@@ -23,4 +23,3 @@ grant update (
 
 -- Backend role management keeps its existing table privileges.
 notify pgrst, 'reload schema';
-

@@ -529,4 +529,3 @@ left join meters on meters.rollup_id = usage.rollup_id
   order by bucketed.time_bucket, bucketed.request_count desc;
 end;
 $function$;
-

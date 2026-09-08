@@ -67,4 +67,3 @@ alter policy gateway_webhook_endpoints_select_workspace_members on public.gatewa
 alter policy gateway_webhook_endpoints_update_workspace_admins on public.gateway_webhook_endpoints to authenticated;
 
 notify pgrst, 'reload schema';
-

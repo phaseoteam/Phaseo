@@ -265,4 +265,3 @@ AS $function$
   left join capability_summary on capability_summary.model_slug = grouped.model_slug
   order by grouped.released_at desc nulls last, grouped.lab_name, grouped.name;
 $function$;
-

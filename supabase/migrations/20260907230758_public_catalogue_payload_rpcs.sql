@@ -47,4 +47,3 @@ grant execute on function public.get_public_models_page_payload(text, text, text
 grant execute on function public.get_public_monitor_rows_payload() to service_role;
 
 notify pgrst, 'reload schema';
-

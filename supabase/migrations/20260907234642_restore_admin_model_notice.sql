@@ -36,4 +36,3 @@ end $$;
 
 revoke all on function public.mutate_v2_admin_model_notice(uuid,text,jsonb) from public,anon,authenticated;
 grant execute on function public.mutate_v2_admin_model_notice(uuid,text,jsonb) to service_role;
-

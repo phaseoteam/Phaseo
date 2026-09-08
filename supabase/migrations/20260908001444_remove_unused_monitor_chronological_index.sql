@@ -7,4 +7,3 @@
 SET LOCAL lock_timeout = '2s';
 SET LOCAL statement_timeout = '15s';
 DROP INDEX public.monitor_history_events_committed_at_idx;
-

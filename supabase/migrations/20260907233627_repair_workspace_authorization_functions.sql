@@ -397,4 +397,3 @@ revoke execute on function public.redeem_credit_code(text,uuid) from public, ano
 grant execute on function public.redeem_credit_code(text,uuid) to authenticated, service_role;
 
 notify pgrst, 'reload schema';
-

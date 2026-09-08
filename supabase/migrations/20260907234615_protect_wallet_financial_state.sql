@@ -16,4 +16,3 @@ grant update (auto_top_up_enabled, low_balance_threshold, auto_top_up_amount, up
 -- Ledger rows are emitted by trusted settlement code and privileged redemption.
 revoke insert, update, delete, truncate on public.credit_ledger from public, anon, authenticated;
 notify pgrst, 'reload schema';
-

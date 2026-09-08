@@ -201,4 +201,3 @@ select
 from hourly
 order by hourly.bucket_start;
 $function$
-

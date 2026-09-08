@@ -52,4 +52,3 @@ CREATE INDEX v2_provider_endpoints_provider_slug_auth_profile_id_idx ON public.v
 CREATE INDEX v2_provider_endpoints_service_tier_slug_idx ON public.v2_provider_endpoints (service_tier_slug);
 CREATE INDEX workspace_addon_subscriptions_quote_id_idx ON public.workspace_addon_subscriptions (quote_id);
 CREATE INDEX workspace_join_requests_invite_id_idx ON public.workspace_join_requests (invite_id);
-

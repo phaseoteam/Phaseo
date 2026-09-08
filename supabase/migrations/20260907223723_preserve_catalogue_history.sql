@@ -577,4 +577,3 @@ as $$
   order by plan.plan_id, plan.frequency;
 $$;
 grant execute on function public.get_v2_model_subscription_plans(text) to anon, authenticated, service_role;
-

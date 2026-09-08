@@ -53,4 +53,3 @@ CREATE INDEX workspace_member_overrides_updated_by_idx ON public.workspace_membe
 CREATE INDEX workspace_member_overrides_user_id_idx ON public.workspace_member_overrides (user_id);
 CREATE INDEX workspace_private_models_created_by_idx ON public.workspace_private_models (created_by);
 CREATE INDEX workspace_sso_monthly_active_users_auth_user_id_idx ON public.workspace_sso_monthly_active_users (auth_user_id);
-

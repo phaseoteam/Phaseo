@@ -4,4 +4,3 @@
 alter function public.is_admin_user() security invoker;
 alter function public.is_admin_user() set search_path = '';
 notify pgrst, 'reload schema';
-

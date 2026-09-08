@@ -624,4 +624,3 @@ select
         'release_date', (select release_date from anchors),
         'total_tokens', (select total_tokens from token_totals)
     ) as cumulative_tokens;$function$;
-
