@@ -174,11 +174,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 1.3,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Granite 3.3 8B (Non-reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Granite 3.3 8B (Non-reasoning); Artificial Analysis ID 2cff73da-4855-403c-afc9-5540feadcc15; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/granite-3-3-8b-instruct",
-      "rank": 568
+      "rank": 513
     }
   ],
   "page_notice": null,

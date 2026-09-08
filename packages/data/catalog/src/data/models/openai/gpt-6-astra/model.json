@@ -36,12 +36,90 @@
     { "name": "zero_data_retention", "value": "Supported for eligible OpenAI API customers." }
   ],
   "benchmarks": [
-    { "benchmark_id": "agents-last-exam", "score": 59.3, "is_self_reported": true, "other_info": "GPT-6 Astra launch evaluation", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
-    { "benchmark_id": "osworld-2.0", "score": 72.6, "is_self_reported": true, "other_info": "v2026.08.08 offline set, partial score", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
-    { "benchmark_id": "browsecomp", "score": 91.5, "is_self_reported": true, "other_info": "GPT-6 Astra launch evaluation", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
-    { "benchmark_id": "deepswe", "score": 74.1, "is_self_reported": true, "other_info": "DeepSWE v1.1", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
-    { "benchmark_id": "gpqa-diamond", "score": 96.0, "is_self_reported": true, "other_info": "GPT-6 Astra launch evaluation", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null },
-    { "benchmark_id": "exploitbench-cap", "score": 100.0, "is_self_reported": true, "other_info": "ExploitBench without production safeguards", "source_link": "https://openai.com/index/gpt-6-astra/", "rank": null }
+    {
+      "benchmark_id": "agents-last-exam",
+      "score": 59.3,
+      "is_self_reported": true,
+      "other_info": "GPT-6 Astra launch evaluation",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "osworld-2.0",
+      "score": 72.6,
+      "is_self_reported": true,
+      "other_info": "v2026.08.08 offline set, partial score",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 91.5,
+      "is_self_reported": true,
+      "other_info": "GPT-6 Astra launch evaluation",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "deepswe",
+      "score": 74.1,
+      "is_self_reported": true,
+      "other_info": "DeepSWE v1.1",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 96,
+      "is_self_reported": true,
+      "other_info": "GPT-6 Astra launch evaluation",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "exploitbench-cap",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": "ExploitBench without production safeguards",
+      "source_link": "https://openai.com/index/gpt-6-astra/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 54.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GPT-6 Astra (max); Artificial Analysis ID 2f339a97-9a0d-499a-9cb5-e0db665bfa25; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-6-astra",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 76.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GPT-6 Astra (max); Artificial Analysis ID 2f339a97-9a0d-499a-9cb5-e0db665bfa25; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-6-astra",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 51.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GPT-6 Astra (max); Artificial Analysis ID 2f339a97-9a0d-499a-9cb5-e0db665bfa25; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-6-astra",
+      "rank": 12
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 4063.77,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GPT-6 Astra (max); Artificial Analysis ID 2f339a97-9a0d-499a-9cb5-e0db665bfa25; Intelligence Index v4.3; USD 2.5673 per task",
+      "source_link": "https://artificialanalysis.ai/models/gpt-6-astra",
+      "rank": 83
+    }
   ],
   "model_type": null,
   "knowledge_cutoff": "2026-04-30T00:00:00",

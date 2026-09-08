@@ -18,11 +18,12 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 2,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Gemma 3 270M; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemma 3 270M; Artificial Analysis ID 04781a0e-40f0-4e2a-a4e5-18e389364a79; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-3-270m",
-      "rank": 555
+      "rank": 513
     }
   ],
   "family_id": null,

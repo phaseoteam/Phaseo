@@ -138,11 +138,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 22.6,
+      "score": 16,
       "is_self_reported": false,
-      "other_info": "DeepSeek V3.2 Speciale; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "DeepSeek V3.2 Speciale; Artificial Analysis ID 527e943a-adc6-4e69-93af-d1608e1b5fed; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/deepseek-v3-2-speciale",
-      "rank": 210
+      "rank": 251
     }
   ],
   "family_id": null,

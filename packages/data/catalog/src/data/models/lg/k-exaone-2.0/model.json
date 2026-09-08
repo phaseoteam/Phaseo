@@ -15,7 +15,26 @@
   "api_model_id": "lg/k-exaone-2.0",
   "links": [{"kind":"announcement","title":"Official LG AI Research announcement","url":"https://www.lgresearch.ai/news/view?seq=678"},{"kind":"model_card","title":"Official model card","url":"https://huggingface.co/LGAI-EXAONE/K-EXAONE-2.0-750B-A37B"}],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 23.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "K-EXAONE 2.0; Artificial Analysis ID 18721247-4e56-4cf7-9a9d-c71cc60c0961; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/k-exaone-2-0-0803",
+      "rank": 191
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 40.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "K-EXAONE 2.0; Artificial Analysis ID 18721247-4e56-4cf7-9a9d-c71cc60c0961; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/k-exaone-2-0-0803",
+      "rank": 138
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": "Mixture of Experts",

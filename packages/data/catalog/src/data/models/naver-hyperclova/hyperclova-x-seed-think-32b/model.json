@@ -18,11 +18,12 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 17.2,
+      "score": 11,
       "is_self_reported": false,
-      "other_info": "HyperCLOVA X SEED Think (32B); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "HyperCLOVA X SEED Think (32B); Artificial Analysis ID 339a92c1-8a42-417f-8d1f-cdbc605acd9e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/hyperclova-x-seed-think-32b",
-      "rank": 273
+      "rank": 320
     }
   ],
   "family_id": null,

@@ -18,11 +18,39 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 14.2,
+      "score": 10.4,
       "is_self_reported": false,
-      "other_info": "DeepSeek V3 (Dec '24); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "DeepSeek V3 (Dec '24); Artificial Analysis ID 43fc5506-c5ed-4dee-9b85-962bf7ae3986; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/deepseek-v3",
-      "rank": 313
+      "rank": 332
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 23,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "DeepSeek V3 (Dec '24); Artificial Analysis ID 43fc5506-c5ed-4dee-9b85-962bf7ae3986; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/deepseek-v3",
+      "rank": 187
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 0.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "DeepSeek V3 (Dec '24); Artificial Analysis ID 43fc5506-c5ed-4dee-9b85-962bf7ae3986; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/deepseek-v3",
+      "rank": 137
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 26.18,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "DeepSeek V3 (Dec '24); Artificial Analysis ID 43fc5506-c5ed-4dee-9b85-962bf7ae3986; Intelligence Index v4.3; USD 0.0246 per task",
+      "source_link": "https://artificialanalysis.ai/models/deepseek-v3",
+      "rank": 4
     }
   ],
   "family_id": null,

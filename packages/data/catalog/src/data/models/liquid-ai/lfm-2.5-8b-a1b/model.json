@@ -15,7 +15,17 @@
   "api_model_id": "liquid-ai/lfm-2.5-8b-a1b",
   "links": [],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 2.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "LFM2.5-8B-A1B; Artificial Analysis ID e2b664ca-7992-4de6-8839-4867f035c892; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/lfm2-5-8b-a1b",
+      "rank": 469
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

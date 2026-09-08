@@ -1,5 +1,6 @@
 import BenchmarkDetailShell from "@/components/(data)/benchmark/BenchmarkDetailShell";
 import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
+import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import { fetchFrontendBenchmark } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -132,7 +133,9 @@ export default async function Page({
 					<JsonLdScript id="benchmark-breadcrumb-schema" data={structuredData.breadcrumbSchema} />
 				</>
 			)}
-			<BenchmarkDetailShell benchmark={benchmark} tocItems={[{ id: "summary", label: "Summary" }, { id: "progress", label: "Progress" }, { id: "model-results", label: "Model Results" }]}>
+			<BenchmarkDetailShell benchmark={benchmark} tocItems={isArtificialAnalysisBenchmark(benchmark.id)
+				? [{ id: "summary", label: "Summary" }, { id: "model-results", label: "Model results" }, { id: "progress", label: "Progress" }]
+				: [{ id: "summary", label: "Summary" }, { id: "progress", label: "Progress" }, { id: "model-results", label: "Model results" }]}>
 				<BenchmarkOverview benchmark={benchmark} />
 			</BenchmarkDetailShell>
 		</>

@@ -426,11 +426,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 14.4,
+      "score": 8.4,
       "is_self_reported": false,
-      "other_info": "Qwen3 VL 235B A22B Instruct; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen3 VL 235B A22B Instruct; Artificial Analysis ID d58cf573-1bd3-4d1f-9182-5482a460f570; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-vl-235b-a22b-instruct",
-      "rank": 309
+      "rank": 355
     }
   ],
   "family_id": null,

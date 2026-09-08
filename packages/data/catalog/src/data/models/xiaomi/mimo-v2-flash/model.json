@@ -145,11 +145,21 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 34,
+      "score": 18.3,
       "is_self_reported": false,
-      "other_info": "MiMo-V2-Flash (Feb 2026); Artificial Analysis Intelligence Index v4.1.1",
-      "source_link": "https://artificialanalysis.ai/models/mimo-v2-0206",
-      "rank": 121
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "MiMo-V2-Flash (Non-reasoning); Artificial Analysis ID 82b36b4d-84dd-4bc0-ad32-e3aee9442789; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mimo-v2-flash",
+      "rank": 232
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 49.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "MiMo-V2-Flash (Non-reasoning); Artificial Analysis ID 82b36b4d-84dd-4bc0-ad32-e3aee9442789; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mimo-v2-flash",
+      "rank": 112
     }
   ],
   "family_id": null,

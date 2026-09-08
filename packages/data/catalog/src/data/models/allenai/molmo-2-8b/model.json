@@ -18,11 +18,12 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 1.6,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Molmo2-8B; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Molmo2-8B; Artificial Analysis ID 3ef6db79-1dfa-4780-8c4b-affe2740d9ac; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/molmo2-8b",
-      "rank": 565
+      "rank": 513
     }
   ],
   "family_id": null,

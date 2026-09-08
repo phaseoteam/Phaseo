@@ -27,7 +27,26 @@
       "source_link": "https://runinfra.ai/inference-api/qwen3-8-flash-next"
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 45.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen3.8-Flash-Next; Artificial Analysis ID 9ac3908c-9eb2-44db-8c01-3ec7da6fc2ae; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-8-flash-next",
+      "rank": 36
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 73.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen3.8-Flash-Next; Artificial Analysis ID 9ac3908c-9eb2-44db-8c01-3ec7da6fc2ae; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen3-8-flash-next",
+      "rank": 36
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": "language",

@@ -27,7 +27,17 @@
     }
   ],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 6.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Medium 3; Artificial Analysis ID 59e22326-1bca-4432-a5fa-147fbe8854e7; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-medium-3",
+      "rank": 380
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": "language",

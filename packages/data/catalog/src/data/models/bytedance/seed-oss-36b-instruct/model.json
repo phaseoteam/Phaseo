@@ -18,11 +18,12 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 18.5,
+      "score": 12.2,
       "is_self_reported": false,
-      "other_info": "Seed-OSS-36B-Instruct; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Seed-OSS-36B-Instruct; Artificial Analysis ID 5c6533f3-75a2-4109-b9a9-3623afc6b86a; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/seed-oss-36b-instruct",
-      "rank": 256
+      "rank": 302
     }
   ],
   "family_id": null,

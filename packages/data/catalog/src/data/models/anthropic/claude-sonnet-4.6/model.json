@@ -312,11 +312,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 48.4,
+      "score": 29,
       "is_self_reported": false,
-      "other_info": "Claude Sonnet 4.6 (Adaptive Reasoning, Max Effort); Artificial Analysis Intelligence Index v4.1.1",
-      "source_link": "https://artificialanalysis.ai/models/claude-sonnet-4-6-adaptive",
-      "rank": 33
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude Sonnet 4.6 (Non-reasoning, High Effort); Artificial Analysis ID 2e40e695-3cec-43da-83f9-615af30b8e91; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-sonnet-4-6",
+      "rank": 129
     }
   ],
   "page_notice": null,

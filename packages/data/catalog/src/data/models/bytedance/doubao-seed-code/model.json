@@ -15,7 +15,17 @@
   "api_model_id": "bytedance/doubao-seed-code",
   "links": [],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 19.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Doubao Seed Code; Artificial Analysis ID 4d6dd5ce-08cb-4e87-9288-1dd2f022aa35; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/doubao-seed-code",
+      "rank": 218
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

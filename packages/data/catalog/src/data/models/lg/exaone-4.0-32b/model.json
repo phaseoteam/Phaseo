@@ -221,11 +221,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 10.5,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "EXAONE 4.0 32B (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
-      "source_link": "https://artificialanalysis.ai/models/exaone-4-0-32b-reasoning",
-      "rank": 367
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "EXAONE 4.0 32B (Non-reasoning); Artificial Analysis ID 2f60d80d-c3d3-4a43-bded-0557898c4618; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/exaone-4-0-32b",
+      "rank": 513
     }
   ],
   "page_notice": null,

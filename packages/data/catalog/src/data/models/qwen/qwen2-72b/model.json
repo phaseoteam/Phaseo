@@ -44,6 +44,15 @@
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
       "rank": 69
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen2 Instruct 72B; Artificial Analysis ID 7656c62b-5345-435b-bf12-b6ce2ca0d58d; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen2-72b-instruct",
+      "rank": 513
     }
   ],
   "family_id": null,

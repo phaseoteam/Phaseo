@@ -1,6 +1,8 @@
 import { ReactNode } from "react";
 import Image from "next/image";
 import { Trophy } from "lucide-react";
+import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
+import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
@@ -66,13 +68,13 @@ export default async function BenchmarkDetailShell({
 				<div id="benchmark-detail-primary-header" className="mb-6 flex w-full items-start justify-between gap-4">
 					<div className="flex min-w-0 items-center gap-4">
 						<div className="flex size-14 shrink-0 items-center justify-center rounded-md border border-border/70 bg-card/40">
-							<Trophy className="size-7 text-muted-foreground" />
+							{isArtificialAnalysisBenchmark(benchmark.id) ? <ArtificialAnalysisLogo size={32} /> : <Trophy className="size-7 text-muted-foreground" />}
 						</div>
 						<div className="min-w-0">
-							<h1 className="truncate text-3xl font-bold tracking-tight">
+							<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
 								{benchmark.name ?? benchmark.id}
 							</h1>
-							<p className="mt-1.5 text-sm text-muted-foreground">AI benchmark results and model performance</p>
+							<p className="mt-1.5 text-sm text-muted-foreground">{isArtificialAnalysisBenchmark(benchmark.id) ? "Independent evaluations by Artificial Analysis" : "AI benchmark results and model performance"}</p>
 						</div>
 					</div>
 					<BenchmarkEditButton benchmarkId={benchmark.id} />

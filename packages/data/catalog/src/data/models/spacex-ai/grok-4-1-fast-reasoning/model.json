@@ -26,7 +26,17 @@
       "value": "Available through Requesty as xai/grok-4-1-fast-reasoning."
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 23.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Grok 4.1 Fast (Reasoning); Artificial Analysis ID 23149f9b-c904-43e2-9ec4-afa2bf843941; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/grok-4-1-fast-reasoning",
+      "rank": 184
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

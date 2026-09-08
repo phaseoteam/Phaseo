@@ -77,9 +77,10 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 1,
       "is_self_reported": false,
-      "other_info": "Gemma 3 1B Instruct; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Gemma 3 1B Instruct; Artificial Analysis ID d1720545-d0a8-4c15-a53e-ef5ca99ac7ea; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gemma-3-1b",
-      "rank": 578
+      "rank": 513
     }
   ],
   "page_notice": null,

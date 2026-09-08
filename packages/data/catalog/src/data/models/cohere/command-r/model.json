@@ -35,16 +35,7 @@
       "value": 4000
     }
   ],
-  "benchmarks": [
-    {
-      "benchmark_id": "aa-intelligence-index-v4",
-      "score": 2.6,
-      "is_self_reported": false,
-      "other_info": "Command-R+ (Apr '24); Artificial Analysis Intelligence Index v4.1.1",
-      "source_link": "https://artificialanalysis.ai/models/command-r-plus-04-2024",
-      "rank": 543
-    }
-  ],
+  "benchmarks": [],
   "family_id": null,
   "page_notice": null,
   "model_type": null,
