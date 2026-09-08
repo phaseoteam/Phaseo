@@ -63,7 +63,7 @@ export default function CountryModelsSection({ models }: CountryModelsSectionPro
 						onChange={(event) => setQuery(event.target.value)}
 						placeholder="Search models or organisations"
 						aria-label="Search country models"
-						className="h-9 pl-9"
+						className="h-9 rounded-md pl-9"
 					/>
 				</div>
 				<p className="shrink-0 text-sm tabular-nums text-muted-foreground">

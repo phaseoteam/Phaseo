@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fetchAdminCatalogCounts, fetchAdminCatalogOverview } from "@/lib/fetchers/internal/fetchAdminCatalog";
-import { CatalogSearch } from "./CatalogSearch";
+import { CatalogSearch } from "@/app/(dashboard)/internal/data/CatalogSearch";
 
 const resourceMeta = {
 	models: { label: "Models", href: "/internal/data/models", newHref: "/internal/data/models/new", icon: Bot, description: "Identity, lifecycle, lineage, notices, routes and pricing" },
