@@ -12,10 +12,12 @@ begin
     return;
   end if;
 
+  -- pg_get_functiondef normalizes RETURNS TABLE columns and may place these
+  -- fields on one line, so do not include indentation in the match.
   v_definition := replace(
     v_definition,
-    $old$  country_code text,$old$,
-    $new$  country_code text,
+    $old$country_code text,$old$,
+    $new$country_code text,
   subdivision_code text,$new$
   );
   v_definition := replace(
@@ -31,7 +33,9 @@ begin
     provider.subdivision_code,$new$
   );
 
-  if v_definition = v_original or position('subdivision_code' in v_definition) = 0 then
+  if v_definition = v_original
+     or position('subdivision_code text' in v_definition) = 0
+     or position('subdivision_code' in v_definition) = 0 then
     raise exception 'public provider index did not contain the expected location clauses';
   end if;
   execute v_definition;
