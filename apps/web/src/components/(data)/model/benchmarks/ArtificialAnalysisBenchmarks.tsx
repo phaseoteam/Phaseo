@@ -40,25 +40,23 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	const preferred = variants.includes("max") ? "max" : variants.at(-1) ?? "";
 	const [selectedVariant, setSelectedVariant] = useState(preferred);
 	const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
+	const [comparisonModelId, setComparisonModelId] = useState("");
 	const selectedResults: DisplayResult[] = selectedVariant ? aaResults.filter((item) => item.variant === selectedVariant).map((item) => ({ benchmarkId: item.benchmark_id, score: item.score, otherInfo: item.other_info, sourceLink: item.source_link })) : [];
 	const fallback: DisplayResult[] = highlights.filter((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
 	const available = selectedResults.length ? selectedResults : fallback;
 	if (!available.length) return null;
 	const versions = [...new Set(available.map((item) => artificialAnalysisVersion(item.otherInfo)).filter(Boolean))];
 	const activeRanking = rankings.find((ranking) => ranking.benchmark_id === expandedMetric);
-	const activeResult = available.find((item) => item.benchmarkId === expandedMetric);
 	const activeMetric = artificialAnalysisMetrics.find((metric) => metric.id === expandedMetric);
 	const peerRows = (activeRanking?.entries ?? []).map((entry) => ({ ...entry, score: Number(entry.score) })).filter((entry) => Number.isFinite(entry.score));
-	const currentPeer = peerRows.find((entry) => entry.model_id === modelId);
-	const comparisonRows = activeRanking && activeResult?.score != null ? [...peerRows.slice(0, 5).filter((entry) => entry.model_id !== modelId), {
-		model_id: modelId ?? "current-model",
-		model_name: currentPeer?.model_name ?? modelId?.split("/").at(-1)?.replaceAll("-", " ") ?? "This model",
-		organisation_id: null,
-		organisation_name: null,
-		score: Number(activeResult.score),
-		rank: currentPeer?.rank ?? 0,
-	}].sort((a, b) => activeRanking.lower_is_better ? a.score - b.score : b.score - a.score).slice(0, 6) : [];
+	const currentPeerIndex = peerRows.findIndex((entry) => entry.model_id === modelId);
+	const nearbyPeers = activeRanking ? peerRows.slice(Math.max(0, currentPeerIndex - 3), currentPeerIndex < 0 ? 6 : currentPeerIndex + 4).filter((entry) => entry.model_id !== modelId).map((entry) => ({ id: entry.model_id, label: entry.model_name, score: entry.score, kind: "peer" as const, selected: false })) : [];
+	const comparisonPeer = peerRows.find((entry) => entry.model_id === comparisonModelId);
+	const peerComparisons = comparisonPeer && !nearbyPeers.some((entry) => entry.id === comparisonPeer.model_id) ? [...nearbyPeers, { id: comparisonPeer.model_id, label: comparisonPeer.model_name, score: comparisonPeer.score, kind: "peer" as const, selected: true }] : nearbyPeers.map((entry) => ({ ...entry, selected: entry.id === comparisonModelId }));
+	const configurationRows = expandedMetric ? aaResults.filter((item) => item.benchmark_id === expandedMetric && item.score !== null && item.variant).map((item) => ({ id: `configuration-${item.variant}`, label: configurationLabel(item.variant as string), score: Number(item.score), kind: "configuration" as const, selected: item.variant === selectedVariant })).filter((item) => Number.isFinite(item.score)) : [];
+	const comparisonRows = [...peerComparisons, ...configurationRows].sort((a, b) => activeRanking?.lower_is_better ? a.score - b.score : b.score - a.score);
 	const maxComparisonScore = Math.max(...comparisonRows.map((row) => row.score), 1);
+	const rankFor = (benchmarkId: string) => rankings.find((ranking) => ranking.benchmark_id === benchmarkId)?.entries.find((entry) => entry.model_id === modelId);
 
 	return <section aria-label="Artificial Analysis benchmarks">
 		<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -69,21 +67,25 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 		<div className="mt-4 grid grid-cols-2 border-y lg:grid-cols-4">
 			{artificialAnalysisMetrics.map(({ id, label, description }, index) => {
 				const result = available.find((item) => item.benchmarkId === id);
+				const ranking = rankings.find((item) => item.benchmark_id === id);
+				const rank = rankFor(id);
 				const active = expandedMetric === id;
 				return <button key={id} type="button" aria-expanded={active} onClick={() => setExpandedMetric(active ? null : id)} className={`group min-w-0 py-4 text-left sm:py-5 ${index % 2 ? "border-l pl-4 sm:pl-5" : "pr-4 sm:pr-5"} ${index > 1 ? "border-t lg:border-t-0 lg:border-l lg:pl-5" : ""}`}>
 					<span className="flex items-center gap-1.5 text-sm font-medium">{label}<BarChart3 className={`size-3.5 transition-colors ${active ? "text-[#8842FD]" : "text-muted-foreground/60 group-hover:text-foreground"}`} /></span>
 					<span className="my-2 block text-xl font-semibold tracking-tight sm:text-2xl xl:text-3xl">{result?.score == null ? "—" : <AnimatedScore benchmarkId={id} score={result.score} />}</span>
 					<span className="block text-xs leading-5 text-muted-foreground">{result?.score == null ? "Not available" : description}</span>
+					{result?.score != null && rank ? <span className="mt-1 block text-xs font-medium text-muted-foreground">#{rank.rank} of {ranking?.entries.length ?? ranking?.total_models ?? "—"} models</span> : null}
 				</button>;
 			})}
 		</div>
 
 		{expandedMetric ? <div className="border-b py-5" aria-live="polite">
-			<div className="mb-4"><h3 className="text-sm font-medium">{activeMetric?.label} comparison</h3><p className="text-xs text-muted-foreground">{activeRanking?.lower_is_better ? "Lower is better" : "Higher is better"} · leading configurations</p></div>
-			{comparisonRows.length ? <div className="space-y-2.5">{comparisonRows.map((row) => {
-				const current = row.model_id === (modelId ?? "current-model");
-				return <div key={row.model_id} className="grid grid-cols-[minmax(7rem,10rem)_1fr_auto] items-center gap-3 text-xs"><span className={`truncate capitalize ${current ? "font-medium text-foreground" : "text-muted-foreground"}`}>{current ? `${row.model_name} · ${configurationLabel(selectedVariant)}` : row.model_name}</span><span className="h-1.5 overflow-hidden rounded-full bg-muted"><span className="block h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.max((row.score / maxComparisonScore) * 100, 2)}%`, backgroundColor: current ? purple : "var(--muted-foreground)" }} /></span><span className="w-16 text-right font-medium tabular-nums">{expandedMetric === "aa-intelligence-index-cost-v4" ? `$${row.score.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : row.score.toFixed(1)}</span></div>;
-			})}</div> : <p className="text-sm text-muted-foreground">Comparison data is not available yet.</p>}
+			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h3 className="text-sm font-medium">{activeMetric?.label} comparison</h3><p className="text-xs text-muted-foreground">{activeRanking?.lower_is_better ? "Lower is better" : "Higher is better"} · this model’s configurations and nearby models</p></div>{peerRows.length ? <Select value={comparisonModelId} onValueChange={setComparisonModelId}><SelectTrigger size="sm" aria-label="Add model to comparison" className="w-full sm:w-52"><SelectValue placeholder="Compare another model" /></SelectTrigger><SelectContent align="end">{peerRows.filter((entry) => entry.model_id !== modelId).map((entry) => <SelectItem key={entry.model_id} value={entry.model_id}>{entry.model_name}</SelectItem>)}</SelectContent></Select> : null}</div>
+			{comparisonRows.length ? <div className="overflow-x-auto pb-2"><div className="flex h-64 min-w-max items-end gap-3 border-b px-1" style={{ width: `${Math.max(comparisonRows.length * 92, 640)}px` }}>{comparisonRows.map((row) => {
+				const height = Math.max((row.score / maxComparisonScore) * 176, 4);
+				const current = row.kind === "configuration";
+				return <div key={row.id} className="flex h-full w-20 flex-col justify-end text-center text-xs"><span className={`mb-1 font-medium tabular-nums ${row.selected ? "text-[#8842FD]" : "text-foreground"}`}>{expandedMetric === "aa-intelligence-index-cost-v4" ? `$${row.score.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : row.score.toFixed(1)}</span><span className="mx-auto w-11 rounded-t-sm transition-[height] duration-500" style={{ height, backgroundColor: current ? purple : "var(--muted-foreground)", opacity: current && !row.selected ? 0.5 : 1 }} /><span className={`mt-2 line-clamp-2 min-h-8 leading-4 ${current ? "font-medium" : "text-muted-foreground"}`} title={row.label}>{row.label}</span></div>;
+			})}</div></div> : <p className="text-sm text-muted-foreground">Comparison data is not available yet.</p>}
 		</div> : null}
 
 		<div className="mt-3 flex justify-end text-xs text-muted-foreground"><a href={available[0]?.sourceLink || "https://artificialanalysis.ai/models"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-foreground">Source: Artificial Analysis <ExternalLink className="size-3.5" /></a></div>
