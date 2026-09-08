@@ -4,7 +4,9 @@ Database migrations are validated on pull requests without production secrets. A
 
 CI-managed application deployment waits for the migration job. If migration validation, approval, dry-run, or application fails, the application deploy is skipped.
 
-The sole exception is an explicitly dispatched `deploy_production` run on `main`. Use it only after independently confirming that every migration on `main` has already been applied to the production database. Manual and push-triggered production releases share a concurrency lock, so this recovery path cannot overlap another production release.
+To recover a missed or failed release, dispatch CI on `main` with `deploy_production=true`. This validates the committed migration history, then runs the same approval-gated migration dry run, application, and security checks before deploying. It requires `ENABLE_PRODUCTION_DB_MIGRATIONS=true`; a skipped or failed migration job blocks manual deployment. Manual and push-triggered production releases share a concurrency lock, so recovery cannot overlap another production release.
+
+Set `importer_mode=run` when recovery also needs a catalogue import. In a combined manual release, the importer waits for successful migrations. Leave `importer_mode=skip` to deploy without importing. Standalone importer dispatches with `deploy_production=false` do not apply migrations.
 
 ## One-time GitHub setup
 
@@ -30,7 +32,7 @@ For a pull request or merge-queue check that changes `supabase/migrations/**`, C
 - requires timestamped lower-snake-case names and prevents new version collisions; and
 - requires an explicit justification comment for destructive SQL.
 
-For a push to `main`, CI repeats validation, waits for approval, links the production project, runs `supabase db push --dry-run`, then applies `supabase db push`. After applying, it runs the rollback-only SQL security checks in `supabase/tests/stealth_catalogue_security_smoke.sql`. These verify the stealth identifier constraint, direct-table RLS boundary, RPC grants, and `SECURITY DEFINER` wrappers against the linked database. Production credentials exist only in the approval-gated job. If either the migration or its security checks fail, CI-managed application deployment remains blocked.
+For a push to `main` or an explicit manual production release on `main`, CI validates migration history, waits for approval, links the production project, runs `supabase db push --dry-run`, then applies `supabase db push`. After applying, it runs the rollback-only SQL security checks in `supabase/tests/stealth_catalogue_security_smoke.sql`. These verify the stealth identifier constraint, direct-table RLS boundary, RPC grants, and `SECURITY DEFINER` wrappers against the linked database. Production credentials exist only in the approval-gated job. If either the migration or its security checks fail, CI-managed application deployment remains blocked.
 
 ## Existing history limitation
 

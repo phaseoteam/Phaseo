@@ -927,7 +927,7 @@ jobs:
             (github.event_name == 'workflow_dispatch' && inputs.deploy_production == true)) &&
             ((vars.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true' &&
             needs.migrate-production.result == 'success') ||
-            (vars.ENABLE_PRODUCTION_DB_MIGRATIONS != 'true' &&
+            (github.event_name == 'push' && vars.ENABLE_PRODUCTION_DB_MIGRATIONS != 'true' &&
             needs.check-paths.outputs.migrations-changed != 'true' &&
             needs.migrate-production.result == 'skipped'))
         permissions:

@@ -236,6 +236,10 @@ test("manual release jobs require main, explicit opt-in, and successful migratio
 		assert.equal(enabled(job, { github: { event_name: "pull_request" } }), false, `${job}: PR cannot release`);
 	}
 	assert.equal(enabled("migrate-production", { vars: { ENABLE_PRODUCTION_DB_MIGRATIONS: "false" } }), false);
+	assert.equal(enabled("deploy", {
+		vars: { ENABLE_PRODUCTION_DB_MIGRATIONS: "false" },
+		needs: { "migrate-production": { result: "skipped" } },
+	}), false, "manual deploy cannot use the disabled-migrations push fallback");
 	assert.equal(enabled("migrate-production", { needs: { "migration-validation": { result: "failure" } } }), false);
 	for (const job of ["deploy", "importer"]) {
 		for (const result of ["failure", "cancelled", "skipped"]) {
