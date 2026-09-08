@@ -67,6 +67,7 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-08-26T00:00:00Z",
+      "effective_to": "2026-09-08T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
@@ -103,6 +104,22 @@
       "cache_duration_seconds": null,
       "conditions": [],
       "source": "https://crof.ai/v1/models"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.06,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Updated from CrofAI's live /v1/models payload on 2026-09-08.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-08T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://crof.ai/v1/models"
     }
   ],
   "regions": [],
@@ -111,19 +128,19 @@
     {
       "kind": "pricing",
       "url": "https://crof.ai/pricing",
-      "accessed_at": "2026-08-26T00:00:00Z",
+      "accessed_at": "2026-09-08T00:00:00Z",
       "notes": "Official current CrofAI pricing payload."
     },
     {
       "kind": "api",
       "url": "https://crof.ai/v1/models",
-      "accessed_at": "2026-08-26T00:00:00Z",
+      "accessed_at": "2026-09-08T00:00:00Z",
       "notes": "Official current CrofAI model payload."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-26T00:00:00Z",
-    "notes": "Verified at $0.08/M input, $0.003/M cached input and $0.10/M output against CrofAI's live payload."
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Verified at $0.06/M input, $0.003/M cached input and $0.10/M output against CrofAI's live payload."
   }
 }
