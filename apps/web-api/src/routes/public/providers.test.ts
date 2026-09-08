@@ -10,7 +10,7 @@ describe("public provider routes", () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("get_public_provider_index")) return new Response(JSON.stringify([{
-				provider_slug: "openai", provider_name: "OpenAI", colour: "#000", country_code: "US",
+				provider_slug: "openai", provider_name: "OpenAI", colour: "#000", country_code: "US", subdivision_code: "US-CA",
 				provider_family_id: "openai", offer_label: null, offer_scope: "global", is_gateway_provider: true, provider_status: "active", byok_available: true, default_execution_regions: ["US", "EU"], default_data_regions: ["US", "EU"],
 				prompt_training_policy: "no_train", data_policy_tier: "private", zero_data_retention: "default", data_retention_days: 0,
 				privacy_policy_url: "https://openai.com/policies/privacy-policy/", terms_of_service_url: "https://openai.com/policies/services-agreement/",
@@ -26,7 +26,7 @@ describe("public provider routes", () => {
 		const response = await app.request("https://phaseo.app/api/_web/api-providers", {}, env);
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
-		await expect(response.json()).resolves.toMatchObject({ providers: [{ api_provider_id: "openai", api_provider_name: "OpenAI", provider_status: "active", byok_available: true, default_execution_regions: ["US", "EU"], default_data_regions: ["US", "EU"], prompt_training_policy: "no_train", zero_data_retention: true, data_retention_days: 0, privacy_policy_url: "https://openai.com/policies/privacy-policy/", terms_of_service_url: "https://openai.com/policies/services-agreement/", total_models: 1, active_models: 1, free_models: 1, total_daily_tokens: 100, total_monthly_tokens: 100, modality_support: { text: { input: 1, output: 1 }, image: { input: 1, output: 0 } } }] });
+		await expect(response.json()).resolves.toMatchObject({ providers: [{ api_provider_id: "openai", api_provider_name: "OpenAI", provider_status: "active", byok_available: true, country_code: "US", subdivision_code: "US-CA", default_execution_regions: ["US", "EU"], default_data_regions: ["US", "EU"], prompt_training_policy: "no_train", zero_data_retention: true, data_retention_days: 0, privacy_policy_url: "https://openai.com/policies/privacy-policy/", terms_of_service_url: "https://openai.com/policies/services-agreement/", total_models: 1, active_models: 1, free_models: 1, total_daily_tokens: 100, total_monthly_tokens: 100, modality_support: { text: { input: 1, output: 1 }, image: { input: 1, output: 0 } } }] });
 	});
 
 	it("loads the provider index through one aggregate RPC without raw catalogue reads", async () => {
