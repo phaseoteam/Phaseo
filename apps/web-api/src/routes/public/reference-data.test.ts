@@ -203,7 +203,7 @@ describe("public reference-data routes", () => {
 	it("reuses the compact database-backed catalogue for country models", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
-			if (url.includes("get_public_models_page_rows")) {
+			if (url.includes("get_public_models_page_payload")) {
 				return new Response(JSON.stringify([{
 					model_id: "openai/gpt-test",
 					name: "GPT Test",
@@ -216,7 +216,7 @@ describe("public reference-data routes", () => {
 					gateway_execution_regions: ["us"],
 				}]), { status: 200 });
 			}
-			if (url.includes("get_monitor_model_rows")) {
+			if (url.includes("get_public_monitor_rows_payload")) {
 				return new Response(JSON.stringify([{
 					model_id: "openai/gpt-test",
 					api_model_id: "gpt-test",
