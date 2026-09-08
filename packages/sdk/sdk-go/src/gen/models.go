@@ -2383,6 +2383,7 @@ const (
 	KnownModelIdIbmGranite423b KnownModelId = "ibm/granite-4.2-3b"
 	KnownModelIdIbmGranite428b KnownModelId = "ibm/granite-4.2-8b"
 	KnownModelIdInceptionMercury2 KnownModelId = "inception/mercury-2"
+	KnownModelIdInceptionMercury25 KnownModelId = "inception/mercury-2.5"
 	KnownModelIdInceptionMercuryEdit2 KnownModelId = "inception/mercury-edit-2"
 	KnownModelIdInclusionaiLing261t KnownModelId = "inclusionai/ling-2.6-1t"
 	KnownModelIdInclusionaiLing26Flash KnownModelId = "inclusionai/ling-2.6-flash"
