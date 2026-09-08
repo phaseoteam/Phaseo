@@ -2060,7 +2060,7 @@ module Phaseo
     # @!attribute [rw] background
     #   @return [String, nil]
     # @!attribute [rw] image
-    #   @return [String]
+    #   @return [String, Array<String>]
     # @!attribute [rw] input_fidelity
     #   @return [String, nil]
     # @!attribute [rw] mask

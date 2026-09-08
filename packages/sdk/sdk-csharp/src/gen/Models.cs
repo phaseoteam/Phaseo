@@ -3477,7 +3477,7 @@ public sealed class ImagesEditRequest
 	public string? Background { get; set; }
 
 	[JsonPropertyName("image")]
-	public string Image { get; set; }
+	public object Image { get; set; }
 
 	[JsonPropertyName("input_fidelity")]
 	public string? InputFidelity { get; set; }

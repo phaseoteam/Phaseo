@@ -3410,7 +3410,7 @@ export type CreateImageEditParams = {
   headers?: Record<string, never>;
   body?: {
     background?: "transparent" | "opaque" | "auto";
-    image: string;
+    image: string | string[];
     input_fidelity?: "high" | "low";
     mask?: string;
     meta?: boolean;

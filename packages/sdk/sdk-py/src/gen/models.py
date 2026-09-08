@@ -1275,7 +1275,7 @@ class ImageModerationInput(TypedDict):
 
 class ImagesEditRequest(TypedDict):
 	background: NotRequired[Literal["transparent", "opaque", "auto"]]
-	image: str
+	image: Union[str, List[str]]
 	input_fidelity: NotRequired[Literal["high", "low"]]
 	mask: NotRequired[str]
 	meta: NotRequired[bool]

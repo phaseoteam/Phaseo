@@ -37,6 +37,11 @@ function renderModels(models: IRModel[]): string {
 		"use std::collections::HashMap;",
 		"",
 		"pub type JsonValue = String;",
+		"",
+		"pub enum StringOrStringArray {",
+		"\tString(String),",
+		"\tArray(Vec<String>),",
+		"}",
 		""
 	];
 	for (const model of models) {
@@ -53,7 +58,11 @@ function renderModel(model: IRModel): string {
 		const lines: string[] = [`pub struct ${model.name} {`];
 		for (const field of fields) {
 			const name = sanitizeIdentifier(field);
-			const type = renderFieldType(model.schema.properties[field], required.has(field));
+			const type = renderFieldType(
+				model.schema.properties[field],
+				required.has(field),
+				model.name === "ImagesEditRequest" && field === "image"
+			);
 			lines.push(`\tpub ${name}: ${type},`);
 		}
 		lines.push("}");
@@ -161,8 +170,8 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 		: `format!("${formatString}", ${args.join(", ")})`;
 }
 
-function renderFieldType(schema: IRSchema, required: boolean): string {
-	const base = rustType(schema);
+function renderFieldType(schema: IRSchema, required: boolean, stringOrStringArray = false): string {
+	const base = stringOrStringArray ? "StringOrStringArray" : rustType(schema);
 	if (required) {
 		return base;
 	}
@@ -184,6 +193,7 @@ function rustType(schema: IRSchema): string {
 		case "enum":
 			return schema.values.filter((value) => value !== null).every((value) => typeof value === "boolean") ? "bool" : "String";
 		case "union":
+			return "String";
 		case "intersection":
 		case "unknown":
 		case "literal":

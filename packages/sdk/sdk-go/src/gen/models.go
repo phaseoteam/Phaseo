@@ -2143,7 +2143,7 @@ type ImageModerationInput struct {
 
 type ImagesEditRequest struct {
 	Background *string `json:"background,omitempty"`
-	Image string `json:"image"`
+	Image interface{} `json:"image"`
 	InputFidelity *string `json:"input_fidelity,omitempty"`
 	Mask *string `json:"mask,omitempty"`
 	Meta *bool `json:"meta,omitempty"`

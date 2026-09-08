@@ -2525,7 +2525,7 @@ class ImagesEditRequest
 {
 	/** @var string|null */
 	public $background;
-	/** @var string */
+	/** @var string|array */
 	public $image;
 	/** @var string|null */
 	public $input_fidelity;

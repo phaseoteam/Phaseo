@@ -2,6 +2,11 @@ use std::collections::HashMap;
 
 pub type JsonValue = String;
 
+pub enum StringOrStringArray {
+	String(String),
+	Array(Vec<String>),
+}
+
 pub struct ActivityEntry {
 	pub byok_usage_inference: f64,
 	pub completion_tokens: i64,
@@ -1422,7 +1427,7 @@ pub struct ImageModerationInput {
 
 pub struct ImagesEditRequest {
 	pub background: Option<String>,
-	pub image: String,
+	pub image: StringOrStringArray,
 	pub input_fidelity: Option<String>,
 	pub mask: Option<String>,
 	pub meta: Option<bool>,

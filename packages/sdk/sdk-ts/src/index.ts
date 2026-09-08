@@ -170,6 +170,7 @@ export type MessageStreamChunk = Record<string, unknown> & {
   usage?: GatewayStreamUsage | null;
   reasoningTokens?: number | null;
 };
+export type ImageStreamChunk = Record<string, unknown>;
 
 export type VideoCreateRequest = {
   model: ModelId;
@@ -774,17 +775,36 @@ export class Phaseo {
     );
   }
 
+  async *streamImage(req: ImagesGenerationRequest): AsyncGenerator<ImageStreamChunk> {
+    const payload = { ...req, stream: true };
+    await this.maybeWarnForPayload(payload);
+
+    const generator = async function* (this: Phaseo) {
+      const res = await this.fetchImpl(`${this.basePath}/images/generations`, {
+        method: "POST",
+        headers: { ...this.headers, "Content-Type": "application/json", Accept: "text/event-stream" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text();
+        throw createStreamHttpError(res, text);
+      }
+      for await (const line of readSseLines(res)) {
+        const chunk = parseImageStreamLine(line);
+        if (chunk) yield chunk;
+      }
+    }.bind(this);
+
+    yield* this.telemetry.wrapStream("images.generations", generator(), () => payload);
+  }
+
   async generateImageEdit(req: ImagesEditRequest): Promise<ImagesEditResponse> {
     await this.maybeWarnForPayload(req);
     return this.telemetry.wrap(
       "images.edits",
       async () => {
         const form = new FormData();
-        Object.entries(req).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            form.append(key, value as string | Blob);
-          }
-        });
+        appendMultipartFields(form, req);
         const res = await this.fetchImpl(`${this.basePath}/images/edits`, {
           method: "POST",
           headers: this.headers,
@@ -798,6 +818,35 @@ export class Phaseo {
       },
       () => ({ ...req, image: req.image ? "[File]" : undefined }),
       extractImageMetadata
+    );
+  }
+
+  async *streamImageEdit(req: ImagesEditRequest): AsyncGenerator<ImageStreamChunk> {
+    const payload = { ...req, stream: true };
+    await this.maybeWarnForPayload(payload);
+
+    const generator = async function* (this: Phaseo) {
+      const form = new FormData();
+      appendMultipartFields(form, payload);
+      const res = await this.fetchImpl(`${this.basePath}/images/edits`, {
+        method: "POST",
+        headers: { ...this.headers, Accept: "text/event-stream" },
+        body: form
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text();
+        throw createStreamHttpError(res, text);
+      }
+      for await (const line of readSseLines(res)) {
+        const chunk = parseImageStreamLine(line);
+        if (chunk) yield chunk;
+      }
+    }.bind(this);
+
+    yield* this.telemetry.wrapStream(
+      "images.edits",
+      generator(),
+      () => ({ ...payload, image: payload.image ? "[File]" : undefined })
     );
   }
 
@@ -1497,6 +1546,23 @@ function parseMessageStreamLine(line: string): MessageStreamChunk | null {
     usage,
     reasoningTokens: extractReasoningTokens(usage)
   };
+}
+
+function parseImageStreamLine(line: string): ImageStreamChunk | null {
+  const parsed = parseSseJson(line);
+  if (parsed === null) return null;
+  return isRecord(parsed) ? parsed : { raw: parsed };
+}
+
+function appendMultipartFields(form: FormData, fields: object): void {
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) form.append(key, item as string | Blob);
+      continue;
+    }
+    form.append(key, value as string | Blob);
+  }
 }
 
 function parseSseJson(line: string): unknown | null {

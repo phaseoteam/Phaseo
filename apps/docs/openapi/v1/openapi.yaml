@@ -1246,6 +1246,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImagesGenerationResponse'
+            text/event-stream:
+              schema:
+                type: string
   /images/edits:
     post:
       x-beta: true
@@ -1269,6 +1272,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImagesEditResponse'
+            text/event-stream:
+              schema:
+                type: string
   /videos:
     get:
       x-beta: true
@@ -11068,7 +11074,13 @@ components:
         model:
           type: string
         image:
-          type: string
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              maxItems: 16
+              items:
+                type: string
         mask:
           type: string
         prompt:

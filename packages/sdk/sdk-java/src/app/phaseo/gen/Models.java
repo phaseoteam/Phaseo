@@ -1431,7 +1431,7 @@ public final class Models {
 
 	public static class ImagesEditRequest {
 		public Object background;
-		public String image;
+		public Object image;
 		public Object input_fidelity;
 		public String mask;
 		public Boolean meta;

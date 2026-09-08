@@ -1426,7 +1426,7 @@ struct ImageModerationInput {
 
 struct ImagesEditRequest {
 	std::any background;
-	std::string image;
+	std::any image;
 	std::any input_fidelity;
 	std::string mask;
 	std::optional<bool> meta;
