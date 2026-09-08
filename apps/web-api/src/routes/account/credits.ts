@@ -189,8 +189,8 @@ creditsRouter.get("/tier-summary", async (c) => {
 	if (!context) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	try {
 		const [prevResult, mtdResult, workspaceResult] = await Promise.all([
-			context.client.rpc("monthly_spend_prev_cents", { p_team: context.workspaceId }),
-			context.client.rpc("mtd_spend_cents", { p_team: context.workspaceId }),
+			context.userClient.rpc("monthly_spend_prev_cents", { p_workspace_id: context.workspaceId }),
+			context.userClient.rpc("mtd_spend_cents", { p_workspace_id: context.workspaceId }),
 			context.client.from("workspaces").select("tier").eq("id", context.workspaceId).maybeSingle(),
 		]);
 		return c.json({

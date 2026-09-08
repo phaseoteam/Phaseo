@@ -183,7 +183,7 @@ describe("account usage settings routes", () => {
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
 			if (url.includes("gateway_async_operations")) return new Response(JSON.stringify([{ kind: "video", internal_id: "job-1", request_id: "request-1", app_id: "app-1", provider: "openai", model: "openai/gpt-test", status: "completed", created_at: "2026-07-17T00:00:00Z", updated_at: "2026-07-17T00:01:00Z", meta: { webhook: { status: "delivered" } } }]), { status: 200 });
-			if (url.includes("v2_web_private_usage_daily")) return new Response(JSON.stringify([{ canonical_model_id: "openai/gpt-test", provider: "openai" }]), { status: 200 });
+			if (url.includes("/rpc/get_private_usage_facets")) return new Response(JSON.stringify([{ canonical_model_id: "openai/gpt-test", provider: "openai" }]), { status: 200 });
 			if (url.includes("select=safe_metadata")) {
 				requestedUnfilteredLabelFacets = !url.includes("detail_metadata=cs");
 				return new Response(JSON.stringify([{ safe_metadata: { labels: [{ key: "team", value: "support" }] }, cost_nanos: 1000 }]), { status: 200, headers: { "content-range": "0-0/1" } });
