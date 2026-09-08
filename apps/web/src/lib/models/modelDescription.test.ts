@@ -3,12 +3,38 @@ import {
 	buildModelPageMetadataDescription,
 	buildModelOverviewMetadataDescription,
 	buildModelOverviewMetadataTitle,
+	countModelMetadataProviders,
 	getExplicitModelDescription,
 	markdownToPlainText,
 	resolveModelDescription,
 } from "./modelDescription";
 
 describe("modelDescription", () => {
+	it("counts distinct providers rather than model routes and capabilities", () => {
+		const providers = Array.from({ length: 77 }, (_, index) => ({
+			api_provider_id: `provider-${index % 22}`,
+		}));
+		const activeProviders = Array.from({ length: 11 }, (_, index) => ({
+			api_provider_id: `provider-${index % 5}`,
+		}));
+		const providerCount = countModelMetadataProviders(providers);
+		expect(providerCount).toBe(22);
+		expect(countModelMetadataProviders(activeProviders)).toBe(5);
+		expect(buildModelOverviewMetadataTitle("GPT 5.6 Luna", { providerCount, hasPricing: true }))
+			.toBe("GPT 5.6 Luna API Pricing — Compare 22 Providers | Phaseo");
+		expect(buildModelOverviewMetadataDescription({ modelName: "GPT 5.6 Luna", providerCount, hasPricing: true }))
+			.toContain("22 providers");
+	});
+
+	it("ignores empty provider identifiers and missing metadata", () => {
+		expect(countModelMetadataProviders()).toBe(0);
+		expect(countModelMetadataProviders([
+			{ api_provider_id: "" }, { api_provider_id: " " },
+			{ api_provider_id: "openai" }, { api_provider_id: " openai " },
+			{ api_provider_id: "openai-eu" },
+		])).toBe(2);
+	});
+
 	it("prefers an explicit description from model details", () => {
 		const description = getExplicitModelDescription({
 			model_details: [

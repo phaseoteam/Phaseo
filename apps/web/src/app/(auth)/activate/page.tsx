@@ -11,7 +11,7 @@ import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 import { WorkspaceSelectField } from "./WorkspaceSelectField";
 
 export const metadata = {
-	title: "Activate Phaseo CLI",
+	title: { absolute: "Activate Phaseo CLI" },
 	description: "Approve a device login request for the Phaseo CLI.",
 };
 
