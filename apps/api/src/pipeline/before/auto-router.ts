@@ -750,6 +750,7 @@ export async function loadAutoRouterBenchmarks(models: string[], benchmarkIds: s
 	const results = await Promise.all(chunks(uniqueModels, 100).map((modelChunk) => getSupabaseAdmin()
 		.from("v2_benchmark_results")
 		.select("model_slug,benchmark_id,score_numeric")
+		.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 		.in("model_slug", modelChunk)
 		.in("benchmark_id", permittedBenchmarkIds)
 		.eq("is_self_reported", false)));

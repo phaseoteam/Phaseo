@@ -4,6 +4,9 @@ set local statement_timeout = '60s';
 alter table public.v2_subscription_plans add column effective_to timestamptz;
 comment on column public.v2_subscription_plans.effective_to is 'End of active catalogue visibility; retained for catalogue history.';
 
+alter policy v2_subscription_plans_public_select on public.v2_subscription_plans
+  using (effective_to is null or effective_to > now());
+
 create or replace function public.get_v2_model_subscription_plans(p_model_slug text)
 returns table (
   plan_uuid uuid, plan_id text, name text, lab_slug text, description text, link text,
