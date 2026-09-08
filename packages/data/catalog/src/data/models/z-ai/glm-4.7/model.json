@@ -122,11 +122,21 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 34.5,
+      "score": 26.2,
       "is_self_reported": false,
-      "other_info": "GLM-4.7 (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GLM-4.7 (Reasoning); Artificial Analysis ID 6fc35842-0165-44cf-8570-c484a92b3d8c; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-4-7",
-      "rank": 116
+      "rank": 161
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 45.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GLM-4.7 (Reasoning); Artificial Analysis ID 6fc35842-0165-44cf-8570-c484a92b3d8c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/glm-4-7",
+      "rank": 125
     }
   ],
   "family_id": null,

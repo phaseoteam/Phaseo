@@ -25,7 +25,26 @@
     }
   ],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GPT-3.5 Turbo; Artificial Analysis ID 037dec2f-51e8-4127-a1f1-85155dae7a1d; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-35-turbo",
+      "rank": 513
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 10.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GPT-3.5 Turbo; Artificial Analysis ID 037dec2f-51e8-4127-a1f1-85155dae7a1d; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/gpt-35-turbo",
+      "rank": 230
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": "language",

@@ -66,11 +66,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 5.8,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Grok-1; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Grok-1; Artificial Analysis ID 4c111fbc-d13a-42b4-858c-1dc17fe3c1d1; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/grok-1",
-      "rank": 477
+      "rank": 513
     }
   ],
   "family_id": null,

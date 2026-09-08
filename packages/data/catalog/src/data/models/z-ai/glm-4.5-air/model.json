@@ -130,11 +130,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 16.7,
+      "score": 10.5,
       "is_self_reported": false,
-      "other_info": "GLM-4.5-Air; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GLM-4.5-Air; Artificial Analysis ID 5d303dc9-c027-401f-9803-4e9aa3331007; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-4-5-air",
-      "rank": 281
+      "rank": 330
     }
   ],
   "family_id": null,

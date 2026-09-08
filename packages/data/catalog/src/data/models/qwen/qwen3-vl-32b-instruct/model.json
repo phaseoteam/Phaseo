@@ -386,11 +386,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 11,
+      "score": 5.3,
       "is_self_reported": false,
-      "other_info": "Qwen3 VL 32B Instruct; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen3 VL 32B Instruct; Artificial Analysis ID 6da314d3-a984-4734-8f31-47dd32fb4699; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-vl-32b-instruct",
-      "rank": 361
+      "rank": 407
     }
   ],
   "family_id": null,

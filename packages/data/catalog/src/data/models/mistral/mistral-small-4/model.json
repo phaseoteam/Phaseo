@@ -90,11 +90,30 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 19.7,
+      "score": 12.8,
       "is_self_reported": false,
-      "other_info": "Mistral Small 4 (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Small 4 (Reasoning); Artificial Analysis ID 3fd96175-4ef1-434c-8795-f873aec2abc1; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/mistral-small-4",
-      "rank": 240
+      "rank": 296
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 26.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Small 4 (Reasoning); Artificial Analysis ID 3fd96175-4ef1-434c-8795-f873aec2abc1; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-small-4",
+      "rank": 171
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 1.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Mistral Small 4 (Reasoning); Artificial Analysis ID 3fd96175-4ef1-434c-8795-f873aec2abc1; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/mistral-small-4",
+      "rank": 122
     }
   ],
   "family_id": null,

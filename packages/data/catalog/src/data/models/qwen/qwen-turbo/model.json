@@ -26,7 +26,17 @@
       "value": "Available through Requesty as alibaba/qwen-turbo."
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Qwen2.5 Turbo; Artificial Analysis ID 352f834f-a03c-4117-8a29-c3ccd8a568ce; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/qwen-turbo",
+      "rank": 513
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

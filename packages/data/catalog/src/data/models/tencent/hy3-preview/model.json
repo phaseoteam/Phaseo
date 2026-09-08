@@ -41,11 +41,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 34.4,
+      "score": 26.8,
       "is_self_reported": false,
-      "other_info": "Hy3-preview (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Hy3-preview (Reasoning); Artificial Analysis ID 8ca48626-ff5e-48b3-8401-38081376d706; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/hy3-preview",
-      "rank": 117
+      "rank": 151
     }
   ],
   "family_id": null,

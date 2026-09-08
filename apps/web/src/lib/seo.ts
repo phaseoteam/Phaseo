@@ -89,7 +89,8 @@ export function buildMetadata({
 	const ogAlt = imageAlt ?? title;
 
 	return {
-		title,
+		// Branded titles are complete; otherwise the root template adds Phaseo.
+		title: /\bPhaseo\b/i.test(title) ? { absolute: title } : title,
 		description,
 		applicationName: PREFERRED_SITE_NAME,
 		metadataBase: METADATA_BASE,

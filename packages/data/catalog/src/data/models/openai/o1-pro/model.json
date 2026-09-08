@@ -76,11 +76,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 19.1,
+      "score": 12.8,
       "is_self_reported": false,
-      "other_info": "o1-pro; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "o1-pro; Artificial Analysis ID e8d4100e-165b-4c5d-ac11-ac553590a334; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/o1-pro",
-      "rank": 250
+      "rank": 296
     }
   ],
   "page_notice": null,

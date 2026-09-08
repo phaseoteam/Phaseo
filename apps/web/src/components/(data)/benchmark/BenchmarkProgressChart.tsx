@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { formatArtificialAnalysisScore, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import {
 	ResponsiveContainer,
 	ScatterChart,
@@ -184,13 +185,14 @@ export default function BenchmarkProgressChart({
 	const tooltipValueFormatter = React.useCallback(
 		(value: number | string | Array<number | string> | undefined) => {
 			if (typeof value !== "number") return value;
+			if (isArtificialAnalysisBenchmark(benchmark.id)) return formatArtificialAnalysisScore(benchmark.id, value);
 			const formatted =
 				Math.abs(value) >= 100 || Number.isInteger(value)
 					? value.toFixed(0)
 					: value.toFixed(2);
 			return hasPercentage ? `${formatted}%` : formatted;
 		},
-		[hasPercentage]
+		[hasPercentage, benchmark.id]
 	);
 
 	return (

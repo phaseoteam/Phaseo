@@ -75,11 +75,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 45.5,
+      "score": 36.9,
       "is_self_reported": false,
-      "other_info": "GPT-5.3 Codex (xhigh); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GPT-5.3 Codex (xhigh); Artificial Analysis ID 59b5b14b-5365-4ee7-824a-18a8e6309644; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-5-3-codex",
-      "rank": 40
+      "rank": 71
     }
   ],
   "page_notice": null,

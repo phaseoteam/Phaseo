@@ -55,11 +55,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 7.5,
+      "score": 2.1,
       "is_self_reported": false,
-      "other_info": "Command A; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Command A; Artificial Analysis ID 3bc32f13-5afa-4e28-bce1-10e57376686b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/command-a",
-      "rank": 436
+      "rank": 483
     }
   ],
   "family_id": null,

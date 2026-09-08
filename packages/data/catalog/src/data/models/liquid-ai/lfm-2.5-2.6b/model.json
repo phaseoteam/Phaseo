@@ -25,7 +25,26 @@
     }
   ],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 5.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "LFM2.5-2.6B; Artificial Analysis ID e1bfc488-5f48-4d42-abf6-7f3c53d79f9c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/lfm2-5-2-6b",
+      "rank": 407
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 7.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "LFM2.5-2.6B; Artificial Analysis ID e1bfc488-5f48-4d42-abf6-7f3c53d79f9c; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/lfm2-5-2-6b",
+      "rank": 242
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": "language",

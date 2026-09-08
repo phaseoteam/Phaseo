@@ -232,11 +232,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 19.6,
+      "score": 13.2,
       "is_self_reported": false,
-      "other_info": "GPT-4.1; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "GPT-4.1; Artificial Analysis ID 3b608b70-6434-4baa-99ad-45d499703c67; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/gpt-4-1",
-      "rank": 243
+      "rank": 288
     }
   ],
   "page_notice": null,

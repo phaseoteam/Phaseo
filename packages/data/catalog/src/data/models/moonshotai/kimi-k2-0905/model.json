@@ -25,7 +25,17 @@
     }
   ],
   "details": [],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 17.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Kimi K2 0905; Artificial Analysis ID 66445f84-b2e3-4202-afdc-92ba0f0e5f36; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/kimi-k2-0905",
+      "rank": 238
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": "language",

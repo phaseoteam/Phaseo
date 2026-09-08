@@ -1,0 +1,82 @@
+name: Artificial Analysis benchmark sync
+
+on:
+    schedule:
+        - cron: "23 4 * * *"
+    workflow_dispatch:
+
+concurrency:
+    group: artificial-analysis-benchmark-sync
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+
+jobs:
+    sync:
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+              with:
+                  persist-credentials: false
+            - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              with:
+                  version: 10.33.0
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              with:
+                  node-version: 24
+                  cache: pnpm
+            - run: pnpm install --frozen-lockfile
+            - name: Test importer
+              run: pnpm exec tsx --test scripts/artificial-analysis/core.test.ts
+            - name: Fetch benchmark snapshot
+              env:
+                  ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
+              run: pnpm data:sync-artificial-analysis --write --report=artificial-analysis-report.json
+            - name: Validate catalog
+              run: |
+                  pnpm data:sync-manifest
+                  pnpm validate:data
+            - name: Upload matching report
+              if: always()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+              with:
+                  name: artificial-analysis-matching
+                  path: artificial-analysis-report.json
+                  if-no-files-found: ignore
+            - name: Create GitHub App token
+              id: app-token
+              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+              with:
+                  client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
+                  private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
+                  permission-contents: write
+                  permission-pull-requests: write
+            - name: Resolve open update branch
+              id: branch
+              env:
+                  GH_TOKEN: ${{ steps.app-token.outputs.token }}
+              run: |
+                  branch="$(gh pr list --state open --base main --json headRefName --jq '.[] | select(.headRefName | startswith("automation/artificial-analysis-")) | .headRefName' | head -n 1)"
+                  if [[ -z "$branch" ]]; then branch="automation/artificial-analysis-$GITHUB_RUN_ID"; fi
+                  echo "name=$branch" >> "$GITHUB_OUTPUT"
+            - name: Publish benchmark update
+              uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
+              with:
+                  token: ${{ steps.app-token.outputs.token }}
+                  branch: ${{ steps.branch.outputs.name }}
+                  commit-message: "chore(data): refresh Artificial Analysis benchmarks"
+                  title: "chore(data): refresh Artificial Analysis benchmarks"
+                  body: |
+                      Refresh Intelligence, Coding, Agentic and evaluation cost from the free Artificial Analysis API. Existing non-AA benchmarks are preserved. The matching report is attached to the workflow run.
+
+                      Validation: importer regression tests and catalog validation.
+                      The existing main-branch importer publishes these records to the database after merge.
+
+                      Created with Codex
+                  add-paths: |
+                      packages/data/catalog/src/data/models/**
+                      packages/data/catalog/src/data/benchmarks/aa-*/benchmark.json
+                      packages/data/catalog/src/data/manifest.json

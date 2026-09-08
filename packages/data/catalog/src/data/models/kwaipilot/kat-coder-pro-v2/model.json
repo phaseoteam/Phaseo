@@ -18,11 +18,21 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 33.9,
+      "score": 25.6,
       "is_self_reported": false,
-      "other_info": "KAT Coder Pro V2; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "KAT Coder Pro V2; Artificial Analysis ID fc4223e8-4586-4ca1-97ca-bb55ff586947; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/kat-coder-pro-v2",
-      "rank": 123
+      "rank": 169
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 59.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "KAT Coder Pro V2; Artificial Analysis ID fc4223e8-4586-4ca1-97ca-bb55ff586947; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/kat-coder-pro-v2",
+      "rank": 81
     }
   ],
   "family_id": null,

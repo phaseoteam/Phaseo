@@ -114,11 +114,12 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 2,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Granite 4.0 Micro; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Granite 4.0 Micro; Artificial Analysis ID 1fc32894-1060-493b-af94-62bb1068555e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/granite-4-0-micro",
-      "rank": 556
+      "rank": 513
     }
   ],
   "family_id": null,

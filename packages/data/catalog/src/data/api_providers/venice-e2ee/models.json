@@ -6,10 +6,10 @@
     "internal_model_id": "anthropic/claude-fable-5",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
     "context_length": 1000000,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -17,11 +17,20 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": true,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -39,14 +48,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -58,10 +76,10 @@
     "internal_model_id": "anthropic/claude-opus-5",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
     "context_length": 1000000,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -69,11 +87,20 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": true,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -91,14 +118,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -110,10 +146,10 @@
     "internal_model_id": "anthropic/claude-sonnet-5",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
     "context_length": 1000000,
-    "max_output_tokens": null,
+    "max_output_tokens": 64000,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -121,11 +157,20 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": true,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -143,14 +188,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -162,10 +216,10 @@
     "internal_model_id": "deepseek/deepseek-v3.2",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 160000,
-    "max_output_tokens": null,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -173,11 +227,19 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -195,14 +257,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -214,10 +285,10 @@
     "internal_model_id": "deepseek/deepseek-v4-flash",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
-    "max_output_tokens": null,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -225,11 +296,19 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -247,14 +326,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -266,10 +354,10 @@
     "internal_model_id": "deepseek/deepseek-v4-flash-0731",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
-    "max_output_tokens": null,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -277,11 +365,19 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "none",
+            "low",
+            "high",
+            "max"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -299,14 +395,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -318,10 +423,10 @@
     "internal_model_id": "deepseek/deepseek-v4-pro",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 1000000,
-    "max_output_tokens": null,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -329,11 +434,14 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": []
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -351,14 +459,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -370,10 +487,10 @@
     "internal_model_id": "google/gemini-3-flash-preview",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image,audio,video",
+    "output_modalities": "text",
     "context_length": 256000,
-    "max_output_tokens": null,
+    "max_output_tokens": 65536,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -381,11 +498,19 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": true,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -403,14 +528,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -422,10 +556,10 @@
     "internal_model_id": "inception/mercury-2",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
+    "max_output_tokens": 50000,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -433,11 +567,19 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -455,14 +597,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -473,11 +624,11 @@
     "provider_model_slug": "llama-3.2-3b",
     "internal_model_id": "meta/llama-3.2-3b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "quantization_scheme": "FP16",
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
+    "max_output_tokens": 4096,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -485,11 +636,14 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": false,
+          "options": []
+        },
+        "tool_call": true,
+        "structured_output": false,
         "temperature": null,
-        "attachment": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -507,14 +661,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -525,11 +688,11 @@
     "provider_model_slug": "llama-3.3-70b",
     "internal_model_id": "meta/llama-3.3-70b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
+    "max_output_tokens": 4096,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -537,11 +700,14 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": false,
+          "options": []
+        },
+        "tool_call": true,
+        "structured_output": false,
         "temperature": null,
-        "attachment": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -559,14 +725,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -578,10 +753,10 @@
     "internal_model_id": "moonshotai/kimi-k3",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
     "context_length": 1000000,
-    "max_output_tokens": null,
+    "max_output_tokens": 131072,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -589,11 +764,19 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "none",
+            "low",
+            "high",
+            "max"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": true,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -611,14 +794,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -629,11 +821,11 @@
     "provider_model_slug": "hermes-3-llama-3.1-405b",
     "internal_model_id": "nous/hermes-3-llama-3.1-405b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -641,11 +833,14 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": false,
+          "options": []
+        },
+        "tool_call": false,
+        "structured_output": false,
         "temperature": null,
-        "attachment": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -663,14 +858,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -681,11 +885,11 @@
     "provider_model_slug": "qwen3-235b-a22b-thinking-2507",
     "internal_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -693,11 +897,18 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -715,14 +926,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -829,11 +1049,11 @@
     "provider_model_slug": "qwen3-next-80b",
     "internal_model_id": "qwen/qwen3-next-80b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "quantization_scheme": "FP16",
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 256000,
-    "max_output_tokens": null,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -841,11 +1061,14 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": false,
+          "options": []
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": false,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -863,14 +1086,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -881,11 +1113,11 @@
     "provider_model_slug": "qwen3-vl-235b-a22b",
     "internal_model_id": "qwen/qwen3-vl-235b-a22b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -893,11 +1125,14 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": false,
+          "options": []
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": true,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -915,14 +1150,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -981,11 +1225,11 @@
     "provider_model_slug": "inkling",
     "internal_model_id": "thinking-machines/inkling",
     "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image,audio",
+    "output_modalities": "text",
     "context_length": 524288,
-    "max_output_tokens": null,
+    "max_output_tokens": 65536,
     "effective_from": null,
     "effective_to": "2026-08-21T00:00:00",
     "capabilities": [
@@ -993,11 +1237,19 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
         "temperature": null,
-        "attachment": null,
+        "attachment": true,
         "input_modalities": null,
         "output_modalities": null,
         "modes": []
@@ -1015,14 +1267,23 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
+      "formats": [
+        "openai.chat.completions"
+      ],
       "endpoint": null,
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -1241,7 +1502,7 @@
     "provider_model_slug": "e2ee-gemma-4-26b-a4b-uncensored-p",
     "internal_model_id": "venice/gemma-4-26b-a4b-uncensored",
     "is_active_gateway": false,
-    "quantization_scheme": "fp8",
+    "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 64000,
@@ -1288,13 +1549,13 @@
       {
         "kind": "provider_models",
         "url": "https://api.venice.ai/api/v1/models",
-        "accessed_at": "2026-08-21T00:00:00Z",
-        "notes": "Live Venice models API metadata."
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -1357,13 +1618,13 @@
       {
         "kind": "provider_models",
         "url": "https://api.venice.ai/api/v1/models",
-        "accessed_at": "2026-08-21T00:00:00Z",
-        "notes": "Live Venice models API metadata."
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -1494,13 +1755,13 @@
       {
         "kind": "provider_models",
         "url": "https://api.venice.ai/api/v1/models",
-        "accessed_at": "2026-08-21T00:00:00Z",
-        "notes": "Live Venice models API metadata."
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -1558,13 +1819,13 @@
       {
         "kind": "provider_models",
         "url": "https://api.venice.ai/api/v1/models",
-        "accessed_at": "2026-08-21T00:00:00Z",
-        "notes": "Live Venice models API metadata."
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -1686,13 +1947,13 @@
       {
         "kind": "provider_models",
         "url": "https://api.venice.ai/api/v1/models",
-        "accessed_at": "2026-08-21T00:00:00Z",
-        "notes": "Live Venice models API metadata."
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -1767,7 +2028,7 @@
     "provider_model_slug": "e2ee-qwen3-6-35b-a3b",
     "internal_model_id": "qwen/qwen3.6-35b-a3b",
     "is_active_gateway": false,
-    "quantization_scheme": "fp8",
+    "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 32000,
@@ -1814,13 +2075,13 @@
       {
         "kind": "provider_models",
         "url": "https://api.venice.ai/api/v1/models",
-        "accessed_at": "2026-08-21T00:00:00Z",
-        "notes": "Live Venice models API metadata."
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
@@ -1959,7 +2220,7 @@
     "provider_model_slug": "e2ee-deepseek-v4-flash",
     "internal_model_id": "deepseek/deepseek-v4-flash",
     "is_active_gateway": false,
-    "quantization_scheme": "fp8",
+    "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 1000000,
@@ -2006,13 +2267,274 @@
       {
         "kind": "provider_models",
         "url": "https://api.venice.ai/api/v1/models",
-        "accessed_at": "2026-08-21T00:00:00Z",
-        "notes": "Live Venice models API metadata."
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21",
+      "checked_at": "2026-09-07",
+      "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.3",
+    "provider_api_model_id": "venice-e2ee:z-ai/glm-5.3",
+    "provider_model_slug": "e2ee-glm-5-3-p",
+    "internal_model_id": "z-ai/glm-5.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-09-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": false,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07",
+      "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.3-flash",
+    "provider_api_model_id": "venice-e2ee:z-ai/glm-5.3-flash",
+    "provider_model_slug": "e2ee-glm-5-3-flash",
+    "internal_model_id": "z-ai/glm-5.3-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-09-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": {
+          "supported": true,
+          "options": []
+        },
+        "tool_call": true,
+        "structured_output": false,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07",
+      "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.8-27b",
+    "provider_api_model_id": "venice-e2ee:qwen/qwen3.8-27b",
+    "provider_model_slug": "e2ee-qwen3-8-27b",
+    "internal_model_id": "qwen/qwen3.8-27b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 8192,
+    "effective_from": "2026-09-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": {
+          "supported": true,
+          "options": []
+        },
+        "tool_call": true,
+        "structured_output": false,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07",
+      "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.6",
+    "provider_api_model_id": "venice-e2ee:moonshotai/kimi-k2.6",
+    "provider_model_slug": "e2ee-kimi-k2-6",
+    "internal_model_id": "moonshotai/kimi-k2.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 8192,
+    "effective_from": "2026-09-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": {
+          "supported": true,
+          "options": []
+        },
+        "tool_call": true,
+        "structured_output": false,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-07T23:17:00Z",
+        "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07",
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []

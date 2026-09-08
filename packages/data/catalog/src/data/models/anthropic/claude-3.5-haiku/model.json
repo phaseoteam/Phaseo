@@ -117,11 +117,21 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 12.4,
+      "score": 6.5,
       "is_self_reported": false,
-      "other_info": "Claude 3.5 Haiku; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude 3.5 Haiku; Artificial Analysis ID 033e4aa9-a556-4224-87b0-341ed1070257; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-3-5-haiku",
-      "rank": 337
+      "rank": 388
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 15.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude 3.5 Haiku; Artificial Analysis ID 033e4aa9-a556-4224-87b0-341ed1070257; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-3-5-haiku",
+      "rank": 212
     }
   ],
   "page_notice": null,

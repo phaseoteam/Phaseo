@@ -51,11 +51,39 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 38.3,
+      "score": 29.3,
       "is_self_reported": false,
-      "other_info": "Nemotron 3 Ultra 550B A55B (Reasoning); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Nemotron 3 Ultra 550B A55B (Reasoning); Artificial Analysis ID 5b52def2-ac9b-4465-ad80-91ea8079e253; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-ultra-550b-a55b",
-      "rank": 83
+      "rank": 125
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 49.3,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Nemotron 3 Ultra 550B A55B (Reasoning); Artificial Analysis ID 5b52def2-ac9b-4465-ad80-91ea8079e253; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-ultra-550b-a55b",
+      "rank": 114
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 21.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Nemotron 3 Ultra 550B A55B (Reasoning); Artificial Analysis ID 5b52def2-ac9b-4465-ad80-91ea8079e253; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-ultra-550b-a55b",
+      "rank": 81
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 584.26,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Nemotron 3 Ultra 550B A55B (Reasoning); Artificial Analysis ID 5b52def2-ac9b-4465-ad80-91ea8079e253; Intelligence Index v4.3; USD 0.3861 per task",
+      "source_link": "https://artificialanalysis.ai/models/nvidia-nemotron-3-ultra-550b-a55b",
+      "rank": 41
     }
   ],
   "family_id": null,

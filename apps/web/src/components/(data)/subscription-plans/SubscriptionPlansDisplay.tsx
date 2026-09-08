@@ -5,6 +5,7 @@ import { useQueryState } from "nuqs";
 import SubscriptionPlanCard from "./SubscriptionPlanCard";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/types";
 
 interface SubscriptionPlansDisplayProps {
@@ -57,11 +58,11 @@ export default function SubscriptionPlansDisplay({
 					<div className="relative w-full max-w-xs">
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
+							aria-label="Search subscription plans"
 							placeholder="Search plans..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className="pl-9 pr-2 py-1.5 text-sm rounded-full bg-background border focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
-							style={{ minWidth: 0 }}
+							className="w-full rounded-md bg-background pl-9"
 						/>
 					</div>
 				</div>
@@ -77,9 +78,12 @@ export default function SubscriptionPlansDisplay({
 						/>
 					))
 				) : (
-					<div className="col-span-full text-center text-muted-foreground py-12">
-						No subscription plans found for the selected filters.
-					</div>
+					<Empty className="col-span-full rounded-md border">
+						<EmptyHeader>
+							<EmptyMedia variant="icon" className="rounded-md"><Search aria-hidden="true" /></EmptyMedia>
+							<EmptyTitle>No subscription plans found</EmptyTitle>
+						</EmptyHeader>
+					</Empty>
 				)}
 			</div>
 		</>

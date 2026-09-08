@@ -238,11 +238,39 @@
     },
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 63.1,
+      "score": 54.1,
       "is_self_reported": false,
-      "other_info": "Claude Opus 5 (Adaptive Reasoning, Max Effort); Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID b8fc61f7-5e9a-49e6-8547-6ac56db24627; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/claude-opus-5",
-      "rank": 1
+      "rank": 6
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 78,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID b8fc61f7-5e9a-49e6-8547-6ac56db24627; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 56.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID b8fc61f7-5e9a-49e6-8547-6ac56db24627; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 5545.57,
+      "is_self_reported": false,
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Claude Opus 5 (Adaptive Reasoning, Max Effort); Artificial Analysis ID b8fc61f7-5e9a-49e6-8547-6ac56db24627; Intelligence Index v4.3; USD 4.2053 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-opus-5",
+      "rank": 87
     }
   ],
   "family_id": null,

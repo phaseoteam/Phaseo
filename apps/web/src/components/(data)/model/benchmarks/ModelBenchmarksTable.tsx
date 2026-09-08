@@ -11,6 +11,9 @@ interface ModelBenchmarksTableProps {
 }
 
 function getScoreDisplay(result: ModelBenchmarkResult) {
+	if (result.benchmark_id === "aa-intelligence-index-cost-v4" && result.score != null) {
+		return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(result.score);
+	}
 	if (result.benchmark.max_score != null && result.score != null) {
 		const formatted =
 			result.score % 1 === 0
@@ -222,4 +225,3 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 		</div>
 	);
 }
-

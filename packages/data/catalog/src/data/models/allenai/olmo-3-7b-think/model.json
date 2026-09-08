@@ -24,11 +24,12 @@
   "benchmarks": [
     {
       "benchmark_id": "aa-intelligence-index-v4",
-      "score": 3.6,
+      "score": 1,
       "is_self_reported": false,
-      "other_info": "Olmo 3 7B Think; Artificial Analysis Intelligence Index v4.1.1",
+      "updated_at": "2026-09-07T23:53:19.135Z",
+      "other_info": "Olmo 3 7B Think; Artificial Analysis ID 338216fb-62c2-48f1-898a-9166d12fb35e; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/olmo-3-7b-think",
-      "rank": 516
+      "rank": 513
     }
   ],
   "family_id": null,
