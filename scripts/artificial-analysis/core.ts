@@ -15,13 +15,40 @@ export type CatalogModel = {
 	benchmarks?: Array<Record<string, unknown>> | null;
 };
 export type MappingConfig = {
-	// Canonical model ID -> stable Artificial Analysis model ID. null opts out.
+	// Canonical model ID -> stable Artificial Analysis model ID used to identify
+	// the evaluated model family. All reasoning configurations in that family
+	// are retained. null opts out.
 	models: Record<string, string | null>;
 	// Canonical organisation ID -> Artificial Analysis creator name or ID.
 	creators: Record<string, string>;
 };
 const normalized = (value: string) => value.toLowerCase().replace(/\+/g, "plus").replace(/[^a-z0-9]+/g, "");
 const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+const REASONING_EFFORTS = ["xhigh", "minimal", "medium", "high", "low", "max", "none"] as const;
+const CONFIGURATION_GROUP = /\(([^)]*)\)/g;
+
+function isReasoningConfiguration(value: string) {
+	const normalizedValue = value.toLowerCase().replace(/[_-]+/g, " ").trim();
+	return /\b(reasoning|thinking|effort)\b/.test(normalizedValue)
+		|| REASONING_EFFORTS.some((effort) => normalizedValue === effort);
+}
+
+export function reasoningVariant(source: Pick<SourceModel, "name" | "slug">): string | null {
+	for (const match of source.name.matchAll(CONFIGURATION_GROUP)) {
+		const configuration = match[1]?.toLowerCase().replace(/[_-]+/g, " ") ?? "";
+		for (const effort of REASONING_EFFORTS) {
+			if (new RegExp(`\\b${effort}\\b`).test(configuration)) return effort;
+		}
+		if (/\bnon reasoning\b/.test(configuration)) return "none";
+		if (/\b(reasoning|thinking)\b/.test(configuration)) return "reasoning";
+	}
+	return source.slug.toLowerCase().match(/-(xhigh|minimal|medium|high|low|max|none)(?:-effort)?$/)?.[1] ?? null;
+}
+
+function reasoningFamilyName(source: Pick<SourceModel, "name">) {
+	return normalized(source.name.replace(CONFIGURATION_GROUP, (full, configuration: string) =>
+		isReasoningConfiguration(configuration) ? "" : full));
+}
 
 export async function fetchModels(apiKey: string, fetcher: typeof fetch = fetch) {
 	const models: SourceModel[] = [];
@@ -59,10 +86,14 @@ export async function fetchModels(apiKey: string, fetcher: typeof fetch = fetch)
 export function matchModel(model: CatalogModel, sources: SourceModel[], config: MappingConfig) {
 	if (Object.hasOwn(config.models, model.model_id)) {
 		const id = config.models[model.model_id];
-		if (id === null) return { status: "excluded" as const, candidates: [] };
+		if (id === null) return { status: "excluded" as const, sources: [], candidates: [] };
 		const source = sources.find((source) => source.id === id);
 		if (!source) throw new Error(`Mapping for ${model.model_id} refers to missing Artificial Analysis ID ${id}.`);
-		return { status: "matched" as const, source, candidates: [source] };
+		const family = reasoningFamilyName(source);
+		const configurations = sources.filter((candidate) =>
+			candidate.model_creator.id === source.model_creator.id
+			&& reasoningFamilyName(candidate) === family);
+		return { status: "matched" as const, source, sources: configurations, candidates: configurations };
 	}
 	const organisation = model.organisation_id ?? model.model_id.split("/")[0];
 	const creators = new Set([organisation, config.creators[organisation]].filter((value): value is string => Boolean(value)).map(normalized));
@@ -71,8 +102,8 @@ export function matchModel(model: CatalogModel, sources: SourceModel[], config: 
 	// Never strip dates, quantization, thinking or effort suffixes: they change what was evaluated.
 	const candidates = eligible.filter((source) => normalized(source.slug) === normalized(source.name)
 		&& ids.includes(normalized(source.name)));
-	return candidates.length === 1 ? { status: "matched" as const, source: candidates[0], candidates }
-		: { status: candidates.length ? "ambiguous" as const : "unmatched" as const, candidates };
+	return candidates.length === 1 ? { status: "matched" as const, source: candidates[0], sources: candidates, candidates }
+		: { status: candidates.length ? "ambiguous" as const : "unmatched" as const, sources: [], candidates };
 }
 
 export function metricValue(source: SourceModel, metric: typeof METRICS[number]) {
@@ -82,11 +113,44 @@ export function metricValue(source: SourceModel, metric: typeof METRICS[number])
 export function matchModels(models: CatalogModel[], sources: SourceModel[], config: MappingConfig) {
 	const explicitIds = Object.values(config.models).filter((id) => id !== null);
 	if (new Set(explicitIds).size !== explicitIds.length) throw new Error("Each Artificial Analysis source must have only one explicit catalog mapping.");
-	const matches = models.map((model) => matchModel(model, sources, config));
+	const initialMatches = models.map((model) => matchModel(model, sources, config));
+	const directOwners = new Map<string, Set<string>>();
+	for (let index = 0; index < initialMatches.length; index++) {
+		const sourceId = initialMatches[index].source?.id;
+		if (!sourceId) continue;
+		const owners = directOwners.get(sourceId) ?? new Set<string>();
+		owners.add(models[index].model_id);
+		directOwners.set(sourceId, owners);
+	}
+	// A reasoning configuration with its own canonical catalogue model remains
+	// attached to that model rather than being absorbed by a mapped family.
+	const matches = initialMatches.map((match, index) => {
+		if (!match.source || !Object.hasOwn(config.models, models[index].model_id)) return match;
+		const familySources = match.sources.filter((source) => {
+			const owners = directOwners.get(source.id);
+			return !owners || owners.has(models[index].model_id);
+		});
+		return { ...match, sources: familySources, candidates: familySources };
+	});
+	const explicitlyMappedSources = new Map<string, string>();
+	for (let index = 0; index < matches.length; index++) {
+		if (!Object.hasOwn(config.models, models[index].model_id)) continue;
+		for (const source of matches[index].sources ?? []) {
+			const previous = explicitlyMappedSources.get(source.id);
+			if (previous && previous !== models[index].model_id) {
+				throw new Error(`Artificial Analysis source ${source.id} maps to both ${previous} and ${models[index].model_id}.`);
+			}
+			explicitlyMappedSources.set(source.id, models[index].model_id);
+		}
+	}
 	return matches.map((match, index) => {
 		if (!match.source || Object.hasOwn(config.models, models[index].model_id)) return match;
+		const explicitOwner = explicitlyMappedSources.get(match.source.id);
+		if (explicitOwner && explicitOwner !== models[index].model_id) {
+			return { status: "ambiguous" as const, sources: [], candidates: match.candidates };
+		}
 		if (matches.some((other, otherIndex) => otherIndex !== index && other.source?.id === match.source.id)) {
-			return { status: "ambiguous" as const, candidates: match.candidates };
+			return { status: "ambiguous" as const, sources: [], candidates: match.candidates };
 		}
 		return match;
 	});
@@ -99,10 +163,13 @@ export function resultsFor(source: SourceModel, version: number, allSources: Sou
 		const scores = allSources.map((entry) => metricValue(entry, metric)).filter(finite);
 		const rank = 1 + scores.filter((other) => metric.higherBetter ? other > score : other < score).length;
 		const perTask = source.artificial_analysis_intelligence_index_cost?.cost_per_task?.total_cost;
-		return [{ benchmark_id: metric.id, score, is_self_reported: false, updated_at,
+		return [{ benchmark_id: metric.id, score, is_self_reported: false, updated_at, variant: reasoningVariant(source),
 			other_info: `${source.name}; Artificial Analysis ID ${source.id}; Intelligence Index v${version}${metric.field === "total_cost" && finite(perTask) ? `; USD ${perTask} per task` : ""}`,
 			source_link: `https://artificialanalysis.ai/models/${source.slug}`, rank }];
 	});
+}
+export function resultsForConfigurations(sources: SourceModel[], version: number, allSources: SourceModel[], updated_at = new Date().toISOString()) {
+	return sources.flatMap((source) => resultsFor(source, version, allSources, updated_at));
 }
 export function mergeResults(model: CatalogModel, results: Array<Record<string, unknown>>) {
 	const managed = new Set<string>(METRICS.map((metric) => metric.id));

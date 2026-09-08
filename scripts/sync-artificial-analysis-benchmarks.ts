@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { dirname, join, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { METRICS, fetchModels, matchModels, mergeResults, metricValue, resultsFor, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
+import { METRICS, fetchModels, matchModels, mergeResults, metricValue, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
 import { writeBenchmarks } from "./artificial-analysis/catalog";
 
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) {
@@ -56,8 +56,8 @@ async function main() {
 	const plan = entries.map((entry, index) => ({ ...entry, match: matches[index] }));
 	const report = { version: source.version, sourceModels: source.models.length,
 		matched: plan.filter((entry) => entry.match.status === "matched").length,
-		models: plan.map((entry) => ({ model_id: entry.model.model_id, status: entry.match.status, source_id: entry.match.source?.id, source_name: entry.match.source?.name, candidates: entry.match.candidates.map(({ id, name, slug }) => ({ id, name, slug })) })),
-		unmappedSources: source.models.filter((model) => !plan.some((entry) => entry.match.source?.id === model.id)).map(({ id, name, slug }) => ({ id, name, slug })),
+		models: plan.map((entry) => ({ model_id: entry.model.model_id, status: entry.match.status, source_id: entry.match.source?.id, source_name: entry.match.source?.name, sources: (entry.match.sources ?? []).map(({ id, name, slug }) => ({ id, name, slug })), candidates: entry.match.candidates.map(({ id, name, slug }) => ({ id, name, slug })) })),
+		unmappedSources: source.models.filter((model) => !plan.some((entry) => entry.match.sources?.some((match) => match.id === model.id))).map(({ id, name, slug }) => ({ id, name, slug })),
 	};
 	const reportArg = process.argv.find((arg) => arg.startsWith("--report="));
 	if (reportArg) writeJson(resolve(reportArg.slice("--report=".length)), report);
@@ -70,7 +70,7 @@ async function main() {
 	for (const entry of plan) {
 		// Retain unmatched models' previous results and provenance until explicitly mapped.
 		if (!entry.match.source) continue;
-		entry.model.benchmarks = mergeResults(entry.model, resultsFor(entry.match.source, source.version, source.models, updated_at));
+		entry.model.benchmarks = mergeResults(entry.model, resultsForConfigurations(entry.match.sources ?? [entry.match.source], source.version, source.models, updated_at));
 		if (entry.file) writeFileSync(entry.file, writeBenchmarks(readFileSync(entry.file, "utf8"), entry.model.benchmarks));
 	}
 	if (!db) return;
@@ -80,8 +80,10 @@ async function main() {
 		if (!entry.match.source || !dbIds.has(entry.model.model_id)) continue;
 		const rows = (entry.model.benchmarks ?? []).flatMap((result, index) => {
 			if (!METRICS.some((metric) => metric.id === result.benchmark_id)) return [];
-			const result_key = `${entry.model.model_id}:${result.benchmark_id}::${index}`;
-			return [{ result_id: stableUuid(`benchmark-result:${result_key}`), model_slug: entry.model.model_id, benchmark_id: result.benchmark_id, score: String(result.score), score_numeric: result.score, is_self_reported: false, other_info: result.other_info, source_link: result.source_link, rank: result.rank, occur_idx: index, variant: null, result_key, updated_at }];
+			const sourceId = String(result.other_info).match(/Artificial Analysis ID ([^;]+)/)?.[1];
+			if (!sourceId) throw new Error(`Missing Artificial Analysis source ID for ${entry.model.model_id}/${result.benchmark_id}.`);
+			const result_key = `${entry.model.model_id}:${result.benchmark_id}:${sourceId}`;
+			return [{ result_id: stableUuid(`benchmark-result:${result_key}`), model_slug: entry.model.model_id, benchmark_id: result.benchmark_id, score: String(result.score), score_numeric: result.score, is_self_reported: false, other_info: result.other_info, source_link: result.source_link, rank: result.rank, occur_idx: index, variant: result.variant ?? null, result_key, updated_at }];
 		});
 		if (rows.length) {
 			const { error } = await db.from("v2_benchmark_results").upsert(rows, { onConflict: "result_id" });

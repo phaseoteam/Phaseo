@@ -53,6 +53,7 @@ export interface BenchmarkResult {
     is_self_reported: boolean | number; // Changed to allow number since your JSON uses 1.0
     source_link: string | null;
     other_info?: string | null; // Made optional as it's not always present
+    variant?: string | null;
 }
 
 export interface APIProvider {
