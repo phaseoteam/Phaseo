@@ -57,6 +57,11 @@ import * as xAiAudioSpeech from "@providers/x-ai/endpoints/audio-speech";
 import * as xAiAudioTranscription from "@providers/x-ai/endpoints/audio-transcription";
 import * as xAiImagesEdit from "@providers/x-ai/endpoints/images-edit";
 import * as metaAudioTranscription from "@providers/meta/endpoints/audio-transcription";
+import * as deepinfraAudioSpeech from "@providers/deepinfra/endpoints/audio-speech";
+import * as friendliAudioTranscription from "@providers/friendli/audio-transcription";
+import * as stepfunAudioSpeech from "@providers/stepfun/audio-speech";
+import * as stepfunImages from "@providers/stepfun/images";
+import * as stepfunAudioTranscription from "@providers/stepfun/audio-transcription";
 
 type NonTextEndpoint =
 	| "images.generations"
@@ -200,6 +205,9 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				seed: raw.seed,
 				prompt_optimizer: raw.prompt_optimizer,
 				steps: raw.steps,
+				cfg_scale: raw.cfg_scale,
+				text_mode: raw.text_mode,
+				style_reference: raw.style_reference,
 				negative_prompt: raw.negative_prompt,
 				guidance_scale: raw.guidance_scale,
 				image_url: raw.image_url,
@@ -215,6 +223,11 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 			return {
 				model: providerModel,
 				image: request.image ?? raw.image,
+				steps: raw.steps,
+				cfg_scale: raw.cfg_scale,
+				text_mode: raw.text_mode,
+				negative_prompt: raw.negative_prompt,
+				provider_params: raw.provider_params,
 				mask: request.mask ?? raw.mask,
 				prompt: request.prompt,
 				size: request.size,
@@ -253,6 +266,8 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				instructions: request.instructions,
 				session_id: request.sessionId,
 				config: {
+					deepinfra: raw.config?.deepinfra,
+					stepfun: raw.config?.stepfun,
 					elevenlabs: (request.vendor as any)?.elevenlabs,
 					minimax: (request.vendor as any)?.minimax ?? raw.config?.minimax,
 				},
@@ -601,8 +616,18 @@ async function executeProviderEndpoint(
 	providerId: string,
 	providerArgs: ProviderExecuteArgs,
 ) {
+	if (providerId === "azure") {
+		switch (endpoint) {
+			case "images.generations": return openaiImages.exec(providerArgs);
+			case "images.edits": return openaiImagesEdits.exec(providerArgs);
+			case "audio.speech": return openaiAudioSpeech.exec(providerArgs);
+			case "audio.transcription": return openaiAudioTranscription.exec(providerArgs);
+			case "audio.translations": return openaiAudioTranslation.exec(providerArgs);
+		}
+	}
 	switch (endpoint) {
 		case "images.generations":
+			if (providerId === "stepfun") return stepfunImages.exec(providerArgs);
 			if (providerId === "minimax" || providerId === "minimax-lightning") {
 				return minimaxImages.exec(providerArgs);
 			}
@@ -617,6 +642,7 @@ async function executeProviderEndpoint(
 			}
 			return openaiImages.exec(providerArgs);
 		case "images.edits":
+			if (providerId === "stepfun") return stepfunImages.exec(providerArgs);
 			if (isXAiProvider(providerId)) {
 				return xAiImagesEdit.exec(providerArgs);
 			}
@@ -631,6 +657,10 @@ async function executeProviderEndpoint(
 			}
 			return openaiImagesEdits.exec(providerArgs);
 		case "audio.speech":
+			if (providerId === "stepfun") return stepfunAudioSpeech.exec(providerArgs);
+			if (providerId === "deepinfra") {
+				return deepinfraAudioSpeech.exec(providerArgs);
+			}
 			if (providerId === "minimax") {
 				return minimaxAudioSpeech.exec(providerArgs);
 			}
@@ -648,6 +678,8 @@ async function executeProviderEndpoint(
 			}
 			return openaiAudioSpeech.exec(providerArgs);
 		case "audio.transcription":
+			if (providerId === "friendli") return friendliAudioTranscription.exec(providerArgs);
+			if (providerId === "stepfun") return stepfunAudioTranscription.exec(providerArgs);
 			if (providerId === "meta") {
 				return metaAudioTranscription.exec(providerArgs);
 			}

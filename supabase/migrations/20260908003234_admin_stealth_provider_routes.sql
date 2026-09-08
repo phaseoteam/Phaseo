@@ -1,6 +1,3 @@
--- Recovered from the production supabase_migrations.schema_migrations ledger.
--- Original version and SQL are retained; this migration is already applied in production.
-
 -- Manage stealth routes through the audited admin mutation without changing historical route identities.
 create or replace function public.mutate_v2_admin_provider_route(
   p_actor_user_id uuid,

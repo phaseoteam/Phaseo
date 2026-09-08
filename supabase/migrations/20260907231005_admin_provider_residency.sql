@@ -1,6 +1,3 @@
--- Recovered from the production supabase_migrations.schema_migrations ledger.
--- Original version and SQL are retained; this migration is already applied in production.
-
 -- Provider-offer policy used by gateway residency filtering. No endpoints or credentials are changed.
 create function public.mutate_v2_admin_provider_residency(p_actor_user_id uuid, p_provider_slug text, p_policy jsonb)
 returns jsonb language plpgsql security invoker set search_path=public,pg_temp as $$

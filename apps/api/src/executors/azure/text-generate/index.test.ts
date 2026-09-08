@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { normalizeAzureChatRequest, resolveAzureTextUrl, shouldUseAzureResponsesRoute } from "./index";
+import { azureMaiUrl } from "@providers/azure/config";
 
 describe("azure text-generate executor", () => {
+	it("uses the native MAI endpoint and Chat contract for MAI text deployments", () => {
+		expect(azureMaiUrl("chat/completions", "https://resource.openai.azure.com/openai/v1")).toBe("https://resource.services.ai.azure.com/mai/v1/chat/completions");
+		expect(azureMaiUrl("chat/completions", "https://resource.services.ai.azure.com/mai/v1")).toBe("https://resource.services.ai.azure.com/mai/v1/chat/completions");
+		expect(shouldUseAzureResponsesRoute({ protocol: "openai.responses", providerModelSlug: "MAI-Thinking-1", ir: { model: "microsoft/mai-thinking-1" } as any })).toBe(false);
+	});
 	it("uses max_completion_tokens for Azure GPT-5 chat deployments", () => {
 		const request = normalizeAzureChatRequest(
 			{

@@ -173,6 +173,7 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				.maybeSingle(),
 			client.from("v2_benchmark_results")
 				.select("result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank")
+                .or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 				.eq("benchmark_id", benchmarkId)
 				.order("rank", { ascending: true, nullsFirst: false }),
 		]);
@@ -391,7 +392,7 @@ publicReferenceDataRouter.get("/subscription-plans/:planId", async (c) => {
 		const primary = planRows[0];
 		const [featuresResult, modelLinksResult, labResult] = await Promise.all([
 			client.from("v2_subscription_plan_features").select("feature_name,feature_value,feature_description,other_info").eq("plan_uuid", primary.plan_uuid).order("feature_name", { ascending: true }),
-			client.from("v2_subscription_plan_models").select("model_slug,model_info,rate_limit,other_info").eq("plan_uuid", primary.plan_uuid).order("model_slug", { ascending: true }),
+			client.from("v2_subscription_plan_models").select("model_slug,model_info,rate_limit,other_info").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).eq("plan_uuid", primary.plan_uuid).order("model_slug", { ascending: true }),
 			client.from("v2_labs").select("lab_slug,name,country_code,metadata").eq("lab_slug", primary.lab_slug).maybeSingle(),
 		]);
 		if (featuresResult.error) throw featuresResult.error;

@@ -11440,5 +11440,47 @@
       "notes": "Verified from Novita's first-party OpenAI-compatible model inventory."
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "bytedance/seedance-1.5-pro",
+    "provider_api_model_id": "novita:bytedance/seedance-1.5-pro",
+    "provider_model_slug": "seedance-v1.5-pro",
+    "internal_model_id": "bytedance/seedance-1.5-pro",
+    "is_active_gateway": true,
+    "input_modalities": "text,image",
+    "output_modalities": "video",
+    "effective_from": "2026-09-06T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": [
+          "seconds",
+          "duration",
+          "resolution",
+          "aspect_ratio",
+          "generate_audio",
+          "input_references",
+          "frame_images",
+          "provider_options",
+          "seed"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "video"
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "url": "https://blogs.novita.ai/seedance-1-5-pro-on-novita-ai-complete-developer-guide/",
+        "accessed_at": "2026-09-06T00:00:00Z",
+        "notes": "Model-specific /v3/async/seedance-v1.5-pro-t2v and -i2v contracts replace the unified endpoint that returned 404. Restricted to published 480p/720p standard-service prices. Request mapping and durable polling covered by deterministic tests; corrected endpoint has not been tested with authenticated inference."
+      }
+    ]
   }
 ]

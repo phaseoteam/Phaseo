@@ -1,0 +1,36 @@
+{
+  "key": "deepinfra:openai/whisper-large-v3:audio.transcription",
+  "api_provider_id": "deepinfra",
+  "provider_slug": "deepinfra",
+  "api_model_id": "openai/whisper-large-v3",
+  "capability_id": "audio.transcription",
+  "rules": [
+    {
+      "meter": "input_audio_seconds",
+      "unit": "second",
+      "unit_size": 60,
+      "price_per_unit": 0.00045,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://deepinfra.com/openai/whisper-large-v3"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://deepinfra.com/openai/whisper-large-v3",
+      "accessed_at": "2026-09-07T22:00:00Z"
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T22:00:00Z",
+    "notes": "Current public model page lists per-minute pricing; input duration metered in seconds."
+  }
+}

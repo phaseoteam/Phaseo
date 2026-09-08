@@ -1,0 +1,58 @@
+{
+  "key": "parasail:qwen/qwen3-235b-a22b-2507:text.generate",
+  "api_provider_id": "parasail",
+  "provider_slug": "parasail",
+  "api_model_id": "qwen/qwen3-235b-a22b-2507",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.14,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://www.parasail.io/models/qwen3-235b-a22b-2507"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.8,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://www.parasail.io/models/qwen3-235b-a22b-2507"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.05,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://www.parasail.io/models/qwen3-235b-a22b-2507"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://www.parasail.io/models/qwen3-235b-a22b-2507",
+      "accessed_at": "2026-09-07T22:05:00Z"
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T22:05:00Z",
+    "notes": "Native endpoint ID and all rates checked against the public provider model page."
+  }
+}

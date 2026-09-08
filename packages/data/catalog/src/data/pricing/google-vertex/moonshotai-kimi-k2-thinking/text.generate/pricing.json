@@ -1,0 +1,74 @@
+{
+  "key": "google-vertex:moonshotai/kimi-k2-thinking:text.generate",
+  "api_provider_id": "google-vertex",
+  "provider_slug": "google-vertex",
+  "api_model_id": "moonshotai/kimi-k2-thinking",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Managed open-model standard rate.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T23:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Managed open-model standard rate.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T23:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.06,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Managed open-model standard rate.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T23:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing",
+      "accessed_at": "2026-09-07T23:00:00Z",
+      "notes": "Official Google managed open-model pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T23:00:00Z",
+    "notes": "Standard per-million token rates from official pricing."
+  }
+}

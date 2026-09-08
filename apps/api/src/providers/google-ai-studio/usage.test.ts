@@ -75,6 +75,25 @@ describe("googleUsageMetadataToIRUsage", () => {
 });
 
 describe("normalizeGoogleUsage", () => {
+	it("subtracts non-text modalities from coarse input, output and cache counts", () => {
+		const usage = normalizeGoogleUsage({
+			promptTokenCount: 12, candidatesTokenCount: 10, cachedContentTokenCount: 4,
+			promptTokensDetails: [{ modality: "IMAGE", tokenCount: 12 }],
+			candidatesTokensDetails: [{ modality: "AUDIO", tokenCount: 8 }],
+			cacheTokensDetails: [{ modality: "IMAGE", tokenCount: 4 }],
+		});
+		expect(usage).toMatchObject({ input_text_tokens: 0, input_image_tokens: 12, output_text_tokens: 2, output_audio_tokens: 8, cached_read_text_tokens: 0, cached_read_image_tokens: 4 });
+	});
+
+	it("does not add coarse tool tokens to detailed tool tokens twice", () => {
+		const usage = normalizeGoogleUsage({
+			promptTokensDetails: [{ modality: "TEXT", tokenCount: 2 }],
+			toolUsePromptTokenCount: 3,
+			toolUsePromptTokensDetails: [{ modality: "TEXT", tokenCount: 3 }],
+		});
+		expect(usage?.input_text_tokens).toBe(5);
+	});
+
 	it("maps cached token details to cached_read meters and flags subset semantics", () => {
 		const usage = normalizeGoogleUsage({
 			promptTokenCount: 120,

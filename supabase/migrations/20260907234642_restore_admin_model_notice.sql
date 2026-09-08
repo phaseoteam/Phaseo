@@ -1,8 +1,5 @@
--- Recovered from the production supabase_migrations.schema_migrations ledger.
--- Original version and SQL are retained; this migration is already applied in production.
--- phaseo:allow-destructive-migration reason: Restore already-applied history: the existing admin notice replacement function deletes only the selected model notice.
-
 -- Restore the notice mutation independently of older, partially applied migrations.
+-- phaseo:allow-destructive-migration reason: An administrator can explicitly clear one model notice; its full before-state and actor remain in append-only catalogue history.
 create or replace function public.mutate_v2_admin_model_notice(
   p_actor_user_id uuid,
   p_model_slug text,

@@ -1,0 +1,38 @@
+{
+  "api_provider_id": "perceptron",
+  "api_provider_name": "Perceptron",
+  "description": "Vision models for captioning and structured perception.",
+  "link": "https://www.perceptron.inc",
+  "status": "NotReady",
+  "zero_data_retention": false,
+  "data_policy_tier": "logs",
+  "data_policy_confidence": "maybe",
+  "data_policy_contract_mode": "none",
+  "country_code": null,
+  "colour": null,
+  "privacy_policy_url": null,
+  "prompt_training_policy": null,
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null,
+  "gateway_kind": null,
+  "routable": false,
+  "routing_enabled": false,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://github.com/perceptron-ai-inc/perceptron",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://github.com/perceptron-ai-inc/perceptron",
+      "accessed_at": "2026-09-07T22:10:00Z"
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-07T22:10:00Z",
+    "notes": "Provider identity verified from first-party sources. No model offers added; direct routing requires separately verified model contracts, pricing and credentials."
+  }
+}

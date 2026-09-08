@@ -1,6 +1,3 @@
--- Recovered from the production supabase_migrations.schema_migrations ledger.
--- Original version and SQL are retained; this migration is already applied in production.
-
 -- Create and maintain provider offers independently of model pricing.
 create function public.mutate_v2_admin_provider_offer(p_actor_user_id uuid, p_action text, p_provider_slug text, p_payload jsonb)
 returns jsonb language plpgsql security invoker set search_path=public,pg_temp as $$

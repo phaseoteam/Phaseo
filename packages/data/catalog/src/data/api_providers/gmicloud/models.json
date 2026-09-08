@@ -3792,7 +3792,7 @@
     "provider_api_model_id": "gmicloud:qwen/qwen3.6-35b-a3b",
     "provider_model_slug": "Qwen/Qwen3.6-35B-A3B",
     "internal_model_id": "qwen/qwen3.6-35b-a3b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -3816,7 +3816,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -3825,7 +3825,9 @@
         "global"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [],
       "endpoint": null,
@@ -3833,9 +3835,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-11T03:45:54.588+00:00",
-      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+      "status": "verified",
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "Authenticated model listing and minimal Chat Completions request returned HTTP 200 with usage. Official publisher weights are available; native reasoning is preserved through IR."
     },
     "rate_limits": []
   },
@@ -4059,7 +4061,7 @@
     "provider_api_model_id": "gmicloud:tencent/hy3",
     "provider_model_slug": "tencent/Hy3",
     "internal_model_id": "tencent/hy3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -4083,7 +4085,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -4092,7 +4094,9 @@
         "global"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [],
       "endpoint": null,
@@ -4100,9 +4104,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-11T03:45:54.588+00:00",
-      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+      "status": "verified",
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "Authenticated model listing and minimal Chat Completions request returned HTTP 200 with usage. Official publisher weights are available; native reasoning is preserved through IR."
     },
     "rate_limits": []
   },
@@ -4111,7 +4115,7 @@
     "provider_api_model_id": "gmicloud:tencent/hy3-preview",
     "provider_model_slug": "tencent/hy3-preview",
     "internal_model_id": "tencent/hy3-preview",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -4135,7 +4139,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -4144,7 +4148,9 @@
         "global"
       ]
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
       "formats": [],
       "endpoint": null,
@@ -4152,9 +4158,9 @@
     },
     "sources": [],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-11T03:45:54.588+00:00",
-      "notes": "Discovered from the provider models API; routing remains disabled pending review."
+      "status": "verified",
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "Authenticated model listing and minimal Chat Completions request returned HTTP 200 with usage. Official publisher weights are available; native reasoning is preserved through IR."
     },
     "rate_limits": []
   },

@@ -68,6 +68,8 @@ describe("account mutation boundaries", () => {
 		["PUT", "/api/account/models/catalog/benchmarks/benchmark-test", { name: "Benchmark Test" }],
 		["DELETE", "/api/account/models/catalog/benchmarks/benchmark-test", undefined],
 		["PUT", "/api/account/models/org%2Fmodel/graph", { modelId: "org/model", name: "Updated" }],
+		["PUT", "/api/account/models/org%2Fmodel/notice", { tone: "warning", markdown: "Limited availability." }],
+		["PUT", "/api/account/models/org%2Fmodel/aliases", [{ alias_slug: "org/model-latest", alias_type: "public", enabled: true }]],
 		["DELETE", "/api/account/models/org%2Fmodel/benchmark-results/result-1", undefined],
 		["DELETE", "/api/account/models/org%2Fmodel/pricing-rules/rule-1", undefined],
 		["DELETE", "/api/account/models/org%2Fmodel/provider-models/provider-model-1", undefined],

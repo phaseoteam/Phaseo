@@ -1,0 +1,39 @@
+{
+  "key": "deepinfra:hexgrad/kokoro-82m:audio.speech",
+  "api_provider_id": "deepinfra",
+  "provider_slug": "deepinfra",
+  "api_model_id": "hexgrad/kokoro-82m",
+  "capability_id": "audio.speech",
+  "rules": [
+    {
+      "meter": "input_characters",
+      "unit": "character",
+      "unit_size": 1000000,
+      "price_per_unit": 0.62,
+      "currency": "USD",
+      "pricing_plan": "default",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T00:00:00Z",
+      "conditions": [],
+      "source": "https://deepinfra.com/hexgrad/Kokoro-82M"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "default"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://deepinfra.com/hexgrad/Kokoro-82M",
+      "accessed_at": "2026-09-07T00:00:00Z",
+      "notes": "Default tier price per million characters."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T00:00:00Z",
+    "notes": "Official model pricing; no live inference test."
+  }
+}

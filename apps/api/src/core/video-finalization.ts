@@ -19,6 +19,7 @@ import { captureWalletReservation, releaseWalletReservation, settleWalletReserva
 import { VIDEO_RESERVATION_PREFIX } from "@core/video-reservations";
 import { buildVideoPricingRequestOptions, resolveVideoOutputCount } from "@core/video-request-options";
 import { computeVideoPricedUsage } from "@core/video-pricing";
+import { computeBill } from "@pipeline/pricing/engine";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 
 const VIDEO_CAPTURE_REQUEST_ID_PREFIX = "video_capture";
@@ -456,7 +457,13 @@ async function computeVideoCompletionPricing(args: {
 	}
 	if (!card) return { charged: false, reason: "price_card_missing" };
 
-	const pricedBase = computeVideoPricedUsage({
+	// DeepInfra reports the final native cost in its authenticated job callback.
+	// Read it from the persisted job, never from public request options.
+	const nativeCost = providerId === "deepinfra" ? (await getVideoJobMeta(workspaceId, videoId))?.deepinfraNativeCostUsd : undefined;
+	if (providerId === "deepinfra" && (typeof nativeCost !== "number" || !Number.isFinite(nativeCost) || nativeCost < 0)) return { charged: false, reason: "native_cost_missing" };
+	const pricedBase = providerId === "deepinfra"
+		? computeBill({ deepinfra_cost_usd: nativeCost! }, card, { model: resolvedModel || model })
+		: computeVideoPricedUsage({
 		seconds,
 		card,
 		model: resolvedModel || model,
@@ -786,6 +793,11 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 		typeof completionPricing?.costNanos === "number"
 			? Math.max(0, Math.round(completionPricing.costNanos))
 			: undefined;
+	if (args.providerId === "deepinfra" && completionCostNanos == null && completionPricing?.reason !== "already_billed") {
+		const reason = completionPricing?.reason ?? "native_cost_missing";
+		await setVideoJobStatus(args.workspaceId, args.videoId, nextStatus, { charged: false, billingReason: reason });
+		return { status: nextStatus, charged: false, reason };
+	}
 	// A paid reservation becoming free at completion requires investigation.
 	// Keep the hold and billing marker open so a corrected price card can settle it.
 	if (completionCostNanos === 0 && Number(videoMeta?.reservedNanos) > 0 && !(args.isByok ?? videoMeta?.keySource === "byok")) {

@@ -1,0 +1,74 @@
+{
+  "key": "deepinfra:bytedance/seedance-2.0:video.generate",
+  "api_provider_id": "deepinfra",
+  "provider_slug": "deepinfra",
+  "api_model_id": "bytedance/seedance-2.0",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "deepinfra_cost_usd",
+      "unit": "USD",
+      "unit_size": 1,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://api.deepinfra.com/models/ByteDance/Seedance-2.0"
+    },
+    {
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 7.7,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [
+        {
+          "path": "resolution",
+          "op": "in",
+          "value": [
+            "480p",
+            "720p"
+          ]
+        }
+      ],
+      "priority": 100,
+      "source": "https://api.deepinfra.com/models/ByteDance/Seedance-2.0"
+    },
+    {
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 8.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [
+        {
+          "path": "resolution",
+          "op": "eq",
+          "value": "1080p"
+        }
+      ],
+      "priority": 100,
+      "source": "https://api.deepinfra.com/models/ByteDance/Seedance-2.0"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://api.deepinfra.com/models/ByteDance/Seedance-2.0",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Token or duration rates estimate the reservation. Final settlement uses only the authenticated callback inference_status.cost in USD; estimate meters are not charged again. Seedance 2.0 rates cover supported text/image input only."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Public native model pricing and output schema verified; authenticated execution not tested."
+  }
+}

@@ -61,7 +61,7 @@ publicCollectionsRouter.get("/collections", async (c) => {
 			client.from("v2_models").select("model_slug,name,lab_slug,status,released_at,announced_at,input_modalities,output_modalities,lab:v2_labs!v2_models_lab_slug_fkey(name,metadata)").eq("hidden", false),
 			client.from("v2_route_capabilities").select("provider_model_id,capability_id,params").eq("status", "active"),
 			client.from("v2_model_provider_routes").select("provider_model_id,model_slug").eq("is_stealth", false).eq("routing_enabled", true).in("status", ["active", "degraded"]),
-			client.from("v2_benchmark_results").select("benchmark_id,rank,model_slug").in("benchmark_id", ["aider-polyglot", "mmmu"]).order("rank", { ascending: true }).limit(limit * 8),
+			client.from("v2_benchmark_results").select("benchmark_id,rank,model_slug").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).in("benchmark_id", ["aider-polyglot", "mmmu"]).order("rank", { ascending: true }).limit(limit * 8),
 		]);
 		if (modelsResult.error) throw modelsResult.error;
 		if (capabilitiesResult.error) throw capabilitiesResult.error;

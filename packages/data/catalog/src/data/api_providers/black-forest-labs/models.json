@@ -3,33 +3,64 @@
     "api_model_id": "black-forest-labs/flux-1.1-pro",
     "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-1.1-pro",
     "provider_model_slug": "flux-pro-1.1",
-    "internal_model_id": "",
-    "is_active_gateway": false,
+    "internal_model_id": "black-forest-labs/flux-1.1-pro",
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "text,image",
+    "input_modalities": "text",
     "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
-    "routable": false,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height"
+        ],
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "bfl.async.image"
+      ],
+      "endpoint": "https://api.bfl.ai/v1/flux-pro-1.1",
+      "deployment": "serverless"
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.bfl.ai/quick_start/generating_images",
+        "accessed_at": "2026-09-07T00:00:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native image submission and polling reviewed against official API documentation. Settlement uses returned BFL credits at $0.01 per credit, including resolution and input-image charges. One output per request. Deterministic tests only; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -37,33 +68,64 @@
     "api_model_id": "black-forest-labs/flux-1.1-pro-ultra",
     "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-1.1-pro-ultra",
     "provider_model_slug": "flux-pro-1.1-ultra",
-    "internal_model_id": "",
-    "is_active_gateway": false,
+    "internal_model_id": "black-forest-labs/flux-1.1-pro-ultra",
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "text,image",
+    "input_modalities": "text",
     "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
-    "routable": false,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height"
+        ],
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "bfl.async.image"
+      ],
+      "endpoint": "https://api.bfl.ai/v1/flux-pro-1.1-ultra",
+      "deployment": "serverless"
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.bfl.ai/quick_start/generating_images",
+        "accessed_at": "2026-09-07T00:00:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native image submission and polling reviewed against official API documentation. Settlement uses returned BFL credits at $0.01 per credit, including resolution and input-image charges. One output per request. Deterministic tests only; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -71,8 +133,8 @@
     "api_model_id": "black-forest-labs/flux-1-kontext-max",
     "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-1-kontext-max",
     "provider_model_slug": "flux-kontext-max",
-    "internal_model_id": "",
-    "is_active_gateway": false,
+    "internal_model_id": "black-forest-labs/flux-1-kontext-max",
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -80,24 +142,79 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
-    "routable": false,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "bfl.async.image"
+      ],
+      "endpoint": "https://api.bfl.ai/v1/flux-kontext-max",
+      "deployment": "serverless"
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.bfl.ai/quick_start/generating_images",
+        "accessed_at": "2026-09-07T00:00:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native image submission and polling reviewed against official API documentation. Settlement uses returned BFL credits at $0.01 per credit, including resolution and input-image charges. One output per request. Deterministic tests only; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -105,8 +222,8 @@
     "api_model_id": "black-forest-labs/flux-1-kontext-pro",
     "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-1-kontext-pro",
     "provider_model_slug": "flux-kontext-pro",
-    "internal_model_id": "",
-    "is_active_gateway": false,
+    "internal_model_id": "black-forest-labs/flux-1-kontext-pro",
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -114,24 +231,79 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
-    "routable": false,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "bfl.async.image"
+      ],
+      "endpoint": "https://api.bfl.ai/v1/flux-kontext-pro",
+      "deployment": "serverless"
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.bfl.ai/quick_start/generating_images",
+        "accessed_at": "2026-09-07T00:00:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native image submission and polling reviewed against official API documentation. Settlement uses returned BFL credits at $0.01 per credit, including resolution and input-image charges. One output per request. Deterministic tests only; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -140,9 +312,9 @@
     "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-2-flex",
     "provider_model_slug": "flux-2-flex",
     "internal_model_id": "black-forest-labs/flux-2-flex",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "image,text",
+    "input_modalities": "text,image",
     "output_modalities": "image",
     "context_length": null,
     "max_output_tokens": null,
@@ -152,47 +324,75 @@
       {
         "capability_id": "image.generate",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       },
       {
         "capability_id": "image.edit",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "bfl.async.image"
+      ],
+      "endpoint": "https://api.bfl.ai/v1/flux-2-flex",
+      "deployment": "serverless"
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.bfl.ai/quick_start/generating_images",
+        "accessed_at": "2026-09-07T00:00:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native image submission and polling reviewed against official API documentation. Settlement uses returned BFL credits at $0.01 per credit, including resolution and input-image charges. One output per request. Deterministic tests only; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -201,7 +401,7 @@
     "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-2-klein-4b",
     "provider_model_slug": "flux-2-klein-4b",
     "internal_model_id": "black-forest-labs/flux-2-klein-4b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -213,47 +413,75 @@
       {
         "capability_id": "image.generate",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       },
       {
         "capability_id": "image.edit",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "bfl.async.image"
+      ],
+      "endpoint": "https://api.bfl.ai/v1/flux-2-klein-4b",
+      "deployment": "serverless"
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.bfl.ai/quick_start/generating_images",
+        "accessed_at": "2026-09-07T00:00:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native image submission and polling reviewed against official API documentation. Settlement uses returned BFL credits at $0.01 per credit, including resolution and input-image charges. One output per request. Deterministic tests only; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -262,7 +490,7 @@
     "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-2-klein-9b",
     "provider_model_slug": "flux-2-klein-9b",
     "internal_model_id": "black-forest-labs/flux-2-klein-9b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -274,47 +502,75 @@
       {
         "capability_id": "image.generate",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       },
       {
         "capability_id": "image.edit",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "bfl.async.image"
+      ],
+      "endpoint": "https://api.bfl.ai/v1/flux-2-klein-9b",
+      "deployment": "serverless"
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.bfl.ai/quick_start/generating_images",
+        "accessed_at": "2026-09-07T00:00:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native image submission and polling reviewed against official API documentation. Settlement uses returned BFL credits at $0.01 per credit, including resolution and input-image charges. One output per request. Deterministic tests only; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -323,7 +579,7 @@
     "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-2-max",
     "provider_model_slug": "flux-2-max",
     "internal_model_id": "black-forest-labs/flux-2-max",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -335,47 +591,75 @@
       {
         "capability_id": "image.generate",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       },
       {
         "capability_id": "image.edit",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "bfl.async.image"
+      ],
+      "endpoint": "https://api.bfl.ai/v1/flux-2-max",
+      "deployment": "serverless"
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.bfl.ai/quick_start/generating_images",
+        "accessed_at": "2026-09-07T00:00:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native image submission and polling reviewed against official API documentation. Settlement uses returned BFL credits at $0.01 per credit, including resolution and input-image charges. One output per request. Deterministic tests only; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -384,7 +668,7 @@
     "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-2-pro",
     "provider_model_slug": "flux-2-pro",
     "internal_model_id": "black-forest-labs/flux-2-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
@@ -396,47 +680,75 @@
       {
         "capability_id": "image.generate",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       },
       {
         "capability_id": "image.edit",
         "status": "active",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "params": [
+          "size",
+          "response_format",
+          "output_format",
+          "seed",
+          "safety_tolerance",
+          "aspect_ratio",
+          "width",
+          "height",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "bfl.async.image"
+      ],
+      "endpoint": "https://api.bfl.ai/v1/flux-2-pro",
+      "deployment": "serverless"
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://docs.bfl.ai/quick_start/generating_images",
+        "accessed_at": "2026-09-07T00:00:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native image submission and polling reviewed against official API documentation. Settlement uses returned BFL credits at $0.01 per credit, including resolution and input-image charges. One output per request. Deterministic tests only; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -445,7 +757,7 @@
     "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-3-video",
     "provider_model_slug": "flux-3-video",
     "internal_model_id": "black-forest-labs/flux-3-video",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "video,audio",
@@ -458,13 +770,56 @@
         "capability_id": "video.generate",
         "status": "active",
         "params": {
-          "prompt": { "type": "string" },
-          "duration": { "type": "number", "min": 5, "max": 20, "aliases": ["seconds", "duration_seconds"] },
-          "size": { "type": "enum", "values": ["hd", "fhd"], "aliases": ["resolution"] },
-          "aspect_ratio": { "type": "enum", "values": ["21:9", "2:1", "16:9", "4:3", "1:1", "3:4", "9:16", "auto"] },
-          "input_image": { "type": "string" },
-          "input_video": { "type": "string" },
-          "generate_audio": { "type": "boolean" }
+          "prompt": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "min": 5,
+            "max": 20,
+            "aliases": [
+              "seconds",
+              "duration_seconds"
+            ]
+          },
+          "size": {
+            "type": "enum",
+            "values": [
+              "hd",
+              "fhd"
+            ],
+            "aliases": [
+              "resolution"
+            ]
+          },
+          "aspect_ratio": {
+            "type": "enum",
+            "values": [
+              "21:9",
+              "2:1",
+              "16:9",
+              "4:3",
+              "1:1",
+              "3:4",
+              "9:16",
+              "auto"
+            ]
+          },
+          "input_image": {
+            "type": "string"
+          },
+          "input_video": {
+            "type": "string"
+          },
+          "input_references": {
+            "type": "array"
+          },
+          "provider_options": {
+            "type": "object"
+          },
+          "generate_audio": {
+            "type": "boolean"
+          }
         },
         "reasoning": null,
         "tool_call": null,
@@ -473,19 +828,52 @@
         "attachment": null,
         "input_modalities": null,
         "output_modalities": null,
-        "modes": ["t2v", "i2v", "v2v", "draft_enhance"]
+        "modes": [
+          "t2v",
+          "i2v",
+          "v2v"
+        ]
       }
     ],
-    "routing_status": "catalogue_only",
-    "routable": false,
-    "regions": { "execution": ["global", "eu", "us"], "data": ["global", "eu", "us"] },
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "global",
+        "eu",
+        "us"
+      ],
+      "data": [
+        "global",
+        "eu",
+        "us"
+      ]
+    },
     "service_tiers": [],
-    "api": { "formats": ["bfl-async-video"], "endpoint": "/v1/flux-3-video", "deployment": null },
+    "api": {
+      "formats": [
+        "bfl-async-video"
+      ],
+      "endpoint": "/v1/flux-3-video",
+      "deployment": null
+    },
     "sources": [
-      { "kind": "official_documentation", "url": "https://docs.bfl.ai/api-reference/utility/generate-a-video-with-flux-3", "accessed_at": "2026-08-24T00:00:00Z" },
-      { "kind": "announcement", "url": "https://bfl.ai/blog/flux-3-video", "accessed_at": "2026-08-24T00:00:00Z" }
+      {
+        "kind": "official_documentation",
+        "url": "https://docs.bfl.ai/api-reference/utility/generate-a-video-with-flux-3",
+        "accessed_at": "2026-08-24T00:00:00Z"
+      },
+      {
+        "kind": "announcement",
+        "url": "https://bfl.ai/blog/flux-3-video",
+        "accessed_at": "2026-08-24T00:00:00Z"
+      }
     ],
-    "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "GA endpoint and request constraints verified against first-party documentation." },
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native text/image generation and continuation, draft pricing, durable submission, polling and content extraction covered by deterministic tests. Explicit duration is required for priced requests. Draft enhancement is not enabled. Authenticated inference has not been run in this audit."
+    },
     "rate_limits": []
   }
 ]

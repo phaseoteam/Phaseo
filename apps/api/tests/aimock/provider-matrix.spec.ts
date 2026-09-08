@@ -206,19 +206,28 @@ describe("AIMock provider matrix", () => {
                     providerId,
                     capability: "image.generate",
                     ir: {
-                        model: "gpt-image-1",
+                        model: providerId === "modelscope" ? "Qwen/Qwen-Image" : providerId === "ovhcloud" ? "stable-diffusion-xl" : providerId === "stepfun" ? "step-image-edit-2" : "gpt-image-1",
                         prompt: "[aimock-image] skyline",
                         n: 1,
-                        size: "1024x1024",
+                        ...(providerId === "modelscope" ? {} : { size: "1024x1024" }),
                     },
                 });
 
                 const completed = expectCompleted(result);
                 expect(completed.ir?.provider).toBe(providerId);
-                expect((completed.ir as any)?.data?.[0]).toMatchObject({
-                    url: "https://example.com/aimock/skyline.png",
-                    revisedPrompt: "Deterministic AIMock skyline",
-                });
+                if (providerId === "ovhcloud") {
+                    expect((completed.ir as any)?.data?.[0]).toMatchObject({ b64Json: "AQID" });
+                    expect(completed.bill.currency).toBe("USD");
+                } else {
+                    expect((completed.ir as any)?.data?.[0]).toMatchObject({
+                        url: "https://example.com/aimock/skyline.png",
+                        ...(providerId === "modelscope" ? {} : { revisedPrompt: "Deterministic AIMock skyline" }),
+                    });
+                }
+                if (providerId === "modelscope") {
+                    expect(completed.ir?.nativeId).toBe("aimock-image-task");
+                    expect(getAimock().getLastRequest()?.headers["x-modelscope-task-type"]).toBe("image_generation");
+                }
                 assertLastRequestTestId(testId);
             });
         }
@@ -234,10 +243,10 @@ describe("AIMock provider matrix", () => {
                     providerId,
                     capability: "audio.speech",
                     ir: {
-                        model: "tts-1",
+                        model: providerId === "ovhcloud" ? "nvr-tts-en-us" : providerId === "stepfun" ? "stepaudio-2.5-tts" : "tts-1",
                         input,
-                        voice: "alloy",
-                        responseFormat: "mp3",
+                        voice: providerId === "ovhcloud" ? "English-US.Female-1" : providerId === "stepfun" ? "zixinnansheng" : "alloy",
+                        responseFormat: providerId === "ovhcloud" ? "wav" : "mp3",
                     },
                 });
 
@@ -261,14 +270,19 @@ describe("AIMock provider matrix", () => {
             if (!isProviderEnabled(providerId)) continue;
 
             it(`${providerId} returns deterministic transcription output`, async () => {
-                const file = new File([Buffer.from("aimock audio bytes")], "sample.wav", { type: "audio/wav" });
+                const file = providerId === "stepfun"
+                    ? new File([new Uint8Array(16000)], "sample.pcm", { type: "audio/pcm" })
+                    : new File([Buffer.from("aimock audio bytes")], "sample.wav", { type: "audio/wav" });
                 const { result, testId } = await executeCapabilityScenario({
                     providerId,
                     capability: "audio.transcription",
                     ir: {
-                        model: "whisper-1",
+                        model: providerId === "stepfun" ? "stepaudio-2.5-asr" : "whisper-1",
                         file,
-                        ...(providerId === "xiaomi" || providerId === "meta" ? {} : {
+                        ...(providerId === "stepfun" ? {
+                            responseFormat: "json",
+                            rawRequest: { config: { stepfun: { format: { type: "pcm", rate: 16000, bits: 16, channel: 1 } } } },
+                        } : providerId === "xiaomi" || providerId === "meta" ? {} : {
                             responseFormat: "verbose_json",
                             timestampGranularities: ["word", "segment"],
                         }),
@@ -279,8 +293,12 @@ describe("AIMock provider matrix", () => {
                 const completed = expectCompleted(result);
                 expect(completed.ir?.provider).toBe(providerId);
                 expect((completed.ir as any)?.text).toBe("Deterministic transcription from AIMock.");
-                expect(Array.isArray((completed.ir as any)?.segments)).toBe(true);
-                expect((completed.ir as any)?.segments?.[0]?.text).toContain("Deterministic transcription");
+                if (providerId === "stepfun") {
+                    expect(completed.bill.usage?.input_audio_seconds).toBe(0.5);
+                } else {
+                    expect(Array.isArray((completed.ir as any)?.segments)).toBe(true);
+                    expect((completed.ir as any)?.segments?.[0]?.text).toContain("Deterministic transcription");
+                }
                 assertLastRequestTestId(testId);
             });
         }

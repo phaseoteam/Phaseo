@@ -5,7 +5,7 @@
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { AudioSpeechSchema, type AudioSpeechRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
-import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { validateOpenAIVoiceForModel } from "../voices";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 
@@ -173,14 +173,15 @@ async function parseSpeechSseResponse(response: Response): Promise<{
 
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const keyInfo = await resolveOpenAICompatKey(args);
+    const { keyInfo, url, headers, deployment } = resolveOpenAITransport(args, "/audio/speech", upstreamTestHeaders(args.meta));
     const adapterPayload = buildAdapterPayload(AudioSpeechSchema, args.body, []).adapterPayload as AudioSpeechRequest;
     const body: AudioSpeechRequest = {
         ...adapterPayload,
         model: args.providerModelSlug || adapterPayload.model,
     };
     const isMorpheus = args.providerId === "morpheus";
-    if (!isMorpheus && body.format !== undefined) {
+    const isOpenAI = args.providerId === "openai" || args.providerId === "openai-eu";
+    if (isOpenAI && body.format !== undefined) {
         return {
             kind: "completed",
             upstream: new Response(
@@ -254,7 +255,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		};
 	}
     let resolvedVoice: string | { id: string } = voiceCandidate;
-    if (typeof voiceCandidate === "string" && !isMorpheus) {
+    if (typeof voiceCandidate === "string" && isOpenAI) {
         const validation = validateOpenAIVoiceForModel(body.model, voiceCandidate);
         if (!validation.ok) {
             return {
@@ -274,7 +275,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         resolvedVoice = validation.resolved;
     }
 
-    if (!supportsSpeechSse(body.model) && body.stream_format === "sse") {
+    if (isOpenAI && !supportsSpeechSse(body.model) && body.stream_format === "sse") {
         return {
             kind: "completed",
             upstream: invalidSpeechRequest('stream_format "sse" is not supported for tts-1 or tts-1-hd.', "stream_format"),
@@ -283,7 +284,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             byokKeyId: keyInfo.byokId,
         };
     }
-    if (!supportsSpeechSse(body.model) && body.instructions != null) {
+    if (isOpenAI && !supportsSpeechSse(body.model) && body.instructions != null) {
         return {
             kind: "completed",
             upstream: invalidSpeechRequest("instructions are not supported for tts-1 or tts-1-hd.", "instructions"),
@@ -295,9 +296,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const requireAuthoritativeUsage = requiresAuthoritativeSpeechUsage(args.providerId, body.model);
 
-    const responseFormat = body.response_format ?? (isMorpheus ? body.format ?? "mp3" : undefined);
+    const responseFormat = body.response_format ?? (!isOpenAI ? body.format ?? "mp3" : undefined);
     const requestBody = {
-        model: body.model,
+        model: deployment || body.model,
         input: body.input,
         voice: resolvedVoice,
         response_format: responseFormat,
@@ -307,9 +308,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		session_id: isMorpheus ? body.session_id : undefined,
     };
 
-    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/audio/speech"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(url, {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
+        headers,
         body: JSON.stringify(requestBody),
     });
 

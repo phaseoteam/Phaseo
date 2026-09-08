@@ -235,10 +235,10 @@
     "provider_api_model_id": "deepinfra:baai/bge-m3",
     "provider_model_slug": "BAAI/bge-m3",
     "internal_model_id": "baai/bge-m3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
     "context_length": 8192,
     "max_output_tokens": null,
     "effective_from": null,
@@ -246,20 +246,28 @@
     "capabilities": [
       {
         "capability_id": "text.embed",
-        "status": "disabled",
-        "params": [],
+        "status": "active",
+        "params": [
+          "input",
+          "encoding_format",
+          "dimensions"
+        ],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "embedding"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -272,8 +280,10 @@
       "default"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.embeddings"
+      ],
+      "endpoint": "/v1/openai/embeddings",
       "deployment": null
     },
     "sources": [
@@ -282,12 +292,18 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://deepinfra.com/BAAI/bge-m3",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Public model availability and default-tier token pricing; IR embedding executor covered by deterministic contract tests."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Public model page and OpenAI embeddings API contract verified; no authenticated inference smoke test performed."
     },
     "rate_limits": []
   },
@@ -296,7 +312,7 @@
     "provider_api_model_id": "deepinfra:black-forest-labs/flux-1-dev",
     "provider_model_slug": "black-forest-labs/FLUX-1-dev",
     "internal_model_id": "black-forest-labs/flux-1-dev",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -307,20 +323,22 @@
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size"
+        ],
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -330,12 +348,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/black-forest-labs/FLUX-1-dev",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -343,12 +363,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/black-forest-labs/FLUX-1-dev/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -357,7 +382,7 @@
     "provider_api_model_id": "deepinfra:black-forest-labs/flux-1-schnell",
     "provider_model_slug": "black-forest-labs/FLUX-1-schnell",
     "internal_model_id": "black-forest-labs/flux-1-schnell",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -368,20 +393,22 @@
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size"
+        ],
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -391,12 +418,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/black-forest-labs/FLUX-1-schnell",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -404,12 +433,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/black-forest-labs/FLUX-1-schnell/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -418,7 +452,7 @@
     "provider_api_model_id": "deepinfra:black-forest-labs/flux-1.1-pro",
     "provider_model_slug": "black-forest-labs/FLUX-1.1-pro",
     "internal_model_id": "black-forest-labs/flux-1.1-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -429,20 +463,22 @@
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size"
+        ],
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -452,12 +488,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/black-forest-labs/FLUX-1.1-pro",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -465,12 +503,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/black-forest-labs/FLUX-1.1-pro/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -479,7 +522,7 @@
     "provider_api_model_id": "deepinfra:black-forest-labs/flux-2-dev",
     "provider_model_slug": "black-forest-labs/FLUX-2-dev",
     "internal_model_id": "black-forest-labs/flux-2-dev",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -490,20 +533,41 @@
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -513,12 +577,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/black-forest-labs/FLUX-2-dev",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -526,12 +592,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/black-forest-labs/FLUX-2-dev/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -540,7 +611,7 @@
     "provider_api_model_id": "deepinfra:black-forest-labs/flux-2-klein-4b",
     "provider_model_slug": "black-forest-labs/FLUX-2-klein-4b",
     "internal_model_id": "black-forest-labs/flux-2-klein-4b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -551,20 +622,41 @@
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -574,12 +666,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/black-forest-labs/FLUX-2-klein-4b",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -587,12 +681,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/black-forest-labs/FLUX-2-klein-4b/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -601,7 +700,7 @@
     "provider_api_model_id": "deepinfra:black-forest-labs/flux-2-klein-9b",
     "provider_model_slug": "black-forest-labs/FLUX-2-klein-9b",
     "internal_model_id": "black-forest-labs/flux-2-klein-9b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -612,20 +711,41 @@
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -635,12 +755,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/black-forest-labs/FLUX-2-klein-9b",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -648,12 +770,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/black-forest-labs/FLUX-2-klein-9b/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -662,7 +789,7 @@
     "provider_api_model_id": "deepinfra:black-forest-labs/flux-2-max",
     "provider_model_slug": "black-forest-labs/FLUX-2-max",
     "internal_model_id": "black-forest-labs/flux-2-max",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -673,20 +800,41 @@
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -696,12 +844,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/black-forest-labs/FLUX-2-max",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -709,12 +859,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/black-forest-labs/FLUX-2-max/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -723,7 +878,7 @@
     "provider_api_model_id": "deepinfra:black-forest-labs/flux-2-pro",
     "provider_model_slug": "black-forest-labs/FLUX-2-pro",
     "internal_model_id": "black-forest-labs/flux-2-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -734,20 +889,41 @@
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -757,12 +933,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/black-forest-labs/FLUX-2-pro",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -770,12 +948,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/black-forest-labs/FLUX-2-pro/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -955,10 +1138,10 @@
     "provider_api_model_id": "deepinfra:bytedance/seedance-1.5-pro",
     "provider_model_slug": "ByteDance/Seedance-1.5-Pro",
     "internal_model_id": "bytedance/seedance-1.5-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -966,7 +1149,7 @@
     "capabilities": [
       {
         "capability_id": "video.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -978,8 +1161,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -989,7 +1172,7 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
       "formats": [],
@@ -1016,10 +1199,10 @@
     "provider_api_model_id": "deepinfra:bytedance/seedance-2.0",
     "provider_model_slug": "ByteDance/Seedance-2.0",
     "internal_model_id": "bytedance/seedance-2.0",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -1027,7 +1210,7 @@
     "capabilities": [
       {
         "capability_id": "video.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -1039,8 +1222,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -1050,7 +1233,7 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
       "formats": [],
@@ -1847,10 +2030,10 @@
     "provider_api_model_id": "deepinfra:google/embeddinggemma-300m",
     "provider_model_slug": "google/embeddinggemma-300m",
     "internal_model_id": "google/embeddinggemma-300m",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
     "context_length": 2048,
     "max_output_tokens": null,
     "effective_from": null,
@@ -1858,20 +2041,28 @@
     "capabilities": [
       {
         "capability_id": "text.embed",
-        "status": "disabled",
-        "params": [],
+        "status": "active",
+        "params": [
+          "input",
+          "encoding_format",
+          "dimensions"
+        ],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "embedding"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -1884,8 +2075,10 @@
       "default"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.embeddings"
+      ],
+      "endpoint": "/v1/openai/embeddings",
       "deployment": null
     },
     "sources": [
@@ -1894,12 +2087,18 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://deepinfra.com/google/embeddinggemma-300m",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Public model availability and default-tier token pricing; IR embedding executor covered by deterministic contract tests."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Public model page and OpenAI embeddings API contract verified; no authenticated inference smoke test performed."
     },
     "rate_limits": []
   },
@@ -2082,7 +2281,7 @@
     "provider_api_model_id": "deepinfra:google/gemini-3-pro-image",
     "provider_model_slug": "google/gemini-3-pro-image",
     "internal_model_id": "google/gemini-3-pro-image",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -2093,20 +2292,39 @@
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -2116,12 +2334,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/google/gemini-3-pro-image",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -2129,12 +2349,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/google/gemini-3-pro-image/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -2326,10 +2551,10 @@
     "provider_api_model_id": "deepinfra:google/veo-3.1",
     "provider_model_slug": "google/veo-3.1",
     "internal_model_id": "google/veo-3.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2337,7 +2562,7 @@
     "capabilities": [
       {
         "capability_id": "video.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -2349,8 +2574,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -2360,7 +2585,7 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
       "formats": [],
@@ -2387,10 +2612,10 @@
     "provider_api_model_id": "deepinfra:google/veo-3.1-fast",
     "provider_model_slug": "google/veo-3.1-fast",
     "internal_model_id": "google/veo-3.1-fast",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -2398,7 +2623,7 @@
     "capabilities": [
       {
         "capability_id": "video.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -2410,8 +2635,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -2421,7 +2646,7 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
       "formats": [],
@@ -2448,7 +2673,7 @@
     "provider_api_model_id": "deepinfra:hexgrad/kokoro-82m",
     "provider_model_slug": "hexgrad/Kokoro-82M",
     "internal_model_id": "hexgrad/kokoro-82m",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -2459,8 +2684,13 @@
     "capabilities": [
       {
         "capability_id": "audio.generate",
-        "status": "disabled",
-        "params": [],
+        "status": "active",
+        "params": [
+          "input",
+          "voice",
+          "response_format",
+          "speed"
+        ],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
@@ -2471,8 +2701,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -2486,7 +2716,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "/v1/audio/speech",
       "deployment": null
     },
     "sources": [
@@ -2499,8 +2729,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Official native speech API and deterministic IR checks; no live inference test."
     },
     "rate_limits": []
   },
@@ -4935,7 +5165,7 @@
     "provider_api_model_id": "deepinfra:openai/whisper-large-v3",
     "provider_model_slug": "openai/whisper-large-v3",
     "internal_model_id": "openai/whisper-large-v3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -4945,8 +5175,8 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "audio.transcribe",
-        "status": "disabled",
+        "capability_id": "audio.transcription",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -4958,8 +5188,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -4973,7 +5203,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.deepinfra.com/v1/audio/transcriptions",
       "deployment": null
     },
     "sources": [
@@ -4987,7 +5217,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "notes": "Current public model page, OpenAI speech-to-text endpoint, multipart fields and input-duration billing verified."
     },
     "rate_limits": []
   },
@@ -4996,7 +5226,7 @@
     "provider_api_model_id": "deepinfra:openai/whisper-large-v3-turbo",
     "provider_model_slug": "openai/whisper-large-v3-turbo",
     "internal_model_id": "openai/whisper-large-v3-turbo",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -5006,8 +5236,8 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "audio.transcribe",
-        "status": "disabled",
+        "capability_id": "audio.transcription",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -5019,8 +5249,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -5034,7 +5264,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.deepinfra.com/v1/audio/transcriptions",
       "deployment": null
     },
     "sources": [
@@ -5048,7 +5278,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "notes": "Current public model page, OpenAI speech-to-text endpoint, multipart fields and input-duration billing verified."
     },
     "rate_limits": []
   },
@@ -5057,7 +5287,7 @@
     "provider_api_model_id": "deepinfra:qwen/qwen-image-edit",
     "provider_model_slug": "Qwen/Qwen-Image-Edit",
     "internal_model_id": "qwen/qwen-image-edit",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -5067,21 +5297,24 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "image"
+        ],
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -5091,12 +5324,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/Qwen/Qwen-Image-Edit",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -5104,12 +5339,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/Qwen/Qwen-Image-Edit/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -5118,7 +5358,7 @@
     "provider_api_model_id": "deepinfra:qwen/qwen-image-max",
     "provider_model_slug": "Qwen/Qwen-Image-Max",
     "internal_model_id": "qwen/qwen-image-max",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -5129,20 +5369,22 @@
     "capabilities": [
       {
         "capability_id": "image.generate",
-        "status": "disabled",
-        "params": [],
-        "reasoning": null,
-        "tool_call": null,
-        "structured_output": null,
-        "temperature": null,
-        "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
-        "modes": []
+        "status": "active",
+        "params": [
+          "response_format",
+          "provider_options",
+          "size"
+        ],
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "image"
+        ]
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -5152,12 +5394,14 @@
       ]
     },
     "service_tiers": [
-      "default"
+      "standard"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
-      "deployment": null
+      "formats": [
+        "deepinfra.native"
+      ],
+      "endpoint": "https://api.deepinfra.com/v1/inference/Qwen/Qwen-Image-Max",
+      "deployment": "serverless"
     },
     "sources": [
       {
@@ -5165,12 +5409,17 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://api.deepinfra.com/models/Qwen/Qwen-Image-Max/schema/default",
+        "accessed_at": "2026-09-07T00:00:00Z"
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native request schema and returned inference_status.cost reviewed against the first-party schema API. Input-image limits, native result mapping and cost meter covered by deterministic tests; no authenticated inference in this audit."
     },
     "rate_limits": []
   },
@@ -5605,7 +5854,7 @@
     "provider_api_model_id": "deepinfra:qwen/qwen3-asr-0.6b",
     "provider_model_slug": "Qwen/Qwen3-ASR-0.6B",
     "internal_model_id": "qwen/qwen3-asr-0.6b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -5615,8 +5864,8 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "audio.transcribe",
-        "status": "disabled",
+        "capability_id": "audio.transcription",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -5628,8 +5877,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -5643,7 +5892,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.deepinfra.com/v1/audio/transcriptions",
       "deployment": null
     },
     "sources": [
@@ -5657,7 +5906,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "notes": "Current public model page, OpenAI speech-to-text endpoint, multipart fields and input-duration billing verified."
     },
     "rate_limits": []
   },
@@ -5666,7 +5915,7 @@
     "provider_api_model_id": "deepinfra:qwen/qwen3-asr-1.7b",
     "provider_model_slug": "Qwen/Qwen3-ASR-1.7B",
     "internal_model_id": "qwen/qwen3-asr-1.7b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -5676,8 +5925,8 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "audio.transcribe",
-        "status": "disabled",
+        "capability_id": "audio.transcription",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -5689,8 +5938,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -5704,7 +5953,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.deepinfra.com/v1/audio/transcriptions",
       "deployment": null
     },
     "sources": [
@@ -5718,7 +5967,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "notes": "Current public model page, OpenAI speech-to-text endpoint, multipart fields and input-duration billing verified."
     },
     "rate_limits": []
   },
@@ -5856,10 +6105,10 @@
     "provider_api_model_id": "deepinfra:qwen/qwen3-embedding-0.6b",
     "provider_model_slug": "Qwen/Qwen3-Embedding-0.6B",
     "internal_model_id": "qwen/qwen3-embedding-0.6b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
     "context_length": 32768,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5867,20 +6116,28 @@
     "capabilities": [
       {
         "capability_id": "text.embed",
-        "status": "disabled",
-        "params": [],
+        "status": "active",
+        "params": [
+          "input",
+          "encoding_format",
+          "dimensions"
+        ],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "embedding"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -5893,8 +6150,10 @@
       "default"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.embeddings"
+      ],
+      "endpoint": "/v1/openai/embeddings",
       "deployment": null
     },
     "sources": [
@@ -5903,12 +6162,18 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://deepinfra.com/Qwen/Qwen3-Embedding-0.6B",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Public model availability and default-tier token pricing; IR embedding executor covered by deterministic contract tests."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Public model page and OpenAI embeddings API contract verified; no authenticated inference smoke test performed."
     },
     "rate_limits": []
   },
@@ -5917,10 +6182,10 @@
     "provider_api_model_id": "deepinfra:qwen/qwen3-embedding-4b",
     "provider_model_slug": "Qwen/Qwen3-Embedding-4B",
     "internal_model_id": "qwen/qwen3-embedding-4b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
     "context_length": 32768,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5928,20 +6193,28 @@
     "capabilities": [
       {
         "capability_id": "text.embed",
-        "status": "disabled",
-        "params": [],
+        "status": "active",
+        "params": [
+          "input",
+          "encoding_format",
+          "dimensions"
+        ],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "embedding"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -5954,8 +6227,10 @@
       "default"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.embeddings"
+      ],
+      "endpoint": "/v1/openai/embeddings",
       "deployment": null
     },
     "sources": [
@@ -5964,12 +6239,18 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://deepinfra.com/Qwen/Qwen3-Embedding-4B",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Public model availability and default-tier token pricing; IR embedding executor covered by deterministic contract tests."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Public model page and OpenAI embeddings API contract verified; no authenticated inference smoke test performed."
     },
     "rate_limits": []
   },
@@ -5978,10 +6259,10 @@
     "provider_api_model_id": "deepinfra:qwen/qwen3-embedding-8b",
     "provider_model_slug": "Qwen/Qwen3-Embedding-8B",
     "internal_model_id": "qwen/qwen3-embedding-8b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
     "context_length": 32768,
     "max_output_tokens": null,
     "effective_from": null,
@@ -5989,20 +6270,28 @@
     "capabilities": [
       {
         "capability_id": "text.embed",
-        "status": "disabled",
-        "params": [],
+        "status": "active",
+        "params": [
+          "input",
+          "encoding_format",
+          "dimensions"
+        ],
         "reasoning": null,
         "tool_call": null,
         "structured_output": null,
         "temperature": null,
         "attachment": null,
-        "input_modalities": null,
-        "output_modalities": null,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "embedding"
+        ],
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -6015,8 +6304,10 @@
       "default"
     ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai.embeddings"
+      ],
+      "endpoint": "/v1/openai/embeddings",
       "deployment": null
     },
     "sources": [
@@ -6025,12 +6316,18 @@
         "url": "https://api.deepinfra.com/models/list",
         "accessed_at": "2026-08-21T14:50:29.173Z",
         "notes": "Provider model and pricing metadata."
+      },
+      {
+        "kind": "documentation",
+        "url": "https://deepinfra.com/Qwen/Qwen3-Embedding-8B",
+        "accessed_at": "2026-09-07T00:00:00Z",
+        "notes": "Public model availability and default-tier token pricing; IR embedding executor covered by deterministic contract tests."
       }
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Public model page and OpenAI embeddings API contract verified; no authenticated inference smoke test performed."
     },
     "rate_limits": []
   },
@@ -6228,7 +6525,7 @@
     "provider_api_model_id": "deepinfra:qwen/qwen3-tts",
     "provider_model_slug": "Qwen/Qwen3-TTS",
     "internal_model_id": "qwen/qwen3-tts",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -6238,8 +6535,8 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "audio.generate",
-        "status": "disabled",
+        "capability_id": "audio.speech",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -6251,8 +6548,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -6266,7 +6563,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.deepinfra.com/v1/inference/Qwen/Qwen3-TTS",
       "deployment": null
     },
     "sources": [
@@ -6280,7 +6577,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "notes": "Native schema, model-specific voice and instruction controls, binary audio response, and character pricing verified."
     },
     "rate_limits": []
   },
@@ -6289,7 +6586,7 @@
     "provider_api_model_id": "deepinfra:qwen/qwen3-tts-voicedesign",
     "provider_model_slug": "Qwen/Qwen3-TTS-VoiceDesign",
     "internal_model_id": "qwen/qwen3-tts-voicedesign",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
@@ -6299,8 +6596,8 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "audio.generate",
-        "status": "disabled",
+        "capability_id": "audio.speech",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -6312,8 +6609,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "global"
@@ -6327,7 +6624,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.deepinfra.com/v1/inference/Qwen/Qwen3-TTS-VoiceDesign",
       "deployment": null
     },
     "sources": [
@@ -6341,7 +6638,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-21T00:00:00Z",
-      "notes": "Availability, model type, context limit, pricing, and service tiers reconciled against the live DeepInfra current-model and model-detail endpoints."
+      "notes": "Native schema, model-specific voice and instruction controls, binary audio response, and character pricing verified."
     },
     "rate_limits": []
   },

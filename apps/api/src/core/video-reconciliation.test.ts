@@ -380,7 +380,7 @@ describe("video-reconciliation provider polling", () => {
 		);
 	});
 
-	it("polls generic openai-compatible video providers using provider-specific auth and URL", async () => {
+	it("polls Novita's native task-result endpoint", async () => {
 		const nativeId = "novita-job-789";
 		const job = makeBaseJob({
 			videoId: "vid_compat_1",
@@ -388,6 +388,7 @@ describe("video-reconciliation provider polling", () => {
 			provider: "novita",
 			model: "novita/seedance-1",
 			meta: {
+				seconds: 6,
 				provider: "novita",
 				keySource: "gateway",
 				resolution: "720p",
@@ -400,10 +401,8 @@ describe("video-reconciliation provider polling", () => {
 			vi.fn().mockResolvedValue({
 				ok: true,
 				json: async () => ({
-					status: "completed",
-					model: "novita/seedance-1",
-					seconds: 6,
-					size: "720p",
+					task: { status: "TASK_STATUS_SUCCEED", progress_percent: 100 },
+					videos: [{ video_url: "https://example.com/video.mp4" }],
 				}),
 			}),
 		);
@@ -411,9 +410,8 @@ describe("video-reconciliation provider polling", () => {
 		const result = await fetchVideoProviderStatus(job);
 
 		expect(globalThis.fetch).toHaveBeenCalledWith(
-			`https://novita.example/videos/${encodeURIComponent(nativeId)}`,
+			`https://api.novita.ai/v3/async/task-result?task_id=${encodeURIComponent(nativeId)}`,
 			expect.objectContaining({
-				method: "GET",
 				headers: expect.objectContaining({
 					Authorization: "Bearer gateway-novita-key",
 				}),
@@ -427,6 +425,16 @@ describe("video-reconciliation provider polling", () => {
 				seconds: 6,
 			}),
 		);
+	});
+	it("polls BFL and restores continuation draft pricing after a restart", async () => {
+		getBindingsMock.mockReturnValue({ BFL_API_KEY: "test-bfl-key" });
+		const fetchMock = vi.fn().mockResolvedValue(Response.json({ status: "Ready", result: { sample: "https://example.com/video.mp4", duration: 10 } }));
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await fetchVideoProviderStatus(makeBaseJob({ provider: "black-forest-labs", model: "black-forest-labs/flux-3-video", nativeId: "native", meta: {
+			provider: "black-forest-labs", bflPollingUrl: "https://api.eu.bfl.ai/v1/get_result?id=native", bflMode: "v2v", bflDraft: true, seconds: 10, resolution: "hd",
+		} }));
+		expect(fetchMock).toHaveBeenCalledWith("https://api.eu.bfl.ai/v1/get_result?id=native", expect.objectContaining({ headers: { "x-key": "test-bfl-key" }, redirect: "error" }));
+		expect(result).toMatchObject({ status: "completed", seconds: 10, metaPatch: { downloadUrl: "https://example.com/video.mp4" }, requestOptions: { video_params: { resolution: "hd", mode: "v2v", draft: true } } });
 	});
 
 	it("polls atlascloud prediction endpoint with result fallback support", async () => {

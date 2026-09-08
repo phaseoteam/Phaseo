@@ -1,7 +1,3 @@
--- Recovered from the production supabase_migrations.schema_migrations ledger.
--- Original version and SQL are retained; this migration is already applied in production.
--- phaseo:allow-destructive-migration reason: Restore already-applied history: deletes occur inside existing admin replacement functions; production will not replay this migration.
-
 -- Retain catalogue rows and record every change, including importer writes.
 -- phaseo:allow-destructive-migration reason: Existing model detail/link collections still use transactional replacement; their complete old rows are retained by the append-only history triggers.
 set local lock_timeout='5s';

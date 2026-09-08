@@ -81,6 +81,8 @@ export type GatewayBindings = {
     AKASHML_API_KEY?: string;
     AKASHML_BASE_URL?: string;
     ALIBABA_CLOUD_API_KEY?: string;
+    MODELSCOPE_API_KEY?: string;
+    MODELSCOPE_BASE_URL?: string;
     DASHSCOPE_API_KEY?: string;
     ALIBABA_BASE_URL?: string;
     ALIBABA_VIDEO_WEBHOOK_SECRET?: string;
@@ -298,10 +300,12 @@ export type GatewayBindings = {
 	AZURE_OPENAI_AUTH_TOKEN?: string;
     AZURE_OPENAI_BASE_URL?: string;
     AZURE_OPENAI_API_VERSION?: string;
+    AZURE_OPENAI_DEPLOYMENTS?: string;
     RESEND_API_KEY?: string;
     RESEND_FROM_EMAIL?: string;
     RESEND_ONBOARDING_AUTOMATIONS_ENABLED?: string;
     RESEND_TEMPLATE_LOW_BALANCE_ID?: string;
+    RESEND_TEMPLATE_MODEL_DEPRECATION_ID?: string;
     DISCORD_WEBHOOK_URL?: string;
     DISCORD_ROLE_ID?: string;
     DISCORD_USER_ID?: string;

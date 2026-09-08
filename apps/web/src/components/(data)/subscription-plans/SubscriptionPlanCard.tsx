@@ -1,9 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/types";
 import { Logo } from "@/components/Logo";
 
@@ -23,18 +21,14 @@ export default function SubscriptionPlanCard({ plan }: Props) {
 
 	return (
 		<Card
-			style={{ borderColor: plan.organisation?.colour || undefined }}
-			className={cn(
-				"h-full flex flex-col shadow-lg relative dark:shadow-zinc-900/25 dark:bg-zinc-950 transition-transform transform hover:scale-105 duration-200 ease-in-out",
-				plan.organisation?.colour && "border-2"
-			)}
+			className="h-full gap-0 rounded-md border-border/70 bg-card/30 py-0 shadow-none transition-colors hover:bg-muted/25"
 		>
-			<CardContent className="flex flex-row items-center gap-3 pt-6">
+			<CardContent className="flex items-center gap-3 p-3">
 				<Link
 					href={`/organisations/${providerId}`}
 					className="group shrink-0"
 				>
-					<div className="w-10 h-10 relative flex items-center justify-center rounded-xl border">
+					<div className="size-10 relative flex items-center justify-center rounded-md border border-border/70 bg-background">
 						<div className="w-7 h-7 relative">
 							<Logo
 								id={providerId}
@@ -74,7 +68,7 @@ export default function SubscriptionPlanCard({ plan }: Props) {
 						size="icon"
 						variant="ghost"
 						tabIndex={-1}
-						className="group"
+						className="group size-8 shrink-0 rounded-md"
 					>
 						<Link
 							href={`/subscription-plans/${id}`}

@@ -9,8 +9,10 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { irToOpenAIResponses } from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
-import { azureDeployment, azureHeaders, azureOpenAIV1Url, azureUrl, resolveAzureConfig, resolveAzureCredential, usesAzureV1 } from "@providers/azure/config";
+import { azureDeployment, azureHeaders, azureMaiUrl, azureOpenAIV1Url, azureUrl, resolveAzureConfig, resolveAzureCredential, usesAzureV1 } from "@providers/azure/config";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
+import { executeAnthropic } from "@executors/anthropic/text-generate";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
 	return cherryPickIRParams(ir, args.capabilityParams);
@@ -30,6 +32,7 @@ export function normalizeAzureChatRequest(
 }
 
 export function shouldUseAzureResponsesRoute(args: Pick<ExecutorExecuteArgs, "providerModelSlug" | "ir" | "protocol">): boolean {
+	if (/^(?:microsoft\/)?mai-/i.test(args.providerModelSlug || args.ir.model)) return false;
 	if (args.protocol === "openai.responses") return true;
 	if (args.protocol === "openai.chat.completions") return false;
 	const model = String(args.providerModelSlug || args.ir.model || "").toLowerCase();
@@ -49,15 +52,18 @@ export function resolveAzureTextUrl(args: {
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	const keyInfo = resolveAzureCredential({ providerId: args.providerId, byokMeta: args.byokMeta } as any);
-	const config = resolveAzureConfig();
+	if (/^(?:anthropic\/)?claude-/i.test(args.providerModelSlug || args.ir.model)) return executeAnthropic(args);
+	const credentialArgs = { providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey, model: args.ir.model, providerModelSlug: args.providerModelSlug };
+	const keyInfo = resolveAzureCredential(credentialArgs as any);
+	const config = resolveAzureConfig(credentialArgs);
 	const route = shouldUseAzureResponsesRoute(args) ? "responses" : "chat";
-	const deployment = azureDeployment({ providerModelSlug: args.providerModelSlug, model: args.ir.model } as any);
-	const url = resolveAzureTextUrl({ route, deployment, baseUrl: config.baseUrl, apiVersion: config.apiVersion });
+	const deployment = azureDeployment({ providerModelSlug: config.deployment || args.providerModelSlug, model: args.ir.model } as any);
+	const isMai = /^(?:microsoft\/)?mai-/i.test(args.providerModelSlug || args.ir.model);
+	const url = isMai ? azureMaiUrl("chat/completions", config.baseUrl) : resolveAzureTextUrl({ route, deployment, baseUrl: config.baseUrl, apiVersion: config.apiVersion });
 
 	const requestPayload = route === "responses"
-		? irToOpenAIResponses(args.ir, args.providerModelSlug, "openai", args.capabilityParams, args.providerId)
-		: irToOpenAIChat(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams);
+		? irToOpenAIResponses(args.ir, config.deployment || args.providerModelSlug, "openai", args.capabilityParams, args.providerId)
+		: irToOpenAIChat(args.ir, config.deployment || args.providerModelSlug, args.providerId, args.capabilityParams);
 	const payload = {
 		...(route === "chat" ? normalizeAzureChatRequest(requestPayload, args) : requestPayload),
 		stream: true,
@@ -75,7 +81,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const res = await fetchUpstream(args, url, {
 		method: "POST",
-		headers: azureHeaders(keyInfo.key, keyInfo.authType),
+		headers: { ...azureHeaders(keyInfo.key, keyInfo.authType), ...upstreamTestHeaders(args.meta) },
 		body: requestBody,
 	});
 	const selectedDispatchAtMs = args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now();
