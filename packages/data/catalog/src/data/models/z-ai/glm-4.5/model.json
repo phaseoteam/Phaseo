@@ -164,7 +164,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 13.3,
       "is_self_reported": false,
-      "updated_at": "2026-09-08T09:16:11.571Z",
+      "updated_at": "2026-09-08T10:38:34.750Z",
       "variant": "reasoning",
       "other_info": "GLM-4.5 (Reasoning); Artificial Analysis ID 1cf439b8-0cfd-47b2-9de2-9a2157e6762b; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/glm-4.5",

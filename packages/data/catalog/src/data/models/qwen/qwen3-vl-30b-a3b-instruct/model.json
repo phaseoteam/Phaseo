@@ -428,7 +428,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 4.3,
       "is_self_reported": false,
-      "updated_at": "2026-09-08T09:16:11.571Z",
+      "updated_at": "2026-09-08T10:38:34.750Z",
       "variant": null,
       "other_info": "Qwen3 VL 30B A3B Instruct; Artificial Analysis ID 51d0b717-953d-4b44-af61-406c6b7dff39; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-vl-30b-a3b-instruct",
