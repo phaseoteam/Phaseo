@@ -95,6 +95,7 @@ publicCompareRouter.get("/compare/selection", async (c) => {
 		const plansResult = planUuids.length > 0
 			? await client.from("v2_subscription_plans")
 				.select("plan_uuid,plan_id,name,lab_slug,description,frequency,price,currency,link")
+				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 				.in("plan_uuid", planUuids).order("plan_id", { ascending: true }).order("frequency", { ascending: true })
 			: { data: [], error: null };
 		if (plansResult.error) throw plansResult.error;

@@ -21,7 +21,7 @@ type ProviderRecord = {
   api_provider_id: string; api_provider_name: string; provider_family_slug?: string | null;
   offer_scope?: string; offer_label?: string | null; residency_mode?: string;
   default_execution_regions?: string[] | null; default_data_regions?: string[] | null;
-  base_url?: string | null; link?: string | null; country_code?: string | null; description?: string | null;
+  base_url?: string | null; link?: string | null; country_code?: string | null; subdivision_code?: string | null; description?: string | null;
   byok_available?: boolean; status?: string; routing_enabled?: boolean; routable?: boolean;
   prompt_training_policy?: string | null; prompt_training_notes?: string | null; prompt_training_source_url?: string | null;
   metadata?: Record<string, unknown>;
@@ -91,7 +91,7 @@ export function ProviderForm({ provider, options, initialScope = "global", initi
         <div className="space-y-2"><label className="text-sm font-medium">Catalog status</label><SearchableSelect label="Catalog status" value={status} options={[...new Set(["active", "beta", "alpha", "not_ready", "deprecated", "disabled", ...(provider?.status ? [provider.status] : [])])].map((value) => ({ value, label: value.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase()) }))} onValueChange={setStatus} /><input type="hidden" name="status" value={status} /></div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="byok_available" defaultChecked={provider?.byok_available} />BYOK available</label>
       </section>
-      <section className="space-y-4 border-t pt-5"><h2 className="flex items-center gap-2 font-medium"><FileText className="size-4 text-muted-foreground" />About</h2><label className="block space-y-2 text-sm font-medium">Description<Textarea name="description" defaultValue={provider?.description || ""} /></label><div className="grid gap-4 sm:grid-cols-2"><label className="space-y-2 text-sm font-medium">Website<Input name="link" type="url" defaultValue={provider?.link || ""} /></label><CatalogCountryField defaultValue={provider?.country_code || ""} /></div>
+      <section className="space-y-4 border-t pt-5"><h2 className="flex items-center gap-2 font-medium"><FileText className="size-4 text-muted-foreground" />About</h2><label className="block space-y-2 text-sm font-medium">Description<Textarea name="description" defaultValue={provider?.description || ""} /></label><div className="grid gap-4 sm:grid-cols-2"><label className="space-y-2 text-sm font-medium">Website<Input name="link" type="url" defaultValue={provider?.link || ""} /></label><CatalogCountryField defaultValue={provider?.country_code || ""} /><label className="space-y-2 text-sm font-medium">Subdivision code<Input name="subdivision_code" defaultValue={provider?.subdivision_code || ""} placeholder="US-CA" className="font-mono" /></label></div>
       </section>
       <section className="space-y-4 border-t pt-6"><h2 className="flex items-center gap-2 font-medium"><ShieldCheck className="size-4 text-muted-foreground" />Data policy</h2>
         <div className="space-y-2"><label className="text-sm font-medium">Prompt training policy</label><SearchableSelect label="Prompt training policy" value={policy} options={PROVIDER_PROMPT_TRAINING_POLICY_VALUES.map((value) => ({ value, label: PROVIDER_PROMPT_TRAINING_POLICY_LABELS[value] }))} onValueChange={setPolicy} /><input type="hidden" name="prompt_training_policy" value={policy} /></div>

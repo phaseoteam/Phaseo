@@ -13,6 +13,7 @@
   "data_policy_confidence": "confirmed",
   "data_policy_contract_mode": "none",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "status": "Active",
   "colour": "#F38020",
   "privacy_policy_url": "https://www.cloudflare.com/privacypolicy/",

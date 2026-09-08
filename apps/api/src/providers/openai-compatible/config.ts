@@ -337,6 +337,7 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
 	if (canonicalProviderId === "deepseek") {
 		return (
 			normalized === "deepseek-v4-flash" ||
+			normalized === "deepseek-v4.1-flash-expires-on-0910" ||
 			normalized === "deepseek-v4-pro" ||
 			normalized === "deepseek-v4-flash-vision-exp"
 		)

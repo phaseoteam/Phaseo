@@ -204,11 +204,11 @@ accountSettingsRouter.get("/contact-personalization", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const [spendResult, workspaceResult] = await Promise.all([
-		context.client.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
+		context.userClient.rpc("monthly_spend_prev_cents", { p_workspace_id: workspaceId }),
 		context.client.from("workspaces").select("slug").eq("id", workspaceId).maybeSingle(),
 	]);
 	if (spendResult.error || workspaceResult.error) return c.json(base, 200, PRIVATE_NO_STORE_HEADERS);
-	const lastMonthUsd = Number(spendResult.data ?? 0) / 1_000_000_000;
+	const lastMonthUsd = Number(spendResult.data ?? 0) / 100;
 	return c.json({ ...base, defaultInternalId: workspaceResult.data?.slug ?? workspaceId, tierLabel: lastMonthUsd >= 10_000 ? "Enterprise" : "Basic" }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

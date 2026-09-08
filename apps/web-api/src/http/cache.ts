@@ -1,7 +1,9 @@
 export type PublicCachePolicy = {
   edgeTtlSeconds: number;
   staleWhileRevalidateSeconds?: number;
+	staleIfErrorSeconds?: number;
 	browserTtlSeconds?: number;
+	browserStaleWhileRevalidateSeconds?: number;
 	cacheTags?: readonly string[];
 };
 
@@ -13,11 +15,15 @@ export const PRIVATE_NO_STORE_HEADERS = {
 export function publicCacheHeaders(policy: PublicCachePolicy): Record<string, string> {
 	const staleWhileRevalidateSeconds = policy.staleWhileRevalidateSeconds ?? 0;
 	const browserTtlSeconds = policy.browserTtlSeconds ?? 60;
+	const browserStaleSeconds = policy.browserStaleWhileRevalidateSeconds ?? staleWhileRevalidateSeconds;
 	const edgeDirectives = [
 		"public",
 		`max-age=${policy.edgeTtlSeconds}`,
 		staleWhileRevalidateSeconds > 0
 			? `stale-while-revalidate=${staleWhileRevalidateSeconds}`
+			: null,
+		policy.staleIfErrorSeconds
+			? `stale-if-error=${policy.staleIfErrorSeconds}`
 			: null,
 	].filter(Boolean);
 
@@ -28,8 +34,8 @@ export function publicCacheHeaders(policy: PublicCachePolicy): Record<string, st
 			"public",
 			`max-age=${browserTtlSeconds}`,
 			`s-maxage=${policy.edgeTtlSeconds}`,
-			staleWhileRevalidateSeconds > 0
-				? `stale-while-revalidate=${staleWhileRevalidateSeconds}`
+			browserStaleSeconds > 0
+				? `stale-while-revalidate=${browserStaleSeconds}`
 				: null,
 		]
 			.filter(Boolean)

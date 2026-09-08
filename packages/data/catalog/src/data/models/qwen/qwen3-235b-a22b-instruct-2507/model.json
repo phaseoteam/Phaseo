@@ -31,7 +31,7 @@
       "benchmark_id": "aa-intelligence-index-v4",
       "score": 12.1,
       "is_self_reported": false,
-      "updated_at": "2026-09-08T09:16:11.571Z",
+      "updated_at": "2026-09-08T10:38:34.750Z",
       "variant": null,
       "other_info": "Qwen3 235B A22B 2507 Instruct; Artificial Analysis ID 3373245b-e6dc-4b66-a7b0-3f06f9b7bd46; Intelligence Index v4.3",
       "source_link": "https://artificialanalysis.ai/models/qwen3-235b-a22b-instruct-2507",

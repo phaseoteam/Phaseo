@@ -125,4 +125,25 @@ await stealthRoute({...omitted,is_stealth:true});
 assert((await db.query('select provider_model_id from v2_pricing_skus where sku_id=$1',[stealthPrice.sku.sku_id])).rows[0].provider_model_id===stealth.provider_model_id,'stealth toggles preserve route and pricing identities');
 await rejects(()=>stealthRoute({provider_model_id:'test:route',provider_slug:'test',provider_model_slug:'upstream',is_stealth:true}),'public route identity cannot become stealth and leak upstream names');
 assert((await db.query("select count(*)::int as n from v2_catalogue_row_history where table_name='v2_model_provider_routes' and after_state->>'provider_model_id'=$1",[stealth.provider_model_id])).rows[0].n>0,'stealth mutations keep audit history');
+await db.exec('alter table v2_subscription_plans enable row level security; create policy v2_subscription_plans_public_select on v2_subscription_plans for select to anon, authenticated using (true); grant select on v2_subscription_plans to anon, authenticated;');
+await db.exec(readMigration('20260908093730_retire_subscription_plan_parents.sql'));
+await db.exec("update v2_subscription_plan_models set effective_to=null");
+assert((await db.query("select * from get_v2_model_subscription_plans('test/model')")).rows.length===1,'active parent and membership are public');
+await db.exec("update v2_subscription_plans set effective_to=now()+interval '1 day'");
+assert((await db.query("select * from get_v2_model_subscription_plans('test/model')")).rows.length===1,'future parent retirement remains public until its end');
+await db.exec("update v2_subscription_plans set effective_to=now()-interval '1 day'");
+assert((await db.query("select * from get_v2_model_subscription_plans('test/model')")).rows.length===0,'retired parent hides an otherwise active membership');
+assert((await db.query('select * from v2_subscription_plans')).rows.length===1,'retired parent remains saved');
+for (const role of ['anon', 'authenticated']) {
+  await db.exec(`set role ${role}`);
+  assert((await db.query('select * from v2_subscription_plans')).rows.length===0,`${role} table reads exclude retired parents`);
+  await db.exec('reset role');
+}
+await db.exec("update v2_subscription_plans set effective_to=null");
+assert((await db.query("select * from get_v2_model_subscription_plans('test/model')")).rows.length===1,'restored parent becomes public again');
+await db.exec('set role anon');
+assert((await db.query('select * from v2_subscription_plans')).rows.length===1,'anonymous table read includes restored parent');
+await db.exec('reset role');
+await db.exec("update v2_subscription_plan_models set effective_to=now()-interval '1 day'");
+assert((await db.query("select * from get_v2_model_subscription_plans('test/model')")).rows.length===0,'retired membership remains hidden with active parent');
 await db.close();

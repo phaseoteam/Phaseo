@@ -2,6 +2,7 @@
   "organisation_id": "minimax",
   "name": "MiniMax",
   "country_code": "CN",
+  "subdivision_code": "CN-SH",
   "description": "MiniMax is an AI company with its headquarters and principal place of business in Shanghai, China. Their mission is to produce model and agent systems that push forward next-generation intelligence, providing novel AI capabilities (public-detailed model info is limited).",
   "colour": "#f13e5a",
   "organisation_links": [

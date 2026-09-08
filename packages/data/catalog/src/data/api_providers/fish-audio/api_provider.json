@@ -11,6 +11,7 @@
   "link": "https://fish.audio/developers/",
   "pricing_source_url": "https://docs.fish.audio/developer-guide/models-pricing/pricing-and-rate-limits",
   "country_code": "CN",
+  "subdivision_code": "CN-SH",
   "status": "NotReady",
   "colour": "#FF6B4A",
   "privacy_policy_url": "https://fish.audio/privacy/",

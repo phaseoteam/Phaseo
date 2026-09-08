@@ -2,6 +2,7 @@
   "organisation_id": "lg",
   "name": "LG",
   "country_code": "KR",
+  "subdivision_code": "KR-11",
   "description": "LG is a technology and electronics company with its corporate office in Seoul, South Korea. Their mission is to integrate advanced AI models into devices, consumer experiences and automation systems so that intelligence becomes embedded everywhere.",
   "colour": "#a50034",
   "organisation_links": [

@@ -243,14 +243,14 @@ export async function createOrganisationAction(formData: FormData) {
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
 	const name = requiredString(formData.get("name"), "name");
 	const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
-	await callCatalogMutation("/api/account/models/catalog/organisations", "POST", { organisation_id: organisationId, name, description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
+	await callCatalogMutation("/api/account/models/catalog/organisations", "POST", { organisation_id: organisationId, name, description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), subdivision_code: optionalString(formData.get("subdivision_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
 	revalidatePath("/internal/data/organisations");
 }
 
 // react-doctor-disable-next-line
 export async function updateOrganisationAction(organisationId: string, formData: FormData) {
 	const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
-	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "PUT", { name: requiredString(formData.get("name"), "name"), description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
+	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "PUT", { name: requiredString(formData.get("name"), "name"), description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), subdivision_code: optionalString(formData.get("subdivision_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
 	revalidatePath("/internal/data/organisations");
 }
 
@@ -295,6 +295,7 @@ export async function createAPIProviderAction(formData: FormData) {
 		description: optionalString(formData.get("description")),
 		link: optionalString(formData.get("link")),
 		country_code: optionalString(formData.get("country_code")),
+		subdivision_code: optionalString(formData.get("subdivision_code")),
 		default_execution_regions: optionalStringArray(formData.get("default_execution_regions")),
 		byok_available: formData.get("byok_available") === "on",
 		prompt_training_policy: promptTrainingPolicy,
@@ -336,6 +337,7 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 			description: optionalString(formData.get("description")),
 			link: optionalString(formData.get("link")),
 			country_code: optionalString(formData.get("country_code")),
+			subdivision_code: optionalString(formData.get("subdivision_code")),
 			default_execution_regions: optionalStringArray(formData.get("default_execution_regions")),
 			byok_available: formData.get("byok_available") === "on",
 			prompt_training_policy: promptTrainingPolicy,

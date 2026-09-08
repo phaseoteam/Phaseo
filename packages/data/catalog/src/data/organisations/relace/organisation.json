@@ -2,6 +2,7 @@
   "organisation_id": "relace",
   "name": "Relace",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "Relace is an AI company building models and tools for software/product engineering, with its team based in San Francisco, California.",
   "colour": "#000000",
   "organisation_links": [

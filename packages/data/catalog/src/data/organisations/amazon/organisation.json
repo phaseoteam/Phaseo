@@ -2,6 +2,7 @@
   "organisation_id": "amazon",
   "name": "Amazon",
   "country_code": "US",
+  "subdivision_code": "US-WA",
   "description": "Amazon is a technology and infrastructure company with principal executive offices in Seattle, Washington. Their mission is to make generative AI and foundation models accessible and scalable across businesses and services, helping users solve problems, boost productivity and innovate.",
   "colour": "#FF9900",
   "organisation_links": [

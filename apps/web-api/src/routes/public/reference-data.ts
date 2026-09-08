@@ -40,6 +40,7 @@ function labOrganisation(row: Record<string, unknown>) {
 		organisation_id: row.lab_slug,
 		name: row.name ?? null,
 		country_code: row.country_code ?? null,
+		subdivision_code: row.subdivision_code ?? null,
 		colour: details.colour ?? null,
 		display_name: details.display_name ?? row.name ?? null,
 		logo: details.logo ?? null,
@@ -50,7 +51,7 @@ function labOrganisation(row: Record<string, unknown>) {
 async function getCountrySummaries(env: Env) {
 	const client = getDataClient(env);
 	const [organisationsResult, catalogue] = await Promise.all([
-		client.from("v2_labs").select("lab_slug,name,country_code,metadata"),
+		client.from("v2_labs").select("lab_slug,name,country_code,subdivision_code,metadata"),
 		fetchModelsPageCatalogue(env, {}, "v2"),
 	]);
 	if (organisationsResult.error) throw organisationsResult.error;
@@ -122,7 +123,7 @@ publicReferenceDataRouter.get("/organisations", async (c) => {
 	try {
 		const { data, error } = await getDataClient(c.env)
 			.from("v2_labs")
-			.select("lab_slug,name,country_code,metadata")
+			.select("lab_slug,name,country_code,subdivision_code,metadata")
 			.order("name", { ascending: true });
 		if (error) throw error;
 		const organisations = (data ?? []).map((row) => {
@@ -131,6 +132,7 @@ publicReferenceDataRouter.get("/organisations", async (c) => {
 				organisation_id: organisation.organisation_id,
 				organisation_name: organisation.name,
 				country_code: organisation.country_code,
+				subdivision_code: organisation.subdivision_code,
 				colour: organisation.colour,
 			};
 		});
@@ -242,7 +244,7 @@ publicReferenceDataRouter.get("/api-providers/:providerId/header", async (c) => 
 	if (["inception", "inceptron", "nextbit"].includes(providerId.toLowerCase())) return notFound(c, "api_provider");
 	try {
 		const { data, error } = await getDataClient(c.env).from("v2_providers")
-			.select("provider_slug,name,country_code")
+			.select("provider_slug,name,country_code,subdivision_code")
 			.eq("provider_slug", providerId).maybeSingle();
 		if (error) throw error;
 		if (!data) return notFound(c, "api_provider");
@@ -250,6 +252,7 @@ publicReferenceDataRouter.get("/api-providers/:providerId/header", async (c) => 
 			api_provider_id: data.provider_slug,
 			api_provider_name: data.name,
 			country_code: data.country_code,
+			subdivision_code: data.subdivision_code,
 		} }), policy(`web-api-provider-${encodeURIComponent(providerId).replace(/%/g, "")}`));
 	} catch (error) {
 		console.error("[web-api/reference] provider header failed", { providerId, error });
@@ -261,7 +264,7 @@ publicReferenceDataRouter.get("/sources", async (c) => {
 	try {
 		const { data, error } = await getDataClient(c.env)
 			.from("v2_providers")
-			.select("provider_slug,name,country_code")
+			.select("provider_slug,name,country_code,subdivision_code")
 			.order("name", { ascending: true });
 		if (error) throw error;
 		const sources = (data ?? [])
@@ -269,6 +272,7 @@ publicReferenceDataRouter.get("/sources", async (c) => {
 				api_provider_id: row.provider_slug,
 				api_provider_name: row.name ?? "",
 				country_code: row.country_code ?? null,
+				subdivision_code: row.subdivision_code ?? null,
 			}))
 			.filter((source) => Boolean(source.api_provider_id));
 		return withPublicCache(c.json({ sources }), policy("web-api-sources"));
@@ -348,6 +352,7 @@ publicReferenceDataRouter.get("/subscription-plans", async (c) => {
 		const [{ data, error }, labsResult] = await Promise.all([
 			client.from("v2_subscription_plans")
 				.select("plan_uuid,plan_id,name,lab_slug,description,frequency,price,currency,link,other_info")
+				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 				.order("name", { ascending: true }),
 			client.from("v2_labs").select("lab_slug,name,country_code,metadata"),
 		]);
@@ -386,6 +391,7 @@ publicReferenceDataRouter.get("/subscription-plans/:planId", async (c) => {
 		const { data: planRows, error: planError } = await client
 			.from("v2_subscription_plans")
 			.select("plan_uuid,plan_id,name,lab_slug,description,frequency,price,currency,link,other_info")
+			.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 			.eq("plan_id", planId);
 		if (planError) throw planError;
 		if (!planRows?.length) return notFound(c, "subscription_plan");

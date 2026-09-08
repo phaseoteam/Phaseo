@@ -50,6 +50,7 @@ describe("resolveOpenAICompatRoute", () => {
 			expect(resolveOpenAICompatRoute("friendli", "meta-llama-3.1-8b-instruct")).toBe("chat");
 			expect(resolveOpenAICompatRoute("gmicloud", "Qwen/Qwen3-235B-A22B-Thinking-2507")).toBe("chat");
 			expect(resolveOpenAICompatRoute("deepseek", "deepseek-v4-flash")).toBe("responses");
+			expect(resolveOpenAICompatRoute("deepseek", "deepseek-v4.1-flash-expires-on-0910")).toBe("responses");
 			expect(resolveOpenAICompatRoute("deepseek", "deepseek-v4-pro")).toBe("responses");
 			expect(resolveOpenAICompatRoute("deepseek", "deepseek-v4-flash-vision-exp")).toBe("responses");
 			expect(resolveOpenAICompatRoute("deepseek", "deepseek-chat")).toBe("chat");

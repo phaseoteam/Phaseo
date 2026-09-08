@@ -2,6 +2,7 @@
   "organisation_id": "windsurf",
   "name": "Windsurf",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "Windsurf is an AI coding environment now associated with Cognition; Cognition's platform terms list a San Francisco, California address. It is focused on agentic software development, code editing, and developer productivity.",
   "colour": "#09B6A2",
   "organisation_links": [

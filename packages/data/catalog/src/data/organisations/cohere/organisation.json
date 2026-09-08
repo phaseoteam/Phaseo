@@ -2,6 +2,7 @@
   "organisation_id": "cohere",
   "name": "Cohere",
   "country_code": "CA",
+  "subdivision_code": "CA-ON",
   "description": "Cohere is an enterprise-AI company with its principal place of business in Toronto, Ontario, Canada. Their mission is to scale intelligence for organisations by delivering powerful foundation models and secure AI solutions tailored for real-world business needs.",
   "colour": "#41584f",
   "organisation_links": [

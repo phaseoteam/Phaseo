@@ -50,7 +50,10 @@ function suppressSmallPublicPerformanceCohorts(value: Record<string, any>): Reco
 const CACHE_PROFILES = {
 	catalogue: {
 		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
+		staleWhileRevalidateSeconds: 7 * 24 * 60 * 60,
+		staleIfErrorSeconds: 7 * 24 * 60 * 60,
+		browserTtlSeconds: 0,
+		browserStaleWhileRevalidateSeconds: 0,
 		cacheTags: ["web-api-models"],
 	},
 	overview: {
@@ -173,8 +176,16 @@ function normaliseGatewayStatus(value: unknown, isActive: unknown): string {
 
 function mergeStandardPricingAvailability(
 	providers: Array<Record<string, unknown>>,
-	standardProviders: Array<Record<string, unknown>>,
 ): Array<Record<string, unknown>> {
+	// The all-tier payload already includes each standard variant. Use that
+	// projection instead of recomputing and transferring the full pricing RPC.
+	const standardProviders: Array<Record<string, unknown>> = providers.flatMap((entry) => {
+		const models = Array.isArray(entry.provider_models)
+			? entry.provider_models as Array<Record<string, unknown>>
+			: [];
+		const standardModels = models.filter((model) => model.service_tier === "standard");
+		return standardModels.length ? [{ ...entry, provider_models: standardModels }] : [];
+	});
 	const standardByProviderId = new Map(
 		standardProviders.flatMap((entry) => {
 			const provider = entry.provider as Record<string, unknown> | null;
@@ -447,19 +458,12 @@ export async function fetchGatewayMonitorRows(
 	_catalogueVersion: ModelsCatalogueVersion = "v2",
 ): Promise<Map<string, Record<string, unknown>[]>> {
 	const client = getDataClient(env);
-	const rows: Record<string, unknown>[] = [];
-	// The compatibility monitor RPC is already backed by the canonical V2
-	// catalogue and emits the legacy page shape used by both API versions.
-	const rpcName = "get_monitor_model_rows";
-	for (let offset = 0; ; offset += 1000) {
-		const { data, error } = await client
-			.rpc(rpcName, { p_include_hidden: false })
-			.range(offset, offset + 999);
-		if (error) throw error;
-		const page = (data ?? []) as Record<string, unknown>[];
-		rows.push(...page.filter((row) => String(row.capability_status ?? "").toLowerCase() !== "internal_testing"));
-		if (page.length < 1000) break;
-	}
+	const { data, error } = await client.rpc("get_public_monitor_rows_payload");
+	if (error) throw error;
+	if (!Array.isArray(data)) throw new Error("Invalid monitor catalogue payload");
+	const rows = (data as Record<string, unknown>[]).filter(
+		(row) => String(row.capability_status ?? "").toLowerCase() !== "internal_testing",
+	);
 	const monitorRouteIds = [...new Set(rows.map((row) => String(row.provider_api_model_id ?? "").trim()).filter(Boolean))];
 	const stealthRouteIds = new Set<string>();
 	for (let offset = 0; offset < monitorRouteIds.length; offset += 200) {
@@ -672,43 +676,6 @@ function buildModelsTablePayload(
 	};
 }
 
-// Bump whenever catalogue response redaction changes so previously cached
-// public payloads cannot bypass the new privacy boundary after deployment.
-export const CATALOGUE_CACHE_SCHEMA_VERSION = "4";
-
-function catalogueCacheRequest(request: Request): Request {
-	const url = new URL(request.url);
-	url.searchParams.set("_phaseo_cache_schema", CATALOGUE_CACHE_SCHEMA_VERSION);
-	return new Request(url, request);
-}
-
-async function matchCachedCatalogue(request: Request): Promise<Response | null> {
-	if (typeof caches === "undefined") return null;
-	try {
-		const response = await (caches as unknown as { default: Cache }).default.match(catalogueCacheRequest(request));
-		if (!response) return null;
-		const headers = new Headers(response.headers);
-		headers.set("X-Phaseo-Local-Cache", "HIT");
-		return new Response(response.body, {
-			status: response.status,
-			statusText: response.statusText,
-			headers,
-		});
-	} catch {
-		return null;
-	}
-}
-
-async function storeCatalogueInCache(request: Request, response: Response): Promise<void> {
-	if (typeof caches === "undefined") return;
-	try {
-		await (caches as unknown as { default: Cache }).default.put(catalogueCacheRequest(request), response.clone());
-	} catch {
-		// Cloudflare's CDN headers remain the shared-cache fallback if a local
-		// Cache API write is unavailable or rejected.
-	}
-}
-
 function sectionPolicy(section: keyof typeof CACHE_PROFILES, modelId?: string): PublicCachePolicy {
 	const profile = CACHE_PROFILES[section];
 	return {
@@ -872,8 +839,8 @@ export const publicModelsRouter = new Hono<{ Bindings: Env }>();
 
 /** Main models API. Deliberately excludes volatile benchmark/performance data. */
 publicModelsRouter.get("/", async (c) => {
-	const cached = await matchCachedCatalogue(c.req.raw);
-	if (cached) return cached;
+	// Workers Cache owns stale serving and background refresh. An inner Cache
+	// API lookup could return the old response during that refresh and renew it.
 	try {
 		const requestedVersion = c.req.query("catalogue_version")?.trim().toLowerCase();
 		if (requestedVersion && requestedVersion !== "v1" && requestedVersion !== "v2") {
@@ -907,7 +874,6 @@ publicModelsRouter.get("/", async (c) => {
 			const normalizedSearch = search?.toLowerCase();
 			const filtered = normalizedSearch ? allModels.filter((model) => String(model.name ?? "").toLowerCase().includes(normalizedSearch)) : allModels;
 			const response = withPublicCache(c.json({ models: filtered.slice(offset, offset + limit), facets: buildModelsPageFacets(filtered), pricing_complete: catalogue.pricingComplete, total: filtered.length, limit, offset, catalogue_version: catalogueVersion, shape: "page", projection }), cataloguePolicy(catalogueVersion, includeVirtual));
-			await storeCatalogueInCache(c.req.raw, response);
 			return response;
 		}
 		if (shape === "table") {
@@ -929,7 +895,6 @@ publicModelsRouter.get("/", async (c) => {
 				}),
 				cataloguePolicy(catalogueVersion),
 			);
-			await storeCatalogueInCache(c.req.raw, response);
 			return response;
 		}
 		const gatewayRowsByModelId = await fetchGatewayMonitorRows(
@@ -998,7 +963,6 @@ publicModelsRouter.get("/", async (c) => {
 			c.json({ models, total: count, limit, offset, catalogue_version: catalogueVersion }),
 			cataloguePolicy(catalogueVersion),
 		);
-		await storeCatalogueInCache(c.req.raw, response);
 		return response;
 	} catch (error) {
 		console.error("[web-api/models] catalogue failed", error);
@@ -1586,30 +1550,15 @@ publicModelsRouter.get("/:modelId/pricing", async (c) => {
 	try {
 		const client = getDataClient(c.env);
 		const requestedServiceTier = c.req.query("service_tier")?.trim().toLowerCase() || null;
-		const v2PricingPromise = client.rpc("get_v2_model_pricing", {
+		const v2Pricing = await client.rpc("get_v2_model_pricing", {
 			p_model_slug: modelId,
 			p_region: c.req.query("region")?.trim().toLowerCase() || null,
 			p_service_tier: requestedServiceTier,
 		});
-		const standardPricingPromise = requestedServiceTier === null
-			? client.rpc("get_v2_model_pricing", {
-				p_model_slug: modelId,
-				p_region: c.req.query("region")?.trim().toLowerCase() || null,
-				p_service_tier: "standard",
-			})
-			: Promise.resolve(null);
-		const [v2Pricing, standardPricing] = await Promise.all([
-			v2PricingPromise,
-			standardPricingPromise,
-		]);
 		if (!v2Pricing.error && Array.isArray(v2Pricing.data)) {
 			const providers = publicProviderPayload(requestedServiceTier === null
-				&& standardPricing
-				&& !standardPricing.error
-				&& Array.isArray(standardPricing.data)
 				? mergeStandardPricingAvailability(
 					v2Pricing.data as Array<Record<string, unknown>>,
-					standardPricing.data as Array<Record<string, unknown>>,
 				)
 				: v2Pricing.data as Array<Record<string, unknown>>);
 			if (c.req.query("shape") === "source") {
@@ -1661,8 +1610,8 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		: "all";
 	try {
 		const client = getDataClient(c.env);
-		const stealthProviderIds = await stealthProviderIdsForModel(c.env, modelId);
-		const [v2, health, cachedInput, providerHourly, qualityHourly] = await Promise.all([
+		const includeHealth = !cloudflareColo && streamMode === "all" && contextBucket === "all";
+		const [v2, health, cachedInput, providerHourly, qualityHourly, stealthProviderIds] = await Promise.all([
 			client.rpc("get_v2_model_performance_metrics", {
 				p_model_slug: modelId,
 				p_cloudflare_colo: cloudflareColo,
@@ -1670,7 +1619,9 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				p_stream_mode: streamMode,
 				p_context_bucket: contextBucket,
 			}),
-			client.rpc("get_v2_model_provider_health_metrics", { p_model_slug: modelId, p_window_days: 3, p_percentile: percentile / 100 }),
+			includeHealth
+				? client.rpc("get_v2_model_provider_health_metrics", { p_model_slug: modelId, p_window_days: 3, p_percentile: percentile / 100 })
+				: Promise.resolve({ data: [], error: null }),
 			client.rpc("get_v2_model_cached_input_metrics", {
 				p_model_slug: modelId,
 				p_cloudflare_colo: cloudflareColo,
@@ -1690,6 +1641,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				p_stream_mode: streamMode,
 				p_context_bucket: contextBucket,
 			}),
+			stealthProviderIdsForModel(c.env, modelId),
 		]);
 		let performance: Record<string, any> | null = null;
 		if (!v2.error && v2.data && !Array.isArray(v2.data) && typeof v2.data === "object") {

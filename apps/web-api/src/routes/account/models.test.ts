@@ -249,7 +249,7 @@ describe("provider residency editing", () => {
       if (url.includes("/rpc/mutate_v2_admin_provider_offer")) { payload = JSON.parse(String(init?.body)); return Response.json({ provider_slug: "openai-eu" }); }
       return Response.json([]);
     }));
-    const offer = { api_provider_id: "openai-eu", api_provider_name: "OpenAI", parent_provider_slug: "openai", offer_scope: "regional", offer_label: "Europe", residency_mode: "provider_managed", default_execution_regions: ["eu"], default_data_regions: ["eu"], base_url: "https://eu.example.com/v1", link: "https://example.com" };
+    const offer = { api_provider_id: "openai-eu", api_provider_name: "OpenAI", parent_provider_slug: "openai", offer_scope: "regional", offer_label: "Europe", residency_mode: "provider_managed", default_execution_regions: ["eu"], default_data_regions: ["eu"], country_code: "US", subdivision_code: "US-CA", base_url: "https://eu.example.com/v1", link: "https://example.com" };
     const response = await app.request("https://phaseo.app/api/account/models/catalog/providers", { method: "POST", headers: { authorization: "Bearer session-token", "content-type": "application/json" }, body: JSON.stringify(offer) }, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
     expect(response.status).toBe(role === "admin" ? 200 : role === "user" ? 403 : 401);
     if (role === "admin") expect(payload).toMatchObject({ p_action: "create", p_provider_slug: "openai-eu", p_payload: offer });

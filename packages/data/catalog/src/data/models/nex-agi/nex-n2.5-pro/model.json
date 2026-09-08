@@ -1,0 +1,104 @@
+{
+  "model_id": "nex-agi/nex-n2.5-pro",
+  "organisation_id": "nex-agi",
+  "name": "Nex N2.5 Pro",
+  "status": "Available",
+  "previous_model_id": "nex-agi/nex-n2-pro",
+  "description": "Nex N2.5 Pro builds on Qwen3.5-397B-A17B, a large hybrid vision-language sparse Mixture-of-Experts model, with Nex AGI's agent-focused post-training for complex reasoning, multi-agent orchestration, advanced software engineering, computer use, and web tasks.",
+  "announced_date": "2026-09-08T00:00:00Z",
+  "release_date": "2026-09-08T00:00:00Z",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "nex-agi/nex-n2.5-pro",
+  "family_id": "nex-agi/nex-n2.5",
+  "links": [
+    {
+      "title": "Official website",
+      "kind": "website",
+      "url": "https://nex-agi.com/"
+    },
+    {
+      "title": "Hugging Face",
+      "kind": "weights",
+      "url": "https://huggingface.co/nex-agi/Nex-N2.5-Pro"
+    },
+    {
+      "title": "ModelScope",
+      "kind": "model_card",
+      "url": "https://modelscope.cn/models/nex-agi/Nex-N2.5-Pro"
+    },
+    {
+      "title": "Source repository",
+      "kind": "github",
+      "url": "https://github.com/nex-agi/Nex-N2.5"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameter_count",
+      "value": 397000000000
+    },
+    {
+      "name": "active_parameter_count",
+      "value": 17000000000
+    },
+    {
+      "name": "base_model",
+      "value": "Qwen3.5-397B-A17B"
+    },
+    {
+      "name": "architecture",
+      "value": "Mixture of Experts"
+    }
+  ],
+  "benchmarks": [],
+  "model_type": "Mixture of Experts",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": true,
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://nex-agi.com/",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Official Nex-N2.5 launch page identifies Pro, its Qwen3.5-397B-A17B foundation, 397B total/17B active MoE scale, intended workloads, and links to the model repositories."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Model identity and published specifications are verified from Nex AGI's official launch page. The catalog announcement and release date are assumed as 2026-09-08 per the requested catalog update."
+  },
+  "last_updated": "2026-09-08T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

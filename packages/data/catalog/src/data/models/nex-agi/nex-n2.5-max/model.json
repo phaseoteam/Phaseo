@@ -1,0 +1,103 @@
+{
+  "model_id": "nex-agi/nex-n2.5-max",
+  "organisation_id": "nex-agi",
+  "name": "Nex N2.5 Max",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Nex N2.5 Max builds on DeepSeek-V4-Pro-Base, a text-only 1.6T-parameter sparse Mixture-of-Experts model with 49B active parameters, with Nex AGI's full-scale agent post-training for complex agent work, scientific modeling, engineering design, and complex frontend development.",
+  "announced_date": "2026-09-08T00:00:00Z",
+  "release_date": "2026-09-08T00:00:00Z",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "nex-agi/nex-n2.5-max",
+  "family_id": "nex-agi/nex-n2.5",
+  "links": [
+    {
+      "title": "Official website",
+      "kind": "website",
+      "url": "https://nex-agi.com/"
+    },
+    {
+      "title": "Hugging Face",
+      "kind": "weights",
+      "url": "https://huggingface.co/nex-agi/Nex-N2.5-Max"
+    },
+    {
+      "title": "ModelScope",
+      "kind": "model_card",
+      "url": "https://modelscope.cn/models/nex-agi/Nex-N2.5-Max"
+    },
+    {
+      "title": "Source repository",
+      "kind": "github",
+      "url": "https://github.com/nex-agi/Nex-N2.5"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameter_count",
+      "value": 1600000000000
+    },
+    {
+      "name": "active_parameter_count",
+      "value": 49000000000
+    },
+    {
+      "name": "base_model",
+      "value": "DeepSeek-V4-Pro-Base"
+    },
+    {
+      "name": "architecture",
+      "value": "Mixture of Experts"
+    }
+  ],
+  "benchmarks": [],
+  "model_type": "Mixture of Experts",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": true,
+  "sources": [
+    {
+      "kind": "website",
+      "url": "https://nex-agi.com/",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Official Nex-N2.5 launch page identifies Max, its DeepSeek-V4-Pro-Base foundation, 1.6T total/49B active text-only MoE scale, intended workloads, and links to the model repositories."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Model identity and published specifications are verified from Nex AGI's official launch page. The catalog announcement and release date are assumed as 2026-09-08 per the requested catalog update."
+  },
+  "last_updated": "2026-09-08T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

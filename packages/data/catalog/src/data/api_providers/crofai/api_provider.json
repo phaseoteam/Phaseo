@@ -26,6 +26,7 @@
   "pricing_source_url": "https://crof.ai/pricing",
   "regional_pricing_notes": "CrofAI publishes a single public rate card rather than separate regional endpoint pricing.",
   "country_code": "US",
+  "subdivision_code": "US-MO",
   "status": "Active",
   "colour": "#7C3AED",
   "gateway_kind": "native",

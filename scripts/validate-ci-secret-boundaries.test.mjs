@@ -193,15 +193,60 @@ test("isolates importer repository code from the write-capable App token", () =>
 	assert.match(publisherJob, /wc -c[^\n]+4194304/);
 });
 
-test("rejects production migration secrets outside push-to-main", () => {
+test("rejects production migration secrets in pull requests", () => {
 	const vulnerableCondition = productionMigrationCondition
 		.replace("github.event_name == 'push'", "github.event_name == 'pull_request'");
 	assert.throws(
 		() => validateCiSecretBoundaries(
 			workflowWithConditions(vulnerableCondition),
 		),
-		/only run for pushes to main/,
+		/restrict production releases to main/,
 	);
+});
+
+test("manual release jobs require main, explicit opt-in, and successful migrations", () => {
+	const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+	function enabled(jobName, overrides = {}) {
+		const job = workflow.split(`    ${jobName}:`)[1].split(/\n    [\w-]+:\r?\n/)[0];
+		const condition = job.match(/\n        if: >-\r?\n([\s\S]*?)(?=\n        [\w-]+:)/)[1];
+		const expression = condition.replace(/\bneeds(?:\.[\w-]+)+/g,
+			(path) => "needs" + path.split(".").slice(1).map((key) => `[${JSON.stringify(key)}]`).join(""));
+		const context = {
+			github: { event_name: "workflow_dispatch", ref: "refs/heads/main" },
+			inputs: { deploy_production: true, importer_mode: "run" },
+			vars: { ENABLE_PRODUCTION_DB_MIGRATIONS: "true" },
+			needs: {
+				"check-paths": { result: "success", outputs: { "migrations-changed": "false", "data-changed": "false" } },
+				"migration-validation": { result: "success" },
+				"migrate-production": { result: "success" },
+				apps: { result: "success" }, data: { result: "success" },
+			},
+		};
+		for (const [key, value] of Object.entries(overrides)) Object.assign(context[key], value);
+		return new Function("github", "inputs", "vars", "needs", "always", `return ${expression}`)(
+			context.github, context.inputs, context.vars, context.needs, () => true,
+		);
+	}
+	for (const job of ["migration-validation", "migrate-production", "deploy", "importer"]) {
+		assert.equal(enabled(job), true, `${job}: explicit manual release`);
+		assert.equal(enabled(job, { github: { ref: "refs/heads/feature" } }), false, `${job}: feature branch denied`);
+	}
+	for (const job of ["migration-validation", "migrate-production", "deploy"]) {
+		assert.equal(enabled(job, { inputs: { deploy_production: false } }), false, `${job}: opt-in required`);
+		assert.equal(enabled(job, { github: { event_name: "pull_request" } }), false, `${job}: PR cannot release`);
+	}
+	assert.equal(enabled("migrate-production", { vars: { ENABLE_PRODUCTION_DB_MIGRATIONS: "false" } }), false);
+	assert.equal(enabled("deploy", {
+		vars: { ENABLE_PRODUCTION_DB_MIGRATIONS: "false" },
+		needs: { "migrate-production": { result: "skipped" } },
+	}), false, "manual deploy cannot use the disabled-migrations push fallback");
+	assert.equal(enabled("migrate-production", { needs: { "migration-validation": { result: "failure" } } }), false);
+	for (const job of ["deploy", "importer"]) {
+		for (const result of ["failure", "cancelled", "skipped"]) {
+			assert.equal(enabled(job, { needs: { "migrate-production": { result } } }), false, `${job}: ${result} migration blocks release`);
+		}
+	}
+	assert.equal(enabled("importer", { inputs: { deploy_production: false } }), true, "standalone importer remains supported");
 });
 
 test("requires the manual production database approval environment", () => {

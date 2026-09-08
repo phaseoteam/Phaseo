@@ -2,6 +2,7 @@
   "organisation_id": "z-ai",
   "name": "z.AI",
   "country_code": "CN",
+  "subdivision_code": "CN-BJ",
   "description": "Z-AI (Z.AI Co., Ltd.) is an AI company with a corporate address in Beijing, China. Their mission is to advance model- and agent-technologies, offering novel AI services and systems that will enable new use-cases and applications (public documentation is currently limited).",
   "colour": "#141618",
   "organisation_links": [

@@ -2945,8 +2945,6 @@ export default function ProviderCard({
 							>
 								<ChevronDown className={cn("size-3 transition-transform", !serviceTiersExpanded && "-rotate-90")} aria-hidden="true" />
 							</button>
-						) : showServiceTierDisclosureGutter ? (
-							<span aria-hidden="true" className="size-5 shrink-0" />
 						) : null}
 						<div>
 						<div className="flex items-center gap-2.5">

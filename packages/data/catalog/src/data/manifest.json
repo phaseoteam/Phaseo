@@ -250,7 +250,7 @@
       "cohere/rerank-v3.5",
       "cohere/rerank-v4.0-fast",
       "cohere/rerank-v4.0-pro",
-      "cohere/rerenk-english-v3",
+      "cohere/rerank-english-v3",
       "cohere/command-r",
       "cohere/command-r-plus",
       "cohere/parse-v5.0"
@@ -292,7 +292,8 @@
       "deepseek/deepseek-r1-turbo",
       "deepseek/deepseek-v3",
       "deepseek/deepseek-v3-turbo",
-      "deepseek/deepseek-r1-distill-llama-70b"
+      "deepseek/deepseek-r1-distill-llama-70b",
+      "deepseek/deepseek-v4.1-flash-beta"
     ],
     "eleven-labs": [
       "eleven-labs/eleven-english-sts-v2",
