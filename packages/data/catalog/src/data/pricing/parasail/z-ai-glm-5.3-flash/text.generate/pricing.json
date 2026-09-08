@@ -12,14 +12,9 @@
       "price_per_unit": 0.15,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "OpenRouter endpoint catalog prompt price.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-08-27T00:00:00Z",
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": "https://openrouter.ai/api/v1/models/z-ai/glm-5.3-flash-20260826/endpoints"
+      "source": "https://www.parasail.io/models/glm-53-flash"
     },
     {
       "meter": "output_text_tokens",
@@ -28,29 +23,36 @@
       "price_per_unit": 0.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "OpenRouter endpoint catalog completion price.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-08-27T00:00:00Z",
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": "https://openrouter.ai/api/v1/models/z-ai/glm-5.3-flash-20260826/endpoints"
+      "source": "https://www.parasail.io/models/glm-53-flash"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.03,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://www.parasail.io/models/glm-53-flash"
     }
   ],
   "regions": [],
-  "service_tiers": ["standard"],
+  "service_tiers": [
+    "standard"
+  ],
   "sources": [
     {
-      "url": "https://openrouter.ai/api/v1/models/z-ai/glm-5.3-flash-20260826/endpoints",
-      "kind": "provider_pricing",
-      "accessed_at": "2026-08-27T00:00:00Z",
-      "notes": "OpenRouter lists Parasail at $0.15 input and $0.50 output per 1M tokens; no cached-input rate is published for this endpoint."
+      "kind": "pricing",
+      "url": "https://www.parasail.io/models/glm-53-flash",
+      "accessed_at": "2026-09-07T22:05:00Z"
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-08-27T00:00:00Z",
-    "notes": "Pricing is recorded from OpenRouter's endpoint catalog; provider-level routing remains disabled pending direct onboarding verification."
+    "status": "verified",
+    "checked_at": "2026-09-07T22:05:00Z",
+    "notes": "Native endpoint ID and all rates checked against the public provider model page."
   }
 }

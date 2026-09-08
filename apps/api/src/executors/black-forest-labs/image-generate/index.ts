@@ -8,6 +8,7 @@ import type { ExecutorUpstreamTiming } from "@executors/types";
 import type { ProviderExecutor } from "../../types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
+import { trustedBflPollingUrl } from "@providers/black-forest-labs/video";
 
 const DEFAULT_BASE_URL = "https://api.bfl.ai";
 const DEFAULT_POLL_INTERVAL_MS = 1200;
@@ -109,7 +110,7 @@ function extractCreditsCost(value: any): number | undefined {
 	return undefined;
 }
 
-function buildBflPayload(ir: IRImageGenerationRequest): Record<string, unknown> {
+function buildBflPayload(ir: IRImageGenerationRequest, modelSlug: string): Record<string, unknown> {
 	const raw = (ir.rawRequest ?? {}) as Record<string, unknown>;
 	const payload: Record<string, unknown> = {
 		prompt: ir.prompt,
@@ -117,8 +118,12 @@ function buildBflPayload(ir: IRImageGenerationRequest): Record<string, unknown> 
 
 	const fromSize = parseSizeToWidthHeight(ir.size);
 	if (fromSize) {
-		payload.width = fromSize.width;
-		payload.height = fromSize.height;
+		if (modelSlug.includes("kontext") || modelSlug.includes("ultra")) {
+			payload.aspect_ratio = `${fromSize.width}:${fromSize.height}`;
+		} else {
+			payload.width = fromSize.width;
+			payload.height = fromSize.height;
+		}
 	}
 
 	// Keep room for BFL-native parameters when callers include them.
@@ -130,10 +135,14 @@ function buildBflPayload(ir: IRImageGenerationRequest): Record<string, unknown> 
 		"prompt_upsampling",
 		"output_format",
 		"aspect_ratio",
+		"steps",
+		"guidance",
+		"raw",
 	];
 	for (const key of passthroughKeys) {
 		if (raw[key] !== undefined && raw[key] !== null) payload[key] = raw[key];
 	}
+	if (ir.outputFormat) payload.output_format = ir.outputFormat;
 
 	const inputImages = Array.isArray(ir.image)
 		? ir.image.filter((entry) => typeof entry === "string" && entry.trim().length > 0)
@@ -178,6 +187,7 @@ async function pollBflJob(args: {
 	while (Date.now() <= deadline) {
 		const pollInit: RequestInit = {
 			method: "GET",
+			redirect: "error",
 			headers: {
 				accept: "application/json",
 				"x-key": args.key,
@@ -242,11 +252,21 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	);
 
 	const requestedCount = Number.isFinite(ir.n) && (ir.n ?? 0) > 0 ? Math.min(Number(ir.n), 10) : 1;
+	const modelSlug = normalizeModelSlug(args.providerModelSlug || ir.model);
+	const inputLimit = modelSlug.includes("klein") ? 4 : modelSlug.includes("kontext") ? 1 : 8;
+	const invalid = (message: string): ExecutorResult => ({ kind: "completed", ir: undefined,
+		upstream: createGatewayErrorResponse(400, "invalid_request", message), bill: { cost_cents: 0, currency: "USD" }, keySource: keyInfo.source, byokKeyId: keyInfo.byokId });
+	if (ir.n != null && ir.n !== 1) return invalid("Black Forest Labs supports one image per gateway request.");
+	if (ir.stream || ir.partialImages != null || ir.quality != null || ir.style != null || ir.background != null || ir.moderation != null || ir.inputFidelity != null || ir.outputCompression != null) return invalid("Unsupported Black Forest Labs image control.");
+	if (ir.size && !parseSizeToWidthHeight(ir.size)) return invalid("Black Forest Labs size must use WIDTHxHEIGHT.");
+	if (ir.responseFormat && !["url", "b64_json"].includes(ir.responseFormat)) return invalid("Unsupported image response format.");
+	if (ir.image instanceof Blob || (Array.isArray(ir.image) && ir.image.some((image) => typeof image !== "string"))) return invalid("Black Forest Labs requires image URLs or base64 strings.");
 	const isImageEdit = args.capability === "image.edit" || args.endpoint === "images.edits";
 	const hasInputImage = Array.isArray(ir.image)
 		? ir.image.some((entry) => typeof entry === "string" && entry.trim().length > 0)
 		: (typeof ir.image === "string" && ir.image.trim().length > 0);
 	const inputImageCount = Array.isArray(ir.image) ? ir.image.length : (hasInputImage ? 1 : 0);
+	if (hasInputImage && modelSlug.startsWith("flux-pro-1.1")) return invalid("FLUX1.1 image prompting is not enabled; use a Kontext or FLUX.2 model for image input.");
 
 	if (isImageEdit && !hasInputImage) {
 		return {
@@ -276,17 +296,16 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			byokKeyId: keyInfo.byokId,
 		};
 	}
-	if (isImageEdit && inputImageCount > 8) {
+	if (inputImageCount > inputLimit) {
 		return {
 			kind: "completed",
 			ir: undefined,
-			upstream: createGatewayErrorResponse(400, "bfl_too_many_input_images", "Black Forest Labs FLUX.2 API accepts at most eight input images."),
+			upstream: createGatewayErrorResponse(400, "bfl_too_many_input_images", `This Black Forest Labs model accepts at most ${inputLimit} input images.`),
 			bill: { cost_cents: 0, currency: "USD" },
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 		};
 	}
-	const modelSlug = normalizeModelSlug(args.providerModelSlug || ir.model);
 	if (!modelSlug) {
 		return {
 			kind: "completed",
@@ -309,7 +328,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		Number(bindings.BLACK_FOREST_LABS_POLL_TIMEOUT_MS || bindings.BFL_POLL_TIMEOUT_MS || DEFAULT_POLL_TIMEOUT_MS),
 	);
 
-	const payload = buildBflPayload(ir);
+	const payload = buildBflPayload(ir, modelSlug);
 	const wantsB64 = String(ir.responseFormat ?? "url").toLowerCase() === "b64_json";
 	const data: IRImageGenerationResponse["data"] = [];
 	const taskIds: string[] = [];
@@ -344,7 +363,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 		const taskId = String(submitted.json?.id ?? "").trim();
 		if (taskId) taskIds.push(taskId);
-		const pollingUrl = String(submitted.json?.polling_url ?? "").trim();
+		const pollingUrl = trustedBflPollingUrl(submitted.json?.polling_url);
 		if (!pollingUrl) {
 			return {
 				kind: "completed",
@@ -382,6 +401,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		lastUpstream = polled.response;
 		rawResponses[rawResponses.length - 1].poll = polled.json;
 		const credits = extractCreditsCost(polled.json) ?? submitCredits;
+		if (credits === undefined) {
+			return { kind: "completed", ir: undefined, upstream: createGatewayErrorResponse(502, "bfl_missing_cost", "Black Forest Labs omitted the credit usage required for settlement."), bill: { cost_cents: 0, currency: "USD" }, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
+		}
 		if (typeof credits === "number") {
 			totalCredits += credits;
 		}

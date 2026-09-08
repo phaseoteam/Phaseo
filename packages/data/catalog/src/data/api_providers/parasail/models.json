@@ -59,9 +59,9 @@
   {
     "api_model_id": "moonshotai/kimi-k2.7-code",
     "provider_api_model_id": "parasail:moonshotai/kimi-k2.7-code",
-    "provider_model_slug": "moonshotai/Kimi-K2.7-Code",
+    "provider_model_slug": "parasail-kimi-k27-code",
     "internal_model_id": "moonshotai/kimi-k2.7-code",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "INT4",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -72,7 +72,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -84,8 +84,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -93,23 +93,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/kimi-k27-code",
+        "accessed_at": "2026-09-07T22:05:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-5.2",
     "provider_api_model_id": "parasail:z-ai/glm-5.2",
-    "provider_model_slug": "zai-org/GLM-5.2",
+    "provider_model_slug": "parasail-glm-52",
     "internal_model_id": "z-ai/glm-5.2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -120,7 +126,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -132,8 +138,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -141,23 +147,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/glm-52",
+        "accessed_at": "2026-09-07T22:05:00Z"
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v4-flash",
     "provider_api_model_id": "parasail:deepseek/deepseek-v4-flash",
-    "provider_model_slug": "deepseek-ai/DeepSeek-V4-Flash",
+    "provider_model_slug": "parasail-deepseek-v4-flash",
     "internal_model_id": "deepseek/deepseek-v4-flash",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -168,7 +180,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [],
         "reasoning": true,
         "tool_call": true,
@@ -180,8 +192,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -193,30 +205,29 @@
       "formats": [
         "openai.chat.completions"
       ],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
         "kind": "documentation",
-        "url": "https://docs.parasail.io/parasail-docs/serverless-and-models",
-        "accessed_at": "2026-08-03T00:00:00Z",
-        "notes": "Deployment recorded; provider onboarding remains unavailable for Phaseo routing."
+        "url": "https://www.parasail.io/models/deepseek-v4-flash",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-03T00:00:00Z",
-      "notes": "Provider deployment recorded; routing follows the disabled parent provider."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m3",
     "provider_api_model_id": "parasail:minimax/minimax-m3",
-    "provider_model_slug": "minimax/minimax-m3",
+    "provider_model_slug": "parasail-minimax-m3",
     "internal_model_id": "minimax/minimax-m3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -227,7 +238,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -258,8 +269,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -267,30 +278,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/minimax-m3",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3.6-35b-a3b",
     "provider_api_model_id": "parasail:qwen/qwen3.6-35b-a3b",
-    "provider_model_slug": "qwen/qwen3.6-35b-a3b",
+    "provider_model_slug": "parasail-qwen3p6-35b-a3b",
     "internal_model_id": "qwen/qwen3.6-35b-a3b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -301,7 +311,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -332,8 +342,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -341,30 +351,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/qwen36-35b-a3b",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v4-pro",
     "provider_api_model_id": "parasail:deepseek/deepseek-v4-pro",
-    "provider_model_slug": "deepseek/deepseek-v4-pro",
+    "provider_model_slug": "parasail-deepseek-v4-pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -375,7 +384,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -407,8 +416,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -416,30 +425,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/deepseek-v4-pro",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "xiaomi/mimo-v2.5",
     "provider_api_model_id": "parasail:xiaomi/mimo-v2.5",
-    "provider_model_slug": "xiaomi/mimo-v2.5",
+    "provider_model_slug": "parasail-mimo-v25",
     "internal_model_id": "xiaomi/mimo-v2.5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text,image,video,audio",
     "output_modalities": "text",
@@ -450,7 +458,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -481,8 +489,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -490,30 +498,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/mimo-v25",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2.6",
     "provider_api_model_id": "parasail:moonshotai/kimi-k2.6",
-    "provider_model_slug": "moonshotai/kimi-k2.6",
+    "provider_model_slug": "parasail-kimi-k26",
     "internal_model_id": "moonshotai/kimi-k2.6",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "int4",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -524,7 +531,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -555,8 +562,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -564,30 +571,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/kimi-k26",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-5.1",
     "provider_api_model_id": "parasail:z-ai/glm-5.1",
-    "provider_model_slug": "z-ai/glm-5.1",
+    "provider_model_slug": "parasail-glm-51",
     "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": null,
     "output_modalities": null,
@@ -598,7 +604,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -629,8 +635,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -638,30 +644,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/glm-51",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "arcee-ai/trinity-large-thinking",
     "provider_api_model_id": "parasail:arcee-ai/trinity-large-thinking",
-    "provider_model_slug": "arcee-ai/trinity-large-thinking",
+    "provider_model_slug": "parasail-trinity-large-thinking",
     "internal_model_id": "arcee-ai/trinity-large-thinking",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp4",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -672,7 +677,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -703,8 +708,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -712,21 +717,20 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/trinity-large-thinking",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
@@ -805,9 +809,9 @@
   {
     "api_model_id": "qwen/qwen3.5-35b-a3b",
     "provider_api_model_id": "parasail:qwen/qwen3.5-35b-a3b",
-    "provider_model_slug": "qwen/qwen3.5-35b-a3b",
+    "provider_model_slug": "parasail-qwen3p5-35b-a3b",
     "internal_model_id": "qwen/qwen3.5-35b-a3b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -818,7 +822,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -849,8 +853,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -858,30 +862,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/qwen35-35b-a3b",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3.5-397b-a17b",
     "provider_api_model_id": "parasail:qwen/qwen3.5-397b-a17b",
-    "provider_model_slug": "qwen/qwen3.5-397b-a17b",
+    "provider_model_slug": "parasail-qwen35-397b-a17b",
     "internal_model_id": "qwen/qwen3.5-397b-a17b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -892,7 +895,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -923,8 +926,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -932,30 +935,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/qwen35-397b-a17b",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-coder-next",
     "provider_api_model_id": "parasail:qwen/qwen3-coder-next",
-    "provider_model_slug": "qwen/qwen3-coder-next",
+    "provider_model_slug": "parasail-qwen3-coder-next",
     "internal_model_id": "qwen/qwen3-coder-next",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "bf16",
     "input_modalities": null,
     "output_modalities": null,
@@ -966,7 +968,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "max_tokens",
           "temperature",
@@ -995,8 +997,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -1004,21 +1006,20 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/qwen3-coder-next",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
@@ -1095,9 +1096,9 @@
   {
     "api_model_id": "qwen/qwen3-vl-8b-instruct",
     "provider_api_model_id": "parasail:qwen/qwen3-vl-8b-instruct",
-    "provider_model_slug": "qwen/qwen3-vl-8b-instruct",
+    "provider_model_slug": "parasail-qwen3vl-8b-instruct",
     "internal_model_id": "qwen/qwen3-vl-8b-instruct",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "bf16",
     "input_modalities": null,
     "output_modalities": null,
@@ -1108,7 +1109,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "max_tokens",
           "temperature",
@@ -1137,8 +1138,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -1146,30 +1147,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/qwen3-vl-8b",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
     "provider_api_model_id": "parasail:qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_model_slug": "qwen/qwen3-vl-235b-a22b-instruct",
+    "provider_model_slug": "parasail-qwen3-vl-235b-a22b-instruct",
     "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": null,
     "output_modalities": null,
@@ -1180,7 +1180,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "structured_outputs",
           "response_format",
@@ -1209,8 +1209,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -1218,30 +1218,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/qwen3-vl-235b-a22b",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
     "provider_api_model_id": "parasail:qwen/qwen3-next-80b-a3b-instruct",
-    "provider_model_slug": "qwen/qwen3-next-80b-a3b-instruct",
+    "provider_model_slug": "parasail-qwen-3-next-80b-instruct",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": null,
     "output_modalities": null,
@@ -1252,7 +1251,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "max_tokens",
           "temperature",
@@ -1281,8 +1280,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -1290,30 +1289,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/qwen3-next-80b",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "parasail:openai/gpt-oss-120b",
-    "provider_model_slug": "openai/gpt-oss-120b",
+    "provider_model_slug": "parasail-gpt-oss-120b",
     "internal_model_id": "openai/gpt-oss-120b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp4",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1324,7 +1322,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -1356,8 +1354,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -1365,30 +1363,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/gpt-oss-120b",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "openai/gpt-oss-20b",
     "provider_api_model_id": "parasail:openai/gpt-oss-20b",
-    "provider_model_slug": "openai/gpt-oss-20b",
+    "provider_model_slug": "parasail-gpt-oss-20b",
     "internal_model_id": "openai/gpt-oss-20b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp4",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1399,7 +1396,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "reasoning",
           "include_reasoning",
@@ -1431,8 +1428,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -1440,30 +1437,29 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/gpt-oss-20b",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-235b-a22b-2507",
     "provider_api_model_id": "parasail:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": "qwen/qwen3-235b-a22b-2507",
+    "provider_model_slug": "parasail-qwen3-235b-a22b-instruct-2507",
     "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": null,
     "output_modalities": null,
@@ -1474,7 +1470,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "active",
         "params": [
           "max_tokens",
           "temperature",
@@ -1503,8 +1499,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -1512,21 +1508,20 @@
     "service_tiers": [],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": null,
-        "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "kind": "documentation",
+        "url": "https://www.parasail.io/models/qwen3-235b-a22b-2507",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
@@ -1602,68 +1597,68 @@
   }
 ,
   {
-      "api_model_id": "moonshotai/kimi-k3",
-      "provider_api_model_id": "parasail:moonshotai/kimi-k3",
-      "provider_model_slug": "parasail-kimi-k3",
-      "internal_model_id": "moonshotai/kimi-k3",
-      "is_active_gateway": false,
-      "quantization_scheme": null,
-      "input_modalities": "text,image,video",
-      "output_modalities": "text",
-      "context_length": 1048576,
-      "max_output_tokens": 1048576,
-      "effective_from": null,
-      "effective_to": null,
-      "capabilities": [
-        {
-          "capability_id": "text.generate",
-          "status": "active",
-          "params": [],
-          "reasoning": null,
-          "tool_call": null,
-          "structured_output": null,
-          "temperature": null,
-          "attachment": null,
-          "input_modalities": null,
-          "output_modalities": null,
-          "modes": []
-        }
-      ],
-      "routing_status": "active",
-      "routable": false,
-      "regions": {
-        "execution": null,
-        "data": null
-      },
-      "service_tiers": [],
-      "api": {
-        "formats": [
-          "openai.chat.completions"
-        ],
-        "endpoint": null,
-        "deployment": null
-      },
-      "sources": [
-        {
-          "kind": "official_company_page",
-          "url": "https://www.parasail.io/models/kimi-k3",
-          "accessed_at": "2026-08-26T00:00:00Z",
-          "notes": "Parasail public model library confirms the model name, endpoint slug, modalities, context and published availability."
-        }
-      ],
-      "verification": {
-        "status": "partial",
-        "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
-      },
-      "rate_limits": []
+    "api_model_id": "moonshotai/kimi-k3",
+    "provider_api_model_id": "parasail:moonshotai/kimi-k3",
+    "provider_model_slug": "parasail-kimi-k3",
+    "internal_model_id": "moonshotai/kimi-k3",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 1048576,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
     },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "official_company_page",
+        "url": "https://www.parasail.io/models/kimi-k3",
+        "accessed_at": "2026-08-26T00:00:00Z",
+        "notes": "Parasail public model library confirms the model name, endpoint slug, modalities, context and published availability."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-26T00:00:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
+    },
+    "rate_limits": []
+  },
     {
       "api_model_id": "z-ai/glm-5",
       "provider_api_model_id": "parasail:z-ai/glm-5",
       "provider_model_slug": "parasail-glm-5",
       "internal_model_id": "z-ai/glm-5",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text",
       "output_modalities": "text",
@@ -1687,7 +1682,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -1697,7 +1692,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -1709,9 +1704,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -1720,7 +1715,7 @@
       "provider_api_model_id": "parasail:minimax/minimax-m2.5",
       "provider_model_slug": "parasail-minimax-m25",
       "internal_model_id": "minimax/minimax-m2.5",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text",
       "output_modalities": "text",
@@ -1744,7 +1739,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -1754,7 +1749,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -1766,9 +1761,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -1777,7 +1772,7 @@
       "provider_api_model_id": "parasail:nvidia/nemotron-3-ultra-550b-a55b",
       "provider_model_slug": "parasail-nemotron-3-ultra-550b-nvfp4",
       "internal_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text",
       "output_modalities": "text",
@@ -1801,7 +1796,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -1811,7 +1806,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -1823,9 +1818,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -1834,7 +1829,7 @@
       "provider_api_model_id": "parasail:meta/llama-4-maverick",
       "provider_model_slug": "parasail-llama-4-maverick-instruct-fp8",
       "internal_model_id": "meta/llama-4-maverick",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text,image",
       "output_modalities": "text",
@@ -1858,7 +1853,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -1868,7 +1863,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -1880,9 +1875,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -1891,7 +1886,7 @@
       "provider_api_model_id": "parasail:meta/llama-3.3-70b-instruct",
       "provider_model_slug": "parasail-llama-33-70b-fp8",
       "internal_model_id": "meta/llama-3.3-70b-instruct",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text",
       "output_modalities": "text",
@@ -1915,7 +1910,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -1925,7 +1920,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -1937,9 +1932,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -1948,7 +1943,7 @@
       "provider_api_model_id": "parasail:qwen/qwen2.5-vl-72b-instruct",
       "provider_model_slug": "parasail-qwen25-vl-72b-instruct",
       "internal_model_id": "qwen/qwen2.5-vl-72b-instruct",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text,image",
       "output_modalities": "text",
@@ -1972,7 +1967,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -1982,7 +1977,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -1994,9 +1989,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -2005,7 +2000,7 @@
       "provider_api_model_id": "parasail:mistral/mistral-small-3.2-24b-instruct",
       "provider_model_slug": "parasail-mistral-small-32-24b",
       "internal_model_id": "mistral/mistral-small-3.2-24b-instruct",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "image,text",
       "output_modalities": "text",
@@ -2029,7 +2024,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -2039,7 +2034,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -2051,9 +2046,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -2062,7 +2057,7 @@
       "provider_api_model_id": "parasail:google/gemma-4-26b-a4b-it",
       "provider_model_slug": "parasail-gemma-4-26b-a4b-it",
       "internal_model_id": "google/gemma-4-26b-a4b-it",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text,image",
       "output_modalities": "text",
@@ -2086,7 +2081,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -2096,7 +2091,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -2108,9 +2103,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -2119,7 +2114,7 @@
       "provider_api_model_id": "parasail:google/gemma-4-31b-it",
       "provider_model_slug": "parasail-gemma-4-31b-it",
       "internal_model_id": "google/gemma-4-31b-it",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text,image",
       "output_modalities": "text",
@@ -2143,7 +2138,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -2153,7 +2148,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -2165,9 +2160,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -2176,7 +2171,7 @@
       "provider_api_model_id": "parasail:google/gemma-3-27b-it",
       "provider_model_slug": "parasail-gemma3-27b-it",
       "internal_model_id": "google/gemma-3-27b-it",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text",
       "output_modalities": "text",
@@ -2200,7 +2195,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -2210,7 +2205,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -2222,9 +2217,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -2290,7 +2285,7 @@
       "provider_api_model_id": "parasail:thedrummer/cydonia-24b-v4.1",
       "provider_model_slug": "parasail-cydonia-24-v41",
       "internal_model_id": "thedrummer/cydonia-24b-v4.1",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text",
       "output_modalities": "text",
@@ -2314,7 +2309,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -2324,7 +2319,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -2336,9 +2331,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -2347,7 +2342,7 @@
       "provider_api_model_id": "parasail:baai/bge-m3",
       "provider_model_slug": "parasail-bge-m3",
       "internal_model_id": "baai/bge-m3",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text",
       "output_modalities": "embeddings",
@@ -2357,7 +2352,7 @@
       "effective_to": null,
       "capabilities": [
         {
-          "capability_id": "text.embed",
+          "capability_id": "embeddings",
           "status": "active",
           "params": [],
           "reasoning": null,
@@ -2371,7 +2366,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -2381,7 +2376,7 @@
         "formats": [
           "openai.embeddings"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/embeddings",
         "deployment": null
       },
       "sources": [
@@ -2393,9 +2388,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -2404,7 +2399,7 @@
       "provider_api_model_id": "parasail:bytedance/ui-tars-1.5-7b",
       "provider_model_slug": "parasail-ui-tars-1p5-7b",
       "internal_model_id": "bytedance/ui-tars-1.5-7b",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "image,text",
       "output_modalities": "text",
@@ -2428,7 +2423,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -2438,7 +2433,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -2450,9 +2445,9 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
@@ -2461,7 +2456,7 @@
       "provider_api_model_id": "parasail:thedrummer/skyfall-36b-v2",
       "provider_model_slug": "parasail-skyfall-36b-v2-fp8",
       "internal_model_id": "thedrummer/skyfall-36b-v2",
-      "is_active_gateway": false,
+      "is_active_gateway": true,
       "quantization_scheme": null,
       "input_modalities": "text",
       "output_modalities": "text",
@@ -2485,7 +2480,7 @@
         }
       ],
       "routing_status": "active",
-      "routable": false,
+      "routable": true,
       "regions": {
         "execution": null,
         "data": null
@@ -2495,7 +2490,7 @@
         "formats": [
           "openai.chat.completions"
         ],
-        "endpoint": null,
+        "endpoint": "https://api.parasail.io/v1/chat/completions",
         "deployment": null
       },
       "sources": [
@@ -2507,18 +2502,18 @@
         }
       ],
       "verification": {
-        "status": "partial",
+        "status": "verified",
         "checked_at": "2026-08-26T00:00:00Z",
-        "notes": "Verified against Parasail public model detail page; authenticated /v1/models availability was not checked."
+        "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
       },
       "rate_limits": []
     },
   {
     "api_model_id": "z-ai/glm-5.3-flash",
     "provider_api_model_id": "parasail:z-ai/glm-5.3-flash",
-    "provider_model_slug": "z-ai/glm-5.3-flash",
+    "provider_model_slug": "parasail-glm-53-flash",
     "internal_model_id": "z-ai/glm-5.3-flash",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "FP8",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -2561,7 +2556,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -2571,27 +2566,20 @@
       "formats": [
         "openai.chat.completions"
       ],
-      "endpoint": null,
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": null
     },
     "sources": [
       {
-        "kind": "provider_models",
-        "url": "https://openrouter.ai/api/v1/models/z-ai/glm-5.3-flash-20260826/endpoints",
-        "accessed_at": "2026-08-27T00:00:00Z",
-        "notes": "OpenRouter's live endpoint catalog lists Parasail as serving z-ai/glm-5.3-flash with FP8 quantization and multimodal input."
-      },
-      {
         "kind": "documentation",
-        "url": "https://docs.parasail.io/parasail-docs/serverless-and-models/serverless",
-        "accessed_at": "2026-08-27T00:00:00Z",
-        "notes": "Parasail documents its OpenAI-compatible Serverless API; provider-level routing remains disabled in this catalog."
+        "url": "https://www.parasail.io/models/glm-53-flash",
+        "accessed_at": "2026-09-07T22:05:00Z"
       }
     ],
     "verification": {
-      "status": "partial",
-      "checked_at": "2026-08-27T00:00:00Z",
-      "notes": "Endpoint availability, limits, capabilities, and pricing were recorded from OpenRouter; provider-level routing remains non-routable pending direct onboarding verification."
+      "status": "verified",
+      "checked_at": "2026-09-07T22:05:00Z",
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   },
@@ -2599,9 +2587,9 @@
     "api_model_id": "z-ai/glm-5.3",
     "canonical_model_id": "z-ai/glm-5.3",
     "provider_api_model_id": "parasail:z-ai/glm-5.3",
-    "provider_model_slug": "zai-org/GLM-5.3",
+    "provider_model_slug": "parasail-glm-53",
     "internal_model_id": "z-ai/glm-5.3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2619,7 +2607,11 @@
             "provider_min": null,
             "provider_max": null,
             "provider_default": "max",
-            "values": ["low", "high", "max"],
+            "values": [
+              "low",
+              "high",
+              "max"
+            ],
             "notes": "GLM-5.3 always reasons and Parasail documents low, high, and max reasoning effort."
           },
           "include_reasoning",
@@ -2638,18 +2630,29 @@
         "structured_output": null,
         "temperature": true,
         "attachment": false,
-        "input_modalities": ["text"],
-        "output_modalities": ["text"],
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
         "modes": []
       }
     ],
     "routing_status": "active",
-    "routable": false,
-    "regions": {"execution": null, "data": null},
-    "service_tiers": ["standard"],
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
     "api": {
-      "formats": ["openai.chat.completions"],
-      "endpoint": "/v1/chat/completions",
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "https://api.parasail.io/v1/chat/completions",
       "deployment": "serverless"
     },
     "sources": [
@@ -2669,7 +2672,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-28T22:47:52Z",
-      "notes": "Exact request slug, endpoint, context, reasoning behavior, supported parameters, and pricing verified from first-party Parasail pages; provider-level gateway routing remains disabled."
+      "notes": "Native provider endpoint ID and public rates verified; gateway executor registered."
     },
     "rate_limits": []
   }

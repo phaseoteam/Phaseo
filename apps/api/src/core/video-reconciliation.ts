@@ -24,6 +24,7 @@ import {
 import { resolveVertexAccessToken, resolveVertexApiBase } from "@providers/google-vertex/auth";
 import type { VideoJobRecord } from "@core/video-jobs";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
+import { bflVideoPricingOptions, trustedBflPollingUrl } from "@providers/black-forest-labs/video";
 
 const GOOGLE_BASE_URL = "https://generativelanguage.googleapis.com";
 const DEFAULT_BYTEDANCE_BASE_URL = "https://ark.ap-southeast.bytepluses.com";
@@ -1027,8 +1028,52 @@ async function fetchLtxVideoStatus(job: VideoJobRecord): Promise<VideoProviderSt
 	};
 }
 
+async function fetchNovitaVideoStatus(job: VideoJobRecord): Promise<VideoProviderStatusResult | null> {
+	const taskId = toNonEmptyString(job.nativeId ?? job.meta?.providerTaskId);
+	if (!taskId) return null;
+	const key = await resolveProviderPollingKey({ job, providerId: "novita", defaultEnvKey: "NOVITA_API_KEY" });
+	if (!key) return null;
+	const response = await fetch(`https://api.novita.ai/v3/async/task-result?task_id=${encodeURIComponent(taskId)}`, {
+		headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000),
+	});
+	if (!response.ok) return null;
+	const json = await response.json() as any;
+	const nativeStatus = json?.task?.status;
+	const status = nativeStatus === "TASK_STATUS_SUCCEED" ? "completed" : nativeStatus === "TASK_STATUS_FAILED" ? "failed" : "in_progress";
+	const downloadUrl = toNonEmptyString(json?.videos?.[0]?.video_url);
+	return { status, providerId: "novita", model: job.model ?? undefined, seconds: toPositiveNumber(job.meta?.seconds),
+		progress: toNonNegativeNumber(json?.task?.progress_percent),
+		requestOptions: buildVideoPricingRequestOptions({ size: job.meta?.resolution, audio: job.meta?.audio, aspect_ratio: job.meta?.aspectRatio }),
+		metaPatch: downloadUrl ? { downloadUrl } : undefined, raw: json };
+}
+
+async function fetchBflVideoStatus(job: VideoJobRecord): Promise<VideoProviderStatusResult | null> {
+	const pollingUrl = trustedBflPollingUrl(job.meta?.bflPollingUrl);
+	if (!pollingUrl) return null;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	const key = await resolveProviderPollingKey({ job, providerId: "black-forest-labs", defaultEnvKey: bindings.BLACK_FOREST_LABS_API_KEY ? "BLACK_FOREST_LABS_API_KEY" : "BFL_API_KEY" });
+	if (!key) return null;
+	const response = await fetch(pollingUrl, { headers: { "x-key": key }, redirect: "error", signal: AbortSignal.timeout(15_000) });
+	if (!response.ok) return null;
+	const json = await response.json() as any;
+	const nativeStatus = String(json?.status ?? "").toLowerCase();
+	const status = nativeStatus === "ready" ? "completed" : ["error", "request moderated", "content moderated"].includes(nativeStatus) ? "failed" : "in_progress";
+	const downloadUrl = toNonEmptyString(json?.result?.sample);
+	return { status, providerId: "black-forest-labs", model: job.model ?? undefined,
+		seconds: toPositiveNumber(json?.result?.duration) ?? toPositiveNumber(job.meta?.seconds),
+		requestOptions: bflVideoPricingOptions(job.meta?.resolution ?? "hd", job.meta?.bflMode ?? "t2v", job.meta?.bflDraft ?? false),
+		metaPatch: downloadUrl ? { downloadUrl } : undefined, raw: json };
+}
+
 export async function fetchVideoProviderStatus(job: VideoJobRecord): Promise<VideoProviderStatusResult | null> {
+	if (job.provider === "deepinfra") {
+		// The native API delivers output by callback; pending jobs must retain their hold.
+		return { status: job.status === "completed" ? "completed" : job.status === "failed" ? "failed" : job.status === "cancelled" ? "cancelled" : "in_progress", providerId: "deepinfra", model: job.model ?? undefined, seconds: job.meta?.seconds ?? undefined,
+			metaPatch: { ...(job.meta?.downloadUrl ? { downloadUrl: job.meta.downloadUrl } : {}) } };
+	}
 	const provider = String(job.provider ?? job.meta?.provider ?? "").trim().toLowerCase();
+	if (provider === "black-forest-labs") return fetchBflVideoStatus(job);
+	if (provider === "novita" || provider === "novitaai") return fetchNovitaVideoStatus(job);
 	if (provider === "google-ai-studio") return fetchGoogleAiStudioVideoStatus(job);
 	if (provider === "google-vertex") return fetchGoogleVertexVideoStatus(job);
 	if (provider === "alibaba" || provider === "alibaba-cloud" || provider === "qwen") return fetchAlibabaVideoStatus(job);

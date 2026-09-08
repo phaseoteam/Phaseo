@@ -4,7 +4,7 @@
     "provider_api_model_id": "baidu:deepseek/deepseek-v4-flash",
     "provider_model_slug": "deepseek-v4-flash",
     "internal_model_id": "deepseek/deepseek-v4-flash",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -27,8 +27,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -59,7 +59,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending live contract validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -216,7 +216,7 @@
     "provider_api_model_id": "baidu:z-ai/glm-5.2",
     "provider_model_slug": "glm-5.2",
     "internal_model_id": "z-ai/glm-5.2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -254,8 +254,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -286,7 +286,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending live contract validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -306,7 +306,7 @@
     "provider_api_model_id": "baidu:deepseek/deepseek-v4-pro",
     "provider_model_slug": "deepseek-v4-pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -341,8 +341,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -373,7 +373,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending live contract validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -393,7 +393,7 @@
     "provider_api_model_id": "baidu:moonshotai/kimi-k2.6",
     "provider_model_slug": "kimi-k2.6",
     "internal_model_id": "moonshotai/kimi-k2.6",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp4",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -429,8 +429,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -461,7 +461,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending live contract validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -481,7 +481,7 @@
     "provider_api_model_id": "baidu:z-ai/glm-5.1",
     "provider_model_slug": "glm-5.1",
     "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": null,
     "output_modalities": null,
@@ -518,8 +518,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -550,7 +550,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending live contract validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -570,7 +570,7 @@
     "provider_api_model_id": "baidu:z-ai/glm-5",
     "provider_model_slug": "glm-5",
     "internal_model_id": "z-ai/glm-5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -608,8 +608,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -640,7 +640,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending live contract validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -745,7 +745,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-5.1:ernie-5.1",
     "provider_model_slug": "ernie-5.1",
     "internal_model_id": "baidu/ernie-5.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -768,8 +768,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -800,7 +800,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -820,7 +820,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-5.0:ernie-5.0",
     "provider_model_slug": "ernie-5.0",
     "internal_model_id": "baidu/ernie-5.0",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -843,8 +843,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -875,7 +875,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -895,7 +895,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-5.0:ernie-5.0-thinking-preview",
     "provider_model_slug": "ernie-5.0-thinking-preview",
     "internal_model_id": "baidu/ernie-5.0",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -918,8 +918,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -950,7 +950,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -970,7 +970,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-5.0:ernie-5.0-thinking-latest",
     "provider_model_slug": "ernie-5.0-thinking-latest",
     "internal_model_id": "baidu/ernie-5.0",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -993,8 +993,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1025,7 +1025,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1045,7 +1045,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp",
     "provider_model_slug": "ernie-5.0-thinking-exp",
     "internal_model_id": "baidu/ernie-5.0",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1068,8 +1068,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1100,7 +1100,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1120,7 +1120,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-32k",
     "provider_model_slug": "ernie-4.5-turbo-32k",
     "internal_model_id": "baidu/ernie-4.5-turbo",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1143,8 +1143,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1175,7 +1175,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1195,7 +1195,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k",
     "provider_model_slug": "ernie-4.5-turbo-128k",
     "internal_model_id": "baidu/ernie-4.5-turbo",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1218,8 +1218,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1250,7 +1250,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1270,7 +1270,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-20260402",
     "provider_model_slug": "ernie-4.5-turbo-20260402",
     "internal_model_id": "baidu/ernie-4.5-turbo",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1293,8 +1293,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1325,7 +1325,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1345,7 +1345,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl",
     "provider_model_slug": "ernie-4.5-turbo-vl",
     "internal_model_id": "baidu/ernie-4.5-turbo",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -1368,8 +1368,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1400,7 +1400,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1420,7 +1420,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl-32k",
     "provider_model_slug": "ernie-4.5-turbo-vl-32k",
     "internal_model_id": "baidu/ernie-4.5-turbo",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
@@ -1443,8 +1443,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1475,7 +1475,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1495,7 +1495,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-x1.1:ernie-x1.1-preview",
     "provider_model_slug": "ernie-x1.1-preview",
     "internal_model_id": "baidu/ernie-x1.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1518,8 +1518,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1550,7 +1550,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1570,7 +1570,7 @@
     "provider_api_model_id": "baidu:baidu/ernie-x1.1:ernie-x1.1",
     "provider_model_slug": "ernie-x1.1",
     "internal_model_id": "baidu/ernie-x1.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1593,8 +1593,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1625,7 +1625,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1645,7 +1645,7 @@
     "provider_api_model_id": "baidu:z-ai/glm-5.3:glm-5.3",
     "provider_model_slug": "glm-5.3",
     "internal_model_id": "z-ai/glm-5.3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1668,8 +1668,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1700,7 +1700,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1720,7 +1720,7 @@
     "provider_api_model_id": "baidu:qwen/qwen3.5-397b-a17b:qwen3.5-397b-a17b",
     "provider_model_slug": "qwen3.5-397b-a17b",
     "internal_model_id": "qwen/qwen3.5-397b-a17b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1743,8 +1743,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1775,7 +1775,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1795,7 +1795,7 @@
     "provider_api_model_id": "baidu:qwen/qwen3.5-122b-a10b:qwen3.5-122b-a10b",
     "provider_model_slug": "qwen3.5-122b-a10b",
     "internal_model_id": "qwen/qwen3.5-122b-a10b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1818,8 +1818,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1850,7 +1850,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1870,7 +1870,7 @@
     "provider_api_model_id": "baidu:qwen/qwen3.5-27b:qwen3.5-27b",
     "provider_model_slug": "qwen3.5-27b",
     "internal_model_id": "qwen/qwen3.5-27b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1893,8 +1893,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -1925,7 +1925,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -1945,7 +1945,7 @@
     "provider_api_model_id": "baidu:qwen/qwen3.5-35b-a3b:qwen3.5-35b-a3b",
     "provider_model_slug": "qwen3.5-35b-a3b",
     "internal_model_id": "qwen/qwen3.5-35b-a3b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1968,8 +1968,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2000,7 +2000,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -2020,7 +2020,7 @@
     "provider_api_model_id": "baidu:deepseek/deepseek-ocr:deepseek-ocr",
     "provider_model_slug": "deepseek-ocr",
     "internal_model_id": "deepseek/deepseek-ocr",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -2043,8 +2043,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2075,7 +2075,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "notes": "Current native model ID and text contract verified against the official Qianfan catalog; enabled through the existing Qianfan text executor and published pricing."
     },
     "rate_limits": [
       {
@@ -2095,7 +2095,7 @@
     "provider_api_model_id": "baidu:qwen/qwen-image:qwen-image",
     "provider_model_slug": "qwen-image",
     "internal_model_id": "qwen/qwen-image",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "image",
@@ -2118,8 +2118,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2162,7 +2162,7 @@
     "provider_api_model_id": "baidu:qwen/qwen3-embedding-0.6b:qwen3-embedding-0.6b",
     "provider_model_slug": "qwen3-embedding-0.6b",
     "internal_model_id": "qwen/qwen3-embedding-0.6b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "embedding",
@@ -2185,8 +2185,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2200,7 +2200,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://qianfan.baidubce.com/v2/embeddings",
       "deployment": null
     },
     "sources": [
@@ -2213,8 +2213,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "checked_at": "2026-09-07T21:55:00Z",
+      "notes": "Official native endpoint, published pricing, and mocked IR request/usage normalization verified."
     },
     "rate_limits": []
   },
@@ -2223,7 +2223,7 @@
     "provider_api_model_id": "baidu:qwen/qwen3-embedding-4b:qwen3-embedding-4b",
     "provider_model_slug": "qwen3-embedding-4b",
     "internal_model_id": "qwen/qwen3-embedding-4b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "embedding",
@@ -2246,8 +2246,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2261,7 +2261,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://qianfan.baidubce.com/v2/embeddings",
       "deployment": null
     },
     "sources": [
@@ -2274,8 +2274,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "checked_at": "2026-09-07T21:55:00Z",
+      "notes": "Official native endpoint, published pricing, and mocked IR request/usage normalization verified."
     },
     "rate_limits": []
   },
@@ -2284,7 +2284,7 @@
     "provider_api_model_id": "baidu:qwen/qwen3-embedding-8b:qwen3-embedding-8b",
     "provider_model_slug": "qwen3-embedding-8b",
     "internal_model_id": "qwen/qwen3-embedding-8b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "embedding",
@@ -2307,8 +2307,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2322,7 +2322,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://qianfan.baidubce.com/v2/embeddings",
       "deployment": null
     },
     "sources": [
@@ -2335,8 +2335,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "checked_at": "2026-09-07T21:55:00Z",
+      "notes": "Official native endpoint, published pricing, and mocked IR request/usage normalization verified."
     },
     "rate_limits": []
   },
@@ -2345,7 +2345,7 @@
     "provider_api_model_id": "baidu:qwen/qwen3-reranker-0.6b:qwen3-reranker-0.6b",
     "provider_model_slug": "qwen3-reranker-0.6b",
     "internal_model_id": "qwen/qwen3-reranker-0.6b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2368,8 +2368,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2383,7 +2383,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://qianfan.baidubce.com/v2/rerank",
       "deployment": null
     },
     "sources": [
@@ -2396,8 +2396,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "checked_at": "2026-09-07T21:55:00Z",
+      "notes": "Official native endpoint, published pricing, and mocked IR request/usage normalization verified."
     },
     "rate_limits": [
       {
@@ -2417,7 +2417,7 @@
     "provider_api_model_id": "baidu:qwen/qwen3-reranker-4b:qwen3-reranker-4b",
     "provider_model_slug": "qwen3-reranker-4b",
     "internal_model_id": "qwen/qwen3-reranker-4b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2440,8 +2440,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2455,7 +2455,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://qianfan.baidubce.com/v2/rerank",
       "deployment": null
     },
     "sources": [
@@ -2468,8 +2468,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "checked_at": "2026-09-07T21:55:00Z",
+      "notes": "Official native endpoint, published pricing, and mocked IR request/usage normalization verified."
     },
     "rate_limits": [
       {
@@ -2489,7 +2489,7 @@
     "provider_api_model_id": "baidu:qwen/qwen3-reranker-8b:qwen3-reranker-8b",
     "provider_model_slug": "qwen3-reranker-8b",
     "internal_model_id": "qwen/qwen3-reranker-8b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2512,8 +2512,8 @@
         "modes": []
       }
     ],
-    "routing_status": "disabled",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": [
         "CN"
@@ -2527,7 +2527,7 @@
     ],
     "api": {
       "formats": [],
-      "endpoint": null,
+      "endpoint": "https://qianfan.baidubce.com/v2/rerank",
       "deployment": null
     },
     "sources": [
@@ -2540,8 +2540,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Confirmed in the official Qianfan public model catalogue; gateway routing remains disabled pending capability-specific adapter validation."
+      "checked_at": "2026-09-07T21:55:00Z",
+      "notes": "Official native endpoint, published pricing, and mocked IR request/usage normalization verified."
     },
     "rate_limits": [
       {

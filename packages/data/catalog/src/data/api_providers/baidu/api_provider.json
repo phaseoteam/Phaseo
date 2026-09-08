@@ -8,7 +8,8 @@
   "description": "Baidu AI Cloud Qianfan model inference API.",
   "link": "https://cloud.baidu.com/product-s/qianfan_home",
   "country_code": "CN",
-  "status": "NotReady",
+  "residency_mode": "provider_managed",
+  "status": "Active",
   "colour": "#2932E1",
   "privacy_policy_url": "https://cloud.baidu.com/doc/Agreements/s/Kjwvy245m",
   "terms_of_service_url": "https://cloud.baidu.com/doc/Agreements/s/2jwvz9uq9",
@@ -16,8 +17,8 @@
   "prompt_training_notes": null,
   "prompt_training_source_url": null,
   "gateway_kind": null,
-  "routable": false,
-  "routing_enabled": false,
+  "routable": true,
+  "routing_enabled": true,
   "sdk_package": null,
   "api_base_url": "https://qianfan.baidubce.com",
   "docs_url": "https://cloud.baidu.com/doc/qianfan/index.html",
@@ -47,6 +48,6 @@
   "verification": {
     "status": "verified",
     "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Public Qianfan v2 model catalogue, Responses API, limits, and pricing verified; routing remains disabled pending live gateway contract validation."
+    "notes": "Qianfan v2 text, embedding, rerank, and image adapters have deterministic contract coverage and published pricing. Credentials and account access are required at runtime; live inference has not been exercised."
   }
 }

@@ -176,6 +176,7 @@ describe('pricing safety checks', () => {
             'input_audio_minutes',
             'output_reasoning_tokens',
             'bfl_credits',
+            'deepinfra_cost_usd',
             'output_video',
             'cached_write_text_tokens_5m',
             'cached_write_text_tokens_1h',

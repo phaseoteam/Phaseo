@@ -1,4 +1,5 @@
 import { googleOAuthTokenRequestInit, resolveGoogleOAuthTokenUri } from "./token-uri";
+import type { ExecutorUpstreamTiming } from "@executors/types";
 
 type VertexServiceAccount = {
 	client_email: string;
@@ -35,7 +36,7 @@ export function resolveVertexApiBase(bindings: Record<string, unknown>): string 
 	return `https://${host}/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 }
 
-export async function resolveVertexAccessToken(rawKey: string): Promise<string> {
+export async function resolveVertexAccessToken(rawKey: string, upstreamTiming?: ExecutorUpstreamTiming): Promise<string> {
 	const value = rawKey.trim();
 	if (!value) throw vertexError("google-vertex_access_token_missing");
 
@@ -43,7 +44,7 @@ export async function resolveVertexAccessToken(rawKey: string): Promise<string> 
 		try {
 			const parsed = JSON.parse(value) as Record<string, unknown>;
 			if (isVertexServiceAccount(parsed)) {
-				return mintServiceAccountAccessToken(parsed);
+				return mintServiceAccountAccessToken(parsed, upstreamTiming);
 			}
 			const token = typeof parsed.access_token === "string" ? parsed.access_token.trim() : "";
 			if (token) return token;
@@ -78,7 +79,7 @@ function isVertexServiceAccount(payload: Record<string, unknown>): payload is Ve
 	);
 }
 
-async function mintServiceAccountAccessToken(sa: VertexServiceAccount): Promise<string> {
+async function mintServiceAccountAccessToken(sa: VertexServiceAccount, upstreamTiming?: ExecutorUpstreamTiming): Promise<string> {
 	const tokenUri = resolveGoogleOAuthTokenUri(sa.token_uri);
 	const now = Math.floor(Date.now() / 1000);
 	const header = { alg: "RS256", typ: "JWT" };
@@ -102,7 +103,8 @@ async function mintServiceAccountAccessToken(sa: VertexServiceAccount): Promise<
 		assertion,
 	});
 
-	const res = await fetch(tokenUri, googleOAuthTokenRequestInit(body));
+	const init = googleOAuthTokenRequestInit(body);
+	const res = await (upstreamTiming ? upstreamTiming.fetch(tokenUri, init, "auth") : fetch(tokenUri, init));
 
 	if (!res.ok) {
 		throw vertexError(`google-vertex_oauth_error_${res.status}`);

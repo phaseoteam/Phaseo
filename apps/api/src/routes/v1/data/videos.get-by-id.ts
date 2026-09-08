@@ -93,7 +93,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 			payload: { id, status: "pending", provider: reconciledProvider, model: videoRecord.model },
 		}));
 	}
-	if (reconciledProvider === "fal" || reconciledProvider === "ltx" || reconciledProvider === "novita") {
+	if (reconciledProvider === "fal" || reconciledProvider === "ltx" || reconciledProvider === "novita" || reconciledProvider === "black-forest-labs" || reconciledProvider === "deepinfra") {
 		const polled = await fetchVideoProviderStatus(videoRecord);
 		if (!polled) {
 			if (isTerminalVideoStatus(videoRecord.status ?? "")) {

@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { geminiToIR, irToGemini, resolveVertexModelRoute } from "../index";
+import { geminiToIR, irToGemini, resolveVertexModelRoute, resolveVertexApiBase } from "../index";
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { execute } from "../index";
 import { installFetchMock } from "../../../../../tests/helpers/mock-fetch";
-import { setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
+import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
 
 vi.mock("@supabase/supabase-js", () => ({
 	createClient: () => ({}),
@@ -36,6 +36,50 @@ function buildExecuteArgs(): ExecutorExecuteArgs {
 }
 
 describe("google-vertex route resolution", () => {
+	it("routes managed GPT OSS 20B to its supported region and preserves SSE usage", async () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const chunks = [
+			{ model: "openai/gpt-oss-20b-maas", choices: [{ index: 0, delta: { role: "assistant", reasoning_content: "Reason" } }] },
+			{ choices: [{ index: 0, delta: { content: "Answer" }, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15, prompt_tokens_details: { cached_tokens: 4 } } },
+		];
+		const mock = installFetchMock([{ match: url => url === "https://us-central1-aiplatform.googleapis.com/v1/projects/test-project/locations/us-central1/endpoints/openapi/chat/completions", response: new Response(chunks.map(c => `data: ${JSON.stringify(c)}\n\n`).join("") + "data: [DONE]\n\n", { headers: { "Content-Type": "text/event-stream" } }) }]);
+		try {
+			const result = await execute({ ...buildExecuteArgs(), providerModelSlug: "openai/gpt-oss-20b-maas" });
+			expect(mock.calls[0].bodyJson).toMatchObject({ model: "openai/gpt-oss-20b-maas", stream: true, stream_options: { include_usage: true } });
+			if (result.kind !== "completed") throw new Error("Expected buffered completion");
+			expect((result.ir as any).choices[0].message.content).toEqual(expect.arrayContaining([{ type: "reasoning_text", text: "Reason" }, { type: "text", text: "Answer" }]));
+			expect(result.bill.usage).toMatchObject({ input_tokens: 10, output_tokens: 5 });
+		} finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
+	});
+	it("keeps global Claude pricing and EU residency aligned with native endpoints", () => {
+		const bindings = { GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-east5" };
+		expect(resolveVertexApiBase(bindings, "google-vertex", "anthropic")).toContain("aiplatform.googleapis.com/v1/projects/test-project/locations/global");
+		expect(resolveVertexApiBase(bindings, "google-vertex-eu", "anthropic")).toContain("aiplatform.eu.rep.googleapis.com/v1/projects/test-project/locations/eu");
+		expect(() => resolveVertexApiBase(bindings, "google-vertex-eu", "gemini")).toThrow("google-vertex_eu_location_required");
+		expect(() => resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_BASE_URL: "https://aiplatform.googleapis.com/v1/projects/test-project/locations/global" }, "google-vertex-eu", "anthropic")).toThrow("google-vertex_endpoint_region_mismatch");
+		expect(resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_LOCATION: "europe-west4" }, "google-vertex-eu", "gemini")).toContain("europe-west4-aiplatform.googleapis.com");
+	});
+	it.each(["us", "eu"])("uses the %s multi-region Claude streaming endpoint", async location => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: location, GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const mock = installFetchMock([{ match: url => url === `https://aiplatform.${location}.rep.googleapis.com/v1/projects/test-project/locations/${location}/publishers/anthropic/models/claude-opus-4-8:streamRawPredict`, response: Response.json({ id: "message", content: [{ type: "text", text: "hi" }], stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } }) }]);
+		try {
+			await execute({ ...buildExecuteArgs(), providerId: location === "eu" ? "google-vertex-eu" : "vertex-test", providerModelSlug: "claude-opus-4-8" });
+			expect(mock.calls[0].bodyJson).toMatchObject({ anthropic_version: "vertex-2023-10-16", stream: true });
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("model");
+		} finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
+	});
+	it("uses the global API hostname for global requests", async () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "global", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const mock = installFetchMock([{
+			match: (url) => url.startsWith("https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/"),
+			response: new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "hi" }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 } }), { headers: { "Content-Type": "application/json" } }),
+		}]);
+		try { expect((await execute(buildExecuteArgs())).kind).toBe("completed"); }
+		finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
+	});
 	it("routes prefixed models by family", () => {
 		expect(resolveVertexModelRoute("google/gemini-2.5-flash").family).toBe("gemini");
 		expect(resolveVertexModelRoute("anthropic/claude-sonnet-4@20250514").family).toBe("anthropic");

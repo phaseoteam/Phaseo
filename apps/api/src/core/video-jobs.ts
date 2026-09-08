@@ -19,6 +19,11 @@ import {
 export type VideoJobMeta = {
 	provider: string;
 	providerTaskId?: string | null;
+	bflPollingUrl?: string | null;
+	bflMode?: string | null;
+	bflDraft?: boolean | null;
+	deepinfraCallbackHash?: string | null;
+	deepinfraNativeCostUsd?: number | null;
 	submissionState?: "submitting" | "accepted" | "unknown" | "rejected";
 	ltxEndpoint?: "text-to-video" | "image-to-video" | "audio-to-video" | null;
 	requestId?: string | null;
@@ -132,6 +137,11 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	};
 	const out: VideoJobMeta = { provider };
 	if (typeof source.providerTaskId === "string") out.providerTaskId = source.providerTaskId;
+	if (typeof source.bflPollingUrl === "string") out.bflPollingUrl = source.bflPollingUrl;
+	if (typeof source.bflMode === "string") out.bflMode = source.bflMode;
+	if (typeof source.bflDraft === "boolean") out.bflDraft = source.bflDraft;
+	if (typeof source.deepinfraCallbackHash === "string") out.deepinfraCallbackHash = source.deepinfraCallbackHash;
+	if (typeof source.deepinfraNativeCostUsd === "number" && Number.isFinite(source.deepinfraNativeCostUsd)) out.deepinfraNativeCostUsd = source.deepinfraNativeCostUsd;
 	if (typeof source.provider_task_id === "string") out.providerTaskId = source.provider_task_id;
 	if (source.ltxEndpoint === "text-to-video" || source.ltxEndpoint === "image-to-video" || source.ltxEndpoint === "audio-to-video") out.ltxEndpoint = source.ltxEndpoint;
 	if (source.ltx_endpoint === "text-to-video" || source.ltx_endpoint === "image-to-video" || source.ltx_endpoint === "audio-to-video") out.ltxEndpoint = source.ltx_endpoint;

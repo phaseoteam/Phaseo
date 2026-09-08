@@ -69,6 +69,7 @@ const LABEL_OVERRIDES: Record<string, { long: string; short: string }> = {
 	output_reasoning_tokens: { long: "Output reasoning tokens", short: "reasoning out" },
 	output_video: { long: "Output videos", short: "out video" },
 	bfl_credits: { long: "BFL credits", short: "bfl credits" },
+	deepinfra_cost_usd: { long: "DeepInfra usage (USD)", short: "DeepInfra USD" },
 	datetime_requests: { long: "Datetime tool requests", short: "datetime" },
 	web_search_requests: { long: "Web search requests", short: "web search" },
 	web_search_results: { long: "Web search results", short: "search results" },

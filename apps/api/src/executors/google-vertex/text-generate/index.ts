@@ -57,18 +57,18 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const keyInfo = resolveProviderKey(args, () =>
 		bindings.GOOGLE_VERTEX_ACCESS_TOKEN || bindings.GOOGLE_VERTEX_API_KEY,
 	);
-	const accessToken = await resolveVertexAccessToken(keyInfo.key, args.upstreamTiming);
-	const apiBase = resolveVertexApiBase(bindings);
 	const route = resolveVertexModelRoute(model);
+	const apiBase = resolveVertexApiBase(bindings, args.providerId, route.family, route.modelForPayload);
 
 	let payload: any;
 	let endpoint: string;
 
 	if (route.family === "anthropic") {
 		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens, route.modelForPath);
+		delete payload.model;
 		payload.anthropic_version = "vertex-2023-10-16";
 		payload.stream = true;
-		endpoint = `${apiBase}/publishers/anthropic/models/${encodeURIComponent(route.modelForPath)}:rawPredict`;
+		endpoint = `${apiBase}/publishers/anthropic/models/${encodeURIComponent(route.modelForPath)}:streamRawPredict`;
 	} else if (route.family === "gemini") {
 		const normalizedIr = withNormalizedReasoning(irRequest, args.capabilityParams, route.modelForPath);
 		payload = await irToGemini(normalizedIr, route.modelForPath, args.upstreamTiming);
@@ -85,6 +85,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const requestBody = JSON.stringify(payload);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+	const accessToken = await resolveVertexAccessToken(keyInfo.key, args.upstreamTiming);
 
 	const res = await fetchUpstream(args, endpoint, {
 		method: "POST",
@@ -348,10 +349,27 @@ export function resolveVertexModelRoute(model: string): VertexModelRoute {
 	return { family: "openapi_chat", modelForPath: value, modelForPayload: value };
 }
 
-function resolveVertexApiBase(bindings: Record<string, any>): string {
+export function resolveVertexApiBase(bindings: Record<string, any>, providerId?: string, family?: VertexModelRoute["family"], model?: string): string {
 	const rawBase = String(bindings.GOOGLE_VERTEX_BASE_URL || "").replace(/\/+$/, "");
 	const project = String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
-	const location = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim() || "us-east5";
+	const configuredLocation = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
+	const requiredLocation = providerId === "google-vertex-eu" && family === "anthropic" ? "eu"
+		: providerId === "google-vertex" && family === "anthropic" ? "global"
+		: providerId === "google-vertex" && family === "openapi_chat" && model?.endsWith("-maas")
+			? model === "openai/gpt-oss-20b-maas" ? "us-central1" : "global" : undefined;
+	const location = requiredLocation || configuredLocation || "global";
+	if (providerId === "google-vertex-eu" && !requiredLocation && !/^europe-/.test(location)) {
+		throw vertexError("google-vertex_eu_location_required");
+	}
+	if (rawBase && (requiredLocation || providerId === "google-vertex-eu")) {
+		const url = new URL(rawBase);
+		const expectedHost = location === "global" ? "aiplatform.googleapis.com"
+			: location === "eu" ? "aiplatform.eu.rep.googleapis.com" : `${location}-aiplatform.googleapis.com`;
+		const pathLocation = url.pathname.match(/\/locations\/([^/]+)/)?.[1];
+		if (url.protocol !== "https:" || url.hostname !== expectedHost || (pathLocation && pathLocation !== location)) {
+			throw vertexError("google-vertex_endpoint_region_mismatch");
+		}
+	}
 
 	if (rawBase) {
 		if (/\/v\d+(?:beta\d+)?\/projects\/[^/]+\/locations\/[^/]+$/i.test(rawBase)) {
@@ -365,7 +383,10 @@ function resolveVertexApiBase(bindings: Record<string, any>): string {
 	}
 
 	if (!project) throw vertexError("google-vertex_project_missing");
-	return `https://${encodeURIComponent(location)}-aiplatform.googleapis.com/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
+	const hostname = location === "global" ? "aiplatform.googleapis.com"
+		: location === "us" || location === "eu" ? `aiplatform.${location}.rep.googleapis.com`
+		: `${encodeURIComponent(location)}-aiplatform.googleapis.com`;
+	return `https://${hostname}/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 }
 
 export async function irToGemini(ir: IRChatRequest, modelOverride?: string | null, upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"]): Promise<any> {

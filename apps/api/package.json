@@ -55,6 +55,7 @@
 		"@visulima/tabular": "^4.1.0",
 		"hono": "^4.12.27",
 		"ink": "^7.1.0",
+		"music-metadata": "^11.15.0",
 		"re2js": "^2.8.6",
 		"react": "^19.2.7",
 		"stripe": "^22.1.0",

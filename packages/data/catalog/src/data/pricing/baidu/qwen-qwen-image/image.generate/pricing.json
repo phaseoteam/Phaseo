@@ -1,0 +1,12 @@
+{
+  "key": "baidu:qwen/qwen-image:image.generate",
+  "api_provider_id": "baidu",
+  "provider_slug": "baidu",
+  "api_model_id": "qwen/qwen-image",
+  "capability_id": "image.generate",
+  "rules": [{ "meter": "output_image", "unit": "image", "unit_size": 1, "price_per_unit": 0.037252866, "currency": "USD", "pricing_plan": "standard", "match": [], "priority": 100, "source": "https://cloud.baidu.com/doc/qianfan/s/wmh4sv6ya" }],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [{ "kind": "pricing", "url": "https://cloud.baidu.com/doc/qianfan/s/wmh4sv6ya", "accessed_at": "2026-09-07T22:40:00Z" }],
+  "verification": { "status": "verified", "checked_at": "2026-09-07T22:40:00Z", "notes": "0.25 CNY per 1024x1024 image. Converted using ECB 2026-09-04 reference cross rate: 1.1622 USD / 7.7994 CNY per EUR (C/2026/4600). Executor restricts generation to the priced size." }
+}

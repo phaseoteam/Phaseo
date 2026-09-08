@@ -112,7 +112,7 @@
     "provider_api_model_id": "relace:relace-rank",
     "provider_model_slug": "relace-rank",
     "internal_model_id": "relace/relace-rank",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "rerank",
@@ -120,14 +120,59 @@
     "max_output_tokens": null,
     "effective_from": "2026-08-24T00:00:00Z",
     "effective_to": null,
-    "capabilities": [{"capability_id":"text.rerank","status":"active","params":[],"reasoning":null,"tool_call":false,"structured_output":false,"temperature":false,"attachment":false,"input_modalities":["text"],"output_modalities":["rerank"],"modes":[]}],
-    "routing_status": "disabled",
-    "routable": false,
-    "regions": {"execution":[],"data":[]},
-    "service_tiers": ["standard"],
-    "api": {"formats":["relace-rerank"],"endpoint":"https://models.relace.ai/v2/code/rank","deployment":null},
-    "sources": [{"kind":"provider_models","url":"https://docs.relace.ai/api-reference/code-reranker/rank-v2","accessed_at":"2026-08-24T00:00:00Z","notes":"Native v2 reranking endpoint and response contract."}],
-    "verification": {"status":"verified","checked_at":"2026-08-24T00:00:00Z","notes":"Available from Relace; Phaseo routing remains disabled because the gateway does not implement Relace's native rerank contract."},
+    "capabilities": [
+      {
+        "capability_id": "text.rerank",
+        "status": "active",
+        "params": [
+          "query",
+          "documents",
+          "top_n",
+          "return_documents"
+        ],
+        "reasoning": null,
+        "tool_call": false,
+        "structured_output": false,
+        "temperature": false,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "rerank"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [],
+      "data": []
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "relace-rerank"
+      ],
+      "endpoint": "https://ranker.endpoint.relace.run/v2/code/rank",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://docs.relace.ai/api-reference/code-reranker/rank-v2",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Native v2 reranking endpoint and response contract."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-07T00:00:00Z",
+      "notes": "Native codebase request, filename-to-index results and token usage mapping implemented from official API documentation; no live inference test."
+    },
     "rate_limits": []
   },
   {

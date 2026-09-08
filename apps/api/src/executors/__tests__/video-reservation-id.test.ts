@@ -8,6 +8,8 @@ import { executor as bytedanceSeedVideo } from "../bytedance-seed/video-generate
 import { executor as googleVertexVideo } from "../google-vertex/video-generate";
 import { executor as googleAiStudioVideo } from "../google/video-generate";
 import { executor as falVideo } from "../fal/video-generate";
+import { executor as deepinfraVideo } from "../deepinfra/video-generate";
+import { executor as blackForestLabsVideo } from "../black-forest-labs/video-generate";
 import { executor as minimaxVideo } from "../minimax/video-generate";
 import { executor as ltxVideo } from "../ltx/video-generate";
 import { executor as novitaVideo } from "../novita/video-generate";
@@ -21,6 +23,8 @@ const VIDEO_EXECUTOR_FILES = [
 	"atlascloud/video-generate/index.ts",
 	"bytedance-seed/video-generate/index.ts",
 	"fal/video-generate/index.ts",
+	"deepinfra/video-generate/index.ts",
+	"black-forest-labs/video-generate/index.ts",
 	"google/video-generate/index.ts",
 	"google-vertex/video-generate/index.ts",
 	"minimax/video-generate/index.ts",
@@ -45,6 +49,8 @@ describe("video reservation ids", () => {
 	it("only registers video executors that use the guarded async reservation path", () => {
 		const guardedDirectExecutors = new Set([
 			alibabaVideo,
+			deepinfraVideo,
+			blackForestLabsVideo,
 			atlasCloudVideo,
 			bytedanceSeedVideo,
 			falVideo,

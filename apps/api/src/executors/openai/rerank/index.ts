@@ -86,6 +86,16 @@ function buildRequestBody(
 	// Most OpenAI-compatible providers reject unknown provider_options fields.
 	delete encoded.provider_options;
 
+	if (args.providerId === "baidu") {
+		return {
+			model: encoded.model,
+			query: ir.query,
+			documents: ir.documents,
+			...(ir.topN !== undefined ? { top_n: ir.topN } : {}),
+			...(ir.userId !== undefined ? { user: ir.userId } : {}),
+		};
+	}
+
 	if (isCohereProvider(args.providerId)) {
 		// Cohere v2 accepts text documents only. Preserve structured gateway
 		// inputs deterministically rather than sending an invalid JSON object.
@@ -217,7 +227,13 @@ function usageToMeters(usage?: IRRerankResponse["usage"]): Record<string, number
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRRerankRequest;
-	const keyInfo = await resolveOpenAICompatKey(args as any);
+	if (args.providerId === "baidu") {
+		const unsupported = ["maxChunksPerDoc", "maxTokensPerDoc", "rankFields", "priority", "serviceTier"] as const;
+		if (ir.documents.some(document => typeof document !== "string") || unsupported.some(name => ir[name] !== undefined)) {
+			return { kind: "completed", upstream: Response.json({ error: { message: "Baidu rerank requires text documents and does not support chunking, rank fields, priority, or service tiers." } }, { status: 400 }), bill: { cost_cents: 0, currency: "USD" } };
+		}
+	}
+	const keyInfo = await resolveOpenAICompatKey({ ...args, forceGatewayKey: args.meta.forceGatewayKey });
 	const key = keyInfo.key;
 	const requestBody = buildRequestBody(ir, args);
 
@@ -253,6 +269,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 	const responseIr = decodeOpenAIRerankResponse(json, ir.model);
+	if (args.providerId === "baidu") {
+		for (const result of responseIr.results) {
+			if (ir.returnDocuments) result.document = ir.documents[result.index];
+			else delete result.document;
+		}
+	}
 	responseIr.rawResponse = json ?? null;
 	ir.rawRequest = requestBody;
 

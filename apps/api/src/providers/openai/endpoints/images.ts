@@ -7,7 +7,7 @@ import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import { ImagesGenerationSchema, type ImagesGenerationRequest } from "@core/schemas";
 import { sanitizePayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
-import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
+import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { buildImagePricingRequestOptions, normalizeOpenAIImageTokenUsage } from "@core/image-request-options";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 
@@ -84,9 +84,6 @@ function logRawImageResponse(
         },
     });
 }
-
-
-
 function mapGatewayToOpenAIImages(body: ImagesGenerationRequest, rawBody: Record<string, unknown>, providerId: string) {
     const providerParams = rawBody.provider_params && typeof rawBody.provider_params === "object"
         ? rawBody.provider_params as Record<string, unknown>
@@ -199,17 +196,16 @@ export function usesGptImageTokenPricing(...modelIds: Array<string | null | unde
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const keyInfo = await resolveOpenAICompatKey(args);
-    const key = keyInfo.key;
+    const { keyInfo, url, headers, deployment } = resolveOpenAITransport(args, "/images/generations", upstreamTestHeaders(args.meta));
     const sanitizedBody = sanitizePayload(ImagesGenerationSchema, args.body);
     const modifiedBody: ImagesGenerationRequest = {
         ...sanitizedBody,
-        model: args.providerModelSlug || args.model,
+        model: deployment || args.providerModelSlug || args.model,
     };
     const req = mapGatewayToOpenAIImages(modifiedBody, args.body as Record<string, unknown>, args.providerId);
-    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/images/generations"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(url, {
         method: "POST",
-        headers: openAICompatHeaders(args.providerId, key, upstreamTestHeaders(args.meta)),
+        headers,
         body: JSON.stringify(req),
     });
     const bill = {
@@ -291,6 +287,4 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     
     return { kind: "completed", upstream: res, bill, normalized, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
 }
-
-
 
