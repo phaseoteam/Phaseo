@@ -20,7 +20,7 @@ jest.mock("./supa", () => ({
     client: () => ({
         from: (table: string) => ({
             select: () => ({ range: () => ({ data: mockRows.get(table) ?? [] }) }),
-            upsert: (rows: Record<string, any>[]) => {
+            upsert: (rows: Record<string, any>[], { onConflict }: { onConflict: string }) => {
                 if (table === "v2_route_capabilities" || table === "v2_pricing_skus") {
                     const parents = mockUpserts.get("v2_model_provider_routes") ?? [];
                     for (const row of rows) {
@@ -30,6 +30,11 @@ jest.mock("./supa", () => ({
                     }
                 }
                 mockUpserts.set(table, [...(mockUpserts.get(table) ?? []), ...rows]);
+                const conflictColumns = onConflict.split(",");
+                const identity = (row: Record<string, any>) => JSON.stringify(conflictColumns.map(column => row[column]));
+                const persisted = new Map((mockRows.get(table) ?? []).map(row => [identity(row), row]));
+                for (const row of rows) persisted.set(identity(row), { ...persisted.get(identity(row)), ...row });
+                mockRows.set(table, [...persisted.values()]);
                 return { data: [] };
             },
             delete: () => ({ eq: () => ({ data: [] }), in: () => ({ data: [] }) }),
@@ -85,7 +90,8 @@ it("keeps protected and unresolved route children out of repository writes", asy
             .toEqual([expect.objectContaining({ provider_model_id: "provider:lab/active", capability_id: "text.generate", status: "active" })]);
         expect(mockUpserts.get("v2_pricing_skus")?.map(row => row.provider_model_id))
             .toEqual(["provider:lab/active"]);
-        expect(mockUpserts.get("v2_route_variants")).toBeUndefined();
+        expect(mockUpserts.get("v2_route_variants"))
+            .toEqual([expect.objectContaining({ provider_model_id: "provider:lab/active", variant_key: "global:standard" })]);
     } finally {
         rmSync(mockDataRoot, { recursive: true, force: true });
     }
