@@ -70,7 +70,7 @@ async function main() {
 	for (const entry of plan) {
 		// Retain unmatched models' previous results and provenance until explicitly mapped.
 		if (!entry.match.source) continue;
-		entry.model.benchmarks = mergeResults(entry.model, resultsForConfigurations(entry.match.sources ?? [entry.match.source], source.version, source.models, updated_at));
+		entry.model.benchmarks = mergeResults(entry.model, resultsForConfigurations(entry.match.sources ?? [entry.match.source], source.version, source.models, updated_at), source.version);
 		if (entry.file) writeFileSync(entry.file, writeBenchmarks(readFileSync(entry.file, "utf8"), entry.model.benchmarks));
 	}
 	if (!db) return;

@@ -174,7 +174,7 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				.eq("benchmark_id", benchmarkId)
 				.maybeSingle(),
 			client.from("v2_benchmark_results")
-				.select("result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank")
+				.select("result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key")
                 .or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 				.eq("benchmark_id", benchmarkId)
 				.order("rank", { ascending: true, nullsFirst: false }),

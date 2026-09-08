@@ -205,7 +205,7 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 				models.set(row.model_slug, { model_name: row.name ?? row.model_slug, organisation_id: row.lab_slug ?? null, organisation_name: lab?.name ?? row.lab_slug ?? null, organisation_colour: lab?.colour ?? null, release_date: row.release_date ?? null });
 			}
 		}
-		const activeIds = activeRankingBenchmarkIds(scores);
+		const activeIds = activeRankingBenchmarkIds(scores.filter((row) => models.has(row.model_slug)));
 		const order = new Map(activeIds.map((id, index) => [id, index]));
 		const benchmarks = (benchmarkResult.data ?? [])
 			.filter((benchmark) => activeIds.includes(benchmark.benchmark_id))

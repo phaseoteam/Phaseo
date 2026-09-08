@@ -37,7 +37,7 @@ test("accepts unavailable evaluation-cost and evaluation objects from the live f
 	assert.equal(resultsFor(withoutEvaluations, 4.3, snapshot.models).length, 1);
 });
 test("rejects unknown major versions, empty data, duplicate IDs and broken metrics", async () => {
-	for (const response of [page([source()], 1, false, 5), page([]), page([source(), source()]), page([source({ evaluations: {} })]), page([source({ artificial_analysis_intelligence_index_cost: { total_cost: -1 } })])]) {
+	for (const response of [page([source()], 1, false, 6), page([]), page([source(), source()]), page([source({ evaluations: {} })]), page([source({ artificial_analysis_intelligence_index_cost: { total_cost: -1 } })])]) {
 		await assert.rejects(fetchModels("key", async () => response));
 	}
 });
@@ -166,7 +166,17 @@ test("repeated sync is idempotent, clears null managed scores and preserves othe
 	const other = { benchmark_id: "mmlu", score: 89, source_link: "https://example.com" };
 	const existing = { ...model, benchmarks: [other, { benchmark_id: "aa-agentic-index-v4", score: 99 }] };
 	const rows = resultsFor(source(), 4.3, [source()]);
-	const merged = mergeResults(existing, rows);
+	const merged = mergeResults(existing, rows, 4.3);
 	assert.deepEqual(merged, [other, ...rows]);
-	assert.deepEqual(mergeResults({ ...model, benchmarks: merged }, rows), merged);
+	assert.deepEqual(mergeResults({ ...model, benchmarks: merged }, rows, 4.3), merged);
+});
+
+test("stores V5 separately while preserving V4 results", async () => {
+	const snapshot = await fetchModels("key", async () => page([source()], 1, false, 5));
+	const v4 = resultsFor(source(), 4.3, [source()]);
+	const v5 = resultsFor(source(), snapshot.version, snapshot.models);
+	assert.ok(v5.every((row) => row.benchmark_id.endsWith("-v5")));
+	const merged = mergeResults({ ...model, benchmarks: v4 }, v5, snapshot.version);
+	assert.equal(merged.filter((row) => String(row.benchmark_id).endsWith("-v4")).length, v4.length);
+	assert.equal(merged.filter((row) => String(row.benchmark_id).endsWith("-v5")).length, v5.length);
 });
