@@ -250,7 +250,7 @@
       "cohere/rerank-v3.5",
       "cohere/rerank-v4.0-fast",
       "cohere/rerank-v4.0-pro",
-      "cohere/rerenk-english-v3",
+      "cohere/rerank-english-v3",
       "cohere/command-r",
       "cohere/command-r-plus",
       "cohere/parse-v5.0"

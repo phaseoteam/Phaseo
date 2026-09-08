@@ -1,29 +1,31 @@
 {
-  "model_id": "cohere/rerenk-english-v3",
+  "model_id": "cohere/rerank-english-v3",
   "organisation_id": "cohere",
-  "name": "Rerenk English V3",
+  "name": "Rerank English V3",
   "status": "Available",
   "previous_model_id": null,
-  "description": "Rerenk English V3 is a language model from Cohere for chat, writing, analysis, and general-purpose automation.",
+  "description": "Rerank English V3 is designed to reorder English-language search results for improved relevance, including semi-structured data.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
   "input_types": null,
-  "output_types": null,
-  "api_model_id": "cohere/rerenk-english-v3",
+  "output_types": "rerank",
+  "api_model_id": "cohere/rerank-english-v3",
   "links": [],
   "details": [],
   "benchmarks": [],
   "family_id": null,
   "page_notice": null,
-  "model_type": null,
+  "model_type": "rerank",
   "knowledge_cutoff": null,
   "limits": {
     "context": null,
     "input": null,
-    "output": null
+    "output": [
+      "rerank"
+    ]
   },
   "modalities": {
     "input": null,
@@ -42,11 +44,18 @@
     "web_search": null
   },
   "open_weights": null,
-  "sources": [],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://docs.cohere.com/docs/rerank",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Cohere's current Rerank model catalogue."
+    }
+  ],
   "verification": {
-    "status": "unverified",
-    "checked_at": null,
-    "notes": null
+    "status": "verified",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Verified against Cohere's current Rerank documentation."
   },
   "last_updated": null,
   "removal_date": null,
