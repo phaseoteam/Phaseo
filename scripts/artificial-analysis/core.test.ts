@@ -102,7 +102,7 @@ test("a source shared by catalog aliases requires explicit mapping", () => {
 	assert.throws(() => matchModels([model, alias], [source()], { ...config, models: { [model.model_id]: "aa-1", [alias.model_id]: "aa-1" } }), /only one explicit/);
 });
 
-test("an explicit family mapping prevents a configuration variant mapping to another catalog model", () => {
+test("a separately catalogued reasoning configuration stays with its canonical model", () => {
 	const variants = [
 		source({ id: "aa-low", name: "Example 1 (low)", slug: "example-1-low" }),
 		source({ id: "aa-high", name: "Example 1 (high)", slug: "example-1-high" }),
@@ -110,8 +110,9 @@ test("an explicit family mapping prevents a configuration variant mapping to ano
 	const highModel = { ...model, model_id: "openai/example-1-high", name: "Example 1 (high)" };
 	const matches = matchModels([model, highModel], variants, { ...config, models: { [model.model_id]: "aa-low" } });
 	assert.equal(matches[0].status, "matched");
-	assert.equal(matches[0].sources.length, 2);
-	assert.equal(matches[1].status, "ambiguous");
+	assert.deepEqual(matches[0].sources.map((item) => item.id), ["aa-low"]);
+	assert.equal(matches[1].status, "matched");
+	assert.deepEqual(matches[1].sources.map((item) => item.id), ["aa-high"]);
 });
 
 test("catalog writes preserve surrounding compact JSON, newline style and snapshot time", () => {

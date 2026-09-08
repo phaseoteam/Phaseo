@@ -113,7 +113,25 @@ export function metricValue(source: SourceModel, metric: typeof METRICS[number])
 export function matchModels(models: CatalogModel[], sources: SourceModel[], config: MappingConfig) {
 	const explicitIds = Object.values(config.models).filter((id) => id !== null);
 	if (new Set(explicitIds).size !== explicitIds.length) throw new Error("Each Artificial Analysis source must have only one explicit catalog mapping.");
-	const matches = models.map((model) => matchModel(model, sources, config));
+	const initialMatches = models.map((model) => matchModel(model, sources, config));
+	const directOwners = new Map<string, Set<string>>();
+	for (let index = 0; index < initialMatches.length; index++) {
+		const sourceId = initialMatches[index].source?.id;
+		if (!sourceId) continue;
+		const owners = directOwners.get(sourceId) ?? new Set<string>();
+		owners.add(models[index].model_id);
+		directOwners.set(sourceId, owners);
+	}
+	// A reasoning configuration with its own canonical catalogue model remains
+	// attached to that model rather than being absorbed by a mapped family.
+	const matches = initialMatches.map((match, index) => {
+		if (!match.source || !Object.hasOwn(config.models, models[index].model_id)) return match;
+		const familySources = match.sources.filter((source) => {
+			const owners = directOwners.get(source.id);
+			return !owners || owners.has(models[index].model_id);
+		});
+		return { ...match, sources: familySources, candidates: familySources };
+	});
 	const explicitlyMappedSources = new Map<string, string>();
 	for (let index = 0; index < matches.length; index++) {
 		if (!Object.hasOwn(config.models, models[index].model_id)) continue;
