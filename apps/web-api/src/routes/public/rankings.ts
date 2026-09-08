@@ -178,6 +178,7 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 		for (let offset = 0; ; offset += 500) {
 			const page = await client.from("v2_benchmark_results")
 				.select("benchmark_id,model_slug,score_numeric,other_info,source_link,updated_at")
+				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 				.in("benchmark_id", RANKING_BENCHMARK_IDS).not("score_numeric", "is", null)
 				.order("result_id").range(offset, offset + 499);
 			if (page.error) throw page.error;

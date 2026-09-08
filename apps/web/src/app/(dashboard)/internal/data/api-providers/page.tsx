@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Globe2, Plus } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { fetchAdminCatalogList } from "@/lib/fetchers/internal/fetchAdminCatalog";
 
 const PAGE_SIZE = 100;
@@ -30,31 +34,32 @@ export default async function InternalAPIProvidersPage({
 			<div className="flex flex-col items-stretch justify-between gap-3 lg:flex-row lg:items-start">
 				<div>
 					<h1 className="text-2xl font-semibold">API providers</h1>
-					<p className="text-sm text-muted-foreground">Small list view for fast record navigation.</p>
+					<p className="text-sm text-muted-foreground">Providers and their regional offers.</p>
 				</div>
-				<Link href="/internal/data/api-providers/new" className="w-full rounded-md border px-3 py-1.5 text-center text-sm hover:bg-muted/40 lg:w-auto">
-					New provider
-				</Link>
+				<div className="flex flex-wrap gap-2"><Link href="/internal/data/api-providers/new?scope=regional" className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted/40"><Globe2 className="size-4" />New regional provider</Link><Link href="/internal/data/api-providers/new" className="w-full rounded-md border px-3 py-1.5 text-center text-sm hover:bg-muted/40 lg:w-auto">
+					<Plus className="mr-1 inline size-4" />New provider
+				</Link></div>
 			</div>
 			<form className="flex flex-col gap-3 sm:flex-row" action="/internal/data/api-providers" method="get">
-				<input
+				<Input
 					name="q"
 					defaultValue={queryText}
 					placeholder="Search providers by name or ID"
-					className="w-full rounded-md border px-3 py-2 text-sm sm:max-w-md"
+					aria-label="Search records" className="min-h-11 w-full sm:max-w-md"
 				/>
-				<button type="submit" className="rounded-md border px-3 py-2 text-sm">
+				<Button type="submit" variant="outline" className="min-h-11">
 					Search
-				</button>
+				</Button>
 			</form>
-			<div className="grid gap-2 2xl:grid-cols-2">
+			<div className="divide-y border-y">
+				{rows.length === 0 ? <p className="py-10 text-center text-sm text-muted-foreground">No records found.</p> : null}
 				{rows.map((row: any) => (
 					<Link
 						key={row.api_provider_id}
 						href={`/internal/data/api-providers/${row.api_provider_id}/edit`}
-						className="rounded-md border px-4 py-3 hover:bg-muted/40 transition-colors"
+						className="block px-3 py-4 transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
 					>
-						<div className="truncate">{row.api_provider_name ?? row.api_provider_id}</div>
+						<div className="flex items-center gap-3"><Logo id={row.provider_family_slug || row.api_provider_id} alt="" width={24} height={24} className="size-6 shrink-0 object-contain" /><span className="truncate">{row.api_provider_name ?? row.api_provider_id}</span>{row.offer_label ? <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">{row.offer_scope === "regional" ? <Globe2 className="size-3.5" /> : null}{row.offer_label}</span> : null}</div>
 						<div className="mt-1 break-all font-mono text-xs text-muted-foreground">{row.api_provider_id}</div>
 					</Link>
 				))}

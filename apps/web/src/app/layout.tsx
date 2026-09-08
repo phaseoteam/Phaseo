@@ -1,6 +1,7 @@
 // app/layout.tsx
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { CatalogNavigationGuardProvider } from "@/components/(data)/UnsavedChangesGuard";
 import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -94,7 +95,7 @@ export default function RootLayout({
 				<CookieConsentManager gaMeasurementId={GA_MEASUREMENT_ID} />
 				<ProductAnalyticsGaBridge />
 				<ConsoleEasterEgg />
-				<ThemeProvider
+				<CatalogNavigationGuardProvider><ThemeProvider
 					attribute="class"
 					defaultTheme="system"
 					enableSystem
@@ -114,7 +115,7 @@ export default function RootLayout({
 						<TailwindIndicator />
 						<Toaster richColors />
 					</TooltipProvider>
-				</ThemeProvider>
+				</ThemeProvider></CatalogNavigationGuardProvider>
 				<DeferredVercelAnalytics />
 			</body>
 		</html>

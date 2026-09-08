@@ -1,15 +1,14 @@
 "use client"
 
-import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "react"
-import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react"
+import Link from "next/link"
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { Plus, ArrowRight } from "lucide-react"
 import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -17,6 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SearchableSelect } from "@/components/ui/searchable-select"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient"
 import {
@@ -26,6 +30,8 @@ import {
 } from "@/lib/providers/promptTrainingPolicy"
 import {
   CAPABILITY_STATUS_OPTIONS,
+  editorOptionLabel,
+  QUANTIZATION_OPTIONS,
   MODEL_CAPABILITY_OPTIONS,
   MODEL_MODALITY_OPTIONS,
   normalizeCapabilityStatus,
@@ -67,6 +73,10 @@ export interface ProviderCapabilityRow {
 }
 
 interface ProvidersTabProps {
+  onSave?: () => Promise<void>
+  saving?: boolean
+  saveError?: string | null
+  savedMessage?: string | null
   modelId: string
   providers: Array<{ id: string; name: string }>
   focusProviderId?: string
@@ -164,7 +174,7 @@ function dedupeCapabilities(rows: ProviderCapabilityRow[]): ProviderCapabilityRo
 
 function defaultCapability(providerRowId: string, providerId: string, apiModelId: string): ProviderCapabilityRow {
   return {
-    id: createCapabilityId(),
+    id: `new-${createCapabilityId()}`,
     provider_row_id: providerRowId,
     provider_id: providerId,
     api_model_id: apiModelId,
@@ -186,7 +196,7 @@ function FieldRow({
   children: ReactNode
 }) {
   return (
-    <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
+    <div className="grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)] md:items-start">
       <div className="space-y-0.5">
         <Label className="text-sm font-medium">{label}</Label>
         {description ? (
@@ -198,88 +208,21 @@ function FieldRow({
   )
 }
 
-function ModelIdCombobox({
-  value,
-  options,
-  onChange,
-}: {
-  value: string
-  options: string[]
-  onChange: (value: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const searchInputRef = useRef<HTMLInputElement>(null)
-  const listId = useId()
-
-  const openAndFocusSearch = () => {
-    setOpen(true)
-    window.requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }))
-  }
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <div className="relative">
-        <Input
-          value={value}
-          onChange={(event) => onChange(event.target.value.trim())}
-          placeholder="organisation/model-id"
-          role="combobox"
-          aria-expanded={open}
-          aria-controls={listId}
-          aria-autocomplete="list"
-          onKeyDown={(event) => {
-            if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return
-            event.preventDefault()
-            openAndFocusSearch()
-          }}
-          className="pr-10"
-        />
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Show known model IDs"
-            className="absolute right-0 top-0 h-full rounded-l-none px-2 text-muted-foreground hover:text-foreground"
-          >
-            <ChevronsUpDown className="size-4" />
-          </Button>
-        </PopoverTrigger>
-      </div>
-      <PopoverContent align="end" className="w-[min(28rem,calc(100vw-2rem))] p-0">
-        <Command>
-          <CommandInput ref={searchInputRef} placeholder="Search known model IDs…" />
-          <CommandList id={listId}>
-            <CommandEmpty>No known model IDs found.</CommandEmpty>
-            {options.map((option) => (
-              <CommandItem
-                key={option}
-                value={option}
-                onSelect={() => {
-                  onChange(option)
-                  setOpen(false)
-                }}
-              >
-                <span className="min-w-0 flex-1 truncate font-mono text-xs">{option}</span>
-                <Check className={cn("size-4 shrink-0", option === value ? "opacity-100" : "opacity-0")} />
-              </CommandItem>
-            ))}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
 export default function ProvidersTab({
   modelId,
+  onSave, saving = false, saveError, savedMessage,
   providers,
   focusProviderId,
   onProviderModelsChange,
   onProviderCapabilitiesChange,
 }: ProvidersTabProps) {
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
+  const [routeQuery, setRouteQuery] = useState("")
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const [providerModels, setProviderModels] = useState<ProviderModelRow[]>([])
   const [providerCapabilities, setProviderCapabilities] = useState<ProviderCapabilityRow[]>([])
+  const [modelNames, setModelNames] = useState<Record<string, string>>({})
   const [availableModelIds, setAvailableModelIds] = useState<string[]>([])
   const onProviderModelsChangeRef = useRef(onProviderModelsChange)
   const onProviderCapabilitiesChangeRef = useRef(onProviderCapabilitiesChange)
@@ -314,6 +257,7 @@ export default function ProvidersTab({
     return providerModels.filter((row) => row.provider_id === focusProviderId)
   }, [providerModels, focusProviderId])
 
+  const matchingProviderModels = visibleProviderModels.filter((row) => `${providerNameById.get(row.provider_id)} ${row.provider_id} ${row.provider_model_slug || ""}`.toLowerCase().includes(routeQuery.trim().toLowerCase()))
   const selectableModelIds = useMemo(() => {
     const merged = new Set<string>([modelId])
     for (const value of availableModelIds) merged.add(value)
@@ -329,6 +273,7 @@ export default function ProvidersTab({
       const providerModelData = source.providerRows ?? []
       const modelRows = options.previousModels ?? []
 
+      setModelNames(Object.fromEntries([...modelRows.map((row: any) => [row.model_id, row.name || row.model_id.split("/").pop()]), [modelId, source.model?.name || modelId.split("/").pop()]]))
       setAvailableModelIds(
         (modelRows ?? [])
           .map((row: any) => (typeof row?.model_id === "string" ? row.model_id.trim() : ""))
@@ -390,7 +335,7 @@ export default function ProvidersTab({
       setProviderCapabilities(dedupeCapabilities(mappedCapabilities))
     }
 
-    void fetchData()
+    void fetchData().catch((error) => setLoadError(error instanceof Error ? error.message : "Unable to load providers")).finally(() => setLoading(false))
   }, [modelId])
 
   useEffect(() => {
@@ -402,25 +347,16 @@ export default function ProvidersTab({
   }, [onProviderCapabilitiesChange])
 
   useEffect(() => {
-    onProviderModelsChangeRef.current?.(providerModels)
-  }, [providerModels])
+    if (!loading && !loadError) onProviderModelsChangeRef.current?.(providerModels)
+  }, [providerModels, loading, loadError])
 
   useEffect(() => {
-    onProviderCapabilitiesChangeRef.current?.(providerCapabilities)
-  }, [providerCapabilities])
+    if (!loading && !loadError) onProviderCapabilitiesChangeRef.current?.(providerCapabilities)
+  }, [providerCapabilities, loading, loadError])
 
   const toggleProvider = (providerId: string) => {
-    setProviderModels((prev) => {
-      if (prev.some((row) => row.provider_id === providerId)) {
-        const remaining = prev.filter((row) => row.provider_id !== providerId)
-        const removedIds = new Set(
-          prev.filter((row) => row.provider_id === providerId).map((row) => row.id)
-        )
-        setProviderCapabilities((capabilities) =>
-          capabilities.filter((capability) => !removedIds.has(capability.provider_row_id))
-        )
-        return remaining
-      }
+    const prev = providerModels
+      if (prev.some((row) => row.provider_id === providerId)) return
 
       const newRow: ProviderModelRow = {
         id: `new-${providerId}-${Date.now()}`,
@@ -443,8 +379,8 @@ export default function ProvidersTab({
         ...prevCapabilities,
         defaultCapability(newRow.id, providerId, newRow.api_model_id),
       ])
-      return [...prev, newRow]
-    })
+      setProviderModels((rows) => [...rows, newRow])
+      setSelectedRowId(newRow.id)
   }
 
   const updateProviderModel = (providerRowId: string, field: keyof ProviderModelRow, value: any) => {
@@ -522,93 +458,44 @@ export default function ProvidersTab({
   }
 
   const removeCapability = (capabilityId: string) => {
-    setProviderCapabilities((prev) => {
-      const next = prev.filter((row) => row.id !== capabilityId)
-      return next.length === prev.length ? prev : next
-    })
+    setProviderCapabilities((rows) => rows.map((row) => row.id === capabilityId ? { ...row, effective_to: new Date().toISOString() } : row))
   }
 
   return (
     <div className="space-y-5">
-      <section className="space-y-3 rounded-lg border p-4">
-        <div className="flex items-center justify-between">
-          <Label className="text-sm font-semibold">Provider Availability</Label>
-          <span className="text-xs text-muted-foreground">
-            {focusProviderId
-              ? `Focused on provider: ${focusProviderId}`
-              : "A-Z ordered. Grey logos are inactive."}
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          {visibleProviderOptions.map((provider) => {
-            const active = selectedProviderIds.has(provider.id)
-            return (
-              <button
-                key={provider.id}
-                type="button"
-                onClick={() => toggleProvider(provider.id)}
-                className={cn(
-                  "rounded-md border px-3 py-2 text-left transition",
-                  active ? "border-primary bg-primary/5" : "bg-muted/40"
-                )}
-              >
-                <div className={cn("flex items-center gap-2", !active && "grayscale opacity-50")}>
-                  <Logo id={provider.id} alt={provider.name} width={18} height={18} />
-                  <span className="truncate text-xs">{provider.name}</span>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </section>
-
-      <div className="space-y-4">
-        {visibleProviderModels.length === 0 ? (
-          <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            {focusProviderId
-              ? "This provider is not attached yet. Click the provider above to add it."
-              : "Select one or more providers above to attach availability and capabilities."}
-          </div>
-        ) : null}
-
-        {visibleProviderModels.map((providerModel) => {
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Input aria-label="Filter connected providers" placeholder="Find a connected provider…" className="min-h-11 sm:flex-1" value={routeQuery} onChange={(event) => setRouteQuery(event.target.value)} />
+        <div className="sm:w-64"><SearchableSelect label="Add provider" placeholder="Add provider…" value="" disabled={loading || saving} options={visibleProviderOptions.filter((provider) => !selectedProviderIds.has(provider.id)).map((provider) => ({ value: provider.id, label: provider.name, icon: <Logo id={provider.id} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))} onValueChange={toggleProvider} /></div>
+      </div>
+      {loading ? <p role="status">Loading providers…</p> : loadError ? <p role="alert">{loadError}</p> : <div className="divide-y border-y">
+        {matchingProviderModels.map((row) => <Button type="button" key={row.id} variant="ghost" className="h-auto min-h-20 w-full justify-start whitespace-normal rounded-none px-2 py-4 text-left" onClick={() => setSelectedRowId(row.id)}>
+          <Logo id={row.provider_id} width={24} height={24} />
+          <div className="min-w-0 flex-1"><div className="font-medium">{providerNameById.get(row.provider_id) || row.provider_id}</div><p className="mt-1 break-all text-xs font-normal text-muted-foreground">{row.provider_model_slug || row.api_model_id}</p><p className="mt-1 text-xs font-normal text-muted-foreground">{providerCapabilities.filter((capability) => capability.provider_row_id === row.id).length} capabilities{row.context_length ? ` · ${row.context_length.toLocaleString()} context` : ""}</p></div>
+          <Badge variant="outline">{row.is_active_gateway ? "Gateway on" : "Gateway off"}</Badge><ArrowRight className="size-4 shrink-0" />
+        </Button>)}
+        {visibleProviderModels.length > 0 && !matchingProviderModels.length ? <p className="py-8 text-center text-sm text-muted-foreground">No matching providers.</p> : null}
+        {!visibleProviderModels.length ? <p className="py-8 text-center text-sm text-muted-foreground">No connected providers. Choose Add provider to get started.</p> : null}
+      </div>}
+      <Sheet open={selectedRowId !== null} onOpenChange={(open) => { if (!open && !saving) setSelectedRowId(null); }}>
+        <SheetContent inert={saving} className="data-[side=right]:w-full data-[side=right]:sm:max-w-2xl" showCloseButton={!saving}>
+        {visibleProviderModels.filter((row) => row.id === selectedRowId).map((providerModel) => {
           const providerName = providerNameById.get(providerModel.provider_id) ?? providerModel.provider_id
           const capabilityRows = providerCapabilities.filter(
             (row) => row.provider_row_id === providerModel.id
           )
 
           return (
-            <section key={providerModel.id} className="space-y-4 rounded-lg border p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Logo id={providerModel.provider_id} alt={providerName} width={18} height={18} />
-                  <div>
-                    <div className="text-sm font-semibold">{providerName}</div>
-                    <div className="text-xs text-muted-foreground">{providerModel.provider_id}</div>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => toggleProvider(providerModel.provider_id)}
-                  aria-label={`Remove ${providerName}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-
+            <div key={providerModel.id} className="flex min-h-0 flex-1 flex-col">
+              <SheetHeader className="border-b pr-14"><SheetTitle className="flex items-center gap-3"><Logo id={providerModel.provider_id} alt="" width={24} height={24} className="size-6 object-contain" />{providerName}</SheetTitle><SheetDescription>{providerModel.provider_model_slug || providerModel.api_model_id}</SheetDescription><Link className="text-sm text-primary hover:underline" href={`/internal/data/models/edit/${modelId}?tab=pricing&provider=${encodeURIComponent(providerModel.provider_id)}&routing=1`}>Regional routing settings</Link></SheetHeader>
+              <fieldset disabled={saving} className="min-h-0 flex-1 overflow-y-auto p-5 [&_input]:min-h-11">
+              <Tabs defaultValue="route">
+                <TabsList className="mb-4 w-full"><TabsTrigger value="route">Route</TabsTrigger><TabsTrigger value="capabilities">Capabilities</TabsTrigger><TabsTrigger value="policy">Data policy</TabsTrigger></TabsList>
+                <TabsContent value="route" className="space-y-5">
               <FieldRow
-                label="Public model ID"
-                description="Select from known model IDs or enter one manually."
+                label="Public model"
+                description="Choose a model from the catalog."
               >
-                <div>
-                  <ModelIdCombobox
-                    value={providerModel.api_model_id}
-                    options={selectableModelIds}
-                    onChange={(value) => updateProviderModel(providerModel.id, "api_model_id", value)}
-                  />
-                </div>
+                <SearchableSelect label="Public model" value={providerModel.api_model_id} options={selectableModelIds.map((value) => ({ value, label: modelNames[value] || value.split("/").pop() || "Unnamed model", icon: <Logo id={value.split("/")[0]} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))} onValueChange={(value) => updateProviderModel(providerModel.id, "api_model_id", value)} />
               </FieldRow>
 
               <FieldRow label="Provider model ID">
@@ -646,17 +533,7 @@ export default function ProvidersTab({
               </FieldRow>
 
               <FieldRow label="Quantization scheme">
-                <Input
-                  value={providerModel.quantization_scheme ?? ""}
-                  onChange={(event) =>
-                    updateProviderModel(
-                      providerModel.id,
-                      "quantization_scheme",
-                      event.target.value || null
-                    )
-                  }
-                  placeholder="FP16, INT8, etc."
-                />
+                <SearchableSelect label="Quantization scheme" value={providerModel.quantization_scheme || "__unknown__"} options={[{ value: "__unknown__", label: "Not specified" }, ...Array.from(new Set([...QUANTIZATION_OPTIONS, ...(providerModel.quantization_scheme ? [providerModel.quantization_scheme] : [])])).map((value) => ({ value, label: value.toUpperCase() }))]} onValueChange={(value) => updateProviderModel(providerModel.id, "quantization_scheme", value === "__unknown__" ? null : value)} />
               </FieldRow>
 
               <FieldRow label="Context and output limits">
@@ -686,34 +563,6 @@ export default function ProvidersTab({
                     placeholder="Max output tokens"
                   />
                 </div>
-              </FieldRow>
-
-              <FieldRow
-                label="Prompt training override"
-                description="Leave as Provider default unless this model/provider mapping differs."
-              >
-                <Select
-                  value={providerModel.prompt_training_policy_override ?? "__provider_default"}
-                  onValueChange={(value) =>
-                    updateProviderModel(
-                      providerModel.id,
-                      "prompt_training_policy_override",
-                      value === "__provider_default" ? null : value
-                    )
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Provider default" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__provider_default">Provider default</SelectItem>
-                    {PROVIDER_PROMPT_TRAINING_POLICY_VALUES.map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {PROVIDER_PROMPT_TRAINING_POLICY_LABELS[value]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </FieldRow>
 
               <FieldRow label="Effective window">
@@ -803,7 +652,39 @@ export default function ProvidersTab({
                 </div>
               </FieldRow>
 
-              <div className="space-y-3 rounded-md border p-3">
+                </TabsContent>
+                <TabsContent value="policy" className="space-y-5">
+              <FieldRow
+                label="Prompt training override"
+                description="Leave as Provider default unless this model/provider mapping differs."
+              >
+                <Select
+                  value={providerModel.prompt_training_policy_override ?? "__provider_default"}
+                  onValueChange={(value) =>
+                    updateProviderModel(
+                      providerModel.id,
+                      "prompt_training_policy_override",
+                      value === "__provider_default" ? null : value
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue>{providerModel.prompt_training_policy_override ? PROVIDER_PROMPT_TRAINING_POLICY_LABELS[providerModel.prompt_training_policy_override] : "Provider default"}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__provider_default">Provider default</SelectItem>
+                    {PROVIDER_PROMPT_TRAINING_POLICY_VALUES.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {PROVIDER_PROMPT_TRAINING_POLICY_LABELS[value]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FieldRow>
+
+                </TabsContent>
+                <TabsContent value="capabilities" className="space-y-4">
+
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold">Capabilities</Label>
                   <Button
@@ -823,7 +704,8 @@ export default function ProvidersTab({
                   </p>
                 ) : null}
 
-                {capabilityRows.map((capability, index) => {
+                <Accordion type="single" collapsible>
+                {capabilityRows.map((capability) => {
                   const capabilityOptions = Array.from(
                     new Set([...CAPABILITY_OPTIONS, capability.capability_id])
                   )
@@ -834,50 +716,27 @@ export default function ProvidersTab({
                   )
 
                   return (
-                    <div key={capability.id} className="space-y-3 rounded-md border p-3">
+                    <AccordionItem value={capability.id} key={capability.id}><AccordionTrigger>{editorOptionLabel(capability.capability_id)} · {capability.effective_to ? "End-dated" : editorOptionLabel(capability.status)}</AccordionTrigger><AccordionContent className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="text-xs font-medium text-muted-foreground">
-                          Capability {index + 1}
+                          Edit capability
                         </div>
                         <Button
                           type="button"
                           variant="ghost"
-                          size="icon"
+                          disabled={Boolean(capability.effective_to)}
                           onClick={() => removeCapability(capability.id)}
-                          aria-label="Remove capability"
+                          aria-label="End-date capability"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          End now
                         </Button>
                       </div>
 
                       <FieldRow label="Capability">
-                        <Select
-                          value={capability.capability_id}
-                          onValueChange={(value) => {
-                            if (usedByOther.has(value.trim().toLowerCase())) return
-                            updateCapability(capability.id, (row) => ({
-                              ...row,
-                              capability_id: value,
-                            }))
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select capability" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {capabilityOptions.map((option) => (
-                              <SelectItem
-                                key={option}
-                                value={option}
-                                disabled={usedByOther.has(option.trim().toLowerCase())}
-                              >
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <SearchableSelect label="Capability" disabled={!capability.id.startsWith("new-")} value={capability.capability_id} options={capabilityOptions.map((value) => ({ value, label: editorOptionLabel(value), disabled: usedByOther.has(value.trim().toLowerCase()) }))} onValueChange={(value) => updateCapability(capability.id, (row) => ({ ...row, capability_id: value }))} />
                       </FieldRow>
 
+                      <FieldRow label="Support dates"><div className="grid gap-2 sm:grid-cols-2"><DatePickerInput value={formatDateForPicker(capability.effective_from)} onChange={(value) => updateCapability(capability.id, (row) => ({ ...row, effective_from: value || null }))} placeholder="Starts" /><DatePickerInput value={formatDateForPicker(capability.effective_to)} onChange={(value) => updateCapability(capability.id, (row) => ({ ...row, effective_to: value || null }))} placeholder="Ends" /></div></FieldRow>
                       <FieldRow label="Status">
                         <Select
                           value={capability.status}
@@ -889,12 +748,12 @@ export default function ProvidersTab({
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue>{editorOptionLabel(capability.status)}</SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {CAPABILITY_STATUS_OPTIONS.map((status) => (
                               <SelectItem key={status} value={status}>
-                                {status}
+                                {editorOptionLabel(status)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -935,14 +794,22 @@ export default function ProvidersTab({
                         </div>
                       </FieldRow>
 
-                    </div>
+                    </AccordionContent></AccordionItem>
                   )
                 })}
-              </div>
-            </section>
+                </Accordion>
+                </TabsContent>
+              </Tabs>
+              </fieldset>
+              <SheetFooter className="border-t p-4">
+                {saveError ? <p role="alert" className="text-sm text-destructive">{saveError}</p> : savedMessage ? <p role="status" className="text-sm text-muted-foreground">{savedMessage}</p> : <p className="text-xs text-muted-foreground">Changes are saved with all providers for this model.</p>}
+                <div className="flex justify-between gap-2"><Button type="button" variant="ghost" disabled={saving} onClick={() => { updateProviderModel(providerModel.id, "effective_to", new Date().toISOString()); }}>End support now</Button><Button type="button" disabled={saving} onClick={() => void onSave?.()}>{saving ? "Saving…" : "Save providers"}</Button></div>
+              </SheetFooter>
+            </div>
           )
         })}
-      </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

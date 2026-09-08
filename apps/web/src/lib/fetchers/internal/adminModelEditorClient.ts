@@ -46,7 +46,11 @@ export type AdminPricingEditorSource = {
 		provider_model_id: string;
 		provider_slug: string;
 		provider_model_slug: string;
+		is_stealth: boolean;
 		status: string;
+		provider_availability_status: "unknown" | "coming_soon" | "preview" | "available" | "limited_access" | "deprecated" | "removed";
+		phaseo_status: "unsupported" | "planned" | "implementing" | "testing" | "enabled" | "disabled" | "blocked";
+		access_scope: "public" | "internal";
 		routing_enabled: boolean;
 		regions: string[];
 		input_modalities: string[];
@@ -55,6 +59,7 @@ export type AdminPricingEditorSource = {
 		max_output_tokens: number | null;
 		effective_from: string | null;
 		effective_to: string | null;
+		metadata: Record<string, unknown>;
 	}>;
 	skus: Array<Record<string, any> & { sku_id: string; provider_model_id: string }>;
 	meters: Array<Record<string, any> & { sku_id: string; meter_key: string }>;
@@ -62,7 +67,7 @@ export type AdminPricingEditorSource = {
 	regions: Array<{ provider_slug: string; region_code: string; display_name: string | null; status: string }>;
 	capabilities: Array<{ provider_model_id: string; capability_id: string; status: string }>;
 	meterDefinitions: Array<{ meter_key: string; display_name: string; modality: string; direction: "input" | "output" | null; unit: string; default_unit_quantity: number; status: string }>;
-	providers: Array<{ provider_slug: string; name: string; status: string; routing_enabled: boolean; routable: boolean; base_url: string | null; metadata: Record<string, unknown> }>;
+	providers: Array<{ provider_slug: string; name: string; status: string; routing_enabled: boolean; routable: boolean; base_url: string | null; residency_mode: "unknown" | "provider_managed" | "customer_selectable" | "account_selected"; default_execution_regions: string[] | null; default_data_regions: string[] | null; metadata: Record<string, unknown> }>;
 };
 
 export async function fetchAdminPricingEditorSource(modelId: string) {
@@ -86,10 +91,34 @@ export async function saveAdminProviderRoute(modelId: string, route: Record<stri
 	);
 }
 
-export async function deleteAdminPricingSku(modelId: string, skuId: string) {
-	return fetchAccountWebApi<{ pricing: Record<string, unknown> }>(
-		`/api/account/models/${encodeURIComponent(modelId)}/pricing-editor/${encodeURIComponent(skuId)}`,
+export async function saveAdminModelNotice(modelId: string, notice: { tone: "info" | "warning" | "critical"; markdown: string } | null) {
+	return fetchAccountWebApi<{ notice: { tone: string; markdown: string } | null }>(
+		`/api/account/models/${encodeURIComponent(modelId)}/notice`,
 		await getBrowserAccessToken(),
-		{ method: "DELETE" },
+		{ method: "PUT", body: JSON.stringify(notice) },
 	);
+}
+
+export async function saveAdminModelAliases(modelId: string, aliases: Array<Record<string, unknown>>) {
+	return fetchAccountWebApi<{ aliases: Array<Record<string, unknown>> }>(
+		`/api/account/models/${encodeURIComponent(modelId)}/aliases`,
+		await getBrowserAccessToken(),
+		{ method: "PUT", body: JSON.stringify(aliases) },
+	);
+}
+
+export async function endDateAdminPricingSku(modelId: string, skuId: string, effectiveTo: string) {
+	return fetchAccountWebApi<{ pricing: Record<string, unknown> }>(
+		`/api/account/models/${encodeURIComponent(modelId)}/pricing-editor/${encodeURIComponent(skuId)}/end-date`,
+		await getBrowserAccessToken(),
+		{ method: "POST", body: JSON.stringify({ effective_to: effectiveTo }) },
+	);
+}
+
+export type ProviderResidencyPolicy = Pick<AdminPricingEditorSource["providers"][number], "residency_mode" | "default_execution_regions" | "default_data_regions">;
+export async function saveAdminProviderResidency(providerId: string, policy: ProviderResidencyPolicy) {
+  return fetchAccountWebApi<{ provider: AdminPricingEditorSource["providers"][number] }>(
+    `/api/account/models/catalog/providers/${encodeURIComponent(providerId)}/residency`, await getBrowserAccessToken(),
+    { method: "PUT", body: JSON.stringify(policy) },
+  );
 }
