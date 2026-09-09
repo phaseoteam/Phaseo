@@ -355,9 +355,6 @@ public final class ModelIds {
     /** Model ID: <code>deepseek/deepseek-v4-pro-0813</code>. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
     public static final String DEEPSEEK_DEEPSEEK_V4_PRO_0813 = "deepseek/deepseek-v4-pro-0813";
 
-    /** Model ID: <code>deepseek/deepseek-v4.1-flash</code>. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash */
-    public static final String DEEPSEEK_DEEPSEEK_V4_1_FLASH = "deepseek/deepseek-v4.1-flash";
-
     /** Model ID: <code>deepseek/deepseek-v4.1-flash-preview</code>. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview */
     public static final String DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW = "deepseek/deepseek-v4.1-flash-preview";
 

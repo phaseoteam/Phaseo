@@ -351,9 +351,6 @@ pub mod model_ids {
     /// Model ID: `deepseek/deepseek-v4-pro-0813`.
     /// Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
     pub const DEEPSEEK_DEEPSEEK_V4_PRO_0813: &str = "deepseek/deepseek-v4-pro-0813";
-    /// Model ID: `deepseek/deepseek-v4.1-flash`.
-    /// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash
-    pub const DEEPSEEK_DEEPSEEK_V4_1_FLASH: &str = "deepseek/deepseek-v4.1-flash";
     /// Model ID: `deepseek/deepseek-v4.1-flash-preview`.
     /// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview
     pub const DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW: &str = "deepseek/deepseek-v4.1-flash-preview";
@@ -2077,7 +2074,6 @@ pub mod model_ids {
         DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
         DEEPSEEK_DEEPSEEK_V4_PRO,
         DEEPSEEK_DEEPSEEK_V4_PRO_0813,
-        DEEPSEEK_DEEPSEEK_V4_1_FLASH,
         DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW,
         EARLY_ACCESS_EA_29B_A4B,
         ELEVEN_LABS_ELEVEN_FLASH_V2,
