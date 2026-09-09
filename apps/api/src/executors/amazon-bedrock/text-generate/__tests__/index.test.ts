@@ -4,7 +4,7 @@ import type { ExecutorExecuteArgs } from "@executors/types";
 import { execute } from "../index";
 import { assertBedrockMantleBaseUrl } from "../bedrock-utils";
 import { installFetchMock, jsonResponse } from "../../../../../tests/helpers/mock-fetch";
-import { setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
+import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
 import { parseSseJson, readSseFrames, sseResponse } from "../../../../../tests/helpers/sse";
 
 function buildArgs(ir: IRChatRequest, overrides: Partial<ExecutorExecuteArgs> = {}): ExecutorExecuteArgs {
@@ -190,6 +190,41 @@ describe("amazon-bedrock text executor", () => {
 		}));
 		mock.restore();
 		expect(result.kind).toBe("stream");
+	});
+
+	it("derives the SigV4 region from a BYOK Mantle URL before the gateway default", async () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			AMAZON_BEDROCK_REGION: "us-west-2",
+			AMAZON_BEDROCK_MANTLE_BASE_URL: "https://bedrock-mantle.us-west-2.api.aws",
+			AMAZON_BEDROCK_API_KEY: "test-bedrock-key",
+		} as any);
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1/chat/completions"),
+			onRequest: (call) => {
+				expect(call.headers.Authorization).toContain("/us-east-1/bedrock/aws4_request");
+			},
+			response: new Response(new ReadableStream<Uint8Array>(), { status: 200 }),
+		}]);
+		try {
+			const credentials = JSON.stringify({
+				accessKeyId: "AKIATEST",
+				secretAccessKey: "secret",
+				baseUrl: "https://bedrock-mantle.us-east-1.api.aws",
+			});
+			const result = await execute(buildArgs({
+				model: "openai.gpt-oss-20b-1:0",
+				stream: true,
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			}, {
+				byokMeta: [{ id: "byok_aws", key: credentials, providerId: "amazon-bedrock", alwaysUse: true }] as any,
+			}));
+			expect(result.kind).toBe("stream");
+		} finally {
+			mock.restore();
+			teardownTestRuntime();
+			setupTestRuntime();
+		}
 	});
 
 	it("routes OpenAI Bedrock models to /openai/v1/chat/completions", async () => {
