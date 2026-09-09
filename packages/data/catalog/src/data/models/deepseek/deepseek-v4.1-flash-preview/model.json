@@ -5,7 +5,7 @@
   "status": "Preview",
   "previous_model_id": null,
   "description": "DeepSeek V4.1 Flash Preview is an early-access DeepSeek text model exposed through a temporary provider deployment. Provider support and availability may change without notice.",
-  "announced_date": null,
+  "announced_date": "2026-09-08T00:00:00Z",
   "release_date": "2026-09-08T00:00:00Z",
   "deprecation_date": null,
   "retirement_date": null,
