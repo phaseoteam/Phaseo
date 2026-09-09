@@ -40,7 +40,7 @@
   "routable": true,
   "routing_enabled": true,
   "sdk_package": null,
-  "api_base_url": "https://bedrock-mantle.us-east-1.api.aws/v1",
+  "api_base_url": "https://bedrock-mantle.us-west-2.api.aws/v1",
   "docs_url": "https://docs.aws.amazon.com/bedrock/latest/userguide/apis.html",
   "auth_env": [
     "AMAZON_BEDROCK_API_KEY",

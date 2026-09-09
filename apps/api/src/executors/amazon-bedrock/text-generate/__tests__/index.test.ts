@@ -429,6 +429,30 @@ describe("amazon-bedrock text executor", () => {
 		expect(mock.calls[0]?.url.endsWith("/openai/v1/chat/completions")).toBe(true);
 	});
 
+	it("routes GPT-6 Astra through the requested Mantle Responses surface", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/openai/v1/responses"),
+			onRequest: (call) => {
+				expect(call.bodyJson?.model).toBe("openai.gpt-6-astra");
+				expect(call.bodyJson?.stream).toBe(true);
+			},
+			response: new Response(new ReadableStream<Uint8Array>(), { status: 200 }),
+		}]);
+
+		const result = await execute(buildArgs({
+			model: "openai.gpt-6-astra",
+			stream: true,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello Astra" }] }],
+		}, {
+			endpoint: "responses",
+			protocol: "openai.responses",
+		}));
+
+		mock.restore();
+		expect(result.kind).toBe("stream");
+		expect(mock.calls).toHaveLength(1);
+	});
+
 	it("does not change endpoints when /responses is unavailable", async () => {
 		const mock = installFetchMock([
 			{
