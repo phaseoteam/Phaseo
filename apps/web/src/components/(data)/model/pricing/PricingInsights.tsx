@@ -92,6 +92,11 @@ import {
 	type PricingRange,
 } from "@/components/(data)/model/pricing/pricingHistoryTimeline";
 import {
+	PRICING_HISTORY_TOOLTIP_EDGE_COUNT,
+	orderPricingHistoryTooltipItems,
+	selectPricingHistoryTooltipItems,
+} from "@/components/(data)/model/pricing/pricingHistoryTooltip";
+import {
 	calculateCacheHitRatePct,
 	calculateObservedEffectivePriceSummary,
 	calculateTokenSharePct,
@@ -664,14 +669,18 @@ function buildPricingHistoryState(args: {
 function PricingHistoryChart({
 	state,
 	visibleSeriesKeys,
+	highlightedSeriesKey,
 	range,
 	expanded,
 }: {
 	state: ReturnType<typeof buildPricingHistoryState>;
 	visibleSeriesKeys: string[];
+	highlightedSeriesKey: string | null;
 	range: PricingRange;
 	expanded?: boolean;
 }) {
+	const hasHighlightedSeries = highlightedSeriesKey != null && visibleSeriesKeys.includes(highlightedSeriesKey);
+
 	return (
 		<ChartContainer
 			config={state.chartConfig}
@@ -685,34 +694,67 @@ function PricingHistoryChart({
 					isAnimationActive={false}
 					content={({ active, payload, label }) => {
 						if (!active || !payload?.length) return null;
-						const items = payload
-							.filter((item) => Number.isFinite(Number(item.value)))
-							.sort((a, b) => Number(a.value ?? 0) - Number(b.value ?? 0));
+						const items = orderPricingHistoryTooltipItems(
+							payload.filter((item) => Number.isFinite(Number(item.value))),
+							visibleSeriesKeys,
+							(item) => String(item.dataKey ?? ""),
+						);
 						if (!items.length) return null;
+						const { items: visibleItems, hiddenCount } = selectPricingHistoryTooltipItems(items);
+						const leadingItems = hiddenCount
+							? visibleItems.slice(0, PRICING_HISTORY_TOOLTIP_EDGE_COUNT)
+							: visibleItems;
+						const trailingItems = hiddenCount
+							? visibleItems.slice(PRICING_HISTORY_TOOLTIP_EDGE_COUNT)
+							: [];
+						const renderItem = (item: (typeof items)[number]) => {
+							const key = String(item.dataKey ?? "");
+							const color = state.chartConfig[key]?.color ?? String(item.color ?? "currentColor");
+							return (
+								<div key={key} className="flex items-center justify-between gap-5">
+									<span className="flex min-w-0 items-center gap-2">
+										<span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+										<span className="truncate">{state.providerNameBySeries.get(key) ?? key}</span>
+									</span>
+									<span className="shrink-0 font-medium tabular-nums">{formatUsd(Number(item.value))}</span>
+								</div>
+							);
+						};
 						return (
-							<div className="max-h-72 min-w-48 overflow-y-auto rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-xl backdrop-blur">
+							<div className="min-w-48 rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-xl backdrop-blur">
 								<p className="mb-2 font-medium text-foreground">{formatTimestampLabel(String(label ?? ""), true)} UTC</p>
 								<div className="space-y-1.5">
-									{items.map((item) => {
-										const key = String(item.dataKey ?? "");
-										return (
-											<div key={key} className="flex items-center justify-between gap-5">
-												<span className="flex items-center gap-2">
-													<span className="size-2 rounded-full" style={{ backgroundColor: String(item.color ?? "currentColor") }} />
-													<span>{state.providerNameBySeries.get(key) ?? key}</span>
-												</span>
-												<span className="font-medium tabular-nums">{formatUsd(Number(item.value))}</span>
-											</div>
-										);
-									})}
+									{leadingItems.map(renderItem)}
+									{hiddenCount ? (
+										<div className="flex items-center gap-2 py-0.5 text-[11px] text-muted-foreground" aria-label={`${hiddenCount} models omitted`}>
+											<span className="h-px flex-1 border-t border-dashed border-muted-foreground/40" aria-hidden="true" />
+											<span className="shrink-0">{hiddenCount}+ Models</span>
+											<span className="h-px flex-1 border-t border-dashed border-muted-foreground/40" aria-hidden="true" />
+										</div>
+									) : null}
+									{trailingItems.map(renderItem)}
 								</div>
 							</div>
 						);
 					}}
 				/>
-				{visibleSeriesKeys.map((seriesKey) => (
-					<Line key={seriesKey} type="stepAfter" dataKey={seriesKey} stroke={`var(--color-${seriesKey})`} strokeWidth={1.8} dot={false} activeDot={{ r: 3 }} connectNulls={false} isAnimationActive={false} />
-				))}
+				{visibleSeriesKeys.map((seriesKey) => {
+					const isHighlighted = highlightedSeriesKey === seriesKey;
+					return (
+						<Line
+							key={seriesKey}
+							type="stepAfter"
+							dataKey={seriesKey}
+							stroke={`var(--color-${seriesKey})`}
+							strokeOpacity={hasHighlightedSeries && !isHighlighted ? 0.18 : 1}
+							strokeWidth={isHighlighted ? 3 : 1.8}
+							dot={false}
+							activeDot={isHighlighted ? { r: 4 } : { r: 3 }}
+							connectNulls={false}
+							isAnimationActive={false}
+						/>
+					);
+				})}
 			</LineChart>
 		</ChartContainer>
 	);
@@ -743,6 +785,7 @@ export default function PricingInsights({
 	const [expandedProviders, setExpandedProviders] = useState<Set<string>>(() => new Set());
 	const [activeProviderInspectorId, setActiveProviderInspectorId] = useState<string | null>(null);
 	const [seriesVisibilityOverrides, setSeriesVisibilityOverrides] = useState<Record<string, boolean>>({});
+	const [highlightedSeriesKey, setHighlightedSeriesKey] = useState<string | null>(null);
 	const [historyNowMs] = useState(() => Date.now());
 	const customStartMs = customPricingRange?.from
 		? Date.UTC(customPricingRange.from.getFullYear(), customPricingRange.from.getMonth(), customPricingRange.from.getDate())
@@ -1338,7 +1381,7 @@ export default function PricingInsights({
 
 			<div className="overflow-hidden rounded-lg border bg-background p-2 sm:p-3">
 			{pricingHistoryState.hasData ? (
-				<PricingHistoryChart state={pricingHistoryState} visibleSeriesKeys={visibleSeriesKeys} range={pricingRange} expanded={expanded} />
+				<PricingHistoryChart state={pricingHistoryState} visibleSeriesKeys={visibleSeriesKeys} highlightedSeriesKey={highlightedSeriesKey} range={pricingRange} expanded={expanded} />
 			) : (
 				<div className={cn("grid place-items-center text-center text-sm text-muted-foreground", expanded ? "h-[min(42vh,460px)]" : "h-[300px]")}>
 					<div className="max-w-sm space-y-1 px-6">
@@ -1478,6 +1521,8 @@ export default function PricingInsights({
 								<TableRow
 									tabIndex={0}
 									aria-label={`Open ${row.providerName} provider details`}
+									onMouseEnter={() => setHighlightedSeriesKey(row.seriesKey)}
+									onMouseLeave={() => setHighlightedSeriesKey(null)}
 									onClick={(event) => handleProviderRowClick(event, row.providerId)}
 									onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 									className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -1585,6 +1630,8 @@ export default function PricingInsights({
 											key={`${row.providerId}-${tierRow.pricingPlan}`}
 											tabIndex={0}
 											aria-label={`Open ${row.providerName} provider details`}
+											onMouseEnter={() => setHighlightedSeriesKey(tierRow.seriesKey)}
+											onMouseLeave={() => setHighlightedSeriesKey(null)}
 											onClick={(event) => handleProviderRowClick(event, row.providerId)}
 											onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 											className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -1649,6 +1696,8 @@ export default function PricingInsights({
 										<TableRow
 											tabIndex={0}
 											aria-label={`Open ${row.providerName} provider details`}
+											onMouseEnter={() => setHighlightedSeriesKey(row.seriesKey)}
+											onMouseLeave={() => setHighlightedSeriesKey(null)}
 											onClick={(event) => handleProviderRowClick(event, row.providerId)}
 											onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 											className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -1688,6 +1737,8 @@ export default function PricingInsights({
 													key={`expanded-${row.providerId}-${tierRow.pricingPlan}`}
 													tabIndex={0}
 													aria-label={`Open ${row.providerName} provider details`}
+													onMouseEnter={() => setHighlightedSeriesKey(tierRow.seriesKey)}
+													onMouseLeave={() => setHighlightedSeriesKey(null)}
 													onClick={(event) => handleProviderRowClick(event, row.providerId)}
 													onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 													className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
