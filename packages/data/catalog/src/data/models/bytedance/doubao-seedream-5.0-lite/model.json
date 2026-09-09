@@ -1,0 +1,82 @@
+{
+  "model_id": "bytedance/doubao-seedream-5.0-lite",
+  "organisation_id": "bytedance",
+  "name": "Doubao Seedream 5.0 Lite",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Doubao-Seedream-5.0-lite是字节跳动发布的最新图像创作模型。该模型首次搭载联网检索功能，能融合实时网络信息，提升生图时效性。同时，模型的聪明度进一步升级，能够精准解析复杂指令和视觉内容。此外，模型在世界知识广度、参考一致性及专业场景生成质量上均有增强，可更好地满足企业级视觉创作需求。",
+  "announced_date": null,
+  "release_date": "2026-01-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "bytedance/doubao-seedream-5.0-lite",
+  "family_id": null,
+  "links": [
+    {
+      "title": "OfoxAI model catalogue",
+      "kind": "documentation",
+      "url": "https://ofox.ai/models/volcengine"
+    }
+  ],
+  "details": [
+    {
+      "name": "ofox_provider_slug",
+      "value": "volcengine/doubao-seedream-5.0-lite"
+    },
+    {
+      "name": "ofox_supported_endpoints",
+      "value": "/v1/images/generations"
+    }
+  ],
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 100000,
+    "input": null,
+    "output": 100000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live model catalogue, exact model IDs, endpoints, modalities, limits, parameters, lifecycle and pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Canonical identity and OfoxAI availability verified from the live catalogue."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

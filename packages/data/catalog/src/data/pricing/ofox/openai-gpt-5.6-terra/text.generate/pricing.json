@@ -9,36 +9,6 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 2,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null
-    },
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.2,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null
-    },
-    {
-      "meter": "cached_write_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
       "price_per_unit": 2.5,
       "currency": "USD",
       "pricing_plan": "standard",
@@ -48,13 +18,14 @@
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": "https://api.ofox.ai/v1/models",
+      "effective_from": "2026-08-24T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 12,
+      "price_per_unit": 15,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
@@ -63,7 +34,72 @@
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
-      "source": null
+      "source": "https://api.ofox.ai/v1/models",
+      "effective_from": "2026-08-24T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.ofox.ai/v1/models",
+      "effective_from": "2026-08-24T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.125,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.ofox.ai/v1/models",
+      "effective_from": "2026-08-24T00:00:00Z"
+    },
+    {
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 32,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.ofox.ai/v1/models",
+      "effective_from": "2026-08-24T00:00:00Z"
+    },
+    {
+      "meter": "native_web_search_requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.ofox.ai/v1/models",
+      "effective_from": "2026-08-24T00:00:00Z"
     }
   ],
   "regions": [],
@@ -72,15 +108,15 @@
   ],
   "sources": [
     {
-      "kind": "models.dev",
-      "url": "https://models.dev/api.json",
-      "accessed_at": "2026-08-11T12:13:09.964Z",
-      "notes": "Provider pricing catalogue fallback; direct provider feeds take precedence."
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live model catalogue, exact model IDs, endpoints, modalities, limits, parameters, lifecycle and pricing."
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-08-11T12:13:09.964Z",
-    "notes": "Pricing filled from the provider-specific models.dev catalogue because no direct local pricing record existed."
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Pricing verified against OfoxAI public live models API for provider slug openai/gpt-5.6-terra."
   }
 }

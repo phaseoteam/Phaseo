@@ -1,0 +1,77 @@
+{
+  "model_id": "deepseek/deepseek-v4-flash-0423",
+  "organisation_id": "deepseek",
+  "name": "DeepSeek V4 Flash 0423",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "DeepSeek V4 Flash is an efficiency-optimized Mixture-of-Experts model from DeepSeek with 284B total parameters and 13B activated parameters, supporting a 1M-token context window. It is designed for fast inference and high-throughput workloads, while maintaining strong reasoning and coding performance.",
+  "announced_date": null,
+  "release_date": "2026-04-23T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "deepseek/deepseek-v4-flash-0423",
+  "family_id": null,
+  "links": [
+    {
+      "title": "OfoxAI model catalogue",
+      "kind": "documentation",
+      "url": "https://ofox.ai/models/deepseek"
+    }
+  ],
+  "details": [
+    {
+      "name": "ofox_supported_endpoints",
+      "value": "/v1/chat/completions,/v1/responses"
+    }
+  ],
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 1000000,
+    "input": null,
+    "output": 384000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live model catalogue, exact model IDs, endpoints, modalities, limits, parameters, lifecycle and pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Exact model identity and availability verified from OfoxAI live catalogue."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

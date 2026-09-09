@@ -1,0 +1,82 @@
+{
+  "model_id": "bytedance/doubao-seed-1-6-vision",
+  "organisation_id": "bytedance",
+  "name": "Doubao Seed 1.6 Vision",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "ByteDance Doubao Seed 1.6 Vision via Volcengine. Multimodal model with strong image understanding and visual reasoning capabilities.",
+  "announced_date": null,
+  "release_date": "2025-08-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "bytedance/doubao-seed-1-6-vision",
+  "family_id": null,
+  "links": [
+    {
+      "title": "OfoxAI model catalogue",
+      "kind": "documentation",
+      "url": "https://ofox.ai/models/volcengine"
+    }
+  ],
+  "details": [
+    {
+      "name": "ofox_provider_slug",
+      "value": "volcengine/doubao-seed-1-6-vision"
+    },
+    {
+      "name": "ofox_supported_endpoints",
+      "value": "/v1/chat/completions,/v1/responses"
+    }
+  ],
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 256000,
+    "input": null,
+    "output": 32000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live model catalogue, exact model IDs, endpoints, modalities, limits, parameters, lifecycle and pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Canonical identity and OfoxAI availability verified from the live catalogue."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

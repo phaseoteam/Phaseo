@@ -1,0 +1,90 @@
+{
+  "key": "ofox:qwen/qwen3-coder-plus:text.generate",
+  "api_provider_id": "ofox",
+  "provider_slug": "ofox",
+  "api_model_id": "qwen/qwen3-coder-plus",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.7999999999999998,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.ofox.ai/v1/models",
+      "effective_from": "2026-08-24T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 9,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.ofox.ai/v1/models",
+      "effective_from": "2026-08-24T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.19999999999999998,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.ofox.ai/v1/models",
+      "effective_from": "2026-08-24T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.ofox.ai/v1/models",
+      "effective_from": "2026-08-24T00:00:00Z"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live model catalogue, exact model IDs, endpoints, modalities, limits, parameters, lifecycle and pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Pricing verified against OfoxAI public live models API for provider slug bailian/qwen3-coder-plus."
+  }
+}

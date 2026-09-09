@@ -1,0 +1,77 @@
+{
+  "model_id": "minimax/minimax-m2.1-lightning",
+  "organisation_id": "minimax",
+  "name": "MiniMax: MiniMax M2.1 Lightning",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "MiniMax-M2.1 is a lightweight, state-of-the-art large language model optimized for coding, agentic workflows, and modern application development. With only 10 billion activated parameters, it delivers a major jump in real-world capability while maintaining exceptional latency, scalability, and cost efficiency.",
+  "announced_date": null,
+  "release_date": "2025-12-23T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "minimax/minimax-m2.1-lightning",
+  "family_id": null,
+  "links": [
+    {
+      "title": "OfoxAI model catalogue",
+      "kind": "documentation",
+      "url": "https://ofox.ai/models/minimax"
+    }
+  ],
+  "details": [
+    {
+      "name": "ofox_supported_endpoints",
+      "value": "/v1/chat/completions,/v1/responses"
+    }
+  ],
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 204800,
+    "input": null,
+    "output": 131000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live model catalogue, exact model IDs, endpoints, modalities, limits, parameters, lifecycle and pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Exact model identity and availability verified from OfoxAI live catalogue."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

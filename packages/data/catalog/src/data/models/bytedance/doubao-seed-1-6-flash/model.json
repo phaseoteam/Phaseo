@@ -1,0 +1,81 @@
+{
+  "model_id": "bytedance/doubao-seed-1-6-flash",
+  "organisation_id": "bytedance",
+  "name": "Doubao Seed 1.6 Flash",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "ByteDance Doubao Seed 1.6 Flash via Volcengine. Fast inference variant optimized for high throughput and low latency applications.",
+  "announced_date": null,
+  "release_date": "2025-08-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "bytedance/doubao-seed-1-6-flash",
+  "family_id": null,
+  "links": [
+    {
+      "title": "OfoxAI model catalogue",
+      "kind": "documentation",
+      "url": "https://ofox.ai/models/volcengine"
+    }
+  ],
+  "details": [
+    {
+      "name": "ofox_provider_slug",
+      "value": "volcengine/doubao-seed-1-6-flash"
+    },
+    {
+      "name": "ofox_supported_endpoints",
+      "value": "/v1/chat/completions,/v1/responses"
+    }
+  ],
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 256000,
+    "input": null,
+    "output": 32000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": false,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live model catalogue, exact model IDs, endpoints, modalities, limits, parameters, lifecycle and pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Canonical identity and OfoxAI availability verified from the live catalogue."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

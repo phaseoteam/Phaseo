@@ -7,23 +7,23 @@
   "provider_family_id": null,
   "offer_label": null,
   "offer_scope": "specialized",
-  "description": null,
+  "description": "Singapore-operated unified AI gateway exposing text, image, video, audio transcription and embedding models through OpenAI-compatible APIs, with additional Anthropic- and Gemini-native protocols.",
   "link": "https://ofox.ai/docs",
-  "residency_mode": null,
-  "default_execution_regions": null,
-  "default_data_regions": null,
+  "residency_mode": "provider_managed",
+  "default_execution_regions": ["global"],
+  "default_data_regions": ["global"],
   "zero_data_retention": false,
-  "residency_source_url": null,
-  "prompt_training_policy": null,
-  "prompt_training_notes": null,
-  "prompt_training_source_url": null,
+  "residency_source_url": "https://ofox.ai/docs/develop/security",
+  "prompt_training_policy": "not_used_for_training",
+  "prompt_training_notes": "OfoxAI states that standard synchronous API request and response bodies are processed in real time, are not persisted by its gateway, and are not used for training. The selected upstream provider receives request content and its own terms apply.",
+  "prompt_training_source_url": "https://ofox.ai/docs/develop/security",
   "user_identifier_policy": null,
   "user_identifier_notes": null,
-  "privacy_policy_url": null,
-  "terms_of_service_url": null,
+  "privacy_policy_url": "https://ofox.ai/privacy-policy",
+  "terms_of_service_url": "https://ofox.ai/terms-of-service",
   "regional_pricing_mode": null,
   "regional_pricing_uplift_percent": null,
-  "pricing_source_url": null,
+  "pricing_source_url": "https://api.ofox.ai/v1/models",
   "regional_pricing_notes": null,
   "country_code": "SG",
   "status": "Active",
@@ -37,7 +37,13 @@
   "auth_env": [
     "OFOX_API_KEY"
   ],
-  "api_formats": [],
+  "api_formats": [
+    "openai.chat.completions",
+    "openai.responses",
+    "openai.images",
+    "openai.embeddings",
+    "openai.audio.transcriptions"
+  ],
   "service_tiers": [],
   "sources": [
     {
@@ -47,6 +53,18 @@
       "notes": "OfoxAI's official terms identify NICE TALK PTE. LTD. as a company incorporated in Singapore and the operator of OfoxAI."
     },
     {
+      "kind": "api",
+      "url": "https://api.ofox.ai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public live catalogue with 138 model IDs, endpoints, modalities, limits, lifecycle flags, supported parameters and pricing."
+    },
+    {
+      "kind": "documentation",
+      "url": "https://ofox.ai/docs/develop/security",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Official data handling, retention and training policy; last reviewed 2026-08-14."
+    },
+    {
       "kind": "models.dev",
       "url": "https://models.dev/api.json",
       "accessed_at": "2026-07-23T09:08:52.190Z",
@@ -54,8 +72,8 @@
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-07-23T09:08:52.190Z",
-    "notes": "Imported from the public models.dev provider registry."
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Provider identity, live public catalogue, API formats, model availability, pricing and data-handling policy verified from official OfoxAI sources. Phaseo routing remains disabled."
   }
 }
