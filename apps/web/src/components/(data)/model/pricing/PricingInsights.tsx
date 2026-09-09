@@ -93,6 +93,7 @@ import {
 } from "@/components/(data)/model/pricing/pricingHistoryTimeline";
 import {
 	PRICING_HISTORY_TOOLTIP_EDGE_COUNT,
+	getPricingHistoryLineStyle,
 	orderPricingHistoryTooltipItems,
 	selectPricingHistoryTooltipItems,
 } from "@/components/(data)/model/pricing/pricingHistoryTooltip";
@@ -679,8 +680,6 @@ function PricingHistoryChart({
 	range: PricingRange;
 	expanded?: boolean;
 }) {
-	const hasHighlightedSeries = highlightedSeriesKey != null && visibleSeriesKeys.includes(highlightedSeriesKey);
-
 	return (
 		<ChartContainer
 			config={state.chartConfig}
@@ -739,17 +738,17 @@ function PricingHistoryChart({
 					}}
 				/>
 				{visibleSeriesKeys.map((seriesKey) => {
-					const isHighlighted = highlightedSeriesKey === seriesKey;
+					const lineStyle = getPricingHistoryLineStyle(seriesKey, highlightedSeriesKey, visibleSeriesKeys);
 					return (
 						<Line
 							key={seriesKey}
 							type="stepAfter"
 							dataKey={seriesKey}
 							stroke={`var(--color-${seriesKey})`}
-							strokeOpacity={hasHighlightedSeries && !isHighlighted ? 0.18 : 1}
-							strokeWidth={isHighlighted ? 3 : 1.8}
+							strokeOpacity={lineStyle.strokeOpacity}
+							strokeWidth={lineStyle.strokeWidth}
 							dot={false}
-							activeDot={isHighlighted ? { r: 4 } : { r: 3 }}
+							activeDot={{ r: lineStyle.activeDotRadius }}
 							connectNulls={false}
 							isAnimationActive={false}
 						/>
@@ -1523,6 +1522,10 @@ export default function PricingInsights({
 									aria-label={`Open ${row.providerName} provider details`}
 									onMouseEnter={() => setHighlightedSeriesKey(row.seriesKey)}
 									onMouseLeave={() => setHighlightedSeriesKey(null)}
+									onFocus={() => setHighlightedSeriesKey(row.seriesKey)}
+									onBlur={(event) => {
+										if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHighlightedSeriesKey(null);
+									}}
 									onClick={(event) => handleProviderRowClick(event, row.providerId)}
 									onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 									className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -1632,6 +1635,10 @@ export default function PricingInsights({
 											aria-label={`Open ${row.providerName} provider details`}
 											onMouseEnter={() => setHighlightedSeriesKey(tierRow.seriesKey)}
 											onMouseLeave={() => setHighlightedSeriesKey(null)}
+											onFocus={() => setHighlightedSeriesKey(tierRow.seriesKey)}
+											onBlur={(event) => {
+												if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHighlightedSeriesKey(null);
+											}}
 											onClick={(event) => handleProviderRowClick(event, row.providerId)}
 											onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 											className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -1662,7 +1669,10 @@ export default function PricingInsights({
 
 			<Dialog open={isHistoryExpanded} onOpenChange={(open) => {
 				setIsHistoryExpanded(open);
-				if (!open) setOpenCalendarSurface(null);
+				if (!open) {
+					setOpenCalendarSurface(null);
+					setHighlightedSeriesKey(null);
+				}
 			}}>
 				<DialogContent className="flex h-[88dvh] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl p-0 sm:h-[84dvh] sm:max-w-[84vw]">
 					<DialogHeader className="sr-only">
@@ -1698,6 +1708,10 @@ export default function PricingInsights({
 											aria-label={`Open ${row.providerName} provider details`}
 											onMouseEnter={() => setHighlightedSeriesKey(row.seriesKey)}
 											onMouseLeave={() => setHighlightedSeriesKey(null)}
+											onFocus={() => setHighlightedSeriesKey(row.seriesKey)}
+											onBlur={(event) => {
+												if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHighlightedSeriesKey(null);
+											}}
 											onClick={(event) => handleProviderRowClick(event, row.providerId)}
 											onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 											className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -1739,6 +1753,10 @@ export default function PricingInsights({
 													aria-label={`Open ${row.providerName} provider details`}
 													onMouseEnter={() => setHighlightedSeriesKey(tierRow.seriesKey)}
 													onMouseLeave={() => setHighlightedSeriesKey(null)}
+													onFocus={() => setHighlightedSeriesKey(tierRow.seriesKey)}
+													onBlur={(event) => {
+														if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setHighlightedSeriesKey(null);
+													}}
 													onClick={(event) => handleProviderRowClick(event, row.providerId)}
 													onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 													className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"

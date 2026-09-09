@@ -33,3 +33,18 @@ export function selectPricingHistoryTooltipItems<T>(items: readonly T[]) {
 		hiddenCount: items.length - maxVisibleItems,
 	};
 }
+
+export function getPricingHistoryLineStyle(
+	seriesKey: string,
+	highlightedSeriesKey: string | null,
+	visibleSeriesKeys: readonly string[],
+) {
+	const hasHighlightedSeries = highlightedSeriesKey != null && visibleSeriesKeys.includes(highlightedSeriesKey);
+	const isHighlighted = hasHighlightedSeries && highlightedSeriesKey === seriesKey;
+
+	return {
+		strokeOpacity: hasHighlightedSeries && !isHighlighted ? 0.18 : 1,
+		strokeWidth: isHighlighted ? 3 : 1.8,
+		activeDotRadius: isHighlighted ? 4 : 3,
+	};
+}
