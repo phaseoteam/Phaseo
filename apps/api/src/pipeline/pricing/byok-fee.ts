@@ -15,6 +15,7 @@ type ByokCounterRow = {
 
 type ByokFeeArgs = {
 	workspaceId: string;
+	idempotencyKey?: string;
 	isByok: boolean;
 	countRequest?: boolean;
 	requestCount?: number;
@@ -115,7 +116,7 @@ async function readByokCounter(
 	}
 }
 
-async function resolveByokCounter(workspaceId: string, countRequest: boolean, requestIncrement: number): Promise<ByokCounterResolution> {
+async function resolveByokCounter(workspaceId: string, countRequest: boolean, requestIncrement: number, idempotencyKey?: string): Promise<ByokCounterResolution> {
 	const supabase = getSupabaseAdmin();
 	const nowIso = new Date().toISOString();
 	if (!countRequest) return readByokCounter(workspaceId, nowIso, requestIncrement, "preview_read");
@@ -123,7 +124,9 @@ async function resolveByokCounter(workspaceId: string, countRequest: boolean, re
 
 	for (let attempt = 1; attempt <= COUNTER_RPC_MAX_ATTEMPTS; attempt++) {
 		try {
-			const { data, error } = requestIncrement === 1
+			const { data, error } = idempotencyKey
+				? await supabase.rpc("increment_workspace_byok_monthly_request_count_once", { p_workspace_id: workspaceId, p_now: nowIso, p_request_count: requestIncrement, p_idempotency_key: idempotencyKey })
+				: requestIncrement === 1
 				? await supabase.rpc("increment_workspace_byok_monthly_request_count", {
 					p_workspace_id: workspaceId,
 					p_now: nowIso,
@@ -234,7 +237,7 @@ export async function applyByokServiceFee(args: ByokFeeArgs): Promise<ByokFeeRes
 	}
 
 	const requestIncrement = Math.max(1, Math.trunc(args.requestCount ?? 1));
-	const counter = await resolveByokCounter(args.workspaceId, args.countRequest !== false, requestIncrement);
+	const counter = await resolveByokCounter(args.workspaceId, args.countRequest !== false, requestIncrement, args.idempotencyKey);
 	const requestCount = counter.requestCount;
 	const monthStart = counter.monthStart;
 	if (counter.source === "unavailable") {

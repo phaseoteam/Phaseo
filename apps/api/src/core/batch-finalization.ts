@@ -697,7 +697,7 @@ async function recordBatchKeyUsage(args: {
 	await setKeyVersion("id", apiKeyId, Date.now());
 }
 
-async function computeBatchSettlement(meta: BatchJobMeta, status: string, workspaceId: string): Promise<BatchSettlementComputation> {
+async function computeBatchSettlement(meta: BatchJobMeta, status: string, workspaceId: string, batchId: string): Promise<BatchSettlementComputation> {
 	const completedCount = meta.requestCounts?.completed ?? null;
 	const outputFileId = normalizeText(meta.outputFileId);
 	const providerId = normalizeText(meta.provider) ?? OPENAI_BATCH_PROVIDER_ID;
@@ -894,6 +894,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string, worksp
 			.filter((entry): entry is { cost: number; index: number } => entry !== null);
 		const byok = await applyByokServiceFee({
 			workspaceId,
+			idempotencyKey: `batch:${batchId}`,
 			isByok: true,
 			requestCount: successfulResponses,
 			baseCostNanos: providerReferenceNanos,
@@ -1080,7 +1081,7 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		};
 	}
 
-	const settlement = await computeBatchSettlement(record.meta, status, args.workspaceId);
+	const settlement = await computeBatchSettlement(record.meta, status, args.workspaceId, args.batchId);
 	if (!settlement.ok) {
 		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
 			...completionTimingPatch,

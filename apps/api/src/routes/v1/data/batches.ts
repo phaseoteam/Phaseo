@@ -2027,12 +2027,16 @@ async function handleCreate(req: Request) {
 	}));
 	let batchCredential: BatchProviderCredential;
 	try {
-		batchCredential = (await resolveBatchSubmissionCredential({
-			workspaceId: auth.workspaceId,
-			providerId,
-			apiKeyId: auth.apiKeyId,
-			model: toText(payload.model) ?? toText((policyRows[0]?.body as any)?.model) ?? policyRows[0]?.gatewayModel ?? "batch",
-		})).credential;
+		const models = [...new Set(policyRows
+			.map((row) => toText((row.body as any)?.model) ?? row.gatewayModel ?? toText(payload.model))
+			.filter((model): model is string => Boolean(model)))];
+		const resolved = await Promise.all((models.length ? models : ["batch"]).map((model) =>
+			resolveBatchSubmissionCredential({ workspaceId: auth.workspaceId, providerId, apiKeyId: auth.apiKeyId, model }),
+		));
+		batchCredential = resolved[0]!.credential;
+		if (resolved.some(({ credential }) => credential.source !== batchCredential.source || credential.byokKeyId !== batchCredential.byokKeyId)) {
+			throw new Error("batch_models_require_incompatible_credentials");
+		}
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : "batch_provider_credentials_unavailable";
 		return err(reason === "byok_credentials_required" ? "validation_error" : "gateway_error", {
@@ -2082,8 +2086,9 @@ async function handleCreate(req: Request) {
 	}
 	const shouldUploadBatchInputFile = FILE_BACKED_JSONL_BATCH_PROVIDERS.has(providerId) && (
 		inputMode.mode === "requests" ||
-		(inputMode.mode === "file" && providerId === OPENAI_PROVIDER_ID && Boolean(requestRows?.length))
+		(inputMode.mode === "file" && (providerId === OPENAI_PROVIDER_ID || (ownedInputFile && ((ownedInputFile.keySource ?? "gateway") !== batchCredential.source || ownedInputFile.byokKeyId !== batchCredential.byokKeyId))) && Boolean(policyRows.length))
 	);
+	if (shouldUploadBatchInputFile && inputMode.mode === "file") requestRows = policyRows;
 	if (shouldUploadBatchInputFile) {
 		let upload: Awaited<ReturnType<typeof uploadProviderBatchInputFile>>;
 		try {

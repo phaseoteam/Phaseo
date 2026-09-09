@@ -94,6 +94,17 @@ describe("applyByokServiceFee", () => {
 		expect(result.pricedUsage.pricing.lines).toEqual([]);
 	});
 
+	it("uses an idempotent counter RPC when a settlement key is provided", async () => {
+		rpcMock.mockResolvedValue({ data: [{ month_start: "2026-09-01T00:00:00+00:00", request_count: 12 }], error: null });
+		await applyByokServiceFee({ workspaceId: "team_1", idempotencyKey: "batch:batch_1", isByok: true, requestCount: 3, baseCostNanos: 1000, baseCostsNanos: [300, 300, 400], pricedUsage: {} });
+		expect(rpcMock).toHaveBeenCalledWith("increment_workspace_byok_monthly_request_count_once", {
+			p_workspace_id: "team_1",
+			p_now: expect.any(String),
+			p_request_count: 3,
+			p_idempotency_key: "batch:batch_1",
+		});
+	});
+
 	it("charges 2.5% fee after the monthly threshold", async () => {
 		rpcMock.mockResolvedValue({
 			data: [{ month_start: "2026-02-01T00:00:00+00:00", request_count: BYOK_MONTHLY_FREE_REQUESTS + 1 }],
