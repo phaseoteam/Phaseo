@@ -7,8 +7,8 @@
   "provider_family_id": null,
   "offer_label": null,
   "offer_scope": "specialized",
-  "description": null,
-  "link": "https://docs.jiekou.ai/docs/support/quickstart?utm_source=github_models.dev",
+  "description": "Jiekou.AI is an OpenAI-compatible model API aggregator offering hosted first- and third-party language models.",
+  "link": "https://jiekou.ai",
   "residency_mode": null,
   "default_execution_regions": null,
   "default_data_regions": null,
@@ -23,7 +23,7 @@
   "terms_of_service_url": null,
   "regional_pricing_mode": null,
   "regional_pricing_uplift_percent": null,
-  "pricing_source_url": null,
+  "pricing_source_url": "https://jiekou.ai/pricing",
   "regional_pricing_notes": null,
   "country_code": null,
   "status": "Active",
@@ -33,23 +33,29 @@
   "routing_enabled": false,
   "sdk_package": "@ai-sdk/openai-compatible",
   "api_base_url": "https://api.jiekou.ai/openai",
-  "docs_url": "https://docs.jiekou.ai/docs/support/quickstart?utm_source=github_models.dev",
+  "docs_url": "https://docs.jiekou.ai/docs/model/llm",
   "auth_env": [
     "JIEKOU_API_KEY"
   ],
-  "api_formats": [],
+  "api_formats": [
+    "chat/completions",
+    "completions",
+    "responses",
+    "anthropic",
+    "gemini"
+  ],
   "service_tiers": [],
   "sources": [
     {
-      "kind": "models.dev",
-      "url": "https://models.dev/api.json",
-      "accessed_at": "2026-07-23T09:08:52.190Z",
-      "notes": "Provider metadata and model support enrichment; not a Phaseo-routable offer."
+      "kind": "api",
+      "url": "https://api.jiekou.ai/openai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00.000Z",
+      "notes": "Public live model catalogue; the provider remains non-routable in Phaseo."
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-07-23T09:08:52.190Z",
-    "notes": "Imported from the public models.dev provider registry."
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00.000Z",
+    "notes": "Provider metadata, compatibility surface, model availability, limits, modalities, and pricing reconciled against Jiekou's public API and official documentation. No public residency or retention commitment was found."
   }
 }

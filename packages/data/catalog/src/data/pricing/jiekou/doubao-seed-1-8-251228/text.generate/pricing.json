@@ -1,0 +1,240 @@
+{
+  "key": "jiekou:doubao-seed-1-8-251228:text.generate",
+  "api_provider_id": "jiekou",
+  "provider_slug": "jiekou",
+  "api_model_id": "doubao-seed-1-8-251228",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1103,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Input-token tier 1-32000.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 32000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 32000
+        }
+      ],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.1034,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Input-token tier 1-32000.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 32000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 32000
+        }
+      ],
+      "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1655,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Input-token tier 32000-128000.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        },
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        },
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 128000
+        }
+      ],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.2069,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Input-token tier 32000-128000.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        },
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32000
+        },
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 128000
+        }
+      ],
+      "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.331,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Input-token tier 128000-256000.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.3103,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Input-token tier 128000-256000.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://api.jiekou.ai/openai/v1/models",
+      "accessed_at": "2026-08-24T00:00:00.000Z",
+      "notes": "Jiekou public live model catalogue."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00.000Z",
+    "notes": "Pricing from Jiekou's public live model catalogue."
+  }
+}

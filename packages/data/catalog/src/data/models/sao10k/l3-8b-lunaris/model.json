@@ -1,0 +1,72 @@
+{
+  "model_id": "sao10k/l3-8b-lunaris",
+  "organisation_id": "sao10k",
+  "name": "L3 8B Lunaris",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "A generalist / roleplaying model merge based on Llama 3.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "sao10k/l3-8b-lunaris",
+  "links": [
+    {
+      "title": "Novita model page",
+      "kind": "provider_model",
+      "url": "https://novita.ai/models/model-detail/sao10k-l3-8b-lunaris"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 8192,
+    "input": 8192,
+    "output": 8192
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": false,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_model",
+      "url": "https://novita.ai/models/model-detail/sao10k-l3-8b-lunaris",
+      "accessed_at": "2026-08-20T00:00:00Z",
+      "notes": "Provider availability and operational limits; creator metadata remains limited."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-20T00:00:00Z",
+    "notes": "Novita availability verified; creator release metadata is not asserted from the provider listing."
+  },
+  "last_updated": "2026-08-20T00:00:00",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
