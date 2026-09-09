@@ -29,17 +29,10 @@
     {
       "name": "specialization",
       "value": "Finance and investment workflows"
-    },
-    {
-      "name": "pricing_note",
-      "value": "Novita currently labels this model as time-limited free and reports zero input and output token prices."
     }
   ],
   "benchmarks": [],
-  "page_notice": {
-    "tone": "info",
-    "markdown": "Novita currently offers this model free for a limited time; no promotion end date is published."
-  },
+  "page_notice": null,
   "model_type": "language",
   "knowledge_cutoff": null,
   "limits": {
@@ -73,7 +66,7 @@
       "kind": "documentation",
       "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
       "accessed_at": "2026-08-27T00:00:00Z",
-      "notes": "Official Novita page and embedded live payload document the finance specialization, parameters, callable identifier, context and output limits, capabilities, platform release time, and time-limited zero pricing."
+      "notes": "Official Novita page and embedded live payload document the finance specialization, parameters, callable identifier, context and output limits, capabilities, and platform release time."
     }
   ],
   "verification": {

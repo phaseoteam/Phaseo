@@ -10,11 +10,11 @@
   "deprecation_date":null,"retirement_date":null,"license":null,
   "input_types":"text","output_types":"text","api_model_id":"mindai/macaron-v1-venti","family_id":null,
   "links":[{"title":"Novita model page","kind":"documentation","url":"https://novita.ai/models/model-detail/mindai-macaron-v1-venti"},{"title":"Model weights","kind":"weights","url":"https://huggingface.co/mindlab-research/Macaron-V1-Venti"}],
-  "details":[{"name":"parameters","value":"748B base plus four 1B LoRA specialists"},{"name":"input_context_length","value":1048576},{"name":"pricing_note","value":"Novita currently charges $1.50 per 1M input tokens, $0.30 per 1M cached input tokens, and $4.50 per 1M output tokens."}],
+  "details":[{"name":"parameters","value":"748B base plus four 1B LoRA specialists"},{"name":"input_context_length","value":1048576}],
   "benchmarks":[],"page_notice":null,"model_type":null,"knowledge_cutoff":null,
   "limits":{"context":1048576,"input":null,"output":131072},"modalities":{"input":["text"],"output":["text"]},
   "reasoning":{"supported":true,"options":[]},"capabilities":{"attachment":null,"tool_call":true,"structured_output":null,"temperature":true,"streaming":true,"web_search":null},"open_weights":true,
-  "sources":[{"kind":"documentation","url":"https://novita.ai/models/model-detail/mindai-macaron-v1-venti","accessed_at":"2026-08-20T00:00:00Z","notes":"Official Novita model page confirms identifier, context, output limit, tool calling, reasoning, and current paid pricing."},{"kind":"weights","url":"https://huggingface.co/mindlab-research/Macaron-V1-Venti","accessed_at":"2026-07-24T00:00:00Z","notes":"Model weights page linked by the provider ecosystem."}],
-  "verification":{"status":"verified","checked_at":"2026-08-20T00:00:00Z","notes":"Provider availability and current paid pricing verified from Novita's first-party model page."},
+  "sources":[{"kind":"documentation","url":"https://novita.ai/models/model-detail/mindai-macaron-v1-venti","accessed_at":"2026-08-20T00:00:00Z","notes":"Official Novita model page confirms identifier, context, output limit, tool calling, and reasoning."},{"kind":"weights","url":"https://huggingface.co/mindlab-research/Macaron-V1-Venti","accessed_at":"2026-07-24T00:00:00Z","notes":"Model weights page linked by the provider ecosystem."}],
+  "verification":{"status":"verified","checked_at":"2026-08-20T00:00:00Z","notes":"Provider availability verified from Novita's first-party model page."},
   "last_updated":"2026-08-20T00:00:00Z","removal_date":null,"replacement_model_id":null,"license_url":null
 }

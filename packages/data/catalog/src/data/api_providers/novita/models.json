@@ -2,6 +2,7 @@
   {
     "api_model_id": "baai/bge-m3",
     "provider_api_model_id": "novita:baai/bge-m3",
+    "provider_status": "coming_soon",
     "provider_model_slug": "baai/bge-m3",
     "internal_model_id": "baai/bge-m3",
     "is_active_gateway": true,
@@ -64,13 +65,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Model, endpoint, inputs, encoding formats, usage and price verified from Novita first-party references."
+      "notes": "Model, endpoint, inputs, encoding formats, and usage verified from Novita first-party references."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "baai/bge-reranker-v2-m3",
     "provider_api_model_id": "novita:baai/bge-reranker-v2-m3",
+    "provider_status": "coming_soon",
     "provider_model_slug": "baai/bge-reranker-v2-m3",
     "internal_model_id": "baai/bge-reranker-v2-m3",
     "is_active_gateway": true,
@@ -133,13 +135,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Model, endpoint, request/response, usage and price verified from Novita first-party references."
+      "notes": "Model, endpoint, request/response, and usage verified from Novita first-party references."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "baidu/cobuddy",
     "provider_api_model_id": "novita:baidu/cobuddy",
+    "provider_status": "coming_soon",
     "provider_model_slug": "baidu/cobuddy",
     "internal_model_id": "baidu/cobuddy",
     "is_active_gateway": true,
@@ -199,12 +202,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/baidu-cobuddy",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -214,13 +211,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "baidu/ernie-4.5-21b-a3b",
     "provider_api_model_id": "novita:baidu/ernie-4.5-21b-a3b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "baidu/ernie-4.5-21B-a3b",
     "internal_model_id": "baidu/ernie-4.5-21b-a3b",
     "is_active_gateway": false,
@@ -260,12 +258,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/baidu-ernie-4.5-21B-a3b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -275,13 +267,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "baidu/ernie-4.5-21b-a3b-thinking",
     "provider_api_model_id": "novita:baidu/ernie-4.5-21b-a3b-thinking",
+    "provider_status": "coming_soon",
     "provider_model_slug": "baidu/ernie-4.5-21B-a3b-thinking",
     "internal_model_id": "baidu/ernie-4.5-21b-a3b-thinking",
     "is_active_gateway": false,
@@ -319,14 +312,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -337,6 +323,7 @@
   {
     "api_model_id": "baidu/ernie-4.5-300b-a47b",
     "provider_api_model_id": "novita:baidu/ernie-4.5-300b-a47b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "baidu/ernie-4.5-300b-a47b-paddle",
     "internal_model_id": "baidu/ernie-4.5-300b-a47b",
     "is_active_gateway": false,
@@ -473,14 +460,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -491,6 +471,7 @@
   {
     "api_model_id": "baidu/ernie-4.5-vl-28b-a3b",
     "provider_api_model_id": "novita:baidu/ernie-4.5-vl-28b-a3b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "baidu/ernie-4.5-vl-28b-a3b",
     "internal_model_id": "baidu/ernie-4.5-vl-28b-a3b",
     "is_active_gateway": false,
@@ -634,14 +615,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -652,6 +626,7 @@
   {
     "api_model_id": "baidu/ernie-4.5-vl-28b-a3b-thinking",
     "provider_api_model_id": "novita:baidu/ernie-4.5-vl-28b-a3b-thinking",
+    "provider_status": "coming_soon",
     "provider_model_slug": "baidu/ernie-4.5-vl-28b-a3b-thinking",
     "internal_model_id": "",
     "is_active_gateway": false,
@@ -802,14 +777,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -820,6 +788,7 @@
   {
     "api_model_id": "baidu/ernie-4.5-vl-424b-a47b",
     "provider_api_model_id": "novita:baidu/ernie-4.5-vl-424b-a47b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "baidu/ernie-4.5-vl-424b-a47b",
     "internal_model_id": "baidu/ernie-4.5-vl-424b-a47b",
     "is_active_gateway": true,
@@ -878,12 +847,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/baidu-ernie-4.5-vl-424b-a47b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -893,13 +856,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-ocr",
     "provider_api_model_id": "novita:deepseek/deepseek-ocr",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-ocr",
     "internal_model_id": "deepseek/deepseek-ocr",
     "is_active_gateway": false,
@@ -941,14 +905,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -959,6 +916,7 @@
   {
     "api_model_id": "deepseek/deepseek-ocr-2",
     "provider_api_model_id": "novita:deepseek/deepseek-ocr-2",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-ocr-2",
     "internal_model_id": "deepseek/deepseek-ocr-2",
     "is_active_gateway": true,
@@ -1015,12 +973,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-ocr-2",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -1030,13 +982,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-prover-v2-671b",
     "provider_api_model_id": "novita:deepseek/deepseek-prover-v2-671b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-prover-v2-671b",
     "internal_model_id": "",
     "is_active_gateway": false,
@@ -1166,14 +1119,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -1184,6 +1130,7 @@
   {
     "api_model_id": "deepseek/deepseek-r1",
     "provider_api_model_id": "novita:deepseek/deepseek-r1",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-r1",
     "internal_model_id": "deepseek/deepseek-r1",
     "is_active_gateway": false,
@@ -1225,14 +1172,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -1243,6 +1183,7 @@
   {
     "api_model_id": "deepseek/deepseek-r1-0528",
     "provider_api_model_id": "novita:deepseek/deepseek-r1-0528",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-r1-0528",
     "internal_model_id": "deepseek/deepseek-r1-2025-05-28",
     "is_active_gateway": true,
@@ -1304,12 +1245,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-r1-0528",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -1319,13 +1254,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-r1-distill-llama-70b",
     "provider_api_model_id": "novita:deepseek/deepseek-r1-distill-llama-70b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-r1-distill-llama-70b",
     "internal_model_id": "deepseek/deepseek-r1-distill-llama-70b",
     "is_active_gateway": true,
@@ -1383,12 +1319,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-r1-distill-llama-70b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -1398,13 +1328,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-r1-distill-qwen-32b",
     "provider_api_model_id": "novita:deepseek/deepseek-r1-distill-qwen-32b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-r1-distill-qwen-32b",
     "internal_model_id": "deepseek/deepseek-r1-distill-qwen-32b",
     "is_active_gateway": false,
@@ -1446,14 +1377,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -1464,6 +1388,7 @@
   {
     "api_model_id": "deepseek/deepseek-r1-turbo",
     "provider_api_model_id": "novita:deepseek/deepseek-r1-turbo",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-r1-turbo",
     "internal_model_id": "deepseek/deepseek-r1-turbo",
     "is_active_gateway": true,
@@ -1525,12 +1450,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-r1-turbo",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -1540,13 +1459,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3-0324",
     "provider_api_model_id": "novita:deepseek/deepseek-v3-0324",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v3-0324",
     "internal_model_id": "deepseek/deepseek-v3-2025-03-24",
     "is_active_gateway": true,
@@ -1606,12 +1526,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v3-0324",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -1621,13 +1535,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3-turbo",
     "provider_api_model_id": "novita:deepseek/deepseek-v3-turbo",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v3-turbo",
     "internal_model_id": "deepseek/deepseek-v3-turbo",
     "is_active_gateway": true,
@@ -1685,12 +1600,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v3-turbo",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -1700,13 +1609,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3.1",
     "provider_api_model_id": "novita:deepseek/deepseek-v3.1",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v3.1",
     "internal_model_id": "deepseek/deepseek-v3.1",
     "is_active_gateway": true,
@@ -1768,12 +1678,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v3.1",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -1783,13 +1687,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3.1-terminus",
     "provider_api_model_id": "novita:deepseek/deepseek-v3.1-terminus",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v3.1-terminus",
     "internal_model_id": "deepseek/deepseek-v3.1-terminus",
     "is_active_gateway": true,
@@ -1851,12 +1756,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v3.1-terminus",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -1866,13 +1765,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3.2",
     "provider_api_model_id": "novita:deepseek/deepseek-v3.2",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v3.2",
     "internal_model_id": "deepseek/deepseek-v3.2",
     "is_active_gateway": true,
@@ -1934,12 +1834,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v3.2",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -1949,13 +1843,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3.2-exp",
     "provider_api_model_id": "novita:deepseek/deepseek-v3.2-exp",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v3.2-exp",
     "internal_model_id": "deepseek/deepseek-v3.2-exp",
     "is_active_gateway": true,
@@ -2017,12 +1912,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v3.2-exp",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2032,13 +1921,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v4-flash",
     "provider_api_model_id": "novita:deepseek/deepseek-v4-flash",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v4-flash",
     "internal_model_id": "deepseek/deepseek-v4-flash",
     "is_active_gateway": true,
@@ -2100,12 +1990,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v4-flash",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2115,13 +1999,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v4-flash-0731",
     "provider_api_model_id": "novita:deepseek/deepseek-v4-flash-0731",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v4-flash-0731",
     "internal_model_id": "deepseek/deepseek-v4-flash-0731",
     "is_active_gateway": true,
@@ -2183,12 +2068,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v4-flash-0731",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2198,13 +2077,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v4-pro",
     "provider_api_model_id": "novita:deepseek/deepseek-v4-pro",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v4-pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
     "is_active_gateway": true,
@@ -2266,12 +2146,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v4-pro",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2281,13 +2155,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v4-pro-0813",
     "provider_api_model_id": "novita:deepseek/deepseek-v4-pro-0813",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v4-pro-0813",
     "internal_model_id": "deepseek/deepseek-v4-pro-0813",
     "is_active_gateway": true,
@@ -2349,12 +2224,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v4-pro-0813",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2364,13 +2233,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-4.5-air",
     "provider_api_model_id": "novita:z-ai/glm-4.5-air",
+    "provider_status": "coming_soon",
     "provider_model_slug": "glm-4.5-air",
     "internal_model_id": "z-ai/glm-4.5-air",
     "is_active_gateway": false,
@@ -2422,14 +2292,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -2440,6 +2303,7 @@
   {
     "api_model_id": "google/gemma-3-27b",
     "provider_api_model_id": "novita:google/gemma-3-27b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "google/gemma-3-27b-it",
     "internal_model_id": "google/gemma-3-27b",
     "is_active_gateway": true,
@@ -2496,12 +2360,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/google-gemma-3-27b-it",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2511,13 +2369,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "google/gemma-4-26b-a4b",
     "provider_api_model_id": "novita:google/gemma-4-26b-a4b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "google/gemma-4-26b-a4b-it",
     "internal_model_id": "google/gemma-4-26b-a4b",
     "is_active_gateway": true,
@@ -2580,12 +2439,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/google-gemma-4-26b-a4b-it",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2595,13 +2448,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "google/gemma-4-31b",
     "provider_api_model_id": "novita:google/gemma-4-31b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "google/gemma-4-31b-it",
     "internal_model_id": "google/gemma-4-31b",
     "is_active_gateway": true,
@@ -2664,12 +2518,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/google-gemma-4-31b-it",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2679,13 +2527,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "inclusionai/ling-2.6-1t",
     "provider_api_model_id": "novita:inclusionai/ling-2.6-1t",
+    "provider_status": "coming_soon",
     "provider_model_slug": "inclusionai/ling-2.6-1t",
     "internal_model_id": "inclusionai/ling-2.6-1t",
     "is_active_gateway": true,
@@ -2745,12 +2594,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/inclusionai-ling-2.6-1t",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2760,13 +2603,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "inclusionai/ling-2.6-flash",
     "provider_api_model_id": "novita:inclusionai/ling-2.6-flash",
+    "provider_status": "coming_soon",
     "provider_model_slug": "inclusionai/ling-2.6-flash",
     "internal_model_id": "inclusionai/ling-2.6-flash",
     "is_active_gateway": true,
@@ -2826,12 +2670,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/inclusionai-ling-2.6-flash",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2841,13 +2679,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "inclusionai/ling-3.0-flash",
     "provider_api_model_id": "novita:inclusionai/ling-3.0-flash",
+    "provider_status": "coming_soon",
     "provider_model_slug": "inclusionai/ling-3.0-flash",
     "internal_model_id": "inclusionai/ling-3.0-flash",
     "is_active_gateway": true,
@@ -2908,12 +2747,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -2923,7 +2756,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
@@ -2931,6 +2764,7 @@
     "canonical_model_id": "inclusionai/ling-3.0-flash:free",
     "api_model_id": "inclusionai/ling-3.0-flash:free",
     "provider_api_model_id": "novita:inclusionai/ling-3.0-flash:free",
+    "provider_status": "coming_soon",
     "provider_model_slug": "inclusionai/ling-3.0-flash",
     "internal_model_id": "inclusionai/ling-3.0-flash",
     "is_active_gateway": false,
@@ -2977,13 +2811,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-06T00:00:00Z",
-      "notes": "Historical free route retired when the promotion ended on 6 August 2026 at 8:00 AM PT."
+      "notes": "Historical route retained for model identity and marked inactive."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "inclusionai/ling-3.0-flash-fast",
     "provider_api_model_id": "novita:inclusionai/ling-3.0-flash-fast",
+    "provider_status": "coming_soon",
     "provider_model_slug": "inclusionai/ling-3.0-flash-fast",
     "internal_model_id": "inclusionai/ling-3.0-flash",
     "is_active_gateway": false,
@@ -3043,12 +2878,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fast",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -3065,6 +2894,7 @@
   {
     "api_model_id": "inclusionai/ling-3.0-tiny",
     "provider_api_model_id": "novita:inclusionai/ling-3.0-tiny",
+    "provider_status": "coming_soon",
     "provider_model_slug": "inclusionai/ling-3.0-tiny",
     "internal_model_id": "inclusionai/ling-3.0-tiny",
     "is_active_gateway": false,
@@ -3102,14 +2932,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -3120,6 +2943,7 @@
   {
     "api_model_id": "inclusionai/ring-2.6-1t",
     "provider_api_model_id": "novita:inclusionai/ring-2.6-1t",
+    "provider_status": "coming_soon",
     "provider_model_slug": "inclusionai/ring-2.6-1t",
     "internal_model_id": "inclusionai/ring-2.6-1t",
     "is_active_gateway": true,
@@ -3181,12 +3005,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/inclusionai-ring-2.6-1t",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -3196,13 +3014,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "kwaipilot/kat-coder-pro",
     "provider_api_model_id": "novita:kwaipilot/kat-coder-pro",
+    "provider_status": "coming_soon",
     "provider_model_slug": "kwaipilot/kat-coder-pro",
     "internal_model_id": "kwaipilot/kat-coder-pro",
     "is_active_gateway": true,
@@ -3262,12 +3081,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/kwaipilot-kat-coder-pro",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -3277,13 +3090,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-3-70b",
     "provider_api_model_id": "novita:meta/llama-3-70b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "meta-llama/llama-3-70b-instruct",
     "internal_model_id": "meta/llama-3-70b",
     "is_active_gateway": false,
@@ -3420,14 +3234,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -3438,6 +3245,7 @@
   {
     "api_model_id": "meta/llama-3-8b",
     "provider_api_model_id": "novita:meta/llama-3-8b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "meta-llama/llama-3-8b-instruct",
     "internal_model_id": "meta/llama-3-8b",
     "is_active_gateway": false,
@@ -3567,14 +3375,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -3585,6 +3386,7 @@
   {
     "api_model_id": "meta/llama-3.1-8b",
     "provider_api_model_id": "novita:meta/llama-3.1-8b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "meta-llama/llama-3.1-8b-instruct",
     "internal_model_id": "meta/llama-3.1-8b",
     "is_active_gateway": true,
@@ -3642,12 +3444,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/meta-llama-llama-3.1-8b-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -3657,13 +3453,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-3.3-70b",
     "provider_api_model_id": "novita:meta/llama-3.3-70b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "meta-llama/llama-3.3-70b-instruct",
     "internal_model_id": "meta/llama-3.3-70b",
     "is_active_gateway": true,
@@ -3723,12 +3520,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/meta-llama-llama-3.3-70b-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -3738,13 +3529,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-4-maverick",
     "provider_api_model_id": "novita:meta/llama-4-maverick",
+    "provider_status": "coming_soon",
     "provider_model_slug": "meta-llama/llama-4-maverick-17b-128e-instruct-fp8",
     "internal_model_id": "meta/llama-4-maverick",
     "is_active_gateway": true,
@@ -3803,12 +3595,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/meta-llama-llama-4-maverick-17b-128e-instruct-fp8",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -3818,13 +3604,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-4-scout",
     "provider_api_model_id": "novita:meta/llama-4-scout",
+    "provider_status": "coming_soon",
     "provider_model_slug": "meta-llama/llama-4-scout-17b-16e-instruct",
     "internal_model_id": "meta/llama-4-scout",
     "is_active_gateway": true,
@@ -3881,12 +3668,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/meta-llama-llama-4-scout-17b-16e-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -3896,13 +3677,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "microsoft/wizardlm-2-8x22b",
     "provider_api_model_id": "novita:microsoft/wizardlm-2-8x22b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "microsoft/wizardlm-2-8x22b",
     "internal_model_id": "microsoft/wizardlm-2-8x22b",
     "is_active_gateway": true,
@@ -3960,12 +3742,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/microsoft-wizardlm-2-8x22b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -3975,13 +3751,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "mindai/macaron-v1-tall",
     "provider_api_model_id": "novita:mindai/macaron-v1-tall",
+    "provider_status": "coming_soon",
     "provider_model_slug": "mindai/macaron-v1-tall",
     "internal_model_id": "mindai/macaron-v1-tall",
     "is_active_gateway": true,
@@ -4041,12 +3818,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-09-01T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/mindai-macaron-v1-tall",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4056,13 +3827,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "mindai/macaron-v1-venti",
     "provider_api_model_id": "novita:mindai/macaron-v1-venti",
+    "provider_status": "coming_soon",
     "provider_model_slug": "mindai/macaron-v1-venti",
     "internal_model_id": "mindai/macaron-v1-venti",
     "is_active_gateway": true,
@@ -4122,12 +3894,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-09-01T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/mindai-macaron-v1-venti",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4137,13 +3903,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m2",
     "provider_api_model_id": "novita:minimax/minimax-m2",
+    "provider_status": "coming_soon",
     "provider_model_slug": "minimax/minimax-m2",
     "internal_model_id": "minimax/minimax-m2",
     "is_active_gateway": true,
@@ -4205,12 +3972,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/minimax-minimax-m2",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4220,13 +3981,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m2.1",
     "provider_api_model_id": "novita:minimax/minimax-m2.1",
+    "provider_status": "coming_soon",
     "provider_model_slug": "minimax/minimax-m2.1",
     "internal_model_id": "minimax/minimax-m2.1",
     "is_active_gateway": true,
@@ -4286,12 +4048,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/minimax-minimax-m2.1",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4301,13 +4057,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m2.5",
     "provider_api_model_id": "novita:minimax/minimax-m2.5",
+    "provider_status": "coming_soon",
     "provider_model_slug": "minimax/minimax-m2.5",
     "internal_model_id": "minimax/minimax-m2.5",
     "is_active_gateway": true,
@@ -4369,12 +4126,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/minimax-minimax-m2.5",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4384,13 +4135,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m2.5-highspeed",
     "provider_api_model_id": "novita:minimax/minimax-m2.5-highspeed",
+    "provider_status": "coming_soon",
     "provider_model_slug": "minimax/minimax-m2.5-highspeed",
     "internal_model_id": "minimax/minimax-m2.5",
     "is_active_gateway": true,
@@ -4452,12 +4204,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/minimax-minimax-m2.5-highspeed",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4467,13 +4213,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m2.7",
     "provider_api_model_id": "novita:minimax/minimax-m2.7",
+    "provider_status": "coming_soon",
     "provider_model_slug": "minimax/minimax-m2.7",
     "internal_model_id": "minimax/minimax-m2.7",
     "is_active_gateway": true,
@@ -4535,12 +4282,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/minimax-minimax-m2.7",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4550,13 +4291,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m3",
     "provider_api_model_id": "novita:minimax/minimax-m3",
+    "provider_status": "coming_soon",
     "provider_model_slug": "minimax/minimax-m3",
     "internal_model_id": "minimax/minimax-m3",
     "is_active_gateway": true,
@@ -4620,12 +4362,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/minimax-minimax-m3",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4635,13 +4371,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m1-80k",
     "provider_api_model_id": "novita:minimax/minimax-m1-80k",
+    "provider_status": "coming_soon",
     "provider_model_slug": "minimaxai/minimax-m1-80k",
     "internal_model_id": "minimax/minimax-m1-80k",
     "is_active_gateway": true,
@@ -4703,12 +4440,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/minimaxai-minimax-m1-80k",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4718,13 +4449,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "mistral/mistral-nemo",
     "provider_api_model_id": "novita:mistral/mistral-nemo",
+    "provider_status": "coming_soon",
     "provider_model_slug": "mistralai/mistral-nemo",
     "internal_model_id": "mistral/mistral-nemo",
     "is_active_gateway": true,
@@ -4782,12 +4514,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/mistralai-mistral-nemo",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4797,13 +4523,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2-0905",
     "provider_api_model_id": "novita:moonshotai/kimi-k2-0905",
+    "provider_status": "coming_soon",
     "provider_model_slug": "moonshotai/kimi-k2-0905",
     "internal_model_id": "moonshotai/kimi-k2",
     "is_active_gateway": true,
@@ -4863,12 +4590,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k2-0905",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4878,13 +4599,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2",
     "provider_api_model_id": "novita:moonshotai/kimi-k2",
+    "provider_status": "coming_soon",
     "provider_model_slug": "moonshotai/kimi-k2-instruct",
     "internal_model_id": "moonshotai/kimi-k2-2025-07-11",
     "is_active_gateway": true,
@@ -4942,12 +4664,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k2-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -4957,13 +4673,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2-thinking",
     "provider_api_model_id": "novita:moonshotai/kimi-k2-thinking",
+    "provider_status": "coming_soon",
     "provider_model_slug": "moonshotai/kimi-k2-thinking",
     "internal_model_id": "moonshotai/kimi-k2-thinking",
     "is_active_gateway": true,
@@ -5025,12 +4742,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k2-thinking",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -5040,13 +4751,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2.5",
     "provider_api_model_id": "novita:moonshotai/kimi-k2.5",
+    "provider_status": "coming_soon",
     "provider_model_slug": "moonshotai/kimi-k2.5",
     "internal_model_id": "moonshotai/kimi-k2.5",
     "is_active_gateway": true,
@@ -5110,12 +4822,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k2.5",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -5125,13 +4831,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2.6",
     "provider_api_model_id": "novita:moonshotai/kimi-k2.6",
+    "provider_status": "coming_soon",
     "provider_model_slug": "moonshotai/kimi-k2.6",
     "internal_model_id": "moonshotai/kimi-k2.6",
     "is_active_gateway": true,
@@ -5195,12 +4902,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k2.6",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -5210,13 +4911,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2.7-code",
     "provider_api_model_id": "novita:moonshotai/kimi-k2.7-code",
+    "provider_status": "coming_soon",
     "provider_model_slug": "moonshotai/kimi-k2.7-code",
     "internal_model_id": "moonshotai/kimi-k2.7-code",
     "is_active_gateway": true,
@@ -5280,12 +4982,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k2.7-code",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -5295,13 +4991,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k3",
     "provider_api_model_id": "novita:moonshotai/kimi-k3",
+    "provider_status": "coming_soon",
     "provider_model_slug": "moonshotai/kimi-k3",
     "internal_model_id": "moonshotai/kimi-k3",
     "is_active_gateway": true,
@@ -5365,12 +5062,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k3",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -5380,13 +5071,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "nvidia/nemotron-3-nano-30b-a3b",
     "provider_api_model_id": "novita:nvidia/nemotron-3-nano-30b-a3b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "nvidia/nemotron-3-nano-30b-a3b",
     "internal_model_id": "nvidia/nemotron-3-nano-30b-a3b",
     "is_active_gateway": true,
@@ -5448,12 +5140,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/nvidia-nemotron-3-nano-30b-a3b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -5463,13 +5149,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "novita:openai/gpt-oss-120b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "openai/gpt-oss-120b",
     "internal_model_id": "openai/gpt-oss-120b",
     "is_active_gateway": true,
@@ -5532,12 +5219,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/openai-gpt-oss-120b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -5547,13 +5228,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "openai/gpt-oss-20b",
     "provider_api_model_id": "novita:openai/gpt-oss-20b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "openai/gpt-oss-20b",
     "internal_model_id": "openai/gpt-oss-20b",
     "is_active_gateway": true,
@@ -5614,12 +5296,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/openai-gpt-oss-20b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -5629,13 +5305,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen2.5-72b",
     "provider_api_model_id": "novita:qwen/qwen2.5-72b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen-2.5-72b-instruct",
     "internal_model_id": "qwen/qwen2.5-72b",
     "is_active_gateway": true,
@@ -5695,12 +5372,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen-2.5-72b-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -5710,13 +5381,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen-mt-plus",
     "provider_api_model_id": "novita:qwen/qwen-mt-plus",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen-mt-plus",
     "internal_model_id": "qwen/qwen-mt-plus",
     "is_active_gateway": true,
@@ -5772,12 +5444,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen-mt-plus",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -5787,13 +5453,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen2.5-7b",
     "provider_api_model_id": "novita:qwen/qwen2.5-7b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen2.5-7b-instruct",
     "internal_model_id": "qwen/qwen2.5-7b",
     "is_active_gateway": false,
@@ -5937,14 +5604,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -5955,6 +5615,7 @@
   {
     "api_model_id": "qwen/qwen2.5-vl-72b",
     "provider_api_model_id": "novita:qwen/qwen2.5-vl-72b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen2.5-vl-72b-instruct",
     "internal_model_id": "qwen/qwen2.5-vl-72b",
     "is_active_gateway": false,
@@ -6084,14 +5745,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -6102,6 +5756,7 @@
   {
     "api_model_id": "qwen/qwen3-235b-a22b",
     "provider_api_model_id": "novita:qwen/qwen3-235b-a22b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-235b-a22b-fp8",
     "internal_model_id": "qwen/qwen3-235b-a22b",
     "is_active_gateway": true,
@@ -6161,12 +5816,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-235b-a22b-fp8",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -6176,13 +5825,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-235b-a22b-2507",
     "provider_api_model_id": "novita:qwen/qwen3-235b-a22b-2507",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-235b-a22b-instruct-2507",
     "internal_model_id": "qwen/qwen3-235b-a22b-2507",
     "is_active_gateway": true,
@@ -6242,12 +5892,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-235b-a22b-instruct-2507",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -6257,13 +5901,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
     "provider_api_model_id": "novita:qwen/qwen3-235b-a22b-thinking-2507",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-235b-a22b-thinking-2507",
     "internal_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
     "is_active_gateway": true,
@@ -6323,12 +5968,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-235b-a22b-thinking-2507",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -6338,13 +5977,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-30b-a3b",
     "provider_api_model_id": "novita:qwen/qwen3-30b-a3b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-30b-a3b-fp8",
     "internal_model_id": "qwen/qwen3-30b-a3b",
     "is_active_gateway": false,
@@ -6488,14 +6128,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -6506,6 +6139,7 @@
   {
     "api_model_id": "qwen/qwen3-32b",
     "provider_api_model_id": "novita:qwen/qwen3-32b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-32b-fp8",
     "internal_model_id": "qwen/qwen3-32b",
     "is_active_gateway": false,
@@ -6642,14 +6276,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -6660,6 +6287,7 @@
   {
     "api_model_id": "qwen/qwen3-4b",
     "provider_api_model_id": "novita:qwen/qwen3-4b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-4b-fp8",
     "internal_model_id": "qwen/qwen3-4b",
     "is_active_gateway": false,
@@ -6803,14 +6431,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -6821,6 +6442,7 @@
   {
     "api_model_id": "qwen/qwen3-coder",
     "provider_api_model_id": "novita:qwen/qwen3-coder",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-coder",
     "internal_model_id": "qwen/qwen3-coder",
     "is_active_gateway": false,
@@ -6872,14 +6494,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -6890,6 +6505,7 @@
   {
     "api_model_id": "qwen/qwen3-coder-30b-a3b",
     "provider_api_model_id": "novita:qwen/qwen3-coder-30b-a3b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-coder-30b-a3b-instruct",
     "internal_model_id": "qwen/qwen3-coder-30b-a3b",
     "is_active_gateway": true,
@@ -6949,12 +6565,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-coder-30b-a3b-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -6964,13 +6574,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-coder-480b-a35b",
     "provider_api_model_id": "novita:qwen/qwen3-coder-480b-a35b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-coder-480b-a35b-instruct",
     "internal_model_id": "qwen/qwen3-coder-480b-a35b",
     "is_active_gateway": true,
@@ -7030,12 +6641,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-coder-480b-a35b-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -7045,13 +6650,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-coder-next",
     "provider_api_model_id": "novita:qwen/qwen3-coder-next",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-coder-next",
     "internal_model_id": "qwen/qwen3-coder-next",
     "is_active_gateway": true,
@@ -7111,12 +6717,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-coder-next",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -7126,13 +6726,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-max",
     "provider_api_model_id": "novita:qwen/qwen3-max",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-max",
     "internal_model_id": "qwen/qwen3-max",
     "is_active_gateway": true,
@@ -7192,12 +6793,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-max",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -7207,13 +6802,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-next-80b-a3b",
     "provider_api_model_id": "novita:qwen/qwen3-next-80b-a3b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-next-80b-a3b-instruct",
     "internal_model_id": "qwen/qwen3-next-80b-a3b",
     "is_active_gateway": true,
@@ -7275,12 +6871,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-next-80b-a3b-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -7290,13 +6880,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
     "provider_api_model_id": "novita:qwen/qwen3-next-80b-a3b-instruct",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-next-80b-a3b-instruct",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
     "is_active_gateway": false,
@@ -7354,19 +6945,20 @@
         "kind": "provider_models",
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "notes": "Third-party availability observation; direct provider documentation and slug remain to be verified."
       }
     ],
     "verification": {
       "status": "partial",
       "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "notes": "Third-party availability observed; disabled until direct provider documentation and slug are verified."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-next-80b-a3b-thinking",
     "provider_api_model_id": "novita:qwen/qwen3-next-80b-a3b-thinking",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-next-80b-a3b-thinking",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
     "is_active_gateway": false,
@@ -7517,14 +7109,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -7535,6 +7120,7 @@
   {
     "api_model_id": "qwen/qwen3-omni-30b-a3b",
     "provider_api_model_id": "novita:qwen/qwen3-omni-30b-a3b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-omni-30b-a3b-instruct",
     "internal_model_id": "qwen/qwen3-omni-30b-a3b",
     "is_active_gateway": true,
@@ -7597,12 +7183,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-omni-30b-a3b-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -7612,13 +7192,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-omni-30b-a3b-thinking",
     "provider_api_model_id": "novita:qwen/qwen3-omni-30b-a3b-thinking",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-omni-30b-a3b-thinking",
     "internal_model_id": "qwen/qwen3-omni-30b-a3b-thinking",
     "is_active_gateway": true,
@@ -7683,12 +7264,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-omni-30b-a3b-thinking",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -7698,13 +7273,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-vl-235b-a22b",
     "provider_api_model_id": "novita:qwen/qwen3-vl-235b-a22b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-vl-235b-a22b-instruct",
     "internal_model_id": "qwen/qwen3-vl-235b-a22b",
     "is_active_gateway": true,
@@ -7766,12 +7342,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-vl-235b-a22b-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -7781,13 +7351,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
     "provider_api_model_id": "novita:qwen/qwen3-vl-235b-a22b-instruct",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-vl-235b-a22b-instruct",
     "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
     "is_active_gateway": false,
@@ -7846,19 +7417,20 @@
         "kind": "provider_models",
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "notes": "Third-party availability observation; direct provider documentation and slug remain to be verified."
       }
     ],
     "verification": {
       "status": "partial",
       "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "notes": "Third-party availability observed; disabled until direct provider documentation and slug are verified."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-vl-235b-a22b-thinking",
     "provider_api_model_id": "novita:qwen/qwen3-vl-235b-a22b-thinking",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-vl-235b-a22b-thinking",
     "internal_model_id": "qwen/qwen3-vl-235b-a22b-thinking",
     "is_active_gateway": true,
@@ -7920,12 +7492,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-vl-235b-a22b-thinking",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -7935,13 +7501,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-vl-30b-a3b",
     "provider_api_model_id": "novita:qwen/qwen3-vl-30b-a3b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-vl-30b-a3b-instruct",
     "internal_model_id": "qwen/qwen3-vl-30b-a3b",
     "is_active_gateway": true,
@@ -8003,12 +7570,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3-vl-30b-a3b-instruct",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -8018,13 +7579,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
     "provider_api_model_id": "novita:qwen/qwen3-vl-30b-a3b-instruct",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-vl-30b-a3b-instruct",
     "internal_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
     "is_active_gateway": false,
@@ -8083,19 +7645,20 @@
         "kind": "provider_models",
         "url": null,
         "accessed_at": "2026-08-12T00:00:00Z",
-        "notes": "Third-party availability observation; direct provider documentation, slug, and official pricing remain to be verified."
+        "notes": "Third-party availability observation; direct provider documentation and slug remain to be verified."
       }
     ],
     "verification": {
       "status": "partial",
       "checked_at": "2026-08-12T00:00:00Z",
-      "notes": "Third-party availability observed; disabled until direct provider documentation, slug, and pricing are verified."
+      "notes": "Third-party availability observed; disabled until direct provider documentation and slug are verified."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-vl-30b-a3b-thinking",
     "provider_api_model_id": "novita:qwen/qwen3-vl-30b-a3b-thinking",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-vl-30b-a3b-thinking",
     "internal_model_id": "qwen/qwen3-vl-30b-a3b-thinking",
     "is_active_gateway": false,
@@ -8239,14 +7802,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -8257,6 +7813,7 @@
   {
     "api_model_id": "qwen/qwen3-vl-8b",
     "provider_api_model_id": "novita:qwen/qwen3-vl-8b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3-vl-8b-instruct",
     "internal_model_id": "",
     "is_active_gateway": false,
@@ -8400,14 +7957,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -8418,6 +7968,7 @@
   {
     "api_model_id": "qwen/qwen3.5-122b-a10b",
     "provider_api_model_id": "novita:qwen/qwen3.5-122b-a10b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.5-122b-a10b",
     "internal_model_id": "qwen/qwen3.5-122b-a10b",
     "is_active_gateway": true,
@@ -8481,12 +8032,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3.5-122b-a10b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -8496,13 +8041,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3.5-27b",
     "provider_api_model_id": "novita:qwen/qwen3.5-27b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.5-27b",
     "internal_model_id": "qwen/qwen3.5-27b",
     "is_active_gateway": true,
@@ -8566,12 +8112,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3.5-27b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -8581,13 +8121,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3.5-35b-a3b",
     "provider_api_model_id": "novita:qwen/qwen3.5-35b-a3b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.5-35b-a3b",
     "internal_model_id": "qwen/qwen3.5-35b-a3b",
     "is_active_gateway": true,
@@ -8651,12 +8192,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3.5-35b-a3b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -8666,13 +8201,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3.5-397b-a17b",
     "provider_api_model_id": "novita:qwen/qwen3.5-397b-a17b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.5-397b-a17b",
     "internal_model_id": "qwen/qwen3.5-397b-a17b",
     "is_active_gateway": true,
@@ -8736,12 +8272,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3.5-397b-a17b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -8751,13 +8281,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3.5-plus",
     "provider_api_model_id": "novita:qwen/qwen3.5-plus",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.5-plus",
     "internal_model_id": "qwen/qwen3.5-plus",
     "is_active_gateway": false,
@@ -8799,14 +8330,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -8817,6 +8341,7 @@
   {
     "api_model_id": "qwen/qwen3.6-27b",
     "provider_api_model_id": "novita:qwen/qwen3.6-27b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.6-27b",
     "internal_model_id": "qwen/qwen3.6-27b",
     "is_active_gateway": true,
@@ -8880,12 +8405,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3.6-27b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -8895,13 +8414,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3.6-35b-a3b",
     "provider_api_model_id": "novita:qwen/qwen3.6-35b-a3b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.6-35b-a3b",
     "internal_model_id": "qwen/qwen3.6-35b-a3b",
     "is_active_gateway": true,
@@ -8965,12 +8485,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3.6-35b-a3b",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -8980,13 +8494,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3.6-plus",
     "provider_api_model_id": "novita:qwen/qwen3.6-plus",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.6-plus",
     "internal_model_id": "qwen/qwen3.6-plus",
     "is_active_gateway": false,
@@ -9028,14 +8543,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -9046,6 +8554,7 @@
   {
     "api_model_id": "qwen/qwen3.7-max",
     "provider_api_model_id": "novita:qwen/qwen3.7-max",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.7-max",
     "internal_model_id": "qwen/qwen3.7-max",
     "is_active_gateway": true,
@@ -9107,12 +8616,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3.7-max",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -9122,13 +8625,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3.8-max",
     "provider_api_model_id": "novita:qwen/qwen3.8-max",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.8-max",
     "internal_model_id": "qwen/qwen3.8-max",
     "is_active_gateway": true,
@@ -9192,12 +8696,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/qwen-qwen3.8-max",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -9207,13 +8705,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "qwen/qwen3-vl-8b-instruct",
     "provider_api_model_id": "novita:qwen/qwen3-vl-8b-instruct",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen3-vl-8b-instruct",
     "internal_model_id": "qwen/qwen3-vl-8b-instruct",
     "is_active_gateway": false,
@@ -9251,14 +8750,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -9269,6 +8761,7 @@
   {
     "api_model_id": "qwen/qwen3.8-flash",
     "provider_api_model_id": "novita:qwen/qwen3.8-flash",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.8-flash",
     "internal_model_id": "qwen/qwen3.8-flash",
     "is_active_gateway": true,
@@ -9319,7 +8812,7 @@
         "url": "https://api.novita.ai/openai/v1/models",
         "kind": "provider_models",
         "accessed_at": "2026-08-27T00:00:00Z",
-        "notes": "Live Novita model availability feed reports qwen/qwen3.8-flash with its provider-specific limits, pricing, modalities, features, and supported endpoints."
+        "notes": "Live Novita model availability feed reports qwen/qwen3.8-flash with its provider-specific limits, modalities, features, and supported endpoints."
       }
     ],
     "verification": {
@@ -9332,6 +8825,7 @@
   {
     "api_model_id": "stepfun/step-3.7-flash",
     "provider_api_model_id": "novita:stepfun/step-3.7-flash",
+    "provider_status": "coming_soon",
     "provider_model_slug": "stepfun/step-3.7-flash",
     "internal_model_id": "stepfun/step-3.7-flash",
     "is_active_gateway": true,
@@ -9395,12 +8889,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/stepfun-step-3.7-flash",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -9410,13 +8898,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "tencent/hy3",
     "provider_api_model_id": "novita:tencent/hy3",
+    "provider_status": "coming_soon",
     "provider_model_slug": "tencent/hy3",
     "internal_model_id": "tencent/hy3",
     "is_active_gateway": true,
@@ -9478,12 +8967,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/tencent-hy3",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -9493,13 +8976,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "xiaomi/mimo-v2-flash",
     "provider_api_model_id": "novita:xiaomi/mimo-v2-flash",
+    "provider_status": "coming_soon",
     "provider_model_slug": "xiaomimimo/mimo-v2-flash",
     "internal_model_id": "xiaomi/mimo-v2-flash",
     "is_active_gateway": false,
@@ -9650,14 +9134,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -9668,6 +9145,7 @@
   {
     "api_model_id": "xiaomi/mimo-v2.5",
     "provider_api_model_id": "novita:xiaomi/mimo-v2.5",
+    "provider_status": "coming_soon",
     "provider_model_slug": "xiaomimimo/mimo-v2.5",
     "internal_model_id": "xiaomi/mimo-v2.5",
     "is_active_gateway": true,
@@ -9731,12 +9209,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/xiaomimimo-mimo-v2.5",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -9746,13 +9218,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "xiaomi/mimo-v2.5-pro",
     "provider_api_model_id": "novita:xiaomi/mimo-v2.5-pro",
+    "provider_status": "coming_soon",
     "provider_model_slug": "xiaomimimo/mimo-v2.5-pro",
     "internal_model_id": "xiaomi/mimo-v2.5-pro",
     "is_active_gateway": true,
@@ -9814,12 +9287,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/xiaomimimo-mimo-v2.5-pro",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -9829,13 +9296,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/autoglm-phone-9b-multilingual",
     "provider_api_model_id": "novita:z-ai/autoglm-phone-9b-multilingual",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/autoglm-phone-9b-multilingual",
     "internal_model_id": "z-ai/autoglm-phone-9b-multilingual",
     "is_active_gateway": true,
@@ -9892,12 +9360,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/zai-org-autoglm-phone-9b-multilingual",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -9907,13 +9369,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-4.5",
     "provider_api_model_id": "novita:z-ai/glm-4.5",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-4.5",
     "internal_model_id": "z-ai/glm-4.5",
     "is_active_gateway": false,
@@ -10057,14 +9520,7 @@
       "endpoint": null,
       "deployment": null
     },
-    "sources": [
-      {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Not listed in Novita's current serverless LLM catalog during the 2026-08-20 provider audit."
-      }
-    ],
+    "sources": [],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
@@ -10075,6 +9531,7 @@
   {
     "api_model_id": "zai-org/glm-4.5-air",
     "provider_api_model_id": "novita:zai-org/glm-4.5-air",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-4.5-air",
     "internal_model_id": "z-ai/glm-4.5-air",
     "is_active_gateway": true,
@@ -10134,12 +9591,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/zai-org-glm-4.5-air",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -10149,13 +9600,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-4.5v",
     "provider_api_model_id": "novita:z-ai/glm-4.5v",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-4.5v",
     "internal_model_id": "z-ai/glm-4.5v",
     "is_active_gateway": true,
@@ -10219,12 +9671,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/zai-org-glm-4.5v",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -10234,13 +9680,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-4.6",
     "provider_api_model_id": "novita:z-ai/glm-4.6",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-4.6",
     "internal_model_id": "z-ai/glm-4.6",
     "is_active_gateway": true,
@@ -10302,12 +9749,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/zai-org-glm-4.6",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -10317,13 +9758,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-4.6v",
     "provider_api_model_id": "novita:z-ai/glm-4.6v",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-4.6v",
     "internal_model_id": "z-ai/glm-4.6v",
     "is_active_gateway": true,
@@ -10387,12 +9829,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/zai-org-glm-4.6v",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -10402,13 +9838,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-4.7",
     "provider_api_model_id": "novita:z-ai/glm-4.7",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-4.7",
     "internal_model_id": "z-ai/glm-4.7",
     "is_active_gateway": true,
@@ -10470,12 +9907,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/zai-org-glm-4.7",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -10485,13 +9916,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-4.7-flash",
     "provider_api_model_id": "novita:z-ai/glm-4.7-flash",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-4.7-flash",
     "internal_model_id": "z-ai/glm-4.7-flash",
     "is_active_gateway": true,
@@ -10553,12 +9985,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/zai-org-glm-4.7-flash",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -10568,13 +9994,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-5",
     "provider_api_model_id": "novita:z-ai/glm-5",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-5",
     "internal_model_id": "z-ai/glm-5",
     "is_active_gateway": true,
@@ -10636,12 +10063,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/zai-org-glm-5",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -10651,13 +10072,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-5.1",
     "provider_api_model_id": "novita:z-ai/glm-5.1",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-5.1",
     "internal_model_id": "z-ai/glm-5.1",
     "is_active_gateway": true,
@@ -10719,12 +10141,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/zai-org-glm-5.1",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -10734,13 +10150,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-5.2",
     "provider_api_model_id": "novita:z-ai/glm-5.2",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-5.2",
     "internal_model_id": "z-ai/glm-5.2",
     "is_active_gateway": true,
@@ -10802,12 +10219,6 @@
     },
     "sources": [
       {
-        "kind": "provider_pricing",
-        "url": "https://novita.ai/pricing?de=1",
-        "accessed_at": "2026-08-20T00:00:00Z",
-        "notes": "Current serverless availability and pricing."
-      },
-      {
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/zai-org-glm-5.2",
         "accessed_at": "2026-08-20T00:00:00Z",
@@ -10817,13 +10228,14 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-20T00:00:00Z",
-      "notes": "Verified from Novita's first-party pricing catalog and model detail page."
+      "notes": "Verified from Novita's first-party model detail page."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-5.3-flash",
     "provider_api_model_id": "novita:zai-org/glm-5.3-flash",
+    "provider_status": "coming_soon",
     "provider_model_slug": "zai-org/glm-5.3-flash",
     "internal_model_id": "z-ai/glm-5.3-flash",
     "is_active_gateway": true,
@@ -10891,12 +10303,6 @@
         "url": "https://novita.ai/models/model-detail/zai-org-glm-5.3-flash",
         "accessed_at": "2026-08-26T00:00:00Z",
         "notes": "Novita announced zai-org/glm-5.3-flash as live."
-      },
-      {
-        "kind": "provider_pricing",
-        "url": "https://api.novita.ai/openai/v1/models",
-        "accessed_at": "2026-08-26T00:00:00Z",
-        "notes": "Novita's live model catalog reports the Flash input, cached-input, and output prices."
       }
     ],
     "verification": {
@@ -10909,6 +10315,7 @@
   {
     "api_model_id": "qwen/qwen3.8-2.4t-a95b",
     "provider_api_model_id": "novita:qwen/qwen3.8-2.4t-a95b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.8-2.4t-a95b",
     "internal_model_id": "qwen/qwen3.8-2.4t-a95b",
     "is_active_gateway": true,
@@ -10986,6 +10393,7 @@
   {
     "api_model_id": "qwen/qwen3.8-27b",
     "provider_api_model_id": "novita:qwen/qwen3.8-27b",
+    "provider_status": "coming_soon",
     "provider_model_slug": "qwen/qwen3.8-27b",
     "internal_model_id": "qwen/qwen3.8-27b",
     "is_active_gateway": true,
@@ -11036,19 +10444,20 @@
         "kind": "provider_models",
         "url": "https://api.novita.ai/openai/v1/models",
         "accessed_at": "2026-08-27T00:00:00Z",
-        "notes": "Novita's live model catalogue reports qwen/qwen3.8-27b availability, limits, modalities, features, endpoints, and pricing."
+        "notes": "Novita's live model catalogue reports qwen/qwen3.8-27b availability, limits, modalities, features, and endpoints."
       }
     ],
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-27T00:00:00Z",
-      "notes": "Availability, provider model slug, limits, capabilities, modalities, endpoints, and pricing verified from Novita's live OpenAI-compatible models endpoint."
+      "notes": "Availability, provider model slug, limits, capabilities, modalities, and endpoints verified from Novita's live OpenAI-compatible models endpoint."
     },
     "rate_limits": []
   },
   {
     "api_model_id": "inclusionai/ling-3.0-flash-fin",
     "provider_api_model_id": "novita:inclusionai/ling-3.0-flash-fin",
+    "provider_status": "coming_soon",
     "provider_model_slug": "inclusionai/ling-3.0-flash-fin",
     "internal_model_id": "inclusionai/ling-3.0-flash-fin",
     "is_active_gateway": true,
@@ -11111,7 +10520,7 @@
         "kind": "provider_model",
         "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
         "accessed_at": "2026-08-27T00:00:00Z",
-        "notes": "Novita's live model page reports the slug, limits, text modalities, function calling, reasoning, serverless chat endpoint, release time, and zero token prices."
+        "notes": "Novita's live model page reports the slug, limits, text modalities, function calling, reasoning, serverless chat endpoint, and release time."
       }
     ],
     "verification": {
@@ -11124,6 +10533,7 @@
   {
     "api_model_id": "inclusionai/ling-3.0-flash-sante",
     "provider_api_model_id": "novita:inclusionai/ling-3.0-flash-sante",
+    "provider_status": "coming_soon",
     "provider_model_slug": "inclusionai/ling-3.0-flash-sante",
     "internal_model_id": "inclusionai/ling-3.0-flash-sante",
     "is_active_gateway": true,
@@ -11186,7 +10596,7 @@
         "kind": "provider_models",
         "url": "https://api.novita.ai/openai/v1/models",
         "accessed_at": "2026-09-03T03:39:27Z",
-        "notes": "Novita's live model catalogue reports the exact slug, description, 256K context, 32K maximum output, text modalities, function calling, reasoning, serverless chat endpoint, and zero token prices."
+        "notes": "Novita's live model catalogue reports the exact slug, description, 256K context, 32K maximum output, text modalities, function calling, reasoning, and serverless chat endpoint."
       }
     ],
     "verification": {
@@ -11199,6 +10609,7 @@
   {
     "api_model_id": "inclusionai/ling-3.0-flash-vl",
     "provider_api_model_id": "novita:inclusionai/ling-3.0-flash-vl",
+    "provider_status": "coming_soon",
     "provider_model_slug": "inclusionai/ling-3.0-flash-vl",
     "internal_model_id": "inclusionai/ling-3.0-flash-vl",
     "is_active_gateway": true,
@@ -11263,7 +10674,7 @@
         "kind": "provider_models",
         "url": "https://api.novita.ai/openai/v1/models",
         "accessed_at": "2026-09-03T03:37:52Z",
-        "notes": "Novita's live model catalogue reports the exact slug, description, 256K context, 32K maximum output, text/image/video modalities, function calling, reasoning, serverless chat endpoint, and zero token prices."
+        "notes": "Novita's live model catalogue reports the exact slug, description, 256K context, 32K maximum output, text/image/video modalities, function calling, reasoning, and serverless chat endpoint."
       }
     ],
     "verification": {
@@ -11276,6 +10687,7 @@
   {
     "api_model_id": "bytedance/seedance-1.5-pro",
     "provider_api_model_id": "novita:bytedance/seedance-1.5-pro",
+    "provider_status": "coming_soon",
     "provider_model_slug": "seedance-v1.5-pro",
     "internal_model_id": "bytedance/seedance-1.5-pro",
     "is_active_gateway": true,
@@ -11311,13 +10723,14 @@
       {
         "url": "https://blogs.novita.ai/seedance-1-5-pro-on-novita-ai-complete-developer-guide/",
         "accessed_at": "2026-09-06T00:00:00Z",
-        "notes": "Model-specific /v3/async/seedance-v1.5-pro-t2v and -i2v contracts replace the unified endpoint that returned 404. Restricted to published 480p/720p standard-service prices. Request mapping and durable polling covered by deterministic tests; corrected endpoint has not been tested with authenticated inference."
+        "notes": "Model-specific /v3/async/seedance-v1.5-pro-t2v and -i2v contracts replace the unified endpoint that returned 404. Restricted to published 480p/720p standard-service variants. Request mapping and durable polling covered by deterministic tests; corrected endpoint has not been tested with authenticated inference."
       }
     ]
   },
   {
     "api_model_id": "deepseek/deepseek-v4.1-flash",
     "provider_api_model_id": "novita:deepseek/deepseek-v4.1-flash-expires-on-0910",
+    "provider_status": "coming_soon",
     "provider_model_slug": "deepseek/deepseek-v4.1-flash-expires-on-0910",
     "internal_model_id": "deepseek/deepseek-v4.1-flash",
     "is_active_gateway": true,
@@ -11379,7 +10792,7 @@
         "kind": "provider_models",
         "url": "https://api.novita.ai/openai/v1/models",
         "accessed_at": "2026-09-09T06:44:02Z",
-        "notes": "Novita's live OpenAI-compatible model inventory reports the temporary DeepSeek V4.1 Flash slug, 1M context, 393,216 maximum output tokens, multimodal input, reasoning, function calling, structured outputs, and zero token prices."
+        "notes": "Novita's live OpenAI-compatible model inventory reports the temporary DeepSeek V4.1 Flash slug, 1M context, 393,216 maximum output tokens, multimodal input, reasoning, function calling, and structured outputs."
       }
     ],
     "verification": {
