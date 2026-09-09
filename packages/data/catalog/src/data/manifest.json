@@ -293,7 +293,7 @@
       "deepseek/deepseek-v3",
       "deepseek/deepseek-v3-turbo",
       "deepseek/deepseek-r1-distill-llama-70b",
-      "deepseek/deepseek-v4.1-flash-beta",
+      "deepseek/deepseek-v4.1-flash-preview",
       "deepseek/deepseek-v4.1-flash"
     ],
     "eleven-labs": [
@@ -2609,6 +2609,7 @@
     "deepseek:text.generate:deepseek-deepseek-v3.2",
     "deepseek:text.generate:deepseek-deepseek-v3.2-thinking",
     "deepseek:text.generate:deepseek-deepseek-v4-flash-0731",
+    "deepseek:text.generate:deepseek-deepseek-v4.1-flash",
     "fireworks:text.generate:black-forest-labs-flux-1-kontext-max",
     "fireworks:text.generate:black-forest-labs-flux-1-kontext-pro",
     "fireworks:text.generate:cogito-cogito-671b-v2.1",
