@@ -43,8 +43,8 @@
   "knowledge_cutoff": null,
   "limits": {
     "context": null,
-    "input": ["text", "audio/*", "image/*", "video/*"],
-    "output": ["audio/*"]
+    "input": null,
+    "output": null
   },
   "modalities": {
     "input": ["text", "audio/*", "image/*", "video/*"],

@@ -2,7 +2,7 @@
   "model_id": "suno/suno-v6-wild",
   "organisation_id": "suno",
   "name": "Suno V6 Wild",
-  "status": "Limited Access",
+  "status": "Available",
   "previous_model_id": null,
   "description": "Suno V6 Wild is Suno's exploratory v6 music model. Suno describes it as less predictable and more varied, producing unexpected, textured, and ambitious results, and makes it available to Pro and Premier subscribers.",
   "announced_date": "2026-09-09T00:00:00",
@@ -43,8 +43,8 @@
   "knowledge_cutoff": null,
   "limits": {
     "context": null,
-    "input": ["text", "audio/*", "image/*", "video/*"],
-    "output": ["audio/*"]
+    "input": null,
+    "output": null
   },
   "modalities": {
     "input": ["text", "audio/*", "image/*", "video/*"],

@@ -281,7 +281,20 @@ describe('Models', () => {
     ]);
     expect(suite).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        status: 'Limited Access',
+        model_id: 'suno/suno-v6',
+        status: 'Available',
+      }),
+      expect.objectContaining({
+        model_id: 'suno/suno-v6-wild',
+        status: 'Available',
+      }),
+      expect.objectContaining({
+        model_id: 'suno/suno-v6-mini',
+        status: 'Available',
+      }),
+    ]));
+    for (const model of suite) {
+      expect(model).toMatchObject({
         announced_date: '2026-09-09T00:00:00',
         release_date: '2026-09-09T00:00:00',
         api_model_id: null,
@@ -292,12 +305,8 @@ describe('Models', () => {
           input: ['text', 'audio/*', 'image/*', 'video/*'],
           output: ['audio/*'],
         },
-      }),
-      expect.objectContaining({
-        model_id: 'suno/suno-v6-mini',
-        status: 'Available',
-      }),
-    ]));
+      });
+    }
     expect(suite.every((model) => model.api_model_id === null)).toBe(true);
   });
 
