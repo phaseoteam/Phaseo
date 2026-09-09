@@ -1907,31 +1907,34 @@ console.log(response);`
 						<div className="flex items-center gap-3">
 							<Badge
 								variant="outline"
-								className="flex h-7 w-7 items-center justify-center rounded-full border-amber-300 bg-amber-50 p-0 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+								className="flex h-7 w-7 items-center justify-center rounded-full p-0 text-xs"
 							>
 								2
 							</Badge>
 							<h3 className="text-base font-semibold">Add a provider key</h3>
 						</div>
-						<Alert className="rounded-lg border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50">
-							<KeyRound className="h-4 w-4 text-amber-700 dark:text-amber-300" />
-							<AlertTitle>BYOK required</AlertTitle>
-							<AlertDescription className="space-y-3 text-sm text-amber-900/90 dark:text-amber-100/90">
-								<p>
-									Phaseo does not manage credentials for the available {byokOnlyProviders.length === 1 ? "provider" : "providers"}. Add your own key before sending this request.
-								</p>
-								<div className="flex flex-wrap gap-2">
-									{byokOnlyProviders.map((provider) => (
-										<Button key={provider.providerId} asChild size="sm" variant="outline" className="bg-background text-foreground">
-											<Link href={`/settings/byok/${provider.providerId}`}>
-												<KeyRound className="h-3.5 w-3.5" />
-												Add {provider.providerName} key
-											</Link>
-										</Button>
-									))}
+						<div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+							<div className="flex min-w-0 items-start gap-3">
+								<div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground">
+									<KeyRound className="h-4 w-4" />
 								</div>
-							</AlertDescription>
-						</Alert>
+								<div>
+									<p className="text-sm font-medium">Provider key required</p>
+									<p className="mt-0.5 text-sm text-muted-foreground">
+										Add your own {byokOnlyProviders.map((provider) => provider.providerName).join(" or ")} credential before sending this request.
+									</p>
+								</div>
+							</div>
+							<div className="flex shrink-0 flex-wrap gap-2 pl-11 sm:pl-0">
+								{byokOnlyProviders.map((provider) => (
+									<Button key={provider.providerId} asChild size="sm" variant="outline" className="bg-background">
+										<Link href={`/settings/byok/${provider.providerId}`}>
+											Add {provider.providerName} key
+										</Link>
+									</Button>
+								))}
+							</div>
+						</div>
 					</div>
 				) : null}
 

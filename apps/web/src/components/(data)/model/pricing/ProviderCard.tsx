@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -2977,13 +2976,18 @@ export default function ProviderCard({
 								</span>
 							</Link>
 							{provider.provider.credential_mode === "byok_only" ? (
-								<Badge
-									variant="outline"
-									className="h-6 gap-1 border-amber-300 bg-amber-50 px-1.5 text-[10px] font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
-								>
-									<KeyRound className="h-3 w-3" />
-									BYOK only
-								</Badge>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span
+											tabIndex={0}
+											aria-label="BYOK only: requires your provider key"
+											className="inline-flex h-6 w-6 items-center justify-center rounded-md text-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:text-amber-300"
+										>
+											<KeyRound className="h-3.5 w-3.5" />
+										</span>
+									</TooltipTrigger>
+									<TooltipContent>BYOK only · requires your provider key</TooltipContent>
+								</Tooltip>
 							) : null}
 
 							<div className="flex shrink-0 items-center gap-1">
