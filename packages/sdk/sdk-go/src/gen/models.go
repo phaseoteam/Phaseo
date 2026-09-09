@@ -2324,6 +2324,7 @@ const (
 	KnownModelIdDeepseekDeepseekV4FlashVisionExp KnownModelId = "deepseek/deepseek-v4-flash-vision-exp"
 	KnownModelIdDeepseekDeepseekV4Pro KnownModelId = "deepseek/deepseek-v4-pro"
 	KnownModelIdDeepseekDeepseekV4Pro0813 KnownModelId = "deepseek/deepseek-v4-pro-0813"
+	KnownModelIdDeepseekDeepseekV41Flash KnownModelId = "deepseek/deepseek-v4.1-flash"
 	KnownModelIdDeepseekDeepseekV41FlashPreview KnownModelId = "deepseek/deepseek-v4.1-flash-preview"
 	KnownModelIdEarlyAccessEa29bA4b KnownModelId = "early-access/ea-29b-a4b"
 	KnownModelIdElevenLabsElevenFlashV2 KnownModelId = "eleven-labs/eleven-flash-v2"

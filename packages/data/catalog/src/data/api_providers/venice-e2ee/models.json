@@ -2538,5 +2538,72 @@
       "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k3",
+    "provider_api_model_id": "venice-e2ee:moonshotai/kimi-k3",
+    "provider_model_slug": "e2ee-kimi-k3-p",
+    "internal_model_id": "moonshotai/kimi-k3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-09-08T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "none",
+            "max"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "disabled",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-09T00:00:00Z",
+        "notes": "Venice's live models API reports e2ee-kimi-k3-p with 1M context, 131,072 maximum completion tokens, multimodal input, reasoning, tool use, structured output, vision, web search, and E2EE support."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-09T00:00:00Z",
+      "notes": "Verified against Venice's live models API; gateway routing remains disabled until the required E2EE encryption protocol is implemented."
+    },
+    "rate_limits": []
   }
 ]

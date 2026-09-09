@@ -1,0 +1,75 @@
+{
+  "key": "novita:deepseek/deepseek-v4.1-flash:text.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "deepseek/deepseek-v4.1-flash",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita's live model payload reports zero input pricing for the temporary route.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-09T06:44:02Z",
+      "effective_to": "2026-09-10T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.novita.ai/openai/v1/models"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita's live model payload reports zero cached-input pricing for the temporary route.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-09T06:44:02Z",
+      "effective_to": "2026-09-10T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.novita.ai/openai/v1/models"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita's live model payload reports zero output pricing for the temporary route.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-09T06:44:02Z",
+      "effective_to": "2026-09-10T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.novita.ai/openai/v1/models"
+    }
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://api.novita.ai/openai/v1/models",
+      "accessed_at": "2026-09-09T06:44:02Z",
+      "notes": "Novita's first-party model inventory reports zero input, cached-input, and output token prices for the temporary route."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-09T06:44:02Z",
+    "notes": "Verified from Novita's first-party OpenAI-compatible model inventory; the route expires on 2026-09-10."
+  }
+}

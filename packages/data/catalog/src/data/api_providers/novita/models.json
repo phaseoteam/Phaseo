@@ -11314,5 +11314,79 @@
         "notes": "Model-specific /v3/async/seedance-v1.5-pro-t2v and -i2v contracts replace the unified endpoint that returned 404. Restricted to published 480p/720p standard-service prices. Request mapping and durable polling covered by deterministic tests; corrected endpoint has not been tested with authenticated inference."
       }
     ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4.1-flash",
+    "provider_api_model_id": "novita:deepseek/deepseek-v4.1-flash-expires-on-0910",
+    "provider_model_slug": "deepseek/deepseek-v4.1-flash-expires-on-0910",
+    "internal_model_id": "deepseek/deepseek-v4.1-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 393216,
+    "effective_from": "2026-09-09T06:44:02Z",
+    "effective_to": "2026-09-10T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "stop",
+          "response_format",
+          "tools",
+          "tool_choice",
+          "reasoning",
+          "reasoning_effort"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "https://api.novita.ai/openai/v1/chat/completions",
+      "deployment": "serverless"
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-09-09T06:44:02Z",
+        "notes": "Novita's live OpenAI-compatible model inventory reports the temporary DeepSeek V4.1 Flash slug, 1M context, 393,216 maximum output tokens, multimodal input, reasoning, function calling, structured outputs, and zero token prices."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-09T06:44:02Z",
+      "notes": "Verified from Novita's first-party OpenAI-compatible model inventory; the provider slug expires on 2026-09-10."
+    },
+    "rate_limits": []
   }
 ]
