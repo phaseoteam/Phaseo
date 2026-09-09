@@ -1,0 +1,50 @@
+{
+  "key": "reka:reka-flash:text.generate",
+  "api_provider_id": "reka",
+  "provider_slug": "reka",
+  "api_model_id": "reka-flash",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.8,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Reka Chat input tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-10T00:00:00Z",
+      "source": "https://docs.reka.ai/pricing"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Reka Chat output tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-10T00:00:00Z",
+      "source": "https://docs.reka.ai/pricing"
+    }
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://docs.reka.ai/pricing",
+      "accessed_at": "2026-09-10T00:00:00Z",
+      "notes": "Reka publishes Flash at $0.80 per 1M input tokens and $2.00 per 1M output tokens."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-10T00:00:00Z",
+    "notes": "Verified against Reka's first-party API pricing page."
+  }
+}
