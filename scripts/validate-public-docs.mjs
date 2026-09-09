@@ -42,6 +42,7 @@ const PUBLIC_PATH_GUARD_ROOTS = [
 const LOCAL_PRIVATE_DOC_ROOTS = new Set([
 	resolve(REPOSITORY_ROOT, "apps/api/docs/internal"),
 ]);
+const ICON_OPTIONAL_PAGE_PREFIXES = ["v1/changelog"];
 
 const FORBIDDEN_CONTENT = [
 	["an Internal navigation tag", /(?:^tag:\s*["']Internal["']|["']tag["']:\s*["']Internal["'])/im],
@@ -146,7 +147,10 @@ for (const page of navigationPages(docsConfig.navigation)) {
 	if (!existsSync(file)) continue;
 	const frontmatter = readFileSync(file, "utf8").match(/^---\r?\n([\s\S]*?)\r?\n---/);
 	const metadata = frontmatter ? load(frontmatter[1]) : null;
-	if (!metadata?.openapi) validateIcon(metadata?.icon, page);
+	const iconOptional = ICON_OPTIONAL_PAGE_PREFIXES.some(
+		(prefix) => page === prefix || page.startsWith(`${prefix}/`),
+	);
+	if (!metadata?.openapi && !iconOptional) validateIcon(metadata?.icon, page);
 }
 
 if (docsConfig?.api?.openapi !== "openapi/v1/openapi.yaml") {
