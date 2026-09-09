@@ -1349,6 +1349,65 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "moonshotai/kimi-k2.5",
+    "provider_api_model_id": "digitalocean:kimi-k2.5",
+    "provider_model_slug": "kimi-k2.5",
+    "internal_model_id": "moonshotai/kimi-k2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-05-29T00:00:00",
+    "effective_to": "2026-09-09T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "retired",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "url": "https://docs.digitalocean.com/products/inference/details/models/",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-23T00:00:00Z",
+        "notes": "Official DigitalOcean serverless inference model catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-09T00:00:00Z",
+      "notes": "DigitalOcean removal manually confirmed on 2026-09-09; route retained as historical record and is no longer available."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "moonshotai/kimi-k2.6",
     "provider_api_model_id": "digitalocean:kimi-k2.6",
     "provider_model_slug": "kimi-k2.6",
@@ -1522,6 +1581,65 @@
       "status": "verified",
       "checked_at": "2026-08-23T00:00:00Z",
       "notes": "Current serverless model verified against DigitalOcean documentation; gateway routing remains disabled pending integration."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/nemotron-3-super-120b-a12b",
+    "provider_api_model_id": "digitalocean:nvidia-nemotron-3-super-120b",
+    "provider_model_slug": "nvidia-nemotron-3-super-120b",
+    "internal_model_id": "nvidia/nemotron-3-super-120b-a12b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-05-29T00:00:00",
+    "effective_to": "2026-09-09T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "retired",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "url": "https://docs.digitalocean.com/products/inference/details/models/",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-23T00:00:00Z",
+        "notes": "Official DigitalOcean serverless inference model catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-09T00:00:00Z",
+      "notes": "DigitalOcean removal manually confirmed on 2026-09-09; route retained as historical record and is no longer available."
     },
     "rate_limits": []
   },
@@ -3575,6 +3693,124 @@
       "status": "verified",
       "checked_at": "2026-08-23T00:00:00Z",
       "notes": "Current serverless model verified against DigitalOcean documentation; gateway routing remains disabled pending integration."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5",
+    "provider_api_model_id": "digitalocean:glm-5",
+    "provider_model_slug": "glm-5",
+    "internal_model_id": "z-ai/glm-5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 64000,
+    "max_output_tokens": 64000,
+    "effective_from": "2026-05-29T00:00:00",
+    "effective_to": "2026-09-09T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "retired",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "url": "https://docs.digitalocean.com/products/inference/details/models/",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-23T00:00:00Z",
+        "notes": "Official DigitalOcean serverless inference model catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-09T00:00:00Z",
+      "notes": "DigitalOcean removal manually confirmed on 2026-09-09; route retained as historical record and is no longer available."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "digitalocean:glm-5.1",
+    "provider_model_slug": "glm-5.1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 163840,
+    "max_output_tokens": 163840,
+    "effective_from": "2026-08-21T00:00:00Z",
+    "effective_to": "2026-09-09T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "retired",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "url": "https://docs.digitalocean.com/products/inference/details/models/",
+        "kind": "api_reference",
+        "accessed_at": "2026-08-23T00:00:00Z",
+        "notes": "Official DigitalOcean serverless inference model catalog."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-09T00:00:00Z",
+      "notes": "DigitalOcean removal manually confirmed on 2026-09-09; route retained as historical record and is no longer available."
     },
     "rate_limits": []
   },
