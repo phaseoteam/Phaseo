@@ -81,11 +81,12 @@ class AnthropicMessagesResponse(TypedDict):
 	type: NotRequired[str]
 	usage: NotRequired[AnthropicUsage]
 
-class AnthropicTool(TypedDict):
-	async: NotRequired[bool]
-	description: NotRequired[str]
-	input_schema: NotRequired[Dict[str, Any]]
-	name: str
+AnthropicTool = TypedDict("AnthropicTool", {
+	"async": NotRequired[bool],
+	"description": NotRequired[str],
+	"input_schema": NotRequired[Dict[str, Any]],
+	"name": str,
+})
 
 class AnthropicUsage(TypedDict):
 	input_tokens: NotRequired[int]
@@ -843,10 +844,11 @@ class FileUploadRequest(TypedDict):
 	file: Any
 	purpose: str
 
-class FunctionToolDefinition(TypedDict):
-	async: NotRequired[bool]
-	function: Dict[str, Any]
-	type: Literal["function"]
+FunctionToolDefinition = TypedDict("FunctionToolDefinition", {
+	"async": NotRequired[bool],
+	"function": Dict[str, Any],
+	"type": Literal["function"],
+})
 
 class FusionToolDefinition(TypedDict):
 	parameters: NotRequired[Dict[str, Any]]
@@ -1528,31 +1530,33 @@ class ModelProviderAvailability(TypedDict):
 	supported_parameters: NotRequired[List[str]]
 	supported_parameters_detail: NotRequired[SupportedParameterDetails]
 
-class ModerationCategories(TypedDict):
-	harassment: NotRequired[bool]
-	harassment_threatening: NotRequired[bool]
-	hate: NotRequired[bool]
-	hate_threatening: NotRequired[bool]
-	self_harm: NotRequired[bool]
-	self_harm_instructions: NotRequired[bool]
-	self_harm_intent: NotRequired[bool]
-	sexual: NotRequired[bool]
-	sexual_minors: NotRequired[bool]
-	violence: NotRequired[bool]
-	violence_graphic: NotRequired[bool]
+ModerationCategories = TypedDict("ModerationCategories", {
+	"harassment": NotRequired[bool],
+	"harassment/threatening": NotRequired[bool],
+	"hate": NotRequired[bool],
+	"hate/threatening": NotRequired[bool],
+	"self-harm": NotRequired[bool],
+	"self-harm/instructions": NotRequired[bool],
+	"self-harm/intent": NotRequired[bool],
+	"sexual": NotRequired[bool],
+	"sexual/minors": NotRequired[bool],
+	"violence": NotRequired[bool],
+	"violence/graphic": NotRequired[bool],
+})
 
-class ModerationCategoryScores(TypedDict):
-	harassment: NotRequired[float]
-	harassment_threatening: NotRequired[float]
-	hate: NotRequired[float]
-	hate_threatening: NotRequired[float]
-	self_harm: NotRequired[float]
-	self_harm_instructions: NotRequired[float]
-	self_harm_intent: NotRequired[float]
-	sexual: NotRequired[float]
-	sexual_minors: NotRequired[float]
-	violence: NotRequired[float]
-	violence_graphic: NotRequired[float]
+ModerationCategoryScores = TypedDict("ModerationCategoryScores", {
+	"harassment": NotRequired[float],
+	"harassment/threatening": NotRequired[float],
+	"hate": NotRequired[float],
+	"hate/threatening": NotRequired[float],
+	"self-harm": NotRequired[float],
+	"self-harm/instructions": NotRequired[float],
+	"self-harm/intent": NotRequired[float],
+	"sexual": NotRequired[float],
+	"sexual/minors": NotRequired[float],
+	"violence": NotRequired[float],
+	"violence/graphic": NotRequired[float],
+})
 
 class ModerationResult(TypedDict):
 	categories: NotRequired[ModerationCategories]

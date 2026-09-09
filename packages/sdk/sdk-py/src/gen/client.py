@@ -30,6 +30,8 @@ class Client:
 		req = urllib.request.Request(url, data=payload, headers=request_headers, method=method.upper())
 		with urllib.request.urlopen(req) as resp:
 			raw = resp.read().decode("utf-8")
+			if resp.headers.get_content_type() == "application/x-ndjson":
+				return raw
 			if not raw:
 				return None
 			try:
