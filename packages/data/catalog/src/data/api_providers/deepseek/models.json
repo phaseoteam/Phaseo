@@ -622,7 +622,7 @@
     "provider_model_slug": "deepseek-v4.1-flash-expires-on-0910",
     "internal_model_id": "deepseek/deepseek-v4.1-flash-preview",
     "canonical_model_id": "deepseek/deepseek-v4.1-flash-preview",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -633,7 +633,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "inactive",
+        "status": "active",
         "params": [
           { "param_id": "max_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
           { "param_id": "reasoning_effort", "provider_min": null, "provider_max": null, "provider_default": "high", "notes": "Native values are low, high, and max. High is the default; for compatibility, medium and xhigh map to high." },
@@ -654,8 +654,8 @@
         "modes": []
       }
     ],
-    "routing_status": "inactive",
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -674,7 +674,7 @@
         "kind": "api_reference",
         "url": "https://api-docs.deepseek.com/guides/responses_api/",
         "accessed_at": "2026-09-08T00:00:00Z",
-        "notes": "Authenticated smoke test confirmed Responses API compatibility for the temporary upstream model ID, which is omitted from the public model feed."
+        "notes": "Authenticated smoke test confirmed Responses API compatibility for the temporary Preview deployment."
       },
       {
         "kind": "pricing",
@@ -1180,7 +1180,7 @@
   "provider_api_model_id": "deepseek:deepseek-v4.1-flash-expires-on-0910",
   "provider_model_slug": "deepseek-v4.1-flash-expires-on-0910",
   "internal_model_id": "deepseek/deepseek-v4.1-flash-preview",
-  "is_active_gateway": false,
+  "is_active_gateway": true,
   "credential_mode": "byok_only",
   "quantization_scheme": null,
   "input_modalities": "text,image",
@@ -1192,13 +1192,13 @@
   "capabilities": [
     {
       "capability_id": "text.generate",
-      "status": "inactive",
+      "status": "active",
       "params": [
         { "param_id": "frequency_penalty", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
         { "param_id": "include_reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
         { "param_id": "max_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
         { "param_id": "reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-        { "param_id": "reasoning_effort", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Beta route capability is recorded for catalog visibility only; gateway routing is disabled." },
+        { "param_id": "reasoning_effort", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Preview route capability is recorded for the temporary deployment; the route expires on September 10, 2026." },
         { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
         { "param_id": "stop", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
         { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
@@ -1216,8 +1216,8 @@
       "modes": []
     }
   ],
-  "routing_status": "inactive",
-  "routable": false,
+  "routing_status": "active",
+  "routable": true,
   "regions": {
     "execution": null,
     "data": null
@@ -1233,7 +1233,7 @@
       "kind": "announcement",
       "url": "https://36kr.com/p/3974654461604357",
       "accessed_at": "2026-09-08T00:00:00Z",
-      "notes": "Reports the limited beta route and its expiration date."
+      "notes": "Reports the limited Preview route and its expiration date."
     },
     {
       "kind": "pricing",
@@ -1245,7 +1245,7 @@
   "verification": {
     "status": "partial",
     "checked_at": "2026-09-08T00:00:00Z",
-    "notes": "Temporary beta route is catalogued but intentionally not gateway-routable pending an official stable model endpoint."
+    "notes": "Temporary Preview route remains gateway-routable until the official stable model endpoint launches on September 10, 2026."
   },
   "rate_limits": []
 },
@@ -1310,7 +1310,7 @@
       "kind": "announcement",
       "url": "https://36kr.com/p/3974654461604357",
       "accessed_at": "2026-09-08T00:00:00Z",
-      "notes": "Reports the limited V4.1 Flash beta that precedes the stable model route."
+      "notes": "Reports the limited V4.1 Flash Preview route that precedes the stable model route."
     },
     {
       "kind": "pricing",

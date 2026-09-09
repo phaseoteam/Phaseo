@@ -474,9 +474,13 @@ class ModelIds:
     # Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
     DEEPSEEK_DEEPSEEK_V4_PRO_0813: Final[str] = "deepseek/deepseek-v4-pro-0813"
 
-    # Model ID: deepseek/deepseek-v4.1-flash-beta
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
-    DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA: Final[str] = "deepseek/deepseek-v4.1-flash-beta"
+    # Model ID: deepseek/deepseek-v4.1-flash
+    # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash
+    DEEPSEEK_DEEPSEEK_V4_1_FLASH: Final[str] = "deepseek/deepseek-v4.1-flash"
+
+    # Model ID: deepseek/deepseek-v4.1-flash-preview
+    # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview
+    DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW: Final[str] = "deepseek/deepseek-v4.1-flash-preview"
 
     # Model ID: early-access/ea-29b-a4b
     # Model page: https://phaseo.app/models/early-access/ea-29b-a4b
@@ -2732,7 +2736,8 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
         ModelIds.DEEPSEEK_DEEPSEEK_V4_PRO,
         ModelIds.DEEPSEEK_DEEPSEEK_V4_PRO_0813,
-        ModelIds.DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA,
+        ModelIds.DEEPSEEK_DEEPSEEK_V4_1_FLASH,
+        ModelIds.DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW,
         ModelIds.EARLY_ACCESS_EA_29B_A4B,
         ModelIds.ELEVEN_LABS_ELEVEN_FLASH_V2,
         ModelIds.ELEVEN_LABS_ELEVEN_FLASH_V2_5,

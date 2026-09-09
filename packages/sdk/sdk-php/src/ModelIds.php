@@ -356,8 +356,11 @@ final class ModelIds
     /** Model ID: deepseek/deepseek-v4-pro-0813. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
     public const DEEPSEEK_DEEPSEEK_V4_PRO_0813 = 'deepseek/deepseek-v4-pro-0813';
 
-    /** Model ID: deepseek/deepseek-v4.1-flash-beta. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta */
-    public const DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = 'deepseek/deepseek-v4.1-flash-beta';
+    /** Model ID: deepseek/deepseek-v4.1-flash. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash */
+    public const DEEPSEEK_DEEPSEEK_V4_1_FLASH = 'deepseek/deepseek-v4.1-flash';
+
+    /** Model ID: deepseek/deepseek-v4.1-flash-preview. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview */
+    public const DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW = 'deepseek/deepseek-v4.1-flash-preview';
 
     /** Model ID: early-access/ea-29b-a4b. Model page: https://phaseo.app/models/early-access/ea-29b-a4b */
     public const EARLY_ACCESS_EA_29B_A4B = 'early-access/ea-29b-a4b';
