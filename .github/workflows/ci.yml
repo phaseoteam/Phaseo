@@ -194,6 +194,7 @@ jobs:
             - name: Test database catalog cutover
               run: |
                   pnpm test:catalogue-history
+                  node scripts/tests/workspace-provisioning.mjs
                   pnpm exec tsx apps/web/scripts/catalogue/enumSnapshot.test.ts
                   pnpm exec tsx --test scripts/update-model-statuses.test.ts
 
