@@ -1,7 +1,7 @@
 {
   "alias_slug": "deepseek/deepseek-pro-latest",
-  "resolved_api_model_id": "deepseek/deepseek-v4-pro",
+  "resolved_api_model_id": "deepseek/deepseek-v4.1-flash",
   "channel": "stable",
   "is_enabled": true,
-  "notes": null
+  "notes": "DeepSeek Pro requests follow the V4.1 Flash route after the September 10, 2026 provider transition."
 }
