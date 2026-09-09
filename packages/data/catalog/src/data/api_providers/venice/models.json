@@ -16140,5 +16140,89 @@
       "notes": "Catalog-only Venice listing for an existing canonical model; gateway support for this endpoint is not implemented. Pricing requires a request-specific quote at https://docs.venice.ai/api-reference/endpoint/video/quote."
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "inception/mercury-2.5",
+    "provider_api_model_id": "venice:inception/mercury-2.5",
+    "provider_model_slug": "mercury-2-5",
+    "internal_model_id": "inception/mercury-2.5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 260000,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-09-08T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "stop",
+          "tools",
+          "tool_choice",
+          "response_format",
+          "reasoning_effort"
+        ],
+        "reasoning": {
+          "supported": true,
+          "options": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions",
+        "openai.responses"
+      ],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_models",
+        "url": "https://api.venice.ai/api/v1/models",
+        "accessed_at": "2026-09-09T00:00:00Z",
+        "notes": "Venice's live models API reports mercury-2-5 with 260K context, 65,536 maximum completion tokens, reasoning, function calling, structured outputs, and web search."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-09T00:00:00Z",
+      "notes": "Verified against Venice's live models API, including the provider slug and native pricing metadata."
+    },
+    "rate_limits": []
   }
 ]

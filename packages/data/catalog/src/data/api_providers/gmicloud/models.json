@@ -5495,5 +5495,82 @@
       "notes": "Exact route, availability, capabilities, context, quantization, and pricing verified against GMICloud's authenticated Model Hub."
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.8-max-0902",
+    "provider_api_model_id": "gmicloud:Qwen/Qwen3.8-Max-0902",
+    "provider_model_slug": "Qwen/Qwen3.8-Max-0902",
+    "internal_model_id": "qwen/qwen3.8-max-0902",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-09-02T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          "max_tokens",
+          "temperature",
+          "top_p",
+          "tools",
+          "tool_choice",
+          "response_format",
+          "reasoning"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": true,
+        "attachment": true,
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [
+      "standard"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/chat/completions",
+      "deployment": "serverless"
+    },
+    "sources": [
+      {
+        "kind": "provider_console",
+        "url": "https://console.gmicloud.ai/user-console/ie/model-hub/llm/b2d7b50b-eafe-4174-bbbf-9ea95f248bf8",
+        "accessed_at": "2026-09-09T00:00:00Z",
+        "notes": "Authenticated GMICloud Model Hub lists the exact Qwen/Qwen3.8-Max-0902 route and shows Price $0 per 1M tokens with Usage Free."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-09T00:00:00Z",
+      "notes": "Exact provider route and displayed free pricing verified on the authenticated GMICloud Model Hub."
+    },
+    "rate_limits": []
   }
 ]
