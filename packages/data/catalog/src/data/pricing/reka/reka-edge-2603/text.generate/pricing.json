@@ -1,0 +1,56 @@
+{
+  "key": "reka:reka-edge-2603:text.generate",
+  "api_provider_id": "reka",
+  "provider_slug": "reka",
+  "api_model_id": "reka-edge-2603",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Versioned Reka Edge alias; input tokens use the published Edge rate.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-09T23:00:00Z",
+      "source": "https://docs.reka.ai/pricing"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Versioned Reka Edge alias; output tokens use the published Edge rate.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-09T23:00:00Z",
+      "source": "https://docs.reka.ai/pricing"
+    }
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://docs.reka.ai/pricing",
+      "accessed_at": "2026-09-09T23:44:00Z",
+      "notes": "Reka documents reka-edge-2603 as a versioned Edge alias; Edge is $0.10 per 1M input and output tokens."
+    },
+    {
+      "kind": "documentation",
+      "url": "https://docs.reka.ai/chat/models",
+      "accessed_at": "2026-09-09T23:44:00Z",
+      "notes": "Reka lists reka-edge-2603 as an available Edge model alias."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-09T23:44:00Z",
+    "notes": "Edge alias pricing verified against Reka's first-party pricing and model documentation."
+  }
+}

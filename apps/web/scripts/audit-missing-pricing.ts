@@ -8,6 +8,7 @@ type ProviderCapability = {
     status?: string | null;
     effective_from?: string | null;
     effective_to?: string | null;
+    params?: unknown;
 };
 
 type ProviderModelEntry = {
@@ -69,7 +70,121 @@ function isWithinWindow(
     return nowMs >= normalizedFrom && nowMs < normalizedTo;
 }
 
-async function loadPricingKeys(providerFilter: string | null) {
+const PRICING_CAPABILITY_ALIASES: Record<string, string[]> = {
+    embeddings: ["embeddings", "text.embed"],
+    "text.embed": ["text.embed", "embeddings"],
+    "audio.generate": ["audio.generate", "audio.speech", "audio/speech"],
+    "audio.speech": ["audio.speech", "audio.generate", "audio/speech"],
+    "audio/speech": ["audio/speech", "audio.speech", "audio.generate"],
+    "image.generate": [
+        "image.generate",
+        "image.generations",
+        "images.generations",
+        "images.generate",
+    ],
+    "image.generations": [
+        "image.generations",
+        "image.generate",
+        "images.generations",
+        "images.generate",
+    ],
+    "images.generations": [
+        "images.generations",
+        "image.generate",
+        "image.generations",
+        "images.generate",
+    ],
+    "images.generate": [
+        "images.generate",
+        "image.generate",
+        "image.generations",
+        "images.generations",
+    ],
+    "image.edit": ["image.edit", "image.edits", "images.edits"],
+    "image.edits": ["image.edits", "image.edit", "images.edits"],
+    "images.edits": ["images.edits", "image.edit", "image.edits"],
+    moderation: ["moderation", "moderations", "moderations.create", "text.moderate"],
+    moderations: ["moderations", "moderation", "moderations.create", "text.moderate"],
+    "moderations.create": [
+        "moderations.create",
+        "moderations",
+        "moderation",
+        "text.moderate",
+    ],
+    "text.moderate": [
+        "text.moderate",
+        "moderations.create",
+        "moderations",
+        "moderation",
+    ],
+    "rerank": ["rerank", "rerank.create", "text.rerank"],
+    "text.rerank": ["text.rerank", "rerank", "rerank.create"],
+    "rerank.create": ["rerank.create", "rerank", "text.rerank"],
+    "video.generate": ["video.generate", "video.generation", "video.generations"],
+    "video.generation": ["video.generation", "video.generate", "video.generations"],
+    "video.generations": ["video.generations", "video.generate", "video.generation"],
+};
+
+const BATCH_PRICING_CAPABILITIES: Record<string, string[]> = {
+    "/v1/embeddings": ["text.embed", "embeddings"],
+    "/embeddings": ["text.embed", "embeddings"],
+    "/v1/videos": ["video.generate", "video.generation"],
+    "/videos": ["video.generate", "video.generation"],
+    "/v1/images/generations": [
+        "image.generate",
+        "image.generations",
+        "images.generations",
+        "images.generate",
+    ],
+    "/images/generations": [
+        "image.generate",
+        "image.generations",
+        "images.generations",
+        "images.generate",
+    ],
+    "/v1/images/edits": ["image.edit", "images.edits"],
+    "/images/edits": ["image.edit", "images.edits"],
+    "/v1/moderations": [
+        "text.moderate",
+        "moderations.create",
+        "moderation",
+        "moderations",
+    ],
+    "/moderations": [
+        "text.moderate",
+        "moderations.create",
+        "moderation",
+        "moderations",
+    ],
+    "/v1/responses": ["text.generate", "batch"],
+    "/responses": ["text.generate", "batch"],
+    "/v1/chat/completions": ["text.generate", "batch"],
+    "/chat/completions": ["text.generate", "batch"],
+};
+
+function getBatchEndpoints(params: unknown): string[] {
+    if (!params || typeof params !== "object" || Array.isArray(params)) return [];
+    const endpoint = (params as Record<string, unknown>).endpoint;
+    if (!endpoint || typeof endpoint !== "object" || Array.isArray(endpoint)) return [];
+    const values = (endpoint as Record<string, unknown>).values;
+    return Array.isArray(values)
+        ? values.map((value) => String(value).trim()).filter(Boolean)
+        : [];
+}
+
+function pricingCapabilityCandidates(capability: ProviderCapability): string[] {
+    const capabilityId = String(capability.capability_id ?? "").trim();
+    if (capabilityId === "batch") {
+        const endpoints = getBatchEndpoints(capability.params);
+        const endpointCandidates = endpoints.flatMap(
+            (endpoint) => BATCH_PRICING_CAPABILITIES[endpoint] ?? ["batch"],
+        );
+        return Array.from(new Set(["batch", ...endpointCandidates]));
+    }
+    return PRICING_CAPABILITY_ALIASES[capabilityId] ?? [capabilityId];
+}
+
+async function loadPricingKeys(providerFilter: string | null, nowMs: number) {
     const pricingKeys = new Set<string>();
     const providerDirs = await listDirs(DIR_PRICING);
 
@@ -86,6 +201,17 @@ async function loadPricingKeys(providerFilter: string | null) {
                     const capabilityId =
                         pricing.capability_id ?? pricing.endpoint ?? basename(capabilityDir);
                     if (!pricing.api_provider_id || !modelId || !capabilityId) continue;
+                    if (!Array.isArray(pricing.rules) || pricing.rules.length === 0) continue;
+                    const hasCurrentRule = pricing.rules.some((rule) => {
+                        if (!rule || typeof rule !== "object" || Array.isArray(rule)) return false;
+                        const row = rule as Record<string, unknown>;
+                        return isWithinWindow(
+                            typeof row.effective_from === "string" ? row.effective_from : null,
+                            typeof row.effective_to === "string" ? row.effective_to : null,
+                            nowMs,
+                        );
+                    });
+                    if (!hasCurrentRule) continue;
 
                     pricingKeys.add(
                         `${pricing.api_provider_id}:${modelId}:${capabilityId}`,
@@ -106,7 +232,7 @@ async function loadPricingKeys(providerFilter: string | null) {
 async function main() {
     const providerFilter = argValue("--provider");
     const nowMs = Date.now();
-    const pricingKeys = await loadPricingKeys(providerFilter);
+    const pricingKeys = await loadPricingKeys(providerFilter, nowMs);
     const providerDirs = await listDirs(DIR_PROVIDERS);
 
     const missing: MissingPricingRow[] = [];
@@ -146,7 +272,13 @@ async function main() {
                 scannedActiveCapabilities += 1;
 
                 const pricingKey = `${apiProviderId}:${model.api_model_id}:${capabilityId}`;
-                if (pricingKeys.has(pricingKey)) continue;
+                const hasPricing = pricingCapabilityCandidates(capability).some(
+                    (pricingCapability) =>
+                        pricingKeys.has(
+                            `${apiProviderId}:${model.api_model_id}:${pricingCapability}`,
+                        ),
+                );
+                if (hasPricing) continue;
 
                 missing.push({
                     api_provider_id: apiProviderId,
