@@ -37,14 +37,14 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            - name: Test model status refresh
+              run: pnpm exec tsx --test scripts/update-model-statuses.test.ts
+
             - name: Refresh model statuses
               env:
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
                   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
               run: pnpm run data:update-statuses
-
-            - name: Test model status refresh
-              run: pnpm exec tsx --test scripts/update-model-statuses.test.ts
 
             - name: Validate data
               run: pnpm run validate:data
