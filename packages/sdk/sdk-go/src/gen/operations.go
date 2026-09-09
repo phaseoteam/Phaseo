@@ -2719,7 +2719,12 @@ func RetrieveBatchResults(client *Client, path map[string]string, query map[stri
 		var zero string
 		return zero, err
 	}
-	return string(data), nil
+	var out string
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero string
+		return zero, err
+	}
+	return out, nil
 }
 
 func RetrieveBatchResultsAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (string, error) {
@@ -2729,7 +2734,12 @@ func RetrieveBatchResultsAlias(client *Client, path map[string]string, query map
 		var zero string
 		return zero, err
 	}
-	return string(data), nil
+	var out string
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero string
+		return zero, err
+	}
+	return out, nil
 }
 
 func RetrieveFile(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {

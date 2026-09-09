@@ -214,7 +214,7 @@ export async function fetchGatewayMetadataSource(env: Env, modelId: string): Pro
 			const routeModes = new Map<string, string[]>();
 			for (const route of providerModels.values()) {
 				const providerId = id(route.provider_id);
-				if (providerId) routeModes.set(providerId, [...(routeModes.get(providerId) ?? []), route.credential_mode]);
+				if (providerId) routeModes.set(providerId, [...(routeModes.get(providerId) ?? []), route.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok"]);
 			}
 			for (const provider of uniqueProviders) {
 				const providerId = id(provider.api_provider_id);
