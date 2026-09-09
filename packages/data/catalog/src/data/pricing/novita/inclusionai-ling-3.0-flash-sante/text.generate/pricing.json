@@ -1,0 +1,77 @@
+{
+  "key": "novita:inclusionai/ling-3.0-flash-sante:text.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "inclusionai/ling-3.0-flash-sante",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita currently reports zero input pricing; no promotion end date is published.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-03T03:39:27Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.novita.ai/openai/v1/models"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita's live model payload currently reports zero cached-input pricing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-03T03:39:27Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.novita.ai/openai/v1/models"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita currently reports zero output pricing; no promotion end date is published.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-03T03:39:27Z",
+      "effective_to": null,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.novita.ai/openai/v1/models"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://api.novita.ai/openai/v1/models",
+      "accessed_at": "2026-09-03T03:39:27Z",
+      "notes": "Novita's live model payload reports zero input, cached-input, and output token prices."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-03T03:39:27Z",
+    "notes": "Verified from Novita's first-party OpenAI-compatible model inventory; pricing currently reports zero with no published end date."
+  }
+}

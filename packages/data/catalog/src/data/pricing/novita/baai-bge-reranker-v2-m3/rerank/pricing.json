@@ -1,0 +1,15 @@
+{
+  "key": "novita:baai/bge-reranker-v2-m3:rerank",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "baai/bge-reranker-v2-m3",
+  "capability_id": "rerank",
+  "rules": [
+    { "meter": "input_text_tokens", "unit": "token", "unit_size": 1000000, "price_per_unit": 0.01, "currency": "USD", "pricing_plan": "standard", "note": "Novita serverless reranker input price per million tokens.", "match": [], "priority": 100, "effective_from": "2026-08-12T00:00:00Z", "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://novita.ai/models" },
+    { "meter": "output_text_tokens", "unit": "token", "unit_size": 1000000, "price_per_unit": 0.01, "currency": "USD", "pricing_plan": "standard", "note": "Novita serverless reranker output price per million tokens.", "match": [], "priority": 100, "effective_from": "2026-08-12T00:00:00Z", "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://novita.ai/models" }
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [{ "kind": "pricing", "url": "https://novita.ai/models", "accessed_at": "2026-08-12T00:00:00Z", "notes": "Current first-party model catalog pricing." }],
+  "verification": { "status": "verified", "checked_at": "2026-08-12T00:00:00Z", "notes": "$0.01 per million input and output tokens." }
+}

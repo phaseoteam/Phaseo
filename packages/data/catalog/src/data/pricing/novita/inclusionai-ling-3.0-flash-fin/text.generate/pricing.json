@@ -1,0 +1,89 @@
+{
+  "key": "novita:inclusionai/ling-3.0-flash-fin:text.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "inclusionai/ling-3.0-flash-fin",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita currently offers Ling 3.0 Flash Fin free for a limited time; no end date is published.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-27T10:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_pricing",
+        "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
+        "accessed_at": "2026-08-27T00:00:00Z",
+        "notes": "Novita's first-party model page reports time-limited free input pricing."
+      }
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita's live payload currently reports zero cached-input pricing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-27T10:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_pricing",
+        "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
+        "accessed_at": "2026-08-27T00:00:00Z",
+        "notes": "Novita's first-party model page reports zero cached-input pricing."
+      }
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita currently offers Ling 3.0 Flash Fin free for a limited time; no end date is published.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-27T10:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_pricing",
+        "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
+        "accessed_at": "2026-08-27T00:00:00Z",
+        "notes": "Novita's first-party model page reports time-limited free output pricing."
+      }
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_pricing",
+      "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash-fin",
+      "accessed_at": "2026-08-27T00:00:00Z",
+      "notes": "Novita labels Ling 3.0 Flash Fin as time-limited free and reports $0 input, cached input, and output token pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-27T00:00:00Z",
+    "notes": "Zero pricing is verified against Novita's first-party live model payload; no promotion end date is published."
+  }
+}

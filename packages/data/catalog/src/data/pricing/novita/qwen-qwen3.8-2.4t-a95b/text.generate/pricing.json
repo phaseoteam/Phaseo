@@ -1,0 +1,86 @@
+{
+  "key": "novita:qwen/qwen3.8-2.4t-a95b:text.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "qwen/qwen3.8-2.4t-a95b",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita Qwen3.8 2.4T A95B cached-input price.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-08-26T00:00:00Z",
+        "notes": "Live Novita model catalog pricing for qwen/qwen3.8-2.4t-a95b."
+      }
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita Qwen3.8 2.4T A95B input price.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-08-26T00:00:00Z",
+        "notes": "Live Novita model catalog pricing for qwen/qwen3.8-2.4t-a95b."
+      }
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita Qwen3.8 2.4T A95B output price.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-08-26T00:00:00Z",
+        "notes": "Live Novita model catalog pricing for qwen/qwen3.8-2.4t-a95b."
+      }
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_model",
+      "url": "https://api.novita.ai/openai/v1/models",
+      "accessed_at": "2026-08-26T00:00:00Z",
+      "notes": "Novita's live model catalog reports $2 input, $0.25 cached input, and $6 output per million tokens."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-26T00:00:00Z",
+    "notes": "Verified from Novita's live OpenAI-compatible model catalog."
+  }
+}

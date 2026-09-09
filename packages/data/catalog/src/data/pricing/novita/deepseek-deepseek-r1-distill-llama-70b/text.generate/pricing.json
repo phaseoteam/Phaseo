@@ -1,0 +1,66 @@
+{
+  "key": "novita:deepseek/deepseek-r1-distill-llama-70b:text.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "deepseek/deepseek-r1-distill-llama-70b",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.8,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://novita.ai/models/model-detail/deepseek-deepseek-r1-distill-llama-70b",
+        "accessed_at": "2026-08-20T00:00:00Z",
+        "notes": "First-party model pricing."
+      }
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.8,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://novita.ai/models/model-detail/deepseek-deepseek-r1-distill-llama-70b",
+        "accessed_at": "2026-08-20T00:00:00Z",
+        "notes": "First-party model pricing."
+      }
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_pricing",
+      "url": "https://novita.ai/pricing?de=1",
+      "accessed_at": "2026-08-20T00:00:00Z",
+      "notes": "Current Novita pricing for deepseek/deepseek-r1-distill-llama-70b."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-20T00:00:00Z",
+    "notes": "Verified from Novita's first-party pricing catalog and model page."
+  }
+}

@@ -37,10 +37,17 @@
     {
       "name": "output_context_length",
       "value": 32768
+    },
+    {
+      "name": "pricing_note",
+      "value": "Novita currently reports zero input, cached-input, and output token prices; no promotion end date is published."
     }
   ],
   "benchmarks": [],
-  "page_notice": null,
+  "page_notice": {
+    "tone": "info",
+    "markdown": "Novita currently reports this model as free; no promotion end date is published."
+  },
   "model_type": "language",
   "knowledge_cutoff": null,
   "limits": {
@@ -74,7 +81,7 @@
       "kind": "provider_models",
       "url": "https://api.novita.ai/openai/v1/models",
       "accessed_at": "2026-09-03T03:39:27Z",
-      "notes": "Novita's first-party model inventory reports the exact identifier, description, 124B/5.1B architecture, 256K context, 32K output limit, text modalities, serverless function calling and reasoning."
+      "notes": "Novita's first-party model inventory reports the exact identifier, description, 124B/5.1B architecture, 256K context, 32K output limit, text modalities, serverless function calling and reasoning, and zero token prices."
     }
   ],
   "verification": {

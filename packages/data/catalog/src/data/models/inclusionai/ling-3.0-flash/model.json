@@ -45,6 +45,10 @@
     {
       "name": "output_context_length",
       "value": 32768
+    },
+    {
+      "name": "pricing_note",
+      "value": "Novita lists $0.06 per 1M input tokens, $0.012 per 1M cached input tokens, and $0.18 per 1M output tokens after the free promotion ended on 6 August 2026 at 8:00 AM PT."
     }
   ],
   "benchmarks": [
@@ -123,13 +127,19 @@
       "kind": "documentation",
       "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-flash",
       "accessed_at": "2026-08-06T00:00:00Z",
-      "notes": "Official Novita model page confirms the callable identifier, context and output limits, function calling, and reasoning support."
+      "notes": "Official Novita model page confirms the current paid pricing, callable identifier, context and output limits, function calling, and reasoning support."
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.com/novita_labs/status/2083204529319989745",
+      "accessed_at": "2026-08-01T00:00:00Z",
+      "notes": "Official Novita update extends the free window through 6 August 2026 at 8:00 AM PT."
     }
   ],
   "verification": {
     "status": "verified",
     "checked_at": "2026-08-06T00:00:00Z",
-    "notes": "Novita availability, model identifier, context, output limit, and capabilities verified from official sources."
+    "notes": "Novita availability, model identifier, context, output limit, capabilities, promotional expiry, and current paid pricing verified from official sources."
   },
   "last_updated": "2026-08-06T00:00:00Z",
   "removal_date": null,

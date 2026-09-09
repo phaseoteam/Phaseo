@@ -1,0 +1,155 @@
+{
+  "key": "novita:z-ai/glm-5.3-flash:text.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "z-ai/glm-5.3-flash",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.075,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "50% GLM-5.3-Flash launch discount applied to the $0.15/M list input rate through 2026-09-09 24:00 UTC+8.",
+      "match": [],
+      "priority": 200,
+      "effective_from": "2026-08-26T00:00:00Z",
+      "effective_to": "2026-09-09T16:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-08-28T00:00:00Z",
+        "notes": "Novita's live model catalog reports origin_price_per_m $0.15 and price_per_m $0.075 for input tokens."
+      }
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Undiscounted GLM-5.3-Flash list input rate after the launch promotion.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-08-28T00:00:00Z",
+        "notes": "Novita's live model catalog reports origin_price_per_m $0.15 and price_per_m $0.075 for input tokens."
+      }
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.015,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "50% GLM-5.3-Flash launch discount applied to the $0.03/M list cached-input rate through 2026-09-09 24:00 UTC+8.",
+      "match": [],
+      "priority": 200,
+      "effective_from": "2026-08-26T00:00:00Z",
+      "effective_to": "2026-09-09T16:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-08-28T00:00:00Z",
+        "notes": "Novita's live model catalog reports origin_price_per_m $0.03 and price_per_m $0.015 for cache-read tokens."
+      }
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.03,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Undiscounted GLM-5.3-Flash list cached-input rate after the launch promotion.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-08-28T00:00:00Z",
+        "notes": "Novita's live model catalog reports origin_price_per_m $0.03 and price_per_m $0.015 for cache-read tokens."
+      }
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "50% GLM-5.3-Flash launch discount applied to the $0.50/M list output rate through 2026-09-09 24:00 UTC+8.",
+      "match": [],
+      "priority": 200,
+      "effective_from": "2026-08-26T00:00:00Z",
+      "effective_to": "2026-09-09T16:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-08-28T00:00:00Z",
+        "notes": "Novita's live model catalog reports origin_price_per_m $0.50 and price_per_m $0.25 for output tokens."
+      }
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Undiscounted GLM-5.3-Flash list output rate after the launch promotion.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://api.novita.ai/openai/v1/models",
+        "accessed_at": "2026-08-28T00:00:00Z",
+        "notes": "Novita's live model catalog reports origin_price_per_m $0.50 and price_per_m $0.25 for output tokens."
+      }
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_model",
+      "url": "https://api.novita.ai/openai/v1/models",
+      "accessed_at": "2026-08-28T00:00:00Z",
+      "notes": "Novita's live model catalog reports a 50% launch discount: $0.075 input, $0.015 cached input, and $0.25 output per million tokens from $0.15/$0.03/$0.50 list rates."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-28T00:00:00Z",
+    "notes": "Novita's live OpenAI-compatible model catalog exposes both origin and discounted prices; the 50% launch promotion is represented through 2026-09-09 24:00 UTC+8."
+  }
+}

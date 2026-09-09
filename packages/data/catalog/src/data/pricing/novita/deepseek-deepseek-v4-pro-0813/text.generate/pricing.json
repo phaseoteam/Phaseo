@@ -1,0 +1,108 @@
+{
+  "key": "novita:deepseek/deepseek-v4-pro-0813:text.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "deepseek/deepseek-v4-pro-0813",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.132,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_to": "2026-09-08T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v4-pro-0813",
+        "accessed_at": "2026-08-20T00:00:00Z",
+        "notes": "First-party model pricing."
+      }
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.32,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v4-pro-0813",
+        "accessed_at": "2026-08-20T00:00:00Z",
+        "notes": "First-party model pricing."
+      }
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.96,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v4-pro-0813",
+        "accessed_at": "2026-08-20T00:00:00Z",
+        "notes": "First-party model pricing."
+      }
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.044,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-08T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "provider_model",
+        "url": "https://novita.ai/models/model-detail/deepseek-deepseek-v4-pro-0813",
+        "accessed_at": "2026-09-08T00:00:00Z",
+        "notes": "First-party model pricing."
+      }
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_pricing",
+      "url": "https://novita.ai/pricing?de=1",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Current Novita pricing for deepseek/deepseek-v4-pro-0813."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Verified at $1.32/M input, $0.044/M cached input and $3.96/M output against Novita's first-party pricing catalog and model page."
+  }
+}

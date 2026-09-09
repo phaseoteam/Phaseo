@@ -1,0 +1,56 @@
+{
+  "key": "novita:inclusionai/ling-3.0-tiny:text.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "inclusionai/ling-3.0-tiny",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "Novita labels this offer time-limited free but does not publish an end date.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-05T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-tiny"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "Novita labels this offer time-limited free but does not publish an end date.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-05T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-tiny"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "free"
+  ],
+  "sources": [
+    {
+      "url": "https://novita.ai/models/model-detail/inclusionai-ling-3.0-tiny",
+      "kind": "documentation"
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-06T00:00:00Z",
+    "notes": "Current promotional input and output rates verified from Novita."
+  }
+}

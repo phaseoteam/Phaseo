@@ -1,0 +1,62 @@
+{
+  "key": "novita:inclusionai/ling-3.0-flash:free:text.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "inclusionai/ling-3.0-flash:free",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "Free on Novita through 6 August 2026 at 8:00 AM PT.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-23T00:00:00Z",
+      "effective_to": "2026-08-06T15:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://x.com/novita_labs/status/2083204529319989745"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "Free on Novita through 6 August 2026 at 8:00 AM PT.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-23T00:00:00Z",
+      "effective_to": "2026-08-06T15:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://x.com/novita_labs/status/2083204529319989745"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "free"
+  ],
+  "sources": [
+    {
+      "url": "https://novita.ai/de/models/model-detail/inclusionai-ling-3.0-flash",
+      "kind": "documentation"
+    },
+    {
+      "url": "https://x.com/novita_labs/status/2083204529319989745",
+      "kind": "announcement"
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-01T00:00:00Z",
+    "notes": "Official Novita update extends the free window through 6 August 2026 at 8:00 AM PT."
+  }
+}

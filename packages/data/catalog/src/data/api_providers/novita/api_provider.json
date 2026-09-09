@@ -10,7 +10,7 @@
   "data_retention_days": 0,
   "residency_source_url": "https://novita.ai/legal/terms-of-service",
   "residency_notes": "Novita's current public terms document the inference-content retention policy but do not identify a customer-selectable data or execution region for the managed API. Public GPU-region material should not be treated as a managed API residency guarantee.",
-  "pricing_source_url": null,
+  "pricing_source_url": "https://novita.ai/pricing",
   "data_policy_tier": "private",
   "data_policy_confidence": "confirmed",
   "data_policy_contract_mode": "none",
