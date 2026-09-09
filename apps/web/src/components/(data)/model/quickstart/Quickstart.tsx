@@ -36,6 +36,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import type { QuickstartRequestContext } from "./requestContext";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import type { ByokOnlyProvider } from "./byokOnly";
 
 interface QuickstartProps {
 	mode?: "generation" | "model-metadata";
@@ -64,6 +65,7 @@ interface QuickstartProps {
 	supportedEndpoints?: string[];
 	showHeader?: boolean;
 	requestContext?: QuickstartRequestContext;
+	byokOnlyProviders?: ByokOnlyProvider[];
 }
 
 const normalizeEndpointValue = (value: string | null | undefined) =>
@@ -317,6 +319,7 @@ export default function Quickstart({
 	supportedEndpoints = [],
 	showHeader = true,
 	requestContext,
+	byokOnlyProviders = [],
 }: QuickstartProps) {
 	const isModelMetadataQuickstart = mode === "model-metadata";
 	const supportedEndpointValues = useMemo(() => {
@@ -1801,6 +1804,8 @@ console.log(response);`
 			: supportsServiceTier
 				? `${serviceTierLabel} tier`
 				: "Standard request";
+	const requiresByok = !isModelMetadataQuickstart && byokOnlyProviders.length > 0;
+	const requestStep = requiresByok ? 3 : 2;
 
 	return (
 		<section className="space-y-4">
@@ -1897,13 +1902,46 @@ console.log(response);`
 					</div>
 				</div>
 
+				{requiresByok ? (
+					<div className="space-y-3 border-t border-border/70 pt-4">
+						<div className="flex items-center gap-3">
+							<Badge
+								variant="outline"
+								className="flex h-7 w-7 items-center justify-center rounded-full border-amber-300 bg-amber-50 p-0 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+							>
+								2
+							</Badge>
+							<h3 className="text-base font-semibold">Add a provider key</h3>
+						</div>
+						<Alert className="rounded-lg border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50">
+							<KeyRound className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+							<AlertTitle>BYOK required</AlertTitle>
+							<AlertDescription className="space-y-3 text-sm text-amber-900/90 dark:text-amber-100/90">
+								<p>
+									Phaseo does not manage credentials for the available {byokOnlyProviders.length === 1 ? "provider" : "providers"}. Add your own key before sending this request.
+								</p>
+								<div className="flex flex-wrap gap-2">
+									{byokOnlyProviders.map((provider) => (
+										<Button key={provider.providerId} asChild size="sm" variant="outline" className="bg-background text-foreground">
+											<Link href={`/settings/byok/${provider.providerId}`}>
+												<KeyRound className="h-3.5 w-3.5" />
+												Add {provider.providerName} key
+											</Link>
+										</Button>
+									))}
+								</div>
+							</AlertDescription>
+						</Alert>
+					</div>
+				) : null}
+
 				<div className="space-y-3 border-t border-border/70 pt-4">
 					<div className="flex items-center gap-3">
 						<Badge
 							variant="outline"
 							className="flex h-7 w-7 items-center justify-center rounded-full p-0 text-xs"
 						>
-							2
+							{requestStep}
 						</Badge>
 						<h3 className="text-base font-semibold">
 							{isModelMetadataQuickstart

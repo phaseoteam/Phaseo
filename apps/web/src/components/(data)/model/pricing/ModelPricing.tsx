@@ -7,6 +7,7 @@ import {
 	fetchFrontendModelProviderRoutingHealth,
 	fetchFrontendModelProviderRuntimeStats,
 	fetchFrontendModelPricing,
+	fetchFrontendModelGatewayMetadata,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
@@ -69,7 +70,7 @@ export default async function ModelPricing({
 	creatorOrganisationName?: string | null;
 	providersOverride?: ProviderPricing[];
 }) {
-	const [providers, identity, showAdminPricingControls] = await Promise.all([
+	const [providers, identity, showAdminPricingControls, gatewayMetadata] = await Promise.all([
 		providersOverride ? Promise.resolve(providersOverride) : fetchFrontendModelPricing(modelId),
 		modelStatus !== undefined
 			? Promise.resolve({
@@ -85,7 +86,24 @@ export default async function ModelPricing({
 					organisationName: header?.organisation?.name ?? null,
 				})),
 		withOptionalTimeout(isAdminViewer(), false, "admin viewer check"),
+		withOptionalTimeout(fetchFrontendModelGatewayMetadata(modelId), null, "gateway metadata"),
 	]);
+	const credentialModeByProvider = new Map(
+		gatewayMetadata?.providers.map((provider) => [
+			provider.api_provider_id,
+			provider.provider?.credential_mode ?? "managed_and_byok",
+		]) ?? [],
+	);
+	const providersWithCredentialModes = providers.map((provider) => ({
+		...provider,
+		provider: {
+			...provider.provider,
+			credential_mode:
+				credentialModeByProvider.get(provider.provider.api_provider_id) ??
+				provider.provider.credential_mode ??
+				"managed_and_byok",
+		},
+	}));
 	const workspacePrivacySettings: WorkspacePrivacySettings | null =
 		await withOptionalTimeout(
 			fetchWorkspacePrivacySettings(),
@@ -94,7 +112,7 @@ export default async function ModelPricing({
 		);
 
 	// Show providers with model mappings even when pricing rules are missing.
-	const providersForDisplay = (providers || []).filter(
+	const providersForDisplay = providersWithCredentialModes.filter(
 		(p) => Array.isArray(p.provider_models) && p.provider_models.length > 0
 	);
 	const now = new Date();

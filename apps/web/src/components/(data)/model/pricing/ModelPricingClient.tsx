@@ -25,12 +25,14 @@ import {
     Globe2,
     GraduationCap,
     ListFilter,
+	KeyRound,
     RotateCcw,
     Shield,
     Server,
     ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     DropdownMenu,
@@ -590,6 +592,12 @@ function ProviderServiceTierInfoIcons({
 
 	return (
 		<div className="flex shrink-0 items-center gap-1">
+			{provider.provider.credential_mode === "byok_only" ? (
+				<Badge variant="outline" className="h-6 gap-1 border-amber-300 bg-amber-50 px-1.5 text-[10px] font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+					<KeyRound className="h-3 w-3" />
+					BYOK only
+				</Badge>
+			) : null}
 			<HoverCard openDelay={120} closeDelay={80}>
 				<HoverCardTrigger asChild>
 					<button

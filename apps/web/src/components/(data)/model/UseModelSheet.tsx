@@ -16,6 +16,7 @@ import {
 	ProviderInspectorSheetTitle,
 } from "./pricing/ProviderInspectorSheet";
 import Quickstart from "./quickstart/Quickstart";
+import { getByokOnlyProviders } from "./quickstart/byokOnly";
 
 export function UseModelSheet({
 	modelId,
@@ -62,6 +63,10 @@ export function UseModelSheet({
 				: [],
 		[gatewayMetadata],
 	);
+	const byokOnlyProviders = useMemo(
+		() => getByokOnlyProviders(gatewayMetadata),
+		[gatewayMetadata],
+	);
 
 	return (
 		<ProviderInspectorSheet open={open} onOpenChange={handleOpenChange}>
@@ -99,6 +104,7 @@ export function UseModelSheet({
 							supportedParametersByEndpoint={gatewayMetadata.supportedParametersByEndpoint}
 							endpoint={quickstartEndpoint}
 							supportedEndpoints={supportedEndpoints}
+							byokOnlyProviders={byokOnlyProviders}
 							showHeader={false}
 						/>
 					) : (
