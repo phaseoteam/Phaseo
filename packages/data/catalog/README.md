@@ -1,36 +1,23 @@
 # @phaseo/data-catalog
 
-Canonical Phaseo data lives in `src/data`.
+The database is the source of truth for Phaseo's model, provider, organisation, benchmark, pricing, alias, family, and subscription catalog.
 
-- Models
-- Providers
-- Organisations
-- Benchmarks
-- Pricing
+## Report a catalog change
 
-The web app and automation scripts reference this directory as the single source of truth.
+[Report incorrect information](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) or [request missing data](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml). Include the affected page or record ID, proposed values, and official sources. Maintainers review reports and apply approved changes through the admin-only [catalog editor](https://phaseo.app/internal/data).
 
-JSON files are the authoring format for pull requests, review, and issue
-discussion. The web importer writes the compatibility `data_*` tables from this
-directory and then synchronises the additive `v2_*` catalogue mirror. Runtime
-queries should move to the v2 tables only after the mirror and reconciliation
-checks are healthy.
+## Edit and review
 
-The structural contract is documented in [`schema/catalog.schema.json`](schema/catalog.schema.json).
-The TypeScript validator remains responsible for cross-file references and
-normalisation rules that JSON Schema cannot express.
+Admins use the editor for records, provider routes, pricing, and benchmark results. [Catalog settings](https://phaseo.app/internal/data/registries) manages families, service tiers, meters, regions, route variants, subscription plans, and plan features. [Provider updates](https://phaseo.app/internal/data/imports) queues prices for explicit acceptance or dismissal; provider feeds do not automatically publish prices.
 
-Provider records may be catalogue-only. Gateway and aggregator entries such as
-OpenRouter, Vercel AI Gateway, Cloudflare AI Gateway, GitHub Models, Requesty,
-and the router services seeded from models.dev are explicitly marked with
-`gateway_kind` and `routable: false`; they describe external availability and
-are not Phaseo routing offers. A provider becomes routable only through an
-explicit reviewed JSON change and route import.
+A provider may be catalog-only. A callable model requires an explicitly enabled compatible provider route; a catalog entry alone does not enable routing. Preserve stable identities, source citations, price units, and historical effective dates when editing.
 
-models.dev is an enrichment source, never a runtime database writer or a source
-of canonical model identities. Refresh its provider support snapshot explicitly
-with `pnpm --filter @phaseo/web catalog:enrich:models-dev`, review the resulting
-JSON diff, and then run the normal importer. The enrichment command only maps
-models that already resolve through a canonical model JSON file, an enabled
-alias, or an existing provider model slug; unmatched upstream records are
-reported and skipped.
+## Files and automation
+
+- `generated/database-v2` contains daily public database snapshots and the generated OpenAPI enum index. Snapshot updates are reviewed through pull requests.
+- `src/data` contains archived compatibility fixtures. Editing these files does not update the live catalog.
+- The legacy JSON-to-database importer is retired. Neither archived fixtures nor exported snapshots are an input feed.
+- Provider discovery proposes database pricing updates, benchmark sync writes reviewed-source results, and lifecycle automation uses database dates and routes.
+- The historical fixture contract remains in [`schema/catalog.schema.json`](schema/catalog.schema.json). Fixture validators check structure and cross-file references; they do not publish data.
+
+Code, schema, and automation changes still use branches, tests, and pull requests. Never edit generated SDK or OpenAPI model lists by hand; regenerate them through the snapshot tooling.

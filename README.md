@@ -81,7 +81,7 @@ console.log(response.choices[0]?.message?.content);
 | `apps/api` | Cloudflare Workers + Hono gateway API. |
 | `apps/docs` | Mintlify documentation and OpenAPI reference. |
 | `packages/sdk/*` | TypeScript, Python, Go, C#, PHP, Ruby, Java, C++, Rust, and Agent SDK packages. |
-| `packages/data/catalog` | Canonical model, provider, pricing, benchmark, and catalog data. |
+| `packages/data/catalog` | Catalog schemas, archived compatibility fixtures, and daily public database exports. |
 | `examples/*` | Small apps and smoke projects for gateway and OAuth flows. |
 | `scripts/*` | Catalog, OpenAPI, release, validation, and maintenance tooling. |
 
@@ -130,7 +130,11 @@ Phaseo package names and documentation are now the primary public surface. New A
 
 ## Contributing
 
-Contributions are welcome across the gateway, web app, docs, SDKs, examples, and catalog data. Read `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` before opening a PR.
+Contributions are welcome across the gateway, web app, docs, SDKs, and examples. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before opening a PR.
+
+For catalog corrections or missing models, providers, pricing, or benchmark results, [open an issue](https://github.com/phaseoteam/Phaseo/issues/new/choose) with the affected page and official sources. Maintainers review reports and update the database through the [internal editor](https://phaseo.app/internal/data), which requires admin access.
+
+The database is the catalog source of truth. Daily public JSON exports remain in `packages/data/catalog/generated/database-v2`; `src/data` contains archived compatibility fixtures. Editing either directory does not update the live catalog, and the legacy JSON importer is retired.
 
 ## Security
 

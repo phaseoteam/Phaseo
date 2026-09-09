@@ -1,191 +1,65 @@
 ---
 icon: "users-round"
-title: "How to Contribute"
-description: "A step-by-step guide on how to make your first contribution to Phaseo - from setting up your environment to submitting a pull request."
+title: "Contribute Code or Documentation"
+description: "Set up Phaseo locally, validate a focused change, and open a pull request."
 ---
 
-Contributing to **Phaseo** is simple, transparent, and open to everyone.
-This guide walks you through the entire process, whether you're editing a model entry, updating benchmark data, improving documentation, or contributing new ideas.
+Use this workflow for code and documentation changes. For model, provider, pricing, organisation, or benchmark records, [submit a catalog issue](./overview.mdx) instead; no local setup is needed.
 
----
+## Set up your fork
 
-## Before you start
-
-You'll need a few basic tools installed:
-
-| Tool               | Purpose                                        | Installation                                       |
-| ------------------ | ---------------------------------------------- | -------------------------------------------------- |
-| **Git**            | Version control to clone and push changes.     | [Install Git](https://git-scm.com/downloads)       |
-| **Node.js (v20+)** | Runs the Phaseo site locally (Next.js).      | [Download Node.js](https://nodejs.org/en/download) |
-| **pnpm**           | Package manager used in this project.          | `npm install -g pnpm`                              |
-| **GitHub account** | Required for forks, issues, and pull requests. | [Sign up here](https://github.com/signup)          |
-
-If you only want to edit **data** or **Markdown documentation**, you can make changes directly on GitHub without setting up a local environment.
-
----
-
-## 1. Fork the repository
-
-Go to the [Phaseo GitHub Repository](https://github.com/phaseoteam/Phaseo) and click **Fork** in the top-right corner.
-This creates your own copy of the project that you can freely edit.
-
----
-
-## 2. Clone your fork
+Install Git, Node.js 22.12 or newer, and pnpm. Fork the [Phaseo repository](https://github.com/phaseoteam/Phaseo), then clone your fork and create a new branch:
 
 ```bash
 git clone https://github.com/yourusername/Phaseo.git
 cd Phaseo
-```
-
-This downloads your fork to your local machine.
-
----
-
-## 3. Create a new branch
-
-It's best practice to make a new branch for each change you make:
-
-```bash
-git checkout -b update-benchmark-data
-```
-
-Please use a descriptive branch name that reflects your change to make reviewing your changes easier.
-
-Examples:
-
--   `fix-{model-name}`
--   `add-new-organisation`
--   `improve-docs`
--   `update-pricing-for-{model-name}`
-
----
-
-## 4. Make your changes
-
-Depending on what you want to edit:
-
-| Area                  | Files                                         | Description                                           |
-| --------------------- | --------------------------------------------- | ----------------------------------------------------- |
-| **Model data**        | `/packages/data/catalog/src/data/models/**/model.json`     | Add or update model metadata, pricing, or benchmarks. |
-| **Organisation data** | `/packages/data/catalog/src/data/organisations/*.json`     | Update details about companies or research groups.    |
-| **Benchmark data**    | `/packages/data/catalog/src/data/benchmarks/**/*.json`     | Submit new evaluation results or corrections.         |
-| **Documentation**     | `/apps/docs/v1/**/*.mdx`                      | Improve or expand guides, references, and docs pages. |
-| **Gateway**           | `/apps/api/*`                                 | Make changes to the API Gateway.                      |
-
-If you're editing data, please follow the schemas and field formats described in [Repo Structure](./repo-structure.mdx).
-
----
-
-## 5. Preview your changes (optional)
-
-If you'd like to preview your edits locally:
-
-```bash
+git switch -c docs/improve-quickstart
 pnpm install
-pnpm dev
 ```
 
-Use [http://localhost:3100](http://localhost:3100) for web changes, and [http://localhost:3101](http://localhost:3101) for docs changes. All data changes will have to be previewed after a PR has been made as the web app pulls from the database.
+## Make and preview the change
 
----
-
-## 6. Commit your changes
-
-Once you're satisfied, commit your work:
+See [Repository structure](./repo-structure.mdx) for the relevant application or package. For Markdown-only edits, you can also use GitHub's file editor and open a pull request there.
 
 ```bash
-git add .
-git commit -m "Updated benchmark data for Claude 3.5 Sonnet"
+# Web app at http://localhost:3100
+pnpm --filter @phaseo/web dev
+
+# Documentation at http://localhost:3101
+pnpm --filter @phaseo/docs dev
 ```
 
-Please ensure your commit message is descriptive of the changes made to help reviewers understand your contribution.
+Follow the relevant `AGENTS.md` instructions. Keep secrets in local environment files and out of commits. Local app previews may require configured backend services and normal sign-in.
 
----
+## Validate your changes
 
-## 7. Push your branch
+Run the checks relevant to the files you changed. For documentation:
 
 ```bash
-git push origin update-benchmark-data
+pnpm docs:links
+pnpm docs:build
 ```
 
----
-
-## 8. Create a Pull Request (PR)
-
-1. Go to your fork on GitHub.
-2. You'll see a message offering to create a PR - click **Compare & Pull Request.**
-3. Fill out the PR template with the appropriate information for your changes.
-4. Submit the PR.
-
-Once your PR is reviewed and approved, it will be merged into the main Phaseo repository.
-
----
-
-## 9. Celebrate
-
-Your contribution will be live once merged. If you made it this far, we appreciate your effort and support.
-
-<Card
-	title="View Contributors"
-	icon="users"
-	href="https://phaseo.app/contribute"
-	horizontal
->
-	See everyone who's helped build Phaseo.
-</Card>
-
----
-
-## Contribution tips
-
--   Keep PRs **small and focused** - one logical change per PR.
--   Attempt to follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) where possible. Use **clear commit prefixes** like `fix:`, `add:`, or `chore:`.
--   If your change affects data accuracy, include **sources or references**.
--   For large or uncertain ideas, open a **GitHub Discussion** or message in Discord before coding.
--   Always stay respectful and follow our [Code of Conduct](../community/code-of-conduct.mdx).
-
----
-
-## Example workflow summary
+For web changes:
 
 ```bash
-# 1. Fork and clone
-
-git clone https://github.com/yourusername/Phaseo.git
-cd Phaseo
-
-# 2. Create branch
-git checkout -b add-openai-new-model
-
-# 3. Make changes
-# e.g., update packages/data/catalog/src/data/models/openai/new-model/model.json
-
-# 4. Commit and push
-git add .
-git commit -m "Add new OpenAI model entry"
-git push origin add-new-openai-model
-
-# 5. Create a Pull Request on GitHub
+pnpm --filter @phaseo/web lint
+pnpm --filter @phaseo/web typecheck
+pnpm --filter @phaseo/web test
 ```
 
----
+Run a production build for rendering or routing changes. API, SDK, and schema changes need their corresponding tests and generation steps. See the root [contribution guide](https://github.com/phaseoteam/Phaseo/blob/main/CONTRIBUTING.md).
 
-## Next steps
+## Open a pull request
 
-<Columns cols={2}>
-	<Card
-		title="Repo Structure"
-		icon="folder-tree"
-		href="./repo-structure.mdx"
-	>
-		Learn about the folder layout and where to find key data files.
-	</Card>
-	<Card
-		title="Editing a Model"
-		icon="brain"
-		href="./editing-a-model.mdx"
-	>
-		Start with a practical example - updating or adding a model entry.
-	</Card>
-</Columns>
+Stage only the files you changed, use a descriptive commit message, and push your branch:
+
+```bash
+git add apps/docs/v1/quickstart.mdx
+git commit -m "docs: clarify the quickstart"
+git push -u origin docs/improve-quickstart
+```
+
+Open a pull request from your fork. Explain the problem, what changed, and which checks passed. Link related issues and include screenshots for visible UI changes. Address review feedback before merge; changes become live after the relevant deployment completes.
+
+Follow the [Code of Conduct](../community/code-of-conduct.mdx). For large or uncertain changes, discuss the proposal before writing code.
