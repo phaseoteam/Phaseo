@@ -82,11 +82,11 @@ async function main() {
 			if (error) throw error;
 		}
 		// Scope cleanup to this matched model, after its replacement succeeds.
-		const { data: old, error: readError } = await db.from("v2_benchmark_results").select("result_id").eq("model_slug", entry.model.model_id).in("benchmark_id", METRICS.map((metric) => metric.id));
+		const { data: old, error: readError } = await db.from("v2_benchmark_results").select("result_id").eq("model_slug", entry.model.model_id).is("effective_to", null).in("benchmark_id", METRICS.map((metric) => metric.id));
 		if (readError) throw readError;
 		const stale = (old ?? []).filter((row) => !rows.some((result) => result.result_id === row.result_id)).map((row) => row.result_id);
 		// Saved catalogue records cannot be deleted. Withdraw obsolete scores in place.
-		if (stale.length) { const { error } = await db.from("v2_benchmark_results").update({ effective_to: updated_at, updated_at }).in("result_id", stale); if (error) throw error; }
+		if (stale.length) { const { error } = await db.from("v2_benchmark_results").update({ effective_to: updated_at, updated_at }).is("effective_to", null).in("result_id", stale); if (error) throw error; }
 	}
 	console.log("Synchronized matched database models. Public caches expire under their normal TTLs.");
 }

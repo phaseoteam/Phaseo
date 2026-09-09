@@ -17,7 +17,10 @@ Provider catalog sync writes pending proposals to the private
 `v2_catalogue_price_proposals` table. Review these at `/internal/data/imports`.
 Acceptance checks that the source SKU has not changed and creates a new price
 version through the existing audited pricing transaction. Dismissal retains the
-proposal. Ambiguous routes, conditional pricing and incomplete meter sets are
+proposal. Each new quote supersedes older pending quotes for the same price
+family; a feed price matching the database clears obsolete quotes. Feed updates
+and acceptance are serialized so a superseded quote cannot be published.
+Ambiguous routes, conditional pricing and incomplete meter sets are
 skipped for manual editing. Official pricing takes priority over live provider
 prices; models.dev only fills missing prices. This feed does not create new models.
 The existing provider discovery pipeline continues to supply discovery candidates.

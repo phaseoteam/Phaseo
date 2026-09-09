@@ -21,6 +21,11 @@ async function all(table: string, order: string): Promise<Row[]> {
     if ((result.data ?? []).length < 500) return rows;
   }
 }
+async function queue(route: string, code: string, proposalId: string | null, url: string, sku: Row | null, previous: Row | null) {
+  if (process.argv.includes("--dry-run")) return;
+  const result = await db.rpc("queue_v2_catalogue_price_proposal", { p_provider_model_id: route, p_sku_code: code, p_proposal_id: proposalId, p_source_url: url, p_sku: sku, p_expected_sku: previous });
+  if (result.error) throw result.error;
+}
 async function main() {
   const filter = process.argv.find((arg) => arg.startsWith("--providers="))?.slice(12).split(",").filter(Boolean);
   const [routes, skus, rates, definitions, capabilities] = await Promise.all([all("v2_model_provider_routes", "provider_model_id"), all("v2_pricing_skus", "sku_id"), all("v2_pricing_sku_meters", "sku_meter_id"), all("v2_meter_definitions", "meter_key"), all("v2_route_capabilities", "provider_model_id")]);
@@ -77,13 +82,10 @@ async function main() {
     }
     const oldMeters = previous ? rates.filter((rate) => rate.sku_id === previous.sku_id) : [];
     if (meters.length !== Object.keys(candidate.meters).length || !meters.length || oldMeters.some((rate) => rate.billable === false || !meters.some((m) => m.meter_key === rate.meter_key) || Object.keys(rate.metadata ?? {}).some((key) => !["source", "source_key"].includes(key)))) { report.skipped.push(`${route.provider_model_id}: incomplete or conditional meter set`); continue; }
-    if (previous && previous.currency === (candidate.currency ?? "USD") && oldMeters.length === meters.length && oldMeters.every((old) => meters.some((m) => m.meter_key === old.meter_key && m.price_nanos === Number(old.price_nanos) && m.unit_quantity === Number(old.unit_quantity) && m.unit === old.unit))) { report.equal++; continue; }
+    if (previous && previous.currency === (candidate.currency ?? "USD") && oldMeters.length === meters.length && oldMeters.every((old) => meters.some((m) => m.meter_key === old.meter_key && m.price_nanos === Number(old.price_nanos) && m.unit_quantity === Number(old.unit_quantity) && m.unit === old.unit))) { await queue(route.provider_model_id, previous.sku_code, null, url, null, previous); report.equal++; continue; }
     const sku = { ...(previous ?? {}), sku_code: previous?.sku_code ?? `feed-${operation.replace(/[^a-z0-9._:-]/g, "-")}`, provider_model_id: route.provider_model_id, display_name: previous?.display_name ?? "Standard", operation, service_tier_slug: "standard", currency: candidate.currency ?? "USD", status: "active", meters, metadata: { ...(previous?.metadata ?? {}), source_url: url } };
     const proposal_id = createHash("sha256").update(JSON.stringify([route.provider_model_id, sku, previous])).digest("hex");
-    if (!process.argv.includes("--dry-run")) {
-      const result = await db.from("v2_catalogue_price_proposals").upsert({ proposal_id, provider_model_id: route.provider_model_id, source_url: url, sku, expected_sku: previous }, { onConflict: "proposal_id", ignoreDuplicates: true });
-      if (result.error) throw result.error;
-    }
+    await queue(route.provider_model_id, sku.sku_code, proposal_id, url, sku, previous);
     report.proposed++;
   }
   await mkdir(".sync", { recursive: true });
