@@ -1,3 +1,4 @@
+-- phaseo:allow-destructive-migration reason: Records an already-applied trigger fix; DELETE only removes the deleted membership's manual access grants during normal cleanup.
 -- Ensure auth-user deletion can cascade through workspace membership cleanup.
 -- The trigger may run as Supabase's auth deletion role, which does not have
 -- direct table privileges on the entitlement tables.
