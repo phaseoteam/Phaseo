@@ -1,10 +1,37 @@
 # Database catalog operations
 
-Edit records at `/internal/data`. The authenticated admin API writes model,
-provider, pricing, organisation and benchmark changes to the database. Existing
-source-override records protect database-managed data from legacy JSON imports.
-The JSON source files still serve legacy import and bootstrap tooling; generated
-snapshots are records of database state and must not be edited as an input feed.
+The database is the source of truth for the catalog. Edit records at
+`/internal/data`; the authenticated admin API records changes in private row history.
+Settings at `/internal/data/registries` manage model families, service tiers, meter
+definitions, provider regions, route variants, subscription plans and plan features.
+Model editors manage plan membership, aliases, capabilities, benchmarks and prices.
+
+The JSON-to-database importer is retired and its CLI exits with an error. CI no
+longer imports catalog JSON or publishes importer-state PRs. Files under `src/data`
+remain archived fixtures for compatibility validation, not an input to production.
+Do not edit generated snapshots as an input feed.
+
+## Automated updates
+
+Provider catalog sync writes pending proposals to the private
+`v2_catalogue_price_proposals` table. Review these at `/internal/data/imports`.
+Acceptance checks that the source SKU has not changed and creates a new price
+version through the existing audited pricing transaction. Dismissal retains the
+proposal. Each new quote supersedes older pending quotes for the same price
+family; a feed price matching the database clears obsolete quotes. Feed updates
+and acceptance are serialized so a superseded quote cannot be published.
+Ambiguous routes, conditional pricing and incomplete meter sets are
+skipped for manual editing. Official pricing takes priority over live provider
+prices; models.dev only fills missing prices. This feed does not create new models.
+The existing provider discovery pipeline continues to supply discovery candidates.
+
+Nightly lifecycle refresh reads database dates and active routes, preserves explicit
+operational overrides, and skips concurrently edited records. Use
+`pnpm data:update-statuses --dry-run` to preview transitions.
+
+Artificial Analysis sync matches database models and writes benchmark metadata and
+results directly to the database. Removed results are end-dated. Run without
+`--write` to preview matches; no JSON publication or importer step is required.
 
 ## Daily record
 
@@ -27,6 +54,10 @@ It writes 23 tables to `packages/data/catalog/generated/database-v2`, using the
 existing Supabase URL and service-role environment variables. It fetches all
 tables before replacing files, includes rows with null timestamps, uses stable
 ordering, and excludes stealth records and the override actor's user ID.
+It also writes `enum-catalog.json`, the compact public index consumed by OpenAPI
+enum generation. Hidden models and stealth routes are excluded; callable IDs
+require an active, publicly available route. Merge snapshot PRs to refresh the
+checked-in enum input.
 
 The export reads paginated tables over multiple requests. It is a catalog record,
 not a transactionally consistent database backup. Use database backups for

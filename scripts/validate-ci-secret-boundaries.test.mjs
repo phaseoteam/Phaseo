@@ -173,24 +173,9 @@ jobs:
 	);
 });
 
-test("isolates importer repository code from the write-capable App token", () => {
-	const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
-	const importerStart = workflow.indexOf("    importer:");
-	const publisherStart = workflow.indexOf("    importer-state-pr:");
-	const sdkStart = workflow.indexOf("    sdk-gen:");
-	assert.ok(importerStart >= 0 && publisherStart > importerStart && sdkStart > publisherStart);
-
-	const importerJob = workflow.slice(importerStart, publisherStart);
-	const publisherJob = workflow.slice(publisherStart, sdkStart);
-	assert.doesNotMatch(importerJob, /create-github-app-token|GH_TOKEN|x-access-token/);
-	assert.match(importerJob, /include-hidden-files: true/);
-	assert.ok(
-		publisherJob.indexOf("Validate importer state artifact") <
-			publisherJob.indexOf("Create minimal GitHub App token"),
-	);
-	assert.match(publisherJob, /permission-contents: write/);
-	assert.match(publisherJob, /permission-pull-requests: write/);
-	assert.match(publisherJob, /wc -c[^\n]+4194304/);
+test("keeps the retired JSON importer out of CI", () => {
+    const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+    assert.doesNotMatch(workflow, /    importer:|    importer-state-pr:|importer_mode:/);
 });
 
 test("rejects production migration secrets in pull requests", () => {
@@ -213,7 +198,7 @@ test("manual release jobs require main, explicit opt-in, and successful migratio
 			(path) => "needs" + path.split(".").slice(1).map((key) => `[${JSON.stringify(key)}]`).join(""));
 		const context = {
 			github: { event_name: "workflow_dispatch", ref: "refs/heads/main" },
-			inputs: { deploy_production: true, importer_mode: "run" },
+			inputs: { deploy_production: true },
 			vars: { ENABLE_PRODUCTION_DB_MIGRATIONS: "true" },
 			needs: {
 				"check-paths": { result: "success", outputs: { "migrations-changed": "false", "data-changed": "false" } },
@@ -227,7 +212,7 @@ test("manual release jobs require main, explicit opt-in, and successful migratio
 			context.github, context.inputs, context.vars, context.needs, () => true,
 		);
 	}
-	for (const job of ["migration-validation", "migrate-production", "deploy", "importer"]) {
+	for (const job of ["migration-validation", "migrate-production", "deploy"]) {
 		assert.equal(enabled(job), true, `${job}: explicit manual release`);
 		assert.equal(enabled(job, { github: { ref: "refs/heads/feature" } }), false, `${job}: feature branch denied`);
 	}
@@ -241,12 +226,11 @@ test("manual release jobs require main, explicit opt-in, and successful migratio
 		needs: { "migrate-production": { result: "skipped" } },
 	}), false, "manual deploy cannot use the disabled-migrations push fallback");
 	assert.equal(enabled("migrate-production", { needs: { "migration-validation": { result: "failure" } } }), false);
-	for (const job of ["deploy", "importer"]) {
+	for (const job of ["deploy"]) {
 		for (const result of ["failure", "cancelled", "skipped"]) {
 			assert.equal(enabled(job, { needs: { "migrate-production": { result } } }), false, `${job}: ${result} migration blocks release`);
 		}
 	}
-	assert.equal(enabled("importer", { inputs: { deploy_production: false } }), true, "standalone importer remains supported");
 });
 
 test("requires the manual production database approval environment", () => {

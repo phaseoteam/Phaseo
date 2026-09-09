@@ -1,0 +1,28 @@
+import { z } from "zod";
+
+export type RegistryField = { key: string; label: string; type: "text" | "number" | "boolean" | "json" | "uuid" | "url" | "datetime"; required?: boolean; options?: string[]; reference?: string; immutable?: boolean; default?: unknown };
+type Registry = { table: string; title: string; keys: string[]; fields: RegistryField[] };
+const text = (key: string, label: string, extra: Partial<RegistryField> = {}): RegistryField => ({ key, label, type: "text", ...extra });
+const ref = (key: string, label: string, reference: string, required = true): RegistryField => text(key, label, { reference, required });
+const id = (key: string): RegistryField => ({ key, label: "ID", type: "uuid", required: true, immutable: true });
+const status = (options = ["active", "deprecated", "disabled"]): RegistryField => text("status", "Status", { options, required: true, default: "active" });
+const endDate: RegistryField = { key: "effective_to", label: "End date (UTC)", type: "datetime" };
+const metadata: RegistryField = { key: "metadata", label: "Additional metadata", type: "json", default: {} };
+const bool = (key: string, label: string, value = false): RegistryField => ({ key, label, type: "boolean", default: value });
+export const catalogRegistries: Record<string, Registry> = {
+  families: { table: "v2_model_families", title: "Model families", keys: ["family_slug"], fields: [text("family_slug", "Family ID", { required: true, immutable: true }), text("name", "Name", { required: true }), ref("lab_slug", "Organisation", "organisations"), metadata] },
+  "service-tiers": { table: "v2_service_tiers", title: "Service tiers", keys: ["service_tier_slug"], fields: [text("service_tier_slug", "Tier ID", { required: true, immutable: true }), text("display_name", "Name", { required: true }), text("description", "Description"), status(), metadata] },
+  meters: { table: "v2_meter_definitions", title: "Meter definitions", keys: ["meter_key"], fields: [text("meter_key", "Meter ID", { required: true, immutable: true }), text("display_name", "Name", { required: true }), text("modality", "Modality", { required: true, options: ["text", "image", "audio", "video", "embedding", "request", "tool", "other"] }), text("direction", "Direction", { options: ["input", "output"] }), text("unit", "Unit", { required: true, options: ["token", "image", "second", "minute", "character", "request", "call", "megapixel"] }), { key: "default_unit_quantity", label: "Units per price", type: "number", required: true, default: 1 }, text("description", "Description"), status(), metadata] },
+  regions: { table: "v2_provider_regions", title: "Provider regions", keys: ["provider_region_id"], fields: [id("provider_region_id"), { ...ref("provider_slug", "Provider", "providers"), immutable: true }, text("region_code", "Region code", { required: true, immutable: true }), text("display_name", "Name"), bool("execution_supported", "Execution supported", true), bool("data_residency_supported", "Data residency supported"), bool("routing_enabled", "Routing enabled"), status(), metadata] },
+  variants: { table: "v2_route_variants", title: "Route variants", keys: ["variant_id"], fields: [id("variant_id"), { ...ref("provider_model_id", "Provider route", "routes"), immutable: true }, text("variant_key", "Variant key", { required: true, immutable: true }), ref("provider_region_id", "Provider region", "regions", false), text("execution_region", "Execution region"), text("data_region", "Data region"), ref("service_tier_slug", "Service tier", "service-tiers"), status(["active", "degraded", "disabled", "retired"]), bool("routing_enabled", "Routing enabled"), text("endpoint_label", "Endpoint label"), metadata] },
+  plans: { table: "v2_subscription_plans", title: "Subscription plans", keys: ["plan_uuid"], fields: [id("plan_uuid"), text("plan_id", "Plan ID", { required: true, immutable: true }), text("name", "Name", { required: true }), ref("lab_slug", "Organisation", "organisations", false), text("description", "Description"), text("frequency", "Billing frequency", { options: ["monthly", "yearly", "weekly", "daily", "one-time", "free"] }), { key: "price", label: "Price", type: "number" }, text("currency", "Currency", { options: ["USD", "EUR", "GBP", "CNY", "JPY", "CAD", "AUD", "INR"] }), { key: "link", label: "Plan URL", type: "url" }, { key: "other_info", label: "Additional information", type: "json", default: {} }, endDate] },
+  "plan-features": { table: "v2_subscription_plan_features", title: "Plan features", keys: ["plan_uuid", "feature_name"], fields: [{ ...ref("plan_uuid", "Plan", "plans"), immutable: true }, text("feature_name", "Feature name", { required: true, immutable: true }), text("feature_value", "Value"), text("feature_description", "Description"), { key: "other_info", label: "Additional information", type: "json", default: {} }, endDate] },
+};
+export function registrySchema(registry: Registry) {
+  return z.strictObject(Object.fromEntries(registry.fields.map((field) => {
+    let schema: z.ZodType = field.type === "boolean" ? z.boolean() : field.type === "number" ? z.number().finite().nonnegative() : field.type === "json" ? z.record(z.string(), z.unknown()) : field.type === "uuid" ? z.uuid() : field.type === "url" ? z.url() : field.type === "datetime" ? z.iso.datetime({ offset: true }) : z.string().trim().max(2000);
+    if (field.required && field.type === "text") schema = z.string().trim().min(1).max(2000);
+    // Database constraints validate vocabulary; existing imported values stay editable.
+    return [field.key, field.required ? schema : schema.nullable().optional()];
+  })));
+}

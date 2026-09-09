@@ -52,7 +52,7 @@
 		"validate:ci-security": "node --test scripts/validate-ci-secret-boundaries.test.mjs && node scripts/validate-ci-secret-boundaries.mjs",
 		"validate:trust": "node scripts/validate-trust-materials.mjs",
 		"validate:domains": "node scripts/check-canonical-domain.mjs",
-		"data:update-statuses": "tsx scripts/update-model-statuses.ts",
+		"data:update-statuses": "tsx scripts/update-database-model-statuses.ts",
 		"data:recompute-benchmark-ranks": "pnpm --filter @phaseo/web run catalog:recompute-benchmark-ranks",
 		"data:recompute-benchmark-ranks:db": "pnpm --filter @phaseo/web run db:recompute-benchmark-ranks",
 		"data:sync-artificial-analysis": "tsx scripts/sync-artificial-analysis-benchmarks.ts",

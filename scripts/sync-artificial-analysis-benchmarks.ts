@@ -1,20 +1,12 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
 import { METRICS, fetchModels, matchModels, mergeResults, metricValue, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
-import { writeBenchmarks } from "./artificial-analysis/catalog";
 
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) {
 	if (existsSync(resolve(file))) loadEnvFile(resolve(file));
-}
-const DATA_ROOT = resolve("packages/data/catalog/src/data");
-function modelFiles(directory: string): string[] {
-	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-		const file = join(directory, entry.name);
-		return entry.isDirectory() ? modelFiles(file) : entry.name === "model.json" ? [file] : [];
-	});
 }
 function writeJson(file: string, value: unknown) {
 	mkdirSync(dirname(file), { recursive: true });
@@ -32,10 +24,10 @@ async function main() {
 	const apiKey = process.env.ARTIFICIAL_ANALYSIS_API_KEY?.trim();
 	if (!apiKey) throw new Error("Set ARTIFICIAL_ANALYSIS_API_KEY in .env.local, .env, apps/web/.env.local or the environment.");
 	const write = process.argv.includes("--write");
-	const syncDb = process.argv.includes("--sync-db");
+	const syncDb = true;
 	const config = JSON.parse(readFileSync(resolve("scripts/artificial-analysis/mappings.json"), "utf8")) as MappingConfig;
 	if (!config.models || !config.creators || Object.values(config.models).some((id) => id !== null && (typeof id !== "string" || !id)) || Object.values(config.creators).some((id) => typeof id !== "string" || !id)) throw new Error("Invalid Artificial Analysis mappings.");
-	const entries: Array<{ file: string | null; model: CatalogModel }> = modelFiles(join(DATA_ROOT, "models")).map((file) => ({ file, model: JSON.parse(readFileSync(file, "utf8")) }));
+	const entries: Array<{ file: string | null; model: CatalogModel }> = [];
 	const db = syncDb ? createAdminClient() : null;
 	const dbIds = new Set<string>();
 	if (db) {
@@ -64,14 +56,14 @@ async function main() {
 	console.log(`Artificial Analysis v${source.version}: ${report.matched}/${entries.length} Phaseo models matched; ${source.models.length} source models.`);
 	for (const status of ["ambiguous", "unmatched", "excluded"]) console.log(`${status}: ${plan.filter((entry) => entry.match.status === status).length}`);
 	if (!report.matched) throw new Error("No models matched; no benchmark data was written.");
-	if (!write) { console.log("Dry run complete. Use --write to update the catalog; --write --sync-db also updates Supabase."); return; }
+	if (!write) { console.log("Dry run complete. Use --write to update the database catalog."); return; }
 	const metadata = METRICS.map((metric) => ({ benchmark_id: metric.id, benchmark_name: metric.name, category: metric.field === "total_cost" ? "cost" : metric.field === "artificial_analysis_coding_index" ? "coding" : metric.field === "artificial_analysis_agentic_index" ? "agentic" : "general", ascending_order: metric.higherBetter, type: "numerical", link: "https://artificialanalysis.ai/data-api/docs", total_models: source.models.filter((model) => metricValue(model, metric) !== null).length }));
-	for (const benchmark of metadata) writeJson(join(DATA_ROOT, "benchmarks", benchmark.benchmark_id, "benchmark.json"), benchmark);
+	// Metadata is published to the database below, never to the retired JSON source.
 	for (const entry of plan) {
 		// Retain unmatched models' previous results and provenance until explicitly mapped.
 		if (!entry.match.source) continue;
 		entry.model.benchmarks = mergeResults(entry.model, resultsForConfigurations(entry.match.sources ?? [entry.match.source], source.version, source.models, updated_at), source.version);
-		if (entry.file) writeFileSync(entry.file, writeBenchmarks(readFileSync(entry.file, "utf8"), entry.model.benchmarks));
+
 	}
 	if (!db) return;
 	const { error } = await db.from("v2_benchmarks").upsert(metadata.map(({ benchmark_name, type, ...rest }) => ({ ...rest, name: benchmark_name, benchmark_type: type, updated_at })), { onConflict: "benchmark_id" });
@@ -83,18 +75,18 @@ async function main() {
 			const sourceId = String(result.other_info).match(/Artificial Analysis ID ([^;]+)/)?.[1];
 			if (!sourceId) throw new Error(`Missing Artificial Analysis source ID for ${entry.model.model_id}/${result.benchmark_id}.`);
 			const result_key = `${entry.model.model_id}:${result.benchmark_id}:${sourceId}`;
-			return [{ result_id: stableUuid(`benchmark-result:${result_key}`), model_slug: entry.model.model_id, benchmark_id: result.benchmark_id, score: String(result.score), score_numeric: result.score, is_self_reported: false, other_info: result.other_info, source_link: result.source_link, rank: result.rank, occur_idx: index, variant: result.variant ?? null, result_key, updated_at }];
+			return [{ result_id: stableUuid(`benchmark-result:${result_key}`), model_slug: entry.model.model_id, benchmark_id: result.benchmark_id, score: String(result.score), score_numeric: result.score, is_self_reported: false, other_info: result.other_info, source_link: result.source_link, rank: result.rank, occur_idx: index, variant: result.variant ?? null, result_key, effective_to: null, updated_at }];
 		});
 		if (rows.length) {
 			const { error } = await db.from("v2_benchmark_results").upsert(rows, { onConflict: "result_id" });
 			if (error) throw error;
 		}
 		// Scope cleanup to this matched model, after its replacement succeeds.
-		const { data: old, error: readError } = await db.from("v2_benchmark_results").select("result_id").eq("model_slug", entry.model.model_id).in("benchmark_id", METRICS.map((metric) => metric.id));
+		const { data: old, error: readError } = await db.from("v2_benchmark_results").select("result_id").eq("model_slug", entry.model.model_id).is("effective_to", null).in("benchmark_id", METRICS.map((metric) => metric.id));
 		if (readError) throw readError;
 		const stale = (old ?? []).filter((row) => !rows.some((result) => result.result_id === row.result_id)).map((row) => row.result_id);
 		// Saved catalogue records cannot be deleted. Withdraw obsolete scores in place.
-		if (stale.length) { const { error } = await db.from("v2_benchmark_results").update({ score: null, score_numeric: null, rank: null, updated_at }).in("result_id", stale); if (error) throw error; }
+		if (stale.length) { const { error } = await db.from("v2_benchmark_results").update({ effective_to: updated_at, updated_at }).is("effective_to", null).in("result_id", stale); if (error) throw error; }
 	}
 	console.log("Synchronized matched database models. Public caches expire under their normal TTLs.");
 }

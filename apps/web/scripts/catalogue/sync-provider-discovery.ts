@@ -275,7 +275,7 @@ export function parseLiveDiscoveryRows(providerId: string, payload: unknown, acc
 	}));
 }
 
-async function fetchLiveDiscoveryRows(): Promise<{ rows: DiscoveryRow[]; errors: string[] }> {
+export async function fetchLiveDiscoveryRows(): Promise<{ rows: DiscoveryRow[]; errors: string[] }> {
 	const providerIds = PROVIDER_FILTERS ?? getProviderSyncProviderIds();
 	const providers = providerIds
 		.map((providerId) => getProviderSyncProvider(providerId))

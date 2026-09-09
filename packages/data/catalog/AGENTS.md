@@ -4,8 +4,8 @@ These instructions apply to `packages/data/catalog` and extend the repository-le
 
 ## Ownership and Shape
 
-- This package is the canonical source for models, API providers, organisations, benchmarks, pricing, aliases, families, and subscription plans.
-- Follow the existing JSON/schema shape and directory naming conventions. Do not add web-only presentation fields or duplicate a fact that already has a canonical owner.
+- The database is the canonical source for models, API providers, organisations, benchmarks, pricing, aliases, families, and subscription plans. Use `/internal/data` for changes; the JSON importer is retired.
+- `src/data` holds archived compatibility fixtures; `generated/database-v2` holds daily public snapshots and the OpenAPI enum index. Do not use either as a database input feed. Follow the existing JSON/schema shape when maintaining fixtures. Do not add web-only presentation fields or duplicate a fact that already has a canonical owner.
 - Keep stable canonical IDs separate from provider route IDs, aliases, display names, and marketing labels. Preserve historical IDs unless an intentional migration updates every consumer.
 - Prefer explicit source-backed values over inference. If a fact is unknown, omit it or use the schema-supported unknown state rather than inventing a value.
 

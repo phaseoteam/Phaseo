@@ -2,6 +2,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { client } from "../importer/supa";
+import { buildEnumSnapshot } from "./enumSnapshot";
 import { excludeStealthRows } from "./exportSnapshotPrivacy";
 
 const PAGE_SIZE = 1_000;
@@ -66,6 +67,7 @@ async function main() {
 	}
 	const publicSnapshots = excludeStealthRows(snapshots);
 	await mkdir(OUTPUT_DIR, { recursive: true });
+	await writeFile(resolve(OUTPUT_DIR, "enum-catalog.json"), `${JSON.stringify(buildEnumSnapshot(publicSnapshots), null, 2)}\n`, "utf8");
 	for (const [table, rows] of publicSnapshots) {
 		console.log(`Exported ${table}: ${rows.length} rows`);
 		await writeFile(resolve(OUTPUT_DIR, `${table}.json`), `${JSON.stringify(rows, null, 2)}\n`, "utf8");

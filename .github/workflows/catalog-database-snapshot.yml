@@ -60,6 +60,32 @@ jobs:
                   if-no-files-found: error
                   retention-days: 90
 
+            - name: Regenerate SDK catalog helpers
+              run: |
+                  pnpm openapi:gen
+                  node scripts/sdk/generate-model-id-constants.mjs
+
+            - name: Record SDK helper additions
+              shell: bash
+              run: |
+                  if ! git diff --quiet -- packages/sdk; then
+                    cat > .changeset/catalog-database-helpers.md <<'EOF'
+                  ---
+                  "@phaseo/sdk": minor
+                  "@phaseo/py-sdk": minor
+                  "@phaseo/go-sdk": minor
+                  "@phaseo/csharp-sdk": minor
+                  "@phaseo/java-sdk": minor
+                  "@phaseo/php-sdk": minor
+                  "@phaseo/ruby-sdk": minor
+                  "@phaseo/cpp-sdk": minor
+                  "@phaseo/rust-sdk": minor
+                  ---
+
+                  Refresh generated catalog helpers from the public database snapshot.
+                  EOF
+                  fi
+
             - name: Resolve snapshot branch
               id: snapshot-branch
               env:
@@ -79,7 +105,11 @@ jobs:
                   branch: ${{ steps.snapshot-branch.outputs.branch }}
                   base: main
                   delete-branch: true
-                  add-paths: packages/data/catalog/generated/database-v2/**
+                  add-paths: |
+                      packages/data/catalog/generated/database-v2/**
+                      apps/docs/openapi/v1/openapi.yaml
+                      packages/sdk/**
+                      .changeset/catalog-database-helpers.md
                   commit-message: "chore(data): snapshot database catalog"
                   title: "Snapshot database catalog"
                   body: |
@@ -90,6 +120,7 @@ jobs:
                       Commands run:
                       - `pnpm install --frozen-lockfile`
                       - `pnpm --filter @phaseo/web catalog:export:database`
+                      - `pnpm openapi:gen`
 
                       Linked issues: none
 

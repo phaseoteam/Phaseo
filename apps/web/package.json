@@ -19,6 +19,7 @@
 		"audit:missing-pricing": "tsx scripts/audit-missing-pricing.ts",
 		"update-db": "tsx scripts/importer/main.ts",
 		"catalog:enrich:models-dev": "tsx scripts/catalogue/enrich-models-dev.ts",
+		"catalog:sync:database": "tsx scripts/catalogue/sync-database-proposals.ts",
 		"catalog:sync:official-pricing": "tsx scripts/catalogue/sync-official-pricing.ts",
 		"catalog:sync:models-dev-pricing": "tsx scripts/catalogue/sync-models-dev-pricing.ts",
 		"catalog:sync:provider-discovery": "tsx scripts/catalogue/sync-provider-discovery.ts",
