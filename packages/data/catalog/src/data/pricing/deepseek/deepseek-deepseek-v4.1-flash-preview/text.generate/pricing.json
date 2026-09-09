@@ -1,8 +1,8 @@
 {
-  "key": "deepseek:deepseek/deepseek-v4.1-flash-beta:text.generate",
+  "key": "deepseek:deepseek/deepseek-v4.1-flash-preview:text.generate",
   "api_provider_id": "deepseek",
   "provider_slug": "deepseek",
-  "api_model_id": "deepseek/deepseek-v4.1-flash-beta",
+  "api_model_id": "deepseek/deepseek-v4.1-flash-preview",
   "capability_id": "text.generate",
   "rules": [
     {
