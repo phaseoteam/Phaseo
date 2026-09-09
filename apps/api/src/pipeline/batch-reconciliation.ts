@@ -202,6 +202,7 @@ export async function runBatchReconciliationJob(args?: {
 					providerId,
 					batchId: job.batchId,
 					requestId: job.requestId,
+					credentialContext,
 				});
 				const recoveredNativeId = String(recovered?.native_batch_id ?? recovered?.id ?? "").trim();
 				if (!recoveredNativeId) {

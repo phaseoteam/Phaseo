@@ -42,19 +42,25 @@ export async function getProviderCredentialMode(providerId: string, model?: stri
 	if (model) {
 		const route = await getSupabaseAdmin()
 			.from("v2_model_provider_routes")
-			.select("credential_mode")
+			.select("credential_mode,routing_enabled,status")
 			.eq("provider_slug", providerId)
-			.eq("model_slug", model)
-			.maybeSingle();
-		if (route.error) throw new Error(`provider_credential_mode_unavailable:${route.error.message ?? "unknown"}`);
-		if (route.data?.credential_mode === "byok_only") return "byok_only";
+			.eq("model_slug", model);
+		if (route.error) {
+			console.error("provider_credential_mode_lookup_failed", { providerId, model, error: route.error.message });
+			throw new Error("provider_credential_mode_unavailable");
+		}
+		const routes = Array.isArray(route.data) ? route.data : route.data ? [route.data] : [];
+		if (routes.some((row) => row.credential_mode === "byok_only" && row.routing_enabled !== false && (!row.status || ["active", "degraded"].includes(row.status)))) return "byok_only";
 	}
 	const { data, error } = await getSupabaseAdmin()
 		.from("v2_providers")
 		.select("credential_mode")
 		.eq("provider_slug", providerId)
 		.maybeSingle();
-	if (error) throw new Error(`provider_credential_mode_unavailable:${error.message ?? "unknown"}`);
+	if (error) {
+		console.error("provider_credential_mode_lookup_failed", { providerId, error: error.message });
+		throw new Error("provider_credential_mode_unavailable");
+	}
 	return data?.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok";
 }
 
@@ -93,7 +99,11 @@ function managedCredential(providerId: string): BatchProviderCredential | null {
 		}
 		const resolved = resolveOpenAICompatKey({ providerId, byokMeta: [], forceGatewayKey: true } as any);
 		return { key: resolved.key, source: "gateway", byokKeyId: null };
-	} catch {
+	} catch (error) {
+		console.error("batch_managed_credential_unavailable", {
+			providerId,
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return null;
 	}
 }
@@ -125,7 +135,8 @@ export async function reloadBatchCredential(args: {
 	keySource?: "gateway" | "byok" | null;
 	byokKeyId?: string | null;
 }): Promise<BatchProviderCredential> {
-	if (args.keySource !== "byok") {
+	const keySource = args.keySource ?? (args.byokKeyId ? "byok" : "gateway");
+	if (keySource === "gateway") {
 		const managed = managedCredential(args.providerId);
 		if (managed) return managed;
 		throw new Error("batch_provider_credentials_unavailable");

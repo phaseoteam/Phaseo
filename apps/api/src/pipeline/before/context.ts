@@ -1525,6 +1525,7 @@ export async function fetchGatewayContext(args: {
 			const routeCredentialModeQuery = providerIds.length
 				? supabase.from("v2_model_provider_routes").select("provider_slug,credential_mode")
 					.in("provider_slug", providerIds).eq("model_slug", parsed.resolvedModel ?? args.model)
+					.eq("routing_enabled", true).in("status", ["active", "degraded"])
 				: Promise.resolve({ data: [], error: null } as any);
 
             const settingsQuery = (async () => {

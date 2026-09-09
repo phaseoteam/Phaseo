@@ -6,7 +6,7 @@ alter table public.v2_providers
 
 alter table public.v2_providers
   add constraint v2_providers_credential_mode_check
-  check (credential_mode in ('managed_and_byok', 'byok_only'));
+  check (credential_mode in ('managed_and_byok', 'byok_only')) not valid;
 
 comment on column public.v2_providers.credential_mode is
   'Whether Phaseo may use managed provider credentials or must use a workspace BYOK credential.';
@@ -24,18 +24,27 @@ notify pgrst, 'reload schema';
 do $$
 declare
   v_definition text;
+  v_previous text;
 begin
   select pg_get_functiondef('public.mutate_v2_admin_provider_offer(uuid,text,text,jsonb)'::regprocedure) into v_definition;
+
+	 v_previous := v_definition;
   v_definition := replace(v_definition,
     'insert into public.v2_providers(provider_slug,name,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,country_code,subdivision_code,base_url,byok_available,status,routing_enabled,routable,metadata,updated_at)',
     'insert into public.v2_providers(provider_slug,name,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,country_code,subdivision_code,base_url,byok_available,credential_mode,status,routing_enabled,routable,metadata,updated_at)');
-  v_definition := replace(v_definition,
-    'coalesce((p_payload->>''byok_available'')::boolean,(v_before->>''byok_available'')::boolean,false), lower(',
-    'coalesce((p_payload->>''byok_available'')::boolean,(v_before->>''byok_available'')::boolean,false), coalesce(p_payload->>''credential_mode'',v_before->>''credential_mode'',''managed_and_byok''), lower(');
+	 if v_definition = v_previous then raise exception 'provider-offer column patch failed'; end if;
+
+	 v_previous := v_definition;
+	 v_definition := regexp_replace(v_definition,
+		 'coalesce\(\(p_payload->>''byok_available''\)::boolean,\(v_before->>''byok_available''\)::boolean,false\),\s+lower\(',
+		 'coalesce((p_payload->>''byok_available'')::boolean,(v_before->>''byok_available'')::boolean,false), coalesce(p_payload->>''credential_mode'',v_before->>''credential_mode'',''managed_and_byok''), lower(');
+	 if v_definition = v_previous then raise exception 'provider-offer value patch failed'; end if;
+
+	 v_previous := v_definition;
   v_definition := replace(v_definition,
     'byok_available=excluded.byok_available,status=excluded.status',
     'byok_available=excluded.byok_available,credential_mode=excluded.credential_mode,status=excluded.status');
-  if position('credential_mode' in v_definition) = 0 then raise exception 'provider-offer mutation patch failed'; end if;
+	 if v_definition = v_previous then raise exception 'provider-offer update patch failed'; end if;
   execute v_definition;
 end $$;
 

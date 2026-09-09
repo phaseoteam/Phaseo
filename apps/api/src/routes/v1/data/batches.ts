@@ -2086,7 +2086,7 @@ async function handleCreate(req: Request) {
 	}
 	const shouldUploadBatchInputFile = FILE_BACKED_JSONL_BATCH_PROVIDERS.has(providerId) && (
 		inputMode.mode === "requests" ||
-		(inputMode.mode === "file" && (providerId === OPENAI_PROVIDER_ID || (ownedInputFile && ((ownedInputFile.keySource ?? "gateway") !== batchCredential.source || ownedInputFile.byokKeyId !== batchCredential.byokKeyId))) && Boolean(policyRows.length))
+		(inputMode.mode === "file" && (providerId === OPENAI_PROVIDER_ID || (ownedInputFile && ((ownedInputFile.keySource ?? "gateway") !== batchCredential.source || (ownedInputFile.byokKeyId ?? null) !== batchCredential.byokKeyId))) && Boolean(policyRows.length))
 	);
 	if (shouldUploadBatchInputFile && inputMode.mode === "file") requestRows = policyRows;
 	if (shouldUploadBatchInputFile) {
@@ -2913,7 +2913,11 @@ async function handleResults(req: Request, id: string) {
 	let body: ReadableStream<Uint8Array>;
 	try {
 		const nativeId = resolveBatchProviderNativeId({ batchId, meta });
-		body = await openBatchResultsStream({ ...meta, nativeBatchId: nativeId }, { signal: req.signal, onStreamError: logFailure });
+		body = await openBatchResultsStream({ ...meta, nativeBatchId: nativeId }, {
+			signal: req.signal,
+			onStreamError: logFailure,
+			credentialContext: { workspaceId: auth.workspaceId, keySource: meta.keySource, byokKeyId: meta.byokKeyId },
+		});
 	} catch (error) {
 		logFailure(error);
 		if (error instanceof BatchResultsError && error.reason === "results_unavailable") {

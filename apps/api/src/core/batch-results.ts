@@ -4,6 +4,7 @@ import {
 	ANTHROPIC_BATCH_PROVIDER_ID, GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID, MISTRAL_BATCH_PROVIDER_ID,
 	X_AI_BATCH_PROVIDER_ID, FILE_BACKED_JSONL_BATCH_PROVIDERS, batchText,
 	buildProviderRetrievePath, fetchProviderBatchApi, fetchProviderFileContent,
+	type BatchCredentialContext,
 } from "@core/batch-provider-adapters";
 
 const encoder = new TextEncoder();
@@ -30,6 +31,7 @@ type Cancellable = { cancel(reason?: unknown): Promise<void> };
 class DownloadContext {
 	readonly abort = new AbortController();
 	private readonly open = new Set<Cancellable>();
+	constructor(private readonly credentialContext?: BatchCredentialContext) {}
 	async response(response: Response): Promise<Response> {
 		if (!response.ok || !response.body) {
 			await response.body?.cancel().catch(() => undefined);
@@ -64,14 +66,14 @@ class DownloadContext {
 	}
 	async api(provider: string, endpointPath: string): Promise<Response> {
 		this.abort.signal.throwIfAborted();
-		return this.response(await fetchProviderBatchApi(provider, { endpointPath, method: "GET", redirect: "manual", signal: this.abort.signal }));
+		return this.response(await fetchProviderBatchApi(provider, { endpointPath, method: "GET", redirect: "manual", signal: this.abort.signal, credentialContext: this.credentialContext }));
 	}
 	async *files(provider: string, ids: string[]): AsyncGenerator<Uint8Array> {
 		const responses: Response[] = [];
 		// Check both success/error files before exposing any bytes to the customer.
 		for (const id of [...new Set(ids)]) {
 			this.abort.signal.throwIfAborted();
-			responses.push(await this.response(await fetchProviderFileContent(provider, id, { redirect: "manual", signal: this.abort.signal })));
+			responses.push(await this.response(await fetchProviderFileContent(provider, id, { redirect: "manual", signal: this.abort.signal }, this.credentialContext)));
 		}
 		for (let index = 0; index < responses.length; index++) {
 			let lastByte: number | undefined;
@@ -217,9 +219,10 @@ async function* resultChunks(context: DownloadContext, meta: BatchJobMeta): Asyn
 export async function openBatchResultsStream(meta: BatchJobMeta, options: {
 	signal?: AbortSignal;
 	onStreamError?: (error: unknown) => void;
+	credentialContext?: BatchCredentialContext;
 } = {}): Promise<ReadableStream<Uint8Array>> {
 	if (!supportsBatchResults(meta.provider)) throw new BatchResultsError("unsupported_provider");
-	const context = new DownloadContext();
+	const context = new DownloadContext(options.credentialContext);
 	const onAbort = () => { void context.close(); };
 	options.signal?.addEventListener("abort", onAbort, { once: true });
 	if (options.signal?.aborted) onAbort();
