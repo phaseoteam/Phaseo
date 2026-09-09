@@ -15,6 +15,10 @@ Good starting point: [Good First Issues](https://github.com/phaseoteam/Phaseo/is
 
 ## Development setup
 
+For catalog changes, no development setup or JSON pull request is needed. [Report incorrect information](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) or [request missing data](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml). Include the affected page or record ID, the proposed change, and official sources. For pricing, include the provider, currency, units, and effective date; for benchmark results, include the evaluation method and citation.
+
+Maintainers review the issue and apply approved changes through the admin-only [catalog editor](https://phaseo.app/internal/data). The database is authoritative; daily JSON snapshots are exports and the legacy JSON importer is retired. Code, schema, and documentation changes continue through pull requests.
+
 ```bash
 git clone https://github.com/phaseoteam/Phaseo.git
 cd Phaseo

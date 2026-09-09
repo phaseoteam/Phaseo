@@ -1,4 +1,5 @@
 import { Pencil } from "lucide-react";
+import { CatalogIssueButton } from "@/components/(data)/CatalogIssueButton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
@@ -16,7 +17,7 @@ export default async function APIProviderEditButton({
   }));
 
   if (!authStatus.isAdmin) {
-    return null;
+    return <CatalogIssueButton entity="API provider" id={apiProviderId} />;
   }
 
   return (

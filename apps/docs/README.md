@@ -22,6 +22,8 @@ They explain **why** Phaseo exists and how anyone can shape it.
 Documentation lives inside this folder in Markdown or MDX format.  
 To improve it, just edit or add a page and submit a pull request.
 
+For catalog corrections or missing data, [open a GitHub issue](https://github.com/phaseoteam/Phaseo/issues/new/choose) with official sources. Maintainers update the database through the internal editor. See [Contributing](v1/contributing/overview.mdx); catalog JSON files are exports or archived fixtures, not an authoring workflow.
+
 > You don’t need permission to help improve understanding.
 
 ---

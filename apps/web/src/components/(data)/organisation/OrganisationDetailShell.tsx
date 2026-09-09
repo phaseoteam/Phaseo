@@ -41,16 +41,16 @@ export default async function OrganisationDetailShell({
 						</p>
 						<p className="mt-1 text-sm text-muted-foreground">
 							If we&apos;re missing a lab, please
-							contribute on Github!
+							open a data request.
 						</p>
 						<div className="mt-3">
 							<a
-								href="https://github.com/phaseoteam/Phaseo"
+								href="https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
 							>
-								Contribute on GitHub
+								Request missing data
 								<Image
 									src="/social/github_light.svg"
 									alt="GitHub Logo"

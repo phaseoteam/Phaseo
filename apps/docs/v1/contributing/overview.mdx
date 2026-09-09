@@ -1,29 +1,35 @@
 ---
 title: "Contributing to Phaseo"
-description: "Choose the right workflow for a data correction, documentation edit, or code contribution."
+description: "Choose the right workflow for a catalog report, documentation edit, or code contribution."
 sidebarTitle: "Contributing"
 icon: "handshake"
 ---
 
-Submit a pull request to the [Phaseo repository](https://github.com/phaseoteam/Phaseo) with the change, its source or rationale, and the checks you ran.
+For catalog corrections and additions, open an issue with the affected record and supporting sources. For code or documentation changes, submit a pull request to the [Phaseo repository](https://github.com/phaseoteam/Phaseo).
 
 ## Choose your contribution
 
 | Change | Start here |
 | --- | --- |
-| Model metadata, capabilities, or pricing | [Edit a model](./editing-a-model.mdx) |
-| Company or research organisation details | [Edit an organisation](./editing-an-organisation.mdx) |
+| Model metadata, capabilities, availability, or pricing | [Report a model update](./editing-a-model.mdx) |
+| Company or research organisation details | [Report an organisation update](./editing-an-organisation.mdx) |
 | Benchmark results | [Submit scores](../research/submitting-scores.mdx) |
+| Other catalog corrections | [Report incorrect information](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) |
+| Missing providers or other catalog data | [Request new data](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) |
 | Documentation or code | [Contribution workflow](./how-to-contribute.mdx) and [repository structure](./repo-structure.mdx) |
 
-For a larger schema or feature change, discuss the proposal with maintainers before implementing it.
+## How catalog reports are published
+
+Maintainers review the evidence in the issue and apply approved changes through the admin-only [internal editor](https://phaseo.app/internal/data). Provider price updates require explicit review before publication.
+
+The database is the catalog source of truth. Daily public JSON snapshots remain available, but neither snapshot edits nor archived JSON pull requests update the live catalog. The legacy JSON importer is retired.
 
 ## Before submitting
 
-- Cite official sources for data changes and distinguish reported results from independently measured results.
-- Follow the existing schema and formatting. Include the relevant validation results in the pull request.
-- Keep the change focused and explain the problem it fixes.
+- Include the affected page or record ID and describe the proposed correction.
+- Cite official sources and distinguish reported benchmark results from independent measurements.
+- Keep each report or pull request focused.
 - Never include credentials or private customer data.
 - Follow the [Code of Conduct](../community/code-of-conduct.mdx).
 
-Use the [step-by-step contribution workflow](./how-to-contribute.mdx) for branch setup, local checks, and opening a pull request. Ask for help in [Discord](https://discord.gg/aQyywCvgZ5) if you are unsure where a change belongs.
+Discuss larger schema or feature changes with maintainers before implementing them. Ask for help in [Discord](https://discord.gg/aQyywCvgZ5) if you are unsure where a change belongs.

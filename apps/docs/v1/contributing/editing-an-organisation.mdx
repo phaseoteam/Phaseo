@@ -1,35 +1,25 @@
 ---
 icon: "building-2"
-title: "Editing an Organisation"
-description: "Update organisation records in the Phaseo data set."
+title: "Report an Organisation Update"
+description: "Request corrections or additions to companies and research organisations in the catalog."
 ---
 
-Organisation data lives in JSON files under `packages/data/catalog/src/data/organisations`.
+Report missing or outdated organisation details through a GitHub issue. Maintainers review the evidence and apply approved changes in the database editor.
 
-## 1. Find the organisation
+## Report a correction
 
-Each organisation is a single JSON file, for example:
+1. Copy the organisation's Phaseo page URL or ID.
+2. [Report incorrect information](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) with the affected field and proposed value.
+3. Link to an official website, announcement, or another verifiable source.
 
-`packages/data/catalog/src/data/organisations/openai.json`
+Common corrections include the name, description, website, location, and relationships to models or API providers.
 
-## 2. Make your edits
+## Request a missing organisation
 
-Typical updates include:
+[Open a data request](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) with the organisation's name, official website, and relevant model or provider links.
 
-- Name, description, and website
-- Country code or metadata fields
-- Relationship links to models or providers
+## After submitting
 
-Keep formatting and field order consistent with nearby files.
+Track review and publication in the issue. No JSON edit or pull request is needed for a catalog record change. Daily JSON files are exports; they are not imported into the live database.
 
-## 3. Validate data
-
-Run the data validation script before opening a PR:
-
-```bash
-pnpm validate:data
-```
-
-## 4. Open a PR
-
-Include sources or references for any factual changes.
+Admins manage organisations through the [internal catalog editor](https://phaseo.app/internal/data), which requires admin access.

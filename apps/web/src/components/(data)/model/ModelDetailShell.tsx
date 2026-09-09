@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 import Link from "next/link";
 import {
 	fetchFrontendModelHeader,
@@ -13,6 +13,7 @@ import { MessageSquare, Scale } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import ModelIdentifierControl from "./ModelIdentifierControl";
+import ModelEditButton from "./edit/ModelEditButton";
 import ModelDescriptionPanel from "./ModelDescriptionPanel";
 import ModelPageNotice from "./ModelPageNotice";
 import ModelStickyHeader from "./ModelStickyHeader";
@@ -193,6 +194,9 @@ export default async function ModelDetailShell({
 					</div>
 
 					<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap xl:mt-0 xl:ml-6 xl:w-auto xl:flex-nowrap xl:items-center">
+						{!isFreeRouter && !header.is_private && !header.hidden ? (
+							<Suspense fallback={null}><ModelEditButton modelId={modelId} tab={tab} /></Suspense>
+						) : null}
 						{canChat ? (
 							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
 								<Link href={`/chat?model=${modelId}`}>
