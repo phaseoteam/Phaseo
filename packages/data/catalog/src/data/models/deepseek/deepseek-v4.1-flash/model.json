@@ -1,7 +1,7 @@
 {
   "model_id": "deepseek/deepseek-v4.1-flash",
   "organisation_id": "deepseek",
-  "name": "DeepSeek V4.1 Flash",
+  "name": "DeepSeek V4.1 Flash (Preview)",
   "status": "Available",
   "previous_model_id": "deepseek/deepseek-v4-flash-0731",
   "description": "DeepSeek V4.1 Flash is the stable Flash-series model scheduled to launch on the 10 September 2026 calendar date. Its temporary beta route expires on the same date and is tracked separately from the stable provider route.",
