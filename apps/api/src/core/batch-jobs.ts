@@ -240,8 +240,10 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (typeof source.last_webhook_progress_at === "string") out.lastWebhookProgressAt = source.last_webhook_progress_at;
 	if (typeof source.lastWebhookDispatchedAt === "string") out.lastWebhookDispatchedAt = source.lastWebhookDispatchedAt;
 	if (typeof source.last_webhook_dispatched_at === "string") out.lastWebhookDispatchedAt = source.last_webhook_dispatched_at;
-	if (source.keySource === "gateway" || source.keySource === "byok") out.keySource = source.keySource;
 	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
+	out.keySource = source.keySource === "gateway" || source.keySource === "byok"
+		? source.keySource
+		: out.byokKeyId ? "byok" : "gateway";
 	if (typeof source.reservationId === "string") out.reservationId = source.reservationId;
 	if (typeof source.reservation_id === "string") out.reservationId = source.reservation_id;
 	if (typeof source.reservedNanos === "number") out.reservedNanos = source.reservedNanos;
@@ -287,8 +289,10 @@ function parseBatchFileMeta(value: unknown): BatchFileMeta | null {
 	if (typeof source.purpose === "string") out.purpose = source.purpose;
 	if (typeof source.filename === "string") out.filename = source.filename;
 	if (typeof source.bytes === "number") out.bytes = source.bytes;
-	if (source.keySource === "gateway" || source.keySource === "byok") out.keySource = source.keySource;
 	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
+	out.keySource = source.keySource === "gateway" || source.keySource === "byok"
+		? source.keySource
+		: out.byokKeyId ? "byok" : "gateway";
 	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
 	return out;
 }

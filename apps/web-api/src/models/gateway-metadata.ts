@@ -155,7 +155,7 @@ export async function fetchGatewayMetadataSource(env: Env, modelId: string): Pro
 	if (!v2Pricing.error && Array.isArray(v2Pricing.data)) {
 		const routeStatusResult = await client
 			.from("v2_model_provider_routes")
-			.select("provider_model_id,provider_availability_status,phaseo_status,access_scope,effective_from,effective_to")
+			.select("provider_model_id,provider_availability_status,phaseo_status,access_scope,effective_from,effective_to,credential_mode")
 			.eq("model_slug", modelId);
 		const explicitStatusesByRoute = new Map(
 			(routeStatusResult.error ? [] : rows(routeStatusResult.data)).flatMap((route) => {
@@ -192,6 +192,7 @@ export async function fetchGatewayMetadataSource(env: Env, modelId: string): Pro
 					max_output_tokens: item.max_output_tokens,
 					effective_from: explicitStatuses?.effective_from ?? item.effective_from ?? null,
 					effective_to: explicitStatuses?.effective_to ?? item.effective_to ?? null,
+					credential_mode: explicitStatuses?.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok",
 				};
 				if (!providerModels.has(key) || item.execution_region == null) providerModels.set(key, normalized);
 				caps.set(key, {
@@ -205,6 +206,22 @@ export async function fetchGatewayMetadataSource(env: Env, modelId: string): Pro
 			}
 		}
 		const uniqueProviders = [...new Map(providers.map((provider, index) => [id(provider.api_provider_id) ?? `provider-${index}`, provider])).values()];
+		const providerIds = uniqueProviders.map((provider) => id(provider.api_provider_id)).filter((value): value is string => value !== null);
+		if (providerIds.length > 0) {
+			const modes = await client.from("v2_providers").select("provider_slug,credential_mode").in("provider_slug", providerIds);
+			if (modes.error) throw modes.error;
+			const modeByProvider = new Map(rows(modes.data).map((row) => [id(row.provider_slug), row.credential_mode]));
+			const routeModes = new Map<string, string[]>();
+			for (const route of providerModels.values()) {
+				const providerId = id(route.provider_id);
+				if (providerId) routeModes.set(providerId, [...(routeModes.get(providerId) ?? []), route.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok"]);
+			}
+			for (const provider of uniqueProviders) {
+				const providerId = id(provider.api_provider_id);
+				const modesForRoutes = providerId ? routeModes.get(providerId) ?? [] : [];
+				provider.credential_mode = modeByProvider.get(providerId) === "byok_only" || (modesForRoutes.length > 0 && modesForRoutes.every((mode) => mode === "byok_only")) ? "byok_only" : "managed_and_byok";
+			}
+		}
 		const aliasResult = await client.rpc("get_v2_model_aliases", { p_model_slug: modelId });
 		const aliases = !aliasResult.error
 			? rows(aliasResult.data).flatMap((alias) => id(alias.alias_slug) ? [{ api_model_id: modelId, alias_slug: id(alias.alias_slug)! }] : [])

@@ -150,6 +150,14 @@ vi.mock("@providers/keys", () => ({
 	resolveProviderKey: vi.fn(() => ({ key: "test-openai-key" })),
 }));
 
+vi.mock("@core/batch-credentials", () => ({
+	resolveBatchSubmissionCredential: vi.fn(async ({ providerId }: { providerId: string }) => {
+		if (providerId === "google-ai-studio" && !state.googleApiKey) throw new Error("google_ai_studio_key_missing");
+		return { credential: { key: `test-${providerId}-key`, source: "gateway", byokKeyId: null }, credentialMode: "managed_and_byok" };
+	}),
+	reloadBatchCredential: vi.fn(async ({ providerId }: { providerId: string }) => ({ key: `test-${providerId}-key`, source: "gateway", byokKeyId: null })),
+}));
+
 vi.mock("@core/async-notifications", () => ({
 	dispatchAsyncWebhookEventInBackground: vi.fn((payload: Record<string, unknown>) => {
 		state.webhookEvents.push(payload);
@@ -2426,10 +2434,8 @@ describe("batchRoutes", () => {
 		});
 		expect(response.status).toBe(500);
 		expect(await response.json()).toMatchObject({ reason: "google_ai_studio_key_missing" });
-		expect(state.finalizeCalls).toEqual([expect.objectContaining({ status: "failed" })]);
-		expect(Array.from(state.batchMeta.values())).toEqual(expect.arrayContaining([
-			expect.objectContaining({ submissionOutcome: "rejected", status: "failed" }),
-		]));
+		expect(state.finalizeCalls).toEqual([]);
+		expect(Array.from(state.batchMeta.values())).toEqual([]);
 		expect(state.operationalFailures).toEqual([]);
 	});
 

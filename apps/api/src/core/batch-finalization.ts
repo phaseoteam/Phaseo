@@ -27,6 +27,7 @@ import {
 	OPENAI_BATCH_PROVIDER_ID,
 } from "@core/batch-provider-adapters";
 import { computeBill } from "@pipeline/pricing/engine";
+import { applyByokServiceFee } from "@pipeline/pricing/byok-fee";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { recordUsageAndCharge } from "@pipeline/pricing/persist";
 import { resolveProviderKey } from "@providers/keys";
@@ -696,7 +697,7 @@ async function recordBatchKeyUsage(args: {
 	await setKeyVersion("id", apiKeyId, Date.now());
 }
 
-async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promise<BatchSettlementComputation> {
+async function computeBatchSettlement(meta: BatchJobMeta, status: string, workspaceId: string, batchId: string): Promise<BatchSettlementComputation> {
 	const completedCount = meta.requestCounts?.completed ?? null;
 	const outputFileId = normalizeText(meta.outputFileId);
 	const providerId = normalizeText(meta.provider) ?? OPENAI_BATCH_PROVIDER_ID;
@@ -725,7 +726,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		};
 	}
 
-	const entries = await fetchProviderBatchOutputEntries(meta);
+	const entries = await fetchProviderBatchOutputEntries(meta, workspaceId);
 	const downloadedSuccessfulResponses = entries.reduce(
 		(total, entry) => total + (extractResponseBody(entry) ? 1 : 0),
 		0,
@@ -739,7 +740,11 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		(isVideoBatchEndpoint(meta.endpoint) || isImageBatchEndpoint(meta.endpoint)) &&
 		normalizeText(meta.inputFileId)
 	) {
-		const inputText = await fetchProviderFileText(providerId, String(meta.inputFileId));
+		const inputText = await fetchProviderFileText(providerId, String(meta.inputFileId), 20 * 1024 * 1024, {
+			workspaceId,
+			keySource: meta.keySource,
+			byokKeyId: meta.byokKeyId,
+		});
 		for (const inputEntry of parseJsonLines(inputText)) {
 			const customId = extractCustomId(inputEntry);
 			if (customId) inputEntriesByCustomId.set(customId, inputEntry);
@@ -876,7 +881,33 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		return { ok: false, reason: "missing_successful_output_rows" };
 	}
 
-	const costNanos = Math.max(0, Math.round(totalNanos));
+	const providerReferenceNanos = Math.max(0, Math.round(totalNanos));
+	let costNanos = providerReferenceNanos;
+	let pricedUsage = buildAggregatePricedUsage({
+		usage: usageAggregate,
+		costNanos: providerReferenceNanos,
+		pricingLines: serializePricingLineAggregates(pricingLines),
+	});
+	if (meta.keySource === "byok" && successfulResponses > 0) {
+		const pricedIndexes = rowCostsByIndex
+			.map((cost, index) => cost == null ? null : { cost, index })
+			.filter((entry): entry is { cost: number; index: number } => entry !== null);
+		const byok = await applyByokServiceFee({
+			workspaceId,
+			idempotencyKey: `batch:${batchId}`,
+			isByok: true,
+			requestCount: successfulResponses,
+			baseCostNanos: providerReferenceNanos,
+			baseCostsNanos: pricedIndexes.map((entry) => entry.cost),
+			pricedUsage,
+		});
+		costNanos = byok.totalNanos;
+		pricedUsage = byok.pricedUsage;
+		byok.chargedCostsNanos?.forEach((cost, index) => {
+			const outputIndex = pricedIndexes[index]?.index;
+			if (outputIndex != null) rowCostsByIndex[outputIndex] = cost;
+		});
+	}
 	const partialSuccess = isPartialSuccess(meta);
 	const reason =
 		costNanos > 0
@@ -896,11 +927,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		costUsd: costNanos / 1e9,
 		charged: costNanos > 0,
 		reason,
-		pricedUsage: buildAggregatePricedUsage({
-			usage: usageAggregate,
-			costNanos,
-			pricingLines: serializePricingLineAggregates(pricingLines),
-		}),
+		pricedUsage,
 		pricingBreakdown: {
 			total_nanos: costNanos,
 			total_usd_str: (costNanos / 1e9).toFixed(9),
@@ -908,6 +935,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 			completed_requests: successfulResponses,
 			failed_requests: meta.requestCounts?.failed ?? null,
 			total_requests: meta.requestCounts?.total ?? null,
+			...(meta.keySource === "byok" ? { byok_reference_total_nanos: providerReferenceNanos } : {}),
 		},
 		outputEntries: entries,
 		rowCostsByIndex,
@@ -1053,7 +1081,7 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		};
 	}
 
-	const settlement = await computeBatchSettlement(record.meta, status);
+	const settlement = await computeBatchSettlement(record.meta, status, args.workspaceId, args.batchId);
 	if (!settlement.ok) {
 		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
 			...completionTimingPatch,

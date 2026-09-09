@@ -1,0 +1,97 @@
+{
+  "model_id": "deepseek/deepseek-v4.1-flash",
+  "organisation_id": "deepseek",
+  "name": "DeepSeek V4.1 Flash",
+  "status": "Preview",
+  "previous_model_id": "deepseek/deepseek-v4-flash-0731",
+  "description": "DeepSeek V4.1 Flash is a limited beta release of DeepSeek's next Flash-series model. The temporary provider route is exposed for the beta window and is tracked separately from the existing V4 Flash records.",
+  "announced_date": "2026-09-08T00:00:00Z",
+  "release_date": "2026-09-08T00:00:00Z",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "deepseek/deepseek-v4.1-flash",
+  "links": [
+    {
+      "title": "Beta report",
+      "kind": "announcement",
+      "url": "https://36kr.com/p/3974654461604357"
+    },
+    {
+      "title": "DeepSeek pricing",
+      "kind": "pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing/"
+    }
+  ],
+  "details": [
+    {
+      "name": "provider_beta_model_id",
+      "value": "deepseek-v4.1-flash-expires-on-0910"
+    },
+    {
+      "name": "availability",
+      "value": "Limited beta access; the temporary API route expires on 2026-09-10."
+    },
+    {
+      "name": "scheduled_pricing_change",
+      "value": "2026-09-10T04:00:00Z"
+    }
+  ],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": true,
+    "structured_output": null,
+    "temperature": true,
+    "streaming": true,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://36kr.com/p/3974654461604357",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Reports the limited DeepSeek V4.1 Flash beta and temporary API route."
+    },
+    {
+      "kind": "pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Official DeepSeek pricing reference for the Flash-series schedule."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Beta identity and temporary route are supported by the announcement report; an official public model page is not yet available."
+  },
+  "last_updated": "2026-09-08T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

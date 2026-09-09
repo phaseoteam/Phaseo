@@ -67,6 +67,23 @@ describe("batch credit reservations", () => {
 		})).resolves.toMatchObject({ held: true, status: "held" });
 	});
 
+	it("reserves only the maximum Phaseo service fee for BYOK batches", async () => {
+		const body = { model: "gpt-4.1-mini", input: "hello", max_output_tokens: 10 };
+		const result = await reserveBatchCredits({
+			workspaceId: "ws_1",
+			apiKeyId: "key_1",
+			requestId: "req_byok",
+			providerId: "openai",
+			isByok: true,
+			requests: [{ endpoint: "/v1/responses", body }],
+		});
+		const fullQuote = Math.ceil((10_000 + estimateInputTokenUpperBound(body)) * 1.1);
+		expect(result.reservedNanos).toBe(Math.ceil(fullQuote * 0.025));
+		expect(reserveWalletCreditsMock).toHaveBeenCalledWith(expect.objectContaining({
+			amountNanos: Math.ceil(fullQuote * 0.025),
+		}));
+	});
+
 	it("uses a UTF-8 input ceiling and applies a ten percent margin", async () => {
 		expect(estimateInputQuadTokens({ input: "12345678" })).toBe(2);
 		expect(estimateInputTokenUpperBound({ input: "12345678" })).toBe(new TextEncoder().encode(JSON.stringify({ input: "12345678" })).byteLength + 16);

@@ -191,6 +191,7 @@ export type RouteAvailabilityPolicy = import("@/lib/config/routeAvailability").R
  */
 export type GatewayProviderSnapshot = {
     providerId: string;
+	credentialMode?: "managed_and_byok" | "byok_only";
     providerFamilyId?: string | null;
     offerScope?: "global" | "regional" | "specialized" | null;
     offerLabel?: string | null;
@@ -352,6 +353,7 @@ export type GatewayContextData = {
  */
 export type ProviderCandidate = {
     providerId: string;
+	credentialMode?: "managed_and_byok" | "byok_only";
     providerFamilyId?: string | null;
     offerScope?: "global" | "regional" | "specialized" | null;
     offerLabel?: string | null;

@@ -61,6 +61,7 @@ import {
 import { normalizeOpenAIProBatchModel, toProviderNativeBatchModelId } from "@core/batch-model-aliases";
 import { finalizeBatchJob, type FinalizeBatchJobResult } from "@core/batch-finalization";
 import { reserveBatchCredits, type BatchReservationRequest } from "@core/batch-reservations";
+import { reloadBatchCredential, resolveBatchSubmissionCredential, type BatchProviderCredential } from "@core/batch-credentials";
 import {
 	fetchProviderFileText,
 	normalizeProviderBatchPayload as normalizeProviderBatchPayloadShared,
@@ -876,12 +877,13 @@ async function fetchProviderBatchApi(providerId: string, args: {
 	contentType?: string | null;
 	idempotencyKey?: string | null;
 	redirect?: RequestRedirect;
+	credential?: BatchProviderCredential;
 }): Promise<Response> {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	if (providerId === ANTHROPIC_PROVIDER_ID) {
-		let keyInfo: ReturnType<typeof resolveProviderKey>;
+		let keyInfo: { key: string };
 		try {
-			keyInfo = resolveProviderKey(
+			keyInfo = args.credential ?? resolveProviderKey(
 				{ providerId, byokMeta: [] },
 				() => bindings.ANTHROPIC_API_KEY,
 			);
@@ -902,7 +904,7 @@ async function fetchProviderBatchApi(providerId: string, args: {
 		});
 	}
 	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
-		const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
+		const key = args.credential?.key || bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
 		if (!key) {
 			throw new ProviderBatchPreDispatchError("google_ai_studio_key_missing");
 		}
@@ -918,9 +920,9 @@ async function fetchProviderBatchApi(providerId: string, args: {
 		});
 	}
 
-	let keyInfo: ReturnType<typeof resolveOpenAICompatKey>;
+	let keyInfo: { key: string };
 	try {
-		keyInfo = resolveOpenAICompatKey({ providerId, byokMeta: [] } as any);
+		keyInfo = args.credential ?? resolveOpenAICompatKey({ providerId, byokMeta: [] } as any);
 	} catch (error) {
 		throw new ProviderBatchPreDispatchError(`${providerId}_batch_credentials_unavailable`, { cause: error });
 	}
@@ -935,6 +937,15 @@ async function fetchProviderBatchApi(providerId: string, args: {
 		method: args.method,
 		headers,
 		body: args.body ?? undefined,
+	});
+}
+
+async function reloadCredentialForBatch(workspaceId: string, providerId: string, meta: BatchJobMeta) {
+	return reloadBatchCredential({
+		workspaceId,
+		providerId,
+		keySource: meta.keySource,
+		byokKeyId: meta.byokKeyId,
 	});
 }
 
@@ -957,6 +968,7 @@ async function requireBatchApiAccess(auth: AuthSuccess, requestId: string): Prom
 async function uploadProviderBatchInputFile(providerId: string, args: {
 	requestId: string;
 	rows: NormalizedBatchRequest[];
+	credential: BatchProviderCredential;
 }): Promise<{ ok: true; fileId: string; payload: any } | { ok: false; response: Response }> {
 	const form = new FormData();
 	form.append("purpose", providerId === "together" ? "batch-api" : "batch");
@@ -969,6 +981,7 @@ async function uploadProviderBatchInputFile(providerId: string, args: {
 		endpointPath: providerId === "together" ? "/files/upload" : "/files",
 		method: "POST",
 		body: form,
+		credential: args.credential,
 	});
 	const upstreamJson = await parseUpstreamJson(upstream);
 	if (!upstream.ok) return { ok: false, response: toJsonResponse(upstream) };
@@ -1463,12 +1476,19 @@ async function validateBatchWebhookEndpointOwnership(args: {
 	});
 }
 
-async function persistBatchFileOwnership(workspaceId: string, providerId: string, payload: any): Promise<void> {
+async function persistBatchFileOwnership(
+	workspaceId: string,
+	providerId: string,
+	payload: any,
+	credential?: Pick<BatchProviderCredential, "source" | "byokKeyId">,
+): Promise<void> {
 	const outputFileId = toText(payload?.output_file_id);
 	if (outputFileId) {
 		await saveBatchFileMeta(workspaceId, outputFileId, {
 			provider: providerId,
 			status: "available",
+			keySource: credential?.source,
+			byokKeyId: credential?.byokKeyId,
 		});
 	}
 	const errorFileId = toText(payload?.error_file_id);
@@ -1476,6 +1496,8 @@ async function persistBatchFileOwnership(workspaceId: string, providerId: string
 		await saveBatchFileMeta(workspaceId, errorFileId, {
 			provider: providerId,
 			status: "available",
+			keySource: credential?.source,
+			byokKeyId: credential?.byokKeyId,
 		});
 	}
 }
@@ -1882,6 +1904,11 @@ async function handleCreate(req: Request) {
 					providerId,
 					directInputFileId,
 					providerId === MOONSHOT_PROVIDER_ID ? MAX_MOONSHOT_BATCH_FILE_BYTES : undefined,
+					{
+						workspaceId: auth.workspaceId,
+						keySource: ownedInputFile?.keySource,
+						byokKeyId: ownedInputFile?.byokKeyId,
+					},
 				),
 				providerId === MOONSHOT_PROVIDER_ID ? MAX_MOONSHOT_BATCH_REQUESTS : undefined,
 			);
@@ -1998,6 +2025,30 @@ async function handleCreate(req: Request) {
 			endpoint: row.url,
 			method: row.method,
 	}));
+	let batchCredential: BatchProviderCredential;
+	try {
+		const models = [...new Set(policyRows
+			.map((row) => toText((row.body as any)?.model) ?? row.gatewayModel ?? toText(payload.model))
+			.filter((model): model is string => Boolean(model)))];
+		const resolved = await Promise.all((models.length ? models : ["batch"]).map((model) =>
+			resolveBatchSubmissionCredential({ workspaceId: auth.workspaceId, providerId, apiKeyId: auth.apiKeyId, model }),
+		));
+		batchCredential = resolved[0]!.credential;
+		if (resolved.some(({ credential }) => credential.source !== batchCredential.source || credential.byokKeyId !== batchCredential.byokKeyId)) {
+			throw new Error("batch_models_require_incompatible_credentials");
+		}
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : "batch_provider_credentials_unavailable";
+		return err(reason === "byok_credentials_required" ? "validation_error" : "gateway_error", {
+			reason,
+			message: reason === "byok_credentials_required"
+				? "This provider requires your own provider credential. Add an eligible BYOK key and retry."
+				: "Provider credentials are unavailable for this batch.",
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+			provider: providerId,
+		});
+	}
 	const batchId = generateGatewayBatchId();
 	let reservation: Awaited<ReturnType<typeof reserveBatchCredits>>;
 	try {
@@ -2006,6 +2057,7 @@ async function handleCreate(req: Request) {
 			apiKeyId: auth.apiKeyId,
 			requestId,
 			providerId,
+			isByok: batchCredential.source === "byok",
 			requests: reservationRequests,
 		});
 	} catch (error) {
@@ -2034,12 +2086,13 @@ async function handleCreate(req: Request) {
 	}
 	const shouldUploadBatchInputFile = FILE_BACKED_JSONL_BATCH_PROVIDERS.has(providerId) && (
 		inputMode.mode === "requests" ||
-		(inputMode.mode === "file" && providerId === OPENAI_PROVIDER_ID && Boolean(requestRows?.length))
+		(inputMode.mode === "file" && (providerId === OPENAI_PROVIDER_ID || (ownedInputFile && ((ownedInputFile.keySource ?? "gateway") !== batchCredential.source || (ownedInputFile.byokKeyId ?? null) !== batchCredential.byokKeyId))) && Boolean(policyRows.length))
 	);
+	if (shouldUploadBatchInputFile && inputMode.mode === "file") requestRows = policyRows;
 	if (shouldUploadBatchInputFile) {
 		let upload: Awaited<ReturnType<typeof uploadProviderBatchInputFile>>;
 		try {
-			upload = await uploadProviderBatchInputFile(providerId, { requestId, rows: requestRows ?? [] });
+			upload = await uploadProviderBatchInputFile(providerId, { requestId, rows: requestRows ?? [], credential: batchCredential });
 		} catch (error) {
 			await releaseWalletReservation({
 				workspaceId: auth.workspaceId,
@@ -2077,14 +2130,15 @@ async function handleCreate(req: Request) {
 				purpose: providerId === "together" ? "batch-api" : "batch",
 				filename: `aistats-batch-${requestId}.jsonl`,
 				bytes: new TextEncoder().encode(toProviderJsonl(providerId, requestRows ?? [])).byteLength,
-				keySource: "gateway",
-				byokKeyId: null,
+				keySource: batchCredential.source,
+				byokKeyId: batchCredential.byokKeyId,
 			});
 		} catch (lookupErr) {
 			await fetchProviderBatchApi(providerId, {
 				endpointPath: `/files/${encodeURIComponent(upload.fileId)}`,
 				method: "DELETE",
 				contentType: JSON_BATCH_CONTENT_TYPE,
+				credential: batchCredential,
 			}).catch(() => null);
 			await releaseWalletReservation({
 				workspaceId: auth.workspaceId,
@@ -2157,8 +2211,8 @@ async function handleCreate(req: Request) {
 		inputFileId: toText(upstreamPayload.input_file_id) ?? toText(payload.input_file_id),
 		inputMode: inputMode.mode,
 		webhook: normalizedWebhook,
-		keySource: "gateway",
-		byokKeyId: null,
+		keySource: batchCredential.source,
+		byokKeyId: batchCredential.byokKeyId,
 		reservationId: reservation.reservationId,
 		reservedNanos: reservation.reservedNanos,
 		reservationStatus: reservation.status,
@@ -2194,6 +2248,7 @@ async function handleCreate(req: Request) {
 			body: JSON.stringify(providerCreate.body),
 			contentType: JSON_BATCH_CONTENT_TYPE,
 			idempotencyKey: `phaseo:${batchId}`,
+			credential: batchCredential,
 		});
 	} catch (error) {
 		if (error instanceof ProviderBatchPreDispatchError) {
@@ -2251,6 +2306,7 @@ async function handleCreate(req: Request) {
 				method: "POST",
 				body: JSON.stringify(providerCreate.followup.body),
 				contentType: JSON_BATCH_CONTENT_TYPE,
+				credential: batchCredential,
 			}).catch(() => null);
 			if (!followup?.ok) {
 				const cancellation = await fetchProviderBatchApi(providerId, {
@@ -2258,6 +2314,7 @@ async function handleCreate(req: Request) {
 					method: "POST",
 					contentType: JSON_BATCH_CONTENT_TYPE,
 					body: "{}",
+					credential: batchCredential,
 				}).catch(() => null);
 				await setBatchJobStatus(auth.workspaceId, batchId, "cancelling", {
 					reservationStatus: reservation.status,
@@ -2286,6 +2343,7 @@ async function handleCreate(req: Request) {
 			const refreshed = await fetchProviderBatchApi(providerId, {
 				endpointPath: `/batches/${encodeURIComponent(nativeId)}`,
 				method: "GET",
+				credential: batchCredential,
 			}).catch(() => null);
 			if (refreshed?.ok) upstreamJson = normalizeProviderBatchPayload(providerId, await parseUpstreamJson(refreshed)) ?? upstreamJson;
 		}
@@ -2304,7 +2362,7 @@ async function handleCreate(req: Request) {
 				reason: "batch_create_missing_native_id",
 			});
 		}
-		const keySource = "gateway" as const;
+		const keySource = batchCredential.source;
 		let persistedMeta: BatchJobMeta | null = null;
 		if (batchId) {
 			persistedMeta = batchMetaFromPayload(upstreamJson, {
@@ -2326,7 +2384,7 @@ async function handleCreate(req: Request) {
 				inputMode: inputMode.mode,
 				webhook: normalizedWebhook,
 				keySource,
-				byokKeyId: null,
+				byokKeyId: batchCredential.byokKeyId,
 				reservationId: reservation.reservationId,
 				reservedNanos: reservation.reservedNanos,
 				reservationStatus: reservation.status,
@@ -2344,6 +2402,7 @@ async function handleCreate(req: Request) {
 					method: "POST",
 					contentType: JSON_BATCH_CONTENT_TYPE,
 					body: "{}",
+					credential: batchCredential,
 				}).then((response) => response.ok).catch(() => false);
 				await setBatchJobStatus(auth.workspaceId, batchId, cancelled ? "cancelling" : "in_progress", {
 					nativeBatchId,
@@ -2410,7 +2469,7 @@ async function handleCreate(req: Request) {
 				provider: providerId,
 				status: "uploaded",
 				keySource,
-				byokKeyId: null,
+				byokKeyId: batchCredential.byokKeyId,
 			}).catch((lookupErr) => {
 				console.error("batch_input_file_meta_store_failed", {
 					error: lookupErr,
@@ -2419,7 +2478,7 @@ async function handleCreate(req: Request) {
 				});
 			});
 		}
-		await persistBatchFileOwnership(auth.workspaceId, providerId, upstreamJson).catch((lookupErr) => {
+		await persistBatchFileOwnership(auth.workspaceId, providerId, upstreamJson, batchCredential).catch((lookupErr) => {
 			console.error("batch_output_file_meta_store_failed", {
 				error: lookupErr,
 				workspaceId: auth.workspaceId,
@@ -2506,9 +2565,16 @@ async function handleRetrieve(req: Request, id: string) {
 	const providerId = meta.provider || OPENAI_PROVIDER_ID;
 	const requestedInline = new URL(req.url).searchParams.get("inline") === "true";
 	const retrievePath = buildProviderRetrievePath(providerId, nativeBatchId);
+	let credential: BatchProviderCredential;
+	try {
+		credential = await reloadCredentialForBatch(auth.workspaceId, providerId, meta);
+	} catch (error) {
+		return err("gateway_error", { reason: error instanceof Error ? error.message : "batch_provider_credentials_unavailable", request_id: requestId, batch_id: batchId });
+	}
 	const upstream = await fetchProviderBatchApi(providerId, {
 		endpointPath: providerId === MISTRAL_PROVIDER_ID && requestedInline ? `${retrievePath}?inline=true` : retrievePath,
 		method: "GET",
+		credential,
 	});
 	const upstreamJson = normalizeProviderBatchPayload(providerId, await parseUpstreamJson(upstream));
 	let refreshedMeta = meta;
@@ -2539,7 +2605,10 @@ async function handleRetrieve(req: Request, id: string) {
 			});
 		});
 		if (persistenceFailure) return persistenceFailure;
-		await persistBatchFileOwnership(auth.workspaceId, providerId, upstreamJson).catch((lookupErr) => {
+		await persistBatchFileOwnership(auth.workspaceId, providerId, upstreamJson, {
+			source: meta.keySource ?? "gateway",
+			byokKeyId: meta.byokKeyId ?? null,
+		}).catch((lookupErr) => {
 			console.error("batch_output_file_meta_store_failed", {
 				error: lookupErr,
 				workspaceId: auth.workspaceId,
@@ -2616,11 +2685,18 @@ async function handleCancel(req: Request, id: string) {
 
 	const nativeBatchId = resolveBatchProviderNativeId({ batchId, meta });
 	const providerId = meta.provider || OPENAI_PROVIDER_ID;
+	let credential: BatchProviderCredential;
+	try {
+		credential = await reloadCredentialForBatch(auth.workspaceId, providerId, meta);
+	} catch (error) {
+		return err("gateway_error", { reason: error instanceof Error ? error.message : "batch_provider_credentials_unavailable", request_id: requestId, batch_id: batchId });
+	}
 	const upstream = await fetchProviderBatchApi(providerId, {
 		endpointPath: buildProviderCancelPath(providerId, nativeBatchId),
 		method: "POST",
 		contentType: JSON_BATCH_CONTENT_TYPE,
 		body: "{}",
+		credential,
 	});
 	const upstreamJson = normalizeProviderBatchPayload(providerId, await parseUpstreamJson(upstream));
 	let refreshedMeta = meta;
@@ -2837,7 +2913,11 @@ async function handleResults(req: Request, id: string) {
 	let body: ReadableStream<Uint8Array>;
 	try {
 		const nativeId = resolveBatchProviderNativeId({ batchId, meta });
-		body = await openBatchResultsStream({ ...meta, nativeBatchId: nativeId }, { signal: req.signal, onStreamError: logFailure });
+		body = await openBatchResultsStream({ ...meta, nativeBatchId: nativeId }, {
+			signal: req.signal,
+			onStreamError: logFailure,
+			credentialContext: { workspaceId: auth.workspaceId, keySource: meta.keySource, byokKeyId: meta.byokKeyId },
+		});
 	} catch (error) {
 		logFailure(error);
 		if (error instanceof BatchResultsError && error.reason === "results_unavailable") {

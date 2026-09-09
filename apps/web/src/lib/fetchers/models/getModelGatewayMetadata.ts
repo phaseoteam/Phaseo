@@ -7,6 +7,7 @@ import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSo
 export interface GatewayProviderDetails {
     api_provider_id: string;
     api_provider_name: string;
+	credential_mode?: "managed_and_byok" | "byok_only";
     provider_family_id?: string | null;
     offer_label?: string | null;
     offer_scope?: "global" | "regional" | "specialized" | null;

@@ -87,12 +87,16 @@ function batchMetaFromOpenAiPayload(payload: any, base: BatchJobMeta): BatchJobM
 	};
 }
 
-async function persistBatchFileOwnership(workspaceId: string, payload: any): Promise<void> {
+async function persistBatchFileOwnership(workspaceId: string, payload: any, meta?: BatchJobMeta | null): Promise<void> {
+	const credentialMeta = meta?.keySource === "byok"
+		? { keySource: "byok" as const, byokKeyId: meta.byokKeyId ?? null }
+		: {};
 	const outputFileId = normalizeText(payload?.output_file_id);
 	if (outputFileId) {
 		await saveBatchFileMeta(workspaceId, outputFileId, {
 			provider: OPENAI_PROVIDER_ID,
 			status: "available",
+			...credentialMeta,
 		});
 	}
 	const errorFileId = normalizeText(payload?.error_file_id);
@@ -100,6 +104,7 @@ async function persistBatchFileOwnership(workspaceId: string, payload: any): Pro
 		await saveBatchFileMeta(workspaceId, errorFileId, {
 			provider: OPENAI_PROVIDER_ID,
 			status: "available",
+			...credentialMeta,
 		});
 	}
 }
@@ -259,7 +264,13 @@ export async function processOpenAiBatchWebhook(args: {
 		return false;
 	}
 
-	const authoritativePayload = await fetchProviderBatchStatus(OPENAI_PROVIDER_ID, nativeBatchId);
+	const authoritativePayload = job.meta?.keySource === "byok"
+		? await fetchProviderBatchStatus(OPENAI_PROVIDER_ID, nativeBatchId, {
+			workspaceId: job.workspaceId,
+			keySource: "byok",
+			byokKeyId: job.meta.byokKeyId,
+		})
+		: await fetchProviderBatchStatus(OPENAI_PROVIDER_ID, nativeBatchId);
 	const data = authoritativePayload ?? (payload?.data && typeof payload.data === "object" ? payload.data : payload);
 	await saveBatchJobMeta(
 		job.workspaceId,
@@ -269,7 +280,7 @@ export async function processOpenAiBatchWebhook(args: {
 			provider: OPENAI_PROVIDER_ID,
 		}),
 	);
-	await persistBatchFileOwnership(job.workspaceId, data);
+	await persistBatchFileOwnership(job.workspaceId, data, job.meta);
 
 	const terminal = mapOpenAiBatchTerminal(eventType, { ...payload, data });
 	if (!terminal) {
@@ -367,10 +378,14 @@ export async function processGoogleAiStudioBatchWebhook(args: {
 		return false;
 	}
 
-	const authoritativePayload = await fetchProviderBatchStatus(
-		GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID,
-		job.nativeId ?? job.meta?.nativeBatchId ?? nativeBatchId,
-	);
+	const authoritativeNativeId = job.nativeId ?? job.meta?.nativeBatchId ?? nativeBatchId;
+	const authoritativePayload = job.meta?.keySource === "byok"
+		? await fetchProviderBatchStatus(GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID, authoritativeNativeId, {
+			workspaceId: job.workspaceId,
+			keySource: "byok",
+			byokKeyId: job.meta?.byokKeyId,
+		})
+		: await fetchProviderBatchStatus(GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID, authoritativeNativeId);
 	const status = normalizeText(authoritativePayload?.status);
 	const terminal =
 		status === "completed"

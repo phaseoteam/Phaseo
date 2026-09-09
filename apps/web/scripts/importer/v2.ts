@@ -1191,6 +1191,7 @@ export async function syncV2Catalogue(): Promise<void> {
             stream_cancellation_verified_at:
                 sourceProvider.stream_cancellation_verified_at ?? null,
         } : {}),
+		credential_mode: sourceProvider?.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok",
         metadata: {
             source: "json",
             legacy_provider_id: row.api_provider_id,
@@ -1332,6 +1333,7 @@ export async function syncV2Catalogue(): Promise<void> {
                 phaseo_status: integrationStatus,
                 access_scope: accessScope,
                 routing_enabled: phaseoRoutingEnabled(statusSource, providerIsExternal),
+				credential_mode: authored?.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok",
                 input_modalities: asTextArray(row.input_modalities),
                 output_modalities: asTextArray(row.output_modalities),
                 context_length: Number(row.context_length) > 0 ? Number(row.context_length) : null,

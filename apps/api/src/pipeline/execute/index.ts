@@ -154,7 +154,7 @@ export function buildCredentialAttemptPlan(
 
 	const balancedAttempts = rankedProviders.flatMap((routed) => {
 		const keys = keysForMode(routed, "balanced");
-		return keys.length ? keys : [{
+		return keys.length ? keys : routed.candidate.credentialMode === "byok_only" ? [] : [{
 			routed,
 			phase: "gateway" as const,
 			credential: { kind: "gateway" as const },
@@ -501,6 +501,15 @@ export async function doRequestWithIR(
 		includeFallbackByok: true,
 		allowManagedFallback: ctx.teamSettings?.byokFallbackEnabled === true,
 	});
+	if (credentialPlan.length === 0 && rankedProviders.some((entry) => entry.candidate.credentialMode === "byok_only")) {
+		return err("byok_credentials_required", {
+			reason: "byok_credentials_required",
+			message: "The selected route requires your own provider credential. Add an eligible BYOK key and retry.",
+			model: ctx.model,
+			endpoint: ctx.endpoint,
+			request_id: ctx.requestId,
+		});
+	}
 	ctx.credentialPlan = credentialPlan.map((entry, index) => ({
 		attempt_number: index + 1,
 		provider: entry.routed.candidate.providerId,

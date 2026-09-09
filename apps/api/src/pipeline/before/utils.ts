@@ -53,6 +53,7 @@ export function buildProviderCandidatesWithDiagnostics(
         const effectiveDataPolicy = resolveEffectiveDataPolicy({ endpoint, provider });
         candidates.push({
             providerId: provider.providerId,
+			credentialMode: provider.credentialMode ?? "managed_and_byok",
             providerFamilyId: provider.providerFamilyId ?? null,
             offerScope: provider.offerScope ?? null,
             offerLabel: provider.offerLabel ?? null,
