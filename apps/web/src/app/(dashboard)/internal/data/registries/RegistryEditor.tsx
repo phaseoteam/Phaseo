@@ -38,13 +38,15 @@ function ReferenceSelect({ field, value, disabled, onChange }: { field: Field; v
 export function RegistryEditor() {
   const [resource, setResource] = useQueryState("collection", { defaultValue: "families" });
   const [registries, setRegistries] = useState<Record<string, Registry>>({});
-  const [rows, setRows] = useState<Row[]>([]);
-  const [count, setCount] = useState(0);
+  const [listing, setListing] = useState<{ resource: string; rows: Row[]; count: number }>({ resource: "", rows: [], count: 0 });
+  const rows = listing.resource === resource ? listing.rows : [];
+  const count = listing.resource === resource ? listing.count : 0;
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [before, setBefore] = useState<Row | null>(null);
   const [draft, setDraft] = useState<Row | null>(null);
+  const [draftResource, setDraftResource] = useState(resource);
   const [baseline, setBaseline] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -57,17 +59,17 @@ export function RegistryEditor() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    void request<{ rows: Row[]; count: number }>(`/${encodeURIComponent(resource)}?page=${page}&q=${encodeURIComponent(search)}`).then((result) => { if (!cancelled) { setRows(result.rows); setCount(result.count); setError(""); } }).catch((e) => { if (!cancelled) setError(String(e)); }).finally(() => { if (!cancelled) setLoading(false); });
+    void request<{ rows: Row[]; count: number }>(`/${encodeURIComponent(resource)}?page=${page}&q=${encodeURIComponent(search)}`).then((result) => { if (!cancelled) { setListing({ resource, rows: result.rows, count: result.count }); setError(""); } }).catch((e) => { if (!cancelled) setError(String(e)); }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [resource, page, search, revision]);
   const canLeave = () => !saving && (!dirty || window.confirm("Discard unsaved changes?"));
   const edit = (row: Row | null) => {
     if (!registry || !canLeave()) return;
     const values = Object.fromEntries(registry.fields.map((field) => { const value = row ? row[field.key] : field.type === "uuid" ? crypto.randomUUID() : field.default ?? null; return [field.key, field.type === "json" ? JSON.stringify(value ?? {}, null, 2) : value]; }));
-    setBefore(row); setDraft(values); setBaseline(JSON.stringify(values)); setError("");
+    setDraftResource(resource); setBefore(row); setDraft(values); setBaseline(JSON.stringify(values)); setError("");
   };
   const save = async () => {
-    if (!registry || !draft) return;
+    if (!registry || !draft || draftResource !== resource) return;
     setSaving(true); setError("");
     try {
       const values = Object.fromEntries(registry.fields.map((field) => [field.key, field.type === "json" ? JSON.parse(String(draft[field.key] || "{}")) : draft[field.key]]));
@@ -89,7 +91,7 @@ export function RegistryEditor() {
         <div className="max-h-[60vh] divide-y overflow-y-auto">{loading ? <p className="py-4 text-sm text-muted-foreground">Loading…</p> : rows.map((row) => <button type="button" key={registry?.keys.map((key) => String(row[key])).join(":")} className="block w-full py-3 text-left hover:bg-muted/50" onClick={() => edit(row)}><span className="block text-sm font-medium">{rowLabel(row)}</span><span className="block truncate text-xs text-muted-foreground">{row.status ? String(row.status) : registry?.keys.map((key) => String(row[key])).join(" · ")}</span></button>)}{!loading && !rows.length ? <p className="py-4 text-sm text-muted-foreground">No records found.</p> : null}</div>
         <div className="flex items-center justify-between"><Button variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</Button><span className="text-sm">{page} / {Math.max(1, Math.ceil(count / 100))}</span><Button variant="outline" disabled={page * 100 >= count} onClick={() => setPage(page + 1)}>Next</Button></div>
       </section>
-      <section>{draft && registry ? <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void save(); }}>
+      <section>{draft && registry && draftResource === resource ? <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void save(); }}>
         <h2 className="font-semibold">{before ? rowLabel(before) : "New record"}</h2>
         <fieldset disabled={saving} className="grid gap-4 sm:grid-cols-2">{registry.fields.map((field) => {
           const value = draft[field.key]; const disabled = saving || (!!before && (field.immutable || registry.keys.includes(field.key)));
