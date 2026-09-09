@@ -5,7 +5,7 @@
   "status": "Preview",
   "previous_model_id": null,
   "description": "DeepSeek V4.1 Flash Preview is an early-access DeepSeek text model exposed through a temporary provider deployment. Provider support and availability may change without notice.",
-  "announced_date": null,
+  "announced_date": "2026-09-08T00:00:00Z",
   "release_date": "2026-09-08T00:00:00Z",
   "deprecation_date": null,
   "retirement_date": null,
@@ -14,6 +14,11 @@
   "output_types": "text",
   "api_model_id": "deepseek/deepseek-v4.1-flash-preview",
   "links": [
+    {
+      "title": "Beta report",
+      "kind": "announcement",
+      "url": "https://36kr.com/p/3974654461604357"
+    },
     {
       "title": "DeepSeek API documentation",
       "kind": "docs",
@@ -65,6 +70,12 @@
   },
   "open_weights": null,
   "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://36kr.com/p/3974654461604357",
+      "accessed_at": "2026-09-09T00:00:00Z",
+      "notes": "Reports that DeepSeek opened the limited V4.1 Flash beta in its official group on September 8, 2026, with the temporary expires-on-0910 endpoint."
+    },
     {
       "kind": "api_reference",
       "url": "https://api-docs.deepseek.com/guides/responses_api/",
