@@ -30,7 +30,7 @@ export default function ModelsTablePageClient({
 		revalidateOnReconnect: false,
 		refreshInterval: 0,
 	});
-	useRevalidateOnResume(mutate);
+	useRevalidateOnResume(mutate, error);
 
 	if (error && !data) throw error;
 	if (!data) return <ModelsTablePageSkeleton />;

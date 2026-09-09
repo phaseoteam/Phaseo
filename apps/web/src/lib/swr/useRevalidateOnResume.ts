@@ -14,8 +14,15 @@ const RESUME_REVALIDATION_INTERVAL_MS = 30 * 60 * 1_000;
  * visibility, focus, and pageshow listeners cover the resume paths used by
  * sleeping, restored, and discarded tabs without polling while hidden.
  */
-export function useRevalidateOnResume<T>(mutate: KeyedMutator<T>) {
+export function useRevalidateOnResume<T>(
+	mutate: KeyedMutator<T>,
+	error?: unknown,
+) {
 	const lastRevalidatedAtRef = useRef<number | null>(null);
+
+	useEffect(() => {
+		if (error) lastRevalidatedAtRef.current = null;
+	}, [error]);
 
 	useEffect(() => {
 		lastRevalidatedAtRef.current ??= Date.now();
@@ -33,13 +40,7 @@ export function useRevalidateOnResume<T>(mutate: KeyedMutator<T>) {
 			}
 
 			lastRevalidatedAtRef.current = now;
-			void mutate().catch(() => {
-				// Allow the next resume/reconnect event to retry after a transient
-				// failure without replacing the existing catalogue data.
-				if (lastRevalidatedAtRef.current === now) {
-					lastRevalidatedAtRef.current = null;
-				}
-			});
+			void mutate();
 		};
 		const handleVisibilityChange = () => {
 			if (document.visibilityState === "visible") revalidateIfStale();
