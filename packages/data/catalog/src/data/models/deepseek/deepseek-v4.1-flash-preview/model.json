@@ -15,6 +15,11 @@
   "api_model_id": "deepseek/deepseek-v4.1-flash-preview",
   "links": [
     {
+      "title": "Beta report",
+      "kind": "announcement",
+      "url": "https://36kr.com/p/3974654461604357"
+    },
+    {
       "title": "DeepSeek API documentation",
       "kind": "docs",
       "url": "https://api-docs.deepseek.com/"
@@ -65,6 +70,12 @@
   },
   "open_weights": null,
   "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://36kr.com/p/3974654461604357",
+      "accessed_at": "2026-09-09T00:00:00Z",
+      "notes": "Reports that DeepSeek opened the limited V4.1 Flash beta in its official group on September 8, 2026, with the temporary expires-on-0910 endpoint."
+    },
     {
       "kind": "api_reference",
       "url": "https://api-docs.deepseek.com/guides/responses_api/",
