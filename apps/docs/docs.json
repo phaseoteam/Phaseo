@@ -1625,7 +1625,6 @@
 				"groups": [
 					{
 						"group": "2026",
-						"icon": "calendar-days",
 						"pages": [
 							"v1/changelog",
 							"v1/changelog/2026-08",
@@ -1640,7 +1639,6 @@
 					},
 					{
 						"group": "Archive",
-						"icon": "archive",
 						"pages": [
 							"v1/changelog/2025",
 							"v1/changelog/2024",
