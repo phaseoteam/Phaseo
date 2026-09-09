@@ -1,3 +1,4 @@
+import { catalogRegistries, registrySchema } from "./catalogRegistries";
 import { Hono } from "hono";
 import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
@@ -211,6 +212,64 @@ accountModelsRouter.get("/provider-audit/source", async (c) => {
 		console.error("[web-api/account/models] provider audit source failed", { error });
 		return c.json({ error: "admin_provider_audit_source_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
+});
+
+accountModelsRouter.get("/catalog/price-proposals", async (c) => {
+  const admin = await requireAdminContext(c.req.raw, c.env);
+  if (!admin.context) return c.json({ error: "unauthorized" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+  const result = await admin.context.client.from("v2_catalogue_price_proposals").select("*,route:v2_model_provider_routes(model_slug,provider_slug,provider_model_slug)").eq("status", "pending").order("created_at").limit(100);
+  if (result.error) return c.json({ error: "proposals_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+  return c.json({ rows: result.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+accountModelsRouter.post("/catalog/price-proposals/:id", async (c) => {
+  const admin = await requireAdminContext(c.req.raw, c.env);
+  if (!admin.context) return c.json({ error: "unauthorized" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+  const parsed = z.object({ accept: z.boolean() }).safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "invalid_decision" }, 400, PRIVATE_NO_STORE_HEADERS);
+  const result = await admin.context.client.rpc("review_v2_catalogue_price_proposal", { p_actor_user_id: admin.context.user.id, p_proposal_id: c.req.param("id"), p_accept: parsed.data.accept });
+  if (result.error) return c.json({ error: "proposal_review_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+  return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountModelsRouter.get("/catalog/registries", async (c) => {
+  const admin = await requireAdminContext(c.req.raw, c.env);
+  if (!admin.context) return c.json({ error: "unauthorized" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+  return c.json({ registries: catalogRegistries }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountModelsRouter.get("/catalog/registries/:resource", async (c) => {
+  const admin = await requireAdminContext(c.req.raw, c.env);
+  if (!admin.context) return c.json({ error: "unauthorized" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+  const resource = c.req.param("resource");
+  const registry = Object.hasOwn(catalogRegistries, resource) ? catalogRegistries[resource] : undefined;
+  const lookups: Record<string, { table: string; keys: string[] }> = { organisations: { table: "v2_labs", keys: ["lab_slug"] }, providers: { table: "v2_providers", keys: ["provider_slug"] }, routes: { table: "v2_model_provider_routes", keys: ["provider_model_id"] } };
+  const source = registry ?? (Object.hasOwn(lookups, resource) ? lookups[resource] : undefined);
+  if (!source) return c.json({ error: "unknown_registry" }, 404, PRIVATE_NO_STORE_HEADERS);
+  const page = Math.max(1, Math.min(100000, Number(c.req.query("page")) || 1));
+  const q = (c.req.query("q") ?? "").replace(/[^a-zA-Z0-9 _:/.-]/g, "").trim().slice(0, 100);
+  let query = admin.context.client.from(source.table).select("*", { count: "exact" });
+  if (q) {
+    const fields = registry ? registry.fields.filter((f) => f.type === "text" && !f.reference).map((f) => f.key) : [source.keys[0], resource === "routes" ? "provider_model_slug" : "name"];
+    if (fields.length) query = query.or(fields.map((key) => `${key}.ilike.%${q}%`).join(","));
+  }
+  for (const key of source.keys) query = query.order(key);
+  const result = await query.range((page - 1) * 100, page * 100 - 1);
+  if (result.error) return c.json({ error: "registry_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+  return c.json({ rows: result.data ?? [], count: result.count ?? 0 }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountModelsRouter.post("/catalog/registries/:resource", async (c) => {
+  const admin = await requireAdminContext(c.req.raw, c.env);
+  if (!admin.context) return c.json({ error: "unauthorized" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+  const resource = c.req.param("resource");
+  const registry = Object.hasOwn(catalogRegistries, resource) ? catalogRegistries[resource] : undefined;
+  if (!registry) return c.json({ error: "unknown_registry" }, 404, PRIVATE_NO_STORE_HEADERS);
+  const body = await c.req.json().catch(() => null);
+  const envelope = z.object({ values: registrySchema(registry), before: z.record(z.string(), z.unknown()).nullable() }).safeParse(body);
+  if (!envelope.success) return c.json({ error: "invalid_registry_record", issues: envelope.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
+  const result = await admin.context.client.rpc("mutate_v2_admin_registry", { p_actor_user_id: admin.context.user.id, p_resource: resource, p_values: envelope.data.values, p_before: envelope.data.before });
+  if (result.error) return c.json({ error: "registry_save_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+  return c.json({ row: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.get("/catalog/counts", async (c) => {

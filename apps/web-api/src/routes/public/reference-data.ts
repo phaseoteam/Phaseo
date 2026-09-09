@@ -397,7 +397,7 @@ publicReferenceDataRouter.get("/subscription-plans/:planId", async (c) => {
 		if (!planRows?.length) return notFound(c, "subscription_plan");
 		const primary = planRows[0];
 		const [featuresResult, modelLinksResult, labResult] = await Promise.all([
-			client.from("v2_subscription_plan_features").select("feature_name,feature_value,feature_description,other_info").eq("plan_uuid", primary.plan_uuid).order("feature_name", { ascending: true }),
+			client.from("v2_subscription_plan_features").select("feature_name,feature_value,feature_description,other_info").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).eq("plan_uuid", primary.plan_uuid).order("feature_name", { ascending: true }),
 			client.from("v2_subscription_plan_models").select("model_slug,model_info,rate_limit,other_info").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).eq("plan_uuid", primary.plan_uuid).order("model_slug", { ascending: true }),
 			client.from("v2_labs").select("lab_slug,name,country_code,metadata").eq("lab_slug", primary.lab_slug).maybeSingle(),
 		]);

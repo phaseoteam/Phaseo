@@ -12,6 +12,12 @@ inline constexpr std::string_view AI21_JAMBA_1_5_LARGE = "ai21/jamba-1.5-large";
 // Model ID: ai21/jamba-1.5-mini
 // Model page: https://phaseo.app/models/ai21/jamba-1.5-mini
 inline constexpr std::string_view AI21_JAMBA_1_5_MINI = "ai21/jamba-1.5-mini";
+// Model ID: ai21/jamba-large-1.5
+// Model page: https://phaseo.app/models/ai21/jamba-large-1.5
+inline constexpr std::string_view AI21_JAMBA_LARGE_1_5 = "ai21/jamba-large-1.5";
+// Model ID: ai21/jamba-mini-1.5
+// Model page: https://phaseo.app/models/ai21/jamba-mini-1.5
+inline constexpr std::string_view AI21_JAMBA_MINI_1_5 = "ai21/jamba-mini-1.5";
 // Model ID: aion-labs/aion-2.0
 // Model page: https://phaseo.app/models/aion-labs/aion-2.0
 inline constexpr std::string_view AION_LABS_AION_2_0 = "aion-labs/aion-2.0";
@@ -180,6 +186,12 @@ inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_3_VIDEO = "black-forest
 // Model ID: bytedance/seed-1.6
 // Model page: https://phaseo.app/models/bytedance/seed-1.6
 inline constexpr std::string_view BYTEDANCE_SEED_1_6 = "bytedance/seed-1.6";
+// Model ID: bytedance/seed-1.6-2025-06-15
+// Model page: https://phaseo.app/models/bytedance/seed-1.6-2025-06-15
+inline constexpr std::string_view BYTEDANCE_SEED_1_6_2025_06_15 = "bytedance/seed-1.6-2025-06-15";
+// Model ID: bytedance/seed-1.6-2025-09-15
+// Model page: https://phaseo.app/models/bytedance/seed-1.6-2025-09-15
+inline constexpr std::string_view BYTEDANCE_SEED_1_6_2025_09_15 = "bytedance/seed-1.6-2025-09-15";
 // Model ID: bytedance/seed-1.6-2025-10-15
 // Model page: https://phaseo.app/models/bytedance/seed-1.6-2025-10-15
 inline constexpr std::string_view BYTEDANCE_SEED_1_6_2025_10_15 = "bytedance/seed-1.6-2025-10-15";
@@ -189,6 +201,12 @@ inline constexpr std::string_view BYTEDANCE_SEED_1_6_250915 = "bytedance/seed-1.
 // Model ID: bytedance/seed-1.6-flash
 // Model page: https://phaseo.app/models/bytedance/seed-1.6-flash
 inline constexpr std::string_view BYTEDANCE_SEED_1_6_FLASH = "bytedance/seed-1.6-flash";
+// Model ID: bytedance/seed-1.6-flash-2025-06-15
+// Model page: https://phaseo.app/models/bytedance/seed-1.6-flash-2025-06-15
+inline constexpr std::string_view BYTEDANCE_SEED_1_6_FLASH_2025_06_15 = "bytedance/seed-1.6-flash-2025-06-15";
+// Model ID: bytedance/seed-1.6-flash-2025-07-15
+// Model page: https://phaseo.app/models/bytedance/seed-1.6-flash-2025-07-15
+inline constexpr std::string_view BYTEDANCE_SEED_1_6_FLASH_2025_07_15 = "bytedance/seed-1.6-flash-2025-07-15";
 // Model ID: bytedance/seed-1.6-flash-2025-08-28
 // Model page: https://phaseo.app/models/bytedance/seed-1.6-flash-2025-08-28
 inline constexpr std::string_view BYTEDANCE_SEED_1_6_FLASH_2025_08_28 = "bytedance/seed-1.6-flash-2025-08-28";
@@ -258,6 +276,9 @@ inline constexpr std::string_view COHERE_COMMAND_A = "cohere/command-a";
 // Model ID: cohere/command-r
 // Model page: https://phaseo.app/models/cohere/command-r
 inline constexpr std::string_view COHERE_COMMAND_R = "cohere/command-r";
+// Model ID: cohere/command-r-7b
+// Model page: https://phaseo.app/models/cohere/command-r-7b
+inline constexpr std::string_view COHERE_COMMAND_R_7B = "cohere/command-r-7b";
 // Model ID: cohere/command-r-plus
 // Model page: https://phaseo.app/models/cohere/command-r-plus
 inline constexpr std::string_view COHERE_COMMAND_R_PLUS = "cohere/command-r-plus";
@@ -324,6 +345,9 @@ inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3 = "deepseek/deepseek-v3";
 // Model ID: deepseek/deepseek-v3-0324
 // Model page: https://phaseo.app/models/deepseek/deepseek-v3-0324
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_0324 = "deepseek/deepseek-v3-0324";
+// Model ID: deepseek/deepseek-v3-2025-03-24
+// Model page: https://phaseo.app/models/deepseek/deepseek-v3-2025-03-24
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_2025_03_24 = "deepseek/deepseek-v3-2025-03-24";
 // Model ID: deepseek/deepseek-v3-turbo
 // Model page: https://phaseo.app/models/deepseek/deepseek-v3-turbo
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V3_TURBO = "deepseek/deepseek-v3-turbo";
@@ -354,6 +378,9 @@ inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_PRO = "deepseek/deepseek-
 // Model ID: deepseek/deepseek-v4-pro-0813
 // Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_PRO_0813 = "deepseek/deepseek-v4-pro-0813";
+// Model ID: deepseek/deepseek-v4.1-flash-beta
+// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = "deepseek/deepseek-v4.1-flash-beta";
 // Model ID: deepseek/deepseek-v4.1-flash-preview
 // Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW = "deepseek/deepseek-v4.1-flash-preview";
@@ -585,6 +612,18 @@ inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO_V2 = "kwaipilot/kat-co
 // Model ID: kwaipilot/kat-coder-pro-v2.5
 // Model page: https://phaseo.app/models/kwaipilot/kat-coder-pro-v2.5
 inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO_V2_5 = "kwaipilot/kat-coder-pro-v2.5";
+// Model ID: lightricks/ltx-2.3-fast
+// Model page: https://phaseo.app/models/lightricks/ltx-2.3-fast
+inline constexpr std::string_view LIGHTRICKS_LTX_2_3_FAST = "lightricks/ltx-2.3-fast";
+// Model ID: lightricks/ltx-2.3-pro
+// Model page: https://phaseo.app/models/lightricks/ltx-2.3-pro
+inline constexpr std::string_view LIGHTRICKS_LTX_2_3_PRO = "lightricks/ltx-2.3-pro";
+// Model ID: lightricks/ltx-2.5-fast
+// Model page: https://phaseo.app/models/lightricks/ltx-2.5-fast
+inline constexpr std::string_view LIGHTRICKS_LTX_2_5_FAST = "lightricks/ltx-2.5-fast";
+// Model ID: lightricks/ltx-2.5-pro
+// Model page: https://phaseo.app/models/lightricks/ltx-2.5-pro
+inline constexpr std::string_view LIGHTRICKS_LTX_2_5_PRO = "lightricks/ltx-2.5-pro";
 // Model ID: liquid-ai/lfm-2-24b-a2b
 // Model page: https://phaseo.app/models/liquid-ai/lfm-2-24b-a2b
 inline constexpr std::string_view LIQUID_AI_LFM_2_24B_A2B = "liquid-ai/lfm-2-24b-a2b";
@@ -699,6 +738,9 @@ inline constexpr std::string_view MINIMAX_MINIMAX_M1_80K = "minimax/minimax-m1-8
 // Model ID: minimax/minimax-m2
 // Model page: https://phaseo.app/models/minimax/minimax-m2
 inline constexpr std::string_view MINIMAX_MINIMAX_M2 = "minimax/minimax-m2";
+// Model ID: minimax/minimax-m2-her
+// Model page: https://phaseo.app/models/minimax/minimax-m2-her
+inline constexpr std::string_view MINIMAX_MINIMAX_M2_HER = "minimax/minimax-m2-her";
 // Model ID: minimax/minimax-m2.1
 // Model page: https://phaseo.app/models/minimax/minimax-m2.1
 inline constexpr std::string_view MINIMAX_MINIMAX_M2_1 = "minimax/minimax-m2.1";
@@ -732,6 +774,9 @@ inline constexpr std::string_view MINIMAX_SPEECH_2_8_HD = "minimax/speech-2.8-hd
 // Model ID: minimax/speech-2.8-turbo
 // Model page: https://phaseo.app/models/minimax/speech-2.8-turbo
 inline constexpr std::string_view MINIMAX_SPEECH_2_8_TURBO = "minimax/speech-2.8-turbo";
+// Model ID: minimax/speech-2.8:free
+// Model page: https://phaseo.app/models/minimax/speech-2.8%3Afree
+inline constexpr std::string_view MINIMAX_SPEECH_2_8_FREE = "minimax/speech-2.8:free";
 // Model ID: mistral/codestral
 // Model page: https://phaseo.app/models/mistral/codestral
 inline constexpr std::string_view MISTRAL_CODESTRAL = "mistral/codestral";
@@ -852,6 +897,9 @@ inline constexpr std::string_view MOONSHOTAI_KIMI_K2 = "moonshotai/kimi-k2";
 // Model ID: moonshotai/kimi-k2-0905
 // Model page: https://phaseo.app/models/moonshotai/kimi-k2-0905
 inline constexpr std::string_view MOONSHOTAI_KIMI_K2_0905 = "moonshotai/kimi-k2-0905";
+// Model ID: moonshotai/kimi-k2-2025-07-11
+// Model page: https://phaseo.app/models/moonshotai/kimi-k2-2025-07-11
+inline constexpr std::string_view MOONSHOTAI_KIMI_K2_2025_07_11 = "moonshotai/kimi-k2-2025-07-11";
 // Model ID: moonshotai/kimi-k2-thinking
 // Model page: https://phaseo.app/models/moonshotai/kimi-k2-thinking
 inline constexpr std::string_view MOONSHOTAI_KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking";
@@ -891,6 +939,12 @@ inline constexpr std::string_view NEX_AGI_DEEPSEEK_V3_1_NEX_N1 = "nex-agi/deepse
 // Model ID: nous/hermes-3-llama-3.1-405b
 // Model page: https://phaseo.app/models/nous/hermes-3-llama-3.1-405b
 inline constexpr std::string_view NOUS_HERMES_3_LLAMA_3_1_405B = "nous/hermes-3-llama-3.1-405b";
+// Model ID: nous/hermes-3-llama-3.1-70b
+// Model page: https://phaseo.app/models/nous/hermes-3-llama-3.1-70b
+inline constexpr std::string_view NOUS_HERMES_3_LLAMA_3_1_70B = "nous/hermes-3-llama-3.1-70b";
+// Model ID: nous/hermes-4-405b
+// Model page: https://phaseo.app/models/nous/hermes-4-405b
+inline constexpr std::string_view NOUS_HERMES_4_405B = "nous/hermes-4-405b";
 // Model ID: nousresearch/hermes-3-llama-3.1-70b
 // Model page: https://phaseo.app/models/nousresearch/hermes-3-llama-3.1-70b
 inline constexpr std::string_view NOUSRESEARCH_HERMES_3_LLAMA_3_1_70B = "nousresearch/hermes-3-llama-3.1-70b";
@@ -909,6 +963,9 @@ inline constexpr std::string_view NVIDIA_NEMOTRON_3_ULTRA_550B_A55B = "nvidia/ne
 // Model ID: nvidia/nemotron-3.5-lightning
 // Model page: https://phaseo.app/models/nvidia/nemotron-3.5-lightning
 inline constexpr std::string_view NVIDIA_NEMOTRON_3_5_LIGHTNING = "nvidia/nemotron-3.5-lightning";
+// Model ID: nvidia/nemotron-nano-12b-v2-vl
+// Model page: https://phaseo.app/models/nvidia/nemotron-nano-12b-v2-vl
+inline constexpr std::string_view NVIDIA_NEMOTRON_NANO_12B_V2_VL = "nvidia/nemotron-nano-12b-v2-vl";
 // Model ID: nvidia/nemotron-nano-9b-v2
 // Model page: https://phaseo.app/models/nvidia/nemotron-nano-9b-v2
 inline constexpr std::string_view NVIDIA_NEMOTRON_NANO_9B_V2 = "nvidia/nemotron-nano-9b-v2";
@@ -942,12 +999,21 @@ inline constexpr std::string_view OPENAI_CHATGPT_4O = "openai/chatgpt-4o";
 // Model ID: openai/davinci-002
 // Model page: https://phaseo.app/models/openai/davinci-002
 inline constexpr std::string_view OPENAI_DAVINCI_002 = "openai/davinci-002";
+// Model ID: openai/gpt-3.5-turbo-0613
+// Model page: https://phaseo.app/models/openai/gpt-3.5-turbo-0613
+inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_0613 = "openai/gpt-3.5-turbo-0613";
 // Model ID: openai/gpt-3.5-turbo-16k
 // Model page: https://phaseo.app/models/openai/gpt-3.5-turbo-16k
 inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_16K = "openai/gpt-3.5-turbo-16k";
 // Model ID: openai/gpt-3.5-turbo-2023-03-21
 // Model page: https://phaseo.app/models/openai/gpt-3.5-turbo-2023-03-21
 inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_2023_03_21 = "openai/gpt-3.5-turbo-2023-03-21";
+// Model ID: openai/gpt-3.5-turbo-2023-11-06
+// Model page: https://phaseo.app/models/openai/gpt-3.5-turbo-2023-11-06
+inline constexpr std::string_view OPENAI_GPT_3_5_TURBO_2023_11_06 = "openai/gpt-3.5-turbo-2023-11-06";
+// Model ID: openai/gpt-4
+// Model page: https://phaseo.app/models/openai/gpt-4
+inline constexpr std::string_view OPENAI_GPT_4 = "openai/gpt-4";
 // Model ID: openai/gpt-4-2023-06-13
 // Model page: https://phaseo.app/models/openai/gpt-4-2023-06-13
 inline constexpr std::string_view OPENAI_GPT_4_2023_06_13 = "openai/gpt-4-2023-06-13";
@@ -1494,6 +1560,9 @@ inline constexpr std::string_view QWEN_QWEN3_5_LIVETRANSLATE_FLASH_REALTIME_2026
 // Model ID: qwen/qwen3.5-plus
 // Model page: https://phaseo.app/models/qwen/qwen3.5-plus
 inline constexpr std::string_view QWEN_QWEN3_5_PLUS = "qwen/qwen3.5-plus";
+// Model ID: qwen/qwen3.5-plus-2026-02-15
+// Model page: https://phaseo.app/models/qwen/qwen3.5-plus-2026-02-15
+inline constexpr std::string_view QWEN_QWEN3_5_PLUS_2026_02_15 = "qwen/qwen3.5-plus-2026-02-15";
 // Model ID: qwen/qwen3.5-plus-2026-04-20
 // Model page: https://phaseo.app/models/qwen/qwen3.5-plus-2026-04-20
 inline constexpr std::string_view QWEN_QWEN3_5_PLUS_2026_04_20 = "qwen/qwen3.5-plus-2026-04-20";
@@ -1572,6 +1641,18 @@ inline constexpr std::string_view REKA_FLASH = "reka-flash";
 // Model ID: reka-flash-research
 // Model page: https://phaseo.app/models/reka-flash-research
 inline constexpr std::string_view REKA_FLASH_RESEARCH = "reka-flash-research";
+// Model ID: reka/reka-edge
+// Model page: https://phaseo.app/models/reka/reka-edge
+inline constexpr std::string_view REKA_REKA_EDGE = "reka/reka-edge";
+// Model ID: reka/reka-edge-2603
+// Model page: https://phaseo.app/models/reka/reka-edge-2603
+inline constexpr std::string_view REKA_REKA_EDGE_2603 = "reka/reka-edge-2603";
+// Model ID: reka/reka-flash
+// Model page: https://phaseo.app/models/reka/reka-flash
+inline constexpr std::string_view REKA_REKA_FLASH = "reka/reka-flash";
+// Model ID: reka/reka-flash-research
+// Model page: https://phaseo.app/models/reka/reka-flash-research
+inline constexpr std::string_view REKA_REKA_FLASH_RESEARCH = "reka/reka-flash-research";
 // Model ID: relace/relace-rank
 // Model page: https://phaseo.app/models/relace/relace-rank
 inline constexpr std::string_view RELACE_RELACE_RANK = "relace/relace-rank";
@@ -1623,6 +1704,9 @@ inline constexpr std::string_view SPACEX_AI_GROK_TRANSCRIBE = "spacex-ai/grok-tr
 // Model ID: spacex-ai/grok-tts
 // Model page: https://phaseo.app/models/spacex-ai/grok-tts
 inline constexpr std::string_view SPACEX_AI_GROK_TTS = "spacex-ai/grok-tts";
+// Model ID: spacex-ai/grok-voice-think-fast-2.0
+// Model page: https://phaseo.app/models/spacex-ai/grok-voice-think-fast-2.0
+inline constexpr std::string_view SPACEX_AI_GROK_VOICE_THINK_FAST_2_0 = "spacex-ai/grok-voice-think-fast-2.0";
 // Model ID: stability-ai/stable-diffusion-xl-base-1.0
 // Model page: https://phaseo.app/models/stability-ai/stable-diffusion-xl-base-1.0
 inline constexpr std::string_view STABILITY_AI_STABLE_DIFFUSION_XL_BASE_1_0 = "stability-ai/stable-diffusion-xl-base-1.0";
@@ -1959,9 +2043,11 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 650> ALL = {
+inline constexpr std::array<std::string_view, 678> ALL = {
 	AI21_JAMBA_1_5_LARGE,
 	AI21_JAMBA_1_5_MINI,
+	AI21_JAMBA_LARGE_1_5,
+	AI21_JAMBA_MINI_1_5,
 	AION_LABS_AION_2_0,
 	AION_LABS_AION_3_0,
 	AION_LABS_AION_3_0_MINI,
@@ -2018,9 +2104,13 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	BLACK_FOREST_LABS_FLUX_2_PRO,
 	BLACK_FOREST_LABS_FLUX_3_VIDEO,
 	BYTEDANCE_SEED_1_6,
+	BYTEDANCE_SEED_1_6_2025_06_15,
+	BYTEDANCE_SEED_1_6_2025_09_15,
 	BYTEDANCE_SEED_1_6_2025_10_15,
 	BYTEDANCE_SEED_1_6_250915,
 	BYTEDANCE_SEED_1_6_FLASH,
+	BYTEDANCE_SEED_1_6_FLASH_2025_06_15,
+	BYTEDANCE_SEED_1_6_FLASH_2025_07_15,
 	BYTEDANCE_SEED_1_6_FLASH_2025_08_28,
 	BYTEDANCE_SEED_1_6_FLASH_250715,
 	BYTEDANCE_SEED_1_8,
@@ -2044,6 +2134,7 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	BYTEDANCE_UI_TARS_1_5_7B,
 	COHERE_COMMAND_A,
 	COHERE_COMMAND_R,
+	COHERE_COMMAND_R_7B,
 	COHERE_COMMAND_R_PLUS,
 	COHERE_COMMAND_R7B,
 	COHERE_EMBED_ENGLISH_V3,
@@ -2066,6 +2157,7 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	DEEPSEEK_DEEPSEEK_R1_TURBO,
 	DEEPSEEK_DEEPSEEK_V3,
 	DEEPSEEK_DEEPSEEK_V3_0324,
+	DEEPSEEK_DEEPSEEK_V3_2025_03_24,
 	DEEPSEEK_DEEPSEEK_V3_TURBO,
 	DEEPSEEK_DEEPSEEK_V3_1,
 	DEEPSEEK_DEEPSEEK_V3_1_TERMINUS,
@@ -2076,6 +2168,7 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
 	DEEPSEEK_DEEPSEEK_V4_PRO,
 	DEEPSEEK_DEEPSEEK_V4_PRO_0813,
+	DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA,
 	DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW,
 	EARLY_ACCESS_EA_29B_A4B,
 	ELEVEN_LABS_ELEVEN_FLASH_V2,
@@ -2153,6 +2246,10 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	KWAIPILOT_KAT_CODER_PRO,
 	KWAIPILOT_KAT_CODER_PRO_V2,
 	KWAIPILOT_KAT_CODER_PRO_V2_5,
+	LIGHTRICKS_LTX_2_3_FAST,
+	LIGHTRICKS_LTX_2_3_PRO,
+	LIGHTRICKS_LTX_2_5_FAST,
+	LIGHTRICKS_LTX_2_5_PRO,
 	LIQUID_AI_LFM_2_24B_A2B,
 	LIQUID_AI_LFM_2_5_8B_A1B,
 	LTX_2_3_FAST,
@@ -2191,6 +2288,7 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	MINIMAX_M2_HER,
 	MINIMAX_MINIMAX_M1_80K,
 	MINIMAX_MINIMAX_M2,
+	MINIMAX_MINIMAX_M2_HER,
 	MINIMAX_MINIMAX_M2_1,
 	MINIMAX_MINIMAX_M2_5,
 	MINIMAX_MINIMAX_M2_5_HIGHSPEED,
@@ -2202,6 +2300,7 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	MINIMAX_SPEECH_2_6_TURBO,
 	MINIMAX_SPEECH_2_8_HD,
 	MINIMAX_SPEECH_2_8_TURBO,
+	MINIMAX_SPEECH_2_8_FREE,
 	MISTRAL_CODESTRAL,
 	MISTRAL_CODESTRAL_EMBED,
 	MISTRAL_DEVSTRAL_2,
@@ -2242,6 +2341,7 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	MISTRAL_VOXTRAL_SMALL,
 	MOONSHOTAI_KIMI_K2,
 	MOONSHOTAI_KIMI_K2_0905,
+	MOONSHOTAI_KIMI_K2_2025_07_11,
 	MOONSHOTAI_KIMI_K2_THINKING,
 	MOONSHOTAI_KIMI_K2_5,
 	MOONSHOTAI_KIMI_K2_6,
@@ -2255,12 +2355,15 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	MORPH_MORPH_WARP_GREP_V2_1,
 	NEX_AGI_DEEPSEEK_V3_1_NEX_N1,
 	NOUS_HERMES_3_LLAMA_3_1_405B,
+	NOUS_HERMES_3_LLAMA_3_1_70B,
+	NOUS_HERMES_4_405B,
 	NOUSRESEARCH_HERMES_3_LLAMA_3_1_70B,
 	NOUSRESEARCH_HERMES_4_405B,
 	NVIDIA_NEMOTRON_3_NANO_30B_A3B,
 	NVIDIA_NEMOTRON_3_SUPER_120B_A12B,
 	NVIDIA_NEMOTRON_3_ULTRA_550B_A55B,
 	NVIDIA_NEMOTRON_3_5_LIGHTNING,
+	NVIDIA_NEMOTRON_NANO_12B_V2_VL,
 	NVIDIA_NEMOTRON_NANO_9B_V2,
 	NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B,
 	NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL,
@@ -2272,8 +2375,11 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	OPENAI_CHAT_LATEST,
 	OPENAI_CHATGPT_4O,
 	OPENAI_DAVINCI_002,
+	OPENAI_GPT_3_5_TURBO_0613,
 	OPENAI_GPT_3_5_TURBO_16K,
 	OPENAI_GPT_3_5_TURBO_2023_03_21,
+	OPENAI_GPT_3_5_TURBO_2023_11_06,
+	OPENAI_GPT_4,
 	OPENAI_GPT_4_2023_06_13,
 	OPENAI_GPT_4_1,
 	OPENAI_GPT_4_1_MINI,
@@ -2456,6 +2562,7 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	QWEN_QWEN3_5_FLASH,
 	QWEN_QWEN3_5_LIVETRANSLATE_FLASH_REALTIME_2026_05_19,
 	QWEN_QWEN3_5_PLUS,
+	QWEN_QWEN3_5_PLUS_2026_02_15,
 	QWEN_QWEN3_5_PLUS_2026_04_20,
 	QWEN_QWEN3_6_27B,
 	QWEN_QWEN3_6_35B_A3B,
@@ -2482,6 +2589,10 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	REKA_EDGE_2603,
 	REKA_FLASH,
 	REKA_FLASH_RESEARCH,
+	REKA_REKA_EDGE,
+	REKA_REKA_EDGE_2603,
+	REKA_REKA_FLASH,
+	REKA_REKA_FLASH_RESEARCH,
 	RELACE_RELACE_RANK,
 	RELACE_RELACE_SEARCH,
 	SAKANA_FUGU_ULTRA,
@@ -2499,6 +2610,7 @@ inline constexpr std::array<std::string_view, 650> ALL = {
 	SPACEX_AI_GROK_IMAGINE_VIDEO_1_5,
 	SPACEX_AI_GROK_TRANSCRIBE,
 	SPACEX_AI_GROK_TTS,
+	SPACEX_AI_GROK_VOICE_THINK_FAST_2_0,
 	STABILITY_AI_STABLE_DIFFUSION_XL_BASE_1_0,
 	STEPFUN_STEP_1_32K,
 	STEPFUN_STEP_1_8K,

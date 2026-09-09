@@ -9,6 +9,8 @@ const collections = [
 	{ label: "Models", href: "/internal/data/models", icon: Bot },
 	{ label: "Organisations", href: "/internal/data/organisations", icon: Building2 },
 	{ label: "Providers", href: "/internal/data/api-providers", icon: Route },
+	{ label: "Provider updates", href: "/internal/data/imports", icon: Route },
+	{ label: "Settings", href: "/internal/data/registries", icon: Database },
 	{ label: "Benchmarks", href: "/internal/data/benchmarks", icon: Gauge },
 ];
 

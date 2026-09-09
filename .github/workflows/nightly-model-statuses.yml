@@ -8,10 +8,8 @@ on:
 env:
     NODE_VERSION: 22
 
-# These permissions only affect GITHUB_TOKEN; we'll use an app token instead.
 permissions:
     contents: read
-    pull-requests: read
 
 jobs:
     update-statuses:
@@ -22,23 +20,6 @@ jobs:
               with:
                   fetch-depth: 0
                   persist-credentials: false
-
-            - name: Create GitHub App token (Phaseo Bot)
-              id: app-token
-              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
-              with:
-                  client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
-                  private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
-
-            - name: Compute bot commit identity
-              id: bot
-              env:
-                  GH_TOKEN: ${{ steps.app-token.outputs.token }}
-              run: |
-                  bot="${{ steps.app-token.outputs.app-slug }}[bot]"
-                  id="$(gh api "/users/${bot}" --jq .id)"
-                  email="${id}+${bot}@users.noreply.github.com"
-                  echo "committer=${bot} <${email}>" >> "$GITHUB_OUTPUT"
 
             - name: Setup pnpm
               uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
@@ -57,6 +38,9 @@ jobs:
               run: pnpm install --frozen-lockfile
 
             - name: Refresh model statuses
+              env:
+                  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
               run: pnpm run data:update-statuses
 
             - name: Test model status refresh
@@ -64,20 +48,4 @@ jobs:
 
             - name: Validate data
               run: pnpm run validate:data
-
-            - name: Create or update pull request
-              id: cpr
-              uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
-              with:
-                  token: ${{ steps.app-token.outputs.token }}
-                  commit-message: "chore: refresh model statuses"
-                  title: "chore: refresh model statuses"
-                  body: |
-                      Automated nightly run to align model.status with announced/release/deprecation/retirement dates.
-                      - Triggered by: ${{ github.workflow }} (run ${{ github.run_id }})
-                  branch: chore/auto-model-statuses
-                  delete-branch: true
-                  committer: ${{ steps.bot.outputs.committer }}
-                  author: ${{ steps.bot.outputs.committer }}
-                  signoff: true
 
