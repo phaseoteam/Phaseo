@@ -310,6 +310,7 @@ export function composeGatewayMetadata(modelId: string, source: GatewayMetadataS
 				output_modalities: stringList(row.output_modalities).join(","),
 				max_input_tokens: cap.max_input_tokens ?? null,
 				max_output_tokens: cap.max_output_tokens ?? null,
+				credential_mode: row.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok",
 				effective_from: row.effective_from ?? null,
 				effective_to: row.effective_to ?? null,
 				created_at: row.created_at ?? null,

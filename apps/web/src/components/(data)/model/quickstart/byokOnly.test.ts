@@ -1,4 +1,4 @@
-import { getByokOnlyProviders } from "./byokOnly";
+import { getByokOnlyProviders } from "@/components/(data)/model/quickstart/byokOnly";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 
 function metadata(
@@ -13,6 +13,7 @@ function metadata(
 		availability_status: "active" as const,
 		input_modalities: "text",
 		output_modalities: "text",
+		credential_mode: credentialMode,
 		provider: {
 			api_provider_id: `provider-${index}`,
 			api_provider_name: `Provider ${index}`,
@@ -46,5 +47,15 @@ describe("getByokOnlyProviders", () => {
 		expect(
 			getByokOnlyProviders(metadata(["byok_only", "managed_and_byok"])),
 		).toEqual([]);
+	});
+
+	it("ignores an inactive managed route when every active route requires BYOK", () => {
+		const value = metadata(["byok_only", "managed_and_byok"]);
+		value.activeProviders = [value.providers[0]];
+		value.inactiveProviders = [value.providers[1]];
+
+		expect(getByokOnlyProviders(value)).toEqual([
+			{ providerId: "provider-0", providerName: "Provider 0" },
+		]);
 	});
 });

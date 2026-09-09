@@ -11,7 +11,7 @@ export function getByokOnlyProviders(
 	if (!metadata?.activeProviders.length) return [];
 	if (
 		metadata.activeProviders.some(
-			(provider) => provider.provider?.credential_mode !== "byok_only",
+			(provider) => provider.credential_mode !== "byok_only",
 		)
 	) {
 		return [];

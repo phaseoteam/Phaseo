@@ -88,11 +88,17 @@ export default async function ModelPricing({
 		withOptionalTimeout(isAdminViewer(), false, "admin viewer check"),
 		withOptionalTimeout(fetchFrontendModelGatewayMetadata(modelId), null, "gateway metadata"),
 	]);
+	const credentialModesByProvider = new Map<string, Array<"managed_and_byok" | "byok_only">>();
+	for (const provider of gatewayMetadata?.activeProviders ?? []) {
+		const modes = credentialModesByProvider.get(provider.api_provider_id) ?? [];
+		modes.push(provider.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok");
+		credentialModesByProvider.set(provider.api_provider_id, modes);
+	}
 	const credentialModeByProvider = new Map(
-		gatewayMetadata?.providers.map((provider) => [
-			provider.api_provider_id,
-			provider.provider?.credential_mode ?? "managed_and_byok",
-		]) ?? [],
+		Array.from(credentialModesByProvider, ([providerId, modes]) => [
+			providerId,
+			modes.every((mode) => mode === "byok_only") ? "byok_only" : "managed_and_byok",
+		] as const),
 	);
 	const providersWithCredentialModes = providers.map((provider) => ({
 		...provider,
