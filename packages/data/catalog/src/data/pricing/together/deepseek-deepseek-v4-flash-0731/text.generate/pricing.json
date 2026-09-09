@@ -15,7 +15,7 @@
       "note": "Together DeepSeek V4 Flash 0731 input tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-10T00:00:00Z",
+      "effective_from": "2026-09-09T23:00:00Z",
       "source": "https://www.together.ai/pricing"
     },
     {
@@ -28,7 +28,7 @@
       "note": "Together DeepSeek V4 Flash 0731 cached input tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-10T00:00:00Z",
+      "effective_from": "2026-09-09T23:00:00Z",
       "source": "https://www.together.ai/pricing"
     },
     {
@@ -41,7 +41,7 @@
       "note": "Together DeepSeek V4 Flash 0731 output tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-10T00:00:00Z",
+      "effective_from": "2026-09-09T23:00:00Z",
       "source": "https://www.together.ai/pricing"
     }
   ],
@@ -51,13 +51,13 @@
     {
       "kind": "pricing",
       "url": "https://www.together.ai/pricing",
-      "accessed_at": "2026-09-10T00:00:00Z",
+      "accessed_at": "2026-09-09T23:44:00Z",
       "notes": "Together publishes DeepSeek V4 Flash 0731 at $0.14 input, $0.03 cached input, and $0.28 output per 1M tokens."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-09-10T00:00:00Z",
+    "checked_at": "2026-09-09T23:44:00Z",
     "notes": "Verified against Together's first-party pricing page."
   }
 }

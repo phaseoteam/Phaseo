@@ -179,12 +179,12 @@ function pricingCapabilityCandidates(capability: ProviderCapability): string[] {
         const endpointCandidates = endpoints.flatMap(
             (endpoint) => BATCH_PRICING_CAPABILITIES[endpoint] ?? ["batch"],
         );
-        return Array.from(new Set(endpointCandidates));
+        return Array.from(new Set(["batch", ...endpointCandidates]));
     }
     return PRICING_CAPABILITY_ALIASES[capabilityId] ?? [capabilityId];
 }
 
-async function loadPricingKeys(providerFilter: string | null) {
+async function loadPricingKeys(providerFilter: string | null, nowMs: number) {
     const pricingKeys = new Set<string>();
     const providerDirs = await listDirs(DIR_PRICING);
 
@@ -202,6 +202,16 @@ async function loadPricingKeys(providerFilter: string | null) {
                         pricing.capability_id ?? pricing.endpoint ?? basename(capabilityDir);
                     if (!pricing.api_provider_id || !modelId || !capabilityId) continue;
                     if (!Array.isArray(pricing.rules) || pricing.rules.length === 0) continue;
+                    const hasCurrentRule = pricing.rules.some((rule) => {
+                        if (!rule || typeof rule !== "object" || Array.isArray(rule)) return false;
+                        const row = rule as Record<string, unknown>;
+                        return isWithinWindow(
+                            typeof row.effective_from === "string" ? row.effective_from : null,
+                            typeof row.effective_to === "string" ? row.effective_to : null,
+                            nowMs,
+                        );
+                    });
+                    if (!hasCurrentRule) continue;
 
                     pricingKeys.add(
                         `${pricing.api_provider_id}:${modelId}:${capabilityId}`,
@@ -222,7 +232,7 @@ async function loadPricingKeys(providerFilter: string | null) {
 async function main() {
     const providerFilter = argValue("--provider");
     const nowMs = Date.now();
-    const pricingKeys = await loadPricingKeys(providerFilter);
+    const pricingKeys = await loadPricingKeys(providerFilter, nowMs);
     const providerDirs = await listDirs(DIR_PROVIDERS);
 
     const missing: MissingPricingRow[] = [];

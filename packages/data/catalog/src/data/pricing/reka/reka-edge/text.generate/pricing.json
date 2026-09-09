@@ -15,7 +15,7 @@
       "note": "Reka Chat input tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-10T00:00:00Z",
+      "effective_from": "2026-09-09T23:00:00Z",
       "source": "https://docs.reka.ai/pricing"
     },
     {
@@ -28,7 +28,7 @@
       "note": "Reka Chat output tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-10T00:00:00Z",
+      "effective_from": "2026-09-09T23:00:00Z",
       "source": "https://docs.reka.ai/pricing"
     }
   ],
@@ -38,13 +38,13 @@
     {
       "kind": "pricing",
       "url": "https://docs.reka.ai/pricing",
-      "accessed_at": "2026-09-10T00:00:00Z",
+      "accessed_at": "2026-09-09T23:44:00Z",
       "notes": "Reka publishes Edge at $0.10 per 1M input tokens and $0.10 per 1M output tokens."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-09-10T00:00:00Z",
+    "checked_at": "2026-09-09T23:44:00Z",
     "notes": "Verified against Reka's first-party API pricing page."
   }
 }
