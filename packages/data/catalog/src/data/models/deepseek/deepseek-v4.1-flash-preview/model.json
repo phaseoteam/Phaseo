@@ -1,10 +1,10 @@
 {
-  "model_id": "deepseek/deepseek-v4.1-flash-beta",
+  "model_id": "deepseek/deepseek-v4.1-flash-preview",
   "organisation_id": "deepseek",
-  "name": "DeepSeek V4.1 Flash Beta",
+  "name": "DeepSeek V4.1 Flash Preview",
   "status": "Preview",
   "previous_model_id": null,
-  "description": "DeepSeek V4.1 Flash Beta is an early-access DeepSeek text model exposed through a temporary provider deployment. Provider support and availability may change without notice.",
+  "description": "DeepSeek V4.1 Flash Preview is an early-access DeepSeek text model exposed through a temporary provider deployment. Provider support and availability may change without notice.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,
@@ -12,7 +12,7 @@
   "license": null,
   "input_types": "text",
   "output_types": "text",
-  "api_model_id": "deepseek/deepseek-v4.1-flash-beta",
+  "api_model_id": "deepseek/deepseek-v4.1-flash-preview",
   "links": [
     {
       "title": "DeepSeek API documentation",
@@ -30,7 +30,7 @@
   "family_id": null,
   "page_notice": {
     "tone": "critical",
-    "markdown": "This is an early-access beta deployment backed by DeepSeek's temporary `deepseek-v4.1-flash-expires-on-0910` endpoint. Provider support may change or end at any time, and the upstream deployment is scheduled to expire on September 10, 2026. Concurrency capacity is extremely low, so requests may fail with capacity or rate-limit errors; do not rely on this endpoint for production workloads."
+    "markdown": "This is an early-access preview deployment backed by DeepSeek's temporary `deepseek-v4.1-flash-expires-on-0910` endpoint. Provider support may change or end at any time, and the upstream deployment is scheduled to expire on September 10, 2026. Concurrency capacity is extremely low, so requests may fail with capacity or rate-limit errors; do not rely on this endpoint for production workloads."
   },
   "model_type": null,
   "knowledge_cutoff": null,
@@ -69,7 +69,7 @@
       "kind": "api_reference",
       "url": "https://api-docs.deepseek.com/guides/responses_api/",
       "accessed_at": "2026-09-08T00:00:00Z",
-      "notes": "Responses API compatibility for the temporary DeepSeek V4.1 Flash Beta deployment."
+      "notes": "Responses API compatibility for the temporary DeepSeek V4.1 Flash Preview deployment."
     },
     {
       "kind": "api_reference",
@@ -81,7 +81,7 @@
   "verification": {
     "status": "verified",
     "checked_at": "2026-09-08T00:00:00Z",
-    "notes": "Authenticated direct smoke tests confirmed the exact upstream model ID on DeepSeek chat and Responses endpoints; the beta ID is omitted from the public model feed."
+    "notes": "Authenticated direct smoke tests confirmed the exact upstream model ID on DeepSeek chat and Responses endpoints; the preview ID is omitted from the public model feed."
   },
   "last_updated": "2026-09-08T00:00:00Z",
   "removal_date": null,

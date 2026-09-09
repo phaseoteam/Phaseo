@@ -235,8 +235,8 @@ export const ModelIds = {
   DEEPSEEK_DEEPSEEK_V4_PRO: "deepseek/deepseek-v4-pro",
   /** Model ID: `deepseek/deepseek-v4-pro-0813`. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
   DEEPSEEK_DEEPSEEK_V4_PRO_0813: "deepseek/deepseek-v4-pro-0813",
-  /** Model ID: `deepseek/deepseek-v4.1-flash-beta`. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta */
-  DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA: "deepseek/deepseek-v4.1-flash-beta",
+  /** Model ID: `deepseek/deepseek-v4.1-flash-preview`. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview */
+  DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW: "deepseek/deepseek-v4.1-flash-preview",
   /** Model ID: `early-access/ea-29b-a4b`. Model page: https://phaseo.app/models/early-access/ea-29b-a4b */
   EARLY_ACCESS_EA_29B_A4B: "early-access/ea-29b-a4b",
   /** Model ID: `eleven-labs/eleven-flash-v2`. Model page: https://phaseo.app/models/eleven-labs/eleven-flash-v2 */

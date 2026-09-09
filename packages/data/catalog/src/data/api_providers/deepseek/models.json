@@ -617,11 +617,11 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "deepseek/deepseek-v4.1-flash-beta",
-    "provider_api_model_id": "deepseek:deepseek/deepseek-v4.1-flash-beta",
+    "api_model_id": "deepseek/deepseek-v4.1-flash-preview",
+    "provider_api_model_id": "deepseek:deepseek/deepseek-v4.1-flash-preview",
     "provider_model_slug": "deepseek-v4.1-flash-expires-on-0910",
-    "internal_model_id": "deepseek/deepseek-v4.1-flash-beta",
-    "canonical_model_id": "deepseek/deepseek-v4.1-flash-beta",
+    "internal_model_id": "deepseek/deepseek-v4.1-flash-preview",
+    "canonical_model_id": "deepseek/deepseek-v4.1-flash-preview",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -674,7 +674,7 @@
         "kind": "api_reference",
         "url": "https://api-docs.deepseek.com/guides/responses_api/",
         "accessed_at": "2026-09-08T00:00:00Z",
-        "notes": "Authenticated smoke test confirmed Responses API compatibility for the temporary upstream model ID, which is omitted from the public model feed."
+        "notes": "Authenticated smoke test confirmed Responses API compatibility for the temporary Preview deployment."
       },
       {
         "kind": "pricing",
@@ -695,18 +695,18 @@
     "provider_api_model_id": "deepseek:deepseek/deepseek-v4-pro-0813",
     "provider_model_slug": "deepseek-v4-pro",
     "internal_model_id": "deepseek/deepseek-v4-pro-0813",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": 384000,
     "effective_from": "2026-08-13T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-09-10T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "inactive",
         "params": [
           {
             "param_id": "frequency_penalty",
@@ -817,8 +817,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "inactive",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1175,11 +1175,11 @@
   },
   "rate_limits": []
 },
-{
-  "api_model_id": "deepseek/deepseek-v4.1-flash",
+  {
+    "api_model_id": "deepseek/deepseek-v4.1-flash-preview",
   "provider_api_model_id": "deepseek:deepseek-v4.1-flash-expires-on-0910",
   "provider_model_slug": "deepseek-v4.1-flash-expires-on-0910",
-  "internal_model_id": "deepseek/deepseek-v4.1-flash",
+  "internal_model_id": "deepseek/deepseek-v4.1-flash-preview",
   "is_active_gateway": true,
   "credential_mode": "byok_only",
   "quantization_scheme": null,
@@ -1188,7 +1188,7 @@
   "context_length": null,
   "max_output_tokens": null,
   "effective_from": "2026-09-08T00:00:00",
-  "effective_to": "2026-09-10T04:00:00",
+  "effective_to": "2026-09-10T00:00:00",
   "capabilities": [
     {
       "capability_id": "text.generate",
@@ -1198,7 +1198,7 @@
         { "param_id": "include_reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
         { "param_id": "max_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
         { "param_id": "reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-        { "param_id": "reasoning_effort", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Beta route capability is recorded for catalog visibility only; gateway routing is disabled." },
+        { "param_id": "reasoning_effort", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Preview route capability is recorded for the temporary deployment; the route expires on September 10, 2026." },
         { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
         { "param_id": "stop", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
         { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
@@ -1233,7 +1233,7 @@
       "kind": "announcement",
       "url": "https://36kr.com/p/3974654461604357",
       "accessed_at": "2026-09-08T00:00:00Z",
-      "notes": "Reports the limited beta route and its expiration date."
+      "notes": "Reports the limited Preview route and its expiration date."
     },
     {
       "kind": "pricing",
@@ -1245,7 +1245,84 @@
   "verification": {
     "status": "partial",
     "checked_at": "2026-09-08T00:00:00Z",
-    "notes": "Temporary beta route is catalogued but intentionally not gateway-routable pending an official stable model endpoint."
+    "notes": "Temporary Preview route remains gateway-routable until the official stable model endpoint launches on September 10, 2026."
+  },
+  "rate_limits": []
+},
+{
+  "api_model_id": "deepseek/deepseek-v4.1-flash",
+  "provider_api_model_id": "deepseek:deepseek/deepseek-v4.1-flash",
+  "provider_model_slug": "deepseek-v4.1-flash",
+  "internal_model_id": "deepseek/deepseek-v4.1-flash",
+  "is_active_gateway": true,
+  "quantization_scheme": null,
+  "input_modalities": "text,image",
+  "output_modalities": "text",
+  "context_length": null,
+  "max_output_tokens": null,
+  "effective_from": "2026-09-10T00:00:00",
+  "effective_to": null,
+  "capabilities": [
+    {
+      "capability_id": "text.generate",
+      "status": "active",
+      "params": [
+        { "param_id": "frequency_penalty", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+        { "param_id": "include_reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+        { "param_id": "max_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+        { "param_id": "reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+        { "param_id": "reasoning_effort", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Stable V4.1 Flash route; provider-specific effort values remain to be confirmed." },
+        { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+        { "param_id": "stop", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+        { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+        { "param_id": "tool_choice", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+        { "param_id": "tools", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+        { "param_id": "top_p", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+      ],
+      "reasoning": true,
+      "tool_call": true,
+      "structured_output": null,
+      "temperature": true,
+      "attachment": true,
+      "input_modalities": ["text", "image"],
+      "output_modalities": ["text"],
+      "modes": []
+    }
+  ],
+  "routing_status": "active",
+  "routable": true,
+  "regions": {
+    "execution": null,
+    "data": null
+  },
+  "service_tiers": [],
+  "api": {
+    "formats": [
+      "openai.chat.completions",
+      "openai.responses",
+      "anthropic.messages"
+    ],
+    "endpoint": null,
+    "deployment": null
+  },
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://36kr.com/p/3974654461604357",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Reports the limited V4.1 Flash Preview route that precedes the stable model route."
+    },
+    {
+      "kind": "pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Official DeepSeek pricing reference for the scheduled Flash-series prices."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Stable launch is scheduled for 2026-09-10; exact provider launch time and final public model documentation remain unconfirmed."
   },
   "rate_limits": []
 }
