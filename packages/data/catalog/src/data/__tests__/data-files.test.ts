@@ -268,6 +268,39 @@ describe('Models', () => {
       }
     });
   }
+
+  test('Suno v6 suite records the official product release without API assertions', () => {
+    const suite = ['suno-v6', 'suno-v6-wild', 'suno-v6-mini'].map((slug) =>
+      readJson(path.join(modelsDir, 'suno', slug, 'model.json')),
+    );
+
+    expect(suite.map((model) => model.model_id)).toEqual([
+      'suno/suno-v6',
+      'suno/suno-v6-wild',
+      'suno/suno-v6-mini',
+    ]);
+    expect(suite).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        status: 'Limited Access',
+        announced_date: '2026-09-09T00:00:00',
+        release_date: '2026-09-09T00:00:00',
+        api_model_id: null,
+        model_type: 'music',
+        input_types: 'text,audio,image,video',
+        output_types: 'music',
+        modalities: {
+          input: ['text', 'audio/*', 'image/*', 'video/*'],
+          output: ['audio/*'],
+        },
+      }),
+      expect.objectContaining({
+        model_id: 'suno/suno-v6-mini',
+        status: 'Available',
+      }),
+    ]));
+    expect(suite.every((model) => model.api_model_id === null)).toBe(true);
+  });
+
 });
 
 // Aliases ----------------------------------------------------------------

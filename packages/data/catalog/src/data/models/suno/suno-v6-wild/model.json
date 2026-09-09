@@ -1,10 +1,10 @@
 {
-  "model_id": "suno/suno-v6-mini",
+  "model_id": "suno/suno-v6-wild",
   "organisation_id": "suno",
-  "name": "Suno V6 Mini",
-  "status": "Available",
+  "name": "Suno V6 Wild",
+  "status": "Limited Access",
   "previous_model_id": null,
-  "description": "Suno V6 Mini is the faster, more efficient member of Suno's v6 music-model generation. Suno says it is available to everyone and makes it easier to turn an idea into a song.",
+  "description": "Suno V6 Wild is Suno's exploratory v6 music model. Suno describes it as less predictable and more varied, producing unexpected, textured, and ambitious results, and makes it available to Pro and Premier subscribers.",
   "announced_date": "2026-09-09T00:00:00",
   "release_date": "2026-09-09T00:00:00",
   "deprecation_date": null,
@@ -19,12 +19,12 @@
   "details": [
     {
       "name": "availability",
-      "value": "Available to everyone.",
+      "value": "Available to Pro and Premier subscribers.",
       "source_link": "https://suno.com/blog/introducing-v6"
     },
     {
-      "name": "supported_inputs",
-      "value": "Suno describes creation with text, audio, images, and video across the v6 models.",
+      "name": "generation_style",
+      "value": "Built for exploration, with less predictable and more varied results.",
       "source_link": "https://suno.com/blog/introducing-v6"
     },
     {
@@ -37,7 +37,7 @@
   "family_id": null,
   "page_notice": {
     "tone": "warning",
-    "markdown": "Suno V6 Mini is a consumer product release available to everyone. Suno has not published an official API model ID or API pricing in this announcement, so no Phaseo API route is asserted."
+    "markdown": "Suno V6 Wild is a consumer product release for Pro and Premier subscribers. Suno has not published an official API model ID or API pricing in this announcement, so no Phaseo API route is asserted."
   },
   "model_type": "music",
   "knowledge_cutoff": null,
@@ -68,13 +68,13 @@
       "kind": "announcement",
       "url": "https://suno.com/blog/introducing-v6",
       "accessed_at": "2026-09-09T00:00:00Z",
-      "notes": "Official announcement dated September 9, 2026 names v6-mini, describes it as faster and more efficient, and says it is available to everyone."
+      "notes": "Official announcement dated September 9, 2026 names v6-wild, describes its exploratory role and Pro/Premier availability, and lists text, audio, image, and video creation across the v6 models."
     }
   ],
   "verification": {
     "status": "verified",
     "checked_at": "2026-09-09T00:00:00Z",
-    "notes": "Official product name, release date, availability, and product modalities verified. API model ID, API route, and API pricing remain unpublished."
+    "notes": "Official product name, release date, subscriber availability, and product modalities verified. API model ID, API route, and API pricing remain unpublished."
   },
   "last_updated": "2026-09-09T00:00:00Z",
   "removal_date": null,
