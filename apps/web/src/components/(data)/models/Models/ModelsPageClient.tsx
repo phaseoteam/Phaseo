@@ -6,6 +6,7 @@ import {
 	fetchModelsPageData,
 	fetchModelsPageDataV2,
 } from "@/lib/swr/models";
+import { useRevalidateOnResume } from "@/lib/swr/useRevalidateOnResume";
 import ModelsDisplay from "./ModelsDisplay";
 import { ModelsPageSkeleton } from "./ModelsPageSkeleton";
 
@@ -20,9 +21,14 @@ export default function ModelsPageClient({
 		catalogueVersion === "v2" ? publicSWRKeys.modelsV2 : publicSWRKeys.models;
 	const fetcher =
 		catalogueVersion === "v2" ? fetchModelsPageDataV2 : fetchModelsPageData;
-	const { data, error } = useSWR(swrKey, fetcher);
+	const { data, error, mutate } = useSWR(swrKey, fetcher, {
+		revalidateOnFocus: false,
+		revalidateOnReconnect: false,
+		refreshInterval: 0,
+	});
+	useRevalidateOnResume(mutate, error);
 
-	if (error) throw error;
+	if (error && !data) throw error;
 	if (!data) return <ModelsPageSkeleton />;
 
 	return <ModelsDisplay modelsPageData={data} />;
