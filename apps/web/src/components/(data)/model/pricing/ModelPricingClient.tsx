@@ -25,6 +25,7 @@ import {
     Globe2,
     GraduationCap,
     ListFilter,
+	KeyRound,
     RotateCcw,
     Shield,
     Server,
@@ -590,6 +591,23 @@ function ProviderServiceTierInfoIcons({
 
 	return (
 		<div className="flex shrink-0 items-center gap-1">
+			{provider.provider.credential_mode === "byok_only" ? (
+				<HoverCard openDelay={120} closeDelay={80}>
+					<HoverCardTrigger asChild>
+						<button
+							type="button"
+							aria-label="BYOK only: requires your provider key"
+							className="inline-flex h-6 w-6 items-center justify-center rounded-md text-amber-700 transition-colors hover:bg-muted/60 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:text-amber-300 dark:hover:text-amber-200"
+						>
+							<KeyRound className="h-3.5 w-3.5" />
+						</button>
+					</HoverCardTrigger>
+					<HoverCardContent align="start" className="w-auto p-2 text-xs">
+						<p className="font-semibold">BYOK only</p>
+						<p className="mt-1 text-muted-foreground">Requires your provider key.</p>
+					</HoverCardContent>
+				</HoverCard>
+			) : null}
 			<HoverCard openDelay={120} closeDelay={80}>
 				<HoverCardTrigger asChild>
 					<button

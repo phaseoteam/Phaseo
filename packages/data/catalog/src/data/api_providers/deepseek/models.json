@@ -623,6 +623,7 @@
     "internal_model_id": "deepseek/deepseek-v4.1-flash-preview",
     "canonical_model_id": "deepseek/deepseek-v4.1-flash-preview",
     "is_active_gateway": true,
+    "credential_mode": "byok_only",
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",

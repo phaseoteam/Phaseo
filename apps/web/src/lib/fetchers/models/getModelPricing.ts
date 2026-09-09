@@ -141,6 +141,7 @@ export interface ProviderInfo {
     country_code?: string | null;
     status?: string | null;
     routing_status?: string | null;
+	credential_mode?: "managed_and_byok" | "byok_only";
     residency_mode?:
         | "unknown"
         | "provider_managed"

@@ -24,6 +24,7 @@ describe("composeGatewayMetadata", () => {
 		expect(metadata.primaryModelIdentifier).toBe("openai/gpt-test");
 		expect(metadata.acceptedModelIdentifiers).toEqual(["openai/gpt-test", "openai/gpt-test-latest"]);
 		expect(metadata.activeProviders).toHaveLength(1);
+		expect(metadata.activeProviders[0].credential_mode).toBe("managed_and_byok");
 		expect(metadata.comingSoonProviders).toHaveLength(1);
 		expect(metadata.inactiveProviders).toHaveLength(0);
 		expect(metadata.primaryModelIdentifierByEndpoint["text.generate"]).toBe("openai/gpt-test");
@@ -31,6 +32,24 @@ describe("composeGatewayMetadata", () => {
 			{ param_id: "max_tokens", provider_count_supported: 1, provider_count_total: 1, support_level: "all_providers" },
 			{ param_id: "temperature", provider_count_supported: 1, provider_count_total: 1, support_level: "all_providers" },
 		]);
+	});
+
+	it("exposes credential mode on each provider route", () => {
+		const source: GatewayMetadataSource = {
+			providerModels: [{
+				provider_api_model_id: "pm-byok",
+				provider_id: "provider-a",
+				api_model_id: "provider/model",
+				is_active_gateway: true,
+				routing_status: "active",
+				credential_mode: "byok_only",
+			}],
+			caps: [{ provider_api_model_id: "pm-byok", capability_id: "text.generate", status: "active", params: {} }],
+			providers: [{ api_provider_id: "provider-a", api_provider_name: "Provider A", status: "active", routing_status: "active" }],
+			aliases: [],
+		};
+
+		expect(composeGatewayMetadata("provider/model", source).activeProviders[0].credential_mode).toBe("byok_only");
 	});
 	it("does not treat an upstream-available offer as Phaseo-enabled", () => {
 		const source: GatewayMetadataSource = {
