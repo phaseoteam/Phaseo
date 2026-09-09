@@ -21,18 +21,25 @@ export function useRevalidateOnResume<T>(mutate: KeyedMutator<T>) {
 		lastRevalidatedAtRef.current ??= Date.now();
 
 		const revalidateIfStale = () => {
-			if (document.visibilityState === "hidden") return;
+			if (document.visibilityState === "hidden" || !navigator.onLine) return;
 
 			const now = Date.now();
 			if (
-				now - (lastRevalidatedAtRef.current ?? now) <
+				lastRevalidatedAtRef.current !== null &&
+				now - lastRevalidatedAtRef.current <
 				RESUME_REVALIDATION_INTERVAL_MS
 			) {
 				return;
 			}
 
 			lastRevalidatedAtRef.current = now;
-			void mutate();
+			void mutate().catch(() => {
+				// Allow the next resume/reconnect event to retry after a transient
+				// failure without replacing the existing catalogue data.
+				if (lastRevalidatedAtRef.current === now) {
+					lastRevalidatedAtRef.current = null;
+				}
+			});
 		};
 		const handleVisibilityChange = () => {
 			if (document.visibilityState === "visible") revalidateIfStale();
@@ -41,11 +48,13 @@ export function useRevalidateOnResume<T>(mutate: KeyedMutator<T>) {
 		document.addEventListener("visibilitychange", handleVisibilityChange);
 		window.addEventListener("focus", revalidateIfStale);
 		window.addEventListener("pageshow", revalidateIfStale);
+		window.addEventListener("online", revalidateIfStale);
 
 		return () => {
 			document.removeEventListener("visibilitychange", handleVisibilityChange);
 			window.removeEventListener("focus", revalidateIfStale);
 			window.removeEventListener("pageshow", revalidateIfStale);
+			window.removeEventListener("online", revalidateIfStale);
 		};
 	}, [mutate]);
 }

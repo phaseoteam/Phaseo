@@ -32,7 +32,7 @@ export default function ModelsTablePageClient({
 	});
 	useRevalidateOnResume(mutate);
 
-	if (error) throw error;
+	if (error && !data) throw error;
 	if (!data) return <ModelsTablePageSkeleton />;
 
 	return (
