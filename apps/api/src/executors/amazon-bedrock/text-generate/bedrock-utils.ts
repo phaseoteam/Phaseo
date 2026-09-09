@@ -234,10 +234,10 @@ export function resolveMantleAuth(args: ExecutorExecuteArgs): {
 		bindings.AMAZON_BEDROCK_MANTLE_BASE_URL;
 	const region = (
 		parsed?.region ||
+		extractRegionFromMantleUrl(baseUrlRaw) ||
 		bindings.AMAZON_BEDROCK_REGION ||
 		bindings.AWS_REGION ||
-		extractRegionFromMantleUrl(baseUrlRaw) ||
-		"us-east-1"
+		"us-west-2"
 	).trim();
 	const defaultBaseUrl = `https://bedrock-mantle.${region}.api.aws`;
 	const baseUrl = String(baseUrlRaw || defaultBaseUrl).replace(/\/+$/, "");
