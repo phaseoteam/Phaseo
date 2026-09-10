@@ -2,7 +2,7 @@ import { apiFetch, getSessionAccessToken } from "../api.js";
 import { readSession, writeSession, type Session } from "../session.js";
 import type { IntegrationId } from "./types.js";
 
-const KEY_NAMES: Record<IntegrationId, string> = {
+const KEY_NAMES: Record<string, string> = {
 	codex: "Phaseo CLI: Codex API Key",
 	"claude-code": "Phaseo CLI: Claude Code API Key",
 	opencode: "Phaseo CLI: OpenCode API Key",
@@ -20,10 +20,14 @@ const KEY_NAMES: Record<IntegrationId, string> = {
 	openclaw: "Phaseo CLI: OpenClaw API Key",
 };
 
+function keyName(integration: string): string {
+	return KEY_NAMES[integration] ?? `Phaseo CLI: ${integration} API Key`;
+}
+
 const LEGACY_KEY_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const LEGACY_KEY_REFRESH_WINDOW_MS = 5 * 60 * 1000;
 
-function withoutCredential(session: Session, integration: IntegrationId): Session {
+function withoutCredential(session: Session, integration: string): Session {
 	const credentials = { ...(session.integrationGatewayCredentials ?? {}) };
 	delete credentials[integration];
 	return { ...session, integrationGatewayCredentials: credentials };
@@ -77,7 +81,7 @@ export async function getLegacyIntegrationGatewayCredential(): Promise<string> {
 	return key;
 }
 
-export async function getIntegrationGatewayCredential(integration: IntegrationId): Promise<string> {
+export async function getIntegrationGatewayCredential(integration: IntegrationId | string): Promise<string> {
 	if (process.env.PHASEO_API_KEY) return process.env.PHASEO_API_KEY;
 	const session = await getSessionAccessToken();
 	const existing = session.integrationGatewayCredentials?.[integration];
@@ -85,7 +89,7 @@ export async function getIntegrationGatewayCredential(integration: IntegrationId
 	const body = await apiFetch(session.apiUrl, "/keys", {
 		method: "POST",
 		accessToken: session.accessToken,
-		body: JSON.stringify({ name: KEY_NAMES[integration] }),
+		body: JSON.stringify({ name: keyName(integration) }),
 	});
 	const key = body?.data?.key;
 	const keyId = body?.data?.id;
@@ -103,12 +107,12 @@ export async function getIntegrationGatewayCredential(integration: IntegrationId
 	return key;
 }
 
-export async function hasIntegrationGatewayCredential(integration: IntegrationId): Promise<boolean> {
+export async function hasIntegrationGatewayCredential(integration: IntegrationId | string): Promise<boolean> {
 	if (process.env.PHASEO_API_KEY) return true;
 	return Boolean((await readSession())?.integrationGatewayCredentials?.[integration]);
 }
 
-export async function revokeIntegrationGatewayCredential(integration?: IntegrationId): Promise<boolean> {
+export async function revokeIntegrationGatewayCredential(integration?: IntegrationId | string): Promise<boolean> {
 	const stored = await readSession();
 	if (!stored) return false;
 	const targets = integration
@@ -120,7 +124,7 @@ export async function revokeIntegrationGatewayCredential(integration?: Integrati
 	let session = await getSessionAccessToken();
 	for (const [id, credential] of active) {
 		await apiFetch(session.apiUrl, `/keys/${encodeURIComponent(credential.keyId)}`, { method: "DELETE", accessToken: session.accessToken });
-		session = withoutCredential(session, id as IntegrationId);
+		session = withoutCredential(session, id);
 	}
 	if (revokeLegacy && session.integrationGatewayKeyId) {
 		await apiFetch(session.apiUrl, `/keys/${encodeURIComponent(session.integrationGatewayKeyId)}`, { method: "DELETE", accessToken: session.accessToken });

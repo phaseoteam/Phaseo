@@ -1,16 +1,16 @@
 ---
-icon: "plug"
 title: "Aider"
+icon: "/icons/brands/aider.png"
 description: "Connect Aider to Phaseo with an automatically managed configuration."
 ---
 
-Phaseo CLI can create a dedicated API key and configure Aider to use Phaseo for every new session.
+Use the Phaseo CLI to create a dedicated key and managed Aider configuration, or copy the same provider values into an existing Aider configuration yourself.
 
-## Set up Aider
+## Set up with the Phaseo CLI
 
 ```bash
 phaseo login
-phaseo integrations setup aider --model anthropic/claude-sonnet-4.6
+phaseo aider --model anthropic/claude-sonnet-4.6
 ```
 
 If `~/.aider.conf.yml` does not exist, setup creates a Phaseo-managed file containing:
@@ -67,5 +67,5 @@ Keep the Aider-only `openai/` prefix. For example, Phaseo model `openai/gpt-5.6-
 
 - [Aider OpenAI-compatible API documentation](https://aider.chat/docs/llms/openai-compat.html)
 - [Aider YAML configuration](https://aider.chat/docs/config/aider_conf.html)
-- [Coding Assistants](./coding-assistants.mdx)
+- [Coding Agents](./coding-assistants.mdx)
 - [Models](../../api-reference/endpoint/models.mdx)

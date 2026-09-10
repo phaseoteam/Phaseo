@@ -45,6 +45,8 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	claudecode: "Claude Code",
 	"cloudflare-ai-gateway": "Cloudflare AI Gateway",
 	crofai: "CrofAI",
+	continue: "Continue",
+	"deepseek-harness": "DeepSeek Harness",
 	digitalocean: "DigitalOcean",
 	github: "GitHub",
 	inference: "Inference",

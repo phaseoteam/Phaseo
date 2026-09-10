@@ -8,6 +8,8 @@ import { detectInstalledPackageManager, type PackageManager } from "../installat
 import { isCommandAvailable } from "./files.js";
 import type { IntegrationId } from "./types.js";
 
+export type RunnerInstallId = "cline" | "kilo" | "omp" | "muse";
+
 export const PRIMARY_HARNESSES = ["codex", "claude-code", "hermes", "opencode", "pi", "prime-agent", "deepseek-harness", "openclaw"] as const satisfies readonly IntegrationId[];
 
 const PACKAGES: Partial<Record<(typeof PRIMARY_HARNESSES)[number], string>> = {
@@ -28,6 +30,20 @@ const COMMANDS: Record<(typeof PRIMARY_HARNESSES)[number], string[]> = {
 	"prime-agent": ["prime-agent", "prime-agent.exe", "prime-agent.cmd"],
 	hermes: ["hermes", "hermes.exe", "hermes.cmd"],
 	openclaw: ["openclaw", "openclaw.exe", "openclaw.cmd"],
+};
+
+const RUNNER_PACKAGES: Record<RunnerInstallId, string> = {
+	cline: "cline",
+	kilo: "@kilocode/cli",
+	omp: "@oh-my-pi/pi-coding-agent",
+	muse: "",
+};
+
+const RUNNER_COMMANDS: Record<RunnerInstallId, string[]> = {
+	cline: ["cline", "cline.exe", "cline.cmd", "cline.ps1"],
+	kilo: ["kilo", "kilo.exe", "kilo.cmd", "kilo.ps1"],
+	omp: ["omp", "omp.exe", "omp.cmd", "omp.ps1"],
+	muse: ["muse", "muse.exe", "muse.cmd", "muse.ps1"],
 };
 
 export type InstallInvocation = { command: string; args: string[]; executable?: string };
@@ -64,6 +80,19 @@ export function installInvocationFor(
 		case "yarn": return { command: "yarn", args: ["global", "add", ...extraArgs, ...openClawArgs, packageName] };
 		case "bun": return { command: "bun", args: ["install", "-g", ...extraArgs, ...openClawArgs, packageName] };
 		default: return { command: "npm", args: ["install", "-g", ...extraArgs, packageName, ...openClawArgs] };
+	}
+}
+
+export function runnerInstallInvocationFor(runner: RunnerInstallId, manager: PackageManager): InstallInvocation {
+	if (runner === "muse") {
+		return { command: "sh", args: ["-c", "curl -fsSL https://dev.meta.ai/install.sh | bash"] };
+	}
+	const packageName = RUNNER_PACKAGES[runner];
+	switch (manager) {
+		case "pnpm": return { command: "pnpm", args: ["add", "-g", packageName] };
+		case "yarn": return { command: "yarn", args: ["global", "add", packageName] };
+		case "bun": return { command: "bun", args: ["install", "-g", packageName] };
+		default: return { command: "npm", args: ["install", "-g", packageName] };
 	}
 }
 
@@ -199,6 +228,25 @@ export async function harnessInstallPlan(integration: IntegrationId): Promise<In
 		return installInvocationFor(integration, "npm");
 	}
 	return packageInstallInvocation(integration);
+}
+
+export async function runnerInstallPlan(runner: RunnerInstallId): Promise<InstallInvocation | null> {
+	if (await isCommandAvailable(RUNNER_COMMANDS[runner])) return null;
+	if (runner === "muse") {
+		if (process.platform === "win32") {
+			throw new Error("Muse Code is not auto-installed by Phaseo on Windows. Install Muse Code from Meta, verify `muse --version`, then rerun with --skip-install.");
+		}
+		if (!await isCommandAvailable(["sh"]) || !await isCommandAvailable(["curl"])) {
+			throw new Error("Muse Code installation requires sh and curl");
+		}
+		return runnerInstallInvocationFor(runner, "npm");
+	}
+	return packageInstallInvocationForRunner(runner);
+}
+
+async function packageInstallInvocationForRunner(runner: RunnerInstallId): Promise<InstallInvocation> {
+	const available = await availableManager();
+	return { ...runnerInstallInvocationFor(runner, available.manager), executable: available.executable };
 }
 
 export async function installHarness(invocation: InstallInvocation, options: { quiet?: boolean; capture?: boolean } = {}): Promise<void> {

@@ -22,12 +22,14 @@ import { CLI_VERSION } from "./generated/meta.js";
 import { createDoctorReport, detectInstalledPackageManager, type DoctorReport } from "./installation.js";
 import { getVersionInfo, removeCommandFor, updateCommandFor, updateInvocationFor } from "./release.js";
 import { runCurie } from "./curie.js";
-import { isPrimarySetupName, runIntegrationCommand } from "./integrations/index.js";
+import { isIntegrationSetupName, runIntegrationCommand } from "./integrations/index.js";
+import { isRunnerName, runRunnerCommand } from "./integrations/runners.js";
 import { revokeIntegrationGatewayCredential } from "./integrations/credential.js";
 
 type ParsedArgs = {
 	command: string[];
 	flags: Record<string, string | boolean>;
+	passthrough?: string[];
 };
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -67,8 +69,13 @@ const LOGIN_METHOD_OPTIONS: LoginMethodOption[] = [
 export function parseArgs(argv: string[]): ParsedArgs {
 	const command: string[] = [];
 	const flags: Record<string, string | boolean> = {};
+	let passthrough: string[] | undefined;
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
+		if (arg === "--") {
+			passthrough = argv.slice(i + 1);
+			break;
+		}
 		if (arg === "-h") {
 			flags.help = true;
 			continue;
@@ -94,7 +101,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
 		}
 		command.push(arg);
 	}
-	return { command, flags };
+	return passthrough ? { command, flags, passthrough } : { command, flags };
 }
 
 function flagString(flags: Record<string, string | boolean>, key: string): string | undefined {
@@ -173,7 +180,8 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 		description: "Phaseo CLI",
 		usage: [
 			"phaseo login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
-			"phaseo <codex|claude|hermes|opencode|pi|prime-agent|dsh|openclaw> [--model <id>] [--catalog all|default] [--dry-run] [--json]",
+			"phaseo <codex|claude-code|hermes|opencode|pi|prime-agent|deepseek-harness|openclaw|aider|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--catalog all|default] [--dry-run] [--json]",
+			"phaseo <cline|kilo|omp|muse> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]",
 			"phaseo logout [--json]",
 			"phaseo whoami [--json]",
 			"phaseo version | v [--json]",
@@ -212,7 +220,11 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	setup: {
 		description: "Configure an installed coding harness with a dedicated Phaseo key and compatible model catalog.",
-		usage: ["phaseo setup <codex|claude|hermes|opencode|pi|prime-agent|dsh|openclaw> [--model <id>] [--catalog all|default] [--dry-run] [--json]"],
+		usage: ["phaseo setup <integration> [--model <id>] [--catalog all|default] [--dry-run] [--json]"],
+	},
+	run: {
+		description: "Launch Cline, Kilo Code, oh-my-pi, or Muse Code against the Phaseo gateway without changing persistent harness configuration.",
+		usage: ["phaseo run <cline|kilo|omp|muse> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]"],
 	},
 	login: {
 		usage: [
@@ -243,14 +255,6 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 		usage: [
 			"phaseo integrations list [integration] [--json]",
 			"phaseo integrations status [integration] [--json]",
-			"phaseo integrations setup codex [--model <id>] [--dry-run] [--json]",
-			"phaseo integrations setup claude-code [--dry-run] [--json]",
-			"phaseo integrations setup opencode [--model <id>] [--catalog all|default] [--dry-run] [--json]",
-			"phaseo integrations setup deepseek-harness [--model <id>] [--catalog all|default] [--dry-run] [--json]",
-			"phaseo integrations setup pi [--model <id>] [--catalog all|default] [--dry-run] [--json]",
-			"phaseo integrations setup prime-agent [--model <id>] [--catalog all|default] [--dry-run] [--json]",
-			"phaseo integrations setup openclaw [--model <id>] [--catalog all|default] [--dry-run] [--json]",
-			"phaseo integrations setup <hermes|aider|cline|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--dry-run] [--json]",
 			"phaseo integrations credential <integration>",
 			"phaseo integrations remove <integration> [--dry-run] [--json]",
 		],
@@ -2052,8 +2056,16 @@ async function main() {
 		else if (first === "analytics" && second === "get") action = analyticsGet(parsed.flags);
 		else if (first === "generation" && second === "get") action = generationGet(parsed.flags);
 		else if (first === "curie" && second === "run") action = runCurie(third, parsed.flags);
-		else if (first === "setup") action = runIntegrationCommand(["setup", ...parsed.command.slice(1)], parsed.flags, { installMissing: true, primaryOnly: true });
-		else if (isPrimarySetupName(first)) action = runIntegrationCommand(["setup", ...parsed.command], parsed.flags, { installMissing: true, primaryOnly: true });
+		else if (first === "run") {
+			if (!second || parsed.command.length > 2) throw new Error("Usage: phaseo run <cline|kilo|omp|muse> [flags] -- [harness args]");
+			action = runRunnerCommand(second, parsed.flags, parsed.passthrough);
+		}
+		else if (isRunnerName(first)) {
+			if (parsed.command.length > 1) throw new Error("Usage: phaseo <cline|kilo|omp|muse> [flags] -- [harness args]");
+			action = runRunnerCommand(first, parsed.flags, parsed.passthrough);
+		}
+		else if (first === "setup") action = runIntegrationCommand(["setup", ...parsed.command.slice(1)], parsed.flags, { installMissing: true });
+		else if (isIntegrationSetupName(first)) action = runIntegrationCommand(["setup", ...parsed.command], parsed.flags, { installMissing: true });
 		else if (first === "integrations") action = runIntegrationCommand(parsed.command.slice(1), parsed.flags);
 		else if (first === "webhooks" && second === "list") action = listWebhooks(parsed.flags);
 		else if (first === "webhooks" && second === "create") action = createWebhook(parsed.flags);

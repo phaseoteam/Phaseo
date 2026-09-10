@@ -118,21 +118,29 @@ phaseo api get /v1/models
 
 ## Coding-agent integrations
 
-Install and configure a coding harness with one command:
+Install and configure a persistent coding integration with one command:
 
 ```bash
 phaseo login
 phaseo codex
-phaseo claude
+phaseo claude-code
 phaseo hermes
 phaseo opencode
 phaseo pi
 phaseo prime-agent
-phaseo dsh
+phaseo deepseek-harness
 phaseo openclaw
+phaseo aider
+phaseo roo-code
+phaseo kilo-code
+phaseo continue
+phaseo cursor
+phaseo zed
 ```
 
-`phaseo <harness>` checks whether the harness is installed. When it is missing in an interactive terminal, Phaseo shows the exact supported install command and asks for confirmation before running it. After installation, Phaseo creates a dedicated non-expiring gateway key and writes the harness configuration. Node-distributed harnesses use an available package manager; Hermes Agent and Prime Agent use their official installers only after approval. Non-interactive runs fail with the install command instead of making an unattended system change. Use `--skip-install` when the harness is managed separately, or `--dry-run` to preview the installer and file changes. The explicit `phaseo setup <harness>` form remains supported.
+`phaseo <integration>` checks whether a first-party harness is installed when the integration supports managed installation. When it is missing in an interactive terminal, Phaseo shows the exact supported install command and asks for confirmation before running it. After installation, Phaseo creates a dedicated non-expiring gateway key and writes the integration configuration. Non-interactive runs fail with the install command instead of making an unattended system change. Use `--skip-install` when the harness is managed separately, or `--dry-run` to preview the installer and file changes. The explicit `phaseo setup <integration>` form remains supported for scripts and compatibility.
+
+`phaseo claude` is an alias for `phaseo claude-code`, and `phaseo dsh` is an alias for `phaseo deepseek-harness`.
 
 OpenCode, DeepSeek Harness, Pi, and Prime Agent receive every active Phaseo text model compatible with the OpenAI Chat Completions protocol. Select the initial model with `--model`, or use `--catalog default` when only that model should be configured:
 
@@ -141,28 +149,31 @@ phaseo opencode --model openai/gpt-5.6-terra
 phaseo dsh --catalog default
 ```
 
-The lower-level integration commands remain available for detection, configuration without installation, and the additional guided integrations:
+The lower-level integration commands remain available for detection, credential retrieval, removal, and compatibility with existing scripts:
 
 ```bash
 phaseo integrations list
 phaseo integrations status codex
-phaseo integrations setup codex --model openai/gpt-5.6-terra --dry-run
-phaseo integrations setup codex --model openai/gpt-5.6-terra
-phaseo integrations setup claude-code
-phaseo integrations setup opencode --model openai/gpt-5.6-terra --catalog all
-phaseo integrations setup deepseek-harness --catalog all
-phaseo integrations setup pi --catalog all
-phaseo integrations setup prime-agent --catalog all
-phaseo openclaw
-phaseo hermes
-phaseo integrations setup aider
-phaseo integrations setup cline
-phaseo integrations setup roo-code
-phaseo integrations setup kilo-code
-phaseo integrations setup continue
-phaseo integrations setup cursor
-phaseo integrations setup zed
+phaseo integrations credential codex
+phaseo integrations remove codex
 ```
+
+`phaseo integrations setup <integration>` remains accepted as a compatibility form, but new documentation should use `phaseo <integration>`.
+
+## Ori-compatible harness runners
+
+Phaseo can also launch Cline, Kilo Code, oh-my-pi, and Muse Code with the Phaseo gateway. The runner keeps the dedicated key in the child process environment, creates only temporary provider configuration, and removes that configuration when the harness exits:
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra -- --tui
+phaseo kilo --model openai/gpt-5.6-terra --
+phaseo omp --model openai/gpt-5.6-terra --
+phaseo muse --model meta/muse-spark-1.3 --
+```
+
+`phaseo run <cline|kilo|omp|muse>` is the equivalent explicit form. Put harness flags after `--` so Phaseo can consume its own flags first. Use `--catalog all` to fetch the active Phaseo text/chat model catalog, or `--dry-run --json` to inspect the install and launch plan without creating a key or starting a harness.
+
+The first interactive run offers to install a missing Cline, Kilo Code, or oh-my-pi CLI. Muse Code uses Meta's installer on Unix-like systems; on Windows, install Muse Code separately, verify `muse --version`, and rerun with `--skip-install`. All four runners use isolated temporary provider state so existing user configuration is not overwritten.
 
 Hermes setup is automatic and uses Hermes' supported plaintext `~/.hermes/.env` credential store. Phaseo CLI records the previous non-secret model settings so removal can restore them.
 
