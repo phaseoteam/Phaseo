@@ -23,6 +23,14 @@ function safeColour(value: string | null | undefined) {
 	return value && /^#[\da-f]{6}$/i.test(value) ? value : "#6b7280";
 }
 
+function contrastingTextColour(background: string) {
+	const channels = [0, 2, 4].map((offset) => Number.parseInt(background.slice(offset + 1, offset + 3), 16) / 255).map((channel) => channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+	const luminance = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+	const darkContrast = (luminance + 0.05) / 0.065;
+	const lightContrast = 1.05 / (luminance + 0.05);
+	return darkContrast >= lightContrast ? "#111827" : "#ffffff";
+}
+
 function releaseDate(value: string | null | undefined) {
 	if (!value) return "Release date unavailable";
 	const date = new Date(value);
@@ -97,9 +105,10 @@ function MetricChart({
 									? ((maximum - entry.score) / range) * 158 + 24
 									: ((entry.score - minimum) / range) * 158 + 24;
 								const configuration = configurationLabel(entry.other_info);
+								const colour = safeColour(entry.organisation_colour);
 								return (
 									<div key={`${entry.model_id}-${entry.score}-${entry.rank}`} className="group flex h-full min-w-11 flex-1 basis-11 cursor-default flex-col items-center justify-end rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0} aria-label={`${entry.model_name}, ${formatArtificialAnalysisScore(ranking?.benchmark_id ?? metric.id, entry.score)}, rank ${entry.rank}, released ${releaseDate(entry.release_date)}`}>
-										<span className="relative flex w-8 items-end justify-center rounded-t-[3px] pb-2 text-[10px] font-semibold tabular-nums text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] transition-[height,filter] duration-300 group-hover:brightness-110 sm:w-9" style={{ height: `${Math.max(height, 3)}px`, backgroundColor: safeColour(entry.organisation_colour) }} title={`${entry.model_name} · ${releaseDate(entry.release_date)} · ${configuration ?? "Default"}`}>
+										<span className="relative flex w-8 items-end justify-center rounded-t-[3px] pb-2 text-[10px] font-semibold tabular-nums shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] transition-[height,filter] duration-300 group-hover:brightness-110 sm:w-9" style={{ height: `${Math.max(height, 3)}px`, backgroundColor: colour, color: contrastingTextColour(colour) }} title={`${entry.model_name} · ${releaseDate(entry.release_date)} · ${configuration ?? "Default"}`}>
 											{formatArtificialAnalysisScore(ranking?.benchmark_id ?? metric.id, entry.score)}
 										</span>
 										<span className="relative my-1 size-4 shrink-0"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain" /></span>

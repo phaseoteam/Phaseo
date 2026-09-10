@@ -1,6 +1,6 @@
 import BenchmarkDetailShell from "@/components/(data)/benchmark/BenchmarkDetailShell";
 import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
-import { applyArtificialAnalysisOrganisationColours, artificialAnalysisMetrics, buildArtificialAnalysisRanking, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { applyArtificialAnalysisOrganisationColours, artificialAnalysisMetricsForBenchmark, buildArtificialAnalysisRanking, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import { fetchFrontendBenchmark, fetchFrontendOrganisations } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -83,8 +83,9 @@ export default async function Page({
 	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmark.id);
 	const artificialAnalysisRankings = artificialAnalysis
 		? await (async () => {
+			const metricDefinitions = artificialAnalysisMetricsForBenchmark(benchmark.id);
 			const [rankings, organisations] = await Promise.all([
-				Promise.all(artificialAnalysisMetrics.map(async ({ id }) => {
+				Promise.all(metricDefinitions.map(async ({ id }) => {
 					const metricBenchmark = id === benchmark.id ? benchmark : await fetchFrontendBenchmark(id).catch(() => null);
 					return metricBenchmark ? buildArtificialAnalysisRanking(metricBenchmark) : null;
 				})),

@@ -9,6 +9,14 @@ export const artificialAnalysisMetrics = [
   { id: "aa-intelligence-index-cost-v4", key: "cost", label: "Evaluation cost", description: "Full Intelligence Index evaluation · USD" },
 ] as const;
 
+export function artificialAnalysisMetricsForBenchmark(benchmarkId: string) {
+  const version = benchmarkId.match(/-v(\d+)$/)?.[1] ?? "4";
+  return artificialAnalysisMetrics.map((metric) => ({
+    ...metric,
+    id: metric.id.replace(/-v\d+$/, `-v${version}`),
+  }));
+}
+
 const artificialAnalysisBenchmarkPattern = /^aa-(?:intelligence|coding|agentic)-index(?:-cost)?-v\d+$/;
 
 export function isArtificialAnalysisBenchmark(id: string) {

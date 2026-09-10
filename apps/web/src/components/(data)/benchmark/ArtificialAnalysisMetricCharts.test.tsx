@@ -30,4 +30,12 @@ describe("Artificial Analysis metric charts", () => {
 		expect(html).toContain('data-testid="cost-chart"');
 		expect(html).toContain("Show top 14");
 	});
+
+	it("uses a dark score label for light organisation colours", () => {
+		const html = renderToStaticMarkup(<ArtificialAnalysisMetricCharts rankings={[ranking("aa-intelligence-index-v4", "Intelligence Index")] .map((item) => ({
+			...item,
+			entries: item.entries.map((entry) => ({ ...entry, organisation_colour: "#d4f0da" })),
+		}))} />);
+		expect(html).toContain("background-color:#d4f0da;color:#111827");
+	});
 });
