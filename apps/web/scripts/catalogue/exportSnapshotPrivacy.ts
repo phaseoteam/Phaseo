@@ -45,7 +45,7 @@ function hasSelfServeSubmission(row: SnapshotRow): boolean {
 }
 
 function isUnpublishedSelfServeProvider(row: SnapshotRow): boolean {
-	return hasSelfServeSubmission(row) && row.routable !== true && row.routing_enabled !== true;
+	return hasSelfServeSubmission(row) && (row.routable !== true || row.routing_enabled !== true);
 }
 
 function isInternalBenchmarkResult(row: SnapshotRow): boolean {
@@ -64,11 +64,13 @@ export function filterPublicSnapshotRows<T extends string>(snapshots: Map<T, Sna
 	const stealthModelSlugs = new Set<string>();
 	const stealthRouteIds = new Set<string>();
 	const stealthSkuIds = new Set<string>();
+	const internalBenchmarkIds = new Set<string>();
 	const unpublishedProviderSlugs = new Set<string>();
 	const unpublishedRouteIds = new Set<string>();
 	const unpublishedSkuIds = new Set<string>();
 	for (const rows of snapshots.values()) {
 		for (const row of rows) {
+			if (isInternalBenchmark(row) && typeof row.benchmark_id === "string") internalBenchmarkIds.add(row.benchmark_id);
 			if (row.is_stealth === true) {
 				if (typeof row.model_slug === "string") stealthModelSlugs.add(row.model_slug);
 				if (typeof row.provider_model_id === "string") stealthRouteIds.add(row.provider_model_id);
@@ -96,7 +98,7 @@ export function filterPublicSnapshotRows<T extends string>(snapshots: Map<T, Sna
 		.filter((row) => !stealthSkuIds.has(String(row.sku_id ?? "")))
 		.filter((row) => !unpublishedSkuIds.has(String(row.sku_id ?? "")))
 		.filter((row) => table !== "v2_benchmarks" || !isInternalBenchmark(row))
-		.filter((row) => table !== "v2_benchmark_results" || !isInternalBenchmarkResult(row))
+		.filter((row) => table !== "v2_benchmark_results" || (!isInternalBenchmarkResult(row) && !internalBenchmarkIds.has(String(row.benchmark_id ?? ""))))
 		.map((row) => sanitizePublicValue(row) as SnapshotRow)]));
 }
 
