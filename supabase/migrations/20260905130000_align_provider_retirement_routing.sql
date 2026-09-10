@@ -157,7 +157,7 @@ begin
       '        ''data_region'', model.data_region',
       '        ''data_region'', model.data_region,
         ''effective_from'', model.effective_from,
-        ''effective_to'', model.effective_to'
+        ''effective_to'', model.effective_to,'
     );
 
     if patched = definition
