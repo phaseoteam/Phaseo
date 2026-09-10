@@ -666,9 +666,11 @@ describe("public model routes", () => {
 		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0, s-maxage=300");
 		expect(benchmarks.status).toBe(200);
 		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=86400, stale-while-revalidate=604800");
+		expect(benchmarks.headers.get("cache-control")).toBe("public, max-age=0, s-maxage=86400");
 		await expect(benchmarks.json()).resolves.toMatchObject({ highlights: [{ benchmarkId: "mmlu", score: 85, scoreDisplay: "85%", rank: 2 }] });
 		expect(performance.status).toBe(200);
 		expect(performance.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
+		expect(performance.headers.get("cache-control")).toBe("public, max-age=0, s-maxage=900");
 	});
 
 	it("keeps the model page healthy when the optional performance rollup fails", async () => {

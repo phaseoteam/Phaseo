@@ -69,15 +69,3 @@ export async function verifyCacheAdmin() {
 export async function fetchCacheControlState() {
 	return fetchInternalWebApi<CacheControlState>("/api/internal/cache", await accessToken());
 }
-
-export async function purgeCacheScope(input: {
-	scope: string;
-	targetId?: string;
-	bumpBrowserGeneration: boolean;
-}) {
-	return fetchInternalWebApi<CachePurgeResult>(
-		"/api/internal/cache/purge",
-		await accessToken(),
-		{ method: "POST", body: JSON.stringify(input) },
-	);
-}

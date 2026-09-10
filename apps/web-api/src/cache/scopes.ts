@@ -40,6 +40,7 @@ const CATALOGUE_TAGS = [
 	"web-api-model-performance",
 	"web-api-model-pricing-history",
 	"web-api-model-usage-daily",
+	"web-api-model-effective-pricing",
 	"web-api-model-realtime",
 	"web-api-model-token-trajectories",
 	"web-api-model-provider-health",
