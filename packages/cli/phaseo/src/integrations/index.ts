@@ -41,6 +41,15 @@ export function isPrimarySetupName(value: string): boolean {
 	}
 }
 
+export function isIntegrationSetupName(value: string): boolean {
+	try {
+		adapterFor(value);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 function isTrue(value: string | boolean | undefined): boolean {
 	return value === true || value === "true" || value === "1";
 }

@@ -160,7 +160,7 @@
 								]
 							},
 							{
-								"group": "Coding Assistants",
+									"group": "Coding Agents",
 								"icon": "bot",
 								"expanded": false,
 								"pages": [
@@ -176,6 +176,8 @@
 									"v1/guides/integrations/cline",
 									"v1/guides/integrations/roo-code",
 									"v1/guides/integrations/kilo-code",
+									"v1/guides/integrations/oh-my-pi",
+									"v1/guides/integrations/muse-code",
 									"v1/guides/integrations/cursor",
 									"v1/guides/integrations/zed"
 								]

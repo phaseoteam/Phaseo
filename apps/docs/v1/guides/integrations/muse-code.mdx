@@ -1,0 +1,51 @@
+---
+title: "Muse Code"
+icon: "/icons/brands/meta.svg"
+description: "Run Muse Code through the Phaseo Gateway with the Phaseo CLI."
+---
+
+The Phaseo CLI can launch Muse Code with a dedicated gateway key and temporary provider settings.
+
+## Set up with the Phaseo CLI
+
+```bash
+phaseo login
+phaseo muse --model muse-spark-1.3 --
+```
+
+Use `--catalog all` to expose every active Phaseo text/chat model, or `--dry-run --json` to preview the launch plan without creating a key or starting Muse Code:
+
+```bash
+phaseo muse --catalog all --dry-run --json
+```
+
+Use `phaseo run muse ...` for the explicit command form. Put Muse Code flags after `--` so Phaseo can consume its own flags first.
+
+On Unix-like systems, the first interactive run offers to install Muse Code with Meta's installer. On Windows, install Muse Code separately, verify `muse --version`, and use `--skip-install`.
+
+## Manual configuration
+
+Muse Code's public setup is built around Meta's own Model API and authentication flow. Meta does not currently document a stable persistent setting for replacing that endpoint with a third-party OpenAI-compatible gateway, so the Phaseo CLI runner is the supported way to route Muse Code through Phaseo.
+
+If you want to use a Phaseo model from another client manually, use the [OpenAI-compatible integration](./openai-sdk) with `https://api.phaseo.app/v1` and a Phaseo API key. Do not copy the runner's temporary Muse settings into your normal Muse profile; those files are implementation details and are removed when the runner exits.
+
+## Verify
+
+Send a small prompt through the launched harness, then confirm the request appears in Phaseo activity. The runner writes `settings.json` under a temporary `XDG_CONFIG_HOME` and removes it when Muse Code exits.
+
+## Troubleshooting
+
+### Muse Code is not installed
+
+Install Muse Code separately, verify `muse --version`, and rerun with `--skip-install`.
+
+### The model is not listed
+
+Use `--catalog all` or pass a model id with `--model`. Model discovery is not required for the Phaseo gateway.
+
+## Related
+
+- [Phaseo CLI](./phaseo-cli)
+- [Meta Model API](https://ai.meta.com/llama)
+- [Models](../../api-reference/endpoint/models.mdx)
+- [Activity](../../api-reference/endpoint/activity.mdx)

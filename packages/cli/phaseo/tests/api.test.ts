@@ -397,6 +397,14 @@ test("treats short and long root flags as flags instead of commands", () => {
 	});
 });
 
+test("keeps harness arguments after -- for the delegated runner", () => {
+	assert.deepEqual(parseArgs(["cline", "--model", "openai/gpt-test", "--", "--plan", "Review the diff"]), {
+		command: ["cline"],
+		flags: { model: "openai/gpt-test" },
+		passthrough: ["--plan", "Review the diff"],
+	});
+});
+
 test("detects preferred package managers and emits install/update commands", () => {
 	assert.equal(detectPackageManager({ npm_config_user_agent: "pnpm/10.33.0 node/v24" } as NodeJS.ProcessEnv), "pnpm");
 	assert.equal(detectPackageManager({ npm_config_user_agent: "yarn/1.22.22 npm/? node/v24" } as NodeJS.ProcessEnv), "yarn");

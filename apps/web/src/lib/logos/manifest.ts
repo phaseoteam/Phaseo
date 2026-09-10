@@ -7,6 +7,48 @@ export const logoManifest = {
 		light: "/logo_light.svg",
 		dark: "/logo_dark.svg",
 	},
+
+	// Coding agent integrations
+	aider: {
+		color: "/logos/aider.svg",
+	},
+	"claude-code": {
+		color: "/logos/claudecode.svg",
+	},
+	continue: {
+		light: "/logos/continue_light.svg",
+		dark: "/logos/continue_dark.svg",
+	},
+	"deepseek-harness": {
+		color: "/logos/deepseek.svg",
+	},
+	"kilo-code": {
+		light: "/logos/kilo_light.svg",
+		dark: "/logos/kilo_dark.svg",
+	},
+	"muse-code": {
+		color: "/logos/meta.svg",
+	},
+	"oh-my-pi": {
+		light: "/logos/oh-my-pi_light.svg",
+		dark: "/logos/oh-my-pi_dark.svg",
+	},
+	pi: {
+		light: "/logos/pi_light.svg",
+		dark: "/logos/pi_dark.svg",
+	},
+	"prime-agent": {
+		light: "/logos/prime-intellect_light.svg",
+		dark: "/logos/prime-intellect_dark.svg",
+	},
+	"roo-code": {
+		light: "/logos/roo-code_light.svg",
+		dark: "/logos/roo-code_dark.svg",
+	},
+	zed: {
+		light: "/logos/zed_light.svg",
+		dark: "/logos/zed_dark.svg",
+	},
 	aionlabs: {
 		color: "/logos/aionlabs.svg",
 	},

@@ -91,16 +91,23 @@ describe("logos", () => {
 		});
 	});
 
-		test.each([
+	test.each([
 		["cline", "/logos/cline_light.svg", "/logos/cline_dark.svg"],
+		["continue", "/logos/continue_light.svg", "/logos/continue_dark.svg"],
 		["helicone", "/logos/helicone_light.svg", "/logos/helicone_dark.svg"],
+		["kilo-code", "/logos/kilo_light.svg", "/logos/kilo_dark.svg"],
 		["ollama", "/logos/ollama_light.svg", "/logos/ollama_dark.svg"],
+		["oh-my-pi", "/logos/oh-my-pi_light.svg", "/logos/oh-my-pi_dark.svg"],
+		["pi", "/logos/pi_light.svg", "/logos/pi_dark.svg"],
+		["prime-agent", "/logos/prime-intellect_light.svg", "/logos/prime-intellect_dark.svg"],
 		["runinfra", "/logos/runinfra.svg", "/logos/runinfra_dark.svg"],
+		["roo-code", "/logos/roo-code_light.svg", "/logos/roo-code_dark.svg"],
 		["sarvam", "/logos/sarvam_light.svg", "/logos/sarvam_dark.svg"],
 		["tinfoil", "/logos/tinfoil_light.svg", "/logos/tinfoil_dark.svg"],
 		["v0", "/logos/v0_light.svg", "/logos/v0_dark.svg"],
 		["ltx", "/logos/ltx_light.svg", "/logos/ltx_dark.svg"],
 		["lightricks", "/logos/ltx_light.svg", "/logos/ltx_dark.svg"],
+		["zed", "/logos/zed_light.svg", "/logos/zed_dark.svg"],
 	])("resolves themed %s logo variants", (id, lightSrc, darkSrc) => {
 		expect(resolveLogo(id, { theme: "light" })).toMatchObject({
 			src: lightSrc,
@@ -110,6 +117,15 @@ describe("logos", () => {
 			src: darkSrc,
 			variant: "dark",
 		});
+	});
+
+	test.each([
+		["aider", "Aider", "/logos/aider.svg"],
+		["claude-code", "Claude Code", "/logos/claudecode.svg"],
+		["deepseek-harness", "DeepSeek Harness", "/logos/deepseek.svg"],
+		["muse-code", "Muse Code", "/logos/meta.svg"],
+	])("resolves the %s integration logo", (id, label, src) => {
+		expect(resolveLogo(id)).toMatchObject({ id, label, src, variant: "color" });
 	});
 
 	test.each([
