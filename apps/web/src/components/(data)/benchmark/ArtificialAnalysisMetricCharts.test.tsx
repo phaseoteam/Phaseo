@@ -10,8 +10,8 @@ const ranking = (benchmarkId: string, label: string): PublicBenchmarkRanking => 
 	lower_is_better: label === "Evaluation Cost",
 	total_models: 2,
 	entries: [
-		{ model_id: "openai/gpt-6-astra", model_name: "GPT-6 Astra", organisation_id: "openai", organisation_name: "OpenAI", organisation_colour: "#333333", score: label === "Evaluation Cost" ? 1200 : 52.8, rank: 1, release_date: "2026-09-03T00:00:00Z", other_info: "GPT-6 Astra (max)" },
-		{ model_id: "anthropic/claude-fable-5.1", model_name: "Claude Fable 5.1", organisation_id: "anthropic", organisation_name: "Anthropic", organisation_colour: "#cc785c", score: label === "Evaluation Cost" ? 1500 : 53.4, rank: 2, release_date: "2026-09-01T00:00:00Z", other_info: "Claude Fable 5.1 (max)" },
+		{ model_id: "openai/gpt-6-astra", model_name: "GPT-6 Astra", organisation_id: "openai", organisation_name: "OpenAI", organisation_colour: "#333333", score: label === "Evaluation Cost" ? 1200 : 52.8, rank: label === "Evaluation Cost" ? 1 : 2, release_date: "2026-09-03T00:00:00Z", other_info: "GPT-6 Astra (max)" },
+		{ model_id: "anthropic/claude-fable-5.1", model_name: "Claude Fable 5.1", organisation_id: "anthropic", organisation_name: "Anthropic", organisation_colour: "#cc785c", score: label === "Evaluation Cost" ? 1500 : 53.4, rank: label === "Evaluation Cost" ? 2 : 1, release_date: "2026-09-01T00:00:00Z", other_info: "Claude Fable 5.1 (max)" },
 	],
 });
 
@@ -29,6 +29,7 @@ describe("Artificial Analysis metric charts", () => {
 		expect(html).toContain('data-testid="agentic-chart"');
 		expect(html).toContain('data-testid="cost-chart"');
 		expect(html).toContain("Show top 14");
+		expect(html.indexOf('title="Claude Fable 5.1')).toBeLessThan(html.indexOf('title="GPT-6 Astra'));
 	});
 
 	it("uses a dark score label for light organisation colours", () => {
@@ -37,5 +38,13 @@ describe("Artificial Analysis metric charts", () => {
 			entries: item.entries.map((entry) => ({ ...entry, organisation_colour: "#d4f0da" })),
 		}))} />);
 		expect(html).toContain("background-color:#d4f0da;color:#111827");
+	});
+
+	it("uses the neutral fallback colour for invalid organisation colours", () => {
+		const html = renderToStaticMarkup(<ArtificialAnalysisMetricCharts rankings={[ranking("aa-intelligence-index-v4", "Intelligence Index")].map((item) => ({
+			...item,
+			entries: item.entries.map((entry) => ({ ...entry, organisation_colour: "not-a-colour" })),
+		}))} />);
+		expect(html).toContain("background-color:#6b7280");
 	});
 });
