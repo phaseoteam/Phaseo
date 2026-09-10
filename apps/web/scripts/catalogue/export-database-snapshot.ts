@@ -1,28 +1,18 @@
 /* eslint-disable no-console -- scheduled export reports per-table progress */
-import { mkdir, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { client } from "../importer/supa";
 import { buildEnumSnapshot } from "./enumSnapshot";
-import { excludeStealthRows } from "./exportSnapshotPrivacy";
+import { filterPublicSnapshotRows } from "./exportSnapshotPrivacy";
+import { PUBLIC_CATALOG_TABLE_NAMES, PUBLIC_CATALOG_TABLES, type PublicCatalogTableName } from "./exportSnapshotTables";
 
 const PAGE_SIZE = 1_000;
 const OUTPUT_DIR = resolve(process.cwd(), "../../packages/data/catalog/generated/database-v2");
+const DRY_RUN = process.argv.includes("--dry-run");
+const README_CONTENT = "# Generated database catalogue snapshot\n\nThis directory is generated from the production v2 catalogue tables. Edit catalogue data in the admin UI, not in these files. The daily snapshot workflow opens or updates a reviewable pull request when database state changes.\n";
 
-const TABLES = {
-	v2_labs: ["lab_slug"], v2_models: ["model_slug"], v2_model_families: ["family_slug"], v2_lab_links: ["lab_slug", "platform", "url"],
-	v2_providers: ["provider_slug"], v2_provider_regions: ["provider_region_id"], v2_model_provider_routes: ["provider_model_id"],
-	v2_route_capabilities: ["provider_model_id", "capability_id"], v2_service_tiers: ["service_tier_slug"], v2_route_variants: ["variant_id"],
-	v2_meter_definitions: ["meter_key"], v2_pricing_skus: ["sku_id"], v2_pricing_sku_meters: ["sku_meter_id"],
-	v2_benchmarks: ["benchmark_id"], v2_benchmark_results: ["result_id"], v2_model_aliases: ["alias_slug"],
-	v2_model_links: ["model_slug", "link_kind", "url"], v2_model_details: ["model_slug", "detail_name"], v2_model_page_notices: ["model_slug"],
-	v2_subscription_plans: ["plan_uuid"], v2_subscription_plan_models: ["plan_uuid", "model_slug"],
-	v2_subscription_plan_features: ["plan_uuid", "feature_name"], v2_catalogue_source_overrides: ["source_type", "source_key"],
-} as const;
-type TableName = keyof typeof TABLES;
-
-const OMITTED_FIELDS: Partial<Record<TableName, ReadonlySet<string>>> = {
-	v2_catalogue_source_overrides: new Set(["actor_user_id"]),
-};
+type TableName = PublicCatalogTableName;
 
 function stableValue(value: unknown): unknown {
 	if (Array.isArray(value)) return value.map(stableValue);
@@ -43,18 +33,65 @@ async function fetchTable(table: TableName): Promise<Record<string, unknown>[]> 
 	const rows: Record<string, unknown>[] = [];
 	for (let from = 0; ; from += PAGE_SIZE) {
 		let query: any = supabase.from(table).select("*");
-		for (const column of TABLES[table]) query = query.order(column, { ascending: true });
+		for (const column of PUBLIC_CATALOG_TABLES[table]) query = query.order(column, { ascending: true });
 		const result = await query.range(from, from + PAGE_SIZE - 1);
 		if (result.error) throw new Error(`Failed to export ${table}: ${result.error.message}`);
 		const page = (result.data ?? []) as Record<string, unknown>[];
 		rows.push(...page);
 		if (page.length < PAGE_SIZE) break;
 	}
-	const omitted = OMITTED_FIELDS[table] ?? new Set<string>();
 	return rows
-		.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => !omitted.has(key))))
 		.map((row) => stableValue(row) as Record<string, unknown>)
 		.sort((left, right) => stableRowKey(left).localeCompare(stableRowKey(right)));
+}
+
+async function removeStaleSnapshotFiles() {
+	for (const filename of await staleSnapshotFiles()) await rm(resolve(OUTPUT_DIR, filename), { force: true });
+}
+
+async function staleSnapshotFiles(): Promise<string[]> {
+	const allowedFiles = new Set(["enum-catalog.json", ...PUBLIC_CATALOG_TABLE_NAMES.map((table) => `${table}.json`)]);
+	let filenames: string[];
+	try {
+		filenames = await readdir(OUTPUT_DIR);
+	} catch (error) {
+		if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return [];
+		throw error;
+	}
+	return filenames.filter((filename) => filename.endsWith(".json") && !allowedFiles.has(filename));
+}
+
+function outputContent(publicSnapshots: ReadonlyMap<TableName, Record<string, unknown>[]>) {
+	const files = [
+		{
+			filename: "enum-catalog.json",
+			content: `${JSON.stringify(buildEnumSnapshot(publicSnapshots), null, 2)}\n`,
+		},
+		...PUBLIC_CATALOG_TABLE_NAMES.map((table) => ({
+			filename: `${table}.json`,
+			content: `${JSON.stringify(publicSnapshots.get(table) ?? [], null, 2)}\n`,
+		})),
+		{ filename: "README.md", content: README_CONTENT },
+	];
+	return files;
+}
+
+function contentHash(content: string): string {
+	return createHash("sha256").update(content, "utf8").digest("hex");
+}
+
+async function printDryRun(publicSnapshots: ReadonlyMap<TableName, Record<string, unknown>[]>) {
+	const files = outputContent(publicSnapshots);
+	const staleFiles = await staleSnapshotFiles();
+	console.log("Dry run: no files were written and no files were removed.");
+	console.log("Would write:");
+	for (const file of files) {
+		const table = file.filename.endsWith(".json") ? file.filename.slice(0, -5) : null;
+		const rows = table && PUBLIC_CATALOG_TABLE_NAMES.includes(table as TableName) ? publicSnapshots.get(table as TableName)?.length ?? 0 : null;
+		console.log(`- ${file.filename}${rows === null ? "" : ` (${rows} rows)`}: ${Buffer.byteLength(file.content, "utf8")} bytes, sha256 ${contentHash(file.content)}`);
+	}
+	console.log(staleFiles.length ? "Would remove:" : "Would remove: none");
+	for (const filename of staleFiles) console.log(`- ${filename}`);
 }
 
 async function main() {
@@ -62,17 +99,21 @@ async function main() {
 	// during export and legacy rows with null timestamps. Export the full tables.
 	// Collect every table before writing so a failed query preserves the prior export.
 	const snapshots = new Map<TableName, Record<string, unknown>[]>();
-	for (const table of Object.keys(TABLES) as TableName[]) {
+	for (const table of PUBLIC_CATALOG_TABLE_NAMES) {
 		snapshots.set(table, await fetchTable(table));
 	}
-	const publicSnapshots = excludeStealthRows(snapshots);
-	await mkdir(OUTPUT_DIR, { recursive: true });
-	await writeFile(resolve(OUTPUT_DIR, "enum-catalog.json"), `${JSON.stringify(buildEnumSnapshot(publicSnapshots), null, 2)}\n`, "utf8");
-	for (const [table, rows] of publicSnapshots) {
-		console.log(`Exported ${table}: ${rows.length} rows`);
-		await writeFile(resolve(OUTPUT_DIR, `${table}.json`), `${JSON.stringify(rows, null, 2)}\n`, "utf8");
+	const publicSnapshots = filterPublicSnapshotRows(snapshots);
+	if (DRY_RUN) {
+		await printDryRun(publicSnapshots);
+		return;
 	}
-	await writeFile(resolve(OUTPUT_DIR, "README.md"), "# Generated database catalogue snapshot\n\nThis directory is generated from the production v2 catalogue tables. Edit catalogue data in the admin UI, not in these files. The daily snapshot workflow opens or updates a reviewable pull request when database state changes.\n", "utf8");
+	await mkdir(OUTPUT_DIR, { recursive: true });
+	await removeStaleSnapshotFiles();
+	for (const file of outputContent(publicSnapshots)) {
+		const table = file.filename.endsWith(".json") ? file.filename.slice(0, -5) : null;
+		if (table && PUBLIC_CATALOG_TABLE_NAMES.includes(table as TableName)) console.log(`Exported ${table}: ${publicSnapshots.get(table as TableName)?.length ?? 0} rows`);
+		await writeFile(resolve(OUTPUT_DIR, file.filename), file.content, "utf8");
+	}
 }
 
 void main().catch((error) => {

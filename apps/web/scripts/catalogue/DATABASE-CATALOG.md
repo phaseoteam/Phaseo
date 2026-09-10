@@ -50,10 +50,29 @@ Run the read-only database export from `apps/web`:
 pnpm catalog:export:database
 ```
 
-It writes 23 tables to `packages/data/catalog/generated/database-v2`, using the
+Use `pnpm catalog:export:database --dry-run` to query and filter the same
+production rows without writing generated files, removing stale files, or
+opening a pull request. The preview reports every file that would be written,
+its row count, byte size, SHA-256 hash, and any stale JSON files that would be
+removed. The scheduled workflow exposes the same preview through
+`workflow_dispatch` with the `dry_run` input.
+
+It writes the public catalogue tables to `packages/data/catalog/generated/database-v2`, using the
 existing Supabase URL and service-role environment variables. It fetches all
 tables before replacing files, includes rows with null timestamps, uses stable
-ordering, and excludes stealth records and the override actor's user ID.
+ordering, and excludes stealth records, unpublished self-serve submissions,
+private admin tables, internal benchmark records, and identity fields nested in
+catalogue metadata.
+
+The export allowlist mirrors the eight canonical namespaces under
+`packages/data/catalog/src/data`: `aliases`, `api_providers`, `benchmarks`,
+`families`, `models`, `organisations`, `pricing`, and `subscription_plans`.
+Provider routes, capabilities, regions, service tiers, model details and links,
+benchmark results, pricing meters, and plan membership are included only as
+parts of those namespaces. Operational, analytics, billing, request, history,
+proposal, and admin tables are not exported. The exporter also removes stale
+JSON files from the generated directory so an old non-catalog table cannot
+survive a later run.
 It also writes `enum-catalog.json`, the compact public index consumed by OpenAPI
 enum generation. Hidden models and stealth routes are excluded; callable IDs
 require an active, publicly available route. Merge snapshot PRs to refresh the
