@@ -17,6 +17,6 @@ describe("pricing chart visual encoding", () => {
 		expect(getPricingTierDasharray("priority")).toBe("8 4");
 		expect(getPricingTierDasharray("flex")).toBe("10 3 2 3");
 		expect(getPricingTierDasharray("batch")).toBe("16 4");
-		expect(getPricingTierDasharray("toString")).toBe("6 4");
+		expect(getPricingTierDasharray("constructor")).toBe("6 4");
 	});
 });
