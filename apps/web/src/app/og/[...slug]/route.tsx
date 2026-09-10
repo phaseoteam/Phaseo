@@ -12,7 +12,7 @@ const OG_CACHE_CONTROL =
 const ASSET_BASE_URL =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ??
 	process.env.WEBSITE_URL ??
-	"http://localhost:3000";
+	"http://localhost:3100";
 
 const montserratRegularPromise = readFile(
 	new URL("../profile-share/assets/Montserrat-Regular.ttf", import.meta.url),

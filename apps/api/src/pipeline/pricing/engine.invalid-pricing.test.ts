@@ -47,6 +47,16 @@ describe("invalid pricing cannot become a wallet charge", () => {
             cached_write_text_tokens_1h: 200,
         }, aggregate).lines.map((line) => line.dimension)).toContain("cached_write_text_tokens");
     });
+	it("treats a priced implicit cached-input meter as cached-read coverage", () => {
+		const implicit = card();
+		implicit.rules.push({
+			...implicit.rules[0],
+			meter: "implicit_cached_input_text_tokens",
+			price_per_unit: "0.2",
+		});
+		const result = computeBillSummary({ cached_tokens: 500 }, implicit);
+		expect(result.lines.map((line) => line.dimension)).toContain("implicit_cached_input_text_tokens");
+	});
 	it("rejects split cache-write usage when aggregate pricing conditions do not match", () => {
 		const aggregate = card();
 		aggregate.rules.push({

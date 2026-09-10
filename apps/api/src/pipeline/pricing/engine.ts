@@ -880,8 +880,10 @@ export function computeBillSummary(
     // Preserve the empty-lines sentinel: async callers use it to reject
     // reservations or retain holds when there is no matching price at all.
 	const hasPricedAggregateCacheWrite = lines.some((line) => line.dimension === "cached_write_text_tokens");
+	const hasPricedImplicitCacheRead = lines.some((line) => line.dimension === "implicit_cached_input_text_tokens");
 	const effectiveMissingCacheMeters = missingRequiredCacheMeters.filter((meter) =>
-		!(hasPricedAggregateCacheWrite && cacheMeterCanUseAggregate(meter, meters))
+		!(hasPricedAggregateCacheWrite && cacheMeterCanUseAggregate(meter, meters)) &&
+		!(meter === "cached_read_text_tokens" && hasPricedImplicitCacheRead)
 	);
     if (effectiveMissingCacheMeters.length > 0) {
 		throw new Error(`pricing_rule_missing:${effectiveMissingCacheMeters.join(",")}`);
