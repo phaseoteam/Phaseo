@@ -9,6 +9,7 @@ import BenchmarkMetrics from "./BenchmarkMetrics";
 import BenchmarkProgressChart from "./BenchmarkProgressChart";
 import ModelsUsingBenchmark from "./ModelsUsingBenchmark";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
+import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
 	getLowerIsBetter,
 	normalizeBenchmarkScoreValue,
@@ -120,10 +121,12 @@ function getCategoryColor(category: string): string {
 
 export default function BenchmarkOverview({
 	benchmark,
+	artificialAnalysisRankings = [],
 }: {
 	benchmark: BenchmarkPage;
+	artificialAnalysisRankings?: PublicBenchmarkRanking[];
 }) {
-	if (isArtificialAnalysisBenchmark(benchmark.id)) return <ArtificialAnalysisOverview benchmark={benchmark} />;
+	if (isArtificialAnalysisBenchmark(benchmark.id)) return <ArtificialAnalysisOverview benchmark={benchmark} rankings={artificialAnalysisRankings} />;
 	const results = benchmark.results ?? [];
 
 	const orderHints = results

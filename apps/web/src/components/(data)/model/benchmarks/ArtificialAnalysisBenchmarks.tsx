@@ -118,11 +118,12 @@ function ModelHoverCard({ entry, configurations, metricLabel, total }: { entry: 
 	</HoverCardContent>;
 }
 
-export function ArtificialAnalysisBenchmarks({ highlights, results = [], rankings = [], modelId }: {
+export function ArtificialAnalysisBenchmarks({ highlights, results = [], rankings = [], modelId, initialExpandedMetric = null }: {
 	highlights: ModelBenchmarkHighlight[];
 	results?: ModelBenchmarkResult[];
 	rankings?: PublicBenchmarkRanking[];
 	modelId?: string;
+	initialExpandedMetric?: string | null;
 }) {
 	const aaResults = useMemo(() => results.filter((item) => isArtificialAnalysisBenchmark(item.benchmark_id) && item.score !== null), [results]);
 	const variants = useMemo(() => [...new Set(aaResults.map((item) => item.variant).filter((value): value is string => Boolean(value)))].sort((a, b) => {
@@ -132,7 +133,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	}), [aaResults]);
 	const preferred = variants.includes("max") ? "max" : variants.at(-1) ?? "";
 	const [selectedVariant, setSelectedVariant] = useState(preferred);
-	const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
+	const [expandedMetric, setExpandedMetric] = useState<string | null>(initialExpandedMetric);
 	const [selectionByMetric, setSelectionByMetric] = useState<Record<string, string[]>>({});
 	const [pickerOpen, setPickerOpen] = useState(false);
 	const [pickerQuery, setPickerQuery] = useState("");
@@ -180,6 +181,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 			|| left.entry.rank - right.entry.rank
 			|| configurationRank(left.configuration.variant) - configurationRank(right.configuration.variant);
 	});
+	const hasSelectedModel = Boolean(modelId && chartRows.some((row) => row.entry.model_id === modelId));
 	const maxScore = Math.max(...chartRows.map((row) => Number(row.configuration.score)), 1);
 	const rankFor = (benchmarkId: string, score: number) => {
 		const ranking = rankings.find((item) => item.benchmark_id === benchmarkId);
@@ -219,14 +221,16 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 			</div>
 			{chartRows.length ? <ScrollArea className="w-full" scrollBarOrientation="horizontal" viewportClassName="pb-3"><div className="relative h-[360px] border-b" style={{ width: `${Math.max(chartRows.length * 54 + 144, 480)}px`, minWidth: "100%" }}>
 				<div className="pointer-events-none absolute inset-x-16 bottom-[140px] top-4 flex flex-col justify-between">{[0, 1, 2, 3, 4].map((line) => <span key={line} className="border-t border-dashed border-border/70" />)}</div>
-				<div className="absolute inset-x-16 bottom-0 top-4 flex items-end gap-1.5">{chartRows.map(({ entry, configuration }) => {
-					const proportionalHeight = (Number(configuration.score) / maxScore) * 205;
-					const height = Math.max(proportionalHeight, 3);
-					const compactBar = proportionalHeight < 30;
-					const colour = safeColour(entry.organisation_colour, "#6b7280");
-					return <HoverCard key={`${entry.model_id}:${configuration.result_key || configuration.variant || "default"}`}><HoverCardTrigger asChild delay={80} closeDelay={80}><div tabIndex={0} className="group flex h-full min-w-12 flex-1 basis-12 cursor-default flex-col items-center justify-end rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className={`relative flex w-8 items-end justify-center rounded-t-[3px] text-[10px] font-semibold tabular-nums shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] transition-[height,filter] duration-300 group-hover:brightness-110 sm:w-9 ${compactBar ? "" : "pb-2 text-white"}`} style={{ height, backgroundColor: colour }}><span className={compactBar ? "absolute bottom-full mb-1 text-foreground" : ""}>{barScore(expandedMetric, Number(configuration.score))}</span></span><span className="relative my-1 size-4 shrink-0"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain" /></span><div className="relative h-[112px] w-full"><Link href={`/models/${entry.model_id}`} className="absolute right-1/2 top-0 line-clamp-2 w-24 origin-top-right -rotate-[55deg] whitespace-normal break-words text-right text-[11px] leading-[1.15] decoration-transparent underline-offset-2 hover:underline hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{entry.model_name}{configuration.variant ? <span className="text-muted-foreground"> ({configurationLabel(configuration.variant)})</span> : null}</Link></div></div></HoverCardTrigger><ModelHoverCard entry={entry} configurations={[configuration]} metricLabel={activeMetric?.label} total={entries.length} /></HoverCard>;
+								<div className="absolute inset-x-16 bottom-0 top-4 flex items-end gap-1.5">{chartRows.map(({ entry, configuration }) => {
+									const isSelectedModel = entry.model_id === modelId;
+									const proportionalHeight = (Number(configuration.score) / maxScore) * 205;
+									const height = Math.max(proportionalHeight, 3);
+									const compactBar = proportionalHeight < 30;
+									const colour = safeColour(entry.organisation_colour, "#6b7280");
+									return <HoverCard key={`${entry.model_id}:${configuration.result_key || configuration.variant || "default"}`}><HoverCardTrigger asChild delay={80} closeDelay={80}><div tabIndex={0} aria-label={entry.model_name} className={`group flex h-full min-w-12 flex-1 basis-12 cursor-default flex-col items-center justify-end rounded-sm outline-none transition-[opacity,filter] duration-300 focus-visible:ring-2 focus-visible:ring-ring ${hasSelectedModel && !isSelectedModel ? "opacity-75 saturate-[.7]" : ""}`}><span className={`relative flex w-8 items-end justify-center rounded-t-[3px] text-[10px] font-semibold tabular-nums shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] transition-[height,filter] duration-300 group-hover:brightness-110 sm:w-9 ${compactBar ? "" : "pb-2 text-white"}`} style={{ height, backgroundColor: colour }}><span className={compactBar ? "absolute bottom-full mb-1 text-foreground" : ""}>{barScore(expandedMetric, Number(configuration.score))}</span></span><span className="relative my-1 size-4 shrink-0"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain" /></span><div className="relative h-[112px] w-full"><Link href={`/models/${entry.model_id}`} className="absolute right-1/2 top-0 line-clamp-2 w-24 origin-top-right -rotate-[55deg] whitespace-normal break-words text-right text-[11px] leading-[1.15] decoration-transparent underline-offset-2 hover:underline hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{entry.model_name}{configuration.variant ? <span className="text-muted-foreground"> ({configurationLabel(configuration.variant)})</span> : null}</Link></div></div></HoverCardTrigger><ModelHoverCard entry={entry} configurations={[configuration]} metricLabel={activeMetric?.label} total={entries.length} /></HoverCard>;
 				})}</div>
-			</div></ScrollArea> : <p className="text-sm text-muted-foreground">Select models to compare.</p>}
+				</div></ScrollArea> : <p className="text-sm text-muted-foreground">Select models to compare.</p>}
+			{hasSelectedModel ? <p className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground"><span className="size-2.5 rounded-full bg-muted-foreground/50" />Other models dimmed</p> : null}
 		</div> : null}
 
 		<div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">

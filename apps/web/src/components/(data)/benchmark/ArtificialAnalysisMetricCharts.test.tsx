@@ -1,0 +1,33 @@
+import { renderToStaticMarkup } from "react-dom/server";
+import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import ArtificialAnalysisMetricCharts from "./ArtificialAnalysisMetricCharts";
+
+const ranking = (benchmarkId: string, label: string): PublicBenchmarkRanking => ({
+	benchmark_id: benchmarkId,
+	name: `Artificial Analysis ${label}`,
+	category: "general",
+	benchmark_type: "numerical",
+	lower_is_better: label === "Evaluation Cost",
+	total_models: 2,
+	entries: [
+		{ model_id: "openai/gpt-6-astra", model_name: "GPT-6 Astra", organisation_id: "openai", organisation_name: "OpenAI", organisation_colour: "#333333", score: label === "Evaluation Cost" ? 1200 : 52.8, rank: 1, release_date: "2026-09-03T00:00:00Z", other_info: "GPT-6 Astra (max)" },
+		{ model_id: "anthropic/claude-fable-5.1", model_name: "Claude Fable 5.1", organisation_id: "anthropic", organisation_name: "Anthropic", organisation_colour: "#cc785c", score: label === "Evaluation Cost" ? 1500 : 53.4, rank: 2, release_date: "2026-09-01T00:00:00Z", other_info: "Claude Fable 5.1 (max)" },
+	],
+});
+
+describe("Artificial Analysis metric charts", () => {
+	it("renders all four index comparisons from the rankings payload", () => {
+		const html = renderToStaticMarkup(<ArtificialAnalysisMetricCharts rankings={[
+			ranking("aa-intelligence-index-v4", "Intelligence Index"),
+			ranking("aa-coding-index-v4", "Coding Index"),
+			ranking("aa-agentic-index-v4", "Agentic Index"),
+			ranking("aa-intelligence-index-cost-v4", "Evaluation Cost"),
+		]} />);
+		expect(html).toContain("Index comparisons");
+		expect(html).toContain('data-testid="intelligence-chart"');
+		expect(html).toContain('data-testid="coding-chart"');
+		expect(html).toContain('data-testid="agentic-chart"');
+		expect(html).toContain('data-testid="cost-chart"');
+		expect(html).toContain("Show top 14");
+	});
+});
