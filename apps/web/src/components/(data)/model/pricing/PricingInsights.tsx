@@ -1624,7 +1624,7 @@ export default function PricingInsights({
 												}}
 												aria-pressed={isMainSeriesVisible}
 												aria-label={`${isMainSeriesVisible ? "Hide" : "Show"} ${row.providerName} ${row.pricingPlan} price line`}
-												className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none", !isMainSeriesVisible && "opacity-35")}
+											className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}
 											>
 												<PricingLineTypeIcon plan={row.pricingPlan} color={row.color} />
 											</button>
@@ -1731,8 +1731,8 @@ export default function PricingInsights({
 											className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
 										>
 						<TableCell className="px-3 py-1.5">
-							<div className="flex items-center gap-2">
-								<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={isTierVisible} aria-label={`${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none", !isTierVisible && "opacity-45")}>
+						<div className="flex items-center gap-2">
+							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={isTierVisible} aria-label={`${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isTierVisible && "opacity-45")}>
 									<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
 								</button>
 								<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
@@ -1810,7 +1810,7 @@ export default function PricingInsights({
 													<span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" />
 												) : null}
 												<span className="inline-flex items-center gap-2 font-medium">
-							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(row); }} aria-pressed={isMainSeriesVisible} aria-label={`${isMainSeriesVisible ? "Hide" : "Show"} ${row.providerName} ${row.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none", !isMainSeriesVisible && "opacity-35")}>
+							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(row); }} aria-pressed={isMainSeriesVisible} aria-label={`${isMainSeriesVisible ? "Hide" : "Show"} ${row.providerName} ${row.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}>
 								<PricingLineTypeIcon plan={row.pricingPlan} color={row.color} />
 											</button>
 											<span className="inline-flex items-center gap-2.5">
@@ -1852,7 +1852,7 @@ export default function PricingInsights({
 												>
 							<TableCell>
 								<div className="flex items-center gap-2">
-									<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={isTierVisible} aria-label={`${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none", !isTierVisible && "opacity-45")}>
+									<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={isTierVisible} aria-label={`${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isTierVisible && "opacity-45")}>
 										<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
 									</button>
 									<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />

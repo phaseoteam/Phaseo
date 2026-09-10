@@ -88,7 +88,7 @@ export function assignOrderedSeriesColours(
 	const out: Record<string, { fill: string; stroke: string }> = {};
 
 	values.forEach((value, index) => {
-		const fill = palette[index % palette.length];
+		const fill = palette[index] ?? `oklch(0.72 0.18 ${((index - palette.length) * GOLDEN_ANGLE + 23) % 360})`;
 		out[value] = {
 			fill,
 			stroke: fill,
@@ -104,7 +104,7 @@ export function assignPerceptualSeriesColours(values: string[]) {
 
 export function getPricingTierDasharray(plan: string) {
 	const normalizedPlan = plan.toLowerCase();
-	return normalizedPlan in PRICING_TIER_DASHARRAYS
+	return Object.prototype.hasOwnProperty.call(PRICING_TIER_DASHARRAYS, normalizedPlan)
 		? PRICING_TIER_DASHARRAYS[normalizedPlan]
 		: "6 4";
 }
