@@ -46,8 +46,10 @@ import {
 	fetchFrontendModelPerformance,
 	fetchFrontendModelTimeline,
 	fetchFrontendModelUsageDailyBreakdown,
+	fetchFrontendOrganisations,
 	fetchFrontendOrganisationModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { applyArtificialAnalysisOrganisationColours } from "@/lib/benchmarks/artificialAnalysis";
 import { fetchFrontendRankingBenchmarks } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -614,7 +616,7 @@ export async function ModelBenchmarksSection({
 	includeHidden,
 	hideWhenEmpty = false,
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
-	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, pendingApiRelease] = await Promise.all([
+	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, organisations, pendingApiRelease] = await Promise.all([
 		withOptionalSectionTimeout(
 			fetchFrontendModelBenchmarkHighlights(modelId),
 			[],
@@ -631,11 +633,18 @@ export async function ModelBenchmarksSection({
 			"benchmark rankings"
 		),
 		withOptionalSectionTimeout(
+			fetchFrontendOrganisations(),
+			[],
+			"organisation colours"
+		),
+		withOptionalSectionTimeout(
 			fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
 			null,
 			"benchmark pending API release state"
 		),
 	]);
+	const organisationColours = new Map(organisations.map((organisation) => [organisation.organisation_id, organisation.colour]));
+	const enrichedBenchmarkRankings = applyArtificialAnalysisOrganisationColours(benchmarkRankings, organisationColours);
 	const shouldShowPendingApiBanner =
 		benchmarkHighlights.length === 0 && pendingApiRelease?.isPendingApiRelease;
 	if (hideWhenEmpty && benchmarkHighlights.length === 0 && !shouldShowPendingApiBanner) {
@@ -648,7 +657,7 @@ export async function ModelBenchmarksSection({
 				<ModelBenchmarks
 					highlightCards={benchmarkHighlights}
 					benchmarkResults={benchmarkResults}
-					benchmarkRankings={benchmarkRankings}
+					benchmarkRankings={enrichedBenchmarkRankings}
 					modelId={modelId}
 					mode="summary"
 				/>
