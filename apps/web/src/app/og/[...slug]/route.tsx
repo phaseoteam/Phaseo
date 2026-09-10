@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
@@ -6,349 +7,298 @@ import type { OgEntity } from "@/lib/fetchers/frontend/getOgPayload";
 import { resolveLogo } from "@/lib/logos";
 
 const brandLogoPath = "/wordmark_light.svg";
-const FALLBACK_HOST = "phaseo.app";
+const OG_CACHE_CONTROL =
+	"public, max-age=0, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=86400";
 const ASSET_BASE_URL =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ??
 	process.env.WEBSITE_URL ??
 	"http://localhost:3000";
+
+const montserratRegularPromise = readFile(
+	new URL("../profile-share/assets/Montserrat-Regular.ttf", import.meta.url),
+);
+const montserratSemiboldPromise = readFile(
+	new URL("../profile-share/assets/Montserrat-SemiBold.ttf", import.meta.url),
+);
+const montserratBoldPromise = readFile(
+	new URL("../profile-share/assets/Montserrat-Bold.ttf", import.meta.url),
+);
 
 function isoToFlagEmoji(iso2: string): string {
 	const base = 0x1f1e6;
 	const [a, b] = iso2.toUpperCase();
 	return String.fromCodePoint(
 		base + (a.charCodeAt(0) - 65),
-		base + (b.charCodeAt(0) - 65)
+		base + (b.charCodeAt(0) - 65),
 	);
 }
 
-function absoluteAsset(
-	src: string | undefined,
-): string | undefined {
+function absoluteAsset(src: string | undefined, assetBaseUrl = ASSET_BASE_URL): string | undefined {
 	if (!src) return undefined;
 	if (!src.startsWith("/") || src.startsWith("//")) return undefined;
 	try {
-		return new URL(src, ASSET_BASE_URL).toString();
+		return new URL(src, assetBaseUrl).toString();
 	} catch {
 		return undefined;
 	}
 }
 
-function getLogoUrl(logoId: string | undefined): string | undefined {
+function getLogoUrl(logoId: string | undefined, assetBaseUrl: string): string | undefined {
 	if (!logoId) return undefined;
-
-	// Prefer a visible logo variant on the light OG background.
-	let resolved = resolveLogo(logoId, {
+	const resolved = resolveLogo(logoId, {
 		variant: "auto",
 		theme: "light",
 		fallbackToColor: true,
 	}) as any;
+	return absoluteAsset(resolved?.src, assetBaseUrl);
+}
 
-	// If that didn't produce a src, try light as a fallback.
-	if (!resolved?.src) {
-		resolved = resolveLogo(logoId, {
-			variant: "light",
-			theme: "light",
-			fallbackToColor: true,
-		}) as any;
-	}
-
-	// 3) If we *still* don't have anything, last-resort guess based on naming.
-	const src: string | undefined =
-		resolved?.src ?? `/logos/${logoId}_light.svg`;
-
-	if (!src) return undefined;
-
-	return absoluteAsset(src);
+function titleCaseLabel(value: string): string {
+	return value.toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function normaliseSegments(
 	request: NextRequest,
-	slugParam?: string | string[]
+	slugParam?: string | string[],
 ) {
 	if (Array.isArray(slugParam)) return slugParam;
-	if (typeof slugParam === "string")
-		return slugParam.split("/").filter(Boolean);
+	if (typeof slugParam === "string") return slugParam.split("/").filter(Boolean);
 	const path = new URL(request.url).pathname.replace(/^\/|\/$/g, "");
 	const parts = path.split("/").filter(Boolean);
 	const ogIndex = parts.indexOf("og");
-	if (ogIndex >= 0) {
-		return parts.slice(ogIndex + 1);
-	}
-	return [];
+	return ogIndex >= 0 ? parts.slice(ogIndex + 1) : [];
 }
 
 function getTitleFontSize(name: string): number {
 	const len = name.trim().length;
-	if (len > 70) return 44;
-	if (len > 54) return 52;
+	if (len > 70) return 46;
+	if (len > 54) return 54;
 	if (len > 38) return 60;
-	return 72;
+	return 70;
 }
 
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: Promise<{ slug: string[] }> }
+	{ params }: { params: Promise<{ slug: string[] }> },
 ) {
 	const { slug } = await params;
 	const rawSegments = normaliseSegments(request, slug);
 
-	if (rawSegments.length < 2) {
-		return new Response("Missing OG target", {
-			status: 400,
-			headers: {
-				"Cache-Control":
-					"public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
-			},
-		});
-	}
+	if (rawSegments.length < 2) return new Response("Missing OG target", { status: 400 });
 
 	const [kindRaw, ...segments] = rawSegments;
 	const kind = kindRaw as OgEntity;
 	const isCountry = kind === "countries";
-
 	const payload = await fetchFrontendOgPayload(kind, segments);
 
-	if (!payload) {
-		return new Response("Not found", {
-			status: 404,
-			headers: {
-				"Cache-Control":
-					"public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
-			},
-		});
-	}
+	if (!payload) return new Response("Not found", { status: 404 });
 
-	const primaryLogoSrc = !isCountry
-		? getLogoUrl(payload.logoId)
-		: undefined;
-
-	const brandLogoSrc = absoluteAsset(brandLogoPath);
-
-	const stats = payload.stats ?? [];
-	const titleFontSize = getTitleFontSize(payload.name);
-	let hostLabel = FALLBACK_HOST;
+	const [montserratRegular, montserratSemibold, montserratBold] = await Promise.all([
+		montserratRegularPromise,
+		montserratSemiboldPromise,
+		montserratBoldPromise,
+	]);
+	let assetBaseUrl = ASSET_BASE_URL;
 	try {
-		hostLabel = new URL(request.url).host || FALLBACK_HOST;
+		assetBaseUrl = new URL(request.url).origin;
 	} catch {
-		hostLabel = FALLBACK_HOST;
+		assetBaseUrl = ASSET_BASE_URL;
 	}
+	const primaryLogoSrc = !isCountry ? getLogoUrl(payload.logoId, assetBaseUrl) : undefined;
+	const brandLogoSrc = absoluteAsset(brandLogoPath, assetBaseUrl);
+	const stats = (payload.stats ?? []).slice(0, 4);
+	const titleFontSize = getTitleFontSize(payload.name);
 
 	return new ImageResponse(
 		(
 			<div
-				tw="h-full w-full text-slate-900"
 				style={{
 					display: "flex",
-					padding: "56px 64px 48px",
-					position: "relative",
-					fontSize: 48,
-					background: "#ffffff",
-					fontFamily:
-						"system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+					width: "100%",
+					height: "100%",
+					background: "#fbfaf6",
+					fontFamily: "Montserrat",
+					color: "#111315",
 				}}
 			>
-				{/* MAIN COLUMN */}
 				<div
-					tw="w-full h-full"
-					style={{ display: "flex", flexDirection: "column", zIndex: 1 }}
+					style={{
+						display: "flex",
+						flexDirection: "column",
+						flex: 1,
+						padding: "72px 58px 38px",
+						background: "#fbfaf6",
+						position: "relative",
+					}}
 				>
 					<div
 						style={{
 							display: "flex",
-							flexDirection: "column",
 							alignItems: "flex-start",
-							gap: 0,
 						}}
 					>
-						<div
-							style={{
-								display: "flex",
-								alignItems: "center",
-								maxWidth: 700,
-								fontFamily:
-									"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-								fontSize: 28,
-								color: "#475569",
-								overflow: "hidden",
-								whiteSpace: "nowrap",
-								textOverflow: "ellipsis",
-							}}
-						>
-							{payload.id}
+						<div style={{ display: "flex", alignItems: "flex-start", flex: 1, paddingRight: 40 }}>
+							{primaryLogoSrc ? (
+								<img
+									src={primaryLogoSrc}
+									alt={`${payload.name} logo`}
+									width={88}
+									height={88}
+									style={{ flexShrink: 0, marginRight: 26, objectFit: "contain" }}
+								/>
+							) : isCountry ? (
+								<div
+									style={{
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										flexShrink: 0,
+										width: 88,
+										height: 88,
+										marginRight: 26,
+										fontSize: 58,
+										lineHeight: 1,
+									}}
+								>
+									{payload.flagEmoji ?? isoToFlagEmoji(payload.id)}
+								</div>
+							) : null}
+
+							<div style={{ display: "flex", flexDirection: "column", paddingTop: 4 }}>
+								<div
+									style={{
+										maxWidth: 760,
+										fontSize: titleFontSize,
+										fontWeight: 700,
+										lineHeight: 1.04,
+										letterSpacing: -1.2,
+										textWrap: "balance",
+									}}
+								>
+									{payload.name}
+								</div>
+								<div
+									style={{
+										marginTop: 18,
+										fontFamily:
+											"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+									fontSize: 18,
+										color: "#77736d",
+									}}
+								>
+									{payload.id}
+								</div>
+							</div>
 						</div>
 					</div>
 
-					{/* TITLE / SUBTITLE / STATS */}
 					<div
-						tw="mt-10 flex-1"
 						style={{
+							position: "absolute",
+							left: 58,
+							right: 58,
+							top: 369,
 							display: "flex",
 							flexDirection: "column",
-							marginTop: 40,
-							flex: 1,
 						}}
 					>
-						<div
-							tw="leading-[1.05] tracking-tight max-w-[900px] mb-4"
-							style={{
-								display: "flex",
-								maxWidth: "900px",
-								marginBottom: 16,
-								fontSize: titleFontSize,
-								color: "#020617",
-							}}
-						>
-							{payload.name}
-						</div>
-
-						{payload.subtitle ? (
-							<div
-								tw="text-2xl text-slate-500 max-w-[900px] mb-10"
-								style={{
-									display: "flex",
-									maxWidth: "900px",
-									marginBottom: 40,
-									color: "#334155",
-								}}
-							>
-								{payload.subtitle}
-							</div>
-						) : null}
-
 						{stats.length > 0 ? (
 							<div
-								tw="flex flex-wrap"
-								style={{ display: "flex", flexWrap: "wrap" }}
+								style={{
+									display: "flex",
+									paddingTop: 22,
+									borderTop: "1px solid #d9d2c7",
+								}}
 							>
 								{stats.map((stat, index) => (
 									<div
 										key={stat.label}
-										tw="flex flex-col min-w-[180px] mr-10"
 										style={{
 											display: "flex",
 											flexDirection: "column",
-											minWidth: 180,
-											marginRight:
-												index === stats.length - 1
-													? 0
-													: 40,
+											flex: 1,
+											paddingLeft: index === 0 ? 0 : 20,
+											marginLeft: index === 0 ? 0 : 20,
+											borderLeft: index === 0 ? "none" : "1px solid #d9d2c7",
 										}}
 									>
 										<div
-											tw="text-[11px] uppercase text-slate-400"
-											style={{ display: "flex" }}
-										>
-											{stat.label}
-										</div>
-										<div
-											tw="mt-2 text-2xl"
 											style={{
-												display: "flex",
-												marginTop: 8,
+														fontSize: 13,
+												fontWeight: 700,
+												letterSpacing: 1.4,
+												color: "#77736d",
 											}}
 										>
-											{stat.value}
+											{titleCaseLabel(stat.label)}
 										</div>
-										{stat.helper ? (
+										<div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
 											<div
-												tw="mt-1 text-xs text-slate-500"
 												style={{
-													display: "flex",
-													marginTop: 4,
+															fontSize: stat.label === "RELEASED" ? 25 : 35,
+													fontWeight: 700,
+													lineHeight: 1,
+													letterSpacing: -1.1,
 												}}
 											>
+												{stat.value}
+											</div>
+											{stat.promotion ? (
+												<div style={{ color: "#77736d", fontSize: 14, fontWeight: 700 }}>
+													{stat.promotion}
+												</div>
+											) : null}
+										</div>
+										{stat.helper ? (
+													<div style={{ marginTop: 6, fontSize: 14, color: "#9b948a" }}>
 												{stat.helper}
 											</div>
 										) : null}
 									</div>
 								))}
 							</div>
+						) : payload.subtitle ? (
+							<div style={{ paddingTop: 20, fontSize: 21, lineHeight: 1.3, color: "#514d47" }}>
+								{payload.subtitle}
+							</div>
 						) : null}
-					</div>
 
-					{/* FOOTER */}
-					<div
-						style={{
-							display: "flex",
-							justifyContent: "space-between",
-							alignItems: "center",
-							borderTop: "1px solid rgba(100, 116, 139, 0.26)",
-							marginTop: "auto",
-							paddingTop: 24,
-						}}
-					>
+						{brandLogoSrc ? (
 						<div
 							style={{
 								display: "flex",
-								alignItems: "center",
+								alignItems: "flex-end",
+								justifyContent: "space-between",
+								marginTop: 88,
 							}}
 						>
-							<span style={{ fontSize: 16, color: "#475569" }}>{hostLabel}</span>
-						</div>
-
-						{brandLogoSrc ? (
-							<img
-								src={brandLogoSrc}
-								alt="Phaseo logo"
-								width={160}
-								height={54}
-								style={{ objectFit: "contain", opacity: 0.96 }}
-							/>
+								<img
+									src={brandLogoSrc}
+									alt="Phaseo"
+									width={132}
+									height={27}
+									style={{ objectFit: "contain", objectPosition: "left bottom" }}
+								/>
+								<div style={{ color: "#77736d", fontSize: 18, fontWeight: 600, letterSpacing: 0.2 }}>
+									phaseo.app
+								</div>
+							</div>
 						) : null}
 					</div>
 				</div>
-
-				{/* TOP-RIGHT ICON */}
-				{(isCountry || primaryLogoSrc) && (
-					<div
-						style={{
-							position: "absolute",
-							top: 48,
-							right: 64,
-							display: "flex",
-							alignItems: "flex-start",
-							justifyContent: "flex-end",
-							zIndex: 3,
-						}}
-					>
-						{isCountry ? (
-							<div
-								style={{
-									fontSize: 92,
-									lineHeight: 1,
-								}}
-							>
-								{payload.flagEmoji ??
-									isoToFlagEmoji(payload.id)}
-							</div>
-						) : (
-							primaryLogoSrc && (
-								<img
-									src={primaryLogoSrc}
-									alt={`${payload.name} logo`}
-									style={{
-										display: "block",
-										width: 64,
-										height: 64,
-										objectFit: "contain",
-										objectPosition: "right center",
-									}}
-								/>
-							)
-						)}
-					</div>
-				)}
 			</div>
 		),
 		{
 			width: 1200,
 			height: 630,
+			fonts: [
+				{ name: "Montserrat", data: montserratRegular, weight: 400, style: "normal" },
+				{ name: "Montserrat", data: montserratSemibold, weight: 600, style: "normal" },
+				{ name: "Montserrat", data: montserratBold, weight: 700, style: "normal" },
+			],
 			headers: {
-				// Keep OG images at the edge for a year; they are expensive to render and rarely change.
-				// This reduces Fast Origin Transfer by avoiding frequent regeneration/revalidation.
-				"Cache-Control":
-					"public, max-age=0, s-maxage=31536000, stale-while-revalidate=86400, stale-if-error=86400",
+				"Cache-Control": OG_CACHE_CONTROL,
 			},
-		}
+		},
 	);
 }
