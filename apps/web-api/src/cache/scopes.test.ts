@@ -18,6 +18,7 @@ describe("cache scopes", () => {
 		const result = resolveCacheScope("model", "openai/gpt-5");
 		expect(result.tags).toContain("web-api-model-openai2Fgpt-5");
 		expect(result.tags).toContain("web-api-search");
+		expect(result.tags).toContain("web-api-model-effective-pricing");
 	});
 
 	it("keeps the incident scope within Cloudflare's per-request operation limit", () => {

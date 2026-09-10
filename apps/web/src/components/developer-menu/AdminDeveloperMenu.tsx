@@ -26,8 +26,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { purgeCacheScopeAction } from "@/app/(dashboard)/internal/cache/actions";
 import {
-	purgeCacheScope,
 	verifyCacheAdmin,
 	type CachePurgeResult,
 } from "@/lib/fetchers/internal/cacheControlClient";
@@ -141,7 +141,7 @@ function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 	function confirmRevalidation() {
 		startTransition(async () => {
 			try {
-				const result = await purgeCacheScope({
+				const result = await purgeCacheScopeAction({
 					scope: resolvedTarget.scope,
 					targetId: resolvedTarget.targetId,
 					bumpBrowserGeneration: refreshBrowsers,
@@ -149,6 +149,9 @@ function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 				setLastResult(result);
 				setConfirming(false);
 				toast.success(`${resolvedTarget.label} cache revalidated`);
+				// A new document also discards section state and browser-side data
+				// caches; refreshing only the Server Components can retain old props.
+				window.location.reload();
 			} catch (error) {
 				toast.error(error instanceof Error ? error.message : String(error));
 			}
@@ -189,7 +192,7 @@ function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 					<AlertDialogHeader>
 						<AlertDialogTitle>Revalidate {target.label.toLowerCase()}?</AlertDialogTitle>
 						<AlertDialogDescription>
-							This purges the named Cloudflare Worker scope for {target.description}. The next request in each region may rebuild it.
+							Refresh all data for {target.description} and reload this page.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>

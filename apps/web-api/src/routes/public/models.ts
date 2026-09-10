@@ -680,6 +680,9 @@ function sectionPolicy(section: keyof typeof CACHE_PROFILES, modelId?: string): 
 	const profile = CACHE_PROFILES[section];
 	return {
 		...profile,
+		// Model purges can evict the shared cache, but cannot evict a visitor's
+		// HTTP cache. Recheck the edge whenever a model section is requested.
+		...(modelId ? { browserTtlSeconds: 0, browserStaleWhileRevalidateSeconds: 0 } : {}),
 		cacheTags: modelId ? [...profile.cacheTags, modelTag(modelId)] : profile.cacheTags,
 	};
 }
