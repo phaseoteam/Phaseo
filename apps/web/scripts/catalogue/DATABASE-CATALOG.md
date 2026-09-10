@@ -56,6 +56,16 @@ tables before replacing files, includes rows with null timestamps, uses stable
 ordering, and excludes stealth records, unpublished self-serve submissions,
 private admin tables, internal benchmark records, and identity fields nested in
 catalogue metadata.
+
+The export allowlist mirrors the eight canonical namespaces under
+`packages/data/catalog/src/data`: `aliases`, `api_providers`, `benchmarks`,
+`families`, `models`, `organisations`, `pricing`, and `subscription_plans`.
+Provider routes, capabilities, regions, service tiers, model details and links,
+benchmark results, pricing meters, and plan membership are included only as
+parts of those namespaces. Operational, analytics, billing, request, history,
+proposal, and admin tables are not exported. The exporter also removes stale
+JSON files from the generated directory so an old non-catalog table cannot
+survive a later run.
 It also writes `enum-catalog.json`, the compact public index consumed by OpenAPI
 enum generation. Hidden models and stealth routes are excluded; callable IDs
 require an active, publicly available route. Merge snapshot PRs to refresh the

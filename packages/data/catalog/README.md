@@ -14,7 +14,7 @@ A provider may be catalog-only. A callable model requires an explicitly enabled 
 
 ## Files and automation
 
-- `generated/database-v2` contains daily public database snapshots and the generated OpenAPI enum index. Snapshot updates are reviewed through pull requests.
+- `generated/database-v2` contains daily public database snapshots and the generated OpenAPI enum index. Snapshots are limited to the `aliases`, `api_providers`, `benchmarks`, `families`, `models`, `organisations`, `pricing`, and `subscription_plans` catalog namespaces; operational, billing, analytics, history, proposal, and admin tables are not exported. Snapshot updates are reviewed through pull requests.
 - `src/data` contains archived compatibility fixtures. Editing these files does not update the live catalog.
 - The legacy JSON-to-database importer is retired. Neither archived fixtures nor exported snapshots are an input feed.
 - Provider discovery proposes database pricing updates, benchmark sync writes reviewed-source results, and lifecycle automation uses database dates and routes.
