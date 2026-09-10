@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { client } from "../importer/supa";
+import { client } from "./database";
 import { buildEnumSnapshot } from "./enumSnapshot";
 import { filterPublicSnapshotRows } from "./exportSnapshotPrivacy";
 import { PUBLIC_CATALOG_TABLE_NAMES, PUBLIC_CATALOG_TABLES, type PublicCatalogTableName } from "./exportSnapshotTables";

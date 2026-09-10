@@ -134,7 +134,7 @@ Contributions are welcome across the gateway, web app, docs, SDKs, and examples.
 
 For catalog corrections or missing models, providers, pricing, or benchmark results, [open an issue](https://github.com/phaseoteam/Phaseo/issues/new/choose) with the affected page and official sources. Maintainers review reports and update the database through the [internal editor](https://phaseo.app/internal/data), which requires admin access.
 
-The database is the catalog source of truth. Daily public JSON exports remain in `packages/data/catalog/generated/database-v2`; `src/data` contains archived compatibility fixtures. Editing either directory does not update the live catalog, and the legacy JSON importer is retired.
+The database is the catalog source of truth. The admin editor and approved database automations write catalog data directly. The `Catalog Database Snapshot` workflow reads only the eight public catalog namespaces and publishes reviewable JSON exports to `packages/data/catalog/generated/database-v2`; `packages/data/catalog/src/data` contains archived compatibility fixtures. Neither directory is an input feed, and there is no JSON importer.
 
 ## Security
 

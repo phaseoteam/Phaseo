@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
-import { client } from "../importer/supa";
+import { client } from "./database";
 import { PRICING_TABLE_SOURCES } from "../../../api/src/pipeline/model-discovery/pricing-tables";
 import { normalizeProviderModelPricing } from "../../../api/src/pipeline/model-discovery/pricing-normalizers";
 import { extractOfficialPricing, type OfficialPriceCandidate } from "./sync-official-pricing";

@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import { basename, dirname, join, resolve } from "path";
-import { DIR_PRICING, DIR_PROVIDERS } from "./importer/paths";
-import { listDirs, readJson } from "./importer/util";
+import { DIR_PRICING, DIR_PROVIDERS } from "./catalogue/dataPaths";
+import { listDirs, readJson } from "./catalogue/json";
 
 type ProviderCapability = {
     capability_id?: string | null;
@@ -45,7 +45,7 @@ type MissingPricingRow = {
 
 const REPORT_PATH = resolve(
     process.cwd(),
-    "scripts/importer/reports/active-provider-pricing-gaps.json",
+    "scripts/reports/active-provider-pricing-gaps.json",
 );
 
 function argValue(flag: string): string | null {

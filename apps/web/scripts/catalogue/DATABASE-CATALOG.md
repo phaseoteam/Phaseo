@@ -6,10 +6,10 @@ Settings at `/internal/data/registries` manage model families, service tiers, me
 definitions, provider regions, route variants, subscription plans and plan features.
 Model editors manage plan membership, aliases, capabilities, benchmarks and prices.
 
-The JSON-to-database importer is retired and its CLI exits with an error. CI no
-longer imports catalog JSON or publishes importer-state PRs. Files under `src/data`
-remain archived fixtures for compatibility validation, not an input to production.
-Do not edit generated snapshots as an input feed.
+There is no JSON-to-database importer or importer-state CI job. Files under
+`src/data` remain archived fixtures for compatibility validation, not an input to
+production. Generated snapshots are public exports; do not edit them as an input
+feed.
 
 ## Automated updates
 
@@ -31,7 +31,7 @@ operational overrides, and skips concurrently edited records. Use
 
 Artificial Analysis sync matches database models and writes benchmark metadata and
 results directly to the database. Removed results are end-dated. Run without
-`--write` to preview matches; no JSON publication or importer step is required.
+`--write` to preview matches; no JSON publication step is required.
 
 ## Daily record
 
@@ -96,8 +96,8 @@ Catalog editors ask before discarding unsaved changes on links, editor tabs and 
 The navigation provider lives outside root Suspense boundaries so it can track history before Next.js mounts. The pinned `next-navigation-guard` dependency has a small checked-in compatibility patch: reinstall link interception after Strict Mode cleanup, continue accepted links through the App Router, and intercept history events before router listeners. Its upstream Strict Mode fix is documented in [the library source](https://github.com/LayerXcom/next-navigation-guard/blob/main/src/hooks/useInterceptLinkClicks.ts). Keep the patch covered by browser checks when upgrading Next.js or the guard.
 
 The history migration records an initial baseline of all 23 catalogue tables and
-appends complete before/after rows for subsequent writes, including importer
-writes. `v2_catalogue_row_history` is private to the backend, rejects changes to
+appends complete before/after rows for subsequent editor and automation writes.
+`v2_catalogue_row_history` is private to the backend, rejects changes to
 existing events, and records actor, transaction and timestamp information. Legacy
 admin events remain available. History begins at the baseline; previously unaudited
 changes cannot be reconstructed from the current database.

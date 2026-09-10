@@ -24,7 +24,7 @@
     "nullableNumber": { "type": ["number", "null"] },
     "dateTime": {
       "type": ["string", "null"],
-      "description": "ISO-like timestamp. Legacy files may omit an explicit timezone; importers normalise timestamps before persistence."
+      "description": "ISO-like timestamp. Legacy files may omit an explicit timezone; catalog tooling normalises timestamps before validation."
     },
     "link": {
       "type": "object",

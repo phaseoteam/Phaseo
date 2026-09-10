@@ -44,6 +44,6 @@
   ],
   "regions": ["global"],
   "service_tiers": ["standard", "batch", "flex", "priority"],
-  "sources": [{ "kind": "pricing", "url": "https://cloud.google.com/skus?filter=3.8%20Flash&currency=USD", "accessed_at": "2026-09-02T00:00:00Z", "notes": "Official Vertex AI public billing SKUs for global and regional service. Only global rates are modeled because the current importer cannot preserve regional price selection safely. Cache-storage token-hour SKUs are not modeled because the catalog lacks that meter." }],
+  "sources": [{ "kind": "pricing", "url": "https://cloud.google.com/skus?filter=3.8%20Flash&currency=USD", "accessed_at": "2026-09-02T00:00:00Z", "notes": "Official Vertex AI public billing SKUs for global and regional service. Only global rates are modeled because the archived fixture format cannot preserve regional price selection safely. Cache-storage token-hour SKUs are not modeled because the catalog lacks that meter." }],
   "verification": { "status": "verified", "checked_at": "2026-09-02T00:00:00Z", "notes": "Global standard, batch, flex, priority, and cached-input rates verified against Google's public USD SKU catalogue. Regional rates remain source-tracked but intentionally unmodeled." }
 }
