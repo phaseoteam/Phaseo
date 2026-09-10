@@ -61,11 +61,47 @@ describe("black-forest-labs image executor", () => {
 		expect(result.upstream?.status).toBe(502);
 		expect(result.ir).toBeUndefined();
 	});
+
+	it("returns an accepted, billable result when an activated job is still pending", async () => {
+		globalThis.fetch = vi.fn()
+			.mockResolvedValueOnce(Response.json({
+				id: "job_pending",
+				polling_url: "https://api.bfl.ai/v1/get_result?id=job_pending",
+				cost: 2.75,
+			}))
+			.mockResolvedValueOnce(Response.json({ status: "Pending" }, { status: 503 }));
+
+		const result = await execute(baseArgs());
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.upstream.status).toBe(202);
+		expect(result.ir?.nativeId).toBe("job_pending");
+		expect(result.ir?.data).toEqual([]);
+		expect((result.ir as any)?.usage?.bfl_credits).toBe(2.75);
+		expect(result.bill.cost_cents).toBe(2.75);
+	});
+
+	it.each([
+		["missing polling URL", { id: "job_invalid_url", cost: 2 }, undefined],
+		["missing output sample", { id: "job_missing_sample", polling_url: "https://api.bfl.ai/v1/get_result?id=job_missing_sample", cost: 3 }, { status: "Ready", cost: 3 }],
+	])("keeps an activated job billable after %s", async (_label, submit, poll) => {
+		globalThis.fetch = poll === undefined
+			? vi.fn().mockResolvedValueOnce(Response.json(submit))
+			: vi.fn().mockResolvedValueOnce(Response.json(submit)).mockResolvedValueOnce(Response.json(poll));
+		const result = await execute(baseArgs());
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.upstream.status).toBe(202);
+		expect(result.ir?.data).toEqual([]);
+		expect((result.ir as any)?.usage?.bfl_credits).toBe(submit.cost);
+		expect(result.bill.cost_cents).toBe(submit.cost);
+	});
 	it("submits + polls BFL jobs and returns b64_json when requested", async () => {
 		globalThis.fetch = vi.fn()
 			.mockResolvedValueOnce(new Response(JSON.stringify({
 				id: "job_1",
 				polling_url: "https://api.us1.bfl.ai/v1/get_result?id=job_1",
+				cost: 1.25,
 			}), { status: 200, headers: { "Content-Type": "application/json" } }))
 			.mockResolvedValueOnce(new Response(JSON.stringify({
 				id: "job_1",
@@ -101,11 +137,12 @@ describe("black-forest-labs image executor", () => {
 		expect(result.bill.cost_cents).toBe(1.25);
 	});
 
-	it("returns a gateway error when BFL polling reaches terminal moderation status", async () => {
+	it("settles known activation credits when BFL polling reaches terminal moderation status", async () => {
 		globalThis.fetch = vi.fn()
 			.mockResolvedValueOnce(new Response(JSON.stringify({
 				id: "job_2",
 				polling_url: "https://api.us1.bfl.ai/v1/get_result?id=job_2",
+				cost: 1,
 			}), { status: 200, headers: { "Content-Type": "application/json" } }))
 			.mockResolvedValueOnce(new Response(JSON.stringify({
 				id: "job_2",
@@ -117,8 +154,9 @@ describe("black-forest-labs image executor", () => {
 		expect(result.kind).toBe("completed");
 		if (result.kind !== "completed") return;
 
-		expect(result.ir).toBeUndefined();
-		expect(result.upstream.status).toBe(422);
+		expect(result.ir?.data).toEqual([]);
+		expect(result.upstream.status).toBe(202);
+		expect(result.bill.cost_cents).toBe(1);
 	});
 
 	it("supports images.edits when an input image is provided", async () => {
@@ -126,6 +164,7 @@ describe("black-forest-labs image executor", () => {
 			.mockResolvedValueOnce(new Response(JSON.stringify({
 				id: "job_3",
 				polling_url: "https://api.us1.bfl.ai/v1/get_result?id=job_3",
+				cost: 4.5,
 			}), { status: 200, headers: { "Content-Type": "application/json" } }))
 			.mockResolvedValueOnce(new Response(JSON.stringify({
 				id: "job_3",
@@ -187,7 +226,7 @@ describe("black-forest-labs image executor", () => {
 
 	it("maps all eight documented FLUX.2 API reference images", async () => {
 		globalThis.fetch = vi.fn()
-			.mockResolvedValueOnce(new Response(JSON.stringify({ id: "job_8", polling_url: "https://api.bfl.ai/v1/get_result?id=job_8" }), { status: 200, headers: { "Content-Type": "application/json" } }))
+			.mockResolvedValueOnce(new Response(JSON.stringify({ id: "job_8", polling_url: "https://api.bfl.ai/v1/get_result?id=job_8", cost: 1 }), { status: 200, headers: { "Content-Type": "application/json" } }))
 			.mockResolvedValueOnce(new Response(JSON.stringify({ id: "job_8", status: "Ready", result: { sample: "https://cdn.bfl.ai/results/job_8.png" } }), { status: 200, headers: { "Content-Type": "application/json" } })) as any;
 		const images = Array.from({ length: 8 }, (_, index) => `https://example.com/reference-${index + 1}.png`);
 		await execute(baseArgs({ endpoint: "images.edits", capability: "image.edit", meta: { returnUpstreamRequest: true }, ir: { model: "black-forest-labs/flux-2-pro", prompt: "compose these", image: images } }));

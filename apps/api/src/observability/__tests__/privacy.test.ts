@@ -119,6 +119,18 @@ describe("observability privacy sanitization", () => {
 		expect(sanitized.language).toBe("en");
 	});
 
+	it("redacts Meta ASR transcript and diarization text", () => {
+		const sanitized = sanitizeForAxiom({
+			transcript: "customer secret",
+			text: "customer secret",
+			turns: [{ speaker: "speaker_1", text: "customer secret" }],
+		}) as any;
+
+		expect(String(sanitized.transcript)).toContain("[redacted");
+		expect(String(sanitized.text)).toContain("[redacted");
+		expect(String(sanitized.turns[0].text)).toContain("[redacted");
+	});
+
 	it("redacts nested Parse document content without hiding unrelated diagnostics", () => {
 		const sanitized = sanitizeForAxiom({
 			pages: [{

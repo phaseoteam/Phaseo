@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { openBatchResultsStream } from "./batch-results";
+import { BATCH_RESULTS_IDLE_TIMEOUT_MS, openBatchResultsStream } from "./batch-results";
 import { fetchProviderBatchApi, fetchProviderFileContent } from "./batch-provider-adapters";
 
 vi.mock("./batch-provider-adapters", async (original) => ({
@@ -40,6 +40,22 @@ describe("batch result streams", () => {
 		api.mockResolvedValueOnce(new Response(content));
 		expect(await download("anthropic")).toBe(content);
 		expect(api.mock.calls[0][1]).toMatchObject({ endpointPath: "/messages/batches/native/results", redirect: "manual" });
+	});
+	it("aborts a provider result stream that stops making progress", async () => {
+		vi.useFakeTimers();
+		try {
+			api.mockResolvedValueOnce(new Response(new ReadableStream({
+				start(controller) { controller.enqueue(encode('{"custom_id":"a"}\n')); },
+			})));
+			const reader = (await openBatchResultsStream({ provider: "anthropic", nativeBatchId: "native" })).getReader();
+			await expect(reader.read()).resolves.toMatchObject({ done: false });
+			const stalledRead = reader.read();
+			const rejection = expect(stalledRead).rejects.toThrow("batch_results_stream_failed");
+			await vi.advanceTimersByTimeAsync(BATCH_RESULTS_IDLE_TIMEOUT_MS + 1);
+			await rejection;
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 	it.each(["response", "metadata"])("streams Gemini REST inline rows from %s without losing content or errors", async (location) => {
 		const rows = [{ metadata: { key: "one" }, response: { candidates: [{ content: { parts: [{ text: "héllo 🎉" }] } }] } }, { metadata: { key: "two" }, error: { code: 3, message: "invalid" } }];

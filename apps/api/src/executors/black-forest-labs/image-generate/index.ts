@@ -180,7 +180,11 @@ async function pollBflJob(args: {
 	timeoutMs: number;
 	intervalMs: number;
 	upstreamTiming?: ExecutorUpstreamTiming;
-}): Promise<{ response: Response; json: any | null } | { errorResponse: Response }> {
+}): Promise<
+	| { response: Response; json: any | null }
+	| { pending: true; status: string; response?: Response; json?: any | null }
+	| { terminal: true; status: string; json: any | null }
+> {
 	const deadline = Date.now() + args.timeoutMs;
 	let lastStatus = "unknown";
 
@@ -198,7 +202,7 @@ async function pollBflJob(args: {
 			: fetch(args.pollingUrl, pollInit));
 		const json = await response.clone().json().catch(() => null);
 		if (!response.ok) {
-			return { errorResponse: response };
+			return { pending: true, status: normalizeStatus(json?.status) || lastStatus, response, json };
 		}
 
 		const status = normalizeStatus(json?.status);
@@ -207,26 +211,12 @@ async function pollBflJob(args: {
 			return { response, json };
 		}
 		if (TERMINAL_FAILURE_STATUSES.has(status)) {
-			return {
-				errorResponse: createGatewayErrorResponse(
-					422,
-					"bfl_generation_failed",
-					`Black Forest Labs image request ended in terminal status: ${json?.status ?? "unknown"}`,
-					{ status: json?.status ?? null, result: json?.result ?? null },
-				),
-			};
+			return { terminal: true, status, json };
 		}
 		await sleep(args.intervalMs);
 	}
 
-	return {
-		errorResponse: createGatewayErrorResponse(
-			504,
-			"bfl_generation_timeout",
-			"Black Forest Labs image request did not complete before timeout.",
-			{ status: lastStatus },
-		),
-	};
+	return { pending: true, status: lastStatus };
 }
 
 async function imageUrlToBase64(url: string, upstreamTiming?: ExecutorUpstreamTiming): Promise<{ base64: string; mimeType: string | null } | null> {
@@ -363,21 +353,54 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 		const taskId = String(submitted.json?.id ?? "").trim();
 		if (taskId) taskIds.push(taskId);
-		const pollingUrl = trustedBflPollingUrl(submitted.json?.polling_url);
-		if (!pollingUrl) {
+		if (submitCredits === undefined) {
 			return {
 				kind: "completed",
 				ir: undefined,
-				upstream: createGatewayErrorResponse(
-					502,
-					"bfl_invalid_response",
-					"Black Forest Labs did not return a polling URL.",
-					{ response: submitted.json ?? null },
-				),
+				upstream: createGatewayErrorResponse(502, "bfl_missing_cost", "Black Forest Labs omitted the submit-time credit usage required for settlement."),
 				bill: { cost_cents: 0, currency: "USD" },
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 			};
+		}
+		const acceptedResult = (status: string, poll?: unknown, currentCredits = submitCredits): ExecutorResult => {
+			const billedCredits = totalCredits + currentCredits;
+			const usage = {
+				inputTokens: 0,
+				outputTokens: 0,
+				totalTokens: 0,
+				requests: index + 1,
+				output_image: index + 1,
+				bfl_credits: Number(billedCredits.toFixed(6)),
+			};
+			const rawResponse = [...rawResponses];
+			rawResponse[rawResponse.length - 1] = { submit: submitted.json, poll: poll ?? { status } };
+			const pendingResponse: IRImageGenerationResponse = {
+				id: args.requestId,
+				nativeId: taskIds.length > 0 ? taskIds.join(",") : undefined,
+				created: Math.floor(Date.now() / 1000),
+				model: args.providerModelSlug || ir.model,
+				provider: args.providerId,
+				data,
+				usage,
+				rawResponse,
+			};
+			return {
+				kind: "completed",
+				ir: pendingResponse,
+				upstream: new Response(JSON.stringify({ id: taskId || null, status }), {
+					status: 202,
+					headers: { "Content-Type": "application/json" },
+				}),
+				bill: { cost_cents: billedCredits, currency: "USD", usage, finish_reason: "pending" },
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				rawResponse,
+			};
+		};
+		const pollingUrl = trustedBflPollingUrl(submitted.json?.polling_url);
+		if (!pollingUrl) {
+			return acceptedResult("polling_url_unavailable");
 		}
 
 		const polled = await pollBflJob({
@@ -387,42 +410,20 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			intervalMs: pollIntervalMs,
 			upstreamTiming: args.upstreamTiming,
 		});
-		if ("errorResponse" in polled) {
-			return {
-				kind: "completed",
-				ir: undefined,
-				upstream: polled.errorResponse,
-				bill: { cost_cents: 0, currency: "USD" },
-				keySource: keyInfo.source,
-				byokKeyId: keyInfo.byokId,
-			};
+		if ("pending" in polled) {
+			return acceptedResult(polled.status, polled.json);
 		}
-
+		if ("terminal" in polled) {
+			return acceptedResult(`terminal:${polled.status}`, polled.json);
+		}
 		lastUpstream = polled.response;
 		rawResponses[rawResponses.length - 1].poll = polled.json;
 		const credits = extractCreditsCost(polled.json) ?? submitCredits;
-		if (credits === undefined) {
-			return { kind: "completed", ir: undefined, upstream: createGatewayErrorResponse(502, "bfl_missing_cost", "Black Forest Labs omitted the credit usage required for settlement."), bill: { cost_cents: 0, currency: "USD" }, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
-		}
-		if (typeof credits === "number") {
-			totalCredits += credits;
-		}
 		const sampleUrl = String(polled.json?.result?.sample ?? "").trim();
 		if (!sampleUrl) {
-			return {
-				kind: "completed",
-				ir: undefined,
-				upstream: createGatewayErrorResponse(
-					502,
-					"bfl_missing_sample",
-					"Black Forest Labs did not return an output image URL.",
-					{ response: polled.json ?? null },
-				),
-				bill: { cost_cents: 0, currency: "USD" },
-				keySource: keyInfo.source,
-				byokKeyId: keyInfo.byokId,
-			};
+			return acceptedResult("result_unavailable", polled.json, credits);
 		}
+		totalCredits += credits;
 
 		if (wantsB64) {
 			const asBase64 = await imageUrlToBase64(sampleUrl, args.upstreamTiming);

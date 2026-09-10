@@ -27,6 +27,20 @@ const KNOWN_METERS = new Set<string>([
     "requests",
 ]);
 
+const CACHE_METERS = new Set<string>([
+    "implicit_cached_input_text_tokens",
+    "cached_write_text_tokens", "cached_write_text_tokens_5m", "cached_write_text_tokens_1h",
+    "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",
+    "cached_read_text_tokens", "cached_read_image_tokens", "cached_read_video_tokens", "cached_read_audio_tokens",
+]);
+
+function cacheMeterCanUseAggregate(meter: string, usage: Record<string, unknown>): boolean {
+	const aggregate = Number(usage.cached_write_text_tokens ?? 0);
+	const splitTotal = Number(usage.cached_write_text_tokens_5m ?? 0) + Number(usage.cached_write_text_tokens_1h ?? 0);
+    return (meter === "cached_write_text_tokens_5m" || meter === "cached_write_text_tokens_1h") &&
+		aggregate > 0 && aggregate >= splitTotal;
+}
+
 function isPricingDebugEnabled(): boolean {
     try {
         if (typeof globalThis !== "undefined" && (globalThis as any).__pricingDebug === true) return true;
@@ -686,6 +700,7 @@ export function computeBillSummary(
 
     const lines: PricingBreakdownLine[] = [];
     const unmatchedConfiguredMeters: string[] = [];
+    const missingRequiredCacheMeters: string[] = [];
     const matchContext = { ...ctx, ...meters };
 
     const findCandidatesForPlanAndMeter = (plan: string, meter: PricingDimensionKey): PriceRule[] =>
@@ -780,7 +795,13 @@ export function computeBillSummary(
                 pricingPlan: resolvedPlan,
                 requestedPricingPlan: pricingPlan,
             });
-            if (card.rules.some((rule) => rule.meter === dim)) unmatchedConfiguredMeters.push(dim);
+            // Cache usage is a distinct upstream cost. Never silently fold or
+            // discard it when an effective card is incomplete.
+            if (CACHE_METERS.has(dim)) {
+                missingRequiredCacheMeters.push(dim);
+            } else if (card.rules.some((rule) => rule.meter === dim)) {
+                unmatchedConfiguredMeters.push(dim);
+            }
             continue;
         }
 
@@ -858,6 +879,15 @@ export function computeBillSummary(
     // A partial bill (even a free matched line) cannot cover unmatched usage.
     // Preserve the empty-lines sentinel: async callers use it to reject
     // reservations or retain holds when there is no matching price at all.
+	const hasPricedAggregateCacheWrite = lines.some((line) => line.dimension === "cached_write_text_tokens");
+	const hasPricedImplicitCacheRead = lines.some((line) => line.dimension === "implicit_cached_input_text_tokens");
+	const effectiveMissingCacheMeters = missingRequiredCacheMeters.filter((meter) =>
+		!(hasPricedAggregateCacheWrite && cacheMeterCanUseAggregate(meter, meters)) &&
+		!(meter === "cached_read_text_tokens" && hasPricedImplicitCacheRead)
+	);
+    if (effectiveMissingCacheMeters.length > 0) {
+		throw new Error(`pricing_rule_missing:${effectiveMissingCacheMeters.join(",")}`);
+    }
     if (lines.length > 0 && unmatchedConfiguredMeters.length > 0) {
         throw new Error(`pricing_rule_missing:${unmatchedConfiguredMeters.join(",")}`);
     }

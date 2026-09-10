@@ -669,7 +669,10 @@
       "minimax/music-3.0:free",
       "minimax/speech-2.8:free",
       "minimax/h3",
-      "minimax/h3-max"
+      "minimax/h3-max",
+      "minimax/minimax-m2.5-highspeed",
+      "minimax/speech-2.8-hd",
+      "minimax/speech-2.8-turbo"
     ],
     "mistral": [
       "mistral/codestral",

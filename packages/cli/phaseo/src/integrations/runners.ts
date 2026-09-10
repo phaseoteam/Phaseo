@@ -21,10 +21,10 @@ const CREDENTIAL_IDS: Record<RunnerId, string> = {
 };
 
 const COMMANDS: Record<RunnerId, string[]> = {
-	cline: ["cline", "cline.exe", "cline.cmd", "cline.ps1"],
-	kilo: ["kilo", "kilo.exe", "kilo.cmd", "kilo.ps1"],
-	omp: ["omp", "omp.exe", "omp.cmd", "omp.ps1"],
-	muse: ["muse", "muse.exe", "muse.cmd", "muse.ps1"],
+	cline: ["cline", "cline.exe", "cline.ps1"],
+	kilo: ["kilo", "kilo.exe", "kilo.ps1"],
+	omp: ["omp", "omp.exe", "omp.ps1"],
+	muse: ["muse", "muse.exe", "muse.ps1"],
 };
 
 export type RunnerPaths = {
@@ -288,15 +288,10 @@ function runChild(invocation: RunnerInvocation): Promise<void> {
 	});
 }
 
-function quoteCmdToken(value: string): string {
-	if (/^[A-Za-z0-9_./:@%+=,-]+$/.test(value)) return value;
-	return `"${value.replace(/["^]/g, (character) => `^${character}`)}"`;
-}
-
 export function runnerChildInvocation(
 	invocation: RunnerInvocation,
 	platform: NodeJS.Platform = process.platform,
-	commandShell = process.env.ComSpec || "cmd.exe",
+	_commandShell = process.env.ComSpec || "cmd.exe",
 ): { command: string; args: string[] } {
 	if (platform !== "win32") return { command: invocation.command, args: invocation.args };
 	const command = invocation.command.toLowerCase();
@@ -307,10 +302,7 @@ export function runnerChildInvocation(
 		};
 	}
 	if (command.endsWith(".cmd") || command.endsWith(".bat")) {
-		return {
-			command: commandShell,
-			args: ["/d", "/s", "/c", [invocation.command, ...invocation.args].map(quoteCmdToken).join(" ")],
-		};
+		throw new Error("Windows .cmd and .bat runner shims are unsupported; use the .ps1 or .exe launcher.");
 	}
 	return { command: invocation.command, args: invocation.args };
 }

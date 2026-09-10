@@ -771,6 +771,9 @@ async function validateBatchRequestPolicies(args: {
 				workspace_id: args.auth.workspaceId,
 			});
 		}
+		// Persist the policy-resolved canonical ID. Caller-controlled/native
+		// model strings must never drive credential selection or reservation.
+		row.gatewayModel = guarded.resolvedModel ?? gatewayModel;
 
 		const beforeBody = JSON.stringify(row.body);
 		const promptResult = applyPromptInjectionGuardrails({
@@ -2028,9 +2031,10 @@ async function handleCreate(req: Request) {
 	let batchCredential: BatchProviderCredential;
 	try {
 		const models = [...new Set(policyRows
-			.map((row) => toText((row.body as any)?.model) ?? row.gatewayModel ?? toText(payload.model))
+			.map((row) => row.gatewayModel)
 			.filter((model): model is string => Boolean(model)))];
-		const resolved = await Promise.all((models.length ? models : ["batch"]).map((model) =>
+		if (!models.length) throw new Error("batch_model_required_for_credential_resolution");
+		const resolved = await Promise.all(models.map((model) =>
 			resolveBatchSubmissionCredential({ workspaceId: auth.workspaceId, providerId, apiKeyId: auth.apiKeyId, model }),
 		));
 		batchCredential = resolved[0]!.credential;

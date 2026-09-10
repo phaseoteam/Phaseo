@@ -12,7 +12,7 @@ const OG_CACHE_CONTROL =
 const ASSET_BASE_URL =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ??
 	process.env.WEBSITE_URL ??
-	"http://localhost:3000";
+	"http://localhost:3100";
 
 const montserratRegularPromise = readFile(
 	new URL("../profile-share/assets/Montserrat-Regular.ttf", import.meta.url),
@@ -98,12 +98,7 @@ export async function GET(
 		montserratSemiboldPromise,
 		montserratBoldPromise,
 	]);
-	let assetBaseUrl = ASSET_BASE_URL;
-	try {
-		assetBaseUrl = new URL(request.url).origin;
-	} catch {
-		assetBaseUrl = ASSET_BASE_URL;
-	}
+	const assetBaseUrl = ASSET_BASE_URL;
 	const primaryLogoSrc = !isCountry ? getLogoUrl(payload.logoId, assetBaseUrl) : undefined;
 	const brandLogoSrc = absoluteAsset(brandLogoPath, assetBaseUrl);
 	const stats = (payload.stats ?? []).slice(0, 4);
