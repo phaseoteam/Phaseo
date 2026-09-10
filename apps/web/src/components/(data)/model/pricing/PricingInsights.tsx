@@ -788,9 +788,9 @@ function PricingHistoryChart({
 								<div className="space-y-1.5">
 									{leadingItems.map(renderItem)}
 									{hiddenCount ? (
-										<div className="flex items-center gap-2 py-0.5 text-[11px] text-muted-foreground" aria-label={`${hiddenCount} models omitted`}>
+										<div className="flex items-center gap-2 py-0.5 text-[11px] text-muted-foreground" aria-label={`${hiddenCount} providers omitted`}>
 											<span className="h-px flex-1 border-t border-dashed border-muted-foreground/40" aria-hidden="true" />
-											<span className="shrink-0">{hiddenCount}+ Models</span>
+											<span className="shrink-0">{hiddenCount}+ Providers</span>
 											<span className="h-px flex-1 border-t border-dashed border-muted-foreground/40" aria-hidden="true" />
 										</div>
 									) : null}
