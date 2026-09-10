@@ -10,6 +10,7 @@ import type {
 	OgEntity,
 	OgPayload,
 } from "@/lib/fetchers/frontend/getOgPayload";
+import { buildModelOgStats } from "@/lib/fetchers/frontend/getOgPayload";
 import type {
 	SignInModel,
 	SupportedModelsStats,
@@ -842,7 +843,15 @@ export async function fetchFrontendOgPayload(
 	const response = await fetchOptionalPublicWebApi<{ payload: OgPayload }>(
 		`/api/_web/og?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(id)}`,
 	);
-	return response?.payload ?? null;
+	if (!response?.payload || kind !== "models") return response?.payload ?? null;
+	const [model, pricing] = await Promise.all([
+		fetchFrontendModelOverview(id).catch(() => null),
+		fetchFrontendModelPricing(id).catch(() => []),
+	]);
+	return {
+		...response.payload,
+		stats: buildModelOgStats(model, pricing),
+	};
 }
 
 export async function fetchFrontendAppUsage(
