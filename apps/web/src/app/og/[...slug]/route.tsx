@@ -107,6 +107,7 @@ export async function GET(
 	const primaryLogoSrc = !isCountry ? getLogoUrl(payload.logoId, assetBaseUrl) : undefined;
 	const brandLogoSrc = absoluteAsset(brandLogoPath, assetBaseUrl);
 	const stats = (payload.stats ?? []).slice(0, 4);
+	const releaseDateFontSize = 35;
 	const titleFontSize = getTitleFontSize(payload.name);
 
 	return new ImageResponse(
@@ -210,52 +211,61 @@ export async function GET(
 									borderTop: "1px solid #d9d2c7",
 								}}
 							>
-								{stats.map((stat, index) => (
-									<div
-										key={stat.label}
-										style={{
-											display: "flex",
-											flexDirection: "column",
-											flex: 1,
-											paddingLeft: index === 0 ? 0 : 20,
-											marginLeft: index === 0 ? 0 : 20,
-											borderLeft: index === 0 ? "none" : "1px solid #d9d2c7",
-										}}
-									>
-										<div
-											style={{
-														fontSize: 13,
-												fontWeight: 700,
-												letterSpacing: 1.4,
-												color: "#77736d",
-											}}
-										>
-											{titleCaseLabel(stat.label)}
+								{stats.map((stat, index) => {
+									const originalPrice = stat.originalValue;
+									const priceContent = originalPrice ? (
+										<div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginTop: 8 }}>
+											<div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+												<div style={{ fontSize: 35, fontWeight: 700, lineHeight: 1, letterSpacing: -1.1 }}>
+													{stat.value}
+												</div>
+												{stat.promotion ? (
+													<div style={{ color: "#2f7d4e", fontSize: 19, fontWeight: 700, letterSpacing: -0.2, whiteSpace: "nowrap" }}>
+														{stat.promotion}
+													</div>
+												) : null}
+											</div>
+											<div style={{ marginTop: 7, fontSize: 18, fontWeight: 600, lineHeight: 1, letterSpacing: -0.4, color: "#9b948a", textDecoration: "line-through" }}>
+												{originalPrice}
+											</div>
 										</div>
+									) : (
 										<div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
-											<div
-												style={{
-															fontSize: stat.label === "RELEASED" ? 25 : 35,
-													fontWeight: 700,
-													lineHeight: 1,
-													letterSpacing: -1.1,
-												}}
-											>
+											<div style={{ fontSize: stat.label === "RELEASED" ? releaseDateFontSize : 35, fontWeight: 700, lineHeight: 1, letterSpacing: -1.1 }}>
 												{stat.value}
 											</div>
 											{stat.promotion ? (
-												<div style={{ color: "#77736d", fontSize: 14, fontWeight: 700 }}>
+												<div style={{ color: "#2f7d4e", fontSize: 16, fontWeight: 700, letterSpacing: -0.2, whiteSpace: "nowrap" }}>
 													{stat.promotion}
 												</div>
 											) : null}
 										</div>
-										{stat.helper ? (
-													<div style={{ marginTop: 6, fontSize: 14, color: "#9b948a" }}>
-												{stat.helper}
+									);
+
+									return (
+										<div
+											key={stat.label}
+											style={{
+												display: "flex",
+												flexDirection: "column",
+												flex: 1,
+												paddingLeft: index === 0 ? 0 : 20,
+												marginLeft: index === 0 ? 0 : 20,
+												borderLeft: index === 0 ? "none" : "1px solid #d9d2c7",
+											}}
+										>
+											<div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1.4, color: "#77736d" }}>
+												{titleCaseLabel(stat.label)}
 											</div>
-										) : null}
-									</div>
-								))}
+											{priceContent}
+											{stat.helper ? (
+												<div style={{ marginTop: 6, fontSize: 14, color: "#9b948a" }}>
+													{stat.helper}
+												</div>
+											) : null}
+										</div>
+									);
+								})}
 							</div>
 						) : payload.subtitle ? (
 							<div style={{ paddingTop: 20, fontSize: 21, lineHeight: 1.3, color: "#514d47" }}>
@@ -264,14 +274,14 @@ export async function GET(
 						) : null}
 
 						{brandLogoSrc ? (
-						<div
-							style={{
-								display: "flex",
-								alignItems: "flex-end",
-								justifyContent: "space-between",
-								marginTop: 88,
-							}}
-						>
+							<div
+								style={{
+									display: "flex",
+									alignItems: "flex-end",
+									justifyContent: "space-between",
+									marginTop: 88,
+								}}
+							>
 								<img
 									src={brandLogoSrc}
 									alt="Phaseo"

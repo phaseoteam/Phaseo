@@ -2,8 +2,22 @@ import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { PricingRule, ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 
 export type OgEntity = "organisations" | "models" | "benchmarks" | "api-providers" | "countries" | "subscription-plans";
-export type OgStat = { label: string; value: string; helper?: string; promotion?: string };
-export type OgPayload = { id: string; name: string; logoId?: string; subtitle?: string; badge?: string; stats?: OgStat[]; flagEmoji?: string };
+export type OgStat = {
+	label: string;
+	value: string;
+	originalValue?: string;
+	helper?: string;
+	promotion?: string;
+};
+export type OgPayload = {
+	id: string;
+	name: string;
+	logoId?: string;
+	subtitle?: string;
+	badge?: string;
+	stats?: OgStat[];
+	flagEmoji?: string;
+};
 
 type PriceCandidate = {
 	providerId: string;
@@ -65,12 +79,17 @@ function pricingMatchSignature(rule: PricingRule): string {
 	return JSON.stringify(rule.match ?? []);
 }
 
+function pricingEffectiveFromMs(rule: PricingRule): number {
+	const value = Date.parse(rule.effective_from);
+	return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+}
+
 function pricingBaselineKey(candidate: PriceCandidate): string {
 	return [candidate.providerId, candidate.rule.meter, candidate.rule.pricing_plan].join("\u0000");
 }
 
-function getPromotionPercent(listCandidate: PriceCandidate, candidates: PriceCandidate[]): number | null {
-	const promotion = candidates
+function getPromotionCandidate(listCandidate: PriceCandidate, candidates: PriceCandidate[]): PriceCandidate | null {
+	const matchingPromotions = candidates
 		.filter((peer) =>
 			peer.providerId === listCandidate.providerId &&
 			peer.rule.meter === listCandidate.rule.meter &&
@@ -78,12 +97,16 @@ function getPromotionPercent(listCandidate: PriceCandidate, candidates: PriceCan
 			pricingMatchSignature(peer.rule) === pricingMatchSignature(listCandidate.rule) &&
 			peer.rule.priority > listCandidate.rule.priority &&
 			peer.pricePerMillion < listCandidate.pricePerMillion,
-		)
-		.reduce<PriceCandidate | null>(
-			(current, candidate) =>
-				current == null || candidate.pricePerMillion < current.pricePerMillion ? candidate : current,
-			null,
 		);
+	return matchingPromotions.sort((a, b) =>
+		b.rule.priority - a.rule.priority ||
+		pricingEffectiveFromMs(b.rule) - pricingEffectiveFromMs(a.rule) ||
+		a.pricePerMillion - b.pricePerMillion,
+	)[0] ?? null;
+}
+
+function getPromotionPercent(listCandidate: PriceCandidate, candidates: PriceCandidate[]): number | null {
+	const promotion = getPromotionCandidate(listCandidate, candidates);
 	if (!promotion || listCandidate.pricePerMillion <= 0) return null;
 
 	const explicitPercent = parsePromotionPercent(promotion.rule.note);
@@ -132,7 +155,7 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 		return baselinePriorities.get(key) === candidate.rule.priority &&
 			(!unconditionalKeys.has(key) || candidate.rule.match.length === 0);
 	});
-	const priceFor = (meter: string): { value: number; promotion?: string } | null => {
+	const priceFor = (meter: string): { value: number; originalValue?: number; promotion?: string } | null => {
 		const meterCandidates = listCandidates.filter((candidate) =>
 			OG_METER_NAMES[meter as keyof typeof OG_METER_NAMES]?.has(candidate.rule.meter) &&
 			["token", "tokens"].includes(candidate.rule.unit.toLowerCase()),
@@ -143,9 +166,14 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 			null,
 		);
 		if (!cheapest) return null;
+		const promotionCandidate = getPromotionCandidate(cheapest, standardCandidates);
 		const promotionPercent = getPromotionPercent(cheapest, standardCandidates);
+		const hasPromotion = promotionCandidate != null && promotionPercent != null;
 		return {
-			value: cheapest.pricePerMillion,
+			value: promotionCandidate && promotionPercent != null
+				? promotionCandidate.pricePerMillion
+				: cheapest.pricePerMillion,
+			...(hasPromotion ? { originalValue: cheapest.pricePerMillion } : {}),
 			...(promotionPercent != null ? { promotion: formatPromotionPercent(promotionPercent) } : {}),
 		};
 	};
@@ -153,9 +181,25 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 	const stats: OgStat[] = [];
 	if (context) stats.push({ label: "CONTEXT", value: formatOgContext(context), helper: "tokens" });
 	const inputPrice = priceFor("input");
-	if (inputPrice != null) stats.push({ label: "INPUT", value: formatOgPrice(inputPrice.value), helper: "per 1M tokens", promotion: inputPrice.promotion });
+	if (inputPrice != null) {
+		stats.push({
+			label: "INPUT",
+			value: formatOgPrice(inputPrice.value),
+			...(inputPrice.originalValue == null ? {} : { originalValue: formatOgPrice(inputPrice.originalValue) }),
+			helper: "per 1M tokens",
+			promotion: inputPrice.promotion,
+		});
+	}
 	const outputPrice = priceFor("output");
-	if (outputPrice != null) stats.push({ label: "OUTPUT", value: formatOgPrice(outputPrice.value), helper: "per 1M tokens", promotion: outputPrice.promotion });
+	if (outputPrice != null) {
+		stats.push({
+			label: "OUTPUT",
+			value: formatOgPrice(outputPrice.value),
+			...(outputPrice.originalValue == null ? {} : { originalValue: formatOgPrice(outputPrice.originalValue) }),
+			helper: "per 1M tokens",
+			promotion: outputPrice.promotion,
+		});
+	}
 	const releaseDate = formatOgDate(model?.release_date ?? model?.announcement_date);
 	if (releaseDate) stats.push({ label: "RELEASED", value: releaseDate });
 	return stats;
