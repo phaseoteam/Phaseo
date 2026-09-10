@@ -65,7 +65,7 @@ test("uses the lowest current Standard list price and ignores Flex", () => {
 	]));
 });
 
-test("uses the Standard list price while showing an active promotion", () => {
+test("uses the discounted price while preserving the Standard list price", () => {
 	const stats = buildModelOgStats(model, [
 		makeProvider("promo-provider", [
 			makeRule("promo-provider", { price_per_unit: 1 }),
@@ -81,7 +81,13 @@ test("uses the Standard list price while showing an active promotion", () => {
 	]);
 
 	expect(stats).toEqual(expect.arrayContaining([
-		{ label: "INPUT", value: "$1.00", helper: "per 1M tokens", promotion: "50% off" },
+		{
+			label: "INPUT",
+			value: "$0.50",
+			originalValue: "$1.00",
+			helper: "per 1M tokens",
+			promotion: "50% off",
+		},
 	]));
 });
 
@@ -103,6 +109,12 @@ test("only uses primary token meters and derives the baseline priority", () => {
 	]);
 
 	expect(stats).toEqual(expect.arrayContaining([
-		{ label: "INPUT", value: "$1.00", helper: "per 1M tokens", promotion: "50% off" },
+		{
+			label: "INPUT",
+			value: "$0.50",
+			originalValue: "$1.00",
+			helper: "per 1M tokens",
+			promotion: "50% off",
+		},
 	]));
 });
