@@ -7,6 +7,8 @@ import type { OgEntity } from "@/lib/fetchers/frontend/getOgPayload";
 import { resolveLogo } from "@/lib/logos";
 
 const brandLogoPath = "/wordmark_light.svg";
+const OG_CACHE_CONTROL =
+	"public, max-age=0, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=86400";
 const ASSET_BASE_URL =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ??
 	process.env.WEBSITE_URL ??
@@ -295,8 +297,7 @@ export async function GET(
 				{ name: "Montserrat", data: montserratBold, weight: 700, style: "normal" },
 			],
 			headers: {
-				"Cache-Control":
-					"public, max-age=0, s-maxage=31536000, stale-while-revalidate=86400, stale-if-error=86400",
+				"Cache-Control": OG_CACHE_CONTROL,
 			},
 		},
 	);

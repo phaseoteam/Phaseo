@@ -11,6 +11,11 @@ type PriceCandidate = {
 	pricePerMillion: number;
 };
 
+const OG_METER_NAMES = {
+	input: new Set(["input_tokens", "input_text_tokens"]),
+	output: new Set(["output_tokens", "output_text_tokens"]),
+} as const;
+
 function formatOgPrice(value: number): string {
 	if (value === 0) return "$0";
 	if (value < 0.01) return `$${value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "")}`;
@@ -60,6 +65,10 @@ function pricingMatchSignature(rule: PricingRule): string {
 	return JSON.stringify(rule.match ?? []);
 }
 
+function pricingBaselineKey(candidate: PriceCandidate): string {
+	return [candidate.providerId, candidate.rule.meter, candidate.rule.pricing_plan].join("\u0000");
+}
+
 function getPromotionPercent(listCandidate: PriceCandidate, candidates: PriceCandidate[]): number | null {
 	const promotion = candidates
 		.filter((peer) =>
@@ -107,9 +116,27 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 			}))
 			.filter((candidate) => Number.isFinite(candidate.pricePerMillion) && candidate.pricePerMillion >= 0),
 	);
-	const listCandidates = standardCandidates.filter((candidate) => candidate.rule.priority === 100);
+	const unconditionalCandidates = standardCandidates.filter((candidate) => candidate.rule.match.length === 0);
+	const unconditionalKeys = new Set(unconditionalCandidates.map(pricingBaselineKey));
+	const baselinePriorities = new Map<string, number>();
+	for (const candidate of standardCandidates) {
+		const key = pricingBaselineKey(candidate);
+		if (unconditionalKeys.has(key) && candidate.rule.match.length !== 0) continue;
+		const existing = baselinePriorities.get(key);
+		if (existing == null || candidate.rule.priority < existing) {
+			baselinePriorities.set(key, candidate.rule.priority);
+		}
+	}
+	const listCandidates = standardCandidates.filter((candidate) => {
+		const key = pricingBaselineKey(candidate);
+		return baselinePriorities.get(key) === candidate.rule.priority &&
+			(!unconditionalKeys.has(key) || candidate.rule.match.length === 0);
+	});
 	const priceFor = (meter: string): { value: number; promotion?: string } | null => {
-		const meterCandidates = listCandidates.filter((candidate) => candidate.rule.meter.includes(meter));
+		const meterCandidates = listCandidates.filter((candidate) =>
+			OG_METER_NAMES[meter as keyof typeof OG_METER_NAMES]?.has(candidate.rule.meter) &&
+			["token", "tokens"].includes(candidate.rule.unit.toLowerCase()),
+		);
 		const cheapest = meterCandidates.reduce<PriceCandidate | null>(
 			(current, candidate) =>
 				current == null || candidate.pricePerMillion < current.pricePerMillion ? candidate : current,

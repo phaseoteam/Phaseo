@@ -84,3 +84,25 @@ test("uses the Standard list price while showing an active promotion", () => {
 		{ label: "INPUT", value: "$1.00", helper: "per 1M tokens", promotion: "50% off" },
 	]));
 });
+
+test("only uses primary token meters and derives the baseline priority", () => {
+	const stats = buildModelOgStats(model, [
+		makeProvider("priority-provider", [
+			makeRule("priority-provider", { price_per_unit: 1, priority: 90 }),
+			makeRule("priority-provider", {
+				price_per_unit: 0.5,
+				priority: 100,
+				note: "Limited-time 50% discount",
+			}),
+			makeRule("priority-provider", {
+				meter: "implicit_cached_input_text_tokens",
+				price_per_unit: 0.01,
+				priority: 90,
+			}),
+		]),
+	]);
+
+	expect(stats).toEqual(expect.arrayContaining([
+		{ label: "INPUT", value: "$1.00", helper: "per 1M tokens", promotion: "50% off" },
+	]));
+});
