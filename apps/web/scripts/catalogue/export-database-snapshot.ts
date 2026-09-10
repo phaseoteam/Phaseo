@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { client } from "../importer/supa";
 import { buildEnumSnapshot } from "./enumSnapshot";
-import { excludeStealthRows } from "./exportSnapshotPrivacy";
+import { filterPublicSnapshotRows } from "./exportSnapshotPrivacy";
 
 const PAGE_SIZE = 1_000;
 const OUTPUT_DIR = resolve(process.cwd(), "../../packages/data/catalog/generated/database-v2");
@@ -16,13 +16,9 @@ const TABLES = {
 	v2_benchmarks: ["benchmark_id"], v2_benchmark_results: ["result_id"], v2_model_aliases: ["alias_slug"],
 	v2_model_links: ["model_slug", "link_kind", "url"], v2_model_details: ["model_slug", "detail_name"], v2_model_page_notices: ["model_slug"],
 	v2_subscription_plans: ["plan_uuid"], v2_subscription_plan_models: ["plan_uuid", "model_slug"],
-	v2_subscription_plan_features: ["plan_uuid", "feature_name"], v2_catalogue_source_overrides: ["source_type", "source_key"],
+	v2_subscription_plan_features: ["plan_uuid", "feature_name"],
 } as const;
 type TableName = keyof typeof TABLES;
-
-const OMITTED_FIELDS: Partial<Record<TableName, ReadonlySet<string>>> = {
-	v2_catalogue_source_overrides: new Set(["actor_user_id"]),
-};
 
 function stableValue(value: unknown): unknown {
 	if (Array.isArray(value)) return value.map(stableValue);
@@ -50,9 +46,7 @@ async function fetchTable(table: TableName): Promise<Record<string, unknown>[]> 
 		rows.push(...page);
 		if (page.length < PAGE_SIZE) break;
 	}
-	const omitted = OMITTED_FIELDS[table] ?? new Set<string>();
 	return rows
-		.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => !omitted.has(key))))
 		.map((row) => stableValue(row) as Record<string, unknown>)
 		.sort((left, right) => stableRowKey(left).localeCompare(stableRowKey(right)));
 }
@@ -65,7 +59,7 @@ async function main() {
 	for (const table of Object.keys(TABLES) as TableName[]) {
 		snapshots.set(table, await fetchTable(table));
 	}
-	const publicSnapshots = excludeStealthRows(snapshots);
+	const publicSnapshots = filterPublicSnapshotRows(snapshots);
 	await mkdir(OUTPUT_DIR, { recursive: true });
 	await writeFile(resolve(OUTPUT_DIR, "enum-catalog.json"), `${JSON.stringify(buildEnumSnapshot(publicSnapshots), null, 2)}\n`, "utf8");
 	for (const [table, rows] of publicSnapshots) {

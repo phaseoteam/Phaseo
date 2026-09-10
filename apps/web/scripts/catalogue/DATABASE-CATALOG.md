@@ -50,10 +50,12 @@ Run the read-only database export from `apps/web`:
 pnpm catalog:export:database
 ```
 
-It writes 23 tables to `packages/data/catalog/generated/database-v2`, using the
+It writes the public catalogue tables to `packages/data/catalog/generated/database-v2`, using the
 existing Supabase URL and service-role environment variables. It fetches all
 tables before replacing files, includes rows with null timestamps, uses stable
-ordering, and excludes stealth records and the override actor's user ID.
+ordering, and excludes stealth records, unpublished self-serve submissions,
+private admin tables, internal benchmark records, and identity fields nested in
+catalogue metadata.
 It also writes `enum-catalog.json`, the compact public index consumed by OpenAPI
 enum generation. Hidden models and stealth routes are excluded; callable IDs
 require an active, publicly available route. Merge snapshot PRs to refresh the
