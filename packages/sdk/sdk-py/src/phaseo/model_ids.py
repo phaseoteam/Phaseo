@@ -506,9 +506,9 @@ class ModelIds:
     # Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
     DEEPSEEK_DEEPSEEK_V4_PRO_0813: Final[str] = "deepseek/deepseek-v4-pro-0813"
 
-    # Model ID: deepseek/deepseek-v4.1-flash-beta
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
-    DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA: Final[str] = "deepseek/deepseek-v4.1-flash-beta"
+    # Model ID: deepseek/deepseek-v4.1-flash
+    # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash
+    DEEPSEEK_DEEPSEEK_V4_1_FLASH: Final[str] = "deepseek/deepseek-v4.1-flash"
 
     # Model ID: deepseek/deepseek-v4.1-flash-preview
     # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview
@@ -2202,10 +2202,6 @@ class ModelIds:
     # Model page: https://phaseo.app/models/reka/reka-flash
     REKA_REKA_FLASH: Final[str] = "reka/reka-flash"
 
-    # Model ID: reka/reka-flash-research
-    # Model page: https://phaseo.app/models/reka/reka-flash-research
-    REKA_REKA_FLASH_RESEARCH: Final[str] = "reka/reka-flash-research"
-
     # Model ID: relace/relace-rank
     # Model page: https://phaseo.app/models/relace/relace-rank
     RELACE_RELACE_RANK: Final[str] = "relace/relace-rank"
@@ -2852,7 +2848,7 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
         ModelIds.DEEPSEEK_DEEPSEEK_V4_PRO,
         ModelIds.DEEPSEEK_DEEPSEEK_V4_PRO_0813,
-        ModelIds.DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA,
+        ModelIds.DEEPSEEK_DEEPSEEK_V4_1_FLASH,
         ModelIds.DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW,
         ModelIds.EARLY_ACCESS_EA_29B_A4B,
         ModelIds.ELEVEN_LABS_ELEVEN_FLASH_V2,
@@ -3276,7 +3272,6 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.REKA_REKA_EDGE,
         ModelIds.REKA_REKA_EDGE_2603,
         ModelIds.REKA_REKA_FLASH,
-        ModelIds.REKA_REKA_FLASH_RESEARCH,
         ModelIds.RELACE_RELACE_RANK,
         ModelIds.RELACE_RELACE_SEARCH,
         ModelIds.SAKANA_FUGU_ULTRA,

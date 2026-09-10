@@ -380,8 +380,8 @@ final class ModelIds
     /** Model ID: deepseek/deepseek-v4-pro-0813. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
     public const DEEPSEEK_DEEPSEEK_V4_PRO_0813 = 'deepseek/deepseek-v4-pro-0813';
 
-    /** Model ID: deepseek/deepseek-v4.1-flash-beta. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta */
-    public const DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = 'deepseek/deepseek-v4.1-flash-beta';
+    /** Model ID: deepseek/deepseek-v4.1-flash. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash */
+    public const DEEPSEEK_DEEPSEEK_V4_1_FLASH = 'deepseek/deepseek-v4.1-flash';
 
     /** Model ID: deepseek/deepseek-v4.1-flash-preview. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview */
     public const DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW = 'deepseek/deepseek-v4.1-flash-preview';
@@ -1651,9 +1651,6 @@ final class ModelIds
 
     /** Model ID: reka/reka-flash. Model page: https://phaseo.app/models/reka/reka-flash */
     public const REKA_REKA_FLASH = 'reka/reka-flash';
-
-    /** Model ID: reka/reka-flash-research. Model page: https://phaseo.app/models/reka/reka-flash-research */
-    public const REKA_REKA_FLASH_RESEARCH = 'reka/reka-flash-research';
 
     /** Model ID: relace/relace-rank. Model page: https://phaseo.app/models/relace/relace-rank */
     public const RELACE_RELACE_RANK = 'relace/relace-rank';

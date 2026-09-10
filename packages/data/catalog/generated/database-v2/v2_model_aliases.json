@@ -1,0 +1,707 @@
+[
+  {
+    "alias_slug": "anthropic/claude-fable-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "anthropic/claude-fable-5.1",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "anthropic/claude-fable-5.1",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "anthropic/claude-haiku-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "anthropic/claude-haiku-4.5",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "anthropic/claude-haiku-4.5",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "anthropic/claude-opus-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "anthropic/claude-opus-5",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "anthropic/claude-opus-5",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "anthropic/claude-sonnet-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "anthropic/claude-sonnet-5",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "anthropic/claude-sonnet-5",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "cohere/rerenk-english-v3",
+    "alias_type": "legacy",
+    "created_at": "2026-09-08T15:42:23.779578+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "cohere/rerank-english-v3",
+      "legacy_channel": "legacy",
+      "source": "json"
+    },
+    "model_slug": "cohere/rerank-english-v3",
+    "updated_at": "2026-09-08T15:42:23.779578+00:00"
+  },
+  {
+    "alias_slug": "deepseek/deepseek-flash-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "deepseek/deepseek-v4-flash",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "deepseek/deepseek-v4-flash",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "deepseek/deepseek-pro-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "deepseek/deepseek-v4-pro",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "deepseek/deepseek-v4-pro",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "elevenlabs/music",
+    "alias_type": "legacy",
+    "created_at": "2026-07-24T16:36:21.634314+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "eleven-labs/music",
+      "legacy_channel": "legacy",
+      "source": "json"
+    },
+    "model_slug": "eleven-labs/music",
+    "updated_at": "2026-07-24T16:36:21.634314+00:00"
+  },
+  {
+    "alias_slug": "google/gemini-embedding-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "google/gemini-embedding-2",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "google/gemini-embedding-2",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "google/gemini-flash-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "google/gemini-3.7-flash",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "google/gemini-3.7-flash",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "google/gemini-flash-lite-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "google/gemini-3.5-flash-lite",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "google/gemini-3.5-flash-lite",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "google/gemini-image-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "google/gemini-3.1-flash-image",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "google/gemini-3.1-flash-image",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "google/gemini-image-lite-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "google/gemini-3.1-flash-lite-image",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "google/gemini-3.1-flash-lite-image",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "google/gemini-image-pro-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "google/gemini-3-pro-image",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "google/gemini-3-pro-image",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "google/gemini-pro-latest",
+    "alias_type": "preview",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "google/gemini-3.1-pro-preview",
+      "legacy_channel": "preview",
+      "source": "json"
+    },
+    "model_slug": "google/gemini-3.1-pro-preview",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "google/veo-fast-latest",
+    "alias_type": "stable",
+    "created_at": "2026-08-26T21:41:51.515147+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "google/veo-3.1-fast",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "google/veo-3.1-fast",
+    "updated_at": "2026-08-26T21:41:51.515147+00:00"
+  },
+  {
+    "alias_slug": "google/veo-latest",
+    "alias_type": "preview",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "google/veo-3.1-preview",
+      "legacy_channel": "preview",
+      "source": "json"
+    },
+    "model_slug": "google/veo-3.1-preview",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "google/veo-lite-latest",
+    "alias_type": "preview",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "google/veo-3.1-lite-preview",
+      "legacy_channel": "preview",
+      "source": "json"
+    },
+    "model_slug": "google/veo-3.1-lite-preview",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "ibm-granite/granite-4.0-h-micro",
+    "alias_type": "legacy",
+    "created_at": "2026-07-24T16:36:21.634314+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "ibm/granite-4.0-h-micro",
+      "legacy_channel": "legacy",
+      "source": "json"
+    },
+    "model_slug": "ibm/granite-4.0-h-micro",
+    "updated_at": "2026-07-24T16:36:21.634314+00:00"
+  },
+  {
+    "alias_slug": "meta/muse-spark-latest",
+    "alias_type": "preview",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "meta/muse-spark-1.3",
+      "legacy_channel": "preview",
+      "source": "json"
+    },
+    "model_slug": "meta/muse-spark-1.3",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "minimax/minimax-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "minimax/minimax-m3",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "minimax/minimax-m3",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "mistral/devstral-small-2:free",
+    "alias_type": "provider",
+    "created_at": "2026-07-26T10:07:51.929432+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "free_variant_alias": true,
+      "provider_model_id": "mistral:mistral/devstral-small-2:free",
+      "source": "json"
+    },
+    "model_slug": "mistral/devstral-small-2.0:free",
+    "updated_at": "2026-07-26T10:07:51.929432+00:00"
+  },
+  {
+    "alias_slug": "mistral/ministral-3.0-14b",
+    "alias_type": "v2-canonical",
+    "created_at": "2026-07-23T09:23:42.600992+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "mistral/ministral-3-14b",
+      "legacy_channel": "v2-canonical",
+      "source": "json"
+    },
+    "model_slug": "mistral/ministral-3-14b",
+    "updated_at": "2026-07-23T09:23:42.600992+00:00"
+  },
+  {
+    "alias_slug": "mistralai/mistral-nemo",
+    "alias_type": "legacy",
+    "created_at": "2026-07-24T16:36:21.634314+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "mistral/mistral-nemo",
+      "legacy_channel": "legacy",
+      "source": "json"
+    },
+    "model_slug": "mistral/mistral-nemo",
+    "updated_at": "2026-07-24T16:36:21.634314+00:00"
+  },
+  {
+    "alias_slug": "moonshotai/kimi-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "moonshotai/kimi-k2.6",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "moonshotai/kimi-k2.6",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "nousresearch/hermes-3-llama-3.1-405b",
+    "alias_type": "legacy",
+    "created_at": "2026-07-24T16:36:21.634314+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "nous/hermes-3-llama-3.1-405b",
+      "legacy_channel": "legacy",
+      "source": "json"
+    },
+    "model_slug": "nous/hermes-3-llama-3.1-405b",
+    "updated_at": "2026-07-24T16:36:21.634314+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-3.5-turbo-0613",
+    "alias_type": "v2-canonical",
+    "created_at": "2026-07-23T09:23:42.600992+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-3.5-turbo-16k",
+      "legacy_channel": "v2-canonical",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-3.5-turbo-16k",
+    "updated_at": "2026-07-23T09:23:42.600992+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-astra-latest",
+    "alias_type": "preview",
+    "created_at": "2026-09-03T14:01:22.139392+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-6-astra",
+      "legacy_channel": "preview",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-6-astra",
+    "updated_at": "2026-09-03T14:01:22.139392+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-audio-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-audio-1.5",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-audio-1.5",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-chat-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "openai/chat-latest",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "openai/chat-latest",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-image-2.5",
+    "alias_type": "stable",
+    "created_at": "2026-09-08T20:22:15.237873+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-image-2.5-flare",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-image-2.5-flare",
+    "updated_at": "2026-09-08T20:22:15.237873+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-image-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-image-2.5-flare",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-image-2.5-flare",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-luna-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-5.6-luna",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-5.6-luna",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-mini-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-5.4-mini",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-5.4-mini",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-nano-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-5.4-nano",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-5.4-nano",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-pro-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-5.6-sol-pro",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-5.6-sol-pro",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-sol-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-5.6-sol",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-5.6-sol",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "openai/gpt-terra-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "openai/gpt-5.6-terra",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "openai/gpt-5.6-terra",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "qwen/qwen3.5-plus-2026-02-15",
+    "alias_type": "v2-canonical",
+    "created_at": "2026-07-23T09:23:42.600992+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "qwen/qwen3.5-plus",
+      "legacy_channel": "v2-canonical",
+      "source": "json"
+    },
+    "model_slug": "qwen/qwen3.5-plus",
+    "updated_at": "2026-07-23T09:23:42.600992+00:00"
+  },
+  {
+    "alias_slug": "qwen/qwen3.8-max-2026-09-02",
+    "alias_type": "stable",
+    "created_at": "2026-09-02T08:39:37.467319+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "qwen/qwen3.8-max-0902",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "qwen/qwen3.8-max-0902",
+    "updated_at": "2026-09-02T08:39:37.467319+00:00"
+  },
+  {
+    "alias_slug": "spacex-ai/grok-4.5-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "spacex-ai/grok-4.5",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "spacex-ai/grok-4.5",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "spacex-ai/grok-build-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "spacex-ai/grok-4.5",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "spacex-ai/grok-4.5",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "spacex-ai/grok-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "legacy_api_model_id": "spacex-ai/grok-4.6",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "spacex-ai/grok-4.6",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "z-ai/glm-4-7-flash:free",
+    "alias_type": "provider",
+    "created_at": "2026-07-26T10:07:51.929432+00:00",
+    "effective_from": null,
+    "effective_to": null,
+    "enabled": true,
+    "metadata": {
+      "free_variant_alias": true,
+      "provider_model_id": "z-ai:z-ai/glm-4-7-flash:free",
+      "source": "json"
+    },
+    "model_slug": "z-ai/glm-4.7-flash:free",
+    "updated_at": "2026-07-26T10:07:51.929432+00:00"
+  },
+  {
+    "alias_slug": "z-ai/glm-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "z-ai/glm-5.1",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "z-ai/glm-5.1",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "z-ai/glm-turbo-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "z-ai/glm-5-turbo",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "z-ai/glm-5-turbo",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  },
+  {
+    "alias_slug": "z-ai/glm-vision-latest",
+    "alias_type": "stable",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "effective_from": null,
+    "effective_to": "2026-09-08T10:48:56.452+00:00",
+    "enabled": false,
+    "metadata": {
+      "legacy_api_model_id": "z-ai/glm-5v-turbo",
+      "legacy_channel": "stable",
+      "source": "json"
+    },
+    "model_slug": "z-ai/glm-5v-turbo",
+    "updated_at": "2026-07-22T10:23:46.119047+00:00"
+  }
+]

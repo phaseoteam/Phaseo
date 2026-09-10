@@ -1,0 +1,542 @@
+[
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "description": null,
+    "display_name": "Batch",
+    "metadata": {
+      "legacy_pricing_plan": "batch",
+      "source": "json"
+    },
+    "service_tier_slug": "batch",
+    "status": "active",
+    "updated_at": "2026-08-11T09:18:49.761881+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "description": null,
+    "display_name": "Enterprise",
+    "metadata": {
+      "legacy_pricing_plan": "enterprise",
+      "source": "json"
+    },
+    "service_tier_slug": "enterprise",
+    "status": "disabled",
+    "updated_at": "2026-08-11T09:18:49.761881+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "description": null,
+    "display_name": "Fast",
+    "metadata": {
+      "legacy_pricing_plan": "priority",
+      "source": "json"
+    },
+    "service_tier_slug": "priority",
+    "status": "active",
+    "updated_at": "2026-08-26T23:54:05.029553+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "description": null,
+    "display_name": "Flex",
+    "metadata": {
+      "legacy_pricing_plan": "flex",
+      "source": "json"
+    },
+    "service_tier_slug": "flex",
+    "status": "active",
+    "updated_at": "2026-08-11T09:18:49.761881+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "description": null,
+    "display_name": "Free",
+    "metadata": {
+      "legacy_pricing_plan": "free",
+      "source": "json"
+    },
+    "service_tier_slug": "free",
+    "status": "disabled",
+    "updated_at": "2026-08-11T09:18:49.761881+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "description": null,
+    "display_name": "Standard",
+    "metadata": {
+      "legacy_pricing_plan": "standard",
+      "source": "json"
+    },
+    "service_tier_slug": "standard",
+    "status": "active",
+    "updated_at": "2026-08-11T09:18:49.761881+00:00"
+  },
+  {
+    "created_at": "2026-08-05T23:03:38.012409+00:00",
+    "description": null,
+    "display_name": "Contributor",
+    "metadata": {
+      "legacy_pricing_plan": "contributor",
+      "source": "json"
+    },
+    "service_tier_slug": "contributor",
+    "status": "disabled",
+    "updated_at": "2026-08-11T09:18:49.761881+00:00"
+  },
+  {
+    "created_at": "2026-08-12T10:35:16.876339+00:00",
+    "description": null,
+    "display_name": "64k",
+    "metadata": {
+      "legacy_pricing_plan": "64k",
+      "source": "json"
+    },
+    "service_tier_slug": "64k",
+    "status": "disabled",
+    "updated_at": "2026-08-12T10:35:16.876339+00:00"
+  },
+  {
+    "created_at": "2026-08-21T18:36:03.394993+00:00",
+    "description": null,
+    "display_name": "Fast",
+    "metadata": {
+      "legacy_pricing_plan": "fast",
+      "source": "json"
+    },
+    "service_tier_slug": "fast",
+    "status": "disabled",
+    "updated_at": "2026-08-21T18:36:03.394993+00:00"
+  },
+  {
+    "created_at": "2026-08-21T22:31:37.499093+00:00",
+    "description": null,
+    "display_name": "Default",
+    "metadata": {
+      "legacy_pricing_plan": "default",
+      "source": "json"
+    },
+    "service_tier_slug": "default",
+    "status": "disabled",
+    "updated_at": "2026-08-21T22:31:37.499093+00:00"
+  },
+  {
+    "created_at": "2026-08-21T22:34:12.697789+00:00",
+    "description": null,
+    "display_name": "Auto",
+    "metadata": {
+      "legacy_pricing_plan": "auto",
+      "source": "json"
+    },
+    "service_tier_slug": "auto",
+    "status": "disabled",
+    "updated_at": "2026-08-21T22:34:12.697789+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "128k",
+    "metadata": {
+      "legacy_pricing_plan": "128k",
+      "source": "json"
+    },
+    "service_tier_slug": "128k",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "256k",
+    "metadata": {
+      "legacy_pricing_plan": "256k",
+      "source": "json"
+    },
+    "service_tier_slug": "256k",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "32k",
+    "metadata": {
+      "legacy_pricing_plan": "32k",
+      "source": "json"
+    },
+    "service_tier_slug": "32k",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Api Trial",
+    "metadata": {
+      "legacy_pricing_plan": "api-trial",
+      "source": "json"
+    },
+    "service_tier_slug": "api-trial",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Developer",
+    "metadata": {
+      "legacy_pricing_plan": "developer",
+      "source": "json"
+    },
+    "service_tier_slug": "developer",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Highspeed",
+    "metadata": {
+      "legacy_pricing_plan": "highspeed",
+      "source": "json"
+    },
+    "service_tier_slug": "highspeed",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Model Lab",
+    "metadata": {
+      "legacy_pricing_plan": "model_lab",
+      "source": "json"
+    },
+    "service_tier_slug": "model_lab",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "On Demand",
+    "metadata": {
+      "legacy_pricing_plan": "on-demand",
+      "source": "json"
+    },
+    "service_tier_slug": "on-demand",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Production",
+    "metadata": {
+      "legacy_pricing_plan": "production",
+      "source": "json"
+    },
+    "service_tier_slug": "production",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Serverless Beta",
+    "metadata": {
+      "legacy_pricing_plan": "serverless-beta",
+      "source": "json"
+    },
+    "service_tier_slug": "serverless-beta",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Step Plan",
+    "metadata": {
+      "legacy_pricing_plan": "step_plan",
+      "source": "json"
+    },
+    "service_tier_slug": "step_plan",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Tier 1",
+    "metadata": {
+      "legacy_pricing_plan": "tier-1",
+      "source": "json"
+    },
+    "service_tier_slug": "tier-1",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Tier 2",
+    "metadata": {
+      "legacy_pricing_plan": "tier-2",
+      "source": "json"
+    },
+    "service_tier_slug": "tier-2",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Tier 3",
+    "metadata": {
+      "legacy_pricing_plan": "tier-3",
+      "source": "json"
+    },
+    "service_tier_slug": "tier-3",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Training 128k",
+    "metadata": {
+      "legacy_pricing_plan": "training-128k",
+      "source": "json"
+    },
+    "service_tier_slug": "training-128k",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Training 256k",
+    "metadata": {
+      "legacy_pricing_plan": "training-256k",
+      "source": "json"
+    },
+    "service_tier_slug": "training-256k",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Training 32k",
+    "metadata": {
+      "legacy_pricing_plan": "training-32k",
+      "source": "json"
+    },
+    "service_tier_slug": "training-32k",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Training 64k",
+    "metadata": {
+      "legacy_pricing_plan": "training-64k",
+      "source": "json"
+    },
+    "service_tier_slug": "training-64k",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Upstream 1",
+    "metadata": {
+      "legacy_pricing_plan": "upstream-1",
+      "source": "json"
+    },
+    "service_tier_slug": "upstream-1",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Upstream 2",
+    "metadata": {
+      "legacy_pricing_plan": "upstream-2",
+      "source": "json"
+    },
+    "service_tier_slug": "upstream-2",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Upstream 3",
+    "metadata": {
+      "legacy_pricing_plan": "upstream-3",
+      "source": "json"
+    },
+    "service_tier_slug": "upstream-3",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Upstream 4",
+    "metadata": {
+      "legacy_pricing_plan": "upstream-4",
+      "source": "json"
+    },
+    "service_tier_slug": "upstream-4",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Upstream 5",
+    "metadata": {
+      "legacy_pricing_plan": "upstream-5",
+      "source": "json"
+    },
+    "service_tier_slug": "upstream-5",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Upstream 6",
+    "metadata": {
+      "legacy_pricing_plan": "upstream-6",
+      "source": "json"
+    },
+    "service_tier_slug": "upstream-6",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:45.291021+00:00",
+    "description": null,
+    "display_name": "Upstream 7",
+    "metadata": {
+      "legacy_pricing_plan": "upstream-7",
+      "source": "json"
+    },
+    "service_tier_slug": "upstream-7",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:09:45.291021+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:18:54.104185+00:00",
+    "description": null,
+    "display_name": "Embedding Plus",
+    "metadata": {
+      "legacy_pricing_plan": "embedding-plus",
+      "source": "json"
+    },
+    "service_tier_slug": "embedding-plus",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:18:54.104185+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:18:54.104185+00:00",
+    "description": null,
+    "display_name": "Embedding Standard",
+    "metadata": {
+      "legacy_pricing_plan": "embedding-standard",
+      "source": "json"
+    },
+    "service_tier_slug": "embedding-standard",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:18:54.104185+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:18:54.104185+00:00",
+    "description": null,
+    "display_name": "Llm Plus",
+    "metadata": {
+      "legacy_pricing_plan": "llm-plus",
+      "source": "json"
+    },
+    "service_tier_slug": "llm-plus",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:18:54.104185+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:18:54.104185+00:00",
+    "description": null,
+    "display_name": "Llm Premium",
+    "metadata": {
+      "legacy_pricing_plan": "llm-premium",
+      "source": "json"
+    },
+    "service_tier_slug": "llm-premium",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:18:54.104185+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:18:54.104185+00:00",
+    "description": null,
+    "display_name": "Llm Standard",
+    "metadata": {
+      "legacy_pricing_plan": "llm-standard",
+      "source": "json"
+    },
+    "service_tier_slug": "llm-standard",
+    "status": "disabled",
+    "updated_at": "2026-08-25T13:18:54.104185+00:00"
+  },
+  {
+    "created_at": "2026-08-25T19:35:15.496078+00:00",
+    "description": null,
+    "display_name": "Early Access",
+    "metadata": {
+      "legacy_pricing_plan": "early_access",
+      "source": "json"
+    },
+    "service_tier_slug": "early_access",
+    "status": "disabled",
+    "updated_at": "2026-08-25T19:35:15.496078+00:00"
+  },
+  {
+    "created_at": "2026-08-28T10:41:18.74864+00:00",
+    "description": null,
+    "display_name": "Aggregator",
+    "metadata": {
+      "legacy_pricing_plan": "aggregator",
+      "source": "json"
+    },
+    "service_tier_slug": "aggregator",
+    "status": "disabled",
+    "updated_at": "2026-08-28T10:41:18.74864+00:00"
+  },
+  {
+    "created_at": "2026-08-28T10:41:18.74864+00:00",
+    "description": null,
+    "display_name": "Load Testing",
+    "metadata": {
+      "legacy_pricing_plan": "load_testing",
+      "source": "json"
+    },
+    "service_tier_slug": "load_testing",
+    "status": "disabled",
+    "updated_at": "2026-08-28T10:41:18.74864+00:00"
+  },
+  {
+    "created_at": "2026-09-02T18:50:43.481925+00:00",
+    "description": null,
+    "display_name": "Provisioned",
+    "metadata": {
+      "legacy_pricing_plan": "provisioned",
+      "source": "json"
+    },
+    "service_tier_slug": "provisioned",
+    "status": "disabled",
+    "updated_at": "2026-09-02T18:50:43.481925+00:00"
+  }
+]

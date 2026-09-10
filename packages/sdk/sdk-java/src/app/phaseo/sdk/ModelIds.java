@@ -379,8 +379,8 @@ public final class ModelIds {
     /** Model ID: <code>deepseek/deepseek-v4-pro-0813</code>. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
     public static final String DEEPSEEK_DEEPSEEK_V4_PRO_0813 = "deepseek/deepseek-v4-pro-0813";
 
-    /** Model ID: <code>deepseek/deepseek-v4.1-flash-beta</code>. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta */
-    public static final String DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = "deepseek/deepseek-v4.1-flash-beta";
+    /** Model ID: <code>deepseek/deepseek-v4.1-flash</code>. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash */
+    public static final String DEEPSEEK_DEEPSEEK_V4_1_FLASH = "deepseek/deepseek-v4.1-flash";
 
     /** Model ID: <code>deepseek/deepseek-v4.1-flash-preview</code>. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview */
     public static final String DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW = "deepseek/deepseek-v4.1-flash-preview";
@@ -1650,9 +1650,6 @@ public final class ModelIds {
 
     /** Model ID: <code>reka/reka-flash</code>. Model page: https://phaseo.app/models/reka/reka-flash */
     public static final String REKA_REKA_FLASH = "reka/reka-flash";
-
-    /** Model ID: <code>reka/reka-flash-research</code>. Model page: https://phaseo.app/models/reka/reka-flash-research */
-    public static final String REKA_REKA_FLASH_RESEARCH = "reka/reka-flash-research";
 
     /** Model ID: <code>relace/relace-rank</code>. Model page: https://phaseo.app/models/relace/relace-rank */
     public static final String RELACE_RELACE_RANK = "relace/relace-rank";

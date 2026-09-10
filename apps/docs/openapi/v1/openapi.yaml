@@ -12996,12 +12996,16 @@ components:
       enum:
         - 2-bench-retail
         - 2-bench-telecom
+        - aa-agentic-index
         - aa-agentic-index-v4
         - aa-agentic-index-v5
         - aa-briefcase
+        - aa-coding-index
         - aa-coding-index-v4
         - aa-coding-index-v5
         - aa-index
+        - aa-intelligence-index
+        - aa-intelligence-index-cost
         - aa-intelligence-index-cost-v4
         - aa-intelligence-index-cost-v5
         - aa-intelligence-index-v4
@@ -20656,7 +20660,7 @@ components:
         - deepseek/deepseek-v4-flash-vision-exp
         - deepseek/deepseek-v4-pro
         - deepseek/deepseek-v4-pro-0813
-        - deepseek/deepseek-v4.1-flash-beta
+        - deepseek/deepseek-v4.1-flash
         - deepseek/deepseek-v4.1-flash-preview
         - early-access/ea-29b-a4b
         - eleven-labs/eleven-flash-v2
@@ -21080,7 +21084,6 @@ components:
         - reka/reka-edge
         - reka/reka-edge-2603
         - reka/reka-flash
-        - reka/reka-flash-research
         - relace/relace-rank
         - relace/relace-search
         - sakana/fugu-ultra

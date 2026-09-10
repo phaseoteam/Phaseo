@@ -254,8 +254,8 @@ namespace PhaseoSdk
         public const string DeepseekDeepseekV4Pro = "deepseek/deepseek-v4-pro";
         /// <summary>Model ID: <c>deepseek/deepseek-v4-pro-0813</c>. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813</summary>
         public const string DeepseekDeepseekV4Pro0813 = "deepseek/deepseek-v4-pro-0813";
-        /// <summary>Model ID: <c>deepseek/deepseek-v4.1-flash-beta</c>. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta</summary>
-        public const string DeepseekDeepseekV41FlashBeta = "deepseek/deepseek-v4.1-flash-beta";
+        /// <summary>Model ID: <c>deepseek/deepseek-v4.1-flash</c>. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash</summary>
+        public const string DeepseekDeepseekV41Flash = "deepseek/deepseek-v4.1-flash";
         /// <summary>Model ID: <c>deepseek/deepseek-v4.1-flash-preview</c>. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview</summary>
         public const string DeepseekDeepseekV41FlashPreview = "deepseek/deepseek-v4.1-flash-preview";
         /// <summary>Model ID: <c>early-access/ea-29b-a4b</c>. Model page: https://phaseo.app/models/early-access/ea-29b-a4b</summary>
@@ -1102,8 +1102,6 @@ namespace PhaseoSdk
         public const string RekaRekaEdge2603 = "reka/reka-edge-2603";
         /// <summary>Model ID: <c>reka/reka-flash</c>. Model page: https://phaseo.app/models/reka/reka-flash</summary>
         public const string RekaRekaFlash = "reka/reka-flash";
-        /// <summary>Model ID: <c>reka/reka-flash-research</c>. Model page: https://phaseo.app/models/reka/reka-flash-research</summary>
-        public const string RekaRekaFlashResearch = "reka/reka-flash-research";
         /// <summary>Model ID: <c>relace/relace-rank</c>. Model page: https://phaseo.app/models/relace/relace-rank</summary>
         public const string RelaceRelaceRank = "relace/relace-rank";
         /// <summary>Model ID: <c>relace/relace-search</c>. Model page: https://phaseo.app/models/relace/relace-search</summary>

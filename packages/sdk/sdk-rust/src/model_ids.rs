@@ -375,9 +375,9 @@ pub mod model_ids {
     /// Model ID: `deepseek/deepseek-v4-pro-0813`.
     /// Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
     pub const DEEPSEEK_DEEPSEEK_V4_PRO_0813: &str = "deepseek/deepseek-v4-pro-0813";
-    /// Model ID: `deepseek/deepseek-v4.1-flash-beta`.
-    /// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
-    pub const DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA: &str = "deepseek/deepseek-v4.1-flash-beta";
+    /// Model ID: `deepseek/deepseek-v4.1-flash`.
+    /// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash
+    pub const DEEPSEEK_DEEPSEEK_V4_1_FLASH: &str = "deepseek/deepseek-v4.1-flash";
     /// Model ID: `deepseek/deepseek-v4.1-flash-preview`.
     /// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview
     pub const DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW: &str = "deepseek/deepseek-v4.1-flash-preview";
@@ -1647,9 +1647,6 @@ pub mod model_ids {
     /// Model ID: `reka/reka-flash`.
     /// Model page: https://phaseo.app/models/reka/reka-flash
     pub const REKA_REKA_FLASH: &str = "reka/reka-flash";
-    /// Model ID: `reka/reka-flash-research`.
-    /// Model page: https://phaseo.app/models/reka/reka-flash-research
-    pub const REKA_REKA_FLASH_RESEARCH: &str = "reka/reka-flash-research";
     /// Model ID: `relace/relace-rank`.
     /// Model page: https://phaseo.app/models/relace/relace-rank
     pub const RELACE_RELACE_RANK: &str = "relace/relace-rank";
@@ -2166,7 +2163,7 @@ pub mod model_ids {
         DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
         DEEPSEEK_DEEPSEEK_V4_PRO,
         DEEPSEEK_DEEPSEEK_V4_PRO_0813,
-        DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA,
+        DEEPSEEK_DEEPSEEK_V4_1_FLASH,
         DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW,
         EARLY_ACCESS_EA_29B_A4B,
         ELEVEN_LABS_ELEVEN_FLASH_V2,
@@ -2590,7 +2587,6 @@ pub mod model_ids {
         REKA_REKA_EDGE,
         REKA_REKA_EDGE_2603,
         REKA_REKA_FLASH,
-        REKA_REKA_FLASH_RESEARCH,
         RELACE_RELACE_RANK,
         RELACE_RELACE_SEARCH,
         SAKANA_FUGU_ULTRA,

@@ -1,0 +1,37 @@
+[
+  {
+    "disposition": "database_managed",
+    "resource_id": "openai:openai/gpt-6-astra",
+    "source_key": "openai:openai/gpt-6-astra",
+    "source_type": "provider_route",
+    "updated_at": "2026-09-04T19:17:11.925466+00:00"
+  },
+  {
+    "disposition": "database_managed",
+    "resource_id": "openai/gpt-6-astra",
+    "source_key": "openai/gpt-6-astra",
+    "source_type": "model",
+    "updated_at": "2026-09-08T00:00:40.466287+00:00"
+  },
+  {
+    "disposition": "database_managed",
+    "resource_id": "reka:reka-flash-research",
+    "source_key": "reka:reka-flash-research",
+    "source_type": "provider_route",
+    "updated_at": "2026-09-09T23:33:51.674897+00:00"
+  },
+  {
+    "disposition": "database_managed",
+    "resource_id": "reka:reka/fp8",
+    "source_key": "reka:reka/fp8",
+    "source_type": "provider_route",
+    "updated_at": "2026-09-09T23:33:27.356364+00:00"
+  },
+  {
+    "disposition": "database_managed",
+    "resource_id": "reka/reka-flash-research",
+    "source_key": "reka/reka-flash-research",
+    "source_type": "model",
+    "updated_at": "2026-09-09T23:30:34.974413+00:00"
+  }
+]

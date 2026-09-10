@@ -251,8 +251,8 @@ export const ModelIds = {
   DEEPSEEK_DEEPSEEK_V4_PRO: "deepseek/deepseek-v4-pro",
   /** Model ID: `deepseek/deepseek-v4-pro-0813`. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
   DEEPSEEK_DEEPSEEK_V4_PRO_0813: "deepseek/deepseek-v4-pro-0813",
-  /** Model ID: `deepseek/deepseek-v4.1-flash-beta`. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta */
-  DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA: "deepseek/deepseek-v4.1-flash-beta",
+  /** Model ID: `deepseek/deepseek-v4.1-flash`. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash */
+  DEEPSEEK_DEEPSEEK_V4_1_FLASH: "deepseek/deepseek-v4.1-flash",
   /** Model ID: `deepseek/deepseek-v4.1-flash-preview`. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview */
   DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW: "deepseek/deepseek-v4.1-flash-preview",
   /** Model ID: `early-access/ea-29b-a4b`. Model page: https://phaseo.app/models/early-access/ea-29b-a4b */
@@ -1099,8 +1099,6 @@ export const ModelIds = {
   REKA_REKA_EDGE_2603: "reka/reka-edge-2603",
   /** Model ID: `reka/reka-flash`. Model page: https://phaseo.app/models/reka/reka-flash */
   REKA_REKA_FLASH: "reka/reka-flash",
-  /** Model ID: `reka/reka-flash-research`. Model page: https://phaseo.app/models/reka/reka-flash-research */
-  REKA_REKA_FLASH_RESEARCH: "reka/reka-flash-research",
   /** Model ID: `relace/relace-rank`. Model page: https://phaseo.app/models/relace/relace-rank */
   RELACE_RELACE_RANK: "relace/relace-rank",
   /** Model ID: `relace/relace-search`. Model page: https://phaseo.app/models/relace/relace-search */

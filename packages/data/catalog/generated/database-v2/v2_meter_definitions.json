@@ -1,0 +1,722 @@
+[
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_audio_minutes",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_audio_minutes",
+    "modality": "audio",
+    "status": "active",
+    "unit": "minute",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_characters",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_characters",
+    "modality": "text",
+    "status": "active",
+    "unit": "character",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_image",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_image",
+    "modality": "image",
+    "status": "active",
+    "unit": "image",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_pages",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_pages",
+    "modality": "text",
+    "status": "active",
+    "unit": "page",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_text_messages",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_text_messages",
+    "modality": "text",
+    "status": "active",
+    "unit": "message",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_video_seconds",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_video_seconds",
+    "modality": "video",
+    "status": "active",
+    "unit": "second",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_image",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_image",
+    "modality": "image",
+    "status": "active",
+    "unit": "image",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_video_seconds",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_video_seconds",
+    "modality": "video",
+    "status": "active",
+    "unit": "second",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_video",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_video",
+    "modality": "video",
+    "status": "active",
+    "unit": "video",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": null,
+    "display_name": "audio_minutes",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "audio_minutes",
+    "modality": "audio",
+    "status": "active",
+    "unit": "minute",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": null,
+    "display_name": "bfl_credits",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "bfl_credits",
+    "modality": "text",
+    "status": "active",
+    "unit": "credit",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": null,
+    "display_name": "native_web_search_requests",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "native_web_search_requests",
+    "modality": "text",
+    "status": "active",
+    "unit": "request",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": null,
+    "display_name": "requests",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "requests",
+    "modality": "text",
+    "status": "active",
+    "unit": "request",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "cache_read",
+    "metadata": {
+      "source": "v2_pricing_sku_meters_backfill"
+    },
+    "meter_key": "cache_read",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "cache_write",
+    "metadata": {
+      "source": "v2_pricing_sku_meters_backfill"
+    },
+    "meter_key": "cache_write",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "cached_read_audio_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "cached_read_audio_tokens",
+    "modality": "audio",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "cached_read_image_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "cached_read_image_tokens",
+    "modality": "image",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "cached_read_text_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "cached_read_text_tokens",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "cached_write_text_tokens_1h",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "cached_write_text_tokens_1h",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "cached_write_text_tokens_5m",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "cached_write_text_tokens_5m",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "cached_write_text_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "cached_write_text_tokens",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_audio_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_audio_tokens",
+    "modality": "audio",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_audio",
+    "metadata": {
+      "source": "v2_pricing_sku_meters_backfill"
+    },
+    "meter_key": "input_audio",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_image_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_image_tokens",
+    "modality": "image",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_text_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_text_tokens",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_tokens",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_video_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_video_tokens",
+    "modality": "video",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "input",
+    "metadata": {
+      "source": "v2_pricing_sku_meters_backfill"
+    },
+    "meter_key": "input",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_audio_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_audio_tokens",
+    "modality": "audio",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_audio",
+    "metadata": {
+      "source": "v2_pricing_sku_meters_backfill"
+    },
+    "meter_key": "output_audio",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_image_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_image_tokens",
+    "modality": "image",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_reasoning_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_reasoning_tokens",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_text_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_text_tokens",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_tokens",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_video_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_video_tokens",
+    "modality": "video",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "output",
+    "display_name": "output",
+    "metadata": {
+      "source": "v2_pricing_sku_meters_backfill"
+    },
+    "meter_key": "output",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "output",
+    "display_name": "reasoning",
+    "metadata": {
+      "source": "v2_pricing_sku_meters_backfill"
+    },
+    "meter_key": "reasoning",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": null,
+    "display_name": "implicit_cached_input_text_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "implicit_cached_input_text_tokens",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": null,
+    "display_name": "total_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "total_tokens",
+    "modality": "text",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000000,
+    "description": null,
+    "direction": null,
+    "display_name": "image_pixels",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "image_pixels",
+    "modality": "image",
+    "status": "active",
+    "unit": "pixel",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:35:31.793752+00:00",
+    "default_unit_quantity": 1000000000,
+    "description": null,
+    "direction": null,
+    "display_name": "video_pixels",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "video_pixels",
+    "modality": "image",
+    "status": "active",
+    "unit": "pixel",
+    "updated_at": "2026-07-26T20:35:31.793752+00:00"
+  },
+  {
+    "created_at": "2026-07-31T11:59:46.961772+00:00",
+    "default_unit_quantity": 3600,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_audio_seconds",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_audio_seconds",
+    "modality": "audio",
+    "status": "active",
+    "unit": "second",
+    "updated_at": "2026-07-31T11:59:46.961772+00:00"
+  },
+  {
+    "created_at": "2026-08-07T10:33:24.741436+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "input_text_bytes",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "input_text_bytes",
+    "modality": "text",
+    "status": "active",
+    "unit": "byte",
+    "updated_at": "2026-08-07T10:33:24.741436+00:00"
+  },
+  {
+    "created_at": "2026-08-13T13:08:49.451888+00:00",
+    "default_unit_quantity": 1000000,
+    "description": null,
+    "direction": "input",
+    "display_name": "cached_read_video_tokens",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "cached_read_video_tokens",
+    "modality": "video",
+    "status": "active",
+    "unit": "token",
+    "updated_at": "2026-08-13T13:08:49.451888+00:00"
+  },
+  {
+    "created_at": "2026-08-23T14:39:36.586949+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_audio_seconds",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_audio_seconds",
+    "modality": "audio",
+    "status": "active",
+    "unit": "second",
+    "updated_at": "2026-08-23T14:39:36.586949+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:59.585317+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": "output",
+    "display_name": "output_video_frames",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "output_video_frames",
+    "modality": "video",
+    "status": "active",
+    "unit": "frame",
+    "updated_at": "2026-08-25T13:09:59.585317+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:59.585317+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": null,
+    "display_name": "native_web_fetch_requests",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "native_web_fetch_requests",
+    "modality": "text",
+    "status": "active",
+    "unit": "request",
+    "updated_at": "2026-08-25T13:09:59.585317+00:00"
+  },
+  {
+    "created_at": "2026-09-08T09:13:21.419738+00:00",
+    "default_unit_quantity": 1,
+    "description": null,
+    "direction": null,
+    "display_name": "deepinfra_cost_usd",
+    "metadata": {
+      "source": "json"
+    },
+    "meter_key": "deepinfra_cost_usd",
+    "modality": "text",
+    "status": "active",
+    "unit": "USD",
+    "updated_at": "2026-09-08T09:13:21.419738+00:00"
+  }
+]

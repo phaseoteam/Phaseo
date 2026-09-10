@@ -1,0 +1,3538 @@
+[
+  {
+    "effective_to": null,
+    "feature_description": "1,000 base credits plus 500 flex allotment.",
+    "feature_name": "GitHub AI Credits",
+    "feature_value": "1,500 / Month",
+    "other_info": {},
+    "plan_uuid": "5d433fee-5758-4e59-bb92-3893dedfd1cb"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "10,000 base credits plus 10,000 flex allotment.",
+    "feature_name": "GitHub AI Credits",
+    "feature_value": "20,000 / Month",
+    "other_info": "Usage-based billing begins June 1, 2026",
+    "plan_uuid": "e7b98476-2a44-4e7f-aa60-2831c8aacf0e"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "3,900 base credits plus 3,100 flex allotment.",
+    "feature_name": "GitHub AI Credits",
+    "feature_value": "7,000 / Month",
+    "other_info": {},
+    "plan_uuid": "5ff2280a-fe4d-4290-8a71-4bc353bdc2b6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Admin dashboard with user and policy management is available when Pro is configured with IAM Identity Center.",
+    "feature_name": "Administration",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "bce0a4ad-087d-4b74-822d-7e3c4c9417e8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "All-day coding in the CLI, IDE, or web, with PAYG beyond included quota.",
+    "feature_name": "Mistral Vibe",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "8cc7e37d-96de-479d-86aa-62fb01ab8e1a"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Allocation is pooled at the AWS payer-account level. Additional submitted lines are billed at $0.003 per line.",
+    "feature_name": "Java Transformations",
+    "feature_value": "4,000 Lines / User / Month",
+    "other_info": {},
+    "plan_uuid": "bce0a4ad-087d-4b74-822d-7e3c4c9417e8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Anthropic describes Team Premium as providing 6.25x the usage of Claude Pro.",
+    "feature_name": "Usage",
+    "feature_value": "6.25x Claude Pro",
+    "other_info": {},
+    "plan_uuid": "bb3025cc-4ac8-44fe-8cb2-da630ed2c9ce"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Anthropic describes Team Premium as providing 6.25x the usage of Claude Pro.",
+    "feature_name": "Usage",
+    "feature_value": "6.25x Claude Pro",
+    "other_info": {},
+    "plan_uuid": "e927eca2-afe5-4295-b858-6137119671ba"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Anthropic describes Team Standard as providing 1.25x the usage of Claude Pro.",
+    "feature_name": "Usage",
+    "feature_value": "1.25x Claude Pro",
+    "other_info": {},
+    "plan_uuid": "42c772ba-e710-4b71-9ef4-ce77a733b381"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Anthropic describes Team Standard as providing 1.25x the usage of Claude Pro.",
+    "feature_name": "Usage",
+    "feature_value": "1.25x Claude Pro",
+    "other_info": {},
+    "plan_uuid": "627d3769-860a-460c-bf73-22555c93ac15"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Antigravity lists Google AI Pro as providing a flexible AI credit pool.",
+    "feature_name": "AI Credits",
+    "feature_value": "Flexible Pool",
+    "other_info": {},
+    "plan_uuid": "79e5bfc8-cd24-4fdf-bd77-c21de5ac7cbd"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Antigravity lists Google AI Pro as providing a flexible AI credit pool.",
+    "feature_name": "AI Credits",
+    "feature_value": "Flexible Pool",
+    "other_info": {},
+    "plan_uuid": "ca3baec7-5aa3-4a2a-b7b0-ca8a02781063"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Antigravity lists Google AI Ultra as providing a flexible AI credit pool.",
+    "feature_name": "AI Credits",
+    "feature_value": "Flexible Pool",
+    "other_info": "Usage limits are higher than Google AI Pro",
+    "plan_uuid": "f6b63724-21da-4d63-84fe-66221adee925"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Applies to the eligible Hailuo video resource published for Max.",
+    "feature_name": "Video Generation",
+    "feature_value": "3 clips / day",
+    "other_info": {},
+    "plan_uuid": "356c27cd-f19e-4eb2-bc7d-0db4076cc690"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Applies to the eligible Hailuo video resource published for Max.",
+    "feature_name": "Video Generation",
+    "feature_value": "3 clips / day",
+    "other_info": {},
+    "plan_uuid": "91dc0ba8-95be-48dd-b705-abc28c43d6c4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Applies to the eligible Hailuo video resource published for Ultra.",
+    "feature_name": "Video Generation",
+    "feature_value": "5 clips / day",
+    "other_info": {},
+    "plan_uuid": "579d7d3e-e3e2-49d6-a8e8-cd06ecd8d3b1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Applies to the eligible Hailuo video resource published for Ultra.",
+    "feature_name": "Video Generation",
+    "feature_value": "5 clips / day",
+    "other_info": {},
+    "plan_uuid": "ae9b1970-37b9-44a6-9282-54e7330186c8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Availability and pricing can vary in the live Cascade model selector.",
+    "feature_name": "Premium Models",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "de4e8623-d6d1-458a-afde-e9e9b30cc736"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Availability and pricing can vary in the live Cascade model selector.",
+    "feature_name": "Premium Models",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "eb4e7cd1-ae5b-495c-89df-3f660b30dcae"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "AWS describes Amazon Q Developer as providing access to the latest Claude models, but does not publish stable underlying model IDs for the subscription plan.",
+    "feature_name": "Model Access",
+    "feature_value": "Latest Claude Models",
+    "other_info": {},
+    "plan_uuid": "7f83ac16-003f-48e9-b493-1d4075903a50"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "AWS describes Amazon Q Developer as providing access to the latest Claude models, but does not publish stable underlying model IDs for the subscription plan.",
+    "feature_name": "Model Access",
+    "feature_value": "Latest Claude Models",
+    "other_info": {},
+    "plan_uuid": "bce0a4ad-087d-4b74-822d-7e3c4c9417e8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "AWS includes agentic coding and Q&A requests with Pro-tier limits; account limits may be adjusted for regional, payment-history, fraud, or approved quota factors.",
+    "feature_name": "Agentic Requests",
+    "feature_value": "Included (with limits)",
+    "other_info": {},
+    "plan_uuid": "bce0a4ad-087d-4b74-822d-7e3c4c9417e8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Centralized team billing and administration.",
+    "feature_name": "Team Billing",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "005acab7-6293-4c22-ad82-0fa87aad9e61"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Centralized team billing and administration.",
+    "feature_name": "Team Billing",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "03936ee6-8f62-4e10-9e2a-7f4e7d4150b3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Centralized team billing and administration.",
+    "feature_name": "Team Billing",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "7ef75ac5-e79d-44e2-907f-2b4ee6d001d7"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Centralized team billing and administration.",
+    "feature_name": "Team Billing",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "fde08e87-8609-4599-b7fe-370c6320844a"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Credits are pooled across the enterprise; additional usage is $0.01 per credit when enabled.",
+    "feature_name": "GitHub AI Credits",
+    "feature_value": "3,900 / User / Month",
+    "other_info": {},
+    "plan_uuid": "579a71b8-8408-4216-8f49-35c42d579100"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Credits are pooled across the organization; additional usage is $0.01 per credit when enabled.",
+    "feature_name": "GitHub AI Credits",
+    "feature_value": "1,900 / User / Month",
+    "other_info": {},
+    "plan_uuid": "6fd17186-8ed4-4e6a-9610-0e003f950d35"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Cursor describes Pro+ as 3x the Agent limits of Pro.",
+    "feature_name": "Agent Limits",
+    "feature_value": "3x Cursor Pro",
+    "other_info": {},
+    "plan_uuid": "586c1e45-545c-4bd7-a391-5a6946e8a1e0"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Cursor describes Pro+ as 3x the Agent limits of Pro.",
+    "feature_name": "Agent Limits",
+    "feature_value": "3x Cursor Pro",
+    "other_info": {},
+    "plan_uuid": "6f62e162-f3a5-4e98-8d37-1135718ff517"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Cursor describes Ultra as 20x the Agent limits of Pro.",
+    "feature_name": "Agent Limits",
+    "feature_value": "20x Cursor Pro",
+    "other_info": {},
+    "plan_uuid": "3f0e5c67-7a50-44c4-b767-36d63f868725"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Cursor describes Ultra as 20x the Agent limits of Pro.",
+    "feature_name": "Agent Limits",
+    "feature_value": "20x Cursor Pro",
+    "other_info": {},
+    "plan_uuid": "5b3eb9c4-7c19-4ec8-b3af-642e42883e3b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Cursor says paid plans include access to frontier models.",
+    "feature_name": "Frontier Models",
+    "feature_value": "Included",
+    "other_info": "Exact available model list may vary",
+    "plan_uuid": "12704428-12bd-4e44-955a-3e525faf7104"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Cursor says paid plans include access to frontier models.",
+    "feature_name": "Frontier Models",
+    "feature_value": "Included",
+    "other_info": "Exact available model list may vary",
+    "plan_uuid": "312cb42b-77b7-4e66-b5ec-ea0b830c6863"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Cursor says paid plans include access to frontier models.",
+    "feature_name": "Frontier Models",
+    "feature_value": "Included",
+    "other_info": "Exact available model list may vary",
+    "plan_uuid": "3f0e5c67-7a50-44c4-b767-36d63f868725"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Cursor says paid plans include access to frontier models.",
+    "feature_name": "Frontier Models",
+    "feature_value": "Included",
+    "other_info": "Exact available model list may vary",
+    "plan_uuid": "586c1e45-545c-4bd7-a391-5a6946e8a1e0"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Cursor says paid plans include access to frontier models.",
+    "feature_name": "Frontier Models",
+    "feature_value": "Included",
+    "other_info": "Exact available model list may vary",
+    "plan_uuid": "5b3eb9c4-7c19-4ec8-b3af-642e42883e3b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Cursor says paid plans include access to frontier models.",
+    "feature_name": "Frontier Models",
+    "feature_value": "Included",
+    "other_info": "Exact available model list may vary",
+    "plan_uuid": "6f62e162-f3a5-4e98-8d37-1135718ff517"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Everything in Copilot Pro+ with the highest monthly AI credit allowance.",
+    "feature_name": "Model Access",
+    "feature_value": "All Models",
+    "other_info": {},
+    "plan_uuid": "e7b98476-2a44-4e7f-aa60-2831c8aacf0e"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Everything on Individual plus team collaboration features.",
+    "feature_name": "Frontier Models",
+    "feature_value": "Included",
+    "other_info": "Exact available model list may vary",
+    "plan_uuid": "005acab7-6293-4c22-ad82-0fa87aad9e61"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Everything on Individual plus team collaboration features.",
+    "feature_name": "Frontier Models",
+    "feature_value": "Included",
+    "other_info": "Exact available model list may vary",
+    "plan_uuid": "fde08e87-8609-4599-b7fe-370c6320844a"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Extra usage is consumed at API pricing after included usage is exhausted.",
+    "feature_name": "Extra Usage",
+    "feature_value": "Available",
+    "other_info": {},
+    "plan_uuid": "a48d74e0-e3d2-4e52-b517-db6e6e7820e9"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Free does not include manual access to the paid-plan model selector.",
+    "feature_name": "Model Selection",
+    "feature_value": "Automatic only",
+    "other_info": {},
+    "plan_uuid": "c45196b6-d8bb-4f97-b084-3c7bfaa2df64"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Free individual usage is subject to weekly rate limits.",
+    "feature_name": "Rate Limits",
+    "feature_value": "Weekly",
+    "other_info": {},
+    "plan_uuid": "c718055a-0309-4a73-80bb-048019bcaf2b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Free users cannot manually select advanced Search models.",
+    "feature_name": "Model Selection",
+    "feature_value": "Best automatic selection",
+    "other_info": {},
+    "plan_uuid": "b682c963-4818-4a6d-b50c-f3f4482da9f8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "GitHub does not publish a stable fixed credit count for Free.",
+    "feature_name": "GitHub AI Credits",
+    "feature_value": "Limited allowance",
+    "other_info": {},
+    "plan_uuid": "c45196b6-d8bb-4f97-b084-3c7bfaa2df64"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "GPT-5.6 access is controlled through Enterprise workspace settings and role-based access controls.",
+    "feature_name": "GPT-5.6 Access Control",
+    "feature_value": "Workspace admin / RBAC controlled",
+    "other_info": {},
+    "plan_uuid": "fa78f080-683e-48f9-953d-c7bce2be4be6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes $10 per month in API credits.",
+    "feature_name": "Mistral Studio",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "e8ace47d-3fd5-4546-8570-8eb2a62e11cf"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes access to all models, including Claude Opus 4.7 and more.",
+    "feature_name": "Model Access",
+    "feature_value": "All Models",
+    "other_info": {},
+    "plan_uuid": "5ff2280a-fe4d-4290-8a71-4bc353bdc2b6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes access to ChatGPT and Codex in the Business workspace.",
+    "feature_name": "Seat Type",
+    "feature_value": "Standard ChatGPT seat",
+    "other_info": {},
+    "plan_uuid": "04f52ce1-99b3-41c1-ad5f-3c38d9beef07"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes access to ChatGPT and Codex in the Business workspace.",
+    "feature_name": "Seat Type",
+    "feature_value": "Standard ChatGPT seat",
+    "other_info": {},
+    "plan_uuid": "e1cfc4d8-6895-41cb-9c5e-54fdc4bbc99d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes Claude Code, Cursor, Cline, Kilo Code, and OpenClaw.",
+    "feature_name": "Tool Compatibility",
+    "feature_value": "20+ coding tools",
+    "other_info": {},
+    "plan_uuid": "0b9d0733-5286-4b90-a45e-b7245d667e19"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes Claude Code, Cursor, Cline, Kilo Code, and OpenClaw.",
+    "feature_name": "Tool Compatibility",
+    "feature_value": "20+ coding tools",
+    "other_info": {},
+    "plan_uuid": "1cab4f0f-642d-4009-9068-729d38a8b10e"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes Claude Code, Cursor, Cline, Kilo Code, and OpenClaw.",
+    "feature_name": "Tool Compatibility",
+    "feature_value": "20+ coding tools",
+    "other_info": {},
+    "plan_uuid": "9f8c4f72-7f5b-4d6e-8a70-37ebb68aefb4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes connectors such as Slack, Google Drive, SharePoint, GitHub, Atlassian, and more.",
+    "feature_name": "Apps and Connectors",
+    "feature_value": "60+ apps and internal-source connectors",
+    "other_info": {},
+    "plan_uuid": "04f52ce1-99b3-41c1-ad5f-3c38d9beef07"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes connectors such as Slack, Google Drive, SharePoint, GitHub, Atlassian, and more.",
+    "feature_name": "Apps and Connectors",
+    "feature_value": "60+ apps and internal-source connectors",
+    "other_info": {},
+    "plan_uuid": "e1cfc4d8-6895-41cb-9c5e-54fdc4bbc99d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes v0 Mini, v0 Pro, v0 Max, and v0 Max Fast.",
+    "feature_name": "Model Access",
+    "feature_value": "All v0 models",
+    "other_info": {},
+    "plan_uuid": "0dd3be6f-0408-4b88-9eee-2cf34fe08a53"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes v0 Mini, v0 Pro, v0 Max, and v0 Max Fast.",
+    "feature_name": "Model Access",
+    "feature_value": "All v0 models",
+    "other_info": {},
+    "plan_uuid": "210a84ab-a38b-49d7-bc6d-1937a463bcc2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Includes v0 Mini, v0 Pro, v0 Max, and v0 Max Fast.",
+    "feature_name": "Model Access",
+    "feature_value": "All v0 models",
+    "other_info": {},
+    "plan_uuid": "5473be30-0a03-4fb3-b3b1-4fdbda3aaaf3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Internal rules, skills, and plugins.",
+    "feature_name": "Team Marketplace",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "03936ee6-8f62-4e10-9e2a-7f4e7d4150b3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Internal rules, skills, and plugins.",
+    "feature_name": "Team Marketplace",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "7ef75ac5-e79d-44e2-907f-2b4ee6d001d7"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Limited messages, web searches, and coding sessions across web and mobile.",
+    "feature_name": "Vibe Access",
+    "feature_value": "Limited",
+    "other_info": {},
+    "plan_uuid": "e8ace47d-3fd5-4546-8570-8eb2a62e11cf"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Marketing model tiers are selected inside v0 and do not map to stable public API model IDs.",
+    "feature_name": "Model Access",
+    "feature_value": "v0 Mini, v0 Pro, v0 Max, and v0 Max Fast",
+    "other_info": {},
+    "plan_uuid": "bc18a278-5660-42c1-b254-b150c5cff6cd"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "MiniMax's published reference for typical concurrent agent usage.",
+    "feature_name": "Agent Usage",
+    "feature_value": "3–4 agents",
+    "other_info": {},
+    "plan_uuid": "72a813b7-40c3-4052-b924-c4bebd0db872"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "MiniMax's published reference for typical concurrent agent usage.",
+    "feature_name": "Agent Usage",
+    "feature_value": "3–4 agents",
+    "other_info": {},
+    "plan_uuid": "89522548-52e5-4fd9-96c7-9f27354d769b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "MiniMax's published reference for typical concurrent agent usage.",
+    "feature_name": "Agent Usage",
+    "feature_value": "4–5 agents",
+    "other_info": {},
+    "plan_uuid": "356c27cd-f19e-4eb2-bc7d-0db4076cc690"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "MiniMax's published reference for typical concurrent agent usage.",
+    "feature_name": "Agent Usage",
+    "feature_value": "4–5 agents",
+    "other_info": {},
+    "plan_uuid": "91dc0ba8-95be-48dd-b705-abc28c43d6c4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "MiniMax's published reference for typical concurrent agent usage.",
+    "feature_name": "Agent Usage",
+    "feature_value": "6–7 agents",
+    "other_info": {},
+    "plan_uuid": "579d7d3e-e3e2-49d6-a8e8-cd06ecd8d3b1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "MiniMax's published reference for typical concurrent agent usage.",
+    "feature_name": "Agent Usage",
+    "feature_value": "6–7 agents",
+    "other_info": {},
+    "plan_uuid": "ae9b1970-37b9-44a6-9282-54e7330186c8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Model availability varies by feature, editor, and enterprise policy.",
+    "feature_name": "Model Access",
+    "feature_value": "Broad model catalog",
+    "other_info": {},
+    "plan_uuid": "579a71b8-8408-4216-8f49-35c42d579100"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Model availability varies by feature, editor, and organisation policy.",
+    "feature_name": "Model Access",
+    "feature_value": "Broad model catalog",
+    "other_info": {},
+    "plan_uuid": "6fd17186-8ed4-4e6a-9610-0e003f950d35"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Monthly included allowance for Amazon Q Developer agentic requests.",
+    "feature_name": "Agentic Requests",
+    "feature_value": "50 / Month",
+    "other_info": {},
+    "plan_uuid": "7f83ac16-003f-48e9-b493-1d4075903a50"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "No five-hour usage limit.",
+    "feature_name": "Relative Usage",
+    "feature_value": "5x Standard seat",
+    "other_info": {},
+    "plan_uuid": "4fd9ff0c-ca64-4752-90e8-93c972daa032"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "No five-hour usage limit.",
+    "feature_name": "Relative Usage",
+    "feature_value": "5x Standard seat",
+    "other_info": {},
+    "plan_uuid": "7dc317e1-6d5d-417a-8dde-f52b7a413600"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "OpenAI states this was a name change from ChatGPT Team to ChatGPT Business.",
+    "feature_name": "Formerly ChatGPT Team",
+    "feature_value": "Renamed August 29, 2025",
+    "other_info": {},
+    "plan_uuid": "04f52ce1-99b3-41c1-ad5f-3c38d9beef07"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "OpenAI states this was a name change from ChatGPT Team to ChatGPT Business.",
+    "feature_name": "Formerly ChatGPT Team",
+    "feature_value": "Renamed August 29, 2025",
+    "other_info": {},
+    "plan_uuid": "e1cfc4d8-6895-41cb-9c5e-54fdc4bbc99d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Organization plan is linked to Google Cloud usage rather than a fixed consumer subscription price.",
+    "feature_name": "Pricing",
+    "feature_value": "Consumption-Based",
+    "other_info": {},
+    "plan_uuid": "f2ca15a9-923d-4d24-9417-ed757f71f418"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Paid plan allowance refreshes daily and weekly.",
+    "feature_name": "Agent Usage",
+    "feature_value": "Standard",
+    "other_info": {},
+    "plan_uuid": "a48d74e0-e3d2-4e52-b517-db6e6e7820e9"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Point-based access to Poe bots and models.",
+    "feature_name": "Points",
+    "feature_value": "1,650,000 / Month",
+    "other_info": {},
+    "plan_uuid": "e5b5a79b-49ed-46d0-a25e-6a123414998a"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Point-based access to Poe bots and models.",
+    "feature_name": "Points",
+    "feature_value": "10,000 / Day",
+    "other_info": {},
+    "plan_uuid": "5b49c706-394a-44da-8305-069b335d5ed2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Point-based access to Poe bots and models.",
+    "feature_name": "Points",
+    "feature_value": "3,300,000 / Month",
+    "other_info": {},
+    "plan_uuid": "bf15bbb4-a8b5-4fab-a29d-210b7d1697f3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Point-based access to Poe bots and models.",
+    "feature_name": "Points",
+    "feature_value": "660,000 / Month",
+    "other_info": {},
+    "plan_uuid": "919223a0-3f11-4986-bdfa-bfabde9be3a9"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Point-based access to Poe bots and models.",
+    "feature_name": "Points",
+    "feature_value": "8,250,000 / Month",
+    "other_info": {},
+    "plan_uuid": "3ed630ab-b5ee-42e1-b2ec-957e0ae1ca9c"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Pooled usage to maximize budget efficiency.",
+    "feature_name": "Pooled Usage",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "35ac37f3-ee62-4af0-8ff6-edb8ee5e44ec"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Priority access to new features.",
+    "feature_name": "Priority Access",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "3f0e5c67-7a50-44c4-b767-36d63f868725"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Priority access to new features.",
+    "feature_name": "Priority Access",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "5b3eb9c4-7c19-4ec8-b3af-642e42883e3b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Priority access to new models and features.",
+    "feature_name": "Priority Access",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "e7b98476-2a44-4e7f-aa60-2831c8aacf0e"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Provides Codex-only access in a ChatGPT Business workspace.",
+    "feature_name": "Seat Type",
+    "feature_value": "Codex seat",
+    "other_info": {},
+    "plan_uuid": "efc23ed2-4ea7-461e-9784-4237bdbf7d48"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Published self-serve Enterprise Max pricing.",
+    "feature_name": "Pricing",
+    "feature_value": "$325 / Month or $3,250 / Year per seat",
+    "other_info": {},
+    "plan_uuid": "0e572461-92de-441d-8c14-2c67da01aa03"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Published self-serve Enterprise Max pricing.",
+    "feature_name": "Pricing",
+    "feature_value": "$325 / Month or $3,250 / Year per seat",
+    "other_info": {},
+    "plan_uuid": "89f2629e-04a1-4b97-97b0-a2f03b715e80"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Published Team-plan example allowance.",
+    "feature_name": "Flash Answers",
+    "feature_value": "200 / Day",
+    "other_info": {},
+    "plan_uuid": "2cd36a4d-c0e2-4064-a1f1-bc53c2722e71"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Share chats and collaborate with team members.",
+    "feature_name": "Collaboration",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "210a84ab-a38b-49d7-bc6d-1937a463bcc2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Shared team context.",
+    "feature_name": "Cloud Agents and Automations",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "03936ee6-8f62-4e10-9e2a-7f4e7d4150b3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Shared team context.",
+    "feature_name": "Cloud Agents and Automations",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "7ef75ac5-e79d-44e2-907f-2b4ee6d001d7"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Standard ChatGPT seat access starts at 2 users.",
+    "feature_name": "Minimum Seats",
+    "feature_value": "2",
+    "other_info": {},
+    "plan_uuid": "04f52ce1-99b3-41c1-ad5f-3c38d9beef07"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Standard ChatGPT seat access starts at 2 users.",
+    "feature_name": "Minimum Seats",
+    "feature_value": "2",
+    "other_info": {},
+    "plan_uuid": "e1cfc4d8-6895-41cb-9c5e-54fdc4bbc99d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Standard ChatGPT seats include baseline Codex access, with flexible pricing available for usage beyond included limits.",
+    "feature_name": "Codex",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "04f52ce1-99b3-41c1-ad5f-3c38d9beef07"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Standard ChatGPT seats include baseline Codex access, with flexible pricing available for usage beyond included limits.",
+    "feature_name": "Codex",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "e1cfc4d8-6895-41cb-9c5e-54fdc4bbc99d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Supported resources share the plan quota.",
+    "feature_name": "Model Coverage",
+    "feature_value": "M3, M2.7, image, speech, and eligible video",
+    "other_info": {},
+    "plan_uuid": "356c27cd-f19e-4eb2-bc7d-0db4076cc690"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Supported resources share the plan quota.",
+    "feature_name": "Model Coverage",
+    "feature_value": "M3, M2.7, image, speech, and eligible video",
+    "other_info": {},
+    "plan_uuid": "579d7d3e-e3e2-49d6-a8e8-cd06ecd8d3b1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Supported resources share the plan quota.",
+    "feature_name": "Model Coverage",
+    "feature_value": "M3, M2.7, image, speech, and eligible video",
+    "other_info": {},
+    "plan_uuid": "91dc0ba8-95be-48dd-b705-abc28c43d6c4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Supported resources share the plan quota.",
+    "feature_name": "Model Coverage",
+    "feature_value": "M3, M2.7, image, speech, and eligible video",
+    "other_info": {},
+    "plan_uuid": "ae9b1970-37b9-44a6-9282-54e7330186c8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Supported text, image, and speech resources share the plan quota.",
+    "feature_name": "Model Coverage",
+    "feature_value": "M3, M2.7, image, and speech",
+    "other_info": {},
+    "plan_uuid": "72a813b7-40c3-4052-b924-c4bebd0db872"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Supported text, image, and speech resources share the plan quota.",
+    "feature_name": "Model Coverage",
+    "feature_value": "M3, M2.7, image, and speech",
+    "other_info": {},
+    "plan_uuid": "89522548-52e5-4fd9-96c7-9f27354d769b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Team plan for shared team workflows and paid model access.",
+    "feature_name": "Team Usage",
+    "feature_value": "$80 base plan plus $40 / full developer seat",
+    "other_info": {},
+    "plan_uuid": "eb4e7cd1-ae5b-495c-89df-3f660b30dcae"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "The current subscription-plan importer requires numeric prices, so this is represented as 0 with custom-pricing metadata.",
+    "feature_name": "Pricing",
+    "feature_value": "Custom",
+    "other_info": {},
+    "plan_uuid": "35ac37f3-ee62-4af0-8ff6-edb8ee5e44ec"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "The current subscription-plan importer requires numeric prices, so this is represented as 0 with custom-pricing metadata.",
+    "feature_name": "Pricing",
+    "feature_value": "Custom",
+    "other_info": {},
+    "plan_uuid": "4e2ba3ee-dcae-42ab-9722-286af2243a96"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "The current subscription-plan importer requires numeric prices, so this is represented as 0 with explicit custom-pricing metadata.",
+    "feature_name": "Pricing",
+    "feature_value": "Custom",
+    "other_info": {},
+    "plan_uuid": "40a823aa-25dd-4798-871c-b4cbca40411b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "The current subscription-plan importer requires numeric prices, so this is represented as 0 with explicit custom-pricing metadata.",
+    "feature_name": "Pricing",
+    "feature_value": "Custom",
+    "other_info": {},
+    "plan_uuid": "fa78f080-683e-48f9-953d-c7bce2be4be6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Unlocks each bot's maximum input size and chat history.",
+    "feature_name": "Maximum Input Size",
+    "feature_value": "Unlocked",
+    "other_info": {},
+    "plan_uuid": "5b49c706-394a-44da-8305-069b335d5ed2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Usage is billed from workspace credits.",
+    "feature_name": "Billing Model",
+    "feature_value": "Usage-based",
+    "other_info": {},
+    "plan_uuid": "efc23ed2-4ea7-461e-9784-4237bdbf7d48"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Windsurf describes Max as including everything in Pro plus significantly higher quotas.",
+    "feature_name": "Agent Usage",
+    "feature_value": "Higher Quotas",
+    "other_info": {},
+    "plan_uuid": "de4e8623-d6d1-458a-afde-e9e9b30cc736"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Windsurf enterprise plans are billed in Agent Compute Units; exact included ACUs depend on the contract.",
+    "feature_name": "Agent Compute Units",
+    "feature_value": "Contract Specific",
+    "other_info": {},
+    "plan_uuid": "40a823aa-25dd-4798-871c-b4cbca40411b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Windsurf says Free includes a light quota to code with agents and limited model availability.",
+    "feature_name": "Agent Usage",
+    "feature_value": "Light",
+    "other_info": {},
+    "plan_uuid": "0489d291-46d9-4b06-b4ca-654ae41c74f3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": "Windsurf's docs say availability and pricing should be checked in the live Cascade model selector.",
+    "feature_name": "Premium Models",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "a48d74e0-e3d2-4e52-b517-db6e6e7820e9"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "5-Hour Limit",
+    "feature_value": "Up to approx. 1,600 prompts",
+    "other_info": {},
+    "plan_uuid": "9b60db69-9130-451b-8955-958661ec4cb1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "5-Hour Limit",
+    "feature_value": "Up to approx. 1,600 prompts",
+    "other_info": {},
+    "plan_uuid": "a81b7622-02e5-4325-bc16-34707a99c273"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "5-Hour Limit",
+    "feature_value": "Up to approx. 1,600 prompts",
+    "other_info": {},
+    "plan_uuid": "ee8a33f9-379a-437a-8954-53f5038bafa1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "5-Hour Limit",
+    "feature_value": "Up to approx. 400 prompts",
+    "other_info": {},
+    "plan_uuid": "126e162a-171e-43c5-9083-02f8cb4586fe"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "5-Hour Limit",
+    "feature_value": "Up to approx. 400 prompts",
+    "other_info": {},
+    "plan_uuid": "12b04079-2eeb-41cd-9f96-83fb8fc5f7b8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "5-Hour Limit",
+    "feature_value": "Up to approx. 400 prompts",
+    "other_info": {},
+    "plan_uuid": "24039297-bd4a-41a4-a303-dce5b3ccc448"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "5-Hour Limit",
+    "feature_value": "Up to approx. 80 prompts",
+    "other_info": {},
+    "plan_uuid": "0b9d0733-5286-4b90-a45e-b7245d667e19"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "5-Hour Limit",
+    "feature_value": "Up to approx. 80 prompts",
+    "other_info": {},
+    "plan_uuid": "1cab4f0f-642d-4009-9068-729d38a8b10e"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "5-Hour Limit",
+    "feature_value": "Up to approx. 80 prompts",
+    "other_info": {},
+    "plan_uuid": "9f8c4f72-7f5b-4d6e-8a70-37ebb68aefb4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Admin Controls",
+    "feature_value": "Enterprise team management, admin controls, and custom deployment support",
+    "other_info": {},
+    "plan_uuid": "0e572461-92de-441d-8c14-2c67da01aa03"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Admin Controls",
+    "feature_value": "Enterprise team management, admin controls, and custom deployment support",
+    "other_info": {},
+    "plan_uuid": "89f2629e-04a1-4b97-97b0-a2f03b715e80"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Admin Controls",
+    "feature_value": "Team management and admin controls",
+    "other_info": {},
+    "plan_uuid": "b8f19b54-927d-444e-8d84-237a845df14d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Admin Controls",
+    "feature_value": "Team management and admin controls",
+    "other_info": {},
+    "plan_uuid": "c4795d00-0c37-4b3a-8e42-bb5caaa5bf47"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Admin Controls",
+    "feature_value": "User management, role-based access, analytics, and domain capture",
+    "other_info": {},
+    "plan_uuid": "42c772ba-e710-4b71-9ef4-ce77a733b381"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Admin Controls",
+    "feature_value": "User management, role-based access, analytics, and domain capture",
+    "other_info": {},
+    "plan_uuid": "627d3769-860a-460c-bf73-22555c93ac15"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Admin Controls",
+    "feature_value": "User management, role-based access, analytics, and domain capture",
+    "other_info": {},
+    "plan_uuid": "bb3025cc-4ac8-44fe-8cb2-da630ed2c9ce"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Admin Controls",
+    "feature_value": "User management, role-based access, analytics, and domain capture",
+    "other_info": {},
+    "plan_uuid": "e927eca2-afe5-4295-b858-6137119671ba"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Advanced Voice Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Advanced Voice Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Advanced Voice Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Advanced Voice Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Advanced Voice With Video",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Advanced Voice With Video",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Advanced Voice With Video",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Limits",
+    "feature_value": "5x Teams Standard",
+    "other_info": {},
+    "plan_uuid": "03936ee6-8f62-4e10-9e2a-7f4e7d4150b3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Limits",
+    "feature_value": "5x Teams Standard",
+    "other_info": {},
+    "plan_uuid": "7ef75ac5-e79d-44e2-907f-2b4ee6d001d7"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Limits",
+    "feature_value": "Extended",
+    "other_info": {},
+    "plan_uuid": "12704428-12bd-4e44-955a-3e525faf7104"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Limits",
+    "feature_value": "Extended",
+    "other_info": {},
+    "plan_uuid": "312cb42b-77b7-4e66-b5ec-ea0b830c6863"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Mode With GPT-5 Mini",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "579a71b8-8408-4216-8f49-35c42d579100"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Mode With GPT-5 Mini",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "5d433fee-5758-4e59-bb92-3893dedfd1cb"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Mode With GPT-5 Mini",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "6fd17186-8ed4-4e6a-9610-0e003f950d35"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Agent Requests",
+    "feature_value": "Limited",
+    "other_info": {},
+    "plan_uuid": "c77796c1-150c-4f97-92fe-fa5dbb7be999"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "API Credits",
+    "feature_value": "$30 / Month",
+    "other_info": {},
+    "plan_uuid": "8cc7e37d-96de-479d-86aa-62fb01ab8e1a"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Audio Overviews",
+    "feature_value": "20 / Day",
+    "other_info": {},
+    "plan_uuid": "1e83b835-31b4-4c3c-9dd2-06312bcb3bd6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Audio Overviews",
+    "feature_value": "2x Free usage limits",
+    "other_info": {},
+    "plan_uuid": "f3abd2e0-dc1e-4c21-9362-c62ee9b9cce2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Audio Overviews",
+    "feature_value": "5x more Audio Overviews and notebooks than Free",
+    "other_info": {},
+    "plan_uuid": "1146b6f0-9533-46ce-8bc1-7ba3f1d3e9b4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Audio Overviews",
+    "feature_value": "5x more Audio Overviews and notebooks than Free",
+    "other_info": {},
+    "plan_uuid": "689c83fd-47e0-4c17-816b-015db4db6774"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Audio Overviews",
+    "feature_value": "Highest access",
+    "other_info": {},
+    "plan_uuid": "da0700c0-c104-48a4-9f17-8ffe8b274d3d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Audio Overviews",
+    "feature_value": "Limited",
+    "other_info": {},
+    "plan_uuid": "0360590a-7bec-4458-8d16-1347123e8c29"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Audit and Support",
+    "feature_value": "Audit logs, service accounts, priority support, and account management",
+    "other_info": {},
+    "plan_uuid": "35ac37f3-ee62-4af0-8ff6-edb8ee5e44ec"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Basic Searches",
+    "feature_value": "Practically unlimited",
+    "other_info": {},
+    "plan_uuid": "b682c963-4818-4a6d-b50c-f3f4482da9f8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Bugbot",
+    "feature_value": "Usage-based billing",
+    "other_info": {},
+    "plan_uuid": "586c1e45-545c-4bd7-a391-5a6946e8a1e0"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Bugbot",
+    "feature_value": "Usage-based billing",
+    "other_info": {},
+    "plan_uuid": "6f62e162-f3a5-4e98-8d37-1135718ff517"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Canvas",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Canvas",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Canvas",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Canvas",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "ChatGPT Access",
+    "feature_value": "No",
+    "other_info": {},
+    "plan_uuid": "efc23ed2-4ea7-461e-9784-4237bdbf7d48"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "ChatGPT Record Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "ChatGPT Record Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "ChatGPT Record Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Claude Code",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "42c772ba-e710-4b71-9ef4-ce77a733b381"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Claude Code",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "627d3769-860a-460c-bf73-22555c93ac15"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Claude Code",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "bb3025cc-4ac8-44fe-8cb2-da630ed2c9ce"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Claude Code",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "e927eca2-afe5-4295-b858-6137119671ba"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Cloud Agents",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "12704428-12bd-4e44-955a-3e525faf7104"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Cloud Agents",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "312cb42b-77b7-4e66-b5ec-ea0b830c6863"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Cloud Agents",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "3f0e5c67-7a50-44c4-b767-36d63f868725"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Cloud Agents",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "586c1e45-545c-4bd7-a391-5a6946e8a1e0"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Cloud Agents",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "5b3eb9c4-7c19-4ec8-b3af-642e42883e3b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Cloud Agents",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "6f62e162-f3a5-4e98-8d37-1135718ff517"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Code edits on macOS",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Code edits on macOS",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Code edits on macOS",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Code edits on macOS",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Codex",
+    "feature_value": "Flexible",
+    "other_info": {},
+    "plan_uuid": "fa78f080-683e-48f9-953d-c7bce2be4be6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Codex",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Codex",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Codex",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Command Requests",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "79e5bfc8-cd24-4fdf-bd77-c21de5ac7cbd"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Command Requests",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "c718055a-0309-4a73-80bb-048019bcaf2b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Command Requests",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "ca3baec7-5aa3-4a2a-b7b0-ca8a02781063"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Command Requests",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "f6b63724-21da-4d63-84fe-66221adee925"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Concurrency",
+    "feature_value": "1",
+    "other_info": {},
+    "plan_uuid": "628f233d-1e73-4d4d-b1b2-180208ea5bcf"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Connectors to internal sources",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Connectors to internal sources",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Connectors",
+    "feature_value": "100+",
+    "other_info": {},
+    "plan_uuid": "e8ace47d-3fd5-4546-8570-8eb2a62e11cf"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Context Window",
+    "feature_value": "1 Million",
+    "other_info": {},
+    "plan_uuid": "1146b6f0-9533-46ce-8bc1-7ba3f1d3e9b4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Context Window",
+    "feature_value": "1 Million",
+    "other_info": {},
+    "plan_uuid": "1e83b835-31b4-4c3c-9dd2-06312bcb3bd6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Context Window",
+    "feature_value": "1 Million",
+    "other_info": {},
+    "plan_uuid": "689c83fd-47e0-4c17-816b-015db4db6774"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Context Window",
+    "feature_value": "1 Million",
+    "other_info": {},
+    "plan_uuid": "da0700c0-c104-48a4-9f17-8ffe8b274d3d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Context Window",
+    "feature_value": "Varies by model and feature",
+    "other_info": {},
+    "plan_uuid": "0360590a-7bec-4458-8d16-1347123e8c29"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Context Window",
+    "feature_value": "Varies by model and feature",
+    "other_info": {},
+    "plan_uuid": "f3abd2e0-dc1e-4c21-9362-c62ee9b9cce2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Controls",
+    "feature_value": "Repository, model, MCP, auto-run, browser, and network controls",
+    "other_info": {},
+    "plan_uuid": "35ac37f3-ee62-4af0-8ff6-edb8ee5e44ec"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Create GPTs",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Create GPTs",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Create GPTs",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Daily Credits",
+    "feature_value": "$2 / User / Day on login",
+    "other_info": {},
+    "plan_uuid": "210a84ab-a38b-49d7-bc6d-1937a463bcc2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Daily Credits",
+    "feature_value": "$2 / User / Day on login",
+    "other_info": {},
+    "plan_uuid": "5473be30-0a03-4fb3-b3b1-4fdbda3aaaf3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Analysis",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Analysis",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Analysis",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Analysis",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Controls",
+    "feature_value": "Custom data retention and enterprise security controls",
+    "other_info": {},
+    "plan_uuid": "4e2ba3ee-dcae-42ab-9722-286af2243a96"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Export",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "2cd36a4d-c0e2-4064-a1f1-bc53c2722e71"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Privacy",
+    "feature_value": "Enterprise data protections",
+    "other_info": {},
+    "plan_uuid": "0e572461-92de-441d-8c14-2c67da01aa03"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Privacy",
+    "feature_value": "Enterprise data protections",
+    "other_info": {},
+    "plan_uuid": "89f2629e-04a1-4b97-97b0-a2f03b715e80"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Privacy",
+    "feature_value": "Enterprise data protections",
+    "other_info": {},
+    "plan_uuid": "b8f19b54-927d-444e-8d84-237a845df14d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Privacy",
+    "feature_value": "Enterprise data protections",
+    "other_info": {},
+    "plan_uuid": "c4795d00-0c37-4b3a-8e42-bb5caaa5bf47"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Training",
+    "feature_value": "Never used for training",
+    "other_info": {},
+    "plan_uuid": "0dd3be6f-0408-4b88-9eee-2cf34fe08a53"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Training",
+    "feature_value": "No training on business data by default",
+    "other_info": {},
+    "plan_uuid": "4fd9ff0c-ca64-4752-90e8-93c972daa032"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Training",
+    "feature_value": "No training on business data by default",
+    "other_info": {},
+    "plan_uuid": "7dc317e1-6d5d-417a-8dde-f52b7a413600"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Training",
+    "feature_value": "No training on workspace data by default",
+    "other_info": {},
+    "plan_uuid": "04f52ce1-99b3-41c1-ad5f-3c38d9beef07"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Data Training",
+    "feature_value": "No training on workspace data by default",
+    "other_info": {},
+    "plan_uuid": "e1cfc4d8-6895-41cb-9c5e-54fdc4bbc99d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": "20x higher usage limits vs. Google AI Pro",
+    "other_info": {},
+    "plan_uuid": "1e83b835-31b4-4c3c-9dd2-06312bcb3bd6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": "2x Free usage limits",
+    "other_info": {},
+    "plan_uuid": "f3abd2e0-dc1e-4c21-9362-c62ee9b9cce2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": "4x Free usage limits",
+    "other_info": {},
+    "plan_uuid": "1146b6f0-9533-46ce-8bc1-7ba3f1d3e9b4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": "4x Free usage limits",
+    "other_info": {},
+    "plan_uuid": "689c83fd-47e0-4c17-816b-015db4db6774"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": "5x Google AI Pro usage limits",
+    "other_info": {},
+    "plan_uuid": "da0700c0-c104-48a4-9f17-8ffe8b274d3d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": "Flexible",
+    "other_info": {},
+    "plan_uuid": "fa78f080-683e-48f9-953d-c7bce2be4be6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": "Limited",
+    "other_info": {},
+    "plan_uuid": "0360590a-7bec-4458-8d16-1347123e8c29"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": "Yes",
+    "other_info": {},
+    "plan_uuid": "04f52ce1-99b3-41c1-ad5f-3c38d9beef07"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": "Yes",
+    "other_info": {},
+    "plan_uuid": "e1cfc4d8-6895-41cb-9c5e-54fdc4bbc99d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Research",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Think",
+    "feature_value": "20x higher usage limits vs. Google AI Pro",
+    "other_info": {},
+    "plan_uuid": "1e83b835-31b4-4c3c-9dd2-06312bcb3bd6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deep Think",
+    "feature_value": "Included where available",
+    "other_info": {},
+    "plan_uuid": "da0700c0-c104-48a4-9f17-8ffe8b274d3d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Deployments",
+    "feature_value": "Deploy to Vercel",
+    "other_info": {},
+    "plan_uuid": "bc18a278-5660-42c1-b254-b150c5cff6cd"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Document Storage",
+    "feature_value": "Up to 15GB",
+    "other_info": {},
+    "plan_uuid": "8cc7e37d-96de-479d-86aa-62fb01ab8e1a"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Domain Verification",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "2cd36a4d-c0e2-4064-a1f1-bc53c2722e71"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Enterprise Billing",
+    "feature_value": "Invoice/PO billing",
+    "other_info": {},
+    "plan_uuid": "35ac37f3-ee62-4af0-8ff6-edb8ee5e44ec"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Enterprise Controls",
+    "feature_value": "Enterprise policy management, audit logs, organisation controls, and knowledge-base features",
+    "other_info": {},
+    "plan_uuid": "579a71b8-8408-4216-8f49-35c42d579100"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Enterprise Controls",
+    "feature_value": "SAML SSO and role-based access control",
+    "other_info": {},
+    "plan_uuid": "0dd3be6f-0408-4b88-9eee-2cf34fe08a53"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Enterprise Controls",
+    "feature_value": "SCIM, EKM, user analytics, domain verification, and role-based access controls",
+    "other_info": {},
+    "plan_uuid": "fa78f080-683e-48f9-953d-c7bce2be4be6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Enterprise Controls",
+    "feature_value": "SSO, SCIM, domain capture, role-based access, analytics, and audit logs",
+    "other_info": {},
+    "plan_uuid": "4e2ba3ee-dcae-42ab-9722-286af2243a96"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Enterprise Search",
+    "feature_value": "Internal knowledge and web search",
+    "other_info": {},
+    "plan_uuid": "b8f19b54-927d-444e-8d84-237a845df14d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Enterprise Search",
+    "feature_value": "Internal knowledge and web search",
+    "other_info": {},
+    "plan_uuid": "c4795d00-0c37-4b3a-8e42-bb5caaa5bf47"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "File Upload",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "File Upload",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "File Upload",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "File Upload",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "File Uploads",
+    "feature_value": "Limited",
+    "other_info": {},
+    "plan_uuid": "b682c963-4818-4a6d-b50c-f3f4482da9f8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "GitHub Spark",
+    "feature_value": "Included",
+    "other_info": "Preview",
+    "plan_uuid": "5ff2280a-fe4d-4290-8a71-4bc353bdc2b6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Google Cloud",
+    "feature_value": "Required",
+    "other_info": {},
+    "plan_uuid": "f2ca15a9-923d-4d24-9417-ed757f71f418"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Identity Management",
+    "feature_value": "SAML/OIDC SSO",
+    "other_info": {},
+    "plan_uuid": "005acab7-6293-4c22-ad82-0fa87aad9e61"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Identity Management",
+    "feature_value": "SAML/OIDC SSO",
+    "other_info": {},
+    "plan_uuid": "03936ee6-8f62-4e10-9e2a-7f4e7d4150b3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Identity Management",
+    "feature_value": "SAML/OIDC SSO",
+    "other_info": {},
+    "plan_uuid": "7ef75ac5-e79d-44e2-907f-2b4ee6d001d7"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Identity Management",
+    "feature_value": "SAML/OIDC SSO",
+    "other_info": {},
+    "plan_uuid": "fde08e87-8609-4599-b7fe-370c6320844a"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Identity Management",
+    "feature_value": "SCIM seat management and SAML/OIDC SSO",
+    "other_info": {},
+    "plan_uuid": "35ac37f3-ee62-4af0-8ff6-edb8ee5e44ec"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": "20x higher usage limits vs. Google AI Pro",
+    "other_info": {},
+    "plan_uuid": "1e83b835-31b4-4c3c-9dd2-06312bcb3bd6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": "2x Free usage limits",
+    "other_info": {},
+    "plan_uuid": "f3abd2e0-dc1e-4c21-9362-c62ee9b9cce2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": "Higher access",
+    "other_info": {},
+    "plan_uuid": "1146b6f0-9533-46ce-8bc1-7ba3f1d3e9b4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": "Higher access",
+    "other_info": {},
+    "plan_uuid": "689c83fd-47e0-4c17-816b-015db4db6774"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": "Highest access",
+    "other_info": {},
+    "plan_uuid": "da0700c0-c104-48a4-9f17-8ffe8b274d3d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": "Limited",
+    "other_info": {},
+    "plan_uuid": "0360590a-7bec-4458-8d16-1347123e8c29"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": "Yes",
+    "other_info": {},
+    "plan_uuid": "04f52ce1-99b3-41c1-ad5f-3c38d9beef07"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": "Yes",
+    "other_info": {},
+    "plan_uuid": "e1cfc4d8-6895-41cb-9c5e-54fdc4bbc99d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Image Generation",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Included Credits",
+    "feature_value": "$30 / User / Month",
+    "other_info": {},
+    "plan_uuid": "210a84ab-a38b-49d7-bc6d-1937a463bcc2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Included Credits",
+    "feature_value": "$30 / User / Month",
+    "other_info": {},
+    "plan_uuid": "5473be30-0a03-4fb3-b3b1-4fdbda3aaaf3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Included Credits",
+    "feature_value": "$5 / Month",
+    "other_info": {},
+    "plan_uuid": "bc18a278-5660-42c1-b254-b150c5cff6cd"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Inline Edits",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "0489d291-46d9-4b06-b4ca-654ae41c74f3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Inline Suggestions",
+    "feature_value": "2,000 / Month",
+    "other_info": {},
+    "plan_uuid": "c45196b6-d8bb-4f97-b084-3c7bfaa2df64"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "IP Indemnity",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "bce0a4ad-087d-4b74-822d-7e3c4c9417e8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Java Transformations",
+    "feature_value": "1,000 Lines / Month",
+    "other_info": {},
+    "plan_uuid": "7f83ac16-003f-48e9-b493-1d4075903a50"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "MCP Quota (Monthly)",
+    "feature_value": "1,000 web searches + web readers / month",
+    "other_info": {},
+    "plan_uuid": "126e162a-171e-43c5-9083-02f8cb4586fe"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "MCP Quota (Monthly)",
+    "feature_value": "1,000 web searches + web readers / month",
+    "other_info": {},
+    "plan_uuid": "12b04079-2eeb-41cd-9f96-83fb8fc5f7b8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "MCP Quota (Monthly)",
+    "feature_value": "1,000 web searches + web readers / month",
+    "other_info": {},
+    "plan_uuid": "24039297-bd4a-41a4-a303-dce5b3ccc448"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "MCP Quota (Monthly)",
+    "feature_value": "100 web searches + web readers / month",
+    "other_info": {},
+    "plan_uuid": "0b9d0733-5286-4b90-a45e-b7245d667e19"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "MCP Quota (Monthly)",
+    "feature_value": "100 web searches + web readers / month",
+    "other_info": {},
+    "plan_uuid": "1cab4f0f-642d-4009-9068-729d38a8b10e"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "MCP Quota (Monthly)",
+    "feature_value": "100 web searches + web readers / month",
+    "other_info": {},
+    "plan_uuid": "9f8c4f72-7f5b-4d6e-8a70-37ebb68aefb4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "MCP Quota (Monthly)",
+    "feature_value": "4,000 web searches + web readers / month",
+    "other_info": {},
+    "plan_uuid": "9b60db69-9130-451b-8955-958661ec4cb1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "MCP Quota (Monthly)",
+    "feature_value": "4,000 web searches + web readers / month",
+    "other_info": {},
+    "plan_uuid": "a81b7622-02e5-4325-bc16-34707a99c273"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "MCP Quota (Monthly)",
+    "feature_value": "4,000 web searches + web readers / month",
+    "other_info": {},
+    "plan_uuid": "ee8a33f9-379a-437a-8954-53f5038bafa1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Memory",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Memory",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Memory",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Memory",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Messages",
+    "feature_value": "7 / Day",
+    "other_info": {},
+    "plan_uuid": "bc18a278-5660-42c1-b254-b150c5cff6cd"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Minimum Seats",
+    "feature_value": "5",
+    "other_info": {},
+    "plan_uuid": "42c772ba-e710-4b71-9ef4-ce77a733b381"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Minimum Seats",
+    "feature_value": "5",
+    "other_info": {},
+    "plan_uuid": "627d3769-860a-460c-bf73-22555c93ac15"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Minimum Seats",
+    "feature_value": "5",
+    "other_info": {},
+    "plan_uuid": "bb3025cc-4ac8-44fe-8cb2-da630ed2c9ce"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Minimum Seats",
+    "feature_value": "5",
+    "other_info": {},
+    "plan_uuid": "e927eca2-afe5-4295-b858-6137119671ba"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Minimum Seats",
+    "feature_value": "None",
+    "other_info": {},
+    "plan_uuid": "efc23ed2-4ea7-461e-9784-4237bdbf7d48"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Access Priority",
+    "feature_value": "First access to new models and features",
+    "other_info": {},
+    "plan_uuid": "9b60db69-9130-451b-8955-958661ec4cb1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Access Priority",
+    "feature_value": "First access to new models and features",
+    "other_info": {},
+    "plan_uuid": "a81b7622-02e5-4325-bc16-34707a99c273"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Access Priority",
+    "feature_value": "First access to new models and features",
+    "other_info": {},
+    "plan_uuid": "ee8a33f9-379a-437a-8954-53f5038bafa1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Access Priority",
+    "feature_value": "Priority access to new models and features",
+    "other_info": {},
+    "plan_uuid": "126e162a-171e-43c5-9083-02f8cb4586fe"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Access Priority",
+    "feature_value": "Priority access to new models and features",
+    "other_info": {},
+    "plan_uuid": "12b04079-2eeb-41cd-9f96-83fb8fc5f7b8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Access Priority",
+    "feature_value": "Priority access to new models and features",
+    "other_info": {},
+    "plan_uuid": "24039297-bd4a-41a4-a303-dce5b3ccc448"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Access",
+    "feature_value": "All flagship models and smart routing",
+    "other_info": {},
+    "plan_uuid": "117deca9-d69e-48a5-8df7-acc146d52c38"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Access",
+    "feature_value": "All flagship models and smart routing",
+    "other_info": {},
+    "plan_uuid": "7d10de70-746e-4c51-959e-72c1bd4adc06"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Access",
+    "feature_value": "All flagship models and smart routing",
+    "other_info": {},
+    "plan_uuid": "96d1d262-bd5f-4023-8db7-b72d42927af0"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Access",
+    "feature_value": "All flagship models and smart routing",
+    "other_info": {},
+    "plan_uuid": "e33104c4-bb09-4a60-af32-1adb02f9962c"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Model Training",
+    "feature_value": "Opted out by default",
+    "other_info": {},
+    "plan_uuid": "5473be30-0a03-4fb3-b3b1-4fdbda3aaaf3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credit Quota",
+    "feature_value": "1600M Credits",
+    "other_info": {},
+    "plan_uuid": "363cd18c-c2dd-45bd-9098-ec59fcc01ac5"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credit Quota",
+    "feature_value": "1600M Credits",
+    "other_info": {},
+    "plan_uuid": "adccdca0-aa04-4de2-9593-e59b1c520ba1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credit Quota",
+    "feature_value": "200M Credits",
+    "other_info": {},
+    "plan_uuid": "412bbf60-2ad5-4451-8957-ffe416a1ae97"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credit Quota",
+    "feature_value": "200M Credits",
+    "other_info": {},
+    "plan_uuid": "7e1bda0e-72bb-48aa-b203-a0ceab3212d1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credit Quota",
+    "feature_value": "60M Credits",
+    "other_info": {},
+    "plan_uuid": "633d4aaa-335c-4d79-93a2-9d122e97bd31"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credit Quota",
+    "feature_value": "60M Credits",
+    "other_info": {},
+    "plan_uuid": "8aa4d4ec-a11a-4f7c-9bf7-d7b3f2318746"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credit Quota",
+    "feature_value": "700M Credits",
+    "other_info": {},
+    "plan_uuid": "bfd46339-5d16-410b-a867-1c5be2279d98"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credit Quota",
+    "feature_value": "700M Credits",
+    "other_info": {},
+    "plan_uuid": "d69d7d66-9fc7-4b3e-8b61-972d163220d9"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credits",
+    "feature_value": "1,600M credits",
+    "other_info": {},
+    "plan_uuid": "96d1d262-bd5f-4023-8db7-b72d42927af0"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credits",
+    "feature_value": "40,000M credits",
+    "other_info": {},
+    "plan_uuid": "7d10de70-746e-4c51-959e-72c1bd4adc06"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credits",
+    "feature_value": "400M credits",
+    "other_info": {},
+    "plan_uuid": "117deca9-d69e-48a5-8df7-acc146d52c38"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Monthly Credits",
+    "feature_value": "8,000M credits",
+    "other_info": {},
+    "plan_uuid": "e33104c4-bb09-4a60-af32-1adb02f9962c"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Organisation Controls",
+    "feature_value": "Policy management, public code matching controls, audit logs, and organisation-level settings",
+    "other_info": {},
+    "plan_uuid": "6fd17186-8ed4-4e6a-9610-0e003f950d35"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Peak-Hour SLA",
+    "feature_value": "Guaranteed peak-hour performance",
+    "other_info": {},
+    "plan_uuid": "9b60db69-9130-451b-8955-958661ec4cb1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Peak-Hour SLA",
+    "feature_value": "Guaranteed peak-hour performance",
+    "other_info": {},
+    "plan_uuid": "a81b7622-02e5-4325-bc16-34707a99c273"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Peak-Hour SLA",
+    "feature_value": "Guaranteed peak-hour performance",
+    "other_info": {},
+    "plan_uuid": "ee8a33f9-379a-437a-8954-53f5038bafa1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Performance",
+    "feature_value": "40%-60% faster than Lite",
+    "other_info": {},
+    "plan_uuid": "126e162a-171e-43c5-9083-02f8cb4586fe"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Performance",
+    "feature_value": "40%-60% faster than Lite",
+    "other_info": {},
+    "plan_uuid": "12b04079-2eeb-41cd-9f96-83fb8fc5f7b8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Performance",
+    "feature_value": "40%-60% faster than Lite",
+    "other_info": {},
+    "plan_uuid": "24039297-bd4a-41a4-a303-dce5b3ccc448"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Privacy and Compliance",
+    "feature_value": "Custom data retention, encryption, no training on business data by default, data residency, and enterprise terms",
+    "other_info": {},
+    "plan_uuid": "fa78f080-683e-48f9-953d-c7bce2be4be6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Pro Searches",
+    "feature_value": "Very limited",
+    "other_info": {},
+    "plan_uuid": "b682c963-4818-4a6d-b50c-f3f4482da9f8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Projects",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Projects",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Projects",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Quota Windows",
+    "feature_value": "5-hour rolling and weekly",
+    "other_info": {},
+    "plan_uuid": "72a813b7-40c3-4052-b924-c4bebd0db872"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Quota Windows",
+    "feature_value": "5-hour rolling and weekly",
+    "other_info": {},
+    "plan_uuid": "89522548-52e5-4fd9-96c7-9f27354d769b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Relative Usage",
+    "feature_value": "3x usage of Claude Pro plan",
+    "other_info": {},
+    "plan_uuid": "0b9d0733-5286-4b90-a45e-b7245d667e19"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Relative Usage",
+    "feature_value": "3x usage of Claude Pro plan",
+    "other_info": {},
+    "plan_uuid": "1cab4f0f-642d-4009-9068-729d38a8b10e"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Relative Usage",
+    "feature_value": "3x usage of Claude Pro plan",
+    "other_info": {},
+    "plan_uuid": "9f8c4f72-7f5b-4d6e-8a70-37ebb68aefb4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Relative Usage",
+    "feature_value": "4x Pro plan usage",
+    "other_info": {},
+    "plan_uuid": "9b60db69-9130-451b-8955-958661ec4cb1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Relative Usage",
+    "feature_value": "4x Pro plan usage",
+    "other_info": {},
+    "plan_uuid": "a81b7622-02e5-4325-bc16-34707a99c273"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Relative Usage",
+    "feature_value": "4x Pro plan usage",
+    "other_info": {},
+    "plan_uuid": "ee8a33f9-379a-437a-8954-53f5038bafa1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Relative Usage",
+    "feature_value": "5x Lite plan usage",
+    "other_info": {},
+    "plan_uuid": "126e162a-171e-43c5-9083-02f8cb4586fe"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Relative Usage",
+    "feature_value": "5x Lite plan usage",
+    "other_info": {},
+    "plan_uuid": "12b04079-2eeb-41cd-9f96-83fb8fc5f7b8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Relative Usage",
+    "feature_value": "5x Lite plan usage",
+    "other_info": {},
+    "plan_uuid": "24039297-bd4a-41a4-a303-dce5b3ccc448"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "RPM",
+    "feature_value": "3",
+    "other_info": {},
+    "plan_uuid": "628f233d-1e73-4d4d-b1b2-180208ea5bcf"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Search",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Search",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Search",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Search",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Seat Type",
+    "feature_value": "Premium",
+    "other_info": {},
+    "plan_uuid": "4fd9ff0c-ca64-4752-90e8-93c972daa032"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Seat Type",
+    "feature_value": "Premium",
+    "other_info": {},
+    "plan_uuid": "7dc317e1-6d5d-417a-8dde-f52b7a413600"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Sora",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Sora",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Sora",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Storage",
+    "feature_value": "Up to 30GB / user",
+    "other_info": {},
+    "plan_uuid": "2cd36a4d-c0e2-4064-a1f1-bc53c2722e71"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Study Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Study Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Study Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Study Mode",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Support",
+    "feature_value": "24/7 priority support, SLAs, invoicing, and volume discounts",
+    "other_info": {},
+    "plan_uuid": "fa78f080-683e-48f9-953d-c7bce2be4be6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Support",
+    "feature_value": "Custom support and onboarding",
+    "other_info": {},
+    "plan_uuid": "0e572461-92de-441d-8c14-2c67da01aa03"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Support",
+    "feature_value": "Custom support and onboarding",
+    "other_info": {},
+    "plan_uuid": "89f2629e-04a1-4b97-97b0-a2f03b715e80"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Support",
+    "feature_value": "Priority access and guaranteed support SLAs",
+    "other_info": {},
+    "plan_uuid": "0dd3be6f-0408-4b88-9eee-2cf34fe08a53"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Support",
+    "feature_value": "Priority support and success resources",
+    "other_info": {},
+    "plan_uuid": "4e2ba3ee-dcae-42ab-9722-286af2243a96"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Supported Models",
+    "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS",
+    "other_info": {},
+    "plan_uuid": "363cd18c-c2dd-45bd-9098-ec59fcc01ac5"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Supported Models",
+    "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS",
+    "other_info": {},
+    "plan_uuid": "412bbf60-2ad5-4451-8957-ffe416a1ae97"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Supported Models",
+    "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS",
+    "other_info": {},
+    "plan_uuid": "633d4aaa-335c-4d79-93a2-9d122e97bd31"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Supported Models",
+    "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS",
+    "other_info": {},
+    "plan_uuid": "7e1bda0e-72bb-48aa-b203-a0ceab3212d1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Supported Models",
+    "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS",
+    "other_info": {},
+    "plan_uuid": "8aa4d4ec-a11a-4f7c-9bf7-d7b3f2318746"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Supported Models",
+    "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS",
+    "other_info": {},
+    "plan_uuid": "adccdca0-aa04-4de2-9593-e59b1c520ba1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Supported Models",
+    "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS",
+    "other_info": {},
+    "plan_uuid": "bfd46339-5d16-410b-a867-1c5be2279d98"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Supported Models",
+    "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS",
+    "other_info": {},
+    "plan_uuid": "d69d7d66-9fc7-4b3e-8b61-972d163220d9"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tab Completions",
+    "feature_value": "Limited",
+    "other_info": {},
+    "plan_uuid": "c77796c1-150c-4f97-92fe-fa5dbb7be999"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tab Completions",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "0489d291-46d9-4b06-b4ca-654ae41c74f3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tab Completions",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "79e5bfc8-cd24-4fdf-bd77-c21de5ac7cbd"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tab Completions",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "c718055a-0309-4a73-80bb-048019bcaf2b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tab Completions",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "ca3baec7-5aa3-4a2a-b7b0-ca8a02781063"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tab Completions",
+    "feature_value": "Unlimited",
+    "other_info": {},
+    "plan_uuid": "f6b63724-21da-4d63-84fe-66221adee925"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tasks",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tasks",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tasks",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Team Features",
+    "feature_value": "Team workspace, shared projects, shared artifacts, and document collaboration",
+    "other_info": {},
+    "plan_uuid": "42c772ba-e710-4b71-9ef4-ce77a733b381"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Team Features",
+    "feature_value": "Team workspace, shared projects, shared artifacts, and document collaboration",
+    "other_info": {},
+    "plan_uuid": "627d3769-860a-460c-bf73-22555c93ac15"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Team Features",
+    "feature_value": "Team workspace, shared projects, shared artifacts, and document collaboration",
+    "other_info": {},
+    "plan_uuid": "bb3025cc-4ac8-44fe-8cb2-da630ed2c9ce"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Team Features",
+    "feature_value": "Team workspace, shared projects, shared artifacts, and document collaboration",
+    "other_info": {},
+    "plan_uuid": "e927eca2-afe5-4295-b858-6137119671ba"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Team Privacy Mode",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "005acab7-6293-4c22-ad82-0fa87aad9e61"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Team Privacy Mode",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "03936ee6-8f62-4e10-9e2a-7f4e7d4150b3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Team Privacy Mode",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "7ef75ac5-e79d-44e2-907f-2b4ee6d001d7"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Team Privacy Mode",
+    "feature_value": "Included",
+    "other_info": {},
+    "plan_uuid": "fde08e87-8609-4599-b7fe-370c6320844a"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tools",
+    "feature_value": "OpenCode, OpenClaw, Claude Code",
+    "other_info": {},
+    "plan_uuid": "363cd18c-c2dd-45bd-9098-ec59fcc01ac5"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tools",
+    "feature_value": "OpenCode, OpenClaw, Claude Code",
+    "other_info": {},
+    "plan_uuid": "412bbf60-2ad5-4451-8957-ffe416a1ae97"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tools",
+    "feature_value": "OpenCode, OpenClaw, Claude Code",
+    "other_info": {},
+    "plan_uuid": "633d4aaa-335c-4d79-93a2-9d122e97bd31"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tools",
+    "feature_value": "OpenCode, OpenClaw, Claude Code",
+    "other_info": {},
+    "plan_uuid": "7e1bda0e-72bb-48aa-b203-a0ceab3212d1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tools",
+    "feature_value": "OpenCode, OpenClaw, Claude Code",
+    "other_info": {},
+    "plan_uuid": "8aa4d4ec-a11a-4f7c-9bf7-d7b3f2318746"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tools",
+    "feature_value": "OpenCode, OpenClaw, Claude Code",
+    "other_info": {},
+    "plan_uuid": "adccdca0-aa04-4de2-9593-e59b1c520ba1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tools",
+    "feature_value": "OpenCode, OpenClaw, Claude Code",
+    "other_info": {},
+    "plan_uuid": "bfd46339-5d16-410b-a867-1c5be2279d98"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Tools",
+    "feature_value": "OpenCode, OpenClaw, Claude Code",
+    "other_info": {},
+    "plan_uuid": "d69d7d66-9fc7-4b3e-8b61-972d163220d9"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "TPD",
+    "feature_value": "1,500,000",
+    "other_info": {},
+    "plan_uuid": "628f233d-1e73-4d4d-b1b2-180208ea5bcf"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "TPM",
+    "feature_value": "500,000",
+    "other_info": {},
+    "plan_uuid": "628f233d-1e73-4d4d-b1b2-180208ea5bcf"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Usage",
+    "feature_value": "Custom",
+    "other_info": {},
+    "plan_uuid": "4e2ba3ee-dcae-42ab-9722-286af2243a96"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Use GPTs",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Use GPTs",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Use GPTs",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Use GPTs",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Video Generation",
+    "feature_value": "20x higher usage limits vs. Google AI Pro",
+    "other_info": {},
+    "plan_uuid": "1e83b835-31b4-4c3c-9dd2-06312bcb3bd6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Video Generation",
+    "feature_value": "Expanded access",
+    "other_info": {},
+    "plan_uuid": "f3abd2e0-dc1e-4c21-9362-c62ee9b9cce2"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Video Generation",
+    "feature_value": "Highest access including Veo 3.1",
+    "other_info": {},
+    "plan_uuid": "da0700c0-c104-48a4-9f17-8ffe8b274d3d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Video Generation",
+    "feature_value": "Limited Veo 3.1 Lite access",
+    "other_info": {},
+    "plan_uuid": "1146b6f0-9533-46ce-8bc1-7ba3f1d3e9b4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Video Generation",
+    "feature_value": "Limited Veo 3.1 Lite access",
+    "other_info": {},
+    "plan_uuid": "689c83fd-47e0-4c17-816b-015db4db6774"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Vision",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5b919d0e-ddcd-49ef-a9a2-e4dcf7fd489b"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Vision",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "5c990d2f-0437-45c9-800a-c04f41ae37e3"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Vision",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "7f4024f9-3af8-48eb-891a-cda5390259f6"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Vision",
+    "feature_value": null,
+    "other_info": {},
+    "plan_uuid": "a1a0d715-07a2-43e9-b22f-86bc620d737f"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Weekly Limit",
+    "feature_value": "Up to approx. 2,000 prompts",
+    "other_info": {},
+    "plan_uuid": "126e162a-171e-43c5-9083-02f8cb4586fe"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Weekly Limit",
+    "feature_value": "Up to approx. 2,000 prompts",
+    "other_info": {},
+    "plan_uuid": "12b04079-2eeb-41cd-9f96-83fb8fc5f7b8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Weekly Limit",
+    "feature_value": "Up to approx. 2,000 prompts",
+    "other_info": {},
+    "plan_uuid": "24039297-bd4a-41a4-a303-dce5b3ccc448"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Weekly Limit",
+    "feature_value": "Up to approx. 400 prompts",
+    "other_info": {},
+    "plan_uuid": "0b9d0733-5286-4b90-a45e-b7245d667e19"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Weekly Limit",
+    "feature_value": "Up to approx. 400 prompts",
+    "other_info": {},
+    "plan_uuid": "1cab4f0f-642d-4009-9068-729d38a8b10e"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Weekly Limit",
+    "feature_value": "Up to approx. 400 prompts",
+    "other_info": {},
+    "plan_uuid": "9f8c4f72-7f5b-4d6e-8a70-37ebb68aefb4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Weekly Limit",
+    "feature_value": "Up to approx. 8,000 prompts",
+    "other_info": {},
+    "plan_uuid": "9b60db69-9130-451b-8955-958661ec4cb1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Weekly Limit",
+    "feature_value": "Up to approx. 8,000 prompts",
+    "other_info": {},
+    "plan_uuid": "a81b7622-02e5-4325-bc16-34707a99c273"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Weekly Limit",
+    "feature_value": "Up to approx. 8,000 prompts",
+    "other_info": {},
+    "plan_uuid": "ee8a33f9-379a-437a-8954-53f5038bafa1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workload Profile",
+    "feature_value": "Managing complex workloads",
+    "other_info": {},
+    "plan_uuid": "126e162a-171e-43c5-9083-02f8cb4586fe"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workload Profile",
+    "feature_value": "Managing complex workloads",
+    "other_info": {},
+    "plan_uuid": "12b04079-2eeb-41cd-9f96-83fb8fc5f7b8"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workload Profile",
+    "feature_value": "Managing complex workloads",
+    "other_info": {},
+    "plan_uuid": "24039297-bd4a-41a4-a303-dce5b3ccc448"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workload Profile",
+    "feature_value": "Managing high-volume workloads for advanced developers",
+    "other_info": {},
+    "plan_uuid": "9b60db69-9130-451b-8955-958661ec4cb1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workload Profile",
+    "feature_value": "Managing high-volume workloads for advanced developers",
+    "other_info": {},
+    "plan_uuid": "a81b7622-02e5-4325-bc16-34707a99c273"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workload Profile",
+    "feature_value": "Managing high-volume workloads for advanced developers",
+    "other_info": {},
+    "plan_uuid": "ee8a33f9-379a-437a-8954-53f5038bafa1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workload Profile",
+    "feature_value": "Managing lightweight workloads",
+    "other_info": {},
+    "plan_uuid": "0b9d0733-5286-4b90-a45e-b7245d667e19"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workload Profile",
+    "feature_value": "Managing lightweight workloads",
+    "other_info": {},
+    "plan_uuid": "1cab4f0f-642d-4009-9068-729d38a8b10e"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workload Profile",
+    "feature_value": "Managing lightweight workloads",
+    "other_info": {},
+    "plan_uuid": "9f8c4f72-7f5b-4d6e-8a70-37ebb68aefb4"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workspace Controls",
+    "feature_value": "Admin controls, member roles, billing management, SAML SSO, and MFA",
+    "other_info": {},
+    "plan_uuid": "04f52ce1-99b3-41c1-ad5f-3c38d9beef07"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workspace Controls",
+    "feature_value": "Admin controls, member roles, billing management, SAML SSO, and MFA",
+    "other_info": {},
+    "plan_uuid": "e1cfc4d8-6895-41cb-9c5e-54fdc4bbc99d"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workspace Controls",
+    "feature_value": "SAML SSO, MFA, centralized billing, analytics, and spend controls",
+    "other_info": {},
+    "plan_uuid": "4fd9ff0c-ca64-4752-90e8-93c972daa032"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Workspace Controls",
+    "feature_value": "SAML SSO, MFA, centralized billing, analytics, and spend controls",
+    "other_info": {},
+    "plan_uuid": "7dc317e1-6d5d-417a-8dde-f52b7a413600"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Yearly Credit Quota",
+    "feature_value": "19200M Credits",
+    "other_info": {},
+    "plan_uuid": "363cd18c-c2dd-45bd-9098-ec59fcc01ac5"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Yearly Credit Quota",
+    "feature_value": "19200M Credits",
+    "other_info": {},
+    "plan_uuid": "adccdca0-aa04-4de2-9593-e59b1c520ba1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Yearly Credit Quota",
+    "feature_value": "2400M Credits",
+    "other_info": {},
+    "plan_uuid": "412bbf60-2ad5-4451-8957-ffe416a1ae97"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Yearly Credit Quota",
+    "feature_value": "2400M Credits",
+    "other_info": {},
+    "plan_uuid": "7e1bda0e-72bb-48aa-b203-a0ceab3212d1"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Yearly Credit Quota",
+    "feature_value": "720M Credits",
+    "other_info": {},
+    "plan_uuid": "633d4aaa-335c-4d79-93a2-9d122e97bd31"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Yearly Credit Quota",
+    "feature_value": "720M Credits",
+    "other_info": {},
+    "plan_uuid": "8aa4d4ec-a11a-4f7c-9bf7-d7b3f2318746"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Yearly Credit Quota",
+    "feature_value": "8400M Credits",
+    "other_info": {},
+    "plan_uuid": "bfd46339-5d16-410b-a867-1c5be2279d98"
+  },
+  {
+    "effective_to": null,
+    "feature_description": null,
+    "feature_name": "Yearly Credit Quota",
+    "feature_value": "8400M Credits",
+    "other_info": {},
+    "plan_uuid": "d69d7d66-9fc7-4b3e-8b61-972d163220d9"
+  }
+]

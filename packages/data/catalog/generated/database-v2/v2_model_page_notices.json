@@ -1,0 +1,310 @@
+[
+  {
+    "created_at": "2026-07-26T20:36:09.403717+00:00",
+    "markdown": "AI Stats is currently unable to offer Muse Spark 1.1 through the Gateway because Meta Model API access is restricted by location. We will make it available as soon as we can.",
+    "model_slug": "meta/muse-spark-1.1",
+    "tone": "warning",
+    "updated_at": "2026-07-26T20:36:09.403717+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:36:09.403717+00:00",
+    "markdown": "Anthropic deprecated `claude-opus-4-1-20250805` on June 5, 2026 and plans to retire it on August 5, 2026. New integrations should move to [`anthropic/claude-opus-5`](/anthropic/claude-opus-5). If you still run Opus 4.1 traffic, use the [Opus 4.1 to 4.8 migration guide](/docs/v1/model-migrations/anthropic-claude-opus-4-1-to-4-8).",
+    "model_slug": "anthropic/claude-opus-4.1",
+    "tone": "warning",
+    "updated_at": "2026-07-26T20:36:09.403717+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:36:09.403717+00:00",
+    "markdown": "Anthropic said on June 12, 2026 that it had to disable Fable 5 and Mythos 5 for all customers to comply with a U.S. export control directive. Requests to this model are currently expected to fail. [Read Anthropic's statement](https://www.anthropic.com/news/fable-mythos-access).",
+    "model_slug": "anthropic/claude-mythos-5",
+    "tone": "critical",
+    "updated_at": "2026-07-26T20:36:09.403717+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:36:09.403717+00:00",
+    "markdown": "GPT Live 1 is available in ChatGPT Voice for Go, Plus, and Pro users. OpenAI says API support is planned soon, but has not confirmed a stable API model ID, pricing, or AI Stats Gateway availability.",
+    "model_slug": "openai/gpt-live-1",
+    "tone": "warning",
+    "updated_at": "2026-07-26T20:36:09.403717+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:36:09.403717+00:00",
+    "markdown": "GPT Live 1 Mini is available in ChatGPT Voice for Free users. OpenAI says API support is planned soon, but has not confirmed a stable API model ID, pricing, or AI Stats Gateway availability.",
+    "model_slug": "openai/gpt-live-1-mini",
+    "tone": "warning",
+    "updated_at": "2026-07-26T20:36:09.403717+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:36:09.403717+00:00",
+    "markdown": "Phaseo shows inferred standard short-context pricing for `gpt-5.5-cyber` based on the published [OpenAI Codex rate card](https://help.openai.com/en/articles/20001106-codex-rate-card). OpenAI's public [API pricing page](https://developers.openai.com/api/docs/pricing) does not currently publish a confirmed standard API price row for `gpt-5.5-cyber`, so these values are informational estimates derived from the Codex credit mapping.",
+    "model_slug": "openai/gpt-5.5-cyber",
+    "tone": "info",
+    "updated_at": "2026-07-26T20:36:09.403717+00:00"
+  },
+  {
+    "created_at": "2026-07-26T20:36:09.403717+00:00",
+    "markdown": "Qwen3.8-Max-Preview is a 2.4T-parameter preview available through Alibaba Token Plan, Qoder, and QoderWork. Qwen says testing in China is ongoing; public API model ID, pricing, context limits, and benchmark results have not been published. [Read Qwen's announcement](https://x.com/Alibaba_Qwen/status/2078754377473601787).",
+    "model_slug": "qwen/qwen3.8-max-preview",
+    "tone": "warning",
+    "updated_at": "2026-07-26T20:36:09.403717+00:00"
+  },
+  {
+    "created_at": "2026-07-29T20:07:10.678219+00:00",
+    "markdown": "Lyria 3.5 is currently available in Google Flow Music, but Google has not yet documented a public API model identifier. Phaseo routing will remain disabled until an official endpoint is available.",
+    "model_slug": "google/lyria-3.5",
+    "tone": "info",
+    "updated_at": "2026-07-29T20:07:10.678219+00:00"
+  },
+  {
+    "created_at": "2026-07-30T15:52:42.247875+00:00",
+    "markdown": "Gemini Robotics ER 1.6 is deprecated and will shut down on 31 August 2026. Migrate to Gemini Robotics ER 2 Preview.",
+    "model_slug": "google/gemini-robotics-er-1.6-preview",
+    "tone": "warning",
+    "updated_at": "2026-07-30T15:52:42.247875+00:00"
+  },
+  {
+    "created_at": "2026-07-31T11:59:35.511627+00:00",
+    "markdown": "MiniMax's API offers H3 through the `/v2/video_generation` multimodal endpoint. Phaseo routes H3 through the native MiniMax V2 video adapter.",
+    "model_slug": "minimax/h3",
+    "tone": "info",
+    "updated_at": "2026-07-31T11:59:35.511627+00:00"
+  },
+  {
+    "created_at": "2026-07-31T11:59:35.511627+00:00",
+    "markdown": "Restricted access through Microsoft MDASH; not available through the Phaseo gateway.",
+    "model_slug": "microsoft/mai-cyber-1-flash",
+    "tone": "info",
+    "updated_at": "2026-07-31T11:59:35.511627+00:00"
+  },
+  {
+    "created_at": "2026-08-04T16:57:21.242951+00:00",
+    "markdown": "Open-weight model; not listed as a selectable model on Fish Audio's hosted API.",
+    "model_slug": "fish-audio/s1-mini",
+    "tone": "info",
+    "updated_at": "2026-08-04T16:57:21.242951+00:00"
+  },
+  {
+    "created_at": "2026-08-06T23:02:36.513114+00:00",
+    "markdown": "The direct `solar-pro3-260126` API version is deprecated; use `solar-pro3`.",
+    "model_slug": "upstage/solar-pro-3-2026-01-26",
+    "tone": "warning",
+    "updated_at": "2026-08-06T23:02:36.513114+00:00"
+  },
+  {
+    "created_at": "2026-08-10T21:03:30.415843+00:00",
+    "markdown": "FLUX 3 Action is **announced for selected partners**. No generally available API or downloadable checkpoint has been published.",
+    "model_slug": "black-forest-labs/flux-3-action",
+    "tone": "info",
+    "updated_at": "2026-08-10T21:03:30.415843+00:00"
+  },
+  {
+    "created_at": "2026-08-10T21:03:30.415843+00:00",
+    "markdown": "FLUX 3 Dev is **announced** as an open-weight release. The checkpoint, license, specifications, and release date are not yet public.",
+    "model_slug": "black-forest-labs/flux-3-dev",
+    "tone": "info",
+    "updated_at": "2026-08-10T21:03:30.415843+00:00"
+  },
+  {
+    "created_at": "2026-08-10T21:03:30.415843+00:00",
+    "markdown": "FLUX 3 Image is **announced**. Black Forest Labs says image synthesis and editing will enter early access after FLUX 3 Video.",
+    "model_slug": "black-forest-labs/flux-3-image",
+    "tone": "info",
+    "updated_at": "2026-08-10T21:03:30.415843+00:00"
+  },
+  {
+    "created_at": "2026-08-10T21:03:30.415843+00:00",
+    "markdown": "The FLUX 3 Video API is generally available, while Black Forest Labs still labels the underlying model as a **preview**. Video editing and Omni Reference are not yet available.",
+    "model_slug": "black-forest-labs/flux-3-video",
+    "tone": "info",
+    "updated_at": "2026-08-10T21:03:30.415843+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "Deprecated July 15, 2026. Migrate to LTX-2.3 Fast before removal on August 15, 2026.",
+    "model_slug": "lightricks/ltx-2-fast",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "Deprecated July 15, 2026. Migrate to LTX-2.3 Pro before removal on August 15, 2026.",
+    "model_slug": "lightricks/ltx-2-pro",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "End of service is scheduled for December 31, 2026 UTC. Migrate to `upstage/solar-embedding-2-passage`.",
+    "model_slug": "upstage/solar-embedding-1-large-passage",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "End of service is scheduled for December 31, 2026 UTC. Migrate to `upstage/solar-embedding-2-query`.",
+    "model_slug": "upstage/solar-embedding-1-large-query",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "Grok 4.7 has only been briefly previewed by Elon Musk. SpaceXAI has not published official specifications, API availability, pricing, or a firm release date.",
+    "model_slug": "spacex-ai/grok-4.7",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "Scheduled to retire from TokenHub on 2026-09-15 Beijing time.",
+    "model_slug": "kling/kling-v1-5",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "Scheduled to retire from TokenHub on 2026-09-15 Beijing time.",
+    "model_slug": "kling/kling-v1-6",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "Scheduled to retire from TokenHub on 2026-09-15 Beijing time.",
+    "model_slug": "kling/kling-v1",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "Scheduled to retire from TokenHub on 2026-09-15 Beijing time.",
+    "model_slug": "kling/kling-v2-1",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "Scheduled to retire from TokenHub on 2026-09-15 Beijing time.",
+    "model_slug": "tencent/hy-image-lite",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "Scheduled to retire from TokenHub on 2026-09-15 Beijing time.",
+    "model_slug": "tencent/hy-image-v3.0",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "This legacy model is no longer listed as available through the Runway API.",
+    "model_slug": "runway/upscale-v1",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "This model is no longer available through the Runway API. Use Aleph 2.0.",
+    "model_slug": "runway/gen-4-aleph",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-26T21:41:45.959168+00:00",
+    "markdown": "This model is no longer available through the Runway API. Use Gen-4.5 or Gen-4 Turbo.",
+    "model_slug": "runway/gen-3-alpha-turbo",
+    "tone": "warning",
+    "updated_at": "2026-08-26T21:41:45.959168+00:00"
+  },
+  {
+    "created_at": "2026-08-27T13:58:47.542339+00:00",
+    "markdown": "The public API currently accepts image URLs and image data URIs only. PDF and file URL inputs are not yet supported.",
+    "model_slug": "cohere/parse-v5.0",
+    "tone": "info",
+    "updated_at": "2026-08-27T13:58:47.542339+00:00"
+  },
+  {
+    "created_at": "2026-08-27T17:14:12.000191+00:00",
+    "markdown": "Novita currently offers this model free for a limited time; no promotion end date is published.",
+    "model_slug": "inclusionai/ling-3.0-flash-fin",
+    "tone": "info",
+    "updated_at": "2026-08-27T17:14:12.000191+00:00"
+  },
+  {
+    "created_at": "2026-08-31T12:26:11.360431+00:00",
+    "markdown": "MiniMax's API offers H3 Max through the V2 video-generation endpoint. The provider route is catalogued, but Phaseo routing remains disabled until the MiniMax adapter supports the V2 payload and task lifecycle.",
+    "model_slug": "minimax/h3-max",
+    "tone": "info",
+    "updated_at": "2026-08-31T12:26:11.360431+00:00"
+  },
+  {
+    "created_at": "2026-09-01T17:47:35.348169+00:00",
+    "markdown": "Claude Mythos 5.1 requires Project Glasswing approval and is not publicly routable through Phaseo.",
+    "model_slug": "anthropic/claude-mythos-5.1",
+    "tone": "warning",
+    "updated_at": "2026-09-01T17:47:35.348169+00:00"
+  },
+  {
+    "created_at": "2026-09-03T10:12:17.421692+00:00",
+    "markdown": "Novita currently reports this model as free; no promotion end date is published.",
+    "model_slug": "inclusionai/ling-3.0-flash-sante",
+    "tone": "info",
+    "updated_at": "2026-09-03T10:12:17.421692+00:00"
+  },
+  {
+    "created_at": "2026-09-03T10:12:17.421692+00:00",
+    "markdown": "Novita currently reports this model as free; no promotion end date is published.",
+    "model_slug": "inclusionai/ling-3.0-flash-vl",
+    "tone": "info",
+    "updated_at": "2026-09-03T10:12:17.421692+00:00"
+  },
+  {
+    "created_at": "2026-09-03T16:05:51.904656+00:00",
+    "markdown": "Suno V6 is a consumer product release for Pro and Premier subscribers. Suno has not published an official API model ID or API pricing in this announcement, so no Phaseo API route is asserted.",
+    "model_slug": "suno/suno-v6",
+    "tone": "warning",
+    "updated_at": "2026-09-09T14:40:30.07734+00:00"
+  },
+  {
+    "created_at": "2026-09-03T16:05:51.904656+00:00",
+    "markdown": "Suno V6 Mini is a consumer product release available to everyone. Suno has not published an official API model ID or API pricing in this announcement, so no Phaseo API route is asserted.",
+    "model_slug": "suno/suno-v6-mini",
+    "tone": "warning",
+    "updated_at": "2026-09-09T14:40:30.07734+00:00"
+  },
+  {
+    "created_at": "2026-09-05T08:41:26.927047+00:00",
+    "markdown": "GPT-6 Astra Pro is a Phaseo model variant that requests OpenAI's documented gpt-6-astra API model with reasoning.mode set to pro. Availability depends on the connected OpenAI account having access.",
+    "model_slug": "openai/gpt-6-astra-pro",
+    "tone": "info",
+    "updated_at": "2026-09-05T08:41:26.927047+00:00"
+  },
+  {
+    "created_at": "2026-09-08T10:44:50.634175+00:00",
+    "markdown": "This is an early-access beta deployment backed by DeepSeek's temporary `deepseek-v4.1-flash-expires-on-0910` endpoint. Provider support may change or end at any time, and the upstream deployment is scheduled to expire on September 10, 2026. Concurrency capacity is extremely low, so requests may fail with capacity or rate-limit errors; do not rely on this endpoint for production workloads.",
+    "model_slug": "deepseek/deepseek-v4.1-flash-beta",
+    "tone": "critical",
+    "updated_at": "2026-09-08T10:44:50.634175+00:00"
+  },
+  {
+    "created_at": "2026-09-08T16:37:52.216465+00:00",
+    "markdown": "Nex-N2.5-Pro weights are coming soon.",
+    "model_slug": "nex-agi/nex-n2.5-pro",
+    "tone": "warning",
+    "updated_at": "2026-09-08T16:37:52.216465+00:00"
+  },
+  {
+    "created_at": "2026-09-09T10:15:49.765071+00:00",
+    "markdown": "This is an early-access preview deployment backed by DeepSeek's temporary `deepseek-v4.1-flash-expires-on-0910` endpoint. Provider support may change or end at any time, and the upstream deployment is scheduled to expire on September 10, 2026. Concurrency capacity is extremely low, so requests may fail with capacity or rate-limit errors; do not rely on this endpoint for production workloads.",
+    "model_slug": "deepseek/deepseek-v4.1-flash-preview",
+    "tone": "critical",
+    "updated_at": "2026-09-09T10:15:49.765071+00:00"
+  },
+  {
+    "created_at": "2026-09-09T14:40:30.07734+00:00",
+    "markdown": "Suno V6 Wild is a consumer product release for Pro and Premier subscribers. Suno has not published an official API model ID or API pricing in this announcement, so no Phaseo API route is asserted.",
+    "model_slug": "suno/suno-v6-wild",
+    "tone": "warning",
+    "updated_at": "2026-09-09T14:40:30.07734+00:00"
+  }
+]
