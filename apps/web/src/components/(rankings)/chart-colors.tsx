@@ -24,6 +24,25 @@ const MODEL_SERIES_PALETTE = [
 	"#6F8E3A",
 ];
 
+const PRICING_PROVIDER_PALETTE = [
+	"oklch(0.72 0.19 35)",
+	"oklch(0.72 0.18 145)",
+	"oklch(0.72 0.18 220)",
+	"oklch(0.74 0.18 285)",
+	"oklch(0.72 0.2 65)",
+	"oklch(0.72 0.18 185)",
+	"oklch(0.72 0.2 330)",
+	"oklch(0.76 0.16 105)",
+];
+
+const PRICING_TIER_DASHARRAYS: Record<string, string | undefined> = {
+	standard: undefined,
+	free: "1 5",
+	priority: "8 4",
+	flex: "10 3 2 3",
+	batch: "16 4",
+};
+
 const GOLDEN_ANGLE = 137.508;
 
 function hash32(str: string) {
@@ -79,4 +98,20 @@ export function assignOrderedSeriesColours(
 	return out;
 }
 
-export { DEFAULT_PASTELS, MODEL_SERIES_PALETTE };
+export function assignPerceptualSeriesColours(values: string[]) {
+	return assignOrderedSeriesColours(values, PRICING_PROVIDER_PALETTE);
+}
+
+export function getPricingTierDasharray(plan: string) {
+	const normalizedPlan = plan.toLowerCase();
+	return normalizedPlan in PRICING_TIER_DASHARRAYS
+		? PRICING_TIER_DASHARRAYS[normalizedPlan]
+		: "6 4";
+}
+
+export {
+	DEFAULT_PASTELS,
+	MODEL_SERIES_PALETTE,
+	PRICING_PROVIDER_PALETTE,
+	PRICING_TIER_DASHARRAYS,
+};
