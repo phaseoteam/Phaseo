@@ -59,11 +59,11 @@ export async function metadataForIds(context: Awaited<ReturnType<typeof requireA
 	const appIds = Array.from(new Set(args.apps ?? [])).filter(Boolean);
 	const routeSelect = "api_model_id:model_slug,model_id:model_slug,provider_model_id,provider_model_slug,provider_slug";
 	const [modelsResult, routesByModelResult, routesByProviderSlugResult, routesByProviderIdResult, providersResult, appsResult] = await Promise.all([
-		modelIds.length ? context.client.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
-		modelIds.length ? context.client.from("v2_model_provider_routes").select(routeSelect).in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
-		modelIds.length ? context.client.from("v2_model_provider_routes").select(routeSelect).in("provider_model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
-		modelIds.length ? context.client.from("v2_model_provider_routes").select(routeSelect).in("provider_model_id", modelIds) : Promise.resolve({ data: [], error: null }),
-		providerIds.length ? context.client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,prompt_training_policy,metadata").in("provider_slug", providerIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.userClient.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("provider_model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("provider_model_id", modelIds) : Promise.resolve({ data: [], error: null }),
+		providerIds.length ? context.userClient.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,prompt_training_policy,metadata").in("provider_slug", providerIds) : Promise.resolve({ data: [], error: null }),
 		appIds.length ? context.client.from("api_apps").select("id,title,app_key,image_url").in("id", appIds) : Promise.resolve({ data: [], error: null }),
 	]);
 	const routeRows = [
@@ -91,7 +91,7 @@ export async function metadataForIds(context: Awaited<ReturnType<typeof requireA
 		mappings.set(alias, { model_id: Array.from(candidates)[0] });
 	}
 	const canonicalIds = Array.from(new Set(Array.from(mappings.values()).map((row) => row.model_id).filter(Boolean)));
-	const mappedModelsResult = canonicalIds.length ? await context.client.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", canonicalIds) : { data: [], error: null };
+	const mappedModelsResult = canonicalIds.length ? await context.userClient.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", canonicalIds) : { data: [], error: null };
 	const canonical = new Map<string, Record<string, unknown>>();
 	for (const row of [...(modelsResult.data ?? []), ...(mappedModelsResult.data ?? [])]) {
 		if (row.model_id) canonical.set(row.model_id, row);

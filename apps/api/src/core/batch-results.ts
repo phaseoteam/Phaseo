@@ -12,6 +12,8 @@ const newline = new Uint8Array([10]);
 const MAX_INLINE_ROW_BYTES = 8 * 1024 * 1024;
 const PARSE_CHUNK_BYTES = 16 * 1024;
 const MAX_RESULTS_PAGES = 1000;
+export const BATCH_RESULTS_IDLE_TIMEOUT_MS = 30_000;
+export const BATCH_RESULTS_TOTAL_TIMEOUT_MS = 10 * 60_000;
 
 export function supportsBatchResults(provider: string): boolean {
 	return FILE_BACKED_JSONL_BATCH_PROVIDERS.has(provider) ||
@@ -31,7 +33,18 @@ type Cancellable = { cancel(reason?: unknown): Promise<void> };
 class DownloadContext {
 	readonly abort = new AbortController();
 	private readonly open = new Set<Cancellable>();
-	constructor(private readonly credentialContext?: BatchCredentialContext) {}
+	private readonly totalTimer: ReturnType<typeof setTimeout>;
+	private timeoutReason: string | null = null;
+	constructor(private readonly credentialContext?: BatchCredentialContext) {
+		this.totalTimer = setTimeout(() => this.abortForTimeout("provider_stream_total_timeout"), BATCH_RESULTS_TOTAL_TIMEOUT_MS);
+	}
+	private abortForTimeout(reason: string): void {
+		this.timeoutReason ??= reason;
+		this.abort.abort();
+	}
+	private throwTimeoutIfPresent(): void {
+		if (this.timeoutReason) throw new BatchResultsError(this.timeoutReason);
+	}
 	async response(response: Response): Promise<Response> {
 		if (!response.ok || !response.body) {
 			await response.body?.cancel().catch(() => undefined);
@@ -48,7 +61,17 @@ class DownloadContext {
 		try {
 			while (true) {
 				this.abort.signal.throwIfAborted();
-				const next = await reader.read();
+				let idleTimer: ReturnType<typeof setTimeout> | undefined;
+				const next = await Promise.race([
+					reader.read(),
+					new Promise<never>((_resolve, reject) => {
+						idleTimer = setTimeout(() => {
+							this.abortForTimeout("provider_stream_idle_timeout");
+							reject(new BatchResultsError("provider_stream_idle_timeout"));
+						}, BATCH_RESULTS_IDLE_TIMEOUT_MS);
+					}),
+				]).finally(() => clearTimeout(idleTimer));
+				this.throwTimeoutIfPresent();
 				this.abort.signal.throwIfAborted();
 				if (next.done) return;
 				if (next.value.length) yield next.value;
@@ -60,6 +83,7 @@ class DownloadContext {
 		}
 	}
 	async close(): Promise<void> {
+		clearTimeout(this.totalTimer);
 		this.abort.abort();
 		await Promise.allSettled([...this.open].map((body) => body.cancel()));
 		this.open.clear();

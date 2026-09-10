@@ -123,6 +123,23 @@ function readProviderModels(providerId: string) {
     );
 }
 
+test('priced MiniMax variants never collapse to a sibling canonical SKU', () => {
+    const variants = new Set([
+        'minimax/minimax-m2.5-highspeed',
+        'minimax/speech-2.8-hd',
+        'minimax/speech-2.8-turbo',
+    ]);
+    for (const providerId of fs.readdirSync(path.join(DATA_ROOT, 'api_providers'))) {
+        const modelsPath = path.join(DATA_ROOT, 'api_providers', providerId, 'models.json');
+        if (!fs.existsSync(modelsPath)) continue;
+        for (const row of readProviderModels(providerId)) {
+            if (variants.has(row.api_model_id)) {
+                expect(row.internal_model_id, `${providerId}:${row.provider_api_model_id}`).toBe(row.api_model_id);
+            }
+        }
+    }
+});
+
 describe('pricing safety checks', () => {
     test('active on gateway with no rules -> error flagged', () => {
         const bad = {

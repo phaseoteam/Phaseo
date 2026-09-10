@@ -6,7 +6,7 @@ export const METRICS = [
 ] as const;
 
 const supportedMajorVersions = new Set([4, 5]);
-const benchmarkId = (metric: typeof METRICS[number], version: number) => `${metric.id}-v${Math.floor(version)}`;
+export const benchmarkId = (metric: typeof METRICS[number], version: number) => `${metric.id}-v${Math.floor(version)}`;
 export type SourceModel = {
 	id: string; name: string; slug: string;
 	model_creator: { id: string; name: string };

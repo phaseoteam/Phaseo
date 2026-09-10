@@ -1549,6 +1549,11 @@ function checkApiProviderModels(
             .filter((entry): entry is readonly [string, ModelEntry] => entry !== null)
     );
     const referencedVariantIds = new Set<string>();
+	const independentlyPricedCanonicalVariants = new Set([
+		'minimax/minimax-m2.5-highspeed',
+		'minimax/speech-2.8-hd',
+		'minimax/speech-2.8-turbo',
+	]);
 
     for (const provider of listDirs(providersDir)) {
         const filePath = path.join(providersDir, provider, 'models.json');
@@ -1629,6 +1634,12 @@ function checkApiProviderModels(
                 errors.push(`API provider model ${rowLabel} missing api_model_id`);
                 continue;
             }
+			if (independentlyPricedCanonicalVariants.has(apiModelId) && internalModelId !== apiModelId) {
+				errors.push(
+					`API provider model ${rowLabel} independently priced variant '${apiModelId}' ` +
+					`must use the same internal_model_id`
+				);
+			}
             state.providerModelKeys.add(`${provider}:${apiModelId}`);
 
             if (apiModelId.toLowerCase().endsWith(':free')) {

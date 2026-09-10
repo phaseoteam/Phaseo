@@ -11,12 +11,22 @@ const NO_STORE = { "Cache-Control": "no-store" };
 const ICONS = new Set(["users", "briefcase", "megaphone", "code", "palette", "headphones", "landmark", "scale", "heart-pulse", "globe", "flask", "graduation-cap", "shield-check", "shopping-bag", "wrench", "truck", "handshake", "chart"]);
 const COLORS = new Set(["blue", "emerald", "amber", "rose", "violet", "slate", "cyan", "teal", "lime", "yellow", "orange", "red", "pink", "fuchsia", "indigo", "sky", "green", "purple"]);
 
-async function authorize(req: Request, write: boolean) {
+async function authorize(req: Request, write: boolean, roleAuthority = false) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return { response: (auth as GuardErr).response };
 	const capability = requireCapability(auth.value, write ? CAPABILITIES.SETTINGS_WRITE : CAPABILITIES.SETTINGS_READ);
 	if (capability) return { response: capability };
-	const role = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
+	if (roleAuthority) {
+		const workspaceCapability = requireCapability(auth.value, CAPABILITIES.WORKSPACES_WRITE, {
+			requireExplicitNonOAuthScope: true,
+		});
+		if (workspaceCapability) return { response: workspaceCapability };
+	}
+	const role = await requireOAuthWorkspaceRole(
+		auth.value,
+		auth.value.workspaceId,
+		roleAuthority ? ["owner"] : ["owner", "admin"],
+	);
 	if (role) return { response: role };
 	const { data, error } = await getSupabaseAdmin().from("workspace_addon_subscriptions")
 		.select("status,grace_until").eq("workspace_id", auth.value.workspaceId).eq("addon_key", "identity").maybeSingle();
@@ -76,7 +86,7 @@ async function getDirectory(req: Request) {
 }
 
 async function updateMemberOverride(req: Request) {
-	const access = await authorize(req, true); if ("response" in access) return access.response;
+	const access = await authorize(req, true, true); if ("response" in access) return access.response;
 	const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	const userId = pathParam(req, "members"); const role = body.access_role == null || body.access_role === "directory" ? null : String(body.access_role);
 	const mode = String(body.department_mode ?? "directory"); const departmentId = mode === "department" ? String(body.department_id ?? "").trim() : null;
@@ -151,7 +161,7 @@ async function listMappings(req: Request) {
 }
 
 async function createMapping(req: Request) {
-	const access = await authorize(req, true); if ("response" in access) return access.response;
+	const access = await authorize(req, true, true); if ("response" in access) return access.response;
 	const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	const groupId = String(body.scim_group_id ?? "").trim(); const departmentId = String(body.department_id ?? "").trim(); const role = String(body.access_role ?? "member"); const position = String(body.department_position ?? "member");
 	if (!groupId || !departmentId || !["member", "admin"].includes(role) || !["member", "lead"].includes(position)) return json({ error: "bad_request", message: "Invalid group mapping" }, 400, NO_STORE);
@@ -161,7 +171,7 @@ async function createMapping(req: Request) {
 }
 
 async function updateMapping(req: Request) {
-	const access = await authorize(req, true); if ("response" in access) return access.response;
+	const access = await authorize(req, true, true); if ("response" in access) return access.response;
 	const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	const id = pathParam(req, "group-mappings"); const role = body.access_role === undefined ? undefined : String(body.access_role); const position = body.department_position === undefined ? undefined : String(body.department_position);
 	if ((role && !["member", "admin"].includes(role)) || (position && !["member", "lead"].includes(position)) || (!role && !position)) return json({ error: "bad_request", message: "Invalid group mapping" }, 400, NO_STORE);
@@ -171,7 +181,7 @@ async function updateMapping(req: Request) {
 }
 
 async function deleteMapping(req: Request) {
-	const access = await authorize(req, true); if ("response" in access) return access.response;
+	const access = await authorize(req, true, true); if ("response" in access) return access.response;
 	const id = pathParam(req, "group-mappings"); const { data, error } = await getSupabaseAdmin().from("scim_group_mappings").delete().eq("workspace_id", access.auth.workspaceId).eq("id", id).select("id").maybeSingle();
 	if (error) return json({ error: "directory_update_failed" }, 503, NO_STORE); if (!data) return json({ error: "not_found" }, 404, NO_STORE);
 	await audit(access.auth, "identity.group_mapping.deleted", "scim_group_mapping", id); return json({ deleted: true }, 200, NO_STORE);

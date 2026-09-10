@@ -90,13 +90,12 @@ test("runner invocations never put the gateway credential in argv", () => {
 	}
 });
 
-test("Windows runner wrappers remain argument-safe for npm-installed CLIs", () => {
+test("Windows runner wrappers reject cmd.exe interpolation and use argument-safe launchers", () => {
 	const invocation = buildRunnerInvocation("cline", models[0].id, ["--system", "Review & test", "--tui"], paths, {});
-	const wrapped = runnerChildInvocation({ ...invocation, command: "C:\\Program Files\\cline.cmd" }, "win32", "cmd.exe");
-	assert.equal(wrapped.command, "cmd.exe");
-	assert.equal(wrapped.args.slice(0, 3).join(" "), "/d /s /c");
-	assert.match(wrapped.args[3], /Program Files/);
-	assert.match(wrapped.args[3], /"Review & test"/);
+	assert.throws(
+		() => runnerChildInvocation({ ...invocation, command: "C:\\Program Files\\cline.cmd" }, "win32", "cmd.exe"),
+		/unsupported/,
+	);
 
 	const powershell = runnerChildInvocation({ ...invocation, command: "C:\\Tools\\cline.ps1" }, "win32", "cmd.exe");
 	assert.deepEqual(powershell.args.slice(0, 4), ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]);

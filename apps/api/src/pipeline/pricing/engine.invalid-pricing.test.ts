@@ -31,6 +31,40 @@ describe("invalid pricing cannot become a wallet charge", () => {
         expect(() => computeBillSummary({ input_text_tokens: 1000, output_text_tokens: 500 }, mixed, { quality: "premium" }))
             .toThrow("pricing_rule_missing:output_text_tokens");
     });
+    it("rejects positive cache usage when the effective card omits its cache meter", () => {
+        expect(() => computeBillSummary({ input_text_tokens: 1000, cached_read_text_tokens: 500 }, card()))
+            .toThrow("pricing_rule_missing:cached_read_text_tokens");
+        expect(() => computeBillSummary({ cached_read_text_tokens: 500 }, card()))
+            .toThrow("pricing_rule_missing:cached_read_text_tokens");
+    });
+    it("preserves aggregate cache-write pricing for providers that also report TTL detail", () => {
+        const aggregate = card();
+        aggregate.rules.push({ ...aggregate.rules[0], meter: "cached_write_text_tokens", price_per_unit: "3" });
+        expect(computeBillSummary({
+            input_text_tokens: 1000,
+            cached_write_text_tokens: 500,
+            cached_write_text_tokens_5m: 300,
+            cached_write_text_tokens_1h: 200,
+        }, aggregate).lines.map((line) => line.dimension)).toContain("cached_write_text_tokens");
+    });
+	it("rejects split cache-write usage when aggregate pricing conditions do not match", () => {
+		const aggregate = card();
+		aggregate.rules.push({
+			...aggregate.rules[0], meter: "cached_write_text_tokens", price_per_unit: "3",
+			match: [{ path: "cache_class", op: "eq", value: "eligible" }],
+		});
+		expect(() => computeBillSummary({ cached_write_text_tokens_5m: 300 }, aggregate))
+			.toThrow("pricing_rule_missing:cached_write_text_tokens");
+	});
+	it("rejects an aggregate cache-write quantity smaller than its split detail", () => {
+		const aggregate = card();
+		aggregate.rules.push({ ...aggregate.rules[0], meter: "cached_write_text_tokens", price_per_unit: "3" });
+		expect(() => computeBillSummary({
+			cached_write_text_tokens: 1,
+			cached_write_text_tokens_5m: 500,
+			cached_write_text_tokens_1h: 500,
+		}, aggregate)).toThrow("pricing_rule_missing:cached_write_text_tokens_5m,cached_write_text_tokens_1h");
+	});
     it.each([0, -1, NaN, Infinity])("rejects invalid unit size %s instead of charging per single unit", (unit_size) => {
         expect(() => computeBillSummary({ input_text_tokens: 1000 }, card({ unit_size })))
             .toThrow("pricing_invalid_unit_size");

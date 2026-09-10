@@ -29,6 +29,8 @@ const state = vi.hoisted(() => ({
 	previewProviders: "openai,anthropic,google-ai-studio,mistral,moonshotai,x-ai,groq,together",
 	googleApiKey: "test-google-key" as string | null,
 	guardContextFailure: null as Response | null,
+	resolvedModel: null as string | null,
+	credentialModels: [] as string[],
 	policyAllowedProviders: null as string[] | null,
 	batchApiEnabled: true,
 	fetchCalls: [] as Array<{
@@ -56,6 +58,8 @@ function resetState() {
 	state.previewProviders = "openai,anthropic,google-ai-studio,mistral,moonshotai,x-ai,groq,together";
 	state.googleApiKey = "test-google-key";
 	state.guardContextFailure = null;
+	state.resolvedModel = null;
+	state.credentialModels = [];
 	state.policyAllowedProviders = null;
 	state.batchApiEnabled = true;
 	state.fetchCalls = [];
@@ -94,7 +98,7 @@ vi.mock("@pipeline/before/guards", () => ({
 		: ({ ok: true, value: {
 			context: { teamSettings: {} },
 			providers: ["openai", "anthropic", "google-ai-studio", "mistral", "moonshotai", "x-ai", "groq", "together"].map((providerId) => ({ providerId })),
-			resolvedModel: null,
+			resolvedModel: state.resolvedModel,
 			candidateDiagnostics: {},
 		} })),
 }));
@@ -151,7 +155,8 @@ vi.mock("@providers/keys", () => ({
 }));
 
 vi.mock("@core/batch-credentials", () => ({
-	resolveBatchSubmissionCredential: vi.fn(async ({ providerId }: { providerId: string }) => {
+	resolveBatchSubmissionCredential: vi.fn(async ({ providerId, model }: { providerId: string; model: string }) => {
+		state.credentialModels.push(model);
 		if (providerId === "google-ai-studio" && !state.googleApiKey) throw new Error("google_ai_studio_key_missing");
 		return { credential: { key: `test-${providerId}-key`, source: "gateway", byokKeyId: null }, credentialMode: "managed_and_byok" };
 	}),
@@ -351,6 +356,30 @@ vi.mock("../../utils", () => ({
 }));
 
 describe("batchRoutes", () => {
+	it("uses the policy-resolved canonical model for credential selection", async () => {
+		state.resolvedModel = "openai/canonical-batch-model";
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			if (url === "https://api.openai.example/v1/files") {
+				return jsonResponse({ id: "file_canonical", purpose: "batch", status: "uploaded" });
+			}
+			if (url === "https://api.openai.example/v1/batches") {
+				return jsonResponse({ id: "batch_canonical", status: "validating", input_file_id: "file_canonical" });
+			}
+			throw new Error(`Unexpected fetch: ${String(init?.method ?? "GET")} ${url}`);
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				model: "openai/attacker-native-alias",
+				requests: [{ custom_id: "one", method: "POST", url: "/v1/responses", body: { model: "attacker-native-alias", input: "hello" } }],
+			}),
+		});
+		expect(response.status).toBe(200);
+		expect(state.credentialModels).toEqual(["openai/canonical-batch-model"]);
+	});
 	it.each(["openai", "together", "mistral"])("downloads %s success/error files without finalization or webhook effects", async (provider) => {
 		state.batchMeta.set(batchKey("ws_batch_test", "batch_files"), { provider, status: "completed", nativeBatchId: "native", outputFileId: "out", errorFileId: "err" });
 		vi.stubGlobal("fetch", vi.fn(async (url) => new Response(String(url).includes("/out/") ? '{"custom_id":"good","response":{"body":{"output":"full"}}}\n' : '{"custom_id":"bad","error":{"message":"failed"}}\n')));

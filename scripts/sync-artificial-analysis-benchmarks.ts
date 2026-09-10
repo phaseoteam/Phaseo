@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { METRICS, fetchModels, matchModels, mergeResults, metricValue, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
+import { METRICS, benchmarkId, fetchModels, matchModels, mergeResults, metricValue, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
 
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) {
 	if (existsSync(resolve(file))) loadEnvFile(resolve(file));
@@ -57,7 +57,9 @@ async function main() {
 	for (const status of ["ambiguous", "unmatched", "excluded"]) console.log(`${status}: ${plan.filter((entry) => entry.match.status === status).length}`);
 	if (!report.matched) throw new Error("No models matched; no benchmark data was written.");
 	if (!write) { console.log("Dry run complete. Use --write to update the database catalog."); return; }
-	const metadata = METRICS.map((metric) => ({ benchmark_id: metric.id, benchmark_name: metric.name, category: metric.field === "total_cost" ? "cost" : metric.field === "artificial_analysis_coding_index" ? "coding" : metric.field === "artificial_analysis_agentic_index" ? "agentic" : "general", ascending_order: metric.higherBetter, type: "numerical", link: "https://artificialanalysis.ai/data-api/docs", total_models: source.models.filter((model) => metricValue(model, metric) !== null).length }));
+	const activeBenchmarkIds = METRICS.map((metric) => benchmarkId(metric, source.version));
+	const managedBenchmarkIds = [...new Set([...activeBenchmarkIds, ...METRICS.map((metric) => metric.id)])];
+	const metadata = METRICS.map((metric) => ({ benchmark_id: benchmarkId(metric, source.version), benchmark_name: metric.name, category: metric.field === "total_cost" ? "cost" : metric.field === "artificial_analysis_coding_index" ? "coding" : metric.field === "artificial_analysis_agentic_index" ? "agentic" : "general", ascending_order: metric.higherBetter, type: "numerical", link: "https://artificialanalysis.ai/data-api/docs", total_models: source.models.filter((model) => metricValue(model, metric) !== null).length }));
 	// Metadata is published to the database below, never to the retired JSON source.
 	for (const entry of plan) {
 		// Retain unmatched models' previous results and provenance until explicitly mapped.
@@ -71,7 +73,7 @@ async function main() {
 	for (const entry of plan) {
 		if (!entry.match.source || !dbIds.has(entry.model.model_id)) continue;
 		const rows = (entry.model.benchmarks ?? []).flatMap((result, index) => {
-			if (!METRICS.some((metric) => metric.id === result.benchmark_id)) return [];
+			if (!activeBenchmarkIds.includes(String(result.benchmark_id))) return [];
 			const sourceId = String(result.other_info).match(/Artificial Analysis ID ([^;]+)/)?.[1];
 			if (!sourceId) throw new Error(`Missing Artificial Analysis source ID for ${entry.model.model_id}/${result.benchmark_id}.`);
 			const result_key = `${entry.model.model_id}:${result.benchmark_id}:${sourceId}`;
@@ -82,7 +84,7 @@ async function main() {
 			if (error) throw error;
 		}
 		// Scope cleanup to this matched model, after its replacement succeeds.
-		const { data: old, error: readError } = await db.from("v2_benchmark_results").select("result_id").eq("model_slug", entry.model.model_id).is("effective_to", null).in("benchmark_id", METRICS.map((metric) => metric.id));
+		const { data: old, error: readError } = await db.from("v2_benchmark_results").select("result_id").eq("model_slug", entry.model.model_id).is("effective_to", null).in("benchmark_id", managedBenchmarkIds);
 		if (readError) throw readError;
 		const stale = (old ?? []).filter((row) => !rows.some((result) => result.result_id === row.result_id)).map((row) => row.result_id);
 		// Saved catalogue records cannot be deleted. Withdraw obsolete scores in place.
