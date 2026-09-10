@@ -168,7 +168,7 @@ Phaseo can also launch Cline, Kilo Code, oh-my-pi, and Muse Code with the Phaseo
 phaseo cline --model openai/gpt-5.6-terra -- --tui
 phaseo kilo --model openai/gpt-5.6-terra --
 phaseo omp --model openai/gpt-5.6-terra --
-phaseo muse --model muse-spark-1.3 --
+phaseo muse --model meta/muse-spark-1.3 --
 ```
 
 `phaseo run <cline|kilo|omp|muse>` is the equivalent explicit form. Put harness flags after `--` so Phaseo can consume its own flags first. Use `--catalog all` to fetch the active Phaseo text/chat model catalog, or `--dry-run --json` to inspect the install and launch plan without creating a key or starting a harness.
