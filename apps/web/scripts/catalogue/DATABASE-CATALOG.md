@@ -50,6 +50,13 @@ Run the read-only database export from `apps/web`:
 pnpm catalog:export:database
 ```
 
+Use `pnpm catalog:export:database --dry-run` to query and filter the same
+production rows without writing generated files, removing stale files, or
+opening a pull request. The preview reports every file that would be written,
+its row count, byte size, SHA-256 hash, and any stale JSON files that would be
+removed. The scheduled workflow exposes the same preview through
+`workflow_dispatch` with the `dry_run` input.
+
 It writes the public catalogue tables to `packages/data/catalog/generated/database-v2`, using the
 existing Supabase URL and service-role environment variables. It fetches all
 tables before replacing files, includes rows with null timestamps, uses stable

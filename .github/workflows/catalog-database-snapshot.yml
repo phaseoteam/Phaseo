@@ -2,6 +2,12 @@ name: Catalog Database Snapshot
 
 on:
     workflow_dispatch:
+        inputs:
+            dry_run:
+                description: "Preview the production export without writing snapshot files or opening a PR"
+                required: false
+                default: false
+                type: boolean
     schedule:
         - cron: "0 0 * * *"
 
@@ -29,7 +35,7 @@ jobs:
 
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
               with:
-                  ref: main
+                  ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || 'main' }}
                   fetch-depth: 0
                   persist-credentials: false
                   token: ${{ steps.app-token.outputs.token }}
@@ -50,9 +56,25 @@ jobs:
               env:
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
                   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-              run: pnpm --filter @phaseo/web catalog:export:database
+              run: |
+                  set -o pipefail
+                  if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+                    pnpm --filter @phaseo/web catalog:export:database --dry-run | tee catalog-database-dry-run.txt
+                  else
+                    pnpm --filter @phaseo/web catalog:export:database
+                  fi
+
+            - name: Upload dry-run report
+              if: ${{ inputs.dry_run }}
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+              with:
+                  name: catalog-database-dry-run-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: catalog-database-dry-run.txt
+                  if-no-files-found: error
+                  retention-days: 30
 
             - name: Preserve this daily snapshot
+              if: ${{ !inputs.dry_run }}
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               with:
                   name: catalog-database-${{ github.run_id }}-${{ github.run_attempt }}
@@ -61,11 +83,13 @@ jobs:
                   retention-days: 90
 
             - name: Regenerate SDK catalog helpers
+              if: ${{ !inputs.dry_run }}
               run: |
                   pnpm openapi:gen
                   node scripts/sdk/generate-model-id-constants.mjs
 
             - name: Record SDK helper additions
+              if: ${{ !inputs.dry_run }}
               shell: bash
               run: |
                   if ! git diff --quiet -- packages/sdk; then
@@ -87,6 +111,7 @@ jobs:
                   fi
 
             - name: Resolve snapshot branch
+              if: ${{ !inputs.dry_run }}
               id: snapshot-branch
               env:
                   GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -99,6 +124,7 @@ jobs:
                   echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
             - name: Open or update snapshot pull request
+              if: ${{ !inputs.dry_run }}
               uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
               with:
                   token: ${{ steps.app-token.outputs.token }}
