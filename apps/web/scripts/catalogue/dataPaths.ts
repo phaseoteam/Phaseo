@@ -1,16 +1,14 @@
-// apps/web/scripts/importer/paths.ts
-import { resolve } from "path";
-import { fileURLToPath } from "url";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = resolve(__filename, ".."); // .../apps/web/scripts/importer
+const __dirname = resolve(__filename, "..");
 
-// If DATA_ROOT is set, resolve it from the *current working directory* (so you can override).
-// Otherwise default to the repo-local path relative to this file:
-// ../../../../packages/data/catalog/src/data
+// Archived fixture paths are used by compatibility validators and audit tools.
+// They are not an input feed for the live database.
 export const DATA_ROOT = process.env.DATA_ROOT
-    ? resolve(process.cwd(), process.env.DATA_ROOT)
-    : resolve(__dirname, "../../../../packages/data/catalog/src/data");
+	? resolve(process.cwd(), process.env.DATA_ROOT)
+	: resolve(__dirname, "../../../../packages/data/catalog/src/data");
 
 export const DIR_ALIASES = resolve(DATA_ROOT, "aliases");
 export const DIR_PROVIDERS = resolve(DATA_ROOT, "api_providers");

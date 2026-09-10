@@ -12,7 +12,7 @@ The database is the catalog source of truth. Admins use `/internal/data` to mana
 
 Public visitors should [report incorrect information](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) or [request missing data](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) with the affected record and official sources. Maintainers review the issue and apply approved updates in the editor.
 
-Daily public snapshots are exported to `packages/data/catalog/generated/database-v2`. The legacy JSON importer is retired, and edits to archived `src/data` fixtures do not update the live catalog.
+The `Catalog Database Snapshot` workflow reads the production database and exports the eight public catalog namespaces to `packages/data/catalog/generated/database-v2`, then opens a reviewable pull request when the snapshot changes. There is no JSON import path: archived `packages/data/catalog/src/data` fixtures and generated snapshots are validation/publication artifacts only and do not update the live catalog.
 
 ## Validation
 

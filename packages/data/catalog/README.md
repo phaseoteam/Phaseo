@@ -14,10 +14,10 @@ A provider may be catalog-only. A callable model requires an explicitly enabled 
 
 ## Files and automation
 
-- `generated/database-v2` contains daily public database snapshots and the generated OpenAPI enum index. Snapshots are limited to the `aliases`, `api_providers`, `benchmarks`, `families`, `models`, `organisations`, `pricing`, and `subscription_plans` catalog namespaces; operational, billing, analytics, history, proposal, and admin tables are not exported. Snapshot updates are reviewed through pull requests.
-- `src/data` contains archived compatibility fixtures. Editing these files does not update the live catalog.
-- The legacy JSON-to-database importer is retired. Neither archived fixtures nor exported snapshots are an input feed.
-- Provider discovery proposes database pricing updates, benchmark sync writes reviewed-source results, and lifecycle automation uses database dates and routes.
+- The admin editor writes the production v2 catalog database. There is no JSON-to-database import step; changes to catalog records must be made through `/internal/data` or an approved database automation.
+- `generated/database-v2` contains daily public database snapshots and the generated OpenAPI enum index. Snapshots are limited to the `aliases`, `api_providers`, `benchmarks`, `families`, `models`, `organisations`, `pricing`, and `subscription_plans` catalog namespaces; operational, billing, analytics, history, proposal, and admin tables are not exported. The `Catalog Database Snapshot` workflow reads the database, writes this directory, and opens a reviewable pull request when the public snapshot changes.
+- `src/data` contains archived compatibility fixtures used by validators and contract tests. Editing these files or generated snapshots does not update the live catalog.
+- Provider discovery proposes database pricing updates, benchmark sync writes reviewed-source results, and lifecycle automation uses database dates and routes. None of these jobs imports repository JSON into the database.
 - The historical fixture contract remains in [`schema/catalog.schema.json`](schema/catalog.schema.json). Fixture validators check structure and cross-file references; they do not publish data.
 
 Code, schema, and automation changes still use branches, tests, and pull requests. Never edit generated SDK or OpenAPI model lists by hand; regenerate them through the snapshot tooling.

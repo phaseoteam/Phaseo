@@ -13,9 +13,14 @@ pnpm data:sync-manifest
 pnpm validate:data
 ```
 
-The workflow runs at 04:23 UTC daily and updates a catalog PR. Merging it runs the existing production database importer. It never auto-merges. Existing `PHASEO_APP_CLIENT_ID` and `PHASEO_APP_PRIVATE_KEY` repository secrets provide PR access. Failed pulls stop before changing benchmark data; the matching report is a workflow artifact.
+The workflow runs at 04:23 UTC daily and writes benchmark results directly to
+the database. It never auto-merges or imports repository JSON. The separate
+catalog snapshot workflow publishes the resulting public data as a reviewable
+PR. Existing `PHASEO_APP_CLIENT_ID` and `PHASEO_APP_PRIVATE_KEY` repository
+secrets provide PR access. Failed pulls stop before changing benchmark data; the
+matching report is a workflow artifact.
 
-To inspect database-only matches without writing, add `--sync-db` to the dry run. For an immediate database backfill, `--write --sync-db` additionally uses `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. This also examines database-only models, paginates all database rows, and only replaces the four managed metrics for successfully matched models. Obsolete database scores are withdrawn by setting their scores and ranks to null, respecting the database retention policy. Commit/merge the catalog snapshot too so a later catalog import does not restore older scores. Public caches refresh on their normal TTLs.
+To inspect database-only matches without writing, add `--sync-db` to the dry run. For an immediate database backfill, `--write --sync-db` additionally uses `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. This also examines database-only models, paginates all database rows, and only replaces the four managed metrics for successfully matched models. Obsolete database scores are withdrawn by setting their scores and ranks to null, respecting the database retention policy. The public snapshot workflow reflects the updated database on its next run. Public caches refresh on their normal TTLs.
 
 ## Matching
 
@@ -34,7 +39,7 @@ Use a `null` model mapping to opt out of future updates (existing records are re
 
 Unmatched records retain previous scores and their original provenance. Coverage is limited to models evaluated by Artificial Analysis; no scores are inferred for untested models. Major index version changes fail closed until a new benchmark family is added, so incompatible versions are not mixed. Minor versions remain recorded on each result, not in a global label that would relabel older data.
 
-Each result persists its snapshot time as `updated_at` through the normal catalog importer. Writes update only the benchmarks property, preserving unrelated model formatting.
+Each result persists its snapshot time as `updated_at` through the database sync. Writes update only the benchmarks property, preserving unrelated model formatting.
 
 The free API has a 100-request daily quota; each page costs one request. We fetch a single snapshot per run, not one request per model. Attribution is displayed in the featured benchmark panel. See [API documentation and licensing](https://artificialanalysis.ai/data-api/docs) for use and redistribution terms.
 

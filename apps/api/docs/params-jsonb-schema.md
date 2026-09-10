@@ -29,7 +29,7 @@ capabilities should use structured object form so model APIs can return allowed 
 }
 ```
 
-Legacy array form is still accepted by importers and validators:
+Legacy array form is still accepted by compatibility readers and validators:
 
 ```json
 ["temperature", "top_p", "max_tokens"]

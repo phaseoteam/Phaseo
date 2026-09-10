@@ -1,8 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-jest.mock("./importer/paths", () => ({ DATA_ROOT: "", DIR_ALIASES: "" }));
-import { phaseoRoutingEnabled } from "./importer/v2";
+import { phaseoRoutingEnabled } from "./catalogue/routePolicy";
 
 const catalogRoot = path.resolve(__dirname, "../../../packages/data/catalog/src/data");
 const readJson = (file: string) => JSON.parse(fs.readFileSync(file, "utf8"));

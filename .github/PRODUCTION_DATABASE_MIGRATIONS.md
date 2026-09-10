@@ -6,7 +6,9 @@ CI-managed application deployment waits for the migration job. If migration vali
 
 To recover a missed or failed release, dispatch CI on `main` with `deploy_production=true`. This validates the committed migration history, then runs the same approval-gated migration dry run, application, and security checks before deploying. It requires `ENABLE_PRODUCTION_DB_MIGRATIONS=true`; a skipped or failed migration job blocks manual deployment. Manual and push-triggered production releases share a concurrency lock, so recovery cannot overlap another production release.
 
-Set `importer_mode=run` when recovery also needs a catalogue import. In a combined manual release, the importer waits for successful migrations. Leave `importer_mode=skip` to deploy without importing. Standalone importer dispatches with `deploy_production=false` do not apply migrations.
+Catalog publication is separate from production migration recovery. The database
+snapshot workflow reads the live catalog and opens a reviewable export pull
+request; production migration dispatches do not import repository JSON.
 
 ## One-time GitHub setup
 

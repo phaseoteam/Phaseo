@@ -774,7 +774,7 @@ export function ruleComparisonMatchSignature(rule: any): string {
                             : op,
                     value: condition.value,
 					// Group identifiers only describe boolean structure when a rule
-					// contains multiple conditions. Importers may still populate them
+					// contains multiple conditions. Database automation may still populate them
 					// on single-condition rules, where they are semantically inert.
 					or_group: hasMultipleConditions ? condition.or_group ?? null : null,
 					and_index: hasMultipleConditions ? condition.and_index ?? null : null,
