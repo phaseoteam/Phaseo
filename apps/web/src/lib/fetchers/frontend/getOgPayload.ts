@@ -79,12 +79,17 @@ function pricingMatchSignature(rule: PricingRule): string {
 	return JSON.stringify(rule.match ?? []);
 }
 
+function pricingEffectiveFromMs(rule: PricingRule): number {
+	const value = Date.parse(rule.effective_from);
+	return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+}
+
 function pricingBaselineKey(candidate: PriceCandidate): string {
 	return [candidate.providerId, candidate.rule.meter, candidate.rule.pricing_plan].join("\u0000");
 }
 
 function getPromotionCandidate(listCandidate: PriceCandidate, candidates: PriceCandidate[]): PriceCandidate | null {
-	return candidates
+	const matchingPromotions = candidates
 		.filter((peer) =>
 			peer.providerId === listCandidate.providerId &&
 			peer.rule.meter === listCandidate.rule.meter &&
@@ -92,12 +97,12 @@ function getPromotionCandidate(listCandidate: PriceCandidate, candidates: PriceC
 			pricingMatchSignature(peer.rule) === pricingMatchSignature(listCandidate.rule) &&
 			peer.rule.priority > listCandidate.rule.priority &&
 			peer.pricePerMillion < listCandidate.pricePerMillion,
-		)
-		.reduce<PriceCandidate | null>(
-			(current, candidate) =>
-				current == null || candidate.pricePerMillion < current.pricePerMillion ? candidate : current,
-			null,
 		);
+	return matchingPromotions.sort((a, b) =>
+		b.rule.priority - a.rule.priority ||
+		pricingEffectiveFromMs(b.rule) - pricingEffectiveFromMs(a.rule) ||
+		a.pricePerMillion - b.pricePerMillion,
+	)[0] ?? null;
 }
 
 function getPromotionPercent(listCandidate: PriceCandidate, candidates: PriceCandidate[]): number | null {

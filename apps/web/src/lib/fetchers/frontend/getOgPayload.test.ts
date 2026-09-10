@@ -91,6 +91,36 @@ test("uses the discounted price while preserving the Standard list price", () =>
 	]));
 });
 
+test("uses the highest-priority active promotion before comparing prices", () => {
+	const stats = buildModelOgStats(model, [
+		makeProvider("promo-provider", [
+			makeRule("promo-provider", { price_per_unit: 1 }),
+			makeRule("promo-provider", {
+				price_per_unit: 0.5,
+				priority: 200,
+				note: "Limited-time 50% discount",
+				effective_from: "2026-02-01T00:00:00Z",
+			}),
+			makeRule("promo-provider", {
+				price_per_unit: 0.75,
+				priority: 300,
+				note: "Limited-time 25% discount",
+				effective_from: "2026-03-01T00:00:00Z",
+			}),
+		]),
+	]);
+
+	expect(stats).toEqual(expect.arrayContaining([
+		{
+			label: "INPUT",
+			value: "$0.75",
+			originalValue: "$1.00",
+			helper: "per 1M tokens",
+			promotion: "25% off",
+		},
+	]));
+});
+
 test("only uses primary token meters and derives the baseline priority", () => {
 	const stats = buildModelOgStats(model, [
 		makeProvider("priority-provider", [
