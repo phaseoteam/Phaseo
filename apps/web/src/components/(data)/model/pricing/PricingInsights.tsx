@@ -74,7 +74,11 @@ import {
 	fmtUSD,
 	resolvePricingMeterPrice,
 } from "@/components/(data)/model/pricing/pricingHelpers";
-import { assignSeriesColours, keyForSeries } from "@/components/(rankings)/chart-colors";
+import {
+	assignPerceptualSeriesColours,
+	getPricingTierDasharray,
+	keyForSeries,
+} from "@/components/(rankings)/chart-colors";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ModelPricingHistoryRule } from "@/lib/fetchers/models/getModelPricingHistoryRules";
 import type { ModelUsageDailyBreakdownRow } from "@/lib/fetchers/models/getModelUsageDailyBreakdown";
@@ -498,6 +502,62 @@ function ServiceTierIconBadge({ plan }: { plan: string }) {
 	);
 }
 
+function PricingLineTypeIcon({ plan, color }: { plan: string; color: string }) {
+	return (
+		<svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true" focusable="false">
+			<line
+				x1="1"
+				y1="4"
+				x2="23"
+				y2="4"
+				stroke={color}
+				strokeWidth="1.75"
+				strokeDasharray={getPricingTierDasharray(plan)}
+				strokeLinecap="round"
+			/>
+		</svg>
+	);
+}
+
+function PricingTierLabel({ providerName, plan }: { providerName: string; plan: string }) {
+	const tier = getTierFilterMeta(plan);
+	return (
+		<span className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground">
+			<ServiceTierIconBadge plan={plan} />
+			<span>
+				{providerName}{" "}
+				<span className={tier.iconClassName}>({formatPricingPlanLabel(plan)})</span>
+			</span>
+		</span>
+	);
+}
+
+function PricingTierLegend({ plans }: { plans: string[] }) {
+	if (!plans.length) return null;
+	return (
+		<div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t px-2 pt-2.5 text-[11px] text-muted-foreground" aria-label="Service tier line styles">
+			<span className="font-medium text-foreground">Service tier</span>
+			{plans.map((plan) => (
+				<span key={plan} className="inline-flex items-center gap-1.5">
+					<svg width="28" height="8" viewBox="0 0 28 8" aria-hidden="true" focusable="false">
+						<line
+							x1="1"
+							y1="4"
+							x2="27"
+							y2="4"
+							stroke="currentColor"
+							strokeWidth="2"
+							strokeDasharray={getPricingTierDasharray(plan)}
+							strokeLinecap="round"
+						/>
+					</svg>
+					<span>{formatPricingPlanLabel(plan)}</span>
+				</span>
+			))}
+		</div>
+	);
+}
+
 type EffectivePricePrefixPoint = {
 	timestampMs: number;
 	inputTokens: number;
@@ -587,12 +647,14 @@ function buildPricingHistoryState(args: {
 	const chartConfig: ChartConfig = {};
 	const rulesBySeries = new Map<string, ModelPricingHistoryRule[]>();
 	const seriesByProviderPlan = new Map<string, string>();
+	const lineDasharrayBySeries = new Map<string, string | undefined>();
 	for (const row of args.rows) {
 		const seriesLabel = `${row.providerName} (${formatPricingPlanLabel(row.pricingPlan)})`;
 		providerNameBySeries.set(row.seriesKey, seriesLabel);
 		chartConfig[row.seriesKey] = { label: seriesLabel, color: row.color };
 		rulesBySeries.set(row.seriesKey, []);
 		seriesByProviderPlan.set(`${row.providerId}\u0000${row.pricingPlan}`, row.seriesKey);
+		lineDasharrayBySeries.set(row.seriesKey, getPricingTierDasharray(row.pricingPlan));
 	}
 	for (const rule of args.historyRules) {
 		const seriesKey = seriesByProviderPlan.get(`${rule.providerId}\u0000${rule.pricingPlan}`);
@@ -661,6 +723,7 @@ function buildPricingHistoryState(args: {
 		chartData,
 		seriesKeys,
 		providerNameBySeries,
+		lineDasharrayBySeries,
 		hasData: chartData.some((entry) =>
 			seriesKeys.some((key) => typeof entry[key] === "number" && Number.isFinite(entry[key])),
 		),
@@ -747,6 +810,7 @@ function PricingHistoryChart({
 							stroke={`var(--color-${seriesKey})`}
 							strokeOpacity={lineStyle.strokeOpacity}
 							strokeWidth={lineStyle.strokeWidth}
+							strokeDasharray={state.lineDasharrayBySeries.get(seriesKey)}
 							dot={false}
 							activeDot={{ r: lineStyle.activeDotRadius }}
 							connectNulls={false}
@@ -822,12 +886,19 @@ export default function PricingInsights({
 	}, []);
 
 	const pricingProviders = providers;
-	const pricingTierColours = useMemo(() => {
-		const tierKeys = pricingProviders.flatMap((provider) => {
-			const providerId = provider.provider.api_provider_id;
-			return getProviderPricingPlans(provider).map((providerPlan) => `${providerId}:${providerPlan}`);
-		});
-		return assignSeriesColours(tierKeys);
+	const pricingProviderColours = useMemo(() => {
+		const providerIds = pricingProviders.map((provider) => provider.provider.api_provider_id);
+		const fallbackColours = assignPerceptualSeriesColours(providerIds);
+		return new Map(
+			pricingProviders.map((provider) => {
+				const providerId = provider.provider.api_provider_id;
+				const storedColour = provider.provider.colour?.trim();
+				return [
+					providerId,
+					storedColour || fallbackColours[providerId]?.stroke || "oklch(0.58 0.19 255)",
+				] as const;
+			}),
+		);
 	}, [pricingProviders]);
 
 	const summaryCutoffMs = useMemo(() => {
@@ -981,7 +1052,7 @@ export default function PricingInsights({
 				providerName,
 				logoProviderId,
 				seriesKey: keyForSeries(`${providerId}:${selectedProviderPlan}`),
-				color: pricingTierColours[`${providerId}:${selectedProviderPlan}`]?.stroke ?? "hsl(210 70% 55%)",
+				color: pricingProviderColours.get(providerId) ?? "oklch(0.58 0.19 255)",
 				pricingPlan: selectedProviderPlan,
 				availablePlans: providerPlans,
 				isExternal: normalizeGatewayStatusValue(provider.provider.status) === "external",
@@ -1017,7 +1088,7 @@ export default function PricingInsights({
 					: usage?.outputWeightTokens30d ?? 0,
 			} satisfies EffectiveRow;
 		});
-	}, [observedUsageByProviderPlan, plan, pricingProviders, pricingTierColours, summaryCutoffMs, usageByProvider]);
+	}, [observedUsageByProviderPlan, plan, pricingProviderColours, pricingProviders, summaryCutoffMs, usageByProvider]);
 	const providerById = useMemo(
 		() => new Map(pricingProviders.map((provider) => [provider.provider.api_provider_id, provider])),
 		[pricingProviders],
@@ -1046,7 +1117,7 @@ export default function PricingInsights({
 				return {
 					...baseRow,
 					seriesKey: keyForSeries(`${baseRow.providerId}:${providerPlan}`),
-					color: pricingTierColours[`${baseRow.providerId}:${providerPlan}`]?.stroke ?? baseRow.color,
+					color: pricingProviderColours.get(baseRow.providerId) ?? baseRow.color,
 					pricingPlan: providerPlan,
 					effectiveUsageEligible: Boolean(observedUsage),
 					inputPricePer1M: effectivePrices?.weightedInputPricePer1M ?? null,
@@ -1067,7 +1138,7 @@ export default function PricingInsights({
 			rowsByProvider.set(baseRow.providerId, tierRows);
 		}
 		return rowsByProvider;
-	}, [effectiveRows, observedUsageByProviderPlan, pricingTierColours, providerById, summaryCutoffMs]);
+	}, [effectiveRows, observedUsageByProviderPlan, pricingProviderColours, providerById, summaryCutoffMs]);
 
 	const effectiveSummary = useMemo(() => {
 		let inputCostUsd = 0;
@@ -1108,6 +1179,15 @@ export default function PricingInsights({
 	const historyRows = useMemo(
 		() => sortedRows.flatMap((row) => providerTierRowsById.get(row.providerId) ?? [row]),
 		[providerTierRowsById, sortedRows],
+	);
+	const pricingHistoryPlans = useMemo(
+		() => Array.from(new Set(historyRows.map((row) => row.pricingPlan))).sort((a, b) => {
+			const aRank = PRICING_PLAN_ORDER.indexOf(a);
+			const bRank = PRICING_PLAN_ORDER.indexOf(b);
+			if (aRank !== bRank) return (aRank < 0 ? 999 : aRank) - (bRank < 0 ? 999 : bRank);
+			return a.localeCompare(b);
+		}),
+		[historyRows],
 	);
 
 	const meterOptions = useMemo(() => {
@@ -1389,6 +1469,7 @@ export default function PricingInsights({
 					</div>
 				</div>
 			)}
+			{pricingHistoryState.hasData ? <PricingTierLegend plans={pricingHistoryPlans} /> : null}
 			</div>
 		</div>
 	);
@@ -1537,12 +1618,15 @@ export default function PricingInsights({
 										<div className="flex items-center gap-2">
 											<button
 												type="button"
-												onClick={() => toggleSeries(row)}
+												onClick={(event) => {
+													event.stopPropagation();
+													toggleSeries(row);
+												}}
 												aria-pressed={isMainSeriesVisible}
 												aria-label={`${isMainSeriesVisible ? "Hide" : "Show"} ${row.providerName} ${row.pricingPlan} price line`}
-												className={cn("grid size-5 place-items-center rounded-md transition-colors hover:bg-muted", !isMainSeriesVisible && "opacity-35")}
+											className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}
 											>
-												<span className="size-2 rounded-full" style={{ backgroundColor: row.color }} />
+												<PricingLineTypeIcon plan={row.pricingPlan} color={row.color} />
 											</button>
 										<Link
 											href={`/api-providers/${row.providerId}`}
@@ -1572,7 +1656,10 @@ export default function PricingInsights({
 											type="button"
 											variant="ghost"
 											size="icon"
-											onClick={() => toggleProviderExpanded(row.providerId)}
+																		onClick={(event) => {
+																			event.stopPropagation();
+																			toggleProviderExpanded(row.providerId);
+																		}}
 											aria-expanded={isExpanded}
 											aria-label={`${isExpanded ? "Collapse" : "Expand"} ${row.providerName} service tiers`}
 											className="size-7 shrink-0 rounded-md text-muted-foreground aria-expanded:!bg-transparent aria-expanded:text-muted-foreground hover:text-foreground hover:aria-expanded:!bg-transparent"
@@ -1643,12 +1730,14 @@ export default function PricingInsights({
 											onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 											className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
 										>
-										<TableCell className="px-3 py-1.5">
-												<button type="button" onClick={() => toggleSeries(tierRow)} aria-pressed={isTierVisible} aria-label={`${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line`} className={cn("inline-flex h-7 items-center gap-2 text-xs font-medium text-foreground focus-visible:outline-none", !isTierVisible && "opacity-45")}>
-													<span className="grid size-5 shrink-0 place-items-center"><span className="size-2 rounded-full" style={{ backgroundColor: tierRow.color }} /></span>
-													<span className="inline-flex items-center gap-2.5"><ServiceTierIconBadge plan={tierRow.pricingPlan} />{row.providerName} ({formatPricingPlanLabel(tierRow.pricingPlan)})</span>
-												</button>
-											</TableCell>
+						<TableCell className="px-3 py-1.5">
+						<div className="flex items-center gap-2">
+							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={isTierVisible} aria-label={`${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isTierVisible && "opacity-45")}>
+									<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
+								</button>
+								<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
+							</div>
+						</TableCell>
 										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.inputPricePer1M)}</TableCell>
 										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.outputPricePer1M)}</TableCell>
 										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.listedInputPricePer1M)}</TableCell>
@@ -1721,8 +1810,8 @@ export default function PricingInsights({
 													<span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" />
 												) : null}
 												<span className="inline-flex items-center gap-2 font-medium">
-											<button type="button" onClick={() => toggleSeries(row)} aria-pressed={isMainSeriesVisible} aria-label={`${isMainSeriesVisible ? "Hide" : "Show"} ${row.providerName} ${row.pricingPlan} price line`} className={cn("grid size-5 place-items-center rounded-md transition-colors hover:bg-muted", !isMainSeriesVisible && "opacity-35")}>
-												<span className="size-2 rounded-full" style={{ backgroundColor: row.color }} />
+							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(row); }} aria-pressed={isMainSeriesVisible} aria-label={`${isMainSeriesVisible ? "Hide" : "Show"} ${row.providerName} ${row.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}>
+								<PricingLineTypeIcon plan={row.pricingPlan} color={row.color} />
 											</button>
 											<span className="inline-flex items-center gap-2.5">
 												<span className="relative flex size-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800">
@@ -1733,7 +1822,7 @@ export default function PricingInsights({
 												{row.providerName}
 											</span>
 											{row.isExternal ? <ExternalProviderBadge /> : null}
-											{additionalTierRows.length > 0 ? <Button type="button" variant="ghost" size="icon" onClick={() => toggleProviderExpanded(row.providerId)} aria-expanded={isExpanded} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${row.providerName} service tiers`} className="size-7 shrink-0 rounded-md text-muted-foreground aria-expanded:!bg-transparent aria-expanded:text-muted-foreground hover:text-foreground hover:aria-expanded:!bg-transparent">
+							{additionalTierRows.length > 0 ? <Button type="button" variant="ghost" size="icon" onClick={(event) => { event.stopPropagation(); toggleProviderExpanded(row.providerId); }} aria-expanded={isExpanded} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${row.providerName} service tiers`} className="size-7 shrink-0 rounded-md text-muted-foreground aria-expanded:!bg-transparent aria-expanded:text-muted-foreground hover:text-foreground hover:aria-expanded:!bg-transparent">
 														<ChevronDown className={cn("size-3.5 transition-transform", !isExpanded && "-rotate-90")} />
 													</Button> : null}
 												</span>
@@ -1761,12 +1850,14 @@ export default function PricingInsights({
 													onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
 													className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
 												>
-											<TableCell>
-												<button type="button" onClick={() => toggleSeries(tierRow)} aria-pressed={isTierVisible} aria-label={`${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line`} className={cn("inline-flex h-7 items-center gap-2 text-xs font-medium text-foreground focus-visible:outline-none", !isTierVisible && "opacity-45")}>
-													<span className="grid size-5 shrink-0 place-items-center"><span className="size-2 rounded-full" style={{ backgroundColor: tierRow.color }} /></span>
-													<span className="inline-flex items-center gap-2.5"><ServiceTierIconBadge plan={tierRow.pricingPlan} />{row.providerName} ({formatPricingPlanLabel(tierRow.pricingPlan)})</span>
-														</button>
-													</TableCell>
+							<TableCell>
+								<div className="flex items-center gap-2">
+									<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={isTierVisible} aria-label={`${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isTierVisible && "opacity-45")}>
+										<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
+									</button>
+									<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
+								</div>
+							</TableCell>
 												<TableCell className="text-left font-medium tabular-nums">{formatUsd(tierRow.inputPricePer1M)}</TableCell>
 												<TableCell className="text-left font-medium tabular-nums">{formatUsd(tierRow.outputPricePer1M)}</TableCell>
 												<TableCell className="text-left font-medium tabular-nums">{formatUsd(tierRow.listedInputPricePer1M)}</TableCell>
