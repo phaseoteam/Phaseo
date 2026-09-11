@@ -3,6 +3,7 @@
 // How: Creates session rows, reserves $5 increments, prices final usage, and settles atomically.
 
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { refreshRealtimeBillingReviews, syncRealtimeBillingReviewSummaries } from "./realtime-billing-review";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { computeBill } from "@pipeline/pricing/engine";
@@ -1359,6 +1360,12 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 		}
 	}
 
+	await refreshRealtimeBillingReviews().catch((error) => {
+		console.error("realtime_billing_review_refresh_failed", { error });
+	});
+	await syncRealtimeBillingReviewSummaries().catch((error) => {
+		console.error("realtime_billing_review_summary_sync_failed", { error });
+	});
 	const unresolvedCutoff = new Date(Date.now() - 60_000).toISOString();
 	const { count: unresolvedCount, error: unresolvedError } = await supabase
 		.from("gateway_realtime_sessions")

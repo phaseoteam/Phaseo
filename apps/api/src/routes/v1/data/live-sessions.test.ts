@@ -49,6 +49,13 @@ it("rejects ordinary keys even when they claim to be a playground user", async (
 	expect(mocks.create).not.toHaveBeenCalled();
 });
 
+it("explains an unresolved billing admission block without starting a provider call", async () => {
+	mocks.create.mockRejectedValueOnce(new Error("realtime_billing_review_required"));
+	const response = await post(request);
+	expect(response.status).toBeGreaterThanOrEqual(400);
+	expect(await response.text()).toContain("realtime_billing_review_required");
+});
+
 it("does not expose Live through the existing Realtime endpoint", async () => {
 	expect((await post(request, false)).status).toBeGreaterThanOrEqual(400);
 	expect(mocks.create).not.toHaveBeenCalled();

@@ -25,6 +25,10 @@ import {
 
 const internalTools = [
 	{
+		id: "realtime-billing", title: "Realtime Billing", description: "Review missing usage, held funds, and audited billing decisions.",
+		icon: Shield, href: "/internal/realtime-billing", comingSoon: false,
+	},
+	{
 		id: "model-test-playground",
 		title: "Model Test Lab",
 		description:

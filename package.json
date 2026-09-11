@@ -11,6 +11,7 @@
 	],
 	"scripts": {
 		"test:catalogue-history": "node scripts/tests/catalogue-history.mjs",
+		"test:realtime-billing-review": "node --test scripts/realtime-billing-review.test.mjs",
 		"dev": "turbo run dev --parallel",
 		"dev:cloudflare-web": "node scripts/dev-cloudflare-web.mjs",
 		"build": "turbo run build",

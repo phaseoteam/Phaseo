@@ -7,6 +7,7 @@ import { validateCompatibility, type CompatibilityTarget } from "@/compatibility
 import { internalGatewayBenchmarkRouter } from "@/routes/internal-gateway-benchmark";
 import { providerCatalogWebhookRouter } from "@/routes/provider-catalog-webhook";
 import { internalProviderCatalogReviewRouter } from "@/routes/internal-provider-catalog-review";
+import { internalRealtimeBillingRouter } from "@/routes/internal-realtime-billing";
 import {
 	LEGACY_ALLOWED_CACHE_TAGS,
 	isCacheScopeId,
@@ -48,6 +49,7 @@ export const internalRouter = new Hono<{ Bindings: Env }>();
 internalRouter.route("/", providerCatalogWebhookRouter);
 internalRouter.route("/", internalProviderCatalogReviewRouter);
 internalRouter.route("/", internalGatewayBenchmarkRouter);
+internalRouter.route("/", internalRealtimeBillingRouter);
 
 internalRouter.get("/cache", async (c) => {
 	if (isCrossSiteBrowserRequest(c.req.raw)) {
