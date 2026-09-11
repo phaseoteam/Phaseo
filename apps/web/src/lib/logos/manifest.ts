@@ -118,6 +118,9 @@ export const logoManifest = {
 	bytedance: {
 		color: "/logos/bytedance.svg",
 	},
+	"canopy-wave": {
+		color: "/logos/canopy-wave.svg",
+	},
 	"bytedance-seed": {
 		color: "/logos/bytedance.svg",
 	},
