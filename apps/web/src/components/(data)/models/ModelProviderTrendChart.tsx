@@ -80,6 +80,17 @@ export function isUsableMetricValue(
 export function calculateCachedInputAverage(
 	points: ModelProviderMetricPoint[],
 ): number | null {
+	const cachePoints = points.filter(
+		(point) => point.cachedInputPct != null && Number.isFinite(point.cachedInputPct),
+	);
+	const hasCompleteTokenTotals = cachePoints.length > 0 && cachePoints.every(
+		(point) =>
+			point.cachedInputTokens != null &&
+			point.effectiveInputTokens != null &&
+			Number.isFinite(point.cachedInputTokens) &&
+			Number.isFinite(point.effectiveInputTokens) &&
+			point.effectiveInputTokens > 0,
+	);
 	const totals = points.reduce(
 		(accumulator, point) => {
 			if (
@@ -95,16 +106,21 @@ export function calculateCachedInputAverage(
 		},
 		{ cached: 0, effective: 0 },
 	);
-	if (totals.effective > 0) {
+	if (hasCompleteTokenTotals && totals.effective > 0) {
 		return Math.min(100, (totals.cached * 100) / totals.effective);
 	}
-	const percentages = points
-		.map((point) => point.cachedInputPct)
-		.filter(
-			(value): value is number => value != null && Number.isFinite(value),
-		);
-	return percentages.length > 0
-		? percentages.reduce((sum, value) => sum + value, 0) / percentages.length
+	const requestWeight = cachePoints.reduce(
+		(sum, point) => sum + Math.max(0, point.requests),
+		0,
+	);
+	if (requestWeight > 0) {
+		return cachePoints.reduce(
+			(sum, point) => sum + (point.cachedInputPct ?? 0) * Math.max(0, point.requests),
+			0,
+		) / requestWeight;
+	}
+	return cachePoints.length > 0
+		? cachePoints.reduce((sum, point) => sum + (point.cachedInputPct ?? 0), 0) / cachePoints.length
 		: null;
 }
 

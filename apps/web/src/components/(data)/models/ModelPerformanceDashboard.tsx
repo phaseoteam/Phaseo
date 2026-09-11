@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import ModelPerformanceCards from "./ModelPerformanceCards";
+import ModelPerformanceCards, { selectProviderTrendData } from "./ModelPerformanceCards";
 import { Activity, CircleAlert, Globe2, Loader2 } from "lucide-react";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import type { ModelPerformanceColo } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -157,9 +157,10 @@ export default function ModelPerformanceDashboard({
 			(colo) => colo.continent === continent && usageByColo.has(colo.code),
 		),
 	})).filter((group) => group.colos.length > 0);
-	const trendProviderPoints = activeMetrics.providerHourly7d?.length
-		? activeMetrics.providerHourly7d
-		: activeMetrics.providerDaily7d;
+	const { data: trendProviderPoints } = selectProviderTrendData(
+		activeMetrics.providerHourly7d ?? [],
+		activeMetrics.providerDaily7d,
+	);
 	const providerCount = new Set(
 		trendProviderPoints
 			.filter((point) => point.requests > 0)

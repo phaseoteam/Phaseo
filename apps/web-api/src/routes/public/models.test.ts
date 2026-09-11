@@ -965,7 +965,7 @@ describe("public model routes", () => {
 		}),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
-			expect.objectContaining({ provider: "poolside", requests: 20 }),
+			expect.objectContaining({ provider: "poolside", requests: 20, cachedInputPct: 0 }),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
 			expect.objectContaining({ provider: "poolside", requests: 20 }),
