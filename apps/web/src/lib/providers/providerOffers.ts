@@ -56,6 +56,18 @@ function inferRegionalOfferLabel(providerId?: string | null): string {
     return suffix ? suffix.slice(1).toUpperCase() : "";
 }
 
+function hasTrailingOfferLabel(providerName: string, offerLabel: string): boolean {
+    const normalizedProviderName = providerName.trim().toLowerCase();
+    const normalizedOfferLabel = offerLabel.trim().toLowerCase();
+    if (!normalizedProviderName || !normalizedOfferLabel) return false;
+
+    return (
+        normalizedProviderName.endsWith(`(${normalizedOfferLabel})`) ||
+        normalizedProviderName.endsWith(` ${normalizedOfferLabel}`) ||
+        normalizedProviderName.endsWith(`-${normalizedOfferLabel}`)
+    );
+}
+
 export function formatProviderOfferDisplayName(args: {
     providerId?: string | null;
     providerName: string;
@@ -89,7 +101,7 @@ export function formatProviderOfferDisplayName(args: {
         return providerName;
     }
 
-    if (providerName.toLowerCase().endsWith(` ${offerLabel.toLowerCase()}`)) return providerName;
+    if (hasTrailingOfferLabel(providerName, offerLabel)) return providerName;
     return `${providerName} ${offerLabel}`;
 }
 

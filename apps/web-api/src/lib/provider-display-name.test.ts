@@ -45,4 +45,13 @@ describe("formatProviderOfferDisplayName", () => {
 			offerScope: "specialized",
 		})).toBe("Example Fast");
 	});
+
+	it("does not repeat a specialized label already in parentheses", () => {
+		expect(formatProviderOfferDisplayName({
+			providerId: "wafer-zdr",
+			providerName: "Wafer (ZDR)",
+			offerLabel: "ZDR",
+			offerScope: "specialized",
+		})).toBe("Wafer (ZDR)");
+	});
 });

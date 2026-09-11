@@ -49,6 +49,16 @@ function normalizeBetaFeatures(value: unknown): Record<string, boolean> {
 	);
 }
 
+function hasTrailingOfferLabel(providerName: string, offerLabel: string): boolean {
+	const normalizedProviderName = providerName.trim().toLowerCase();
+	const normalizedOfferLabel = offerLabel.trim().toLowerCase();
+	if (!normalizedProviderName || !normalizedOfferLabel) return false;
+
+	return normalizedProviderName.endsWith(`(${normalizedOfferLabel})`)
+		|| normalizedProviderName.endsWith(` ${normalizedOfferLabel}`)
+		|| normalizedProviderName.endsWith(`-${normalizedOfferLabel}`);
+}
+
 function providerDisplayName(provider: Record<string, unknown>): string {
 	const providerId = String(provider.api_provider_id ?? "").trim();
 	let name = String(provider.api_provider_name ?? providerId).trim();
@@ -65,8 +75,10 @@ function providerDisplayName(provider: Record<string, unknown>): string {
 		const regional = label.split(/\s+/).filter((word) =>
 			!providerWords.has(word.toLowerCase()),
 		).join(" ").trim() || label;
+		if (name.toLowerCase().endsWith(`(${regional.toLowerCase()})`)) return name;
 		return `${name} (${regional})`;
 	}
+	if (hasTrailingOfferLabel(name, label)) return name;
 	return `${name} ${label}`;
 }
 
