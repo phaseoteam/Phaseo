@@ -6,50 +6,73 @@
   "api_provider_name": "Kilo Gateway",
   "provider_family_id": null,
   "offer_label": null,
-  "offer_scope": "specialized",
-  "description": null,
-  "link": "https://kilo.ai",
-  "residency_mode": null,
+  "offer_scope": "global",
+  "description": "OpenAI-compatible AI gateway with managed and bring-your-own-key routing across hundreds of upstream models.",
+  "link": "https://kilo.ai/gateway",
+  "residency_mode": "provider_managed",
   "default_execution_regions": null,
-  "default_data_regions": null,
+  "default_data_regions": [
+    "US"
+  ],
   "zero_data_retention": false,
-  "residency_source_url": null,
-  "prompt_training_policy": null,
-  "prompt_training_notes": null,
-  "prompt_training_source_url": null,
-  "user_identifier_policy": null,
-  "user_identifier_notes": null,
-  "privacy_policy_url": null,
-  "terms_of_service_url": null,
-  "regional_pricing_mode": null,
+  "residency_source_url": "https://kilo.ai/privacy",
+  "prompt_training_policy": "unknown",
+  "prompt_training_notes": "Training and retention depend on the selected upstream route. Kilo flags models whose providers may train on prompts, and Auto Free may route to providers that log prompts and outputs for service improvement.",
+  "prompt_training_source_url": "https://kilo.ai/docs/gateway/models-and-providers",
+  "user_identifier_policy": "sent",
+  "user_identifier_notes": "Kilo Gateway receives account ID and request metadata for authentication, routing, and billing; prompt content is forwarded to the selected upstream provider.",
+  "privacy_policy_url": "https://kilo.ai/privacy",
+  "terms_of_service_url": "https://kilo.ai/terms",
+  "regional_pricing_mode": "same_as_global",
   "regional_pricing_uplift_percent": null,
-  "pricing_source_url": null,
-  "regional_pricing_notes": null,
+  "pricing_source_url": "https://api.kilo.ai/api/gateway/models",
+  "regional_pricing_notes": "The public catalogue publishes per-token and optional request, image, web-search, and internal-reasoning rates in USD without region-specific variants.",
   "country_code": "US",
-  "status": "Active",
+  "status": "external",
   "colour": null,
-  "gateway_kind": "catalogue",
+  "gateway_kind": "aggregator",
   "routable": false,
   "routing_enabled": false,
   "sdk_package": "@ai-sdk/openai-compatible",
   "api_base_url": "https://api.kilo.ai/api/gateway",
-  "docs_url": "https://kilo.ai",
+  "docs_url": "https://kilo.ai/docs/gateway",
   "auth_env": [
     "KILO_API_KEY"
   ],
-  "api_formats": [],
+  "api_formats": [
+    "openai.chat.completions",
+    "openai.completions"
+  ],
   "service_tiers": [],
   "sources": [
     {
+      "kind": "official_models",
+      "url": "https://api.kilo.ai/api/gateway/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Unauthenticated live catalogue used to verify exact model IDs, context and output limits, modalities, supported parameters, availability, and pricing."
+    },
+    {
+      "kind": "official_docs",
+      "url": "https://kilo.ai/docs/gateway/api-reference",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Documents the OpenAI-compatible chat, streaming, tool-calling, models, providers, and Mistral-only FIM surfaces."
+    },
+    {
+      "kind": "official_pricing",
+      "url": "https://kilo.ai/docs/gateway/usage-and-billing",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Documents upstream pass-through token billing, cache meters, free and BYOK behavior, and gateway rate limits."
+    },
+    {
       "kind": "official_privacy_notice",
       "url": "https://kilo.ai/privacy",
-      "accessed_at": "2026-08-09T00:00:00Z",
-      "notes": "Kilo Code's official privacy policy identifies Kilo Code Inc. as the relevant data controller."
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Identifies Kilo Code Inc., US hosting, Gateway account/request metadata collection, upstream prompt forwarding, and route-dependent downstream retention."
     },
     {
       "kind": "official_terms",
       "url": "https://kilo.ai/terms",
-      "accessed_at": "2026-08-09T00:00:00Z",
+      "accessed_at": "2026-08-24T00:00:00Z",
       "notes": "Kilo Code's official terms identify Kilo Code Inc. as the contracting entity and state that the service operates from the United States."
     },
     {
@@ -60,8 +83,8 @@
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-08-09T00:00:00Z",
-    "notes": "Location metadata verified from Kilo Code's official privacy policy and terms; other provider metadata and model support remain sourced from models.dev. The provider is not a Phaseo-routable offer."
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Provider identity, API surface, live catalogue, pricing, billing, limits, routing behavior, and variable upstream data handling verified from Kilo primary sources. The provider remains external and is not Phaseo-routable."
   }
 }
