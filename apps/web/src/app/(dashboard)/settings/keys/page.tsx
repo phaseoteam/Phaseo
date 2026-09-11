@@ -57,7 +57,7 @@ async function KeysContent({
 								target="_blank"
 								rel="noreferrer"
 							>
-								Quick start
+								Quick Start
 								<ArrowUpRight className="ml-1 h-4 w-4" />
 							</Link>
 						</Button>
