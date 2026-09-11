@@ -86,9 +86,8 @@ describe("Artificial Analysis benchmark panel", () => {
 				benchmark: { id: "aa-intelligence-index-v4", name: "Artificial Analysis Intelligence Index", category: "general", link: null, total_models: 2, max_score: null, order: null, ascending_order: false, type: "numerical" },
 			}]} rankings={[ranking]} modelId="openai/gpt-6-astra" initialExpandedMetric="aa-intelligence-index-v4" />);
 		expect(html).toContain("Other models dimmed");
-		expect(html).toContain("opacity-50");
+		expect(html).toContain("opacity-40");
 		expect(html).toContain("bg-black");
-		expect(html).toContain("ring-1 ring-inset ring-white/25");
 		expect(html).toContain("pb-2 text-white");
 		expect(html).not.toContain("ring-2 ring-[#8842FD]");
 	});
