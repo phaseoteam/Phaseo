@@ -121,7 +121,7 @@ export default function ModelPerformanceDashboard({
 	const [selectedPercentile, setSelectedPercentile] = useState<ModelPercentile>(
 		() => initialSelection.percentile,
 	);
-	const [selectedRangeDays, setSelectedRangeDays] = useState<PerformanceRangeDays>(7);
+	const [selectedRangeDays, setSelectedRangeDays] = useState<PerformanceRangeDays>(3);
 	const successfulSelectionRef = useRef(initialSelection);
 	const isInitialSelection =
 		selectedColo === initialSelection.colo &&
@@ -133,6 +133,7 @@ export default function ModelPerformanceDashboard({
 		modelId,
 		cloudflareColo: selectedColo,
 		percentile: selectedPercentile,
+		rangeDays: selectedRangeDays,
 		fallbackData: isInitialSelection ? metrics : undefined,
 		refreshInterval: MODEL_PERFORMANCE_REFRESH_INTERVAL_MS,
 		onError: () => {

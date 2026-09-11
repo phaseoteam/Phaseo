@@ -816,7 +816,7 @@ describe("public model routes", () => {
 					}],
 				}]), { status: 200 });
 			}
-			if (url.includes("/rpc/get_v2_model_provider_hourly_performance_v2")) {
+			if (url.includes("/rpc/get_v2_model_provider_30m_performance_v1")) {
 				return new Response(JSON.stringify([{
 					bucket: "2026-08-27T09:00:00Z",
 					provider_id: "test-provider",
@@ -857,7 +857,7 @@ describe("public model routes", () => {
 		}));
 
 		const response = await app.request(
-			"https://phaseo.app/api/_web/models/test%2Flow-volume/performance",
+			"https://phaseo.app/api/_web/models/test%2Flow-volume/performance?range=1",
 			{},
 			env,
 		);
@@ -865,6 +865,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(payload.minimumSampleSize).toBe(1);
+		expect(payload.metrics.rangeDays).toBe(1);
 		expect(payload.metrics.summary).toMatchObject({ totalRequests: 1, successfulRequests: 1 });
 		expect(payload.metrics.hourly).toHaveLength(1);
 		expect(payload.metrics.successSeries).toHaveLength(1);

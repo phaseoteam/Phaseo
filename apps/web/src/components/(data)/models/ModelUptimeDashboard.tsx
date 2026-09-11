@@ -16,6 +16,7 @@ export default function ModelUptimeDashboard({
 		modelId,
 		cloudflareColo: null,
 		percentile: DEFAULT_MODEL_PERCENTILE,
+		rangeDays: 3,
 		fallbackData: initialMetrics ?? undefined,
 	});
 	const metrics = data ?? initialMetrics;

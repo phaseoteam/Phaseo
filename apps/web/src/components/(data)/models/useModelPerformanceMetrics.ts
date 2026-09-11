@@ -13,12 +13,14 @@ function getModelPerformanceKey({
 	modelId,
 	cloudflareColo,
 	percentile,
+	rangeDays,
 }: {
 	modelId: string;
 	cloudflareColo: string | null;
 	percentile: ModelPercentile;
+	rangeDays: 1 | 3 | 7;
 }): `/api/_web/${string}` {
-	const query = new URLSearchParams({ percentile: String(percentile) });
+	const query = new URLSearchParams({ percentile: String(percentile), range: String(rangeDays) });
 	if (cloudflareColo) query.set("colo", cloudflareColo);
 	return `/api/_web/models/${encodeURIComponent(modelId)}/performance?${query.toString()}`;
 }
@@ -34,6 +36,7 @@ export function useModelPerformanceMetrics({
 	modelId,
 	cloudflareColo,
 	percentile,
+	rangeDays,
 	fallbackData,
 	refreshInterval = 0,
 	onError,
@@ -42,6 +45,7 @@ export function useModelPerformanceMetrics({
 	modelId: string;
 	cloudflareColo: string | null;
 	percentile: ModelPercentile;
+	rangeDays: 1 | 3 | 7;
 	fallbackData?: ModelPerformanceMetrics;
 	refreshInterval?: number;
 	onError?: () => void;
@@ -51,6 +55,7 @@ export function useModelPerformanceMetrics({
 		modelId,
 		cloudflareColo,
 		percentile,
+		rangeDays,
 	});
 	const options: SWRConfiguration<ModelPerformanceMetrics | null> = {
 		dedupingInterval: 30_000,

@@ -1616,6 +1616,9 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 	const modelId = c.req.param("modelId");
 	const cloudflareColo = c.req.query("colo")?.trim().toUpperCase() || null;
 	const percentile = parsePercentile(c.req.query("percentile"));
+	const rangeDays = [1, 3, 7].includes(Number(c.req.query("range")))
+		? Number(c.req.query("range"))
+		: 3;
 	const streamMode = ["stream", "non_stream"].includes(c.req.query("stream") ?? "")
 		? c.req.query("stream")
 		: "all";
@@ -1642,7 +1645,10 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				p_stream_mode: streamMode,
 				p_context_bucket: contextBucket,
 			}),
-			client.rpc("get_v2_model_provider_hourly_performance_v2", {
+			rangeDays === 7 ? Promise.resolve({ data: [], error: null }) : client.rpc(
+				rangeDays === 1
+					? "get_v2_model_provider_30m_performance_v1"
+					: "get_v2_model_provider_hourly_performance_v2", {
 				p_model_slug: modelId,
 				p_cloudflare_colo: cloudflareColo,
 				p_percentile: percentile / 100,
@@ -1723,12 +1729,20 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		) {
 			throw providerHourly.error;
 		}
-		const providerHourlyRows = !providerHourly.error && Array.isArray(providerHourly.data)
+		const providerHourlyRowsUnbounded = !providerHourly.error && Array.isArray(providerHourly.data)
 			? (providerHourly.data as Array<Record<string, unknown>>).filter((value) => {
 				const provider = String(value.provider_id ?? "").trim().toLowerCase();
 				return provider.length > 0 && provider !== "unknown" && hasPublicPerformanceSample(value.requests);
 			})
 			: [];
+		const latestProviderBucket = Math.max(
+			...providerHourlyRowsUnbounded.map((value) => Date.parse(String(value.bucket ?? ""))).filter(Number.isFinite),
+		);
+		const providerSeriesCutoff = latestProviderBucket - rangeDays * 24 * 60 * 60 * 1000;
+		const providerHourlyRows = providerHourlyRowsUnbounded.filter((value) => {
+			const bucket = Date.parse(String(value.bucket ?? ""));
+			return !Number.isFinite(latestProviderBucket) || (Number.isFinite(bucket) && bucket >= providerSeriesCutoff);
+		});
 		if (
 			qualityHourly.error &&
 			!/could not find|does not exist|PGRST202/i.test(qualityHourly.error.message ?? "")
@@ -1879,7 +1893,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			value.cacheHitRatePct != null
 		);
 		const qualitySeries = hourlyQualitySeries.length > 0 ? hourlyQualitySeries : legacyQualitySeries;
-		const metrics = { cloudflareColo: performance.cloudflare_colo ?? cloudflareColo, percentile, streamMode, contextBucket, summary: summary(performance.last_24h), prevSummary: performance.prev_24h ? summary(performance.prev_24h) : null, hourly, successSeries, timeOfDay, providerPerformance, providerDaily7d, providerHourly7d, providerPercentileDaily7d, qualitySeries, dataRange: providerHourly7d.length ? { start: providerHourly7d[0]?.bucket ?? "", end: providerHourly7d[providerHourly7d.length - 1]?.bucket ?? "" } : hourly.length ? { start: hourly[0]?.bucket ?? "", end: hourly[hourly.length - 1]?.bucket ?? "" } : { start: "", end: "" }, cumulativeTokens: number(performance.cumulative_tokens?.total_tokens), releaseDate: performance.cumulative_tokens?.release_date ?? null };
+		const metrics = { cloudflareColo: performance.cloudflare_colo ?? cloudflareColo, percentile, rangeDays, streamMode, contextBucket, summary: summary(performance.last_24h), prevSummary: performance.prev_24h ? summary(performance.prev_24h) : null, hourly, successSeries, timeOfDay, providerPerformance, providerDaily7d, providerHourly7d, providerPercentileDaily7d, qualitySeries, dataRange: providerHourly7d.length ? { start: providerHourly7d[0]?.bucket ?? "", end: providerHourly7d[providerHourly7d.length - 1]?.bucket ?? "" } : hourly.length ? { start: hourly[0]?.bucket ?? "", end: hourly[hourly.length - 1]?.bucket ?? "" } : { start: "", end: "" }, cumulativeTokens: number(performance.cumulative_tokens?.total_tokens), releaseDate: performance.cumulative_tokens?.release_date ?? null };
 		const activity = { summary: metrics.summary, providerPerformance, cumulativeTokens: metrics.cumulativeTokens };
 		return withPublicCache(c.json({
 			modelId,
