@@ -31,8 +31,12 @@ async function hmac(env: Env, secret: string) {
 }
 
 function parseGatewayKey(value: unknown) {
-	const match = /^(?:phaseo|aistats)_v1_sk_([A-Za-z0-9]{12})_([A-Za-z0-9]{40})$/.exec(String(value ?? "").trim());
-	return match ? { kid: match[1], secret: match[2], prefix: match[1].slice(0, 6) } : null;
+	const parts = String(value ?? "").trim().split("_");
+	if (parts.length < 5) return null;
+	const [namespace, version, keyType, kid, ...secretParts] = parts;
+	if ((namespace !== "phaseo" && namespace !== "aistats") || version !== "v1" || keyType !== "sk") return null;
+	const secret = secretParts.join("_");
+	return kid && secret ? { kid, secret, prefix: kid.slice(0, 6) } : null;
 }
 
 async function keyHashes(env: Env, secret: string) {

@@ -750,7 +750,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 	const [matchedKeyId, setMatchedKeyId] = useState<string | null>(null);
 	const [rawLookupPending, setRawLookupPending] = useState(false);
 	const normalizedSearch = search.trim();
-	const isRawKeySearch = /^(?:phaseo|aistats)_v1_sk_[A-Za-z0-9]{12}_[A-Za-z0-9]{40}$/.test(normalizedSearch);
+	const isRawKeySearch = /^(?:phaseo|aistats)_v1_sk_[^_]+_.+$/.test(normalizedSearch);
 	const workspaceId = String(teamsWithKeys?.[0]?.id ?? "");
 
 	useEffect(() => {
@@ -935,6 +935,8 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 					onChange={(event) => {
 						setSearch(event.target.value);
 						setShowRawKey(false);
+						setMatchedKeyId(null);
+						setRawLookupPending(false);
 					}}
 				/>
 				{normalizedSearch ? (
