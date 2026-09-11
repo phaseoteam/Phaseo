@@ -69,6 +69,18 @@ export function getPerformanceXAxisDomain(pointCount: number): [number, number] 
 	return [-0.5, Math.max(0.5, pointCount - 0.5)];
 }
 
+export function getPerformancePointerIndex(
+	relativeX: number,
+	plotWidth: number,
+	pointCount: number,
+) {
+	if (pointCount <= 1 || plotWidth <= 0) return 0;
+	const [domainStart, domainEnd] = getPerformanceXAxisDomain(pointCount);
+	const clampedX = Math.max(0, Math.min(relativeX, plotWidth));
+	const domainValue = domainStart + (clampedX / plotWidth) * (domainEnd - domainStart);
+	return Math.max(0, Math.min(pointCount - 1, Math.round(domainValue)));
+}
+
 export function isUsableMetricValue(
 	metric: MetricKey,
 	value: number | null | undefined,
@@ -588,17 +600,11 @@ export default function ModelProviderTrendChart({
 									? (() => {
 											const relativeX =
 												state.activeCoordinate.x - state.offset.left;
-											const clampedX = Math.max(
-												0,
-												Math.min(relativeX, state.offset.width),
+											const index = getPerformancePointerIndex(
+												relativeX,
+												state.offset.width,
+												chartData.length,
 											);
-											const index =
-												chartData.length === 1
-													? 0
-													: Math.round(
-															(clampedX / state.offset.width) *
-																(chartData.length - 1),
-														);
 											return String(chartData[index]?.time ?? "");
 										})()
 									: null;

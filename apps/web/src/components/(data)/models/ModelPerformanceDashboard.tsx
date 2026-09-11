@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import ModelPerformanceCards, { selectProviderTrendData } from "./ModelPerformanceCards";
+import ModelPerformanceCards, { selectProviderTrendData } from "@/components/(data)/models/ModelPerformanceCards";
 import { Activity, CalendarDays, CircleAlert, Globe2, Loader2 } from "lucide-react";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import type { ModelPerformanceColo } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -186,6 +186,8 @@ export default function ModelPerformanceDashboard({
 	const allRangePoints = [
 		...(activeMetrics.providerHourly7d ?? []),
 		...activeMetrics.providerDaily7d,
+		...(activeMetrics.providerPercentileDaily7d ?? []),
+		...(activeMetrics.qualitySeries ?? []),
 	];
 	const latestRangeTimestamp = Math.max(
 		...allRangePoints.map(pointTimestamp).filter(Number.isFinite),

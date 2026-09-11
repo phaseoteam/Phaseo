@@ -4,6 +4,7 @@ import {
 	formatPerformanceTimeTick,
 	getPerformanceAxisTickIndexes,
 	getPerformanceXAxisDomain,
+	getPerformancePointerIndex,
 	getHoverDateTextAnchor,
 	getSeriesEmphasis,
 	isUsableMetricValue,
@@ -14,6 +15,15 @@ describe("getPerformanceXAxisDomain", () => {
 		expect(getPerformanceXAxisDomain(1)).toEqual([-0.5, 0.5]);
 		expect(getPerformanceXAxisDomain(2)).toEqual([-0.5, 1.5]);
 		expect(getPerformanceXAxisDomain(7)).toEqual([-0.5, 6.5]);
+	});
+});
+
+describe("getPerformancePointerIndex", () => {
+	it("maps pointer positions through the padded x-axis domain", () => {
+		expect(getPerformancePointerIndex(0, 100, 2)).toBe(0);
+		expect(getPerformancePointerIndex(49, 100, 2)).toBe(0);
+		expect(getPerformancePointerIndex(51, 100, 2)).toBe(1);
+		expect(getPerformancePointerIndex(100, 100, 2)).toBe(1);
 	});
 });
 
