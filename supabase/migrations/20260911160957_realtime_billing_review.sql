@@ -1,8 +1,8 @@
 begin;
 
 create table public.gateway_realtime_billing_reviews (
-  session_id text primary key references public.gateway_realtime_sessions(session_id),
-  workspace_id uuid not null references public.workspaces(id),
+  session_id text primary key references public.gateway_realtime_sessions(session_id) on delete cascade,
+  workspace_id uuid not null references public.workspaces(id) on delete cascade,
   status text not null default 'open' check (status in ('open', 'resolved')),
   access_blocked boolean not null default true,
   version bigint not null default 1,
@@ -23,9 +23,10 @@ create table public.gateway_realtime_billing_reviews (
 );
 create index on public.gateway_realtime_billing_reviews (retry_after) where status = 'open';
 create index on public.gateway_realtime_billing_reviews (workspace_id) where access_blocked;
+create index on public.gateway_realtime_billing_reviews (workspace_id);
 create table public.gateway_realtime_billing_decisions (
   operation_id uuid primary key default gen_random_uuid(),
-  session_id text not null references public.gateway_realtime_billing_reviews(session_id),
+  session_id text not null references public.gateway_realtime_billing_reviews(session_id) on delete cascade,
   workspace_id uuid not null,
   actor_user_id text,
   action text not null,

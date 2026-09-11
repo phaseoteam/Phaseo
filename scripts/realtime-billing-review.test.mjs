@@ -145,3 +145,17 @@ test("backfill registers historical incidents without changing their held funds"
     assert.equal((await db.query("select count(*)::int as n from credit_ledger")).rows[0].n, 0);
   } finally { await db.close(); }
 });
+
+test("billing reviews follow workspace deletion for open and resolved incidents", async () => {
+  for (const resolved of [false, true]) {
+    const db = await fixture();
+    try {
+      await decide(db, resolved ? "write_off" : "retain");
+      assert.ok((await db.query("select count(*)::int as n from gateway_realtime_billing_decisions")).rows[0].n > 0);
+      await db.query("delete from workspaces where id=$1", [workspace]);
+      for (const table of ["gateway_realtime_sessions", "gateway_realtime_billing_reviews", "gateway_realtime_billing_decisions"]) {
+        assert.equal((await db.query(`select count(*)::int as n from ${table}`)).rows[0].n, 0);
+      }
+    } finally { await db.close(); }
+  }
+});
