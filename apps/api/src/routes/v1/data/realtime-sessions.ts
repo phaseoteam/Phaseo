@@ -189,6 +189,11 @@ function errorMessage(error: unknown): string {
 
 function responseForError(error: unknown, requestId?: string, workspaceId?: string): Response {
 	const message = errorMessage(error);
+	if (message.includes("realtime_billing_review_required")) {
+		return err("key_limit_exceeded", { reason: "realtime_billing_review_required",
+			message: "Realtime access is paused while a previous session's billing is reviewed. Please contact support.",
+			request_id: requestId, workspace_id: workspaceId });
+	}
 	if (message === "live_backend_price_card_missing") {
 		return err("unsupported_model_or_endpoint", { reason: message,
 			message: "The selected Live backend needs complete pricing before a session can start.", request_id: requestId, workspace_id: workspaceId });

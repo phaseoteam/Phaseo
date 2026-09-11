@@ -1302,6 +1302,7 @@ export class RealtimeRelayDurableObject {
 				usage: {
 					...this.usage,
 					assistant_response_in_flight: true,
+					recovery_provider_state: this.providerState,
 				},
 				reason,
 			});
