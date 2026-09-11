@@ -908,7 +908,7 @@ describe("public model routes", () => {
 						{ provider: "unknown", provider_name: "unknown", requests: 1 },
 					],
 					provider_daily_7d: [
-						{ day: "2026-07-23", provider: "poolside", provider_name: "Poolside", requests: 20 },
+						{ day: "2026-07-23", provider: "poolside", provider_name: "Poolside", requests: 20, avg_latency_ms: 230, gateway_e2e_ms: 760 },
 						{ day: "2026-07-23", provider: "unknown", provider_name: "unknown", requests: 1 },
 					],
 				}), { status: 200 });
@@ -957,6 +957,8 @@ describe("public model routes", () => {
 			expect.objectContaining({
 			provider: "poolside",
 			providerColor: "#12AB78",
+			avgLatencyMs: 230,
+			avgEndToEndMs: 760,
 			cachedInputPct: 62.5,
 			cachedInputTokens: 625,
 			effectiveInputTokens: 1000,
