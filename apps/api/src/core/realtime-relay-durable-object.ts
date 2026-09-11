@@ -31,6 +31,7 @@ import {
 	type RealtimeSessionRow,
 } from "@core/realtime-sessions";
 import { enqueueAsyncGenAiOtlpExport } from "@observability/otlp-export";
+import { isLiveModel, liveConfig, liveStartEvent, ingestLiveUsage, assertLiveFinalUsage, priceLiveUsage, liveUsageMeters, type LiveUsage } from "./live-sessions";
 
 const GOOGLE_LIVE_URL =
 	"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
@@ -54,7 +55,7 @@ const GOOGLE_SILENCE_END_MS = 1_000;
 const BUDGET_CLOSING_INSTRUCTIONS =
 	"The realtime session budget is almost exhausted. Briefly tell the user that this voice session is ending, finish the current thought, and do not ask a follow-up question.";
 
-type RelayUsageAggregate = {
+type RelayUsageAggregate = LiveUsage & {
 	input_text_tokens?: number;
 	output_text_tokens?: number;
 	input_audio_tokens?: number;
@@ -369,6 +370,9 @@ export class RealtimeRelayDurableObject {
 	private openAISpeechActive = false;
 	private openAIInputCommitted = false;
 	private waitingForOpenAIInputClear = false;
+	private liveClosing = false;
+
+	private get isLive() { return isLiveModel(this.session?.model_id); }
 
 	constructor(state: DurableObjectState, env: GatewayBindings) {
 		this.state = state;
@@ -434,7 +438,7 @@ export class RealtimeRelayDurableObject {
 				// settle() intentionally returns early for an already-settled session.
 				this.closeUpstream("client_disconnected_during_provider_connection");
 				await this.settle("cancelled", "client_disconnected_during_provider_connection");
-			} else {
+			} else if (!this.isLive) {
 				this.session = await markRealtimeSessionConnected({
 					auth: authForSession(this.session, `realtime_relay:${this.session.session_id}`),
 					sessionId: this.session.session_id,
@@ -473,6 +477,26 @@ export class RealtimeRelayDurableObject {
 		if (provider === "openai") {
 			const key = resolveOpenAIKey();
 			if (!key) throw new Error("openai_key_missing");
+			if (this.isLive) {
+				const start = liveStartEvent(liveConfig(this.session.metadata), voice ?? "marin", instructions);
+				this.upstream = await connectWebSocket("wss://api.openai.com/v1/live/sessions",
+					{ headers: await openAIRealtimeHeaders(key, this.session) });
+				if (this.settled || this.clientGoneHandled) { this.closeUpstream("client_gone_before_live_start"); return; }
+				this.attachUpstream();
+				// Once start is sent, missing final usage must retain the hold, even if setup times out.
+				this.usage.live_started = true;
+				await this.checkpointUsage(true);
+				if (this.clientGoneHandled || this.liveClosing || this.settled) {
+					// The startup command has not been sent, so this connection cannot have billed Live usage.
+					this.usage.live_started = false;
+					await this.checkpointUsage(true);
+					this.closeUpstream("client_gone_before_live_start");
+					await this.settle("cancelled", "client_gone_before_live_start");
+					return;
+				}
+				this.sendUpstream(start);
+				return;
+			}
 			this.upstream = await connectWebSocket(
 				`wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`,
 				{ headers: await openAIRealtimeHeaders(key, this.session) },
@@ -554,6 +578,10 @@ export class RealtimeRelayDurableObject {
 		// A close must not settle while the preceding usage event is still being persisted.
 		this.upstreamEvents = this.upstreamEvents.then(handle).catch(async (error) => {
 			console.error("realtime_provider_event_failed", { sessionId: this.session?.session_id, error });
+			if (this.isLive) {
+				this.usage.live_billing_error = "provider_event_processing_failed";
+				await this.checkpointUsage(true);
+			}
 			await this.settle("failed", "provider_event_processing_failed");
 		});
 		this.state.waitUntil(this.upstreamEvents);
@@ -604,6 +632,10 @@ export class RealtimeRelayDurableObject {
 			return;
 		}
 		const message = parseJson(text) as ClientAudioMessage | null;
+		if (this.isLive && (message?.type as string) === "client.close") {
+			await this.requestLiveClose("completed", "client_requested_close");
+			return;
+		}
 		if (!message || message.type !== "client.audio" || !message.audio) return;
 		const provider = this.session ? providerFromSession(this.session) : null;
 		if (!provider || !this.acceptingAudio || !this.providerSetupComplete) return;
@@ -624,6 +656,11 @@ export class RealtimeRelayDurableObject {
 		}
 		// Ingress limits include dropped silence; billable usage must not.
 		this.receivedAudioMs += validated.durationMs;
+		if (this.isLive) {
+			this.resetIdleTimer();
+			this.sendUpstream({ type: "session.input_audio.append", audio: message.audio });
+			return;
+		}
 		if (provider === "google-ai-studio") {
 			// Compute activity from validated PCM, never the client-supplied rms.
 			// Idle microphone silence does not create a provider VAD turn and
@@ -692,6 +729,36 @@ export class RealtimeRelayDurableObject {
 		this.providerEventSeen = true;
 		const provider = providerFromSession(this.session);
 		const type = getStringField(event, "type");
+		if (this.isLive) {
+			this.usage = { ...this.usage, ...ingestLiveUsage(this.usage, event) };
+			if (type === "session.started") {
+				this.providerSetupComplete = true;
+				this.session = await markRealtimeSessionConnected({
+					auth: authForSession(this.session, `live_started:${this.session.session_id}`), sessionId: this.session.session_id,
+					providerSessionId: getStringField(getRecordField(event, "session") ?? {}, "id"),
+				});
+				if (this.liveClosing) this.sendUpstream({ type: "session.close" });
+			}
+			if (type === "error") { await this.requestLiveClose("failed", "live_provider_error"); return; }
+			if (["session.started", "session.usage.updated", "session.closed", "session.delegation.created", "response.event"].includes(type)) {
+				await this.checkpointUsage(true);
+				if (type !== "response.event" || getRecordField(event, "event")?.response
+					|| getRecordField(event, "event")?.type === "response.output_item.done") {
+					await this.persistUsage();
+					const priced = priceLiveUsage(this.usage, liveConfig(this.session.metadata));
+					this.sendClient({ type: "relay.live_usage", seconds: this.usage.live_seconds ?? 0,
+						voice_nanos: priced.live_voice_nanos, backend_nanos: priced.live_backend_nanos,
+						tool_nanos: priced.live_tool_nanos, usage: liveUsageMeters(this.usage),
+						response_count: this.usage.live_responses?.length ?? 0,
+						pending_response_count: this.usage.live_pending_responses?.length ?? 0 });
+				}
+			}
+			if (this.usage.live_final && !this.usage.live_pending_responses?.length && !this.usage.live_tool_calls?.some((call) => !call.done)) {
+				const pending = await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT);
+				await this.settle(pending?.status ?? "completed", pending?.reason ?? "live_session_closed");
+			}
+			return;
+		}
 		if (type === "session.updated" || event.setupComplete) this.providerSetupComplete = true;
 		if (event.error && !this.providerSetupComplete) {
 			await this.settle("failed", "provider_session_setup_failed");
@@ -891,6 +958,7 @@ export class RealtimeRelayDurableObject {
 
 	private async handleClientGone() {
 		this.acceptingAudio = false;
+		if (this.isLive) { await this.requestLiveClose("cancelled", "client_disconnected"); return; }
 		if (this.session && providerFromSession(this.session) === "openai" && this.receivedAudioMs > 0) {
 			if (this.openAISpeechActive && !this.openAIInputCommitted && !this.responseInFlight) {
 				this.sendUpstream({ type: "input_audio_buffer.commit" });
@@ -932,6 +1000,7 @@ export class RealtimeRelayDurableObject {
 		reason: string,
 	) {
 		if (!this.session || this.settled) return;
+		if (this.isLive) { await this.requestLiveClose(status, reason); return; }
 		const provider = providerFromSession(this.session);
 		if (this.usage.input_audio_clear_pending === true) {
 			await this.markBillingUnresolved("openai_input_clear_acknowledgement_missing");
@@ -1008,7 +1077,10 @@ export class RealtimeRelayDurableObject {
 			console.error("realtime_relay_usage_failed", error);
 			return null;
 		});
-		if (!updated) return;
+		if (!updated) {
+			if (this.isLive) await this.requestLiveClose("failed", "live_billing_checkpoint_failed");
+			return;
+		}
 		this.session = updated;
 		if (["completed", "failed", "cancelled", "expired"].includes(updated.status)) {
 			this.acceptingAudio = false;
@@ -1056,6 +1128,7 @@ export class RealtimeRelayDurableObject {
 		this.budgetClosing = true;
 		this.acceptingAudio = false;
 		this.sendClient({ type: "relay.budget_closing", reason });
+		if (this.isLive) { await this.requestLiveClose("expired", reason); return; }
 		const provider = this.session ? providerFromSession(this.session) : null;
 		if (provider === "openai") {
 			this.sendUpstream({
@@ -1143,6 +1216,20 @@ export class RealtimeRelayDurableObject {
 	private async settle(status: "completed" | "failed" | "cancelled" | "expired", reason: string): Promise<boolean> {
 		if (!this.session || this.settled) return this.settled;
 		if (this.settling) return false;
+		if (this.isLive) {
+			try { assertLiveFinalUsage(this.usage); }
+			catch {
+				const needsDrain = this.usage.live_started && (!this.usage.live_final
+					|| this.usage.live_pending_responses?.length
+					|| this.usage.live_tool_calls?.some((call) => !call.done));
+				// A complete but invalid snapshot cannot be repaired by closing again.
+				// Avoid recursing through requestLiveClose() back into settlement.
+				if (needsDrain && this.upstream?.readyState === WebSocket.OPEN && !this.liveClosing) {
+					await this.requestLiveClose(status, reason); return false;
+				}
+				return this.markBillingUnresolved("live_authoritative_usage_pending");
+			}
+		}
 		const provider = providerFromSession(this.session);
 		if (
 			provider !== "spacex-ai" &&
@@ -1290,6 +1377,26 @@ export class RealtimeRelayDurableObject {
 			// The provider socket may already be closed.
 		}
 		this.upstream = null;
+	}
+
+	private async requestLiveClose(status: PendingSettlement["status"], reason: string) {
+		if (this.settled || this.liveClosing) return;
+		if (!this.usage.live_started || (this.usage.live_final && !this.usage.live_pending_responses?.length && !this.usage.live_tool_calls?.some((call) => !call.done))) {
+			await this.settle(status, reason); return;
+		}
+		if (this.upstream?.readyState !== WebSocket.OPEN) {
+			await this.markBillingUnresolved("live_socket_closed_without_final_usage"); return;
+		}
+		this.liveClosing = true;
+		this.acceptingAudio = false;
+		this.clearTimers();
+		await this.state.storage.put(STORAGE_PENDING_SETTLEMENT, { status, reason, phase: "authoritative" } satisfies PendingSettlement);
+		await this.checkpointUsage(true);
+		await this.state.storage.setAlarm(Date.now() + RELAY_DRAIN_TIMEOUT_MS);
+		if (this.providerSetupComplete) this.sendUpstream({ type: "session.close" });
+		this.drainTimer = setTimeout(() => {
+			this.queueUpstreamEvent(async () => { await this.settle(status, "live_final_usage_timeout"); });
+		}, RELAY_DRAIN_TIMEOUT_MS) as unknown as number;
 	}
 
 	private closeSockets(reason: string) {

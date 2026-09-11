@@ -27,6 +27,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
 	ModelSelector,
 	ModelSelectorContent,
@@ -54,6 +55,8 @@ import {
 import { cn } from "@/lib/utils";
 import { fetchChatWebApi } from "@/lib/web-api/client";
 import { RoomResponseTimestamp } from "@/components/(chat)/RoomResponseTimestamp";
+import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails, type LiveUsageView, type LiveSettingsValue } from "./LiveSettings";
+import { createAudioBufferFromPcm16, createPcmCapture, ensureAudioRunning, type PcmChunk } from "./realtimeAudio";
 
 const RealtimePersona = dynamic(
 	() => import("@/components/ai-elements/persona").then((mod) => mod.Persona),
@@ -153,6 +156,7 @@ type RealtimeModel = {
 	voices: RealtimeVoiceOption[];
 	transport: "WebRTC" | "WebSocket";
 	billing:
+		| "Live duration + backend tokens"
 		| "OpenAI usage events"
 		| "xAI duration meter"
 		| "Google usage metadata";
@@ -470,6 +474,13 @@ const REALTIME_MODELS: RealtimeModel[] = [
 		billing: "Google usage metadata",
 	},
 ];
+
+const GPT_LIVE_MODEL: RealtimeModel = {
+	id: "openai:gpt-live-1", label: "OpenAI GPT Live 1", provider: "openai", providerLabel: "OpenAI",
+	logoId: "openai", model: "openai/gpt-live-1", releaseDate: null, defaultVoice: "marin",
+	voices: LIVE_VOICE_OPTIONS,
+	transport: "WebSocket", billing: "Live duration + backend tokens",
+};
 
 const BUDGET_CLOSING_INSTRUCTIONS =
 	"The realtime session budget is almost exhausted. Briefly tell the user that this voice session is ending, finish the current thought, and do not ask a follow-up question.";
@@ -893,51 +904,6 @@ function replaceTextLine(
 	return [...lines, { ...next, createdAt: new Date().toISOString() }];
 }
 
-function floatTo16BitPcmBase64(input: Float32Array): string {
-	const bytes = new Uint8Array(input.length * 2);
-	const view = new DataView(bytes.buffer);
-	for (let i = 0; i < input.length; i += 1) {
-		const sample = Math.max(-1, Math.min(1, input[i] ?? 0));
-		view.setInt16(i * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-	}
-	let binary = "";
-	for (const byte of bytes) binary += String.fromCharCode(byte);
-	return btoa(binary);
-}
-
-function calculateRms(input: Float32Array): number {
-	if (input.length === 0) return 0;
-	let sum = 0;
-	for (let i = 0; i < input.length; i += 1) {
-		const sample = input[i] ?? 0;
-		sum += sample * sample;
-	}
-	return Math.sqrt(sum / input.length);
-}
-
-function decodeBase64ToPcm16(base64: string): Int16Array {
-	const binary = atob(base64);
-	const bytes = new Uint8Array(binary.length);
-	for (let i = 0; i < binary.length; i += 1) {
-		bytes[i] = binary.charCodeAt(i);
-	}
-	return new Int16Array(bytes.buffer);
-}
-
-function createAudioBufferFromPcm16(
-	audioContext: AudioContext,
-	base64: string,
-	sampleRate = 24_000,
-): AudioBuffer {
-	const pcm = decodeBase64ToPcm16(base64);
-	const buffer = audioContext.createBuffer(1, pcm.length, sampleRate);
-	const channel = buffer.getChannelData(0);
-	for (let i = 0; i < pcm.length; i += 1) {
-		channel[i] = (pcm[i] ?? 0) / 0x8000;
-	}
-	return buffer;
-}
-
 function StatCard({
 	icon,
 	label,
@@ -1146,7 +1112,7 @@ function RealtimeVoiceSelector({
 								{voice.label ?? voice.id}
 							</span>
 							{voice.description ? (
-								<span className="block truncate text-xs text-muted-foreground">
+								<span className="block text-xs leading-snug text-muted-foreground">
 									{voice.description}
 								</span>
 							) : null}
@@ -1383,7 +1349,7 @@ function buildRealtimeModels(models: GatewaySupportedModel[]): RealtimeModel[] {
 		seen.add(model.id);
 		return true;
 	});
-	return deduped.sort(compareRealtimeModelsByRelease);
+	return [GPT_LIVE_MODEL, ...deduped.filter((model) => !model.model.endsWith("gpt-live-1")).sort(compareRealtimeModelsByRelease)];
 }
 
 type RealtimeRoomProps = {
@@ -1395,6 +1361,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const realtimeModels = useMemo(() => buildRealtimeModels(models), [models]);
 	const suggestedModels = useMemo(() => {
 		const ids = [
+			"openai:gpt-live-1",
 			"openai:gpt-realtime-2.1",
 			"xai:grok-voice-latest",
 			"google:gemini-3.1-flash-live-preview",
@@ -1405,6 +1372,11 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	}, [realtimeModels]);
 	const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
 	const [selectedVoiceId, setSelectedVoiceId] = useState("");
+	const [liveBackendModel, setLiveBackendModel] = useState("openai/gpt-5.6-luna");
+	const [liveSettings, setLiveSettings] = useState<LiveSettingsValue>(DEFAULT_LIVE_SETTINGS);
+	const [liveUsage, setLiveUsage] = useState<{ seconds: number; voice_nanos: number; backend_nanos: number; tool_nanos: number;
+		response_count: number; pending_response_count: number; usage?: LiveUsageView } | null>(null);
+	const [billingApi, setBillingApi] = useState("realtime");
 	const [status, setStatus] = useState<SessionStatus>("idle");
 	const [error, setError] = useState<string | null>(null);
 	const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -1423,7 +1395,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	>("normal");
 	const [billingSessionId, setBillingSessionId] = useState<string | null>(null);
 	const [billingReadFailed, setBillingReadFailed] = useState(false);
-	const [ledger, setLedger] = useState<{ status: string; reserved_nanos: number; captured_nanos: number; released_nanos: number; estimated_cost_nanos: number; final_cost_nanos: number | null } | null>(null);
+	const [ledger, setLedger] = useState<{ status: string; reserved_nanos: number; captured_nanos: number; released_nanos: number; estimated_cost_nanos: number; final_cost_nanos: number | null; pricing_lines?: Array<{ component?: string; line_nanos?: number }>; usage?: LiveUsageView } | null>(null);
 	useEffect(() => {
 		if (!billingSessionId) return;
 		const controller = new AbortController();
@@ -1432,7 +1404,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		const poll = async () => {
 			let terminal = false;
 			try {
-				const response = await fetchChatWebApi(`/api/chat/realtime/session/${encodeURIComponent(billingSessionId)}`, { signal: controller.signal });
+				const response = await fetchChatWebApi(`/api/chat/${billingApi}/session/${encodeURIComponent(billingSessionId)}`, { signal: controller.signal });
 				if (response.ok) {
 					const value = await response.json();
 					if (!controller.signal.aborted) { setLedger(value); setBillingReadFailed(false); }
@@ -1443,7 +1415,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		};
 		void poll();
 		return () => { controller.abort(); clearTimeout(timer); };
-	}, [billingSessionId, status]);
+	}, [billingApi, billingSessionId, status]);
 	const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
 	const [diagnosticLogs, setDiagnosticLogs] = useState<RealtimeDiagnosticLog[]>(
 		[],
@@ -1464,8 +1436,10 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const webSocketRef = useRef<WebSocket | null>(null);
 	const inputAudioContextRef = useRef<AudioContext | null>(null);
 	const outputAudioContextRef = useRef<AudioContext | null>(null);
-	const streamProcessorRef = useRef<ScriptProcessorNode | null>(null);
-	const streamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+	const pcmCaptureRef = useRef<ReturnType<typeof createPcmCapture> | null>(null);
+	const liveAudioSenderRef = useRef<((chunk: PcmChunk) => void) | null>(null);
+	const startupAttemptRef = useRef(0);
+	const outputAudioSeenRef = useRef(false);
 	const outputScheduleRef = useRef(0);
 	const xaiInputSpeechStartedAtRef = useRef<number | null>(null);
 	const googleLastUsageCostRef = useRef(0);
@@ -1489,6 +1463,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const lastExtendedReservedNanosRef = useRef(0);
 	const usageAggregateRef = useRef<RealtimeUsageAggregate>({});
 	const relaySessionRef = useRef(false);
+	const liveSessionRef = useRef(false);
 
 	useEffect(() => {
 		try {
@@ -1583,8 +1558,10 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const showRichPersonaOrb = orbMode === "persona";
 	const showOrb = orbMode !== "off";
 	const defaultSystemPrompt = useMemo(
-		() => getDefaultRealtimeSystemPrompt(selectedModel),
-		[selectedModel],
+		() => selectedModel?.id === GPT_LIVE_MODEL.id
+			? `You are a helpful voice assistant. Speak naturally and concisely. Backchannel policy: Use moderate listening acknowledgments. Interruption policy: Stop speaking and listen when interrupted. Delegation policy: Delegate requests requiring careful reasoning${liveSettings.web_search ? " or current information from web search" : ""} to the backend. Do not delegate greetings or simple clarifications. Wait for backend results before reporting them. The backend can reason${liveSettings.web_search ? " and search the web" : ", but has no external tools"}; it cannot perform external actions.`
+			: getDefaultRealtimeSystemPrompt(selectedModel),
+		[selectedModel, liveSettings.web_search],
 	);
 	const realtimeSystemPrompt =
 		displaySettings.systemPrompt?.trim() || defaultSystemPrompt;
@@ -1669,6 +1646,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 	const ensureMicrophoneAccess = useCallback(async () => {
 		if (localStreamRef.current?.active) return localStreamRef.current;
+		const attempt = startupAttemptRef.current;
 		if (!navigator.mediaDevices?.getUserMedia) {
 			throw new Error(
 				"Microphone capture is not available in this browser context.",
@@ -1676,6 +1654,10 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		}
 		try {
 			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			if (attempt !== startupAttemptRef.current) {
+				stream.getTracks().forEach((track) => track.stop());
+				throw new Error("Microphone check cancelled.");
+			}
 			localStreamRef.current = stream;
 			return stream;
 		} catch (error) {
@@ -1715,10 +1697,10 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	}, []);
 
 	const stopInputCapture = useCallback(() => {
-		streamProcessorRef.current?.disconnect();
-		streamProcessorRef.current = null;
-		streamSourceRef.current?.disconnect();
-		streamSourceRef.current = null;
+		startupAttemptRef.current += 1;
+		liveAudioSenderRef.current = null;
+		pcmCaptureRef.current?.stop();
+		pcmCaptureRef.current = null;
 		void inputAudioContextRef.current?.close().catch(() => undefined);
 		inputAudioContextRef.current = null;
 		localStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -1807,6 +1789,13 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			}
 
 			stopInputCapture();
+			if (liveSessionRef.current && webSocketRef.current?.readyState === WebSocket.OPEN) {
+				pendingStopStatusRef.current = terminalStatus;
+				setIsFinishing(true);
+				webSocketRef.current.send(JSON.stringify({ type: "client.close" }));
+				if (providerDrainTimerRef.current == null) providerDrainTimerRef.current = window.setTimeout(() => stopSession(true, terminalStatus), 25_000);
+				return;
+			}
 			if (!assistantResponseInFlightRef.current) {
 				stopSession(true, terminalStatus);
 				return;
@@ -1997,6 +1986,15 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		const audioContext =
 			outputAudioContextRef.current ?? new AudioContext({ sampleRate: 24_000 });
 		outputAudioContextRef.current = audioContext;
+		void ensureAudioRunning(audioContext).catch((error: Error) => {
+			addDiagnosticLog("Audio playback failed", { message: error.message }, "error");
+			setError(error.message);
+			stopSession();
+		});
+		if (!outputAudioSeenRef.current) {
+			outputAudioSeenRef.current = true;
+			addDiagnosticLog("First provider audio received", { contextState: audioContext.state });
+		}
 		const buffer = createAudioBufferFromPcm16(audioContext, base64);
 		const source = audioContext.createBufferSource();
 		source.buffer = buffer;
@@ -2005,8 +2003,12 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		const startAt = Math.max(now, outputScheduleRef.current);
 		source.start(startAt);
 		outputScheduleRef.current = startAt + buffer.duration;
+		source.onended = () => {
+			source.disconnect();
+			if (liveSessionRef.current && audioContext.currentTime >= outputScheduleRef.current - 0.01) setPersonaState("listening");
+		};
 		return Math.round(buffer.duration * 1000);
-	}, []);
+	}, [addDiagnosticLog, stopSession]);
 
 	const updateGoogleCostFromUsage = useCallback(
 		(usage: GoogleUsageMetadata) => {
@@ -2043,6 +2045,40 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		(event: Record<string, unknown>, provider: RealtimeProvider) => {
 			const type = getStringField(event, "type");
 			if (type) setLastEventType(type);
+			if (type === "relay.live_usage") {
+				setLiveUsage({ seconds: toNumber(event.seconds), voice_nanos: toNumber(event.voice_nanos),
+					backend_nanos: toNumber(event.backend_nanos), tool_nanos: toNumber(event.tool_nanos),
+					response_count: toNumber(event.response_count), pending_response_count: toNumber(event.pending_response_count),
+					usage: event.usage as LiveUsageView | undefined });
+				setActualCostUsd((toNumber(event.voice_nanos) + toNumber(event.backend_nanos) + toNumber(event.tool_nanos)) / 1e9);
+				return;
+			}
+			if (liveSessionRef.current) {
+				if (type === "session.output_audio.delta") { playPcm16Audio(getStringField(event, "delta")); setPersonaState("speaking"); return; }
+				if (type === "session.input_transcript.delta" || type === "session.output_transcript.delta") {
+					const role = type === "session.input_transcript.delta" ? "user" : "assistant";
+					const delta = getStringField(event, "delta");
+					if (delta) setTranscript((lines) => {
+						const last = lines.at(-1);
+						return appendTextLine(lines, { id: last?.role === role ? last.id : `live-${crypto.randomUUID()}`, role, text: delta });
+					});
+					return;
+				}
+				if (type === "session.delegation.created") { setPersonaState("thinking"); addDiagnosticLog("Backend task started"); return; }
+				if (type === "response.event") {
+					const nested = event.event as Record<string, unknown> | undefined;
+					if (nested && ["response.completed", "response.failed", "response.incomplete", "response.cancelled"].includes(String(nested.type))) {
+						addDiagnosticLog(`Backend ${String(nested.type).replace("response.", "")}`);
+					}
+					return;
+				}
+				if (type === "session.closed") {
+					assistantResponseInFlightRef.current = false;
+					pendingStopStatusRef.current ??= "completed";
+					completePendingStop();
+					return;
+				}
+			}
 
 			if (type === "relay.connected") {
 				addDiagnosticLog("Realtime relay ready", event);
@@ -2380,7 +2416,11 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		if (!selectedModel) {
 			throw new Error("Select a realtime model before starting.");
 		}
-		const response = await fetchChatWebApi("/api/chat/realtime/session", {
+		const live = selectedModel.id === GPT_LIVE_MODEL.id;
+		if (live && (!Number.isInteger(liveSettings.max_output_tokens) || liveSettings.max_output_tokens < 16 || liveSettings.max_output_tokens > 32768)) {
+			throw new Error("Set the backend output limit between 16 and 32,768 tokens.");
+		}
+		const response = await fetchChatWebApi(`/api/chat/${live ? "live" : "realtime"}/session`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
@@ -2388,6 +2428,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				model: selectedModel.model,
 				voice: selectedVoice?.id ?? selectedModel.defaultVoice,
 				instructions: realtimeSystemPrompt,
+				...(live ? { backend_model: liveBackendModel, backend_settings: liveSettings } : {}),
 			}),
 		});
 		const payload = await response.json().catch(() => null);
@@ -2395,7 +2436,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			throw new Error(getSessionErrorMessage(payload, response.status));
 		}
 		return payload as RealtimeSessionResponse;
-	}, [realtimeSystemPrompt, selectedModel, selectedVoice]);
+	}, [liveBackendModel, liveSettings, realtimeSystemPrompt, selectedModel, selectedVoice]);
 
 	const startOpenAI = useCallback(
 		async (session: RealtimeSessionResponse) => {
@@ -2472,29 +2513,22 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		) => {
 			const stream = await ensureMicrophoneAccess();
 			localStreamRef.current = stream;
-			const audioContext = new AudioContext({ sampleRate });
+			const audioContext = inputAudioContextRef.current ?? new AudioContext({ sampleRate });
 			inputAudioContextRef.current = audioContext;
-			const source = audioContext.createMediaStreamSource(stream);
-			const processor = audioContext.createScriptProcessor(4096, 1, 1);
-			streamSourceRef.current = source;
-			streamProcessorRef.current = processor;
-			const mutedMonitor = audioContext.createGain();
-			mutedMonitor.gain.value = 0;
-
-			processor.onaudioprocess = (event) => {
-				const input = event.inputBuffer.getChannelData(0);
-				const chunk = {
-					durationMs: Math.round((input.length / sampleRate) * 1000),
-					rms: calculateRms(input),
-				};
-				const sent = sendAudio(floatTo16BitPcmBase64(input), chunk);
+			await ensureAudioRunning(audioContext);
+			const capture = createPcmCapture(audioContext, stream, (chunk) => {
+				const sent = sendAudio(chunk.audio, chunk);
 				if (sent !== false) onAudioSent?.(chunk.durationMs);
-			};
-			source.connect(processor);
-			processor.connect(mutedMonitor);
-			mutedMonitor.connect(audioContext.destination);
+			}, (error) => {
+				addDiagnosticLog("Microphone capture failed", { message: error.message }, "error");
+				setError(error.message);
+				stopSession();
+				setStatus("error");
+			});
+			pcmCaptureRef.current = capture;
+			await capture.ready;
 		},
-		[ensureMicrophoneAccess],
+		[ensureMicrophoneAccess, addDiagnosticLog, stopSession],
 	);
 
 	const startXAI = useCallback(
@@ -2779,7 +2813,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			ws.onmessage = (message) => {
 				void parseRealtimeEvent(message).then((event) => {
 					if (event) {
-						if (event.type === "session.updated" || event.setupComplete) ready();
+						if (webSocketRef.current !== ws) return;
+						if (event.type === "session.updated" || event.type === "session.started" || event.setupComplete) ready();
 						if (event.error || event.type === "relay.upstream_error") failSetup(new Error("The provider rejected the realtime session."));
 						handleRealtimeEvent(event, session.provider);
 					}
@@ -2787,6 +2822,15 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			};
 			ws.onclose = (event) => {
 				failSetup(new Error("The realtime connection closed before setup completed."));
+				if (webSocketRef.current !== ws) return;
+				if (liveSessionRef.current) {
+					stopInputCapture();
+					setStartedAt(null);
+					setIsFinishing(true);
+					pendingStopStatusRef.current ??= "completed";
+					completePendingStop();
+					return;
+				}
 				addDiagnosticLog(
 					"Realtime relay socket closed",
 					{ code: event.code, reason: event.reason, wasClean: event.wasClean },
@@ -2800,9 +2844,36 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			ws.onerror = () => failSetup(new Error("Realtime relay WebSocket failed to connect."));
 			try { await setup; } catch (error) { ws.close(); throw error; }
 			finally { window.clearTimeout(setupTimer); }
+			if (ws.readyState !== WebSocket.OPEN || pendingStopStatusRef.current) return;
 
 			const sampleRate = session.provider === "google" ? 16_000 : 24_000;
-			await startPcmInputStream(
+			if (liveSessionRef.current) {
+				let sentFrames = 0;
+				let speechSeen = false;
+				let firstFrameSent!: () => void;
+				const firstFrame = new Promise<void>((resolve) => { firstFrameSent = resolve; });
+				liveAudioSenderRef.current = (chunk) => {
+					if (pendingStopStatusRef.current || ws.readyState !== WebSocket.OPEN) return;
+					ws.send(JSON.stringify({ type: "client.audio", audio: chunk.audio, rms: chunk.rms }));
+					sentFrames += 1;
+					if (sentFrames === 1) {
+						addDiagnosticLog("Microphone audio forwarding", { sampleRate, rms: chunk.rms });
+						firstFrameSent();
+					}
+					if (!speechSeen && chunk.rms >= 0.01) {
+						speechSeen = true;
+						addDiagnosticLog("Microphone signal detected", { rms: chunk.rms });
+					}
+					if (sentFrames === 30 && !speechSeen) addDiagnosticLog("Microphone audio is quiet", { hint: "Check your selected microphone and speak into it." }, "warning");
+				};
+				let timer: ReturnType<typeof setTimeout> | undefined;
+				try {
+					await Promise.race([firstFrame, new Promise<never>((_, reject) => {
+						timer = setTimeout(() => reject(new Error("Microphone audio could not reach the relay.")), 5_000);
+					})]);
+				} finally { clearTimeout(timer); }
+				if (webSocketRef.current !== ws || pendingStopStatusRef.current) return;
+			} else await startPcmInputStream(
 				sampleRate,
 				(audio, chunk) => {
 					if (pendingStopStatusRef.current) return false;
@@ -2842,9 +2913,9 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		[
 			addDiagnosticLog,
 			handleRealtimeEvent,
-			isFinishing,
 			startPcmInputStream,
-			status,
+			stopInputCapture,
+			completePendingStop,
 		],
 	);
 
@@ -2893,12 +2964,37 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			},
 		]);
 		setTranscript([]);
+		const attempt = ++startupAttemptRef.current;
+		liveSessionRef.current = selectedModel.id === GPT_LIVE_MODEL.id;
+		outputAudioSeenRef.current = false;
 
 		try {
 			addDiagnosticLog("Requesting microphone access");
-			await ensureMicrophoneAccess();
+			if (liveSessionRef.current) {
+				// Create/resume both contexts inside the Start gesture, before network awaits.
+				const input = new AudioContext({ sampleRate: 24_000 });
+				const output = new AudioContext({ sampleRate: 24_000 });
+				inputAudioContextRef.current = input;
+				outputAudioContextRef.current = output;
+				await Promise.all([ensureAudioRunning(input), ensureAudioRunning(output), ensureMicrophoneAccess()]);
+				if (attempt !== startupAttemptRef.current) return;
+				await startPcmInputStream(24_000, (audio, chunk) => {
+					liveAudioSenderRef.current?.({ audio, ...chunk });
+					return false; // Preflight frames are discarded; billing uses provider usage only.
+				});
+				addDiagnosticLog("Audio preflight passed", { inputState: input.state, outputState: output.state, sampleRate: input.sampleRate });
+			} else await ensureMicrophoneAccess();
+			if (attempt !== startupAttemptRef.current) return;
 			addDiagnosticLog("Microphone access granted");
 			const session = await createSession();
+			if (attempt !== startupAttemptRef.current) {
+				// Never open a provider socket after cancellation. The gateway expires unused reservations.
+				addDiagnosticLog("Session startup cancelled before provider connection", { sessionId: session.session_id ?? session.id });
+				return;
+			}
+			liveSessionRef.current = selectedModel?.id === GPT_LIVE_MODEL.id;
+			setBillingApi(liveSessionRef.current ? "live" : "realtime");
+			setLiveUsage(null);
 			currentSessionIdRef.current = session.session_id ?? session.id ?? null;
 			relaySessionRef.current = session.connect.url.includes("/relay");
 			setSessionBilling(session.billing ?? null);
@@ -2921,6 +3017,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				await startXAI(session);
 			}
 		} catch (sessionError) {
+			if (attempt !== startupAttemptRef.current) return;
 			stopSession();
 			const message = getRealtimeStartupErrorMessage(sessionError);
 			setStatus("error");
@@ -2939,6 +3036,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		selectedModel,
 		status,
 		stopSession,
+		startPcmInputStream,
 	]);
 
 	const personaLabel =
@@ -3020,11 +3118,28 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				</div>
 			</header>
 
+			{selectedModel?.id === GPT_LIVE_MODEL.id && (
+				<div className="flex shrink-0 flex-wrap items-center gap-3 border-b px-4 py-2 text-sm">
+					<span>Backend model</span>
+					<Select disabled={sessionActive} value={liveBackendModel} onValueChange={setLiveBackendModel}>
+						<SelectTrigger aria-label="Live backend model">
+							<SelectValue>{liveBackendModel.endsWith("luna") ? "GPT 5.6 Luna" : "GPT 5.6 Terra"}</SelectValue>
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="openai/gpt-5.6-luna">GPT 5.6 Luna</SelectItem>
+							<SelectItem value="openai/gpt-5.6-terra">GPT 5.6 Terra</SelectItem>
+						</SelectContent>
+					</Select>
+					<Button variant="ghost" size="sm" onClick={() => setSettingsOpen(true)}>Delegation settings</Button>
+				</div>
+			)}
+
 			<section className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_360px]">
-				<div className="flex min-h-0 flex-col border-b border-border lg:border-b-0 lg:border-r">
-					<div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-8">
+				<div className="flex min-h-0 min-w-0 flex-col border-b border-border lg:border-b-0 lg:border-r">
+					<ScrollArea className="min-h-0 flex-1" viewportClassName="overscroll-contain" viewportProps={{ role: "region", "aria-label": "Session overview", tabIndex: 0 }}>
+					<div className="flex min-h-full flex-col items-center px-4 py-6">
 						{selectedModel ? (
-							<div className="flex w-full max-w-3xl flex-col items-center gap-7">
+							<div className="my-auto flex w-full max-w-3xl shrink-0 flex-col items-center gap-5">
 								<div className="flex flex-col items-center gap-3">
 									{showOrb ? (
 										<div className="relative flex h-56 w-56 items-center justify-center">
@@ -3089,6 +3204,12 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 									</StatCard>
 								</div>
 
+								{selectedModel?.id === GPT_LIVE_MODEL.id && <p className="text-sm text-muted-foreground">
+									$0.05/minute plus backend tokens. Voice: ${((ledger?.pricing_lines?.filter((line) => line.component === "voice").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.voice_nanos ?? 0) / 1e9).toFixed(4)}.
+									{" "}Backend: ${((ledger?.pricing_lines?.filter((line) => line.component === "backend").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.backend_nanos ?? 0) / 1e9).toFixed(4)}.
+									{" "}Tools: ${((ledger?.pricing_lines?.filter((line) => line.component === "tool").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.tool_nanos ?? 0) / 1e9).toFixed(4)}.
+								</p>}
+								{selectedModel?.id === GPT_LIVE_MODEL.id && <LiveUsageDetails usage={liveUsage || ledger?.usage ? { ...ledger?.usage, ...liveUsage?.usage } : undefined} pending={liveUsage?.pending_response_count} />}
 								{billingSessionId && <p className="text-sm text-muted-foreground">
 									{billingReadFailed ? "Billing status is unavailable; displayed amounts may be out of date. " : !ledger || ((status === "ended" || status === "error") && ledger.final_cost_nanos == null && ledger.status !== "billing_unresolved") ? "Finalizing billing. " : ""}
 									{ledger?.status === "billing_unresolved" ? "Final usage is pending billing review. The remaining hold is retained. " : ""}
@@ -3147,7 +3268,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 								) : null}
 							</div>
 						) : (
-							<div className="w-full max-w-3xl">
+							<div className="my-auto w-full max-w-3xl shrink-0">
 								<div className="mb-5 text-center">
 									<p className="text-sm font-medium">Choose a realtime model</p>
 									<p className="mt-1 text-sm text-muted-foreground">
@@ -3186,6 +3307,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 							</div>
 						)}
 					</div>
+					</ScrollArea>
 
 					<RoomComposerFooter>
 						<div className="mx-auto w-full max-w-3xl">
@@ -3298,6 +3420,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			</section>
 
 			<RealtimeSettingsDialog
+				liveSettings={selectedModel?.id === GPT_LIVE_MODEL.id ? liveSettings : undefined}
+				onLiveSettingsChange={setLiveSettings}
 				open={settingsOpen}
 				onOpenChange={setSettingsOpen}
 				orbMode={orbMode}
@@ -3322,6 +3446,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 }
 
 function RealtimeSettingsDialog({
+	liveSettings,
+	onLiveSettingsChange,
 	open,
 	onOpenChange,
 	orbMode,
@@ -3330,6 +3456,8 @@ function RealtimeSettingsDialog({
 	defaultSystemPrompt,
 	onSystemPromptChange,
 }: {
+	liveSettings?: LiveSettingsValue;
+	onLiveSettingsChange: (settings: LiveSettingsValue) => void;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	orbMode: RealtimeOrbMode;
@@ -3367,7 +3495,7 @@ function RealtimeSettingsDialog({
 				<DialogDescription className="sr-only">
 					Realtime display and session settings.
 				</DialogDescription>
-				<div className="flex h-[440px] flex-1 overflow-hidden">
+				<div className="flex h-[min(440px,calc(100dvh-2rem))] flex-1 overflow-hidden">
 					<div className="hidden w-48 shrink-0 flex-col border-r border-border p-2 md:flex">
 						<Button
 							type="button"
@@ -3378,7 +3506,7 @@ function RealtimeSettingsDialog({
 							Model
 						</Button>
 					</div>
-					<div className="flex flex-1 flex-col overflow-hidden">
+					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 						<div className="border-b border-border px-4 py-3 md:hidden">
 							<Button
 								type="button"
@@ -3390,8 +3518,8 @@ function RealtimeSettingsDialog({
 								Model
 							</Button>
 						</div>
-						<div className="flex-1 overflow-y-auto p-4">
-							<div className="grid gap-4">
+						<ScrollArea className="min-h-0 flex-1" viewportClassName="overscroll-contain" viewportProps={{ role: "region", "aria-label": "Realtime settings content", tabIndex: 0 }}>
+							<div className="grid gap-4 p-4">
 								<div className="grid gap-1">
 									<p className="text-sm font-semibold text-foreground">Model</p>
 									<p className="text-xs text-muted-foreground">
@@ -3423,6 +3551,7 @@ function RealtimeSettingsDialog({
 										{systemPrompt.trim() ? "Custom prompt" : defaultSystemPrompt}
 									</p>
 								</div>
+								{liveSettings ? <LiveSettings value={liveSettings} onChange={onLiveSettingsChange} /> : null}
 								<div className="grid gap-1">
 									<p className="text-sm font-semibold text-foreground">Display</p>
 									<p className="text-xs text-muted-foreground">
@@ -3461,7 +3590,7 @@ function RealtimeSettingsDialog({
 									</div>
 								</div>
 							</div>
-						</div>
+						</ScrollArea>
 					</div>
 				</div>
 			</DialogContent>
