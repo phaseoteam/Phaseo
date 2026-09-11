@@ -85,11 +85,15 @@ describe("Artificial Analysis benchmark panel", () => {
 				result_key: "astra-max",
 				benchmark: { id: "aa-intelligence-index-v4", name: "Artificial Analysis Intelligence Index", category: "general", link: null, total_models: 2, max_score: null, order: null, ascending_order: false, type: "numerical" },
 			}]} rankings={[ranking]} modelId="openai/gpt-6-astra" initialExpandedMetric="aa-intelligence-index-v4" />);
+		const selectedBar = html.match(/aria-label="GPT-6 Astra"[\s\S]*?href="\/models\/openai\/gpt-6-astra"/)?.[0];
+		const dimmedBar = html.match(/aria-label="Claude Fable 5.1"[\s\S]*?href="\/models\/anthropic\/claude-fable-5.1"/)?.[0];
 		expect(html).toContain("Other models dimmed");
-		expect(html).toContain("opacity-20");
-		expect(html).toContain("bg-black");
-		expect(html).toContain("text-foreground");
-		expect(html).toContain("text-white");
+		expect(selectedBar).toContain("bg-black");
+		expect(selectedBar).toContain("text-white");
+		expect(selectedBar).not.toContain("opacity-20");
+		expect(selectedBar).not.toContain("shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]");
+		expect(dimmedBar).toContain("opacity-20");
+		expect(dimmedBar).toContain("text-foreground");
 		expect(html).not.toContain("ring-2 ring-[#8842FD]");
 	});
 });
