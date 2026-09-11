@@ -114,85 +114,99 @@ chatRouter.post("/audio", async (c) => {
 	return proxyGateway(c.req.raw, c.env, waitUntil(c), { path: AUDIO_PATHS[action], requestBody: body.requestBody ?? {}, appHeaders: body.appHeaders, debug: body.debug, baseUrl: body.baseUrl });
 });
 
-chatRouter.get("/realtime/session/:sessionId", async (c) => {
-	const auth = await resolveGatewayKeys(c.req.raw, c.env, waitUntil(c));
-	if ("status" in auth) return realtimeError(auth.status, auth.code, auth.message);
-	const sessionId = c.req.param("sessionId");
-	if (!/^rt_[0-9a-hjkmnp-tv-z]{26}$/.test(sessionId)) return realtimeError(400, "invalid_session_id", "Invalid realtime session.");
-	const result = await getDataClient(c.env).from("gateway_realtime_sessions")
-		.select("session_id,status,reserved_nanos,captured_nanos,released_nanos,estimated_cost_nanos,final_cost_nanos,currency")
-		.eq("session_id", sessionId).eq("workspace_id", auth.workspaceId).eq("user_id", auth.userId).eq("source", "chat").maybeSingle();
-	if (result.error) return realtimeError(503, "realtime_status_unavailable", "Realtime billing is temporarily unavailable.");
-	if (!result.data) return realtimeError(404, "realtime_session_not_found", "Realtime session not found.");
-	return c.json(result.data, 200, PRIVATE_NO_STORE_HEADERS);
-});
-
-chatRouter.post("/realtime/session", async (c) => {
-	const auth = await resolveGatewayKeys(c.req.raw, c.env, waitUntil(c));
-	if (!("apiKey" in auth)) return realtimeError(auth.status, auth.code, auth.message);
-
-	const body = await envelope(c.req.raw);
-	const provider = normalizeRealtimeProvider(String(body.provider ?? "").trim().toLowerCase());
-	const model = String(body.model ?? "").trim();
-	const voice = typeof body.voice === "string" ? body.voice.trim() : "";
-	const instructions = typeof body.instructions === "string" ? body.instructions.trim() : "";
-	if (!provider || !model || model.length > 160 || voice.length > 80 || instructions.length > 4000) {
-		return realtimeError(400, "invalid_realtime_session_request", "Invalid realtime session request.");
-	}
-
-	const baseUrl = resolveGatewayBaseUrlForEnvironment({
-		configuredBaseUrl: c.env.AI_STATS_GATEWAY_URL ?? c.env.PHASEO_GATEWAY_URL,
-		stagingBaseUrl: c.env.STAGING_GATEWAY_BASE_URL,
-		environment: c.env.ENV,
+for (const path of ["/realtime/session/:sessionId", "/live/session/:sessionId"]) {
+	chatRouter.get(path, async (c) => {
+		const auth = await resolveGatewayKeys(c.req.raw, c.env, waitUntil(c));
+		if ("status" in auth) return realtimeError(auth.status, auth.code, auth.message);
+		const sessionId = c.req.param("sessionId");
+		if (!/^rt_[0-9a-hjkmnp-tv-z]{26}$/.test(sessionId)) return realtimeError(400, "invalid_session_id", "Invalid realtime session.");
+		const result = await getDataClient(c.env).from("gateway_realtime_sessions")
+			.select("session_id,status,reserved_nanos,captured_nanos,released_nanos,estimated_cost_nanos,final_cost_nanos,currency,pricing_lines,usage")
+			.eq("session_id", sessionId).eq("workspace_id", auth.workspaceId).eq("user_id", auth.userId).eq("source", "chat").maybeSingle();
+		if (result.error) return realtimeError(503, "realtime_status_unavailable", "Realtime billing is temporarily unavailable.");
+		if (!result.data) return realtimeError(404, "realtime_session_not_found", "Realtime session not found.");
+		return c.json(result.data, 200, PRIVATE_NO_STORE_HEADERS);
 	});
-	if (!baseUrl) return realtimeError(500, "gateway_not_configured", "Realtime gateway is not configured.");
+}
 
-	let upstream: Response;
-	try {
-		upstream = await fetch(`${baseUrl}/realtime/sessions`, {
-			method: "POST",
-			headers: {
-				...CANONICAL_CHAT_APP_HEADERS,
-				...sanitizeAppHeaders(body.appHeaders),
-				Authorization: `Bearer ${auth.apiKey}`,
-				"Content-Type": "application/json",
+for (const path of ["/realtime/session", "/live/session"]) {
+	chatRouter.post(path, async (c) => {
+		const auth = await resolveGatewayKeys(c.req.raw, c.env, waitUntil(c));
+		if (!("apiKey" in auth)) return realtimeError(auth.status, auth.code, auth.message);
+
+		const body = await envelope(c.req.raw);
+		const live = c.req.path.endsWith("/live/session");
+		const provider = normalizeRealtimeProvider(String(body.provider ?? "").trim().toLowerCase());
+		const model = String(body.model ?? "").trim();
+		const voice = typeof body.voice === "string" ? body.voice.trim() : "";
+		const instructions = typeof body.instructions === "string" ? body.instructions.trim() : "";
+		if (!provider || !model || model.length > 160 || voice.length > 80 || instructions.length > 4000) {
+			return realtimeError(400, "invalid_realtime_session_request", "Invalid realtime session request.");
+		}
+		if (live && (provider !== "openai" || !["gpt-live-1", "openai/gpt-live-1"].includes(model))) {
+			return realtimeError(400, "invalid_live_model", "Select GPT Live 1 for a Live session.");
+		}
+		const backendModel = body.backend_model ?? "openai/gpt-5.6-luna";
+		if (live && !["openai/gpt-5.6-luna", "openai/gpt-5.6-terra"].includes(backendModel)) {
+			return realtimeError(400, "invalid_live_backend", "Select a supported backend model.");
+		}
+
+		const baseUrl = resolveGatewayBaseUrlForEnvironment({
+			configuredBaseUrl: c.env.AI_STATS_GATEWAY_URL ?? c.env.PHASEO_GATEWAY_URL,
+			stagingBaseUrl: c.env.STAGING_GATEWAY_BASE_URL,
+			environment: c.env.ENV,
+		});
+		if (!baseUrl) return realtimeError(500, "gateway_not_configured", "Realtime gateway is not configured.");
+
+		let upstream: Response;
+		try {
+			upstream = await fetch(`${baseUrl}/${live ? "live" : "realtime"}/sessions`, {
+				method: "POST",
+				headers: {
+					...CANONICAL_CHAT_APP_HEADERS,
+					...sanitizeAppHeaders(body.appHeaders),
+					Authorization: `Bearer ${auth.apiKey}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					provider,
+					model: normalizeRealtimeModel(provider, model),
+					...(live ? { backend_model: backendModel } : {}),
+					...(live && body.backend_settings !== undefined ? { backend_settings: body.backend_settings } : {}),
+					...(voice ? { voice } : {}),
+					...(instructions ? { instructions } : {}),
+					source: "chat",
+					metadata: { feature: "chat_realtime_voice", userId: auth.userId, workspaceId: auth.workspaceId },
+				}),
+			});
+		} catch {
+			return realtimeError(502, "gateway_unreachable", "The realtime gateway is temporarily unavailable.");
+		}
+
+		const payload = await upstream.json<Record<string, any>>().catch(() => null);
+		if (!upstream.ok || !payload) {
+			return new Response(JSON.stringify(payload ?? { error: "realtime_session_failed" }), {
+				status: upstream.status,
+				headers: { "Content-Type": "application/json", ...PRIVATE_NO_STORE_HEADERS },
+			});
+		}
+		const connect = payload.connect as Record<string, unknown> | undefined;
+		const clientSecret = String(payload.clientSecret ?? "");
+		if (!connect?.url || !String(connect.url).includes("/relay") || !clientSecret) {
+			return realtimeError(502, "invalid_realtime_relay_response", "The realtime gateway did not return a valid relay session.");
+		}
+		return c.json({
+			...payload,
+			provider: provider === "spacex-ai" ? "xai" : provider === "google-ai-studio" ? "google" : provider,
+			connect: {
+				...connect,
+				transport: "websocket",
+				url: realtimeWebSocketUrl(baseUrl, String(connect.url)),
+				protocols: ["statsync-realtime", `rtsec.${clientSecret}`],
 			},
-			body: JSON.stringify({
-				provider,
-				model: normalizeRealtimeModel(provider, model),
-				...(voice ? { voice } : {}),
-				...(instructions ? { instructions } : {}),
-				source: "chat",
-				metadata: { feature: "chat_realtime_voice", userId: auth.userId, workspaceId: auth.workspaceId },
-			}),
-		});
-	} catch {
-		return realtimeError(502, "gateway_unreachable", "The realtime gateway is temporarily unavailable.");
-	}
-
-	const payload = await upstream.json<Record<string, any>>().catch(() => null);
-	if (!upstream.ok || !payload) {
-		return new Response(JSON.stringify(payload ?? { error: "realtime_session_failed" }), {
-			status: upstream.status,
-			headers: { "Content-Type": "application/json", ...PRIVATE_NO_STORE_HEADERS },
-		});
-	}
-	const connect = payload.connect as Record<string, unknown> | undefined;
-	const clientSecret = String(payload.clientSecret ?? "");
-	if (!connect?.url || !String(connect.url).includes("/relay") || !clientSecret) {
-		return realtimeError(502, "invalid_realtime_relay_response", "The realtime gateway did not return a valid relay session.");
-	}
-	return c.json({
-		...payload,
-		provider: provider === "spacex-ai" ? "xai" : provider === "google-ai-studio" ? "google" : provider,
-		connect: {
-			...connect,
-			transport: "websocket",
-			url: realtimeWebSocketUrl(baseUrl, String(connect.url)),
-			protocols: ["statsync-realtime", `rtsec.${clientSecret}`],
-		},
-	}, 200, PRIVATE_NO_STORE_HEADERS);
-});
+		}, 200, PRIVATE_NO_STORE_HEADERS);
+	});
+}
 
 chatRouter.get("/audio", async (c) => {
 	if ((c.req.query("action") ?? "music") !== "music") return c.json({ error: "Polling is only supported for music action." }, 400, PRIVATE_NO_STORE_HEADERS);

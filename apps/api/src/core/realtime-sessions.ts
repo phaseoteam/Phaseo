@@ -11,6 +11,7 @@ import { fetchGatewayContext } from "@pipeline/before/context";
 import { buildProviderCandidatesWithDiagnostics } from "@pipeline/before/utils";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { enqueueAsyncGenAiOtlpExport } from "@observability/otlp-export";
+import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveUsageMeters, LIVE_VOICES } from "./live-sessions";
 
 export const REALTIME_INITIAL_HOLD_NANOS = 5_000_000_000;
 export const REALTIME_HOLD_INCREMENT_NANOS = 5_000_000_000;
@@ -583,7 +584,8 @@ function modalityTokens(details: unknown, modality: string): number {
 }
 
 export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>): Record<string, unknown> {
-	const source = rawUsage && typeof rawUsage === "object" ? rawUsage as any : {};
+	const source = rawUsage && typeof rawUsage === "object"
+		? { ...rawUsage, ...(rawUsage.live_started === true ? liveUsageMeters(rawUsage) : {}) } as any : {};
 	const usageMetadata = source.usageMetadata && typeof source.usageMetadata === "object"
 		? source.usageMetadata as any
 		: source;
@@ -720,11 +722,13 @@ async function evaluateActiveRealtimePolicy(
 	session: RealtimeSessionRow,
 	estimatedCostNanos: number,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
+	const live = isLiveModel(session.model_id);
+	const policyModel = live ? liveConfig(session.metadata).backendModel : session.model_id;
 	const context = await fetchGatewayContext({
 		workspaceId: session.workspace_id,
 		apiKeyId: session.key_id ?? "00000000-0000-0000-0000-000000000000",
-		model: session.model_id,
-		endpoint: "audio.realtime",
+		model: policyModel,
+		endpoint: live ? "text.generate" : "audio.realtime",
 	});
 	if (!context.key.ok) return { ok: false, reason: "realtime_key_invalid" };
 	if (!context.keyLimit.ok && context.keyLimit.limitMetric !== "requests") {
@@ -744,6 +748,10 @@ async function evaluateActiveRealtimePolicy(
 		teamSettings: context.teamSettings ?? null,
 	});
 	if (!policyResult.ok) {
+		return { ok: false, reason: "realtime_workspace_policy_blocked" };
+	}
+	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(candidates), resolvedModel: session.model_id,
+		body: { model: session.model_id, provider }, workspacePolicy, teamSettings: context.teamSettings ?? null }).ok) {
 		return { ok: false, reason: "realtime_workspace_policy_blocked" };
 	}
 	if (!provider || !policyResult.providers.some((candidate) => candidate.providerId === provider)) {
@@ -768,6 +776,8 @@ export async function createRealtimeSession(args: {
 	metadata?: Record<string, unknown>;
 	otelTraceContext?: RealtimeOtelContext | null;
 	relay?: boolean;
+	liveBackendModel?: string;
+	liveBackendSettings?: unknown;
 }): Promise<{
 	session: RealtimeSessionRow;
 	clientSecret: string;
@@ -780,8 +790,13 @@ export async function createRealtimeSession(args: {
 	const modelId = canonicalModel(provider, args.model);
 	const providerModelId = providerModel(provider, args.model);
 	const voice = defaultVoice(provider, args.voice);
-	const card = await requireRealtimePriceCard(provider, modelId);
-	void card;
+	const live = isLiveModel(modelId);
+	if (live && (!args.liveBackendModel || args.source !== "chat" || !args.auth.userId || args.relay === false)) {
+		throw new Error("live_playground_only");
+	}
+	if (live && !LIVE_VOICES.includes(voice as typeof LIVE_VOICES[number])) throw new Error("live_voice_not_supported");
+	const liveSettings = live ? await createLiveConfig(args.liveBackendModel!, args.liveBackendSettings) : null;
+	if (!live) await requireRealtimePriceCard(provider, modelId);
 
 	const supabase = getSupabaseAdmin();
 	const sessionId = `rt_${ulid().toLowerCase()}`;
@@ -802,6 +817,7 @@ export async function createRealtimeSession(args: {
 	};
 	const sessionMetadata = {
 		...(args.metadata ?? {}),
+		live: liveSettings,
 		...(useRelay ? { relay: true, instructions: args.instructions ?? null } : {}),
 		phaseo_otel_parent_context: args.otelTraceContext ?? null,
 		phaseo_otel_submission_context: submissionContext,
@@ -863,7 +879,7 @@ export async function createRealtimeSession(args: {
 			clientSecret: relaySecret!,
 			connect: {
 				transport: "websocket",
-				url: `/v1/realtime/sessions/${encodeURIComponent(sessionId)}/relay`,
+				url: `/v1/${live ? "live" : "realtime"}/sessions/${encodeURIComponent(sessionId)}/relay`,
 			},
 			raw: { relay: true },
 		};
@@ -993,12 +1009,14 @@ export async function extendRealtimeSessionHold(args: {
 export async function markRealtimeSessionConnected(args: {
 	auth: RealtimeAuthContext;
 	sessionId: string;
+	providerSessionId?: string;
 }): Promise<RealtimeSessionRow> {
 	const now = new Date().toISOString();
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_realtime_sessions")
 		.update({
 			status: "connected",
+			...(args.providerSessionId ? { provider_session_id: args.providerSessionId } : {}),
 			connected_at: now,
 			last_event_at: now,
 			updated_at: now,
@@ -1038,9 +1056,10 @@ export async function updateRealtimeSessionUsage(args: {
 	}
 	const provider = providerFromModel(session.model_id, session.provider);
 	if (!provider) throw new Error("realtime_provider_required");
-	const card = await requireRealtimePriceCard(provider, session.model_id);
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? session.usage ?? {});
-	const pricedUsage = computeBill(normalizedUsage, card, { endpoint: "audio.realtime" });
+	const pricedUsage = isLiveModel(session.model_id)
+		? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
+		: computeBill(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id), { endpoint: "audio.realtime" });
 	const pricedNanos = pricedTotalNanos(pricedUsage);
 	const estimatedCostNanos = Math.max(
 		Math.max(0, Number(session.estimated_cost_nanos ?? 0) || 0),
@@ -1150,16 +1169,18 @@ export async function settleRealtimeSession(args: {
 	}
 	const provider = providerFromModel(session.model_id, session.provider);
 	if (!provider) throw new Error("realtime_provider_required");
-	const card = await requireRealtimePriceCard(provider, session.model_id);
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? {});
-	const pricedUsage = computeBill(normalizedUsage, card, { endpoint: "audio.realtime" });
-	const costNanos = resolveRealtimeFinalCostNanos({
+	const live = isLiveModel(session.model_id);
+	const pricedUsage = live ? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
+		: computeBill(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id), { endpoint: "audio.realtime" });
+	const costNanos = live ? pricedTotalNanos(pricedUsage) : resolveRealtimeFinalCostNanos({
 		auth: args.auth,
 		finalCostNanos: args.finalCostNanos,
 		pricedCostNanos: pricedTotalNanos(pricedUsage),
 	});
 	const lines = pricingLines(pricedUsage);
-	assertRealtimeBillingMetersPresent({ provider, usage: normalizedUsage, costNanos });
+	if (live) assertLiveFinalUsage(normalizedUsage);
+	else assertRealtimeBillingMetersPresent({ provider, usage: normalizedUsage, costNanos });
 	const rpc = await supabase.rpc("gateway_realtime_settle_once", {
 		p_workspace_id: args.auth.workspaceId,
 		p_session_id: args.sessionId,
