@@ -57,6 +57,18 @@ describe("selectMetricData", () => {
 			),
 		).toBe(cardData);
 	});
+
+	it("uses compact percentile bands for cache rate", () => {
+		const detailData = [
+			{ ...point("percentile-10", null), cachedInputPct: 20 },
+			{ ...point("percentile-50", null), cachedInputPct: 60 },
+		];
+		const cardData = [detailData[1]!];
+
+		expect(
+			selectMetricData("cachedInput", false, detailData, cardData, true),
+		).toBe(cardData);
+	});
 });
 
 describe("hasQualityMetricData", () => {

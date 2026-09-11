@@ -44,6 +44,7 @@ import {
 	hasPerformanceHistory,
 	isPerformanceDataStale,
 } from "./modelPerformanceFreshness";
+import { buildSingleProviderPercentileSeries } from "./modelPerformancePercentiles";
 
 import {
 	Empty,
@@ -165,6 +166,10 @@ export default function ModelPerformanceDashboard({
 			.map((point) => point.provider),
 	).size;
 	const showPercentileSelector = providerCount > 1;
+	const singleProviderPercentileSeries = buildSingleProviderPercentileSeries(
+		providerCount,
+		activeMetrics.providerPercentileDaily7d,
+	);
 
 	return (
 		<section className="space-y-6">
@@ -284,6 +289,7 @@ export default function ModelPerformanceDashboard({
 					hourly={activeMetrics.hourly}
 					providerDaily7d={activeMetrics.providerDaily7d}
 					providerHourly7d={activeMetrics.providerHourly7d ?? []}
+					chartProviderDaily7d={singleProviderPercentileSeries ?? undefined}
 					qualitySeries={activeMetrics.qualitySeries}
 				/>
 			) : (
