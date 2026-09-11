@@ -29,6 +29,27 @@ async function hmac(env: Env, secret: string) {
 	const key = await crypto.subtle.importKey("raw", buffer(new TextEncoder().encode(pepper)), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
 	return [...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(secret)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
+
+function parseGatewayKey(value: unknown) {
+	const parts = String(value ?? "").trim().split("_");
+	if (parts.length < 5) return null;
+	const [namespace, version, keyType, kid, ...secretParts] = parts;
+	if ((namespace !== "phaseo" && namespace !== "aistats") || version !== "v1" || keyType !== "sk") return null;
+	const secret = secretParts.join("_");
+	return kid && secret ? { kid, secret, prefix: kid.slice(0, 6) } : null;
+}
+
+async function keyHashes(env: Env, secret: string) {
+	const peppers = [env.KEY_PEPPER_ACTIVE, env.KEY_PEPPER_PREVIOUS]
+		.map((value) => String(value ?? "").trim())
+		.filter((value, index, values) => value && values.indexOf(value) === index);
+	if (!peppers.length) throw new Error("key_pepper_unavailable");
+	const encoder = new TextEncoder();
+	return Promise.all(peppers.map(async (pepper) => {
+		const key = await crypto.subtle.importKey("raw", buffer(encoder.encode(pepper)), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+		return [...new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(secret)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+	}));
+}
 function nonNegative(value: unknown) { const number = Number(value); return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0; }
 function optionalExpiry(value: unknown): string | null | undefined {
 	if (value === undefined) return undefined; if (value === null || String(value).trim() === "") return null;
@@ -62,6 +83,33 @@ async function invalidateGatewayKey(env: Env, keyId: string) {
 }
 
 export const accountSettingsKeysRouter = new Hono<{ Bindings: Env }>();
+
+accountSettingsKeysRouter.post("/keys/lookup", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const body: { workspaceId?: unknown; key?: unknown } = await c.req.json<{ workspaceId?: unknown; key?: unknown }>().catch(() => ({}));
+	const workspaceId = String(body.workspaceId ?? "").trim();
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
+	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) {
+		return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	}
+	const parsed = parseGatewayKey(body.key);
+	if (!parsed) return c.json({ keyId: null }, 200, PRIVATE_NO_STORE_HEADERS);
+	try {
+		const hashes = await keyHashes(c.env, parsed.secret);
+		const result = await context.client
+			.from("keys")
+			.select("id,hash,kid")
+			.eq("workspace_id", context.workspaceId)
+			.eq("prefix", parsed.prefix)
+			.neq("status", "deleted");
+		if (result.error) throw result.error;
+		const match = (result.data ?? []).find((row) => row.kid === parsed.kid && hashes.includes(String(row.hash ?? "")));
+		return c.json({ keyId: match?.id ?? null }, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch {
+		return c.json({ error: "key_lookup_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+});
 
 accountSettingsKeysRouter.post("/keys", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);

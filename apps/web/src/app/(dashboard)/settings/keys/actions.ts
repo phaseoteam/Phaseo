@@ -46,3 +46,11 @@ export async function updateKeyLimitsAction(id: string, payload: KeyLimitPayload
 	const result = await fetchAccountWebApi<{ success: true }>(`/api/account/settings/keys/${encodeURIComponent(id)}/limits`, await token(), { method: "PUT", body: JSON.stringify(payload) });
 	refreshKeyPaths(); return result;
 }
+
+export async function lookupApiKeyAction(workspaceId: string, key: string) {
+	if (!workspaceId || !key) return { keyId: null };
+	return fetchAccountWebApi<{ keyId: string | null }>("/api/account/settings/keys/lookup", await token(), {
+		method: "POST",
+		body: JSON.stringify({ workspaceId, key }),
+	});
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useId, useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import React, { memo, useId, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import {
 	Ban,
 	CheckCircle2,
 	Edit2,
+	Eye,
+	EyeOff,
 	Infinity as InfinityIcon,
 	Info,
 	Key,
@@ -28,7 +30,10 @@ import {
 	Trash2,
 	X,
 	Filter,
+	Loader2,
+	Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
 	Dialog,
 	DialogContent,
@@ -69,6 +74,7 @@ import DeleteKeyItem from "./DeleteKeyItem";
 import RotateKeyItem from "./RotateKeyItem";
 import {
 	deleteApiKeyAction,
+	lookupApiKeyAction,
 	updateApiKeyAction,
 } from "@/app/(dashboard)/settings/keys/actions";
 import { toast } from "sonner";
@@ -739,6 +745,26 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 	const router = useRouter();
  const desktop = useSyncExternalStore(subscribeToLayout, getDesktopLayout, getServerLayout);
 	const [filter, setFilter] = useQueryState("keyStatus", parseAsStringLiteral(["enabled", "disabled", "expired", "enabled-disabled", "enabled-expired", "disabled-expired", "all", "none"] as const).withDefault("enabled-disabled"));
+	const [search, setSearch] = useState("");
+	const [showRawKey, setShowRawKey] = useState(false);
+	const [matchedKeyId, setMatchedKeyId] = useState<string | null>(null);
+	const [rawLookupPending, setRawLookupPending] = useState(false);
+	const normalizedSearch = search.trim();
+	const isRawKeySearch = /^(?:phaseo|aistats)_v1_sk_[^_]+_.+$/.test(normalizedSearch);
+	const workspaceId = String(teamsWithKeys?.[0]?.id ?? "");
+
+	useEffect(() => {
+		if (!isRawKeySearch || !workspaceId) return;
+		let current = true;
+		const timeout = window.setTimeout(() => {
+			setRawLookupPending(true);
+			lookupApiKeyAction(workspaceId, normalizedSearch)
+				.then((result) => { if (current) setMatchedKeyId(result.keyId); })
+				.catch(() => { if (current) setMatchedKeyId(null); })
+				.finally(() => { if (current) setRawLookupPending(false); });
+		}, 250);
+		return () => { current = false; window.clearTimeout(timeout); };
+	}, [isRawKeySearch, normalizedSearch, workspaceId]);
 	// Ensure teams that have keys are shown first. Within each workspace, keys are
 	// ordered with enabled keys first, then by most recent use within each status.
 	const sortedTeams = useMemo(() => {
@@ -747,13 +773,18 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 		const withoutKeys: any[] = [];
 		for (const t of teamsWithKeys) {
 			if (t && Array.isArray(t.keys) && t.keys.length > 0) {
-				const keys = organiseKeys(t.keys, filter);
+				const searchedKeys = isRawKeySearch
+					? (matchedKeyId ? t.keys.filter((key: any) => String(key.id) === matchedKeyId) : [])
+					: normalizedSearch
+						? t.keys.filter((key: any) => String(key.name ?? "").toLocaleLowerCase().includes(normalizedSearch.toLocaleLowerCase()))
+						: t.keys;
+				const keys = organiseKeys(searchedKeys, isRawKeySearch ? "all" : filter);
 				withKeys.push({ ...t, keys });
 			}
 			else withoutKeys.push(t);
 		}
 		return [...withKeys, ...withoutKeys];
-	}, [teamsWithKeys, filter]);
+	}, [teamsWithKeys, filter, isRawKeySearch, matchedKeyId, normalizedSearch]);
 	const allKeys = useMemo(() => {
 		if (!Array.isArray(sortedTeams)) return [] as any[];
 		return sortedTeams.flatMap((team: any) =>
@@ -890,6 +921,36 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 	return (
 		<>
 		<div className="mt-6 min-w-0 space-y-6 pb-24">
+			<div className="relative max-w-md">
+				<Search aria-hidden="true" className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+				<Input
+					aria-label="Search API keys"
+					autoCapitalize="none"
+					autoComplete="off"
+					className={isRawKeySearch ? "pl-8 pr-24" : "pl-8 pr-9"}
+					placeholder="Search by name or paste a full key"
+					spellCheck={false}
+					type={isRawKeySearch && !showRawKey ? "password" : "text"}
+					value={search}
+					onChange={(event) => {
+						setSearch(event.target.value);
+						setShowRawKey(false);
+						setMatchedKeyId(null);
+						setRawLookupPending(false);
+					}}
+				/>
+				{normalizedSearch ? (
+					<div className="absolute right-0 top-0 flex h-full items-center">
+						{isRawKeySearch && rawLookupPending ? <Loader2 aria-label="Looking up API key" className="mr-1 size-4 animate-spin text-muted-foreground" /> : null}
+						{isRawKeySearch ? (
+							<Button type="button" variant="ghost" size="icon" className="size-8" aria-label={showRawKey ? "Hide API key" : "Show API key"} aria-pressed={showRawKey} onClick={() => setShowRawKey((visible) => !visible)}>
+								{showRawKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+							</Button>
+						) : null}
+						<Button type="button" variant="ghost" size="icon" className="size-8" aria-label="Clear search" onClick={() => { setSearch(""); setShowRawKey(false); }}><X className="size-4" /></Button>
+					</div>
+				) : null}
+			</div>
 
 			{someSelected ? (
 				<div role="region" aria-label="Selected key actions" className="fixed bottom-6 left-1/2 z-40 flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-3 rounded-2xl border border-border/70 bg-popover px-3 py-2 text-popover-foreground shadow-xl">
@@ -950,7 +1011,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 								<EmptyTitle className="text-base">No matching keys</EmptyTitle>
  {statusMenu}
 								<EmptyDescription>
-									{filter === "all" ? "Create an API key to manage access and usage limits." : "Choose another status to see more keys."}
+									{normalizedSearch ? (rawLookupPending ? "Checking this API key…" : "Try another key name or full API key.") : filter === "all" ? "Create an API key to manage access and usage limits." : "Choose another status to see more keys."}
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
