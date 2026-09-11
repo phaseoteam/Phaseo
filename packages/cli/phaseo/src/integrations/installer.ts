@@ -8,7 +8,7 @@ import { detectInstalledPackageManager, type PackageManager } from "../installat
 import { isCommandAvailable } from "./files.js";
 import type { IntegrationId } from "./types.js";
 
-export type RunnerInstallId = "cline" | "kilo" | "omp" | "muse";
+export type RunnerInstallId = "cline" | "kilo" | "omp" | "muse" | "minimax";
 
 export const PRIMARY_HARNESSES = ["codex", "claude-code", "hermes", "opencode", "pi", "prime-agent", "deepseek-harness", "openclaw"] as const satisfies readonly IntegrationId[];
 
@@ -37,6 +37,7 @@ const RUNNER_PACKAGES: Record<RunnerInstallId, string> = {
 	kilo: "@kilocode/cli",
 	omp: "@oh-my-pi/pi-coding-agent",
 	muse: "",
+	minimax: "",
 };
 
 const RUNNER_COMMANDS: Record<RunnerInstallId, string[]> = {
@@ -44,6 +45,7 @@ const RUNNER_COMMANDS: Record<RunnerInstallId, string[]> = {
 	kilo: ["kilo", "kilo.exe", "kilo.cmd", "kilo.ps1"],
 	omp: ["omp", "omp.exe", "omp.cmd", "omp.ps1"],
 	muse: ["muse", "muse.exe", "muse.cmd", "muse.ps1"],
+	minimax: ["mcode", "mcode.exe", "mcode.ps1", "mcode.cmd"],
 };
 
 export type InstallInvocation = { command: string; args: string[]; executable?: string };
@@ -86,6 +88,11 @@ export function installInvocationFor(
 export function runnerInstallInvocationFor(runner: RunnerInstallId, manager: PackageManager): InstallInvocation {
 	if (runner === "muse") {
 		return { command: "sh", args: ["-c", "curl -fsSL https://dev.meta.ai/install.sh | bash"] };
+	}
+	if (runner === "minimax") {
+		return process.platform === "win32"
+			? { command: "powershell.exe", args: ["-NoProfile", "-Command", "irm https://filecdn.minimax.chat/public/install.ps1 | iex"] }
+			: { command: "sh", args: ["-c", "curl -fsSL https://filecdn.minimax.chat/public/install.sh | bash"] };
 	}
 	const packageName = RUNNER_PACKAGES[runner];
 	switch (manager) {
@@ -238,6 +245,14 @@ export async function runnerInstallPlan(runner: RunnerInstallId): Promise<Instal
 		}
 		if (!await isCommandAvailable(["sh"]) || !await isCommandAvailable(["curl"])) {
 			throw new Error("Muse Code installation requires sh and curl");
+		}
+		return runnerInstallInvocationFor(runner, "npm");
+	}
+	if (runner === "minimax") {
+		if (process.platform === "win32") {
+			if (!await isCommandAvailable(["powershell.exe"])) throw new Error("MiniMax Code installation requires PowerShell");
+		} else if (!await isCommandAvailable(["sh"]) || !await isCommandAvailable(["curl"]) || !await isCommandAvailable(["bash"])) {
+			throw new Error("MiniMax Code installation requires sh, bash, and curl");
 		}
 		return runnerInstallInvocationFor(runner, "npm");
 	}

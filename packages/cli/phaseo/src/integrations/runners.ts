@@ -9,7 +9,7 @@ import { getIntegrationGatewayCredential } from "./credential.js";
 import { confirmHarnessInstall, installHarness, renderInstallInvocation, runnerInstallPlan } from "./installer.js";
 import type { IntegrationModel } from "./types.js";
 
-export type RunnerId = "cline" | "kilo" | "omp" | "muse";
+export type RunnerId = "cline" | "kilo" | "omp" | "muse" | "minimax";
 
 const BASE_URL = "https://api.phaseo.app/v1";
 const DEFAULT_MODEL = "openai/gpt-5.6-terra";
@@ -18,6 +18,7 @@ const CREDENTIAL_IDS: Record<RunnerId, string> = {
 	kilo: "kilo-cli",
 	omp: "oh-my-pi",
 	muse: "muse-code",
+	minimax: "minimax-code",
 };
 
 const COMMANDS: Record<RunnerId, string[]> = {
@@ -25,6 +26,7 @@ const COMMANDS: Record<RunnerId, string[]> = {
 	kilo: ["kilo", "kilo.exe", "kilo.ps1"],
 	omp: ["omp", "omp.exe", "omp.ps1"],
 	muse: ["muse", "muse.exe", "muse.ps1"],
+	minimax: ["mcode", "mcode.exe", "mcode.ps1", "mcode.cmd"],
 };
 
 export type RunnerPaths = {
@@ -34,6 +36,7 @@ export type RunnerPaths = {
 	kiloConfig: string;
 	ompAgent: string;
 	museConfigHome: string;
+	minimaxData: string;
 };
 
 export type RunnerInvocation = {
@@ -43,7 +46,7 @@ export type RunnerInvocation = {
 };
 
 function runnerId(value: string | undefined): RunnerId | null {
-	if (value === "cline" || value === "kilo" || value === "omp" || value === "muse") return value;
+	if (value === "cline" || value === "kilo" || value === "omp" || value === "muse" || value === "minimax") return value;
 	return null;
 }
 
@@ -53,13 +56,35 @@ export function isRunnerName(value: string | undefined): value is RunnerId {
 
 export function normalizeRunnerName(value: string | undefined): RunnerId {
 	const normalized = runnerId(value);
-	if (!normalized) throw new Error(`Unknown Phaseo runner: ${value || "(missing)"}. Supported: cline, kilo, omp, muse`);
+	if (!normalized) throw new Error(`Unknown Phaseo runner: ${value || "(missing)"}. Supported: cline, kilo, omp, muse, minimax`);
 	return normalized;
 }
 
 function modelEntry(model: string, models: IntegrationModel[]): IntegrationModel[] {
 	if (models.some((entry) => entry.id === model)) return models;
 	return [{ id: model, name: model }, ...models];
+}
+
+function minimaxModelEntries(model: string, models: IntegrationModel[]): IntegrationModel[] {
+	const entries = modelEntry(model, models);
+	const selectedIndex = entries.findIndex((entry) => entry.id === model);
+	if (selectedIndex <= 0) return entries;
+	return [entries[selectedIndex], ...entries.slice(0, selectedIndex), ...entries.slice(selectedIndex + 1)];
+}
+
+export function buildMinimaxProviderArgs(model: string, models: IntegrationModel[]): string[] {
+	return [
+		"provider",
+		"add",
+		"--name",
+		"Phaseo",
+		"--base-url",
+		BASE_URL,
+		"--api-format",
+		"openai-completions",
+		...minimaxModelEntries(model, models).flatMap((entry) => ["--model", entry.id]),
+		"--use",
+	];
 }
 
 export function renderClineProviders(model: string): string {
@@ -181,6 +206,7 @@ function paths(root: string): RunnerPaths {
 		kiloConfig: join(root, "kilo.jsonc"),
 		ompAgent: join(root, "omp", "agent"),
 		museConfigHome: join(root, "muse-config"),
+		minimaxData: join(root, "minimax-data"),
 	};
 }
 
@@ -213,6 +239,13 @@ export function buildRunnerInvocation(
 			env: { ...childEnv, PI_CODING_AGENT_DIR: configPaths.ompAgent, PHASEO_OMP_API_KEY: "<credential>" },
 		};
 	}
+	if (runner === "minimax") {
+		return {
+			command: COMMANDS[runner][0],
+			args: passthrough,
+			env: { ...childEnv, MINIMAX_DATA_DIR: configPaths.minimaxData },
+		};
+	}
 	return {
 		command: COMMANDS[runner][0],
 		args: passthrough,
@@ -237,7 +270,14 @@ async function resolveCommand(candidates: string[]): Promise<string> {
 	throw new Error(`${candidates[0]} is not installed or is not available on PATH`);
 }
 
-async function prepareRunnerFiles(runner: RunnerId, pathsToUse: RunnerPaths, model: string, models: IntegrationModel[]): Promise<void> {
+async function prepareRunnerFiles(
+	runner: RunnerId,
+	pathsToUse: RunnerPaths,
+	model: string,
+	models: IntegrationModel[],
+	credential: string,
+	command: string,
+): Promise<void> {
 	if (runner === "cline") {
 		await mkdir(pathsToUse.clineSettings, { recursive: true });
 		await mkdir(pathsToUse.clineData, { recursive: true });
@@ -257,6 +297,15 @@ async function prepareRunnerFiles(runner: RunnerId, pathsToUse: RunnerPaths, mod
 	if (runner === "muse") {
 		await mkdir(join(pathsToUse.museConfigHome, "muse"), { recursive: true });
 		await writeFile(join(pathsToUse.museConfigHome, "muse", "settings.json"), renderMuseSettings(model, models), { mode: 0o600 });
+		return;
+	}
+	if (runner === "minimax") {
+		await mkdir(pathsToUse.minimaxData, { recursive: true });
+		await runChild({
+			command,
+			args: buildMinimaxProviderArgs(model, models),
+			env: { ...process.env, MINIMAX_DATA_DIR: pathsToUse.minimaxData, MCODE_PROVIDER_API_KEY: credential },
+		}, "ignore");
 	}
 }
 
@@ -271,12 +320,12 @@ function invocationForRuntime(invocation: RunnerInvocation, credential: string):
 	return { ...invocation, env };
 }
 
-function runChild(invocation: RunnerInvocation): Promise<void> {
+function runChild(invocation: RunnerInvocation, stdio: "inherit" | "ignore" = "inherit"): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const childInvocation = runnerChildInvocation(invocation);
 		const child = spawn(childInvocation.command, childInvocation.args, {
 			env: invocation.env,
-			stdio: "inherit",
+			stdio,
 			shell: false,
 			windowsHide: false,
 		});
@@ -345,7 +394,15 @@ export async function runRunnerCommand(
 			command: preview.command,
 			args: preview.args,
 			credential: "inherited by the child process only",
-			config: runner === "cline" ? "temporary Cline settings directory" : runner === "kilo" ? "temporary KILO_CONFIG file" : runner === "omp" ? "temporary PI_CODING_AGENT_DIR/models.yml" : "temporary XDG_CONFIG_HOME/muse/settings.json",
+			config: runner === "cline"
+				? "temporary Cline settings directory"
+				: runner === "kilo"
+					? "temporary KILO_CONFIG file"
+					: runner === "omp"
+						? "temporary PI_CODING_AGENT_DIR/models.yml"
+						: runner === "muse"
+							? "temporary XDG_CONFIG_HOME/muse/settings.json"
+							: "temporary MINIMAX_DATA_DIR provider configuration",
 		};
 		if (json) process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
 		else {
@@ -368,9 +425,10 @@ export async function runRunnerCommand(
 	const root = await mkdtemp(join(tmpdir(), `phaseo-${runner}-`));
 	const configPaths = paths(root);
 	try {
-		await prepareRunnerFiles(runner, configPaths, model, modelEntry(model, models));
+		const command = await resolveCommand(COMMANDS[runner]);
+		await prepareRunnerFiles(runner, configPaths, model, modelEntry(model, models), credential, command);
 		const invocation = buildRunnerInvocation(runner, model, passthrough, configPaths);
-		invocation.command = await resolveCommand(COMMANDS[runner]);
+		invocation.command = command;
 		await runChild(invocationForRuntime(invocation, credential));
 	} finally {
 		await rm(root, { recursive: true, force: true });

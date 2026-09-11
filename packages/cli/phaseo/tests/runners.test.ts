@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { runnerInstallInvocationFor } from "../src/integrations/installer.js";
+import { renderInstallInvocation, runnerInstallInvocationFor } from "../src/integrations/installer.js";
 import {
+	buildMinimaxProviderArgs,
 	buildRunnerInvocation,
 	isRunnerName,
 	normalizeRunnerName,
@@ -20,6 +21,7 @@ const paths = {
 	kiloConfig: "C:\\Temp\\phaseo-runner\\kilo.jsonc",
 	ompAgent: "C:\\Temp\\phaseo-runner\\omp\\agent",
 	museConfigHome: "C:\\Temp\\phaseo-runner\\muse-config",
+	minimaxData: "C:\\Temp\\phaseo-runner\\minimax-data",
 };
 
 const models = [
@@ -27,11 +29,11 @@ const models = [
 	{ id: "anthropic/claude-test", name: "Claude Test", contextWindow: 200_000, maxOutputTokens: 32_000, reasoning: false, input: ["text", "image"] as Array<"text" | "image"> },
 ];
 
-test("runner names cover every Ori addition", () => {
-	for (const name of ["cline", "kilo", "omp", "muse"]) assert.equal(isRunnerName(name), true);
+test("runner names cover every supported addition", () => {
+	for (const name of ["cline", "kilo", "omp", "muse", "minimax"]) assert.equal(isRunnerName(name), true);
 	assert.equal(isRunnerName("roo"), false);
 	assert.equal(normalizeRunnerName("omp"), "omp");
-	assert.throws(() => normalizeRunnerName("unknown"), /Supported: cline, kilo, omp, muse/);
+	assert.throws(() => normalizeRunnerName("unknown"), /Supported: cline, kilo, omp, muse, minimax/);
 });
 
 test("Cline config uses an env-backed key and exposes the model catalog", () => {
@@ -81,8 +83,15 @@ test("Muse config seeds an isolated provider and model catalog", () => {
 	assert.doesNotMatch(renderMuseSettings(models[0].id, models), /phaseo_v1_sk_/);
 });
 
+test("MiniMax provider setup uses the OpenAI-compatible Phaseo endpoint and selected model first", () => {
+	const args = buildMinimaxProviderArgs(models[1].id, models);
+	assert.deepEqual(args.slice(0, 8), ["provider", "add", "--name", "Phaseo", "--base-url", "https://api.phaseo.app/v1", "--api-format", "openai-completions"]);
+	assert.deepEqual(args.slice(8), ["--model", models[1].id, "--model", models[0].id, "--use"]);
+	assert.doesNotMatch(args.join(" "), /phaseo_v1_sk_/);
+});
+
 test("runner invocations never put the gateway credential in argv", () => {
-	for (const runner of ["cline", "kilo", "omp", "muse"] as const) {
+	for (const runner of ["cline", "kilo", "omp", "muse", "minimax"] as const) {
 		const invocation = buildRunnerInvocation(runner, models[0].id, ["--plan", "Review the diff"], paths, { PATH: "C:\\Tools", SECRET: "do-not-forward" });
 		assert.deepEqual(invocation.args.slice(-2), ["--plan", "Review the diff"]);
 		assert.equal(invocation.args.some((value) => value.includes("do-not-forward")), false);
@@ -115,4 +124,5 @@ test("runner installers map to the documented package or installer", () => {
 		args: ["install", "-g", "@oh-my-pi/pi-coding-agent"],
 	});
 	assert.match(runnerInstallInvocationFor("muse", "npm").args[1], /dev\.meta\.ai\/install\.sh/);
+	assert.match(renderInstallInvocation(runnerInstallInvocationFor("minimax", "npm")), /filecdn\.minimax\.chat\/public\/install\.(ps1|sh)/);
 });

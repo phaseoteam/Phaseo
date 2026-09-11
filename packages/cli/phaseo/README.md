@@ -160,20 +160,21 @@ phaseo integrations remove codex
 
 `phaseo integrations setup <integration>` remains accepted as a compatibility form, but new documentation should use `phaseo <integration>`.
 
-## Ori-compatible harness runners
+## Isolated CLI harness runners
 
-Phaseo can also launch Cline, Kilo Code, oh-my-pi, and Muse Code with the Phaseo gateway. The runner keeps the dedicated key in the child process environment, creates only temporary provider configuration, and removes that configuration when the harness exits:
+Phaseo can also launch Cline, Kilo Code, oh-my-pi, Muse Code, and MiniMax Code with the Phaseo gateway. The runner keeps the dedicated key in the child process environment, creates only temporary provider configuration, and removes that configuration when the harness exits:
 
 ```bash
 phaseo cline --model openai/gpt-5.6-terra -- --tui
 phaseo kilo --model openai/gpt-5.6-terra --
 phaseo omp --model openai/gpt-5.6-terra --
 phaseo muse --model meta/muse-spark-1.3 --
+phaseo minimax --model openai/gpt-5.6-terra --
 ```
 
-`phaseo run <cline|kilo|omp|muse>` is the equivalent explicit form. Put harness flags after `--` so Phaseo can consume its own flags first. Use `--catalog all` to fetch the active Phaseo text/chat model catalog, or `--dry-run --json` to inspect the install and launch plan without creating a key or starting a harness.
+`phaseo run <cline|kilo|omp|muse|minimax>` is the equivalent explicit form. Put harness flags after `--` so Phaseo can consume its own flags first. Use `--catalog all` to fetch the active Phaseo text/chat model catalog, or `--dry-run --json` to inspect the install and launch plan without creating a key or starting a harness.
 
-The first interactive run offers to install a missing Cline, Kilo Code, or oh-my-pi CLI. Muse Code uses Meta's installer on Unix-like systems; on Windows, install Muse Code separately, verify `muse --version`, and rerun with `--skip-install`. All four runners use isolated temporary provider state so existing user configuration is not overwritten.
+The first interactive run offers to install a missing Cline, Kilo Code, or oh-my-pi CLI. Muse Code and MiniMax Code use their official installers when the command is missing. MiniMax Code uses the official PowerShell installer on Windows. All five runners use isolated temporary provider state so existing user configuration is not overwritten.
 
 Hermes setup is automatic and uses Hermes' supported plaintext `~/.hermes/.env` credential store. Phaseo CLI records the previous non-secret model settings so removal can restore them.
 
