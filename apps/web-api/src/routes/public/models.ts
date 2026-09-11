@@ -8,11 +8,12 @@ import { publicProviderDisplayName, publicProviderPayload, STEALTH_PROVIDER_DISP
 import { buildFreeRouterCatalogueRow, fetchFreeRouterOverview } from "@/models/free-router";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
-// Basic latency, throughput, and uptime observations are useful from the first
-// request. Keep a larger cohort only for derived cache telemetry, which can
-// reveal more about an individual request's token composition.
-const PUBLIC_PERFORMANCE_MIN_REQUESTS = 20;
-const PUBLIC_CACHE_TELEMETRY_MIN_REQUESTS = 20;
+// Public performance and usage telemetry is aggregated, cached, and excludes
+// raw request timestamps, request content, and request identifiers. App
+// attribution remains opt-in and uses a larger cohort of ten requests.
+const PUBLIC_PERFORMANCE_MIN_REQUESTS = 1;
+const PUBLIC_CACHE_TELEMETRY_MIN_REQUESTS = 1;
+const PUBLIC_APP_ATTRIBUTION_MIN_REQUESTS = 10;
 
 function hasPublicPerformanceSample(value: unknown) {
 	return Number(value ?? 0) >= PUBLIC_PERFORMANCE_MIN_REQUESTS;
@@ -1356,7 +1357,14 @@ publicModelsRouter.get("/:modelId/provider-health", async (c) => {
 		if (!healthError && Array.isArray(healthData)) {
 			const rows = (healthData as Array<Record<string, unknown>>)
 				.filter((row) => providerIds.includes(String(row.provider_id ?? "")) && hasPublicPerformanceSample(row.health_requests ?? row.requests))
-				.map((row) => ({ ...row, provider_id: publicProviderId(row.provider_id, stealthProviderIds) }));
+				.map(({ last_request_at: _lastRequestAt, error_code_counts: _errorCodeCounts, ...row }) => {
+					const providerId = publicProviderId(row.provider_id, stealthProviderIds);
+					return {
+						...row,
+						provider_id: providerId,
+						provider_name: publicProviderDisplayName(providerId, row.provider_name),
+					};
+				});
 			return withPublicCache(c.json({ rows, source: "v2" }), sectionPolicy("providerHealth", modelId));
 		}
 		throw healthError ?? new Error("V2 provider health query returned an invalid payload");
@@ -1437,7 +1445,7 @@ publicModelsRouter.get("/:modelId/apps", async (c) => {
 		const client = getDataClient(c.env);
 		const v2 = await client.rpc("get_v2_model_apps", { p_model_slug: modelId, p_limit: limit });
 		if (!v2.error && Array.isArray(v2.data)) {
-			const apps = (v2.data as Array<Record<string, unknown>>).map((row) => { const appId = String(row.app_id ?? "").trim(); return appId ? { appId, title: String(row.title ?? appId).trim() || appId, imageUrl: typeof row.image_url === "string" && row.image_url.trim() ? row.image_url.trim() : null, url: typeof row.url === "string" && row.url.trim() ? row.url.trim() : null, lastSeen: typeof row.last_seen === "string" && row.last_seen.trim() ? row.last_seen : null, totalRequests: Math.max(0, Math.round(Number(row.requests ?? 0) || 0)), successfulRequests: Math.max(0, Math.round(Number(row.success_requests ?? 0) || 0)), totalTokens: Math.max(0, Math.round(Number(row.total_tokens ?? 0) || 0)) } : null; }).filter((row): row is NonNullable<typeof row> => Boolean(row));
+			const apps = (v2.data as Array<Record<string, unknown>>).map((row) => { const appId = String(row.app_id ?? "").trim(); return appId ? { appId, title: String(row.title ?? appId).trim() || appId, imageUrl: typeof row.image_url === "string" && row.image_url.trim() ? row.image_url.trim() : null, url: typeof row.url === "string" && row.url.trim() ? row.url.trim() : null, lastSeen: typeof row.last_seen === "string" && row.last_seen.trim() ? row.last_seen : null, totalRequests: Math.max(0, Math.round(Number(row.requests ?? 0) || 0)), successfulRequests: Math.max(0, Math.round(Number(row.success_requests ?? 0) || 0)), totalTokens: Math.max(0, Math.round(Number(row.total_tokens ?? 0) || 0)) } : null; }).filter((row): row is NonNullable<typeof row> => Boolean(row) && row.totalRequests >= PUBLIC_APP_ATTRIBUTION_MIN_REQUESTS);
 			return withPublicCache(c.json({ apps, source: "v2" }), sectionPolicy("apps", modelId));
 		}
 		throw v2.error ?? new Error("V2 apps query returned an invalid payload");
@@ -1854,19 +1862,9 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				toolCallSuccessPct: toolCallErrorPct == null ? null : 100 - toolCallErrorPct,
 				toolCallErrorPct,
 				toolCallHistoricalDefault: toolCallResponses === 0 && requests > 0,
-				toolCallErrorCounts: {
-					invalidJson: Number(value.tool_invalid_json_errors ?? 0),
-					schemaMismatch: Number(value.tool_schema_mismatch_errors ?? 0),
-					unknownToolName: Number(value.tool_unknown_name_errors ?? 0),
-				},
 				structuredOutputSuccessPct: structuredOutputErrorPct == null ? null : 100 - structuredOutputErrorPct,
 				structuredOutputErrorPct,
 				structuredOutputHistoricalDefault: structuredOutputResponses === 0 && requests > 0,
-				structuredOutputErrorCounts: {
-					invalidJson: Number(value.structured_invalid_json_errors ?? 0),
-					schemaMismatch: Number(value.structured_schema_mismatch_errors ?? 0),
-					missingOutput: Number(value.structured_missing_output_errors ?? 0),
-				},
 				cacheHitRatePct: number(value.cache_read_pct),
 				requests,
 			};

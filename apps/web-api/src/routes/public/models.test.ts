@@ -28,6 +28,45 @@ describe("provider health RPC fallback", () => {
 			message: "Could not find the function public.some_other_function",
 		})).toBe(false);
 	});
+
+	it("publishes a redacted one-request stealth aggregate without exact timestamps or error categories", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("v2_model_provider_routes")) {
+				return new Response(JSON.stringify([{ provider_slug: "private-provider", is_stealth: true }]));
+			}
+			if (url.includes("get_v2_model_provider_tier_health_metrics")) {
+				return new Response(JSON.stringify([{
+					provider_id: "private-provider",
+					provider_name: "Private Provider",
+					health_requests: 1,
+					uptime_pct: 100,
+					percentile_latency_ms: 240,
+					percentile_throughput: 18.5,
+					last_request_at: "2026-09-11T10:12:13.456Z",
+					error_code_counts: { "429": 1 },
+				}]));
+			}
+			return new Response(JSON.stringify([]));
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/test%2Flow-volume/provider-health?provider_ids=stealth",
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(payload.rows).toEqual([expect.objectContaining({
+			provider_id: "stealth",
+			provider_name: "Stealth",
+			health_requests: 1,
+			uptime_pct: 100,
+		})]);
+		expect(payload.rows[0]).not.toHaveProperty("last_request_at");
+		expect(payload.rows[0]).not.toHaveProperty("error_code_counts");
+	});
 });
 
 describe("public model canonical resolution", () => {
@@ -692,7 +731,7 @@ describe("public model routes", () => {
 		await expect(response.json()).resolves.toMatchObject({ modelId: "openai/gpt-test", metrics: null, performance: null });
 	});
 
-	it("suppresses performance and uptime series for a single-request cohort", async () => {
+	it("publishes performance, quality, and cache series for a single-request cohort", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("/rpc/get_v2_model_quality_hourly_v1")) {
@@ -784,13 +823,17 @@ describe("public model routes", () => {
 		const payload = await response.json() as any;
 
 		expect(response.status).toBe(200);
-		expect(payload.minimumSampleSize).toBe(20);
-		expect(payload.metrics.summary).toMatchObject({ totalRequests: 0, successfulRequests: 0 });
-		expect(payload.metrics.hourly).toEqual([]);
-		expect(payload.metrics.successSeries).toEqual([]);
-		expect(payload.metrics.providerHourly7d).toEqual([]);
-		expect(payload.metrics.qualitySeries).toEqual([]);
-		expect(payload.metrics.providerPerformance).toEqual([]);
+		expect(payload.minimumSampleSize).toBe(1);
+		expect(payload.metrics.summary).toMatchObject({ totalRequests: 1, successfulRequests: 1 });
+		expect(payload.metrics.hourly).toHaveLength(1);
+		expect(payload.metrics.successSeries).toHaveLength(1);
+		expect(payload.metrics.providerHourly7d).toEqual([
+			expect.objectContaining({ requests: 1, cacheTelemetryRequests: 20 }),
+		]);
+		expect(payload.metrics.qualitySeries).toEqual([
+			expect.objectContaining({ requests: 1, cacheHitRatePct: 60 }),
+			expect.objectContaining({ requests: 2 }),
+		]);
 	});
 
 	it("never exposes a synthetic unknown provider in performance data", async () => {
@@ -1194,13 +1237,16 @@ describe("public model routes", () => {
 	it("returns public model app usage from the rollup RPC", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
-			if (url.includes("get_v2_model_apps")) return new Response(JSON.stringify([{ app_id: "app-1", title: "Example", image_url: "https://example.com/app.png", url: "https://example.com", last_seen: "2026-07-17T00:00:00Z", requests: "4", success_requests: "3", total_tokens: "100" }]), { status: 200 });
+			if (url.includes("get_v2_model_apps")) return new Response(JSON.stringify([
+				{ app_id: "app-1", title: "Below threshold", requests: "9", success_requests: "9", total_tokens: "90" },
+				{ app_id: "app-2", title: "Example", image_url: "https://example.com/app.png", url: "https://example.com", last_seen: "2026-07-17T00:00:00Z", requests: "10", success_requests: "9", total_tokens: "100" },
+			]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/apps", {}, env);
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=3600");
-		await expect(response.json()).resolves.toEqual({ apps: [{ appId: "app-1", title: "Example", imageUrl: "https://example.com/app.png", url: "https://example.com", lastSeen: "2026-07-17T00:00:00Z", totalRequests: 4, successfulRequests: 3, totalTokens: 100 }], source: "v2" });
+		await expect(response.json()).resolves.toEqual({ apps: [{ appId: "app-2", title: "Example", imageUrl: "https://example.com/app.png", url: "https://example.com", lastSeen: "2026-07-17T00:00:00Z", totalRequests: 10, successfulRequests: 9, totalTokens: 100 }], source: "v2" });
 	});
 
 	it("returns parity-shaped timeline and subscription-plan sections", async () => {
