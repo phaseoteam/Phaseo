@@ -102,9 +102,10 @@ function MetricChart({
 									: ((entry.score - minimum) / range) * 158 + 24;
 								const configuration = configurationLabel(entry.other_info);
 								const colour = artificialAnalysisChartColour(entry.organisation_id, entry.organisation_colour);
+								const isOpenAI = entry.organisation_id === "openai";
 								return (
 									<div key={`${entry.model_id}-${entry.score}-${entry.rank}`} className="group flex h-full min-w-11 flex-1 basis-11 cursor-default flex-col items-center justify-end rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0} aria-label={`${entry.model_name}, ${formatArtificialAnalysisScore(ranking?.benchmark_id ?? metric.id, entry.score)}, rank ${entry.rank}, released ${releaseDate(entry.release_date)}`}>
-										<span className="relative flex w-8 items-end justify-center rounded-t-[3px] pb-2 text-[10px] font-semibold tabular-nums shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] transition-[height,filter] duration-300 group-hover:brightness-110 sm:w-9" style={{ height: `${Math.max(height, 3)}px`, backgroundColor: colour, color: contrastingTextColour(colour) }} title={`${entry.model_name} · ${releaseDate(entry.release_date)} · ${configuration ?? "Default"}`}>
+										<span className="relative flex w-8 items-end justify-center rounded-t-[3px] pb-2 text-[10px] font-semibold tabular-nums shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] transition-[height,filter] duration-300 group-hover:brightness-110 sm:w-9" style={{ height: `${Math.max(height, 3)}px`, backgroundColor: isOpenAI ? "var(--foreground)" : colour, color: isOpenAI ? "var(--background)" : contrastingTextColour(colour) }} title={`${entry.model_name} · ${releaseDate(entry.release_date)} · ${configuration ?? "Default"}`}>
 											{formatArtificialAnalysisScore(ranking?.benchmark_id ?? metric.id, entry.score)}
 										</span>
 										<span className="relative my-1 size-4 shrink-0"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain" /></span>

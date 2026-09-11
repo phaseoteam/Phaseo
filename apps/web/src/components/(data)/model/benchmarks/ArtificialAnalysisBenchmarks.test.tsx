@@ -87,7 +87,8 @@ describe("Artificial Analysis benchmark panel", () => {
 			}]} rankings={[ranking]} modelId="openai/gpt-6-astra" initialExpandedMetric="aa-intelligence-index-v4" />);
 		expect(html).toContain("Other models dimmed");
 		expect(html).toContain("opacity-30 saturate-100");
-		expect(html).toContain("background-color:#000000");
+		expect(html).toContain("background-color:var(--foreground)");
+		expect(html).toContain("text-background");
 		expect(html).not.toContain("ring-2 ring-[#8842FD]");
 	});
 });

@@ -30,7 +30,7 @@ describe("Artificial Analysis metric charts", () => {
 		expect(html).toContain('data-testid="agentic-chart"');
 		expect(html).toContain('data-testid="cost-chart"');
 		expect(html).toContain("Show top 14");
-		expect(html).toContain("background-color:#000000");
+		expect(html).toContain("background-color:var(--foreground);color:var(--background)");
 		expect(html).toContain("background-color:#736cd3");
 		expect(html.indexOf('title="Claude Fable 5.1')).toBeLessThan(html.indexOf('title="GPT-6 Astra'));
 	});

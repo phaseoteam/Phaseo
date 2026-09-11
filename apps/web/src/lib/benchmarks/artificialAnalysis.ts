@@ -33,7 +33,6 @@ export function artificialAnalysisMetricKey(id: string) {
 }
 
 const artificialAnalysisOrganisationColours: Readonly<Record<string, string>> = {
-	openai: "#000000",
 	"spacex-ai": "#736cd3",
 };
 
