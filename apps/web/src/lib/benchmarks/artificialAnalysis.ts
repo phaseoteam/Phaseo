@@ -31,6 +31,21 @@ export function artificialAnalysisMetricKey(id: string) {
   if (isArtificialAnalysisCostBenchmark(id)) return "cost";
   return id.match(/^aa-(intelligence|coding|agentic)-index-v\d+$/)?.[1] ?? null;
 }
+
+const artificialAnalysisOrganisationColours: Readonly<Record<string, string>> = {
+	"spacex-ai": "#736cd3",
+};
+
+export function artificialAnalysisChartColour(
+	organisationId: string | null | undefined,
+	value: string | null | undefined,
+	fallback = "#6b7280",
+) {
+	const override = organisationId ? artificialAnalysisOrganisationColours[organisationId] : null;
+	if (override) return override;
+	return value && /^#[\da-f]{6}$/i.test(value) ? value : fallback;
+}
+
 export function formatArtificialAnalysisScore(id: string, score: number) {
   return new Intl.NumberFormat("en-US", isArtificialAnalysisCostBenchmark(id)
     ? { style: "currency", currency: "USD", maximumFractionDigits: 2 }
