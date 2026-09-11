@@ -1360,12 +1360,17 @@ publicModelsRouter.get("/:modelId/provider-health", async (c) => {
 		if (!healthError && Array.isArray(healthData)) {
 			const rows = (healthData as Array<Record<string, unknown>>)
 				.filter((row) => providerIds.includes(String(row.provider_id ?? "")) && hasPublicPerformanceSample(row.health_requests ?? row.requests))
-				.map(({ last_request_at: _lastRequestAt, error_code_counts: _errorCodeCounts, ...row }) => {
+				.map(({ last_request_at: _lastRequestAt, error_code_counts: rawErrorCounts, ...row }) => {
 					const providerId = publicProviderId(row.provider_id, stealthProviderIds);
+					const allowedErrorCategories = new Set(["authentication", "payment", "model_unavailable", "server", "stream", "other_provider"]);
+					const errorCategoryCounts = rawErrorCounts && typeof rawErrorCounts === "object" && !Array.isArray(rawErrorCounts)
+						? Object.fromEntries(Object.entries(rawErrorCounts).filter(([category, count]) => allowedErrorCategories.has(category) && Number.isFinite(Number(count)) && Number(count) > 0))
+						: {};
 					return {
 						...row,
 						provider_id: providerId,
 						provider_name: publicProviderDisplayName(providerId, row.provider_name),
+						error_category_counts: errorCategoryCounts,
 					};
 				});
 			return withPublicCache(c.json({ rows, source: "v2" }), sectionPolicy("providerHealth", modelId));
@@ -1783,7 +1788,13 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			const cacheRequests = Number(cache?.telemetry_requests ?? 0);
 			return { bucket: value.bucket ?? "", avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(value.requests, cache?.cached_input_pct), cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0), successPct: number(value.success_pct) };
 		});
-		const providerPerformance = (performance.provider_uptime_24h ?? []).map((value: Record<string, any>) => { const provider = publicProviderId(value.provider, stealthProviderIds); return { provider, providerName: provider === "stealth" ? "Stealth" : value.provider_name ?? value.provider ?? "", providerColor: providerColor(provider), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), requests: Number(value.requests ?? 0), uptimePct: number(value.uptime_pct), uptimeBuckets: (value.uptime_buckets ?? []).map((bucket: Record<string, unknown>) => ({ start: bucket.start ?? "", end: bucket.end ?? "", successPct: number(bucket.success_pct) })) }; });
+		const providerPerformance = (performance.provider_uptime_24h ?? []).map((value: Record<string, any>) => { const provider = publicProviderId(value.provider, stealthProviderIds); return { provider, providerName: provider === "stealth" ? "Stealth" : value.provider_name ?? value.provider ?? "", providerColor: providerColor(provider), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), requests: Number(value.requests ?? 0), uptimePct: number(value.uptime_pct), uptimeBuckets: (value.uptime_buckets ?? []).map((bucket: Record<string, unknown>) => {
+			const requests = Number(bucket.health_requests ?? bucket.requests ?? 0);
+			const successPct = number(bucket.uptime_pct ?? bucket.success_pct);
+			const reportedSuccessfulRequests = number(bucket.health_success_requests ?? bucket.success_requests);
+			const successfulRequests = reportedSuccessfulRequests ?? (successPct == null ? 0 : Math.round(requests * successPct / 100));
+			return { start: bucket.start ?? "", end: bucket.end ?? "", successPct, errorPct: successPct == null ? null : Math.max(0, 100 - successPct), requests, successfulRequests, failedRequests: Math.max(0, requests - successfulRequests) };
+		}) }; });
 		const providerDaily7d = (performance.provider_daily_7d ?? []).map((value: Record<string, unknown>) => {
 			const cache = cachedInputProviderDaily.get(`${String(value.day ?? "")}:${String(value.provider ?? "")}`) as Record<string, unknown> | undefined;
 			const cacheRequests = Number(cache?.telemetry_requests ?? 0);
@@ -1829,7 +1840,27 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		if (percentileSeries.error && !/could not find|does not exist|PGRST202/i.test(percentileSeries.error.message ?? "")) {
 			throw percentileSeries.error;
 		}
-		const successSeries = (performance.hourly_24h ?? []).map((value: Record<string, unknown>) => ({ bucket: value.bucket ?? "", overallSuccessPct: number(value.success_pct), worstProviderSuccessPct: providerCount > 1 ? number(value.worst_provider_success_pct) : null, providerCount, requests: Number(value.requests ?? 0) }));
+		const providerHealthByHour = new Map<string, Array<{ successPct: number; requests: number; successfulRequests: number }>>();
+		for (const provider of providerPerformance) {
+			for (const bucket of provider.uptimeBuckets) {
+				const timestamp = Date.parse(String(bucket.start));
+				if (!Number.isFinite(timestamp) || bucket.successPct == null || bucket.requests <= 0) continue;
+				const hour = new Date(timestamp);
+				hour.setUTCMinutes(0, 0, 0);
+				const key = hour.toISOString();
+				providerHealthByHour.set(key, [...(providerHealthByHour.get(key) ?? []), { successPct: bucket.successPct, requests: bucket.requests, successfulRequests: bucket.successfulRequests }]);
+			}
+		}
+		const successSeries = (performance.hourly_24h ?? []).map((value: Record<string, unknown>) => {
+			const timestamp = Date.parse(String(value.bucket ?? ""));
+			const hour = new Date(timestamp);
+			if (Number.isFinite(timestamp)) hour.setUTCMinutes(0, 0, 0);
+			const providers = Number.isFinite(timestamp) ? providerHealthByHour.get(hour.toISOString()) ?? [] : [];
+			const leastReliable = providers.reduce<{ successPct: number; requests: number; successfulRequests: number } | null>((worst, candidate) => !worst || candidate.successPct < worst.successPct ? candidate : worst, null);
+			const eligibleRequests = providers.reduce((sum, provider) => sum + provider.requests, 0);
+			const eligibleSuccesses = providers.reduce((sum, provider) => sum + provider.successfulRequests, 0);
+			return { bucket: value.bucket ?? "", overallSuccessPct: eligibleRequests > 0 ? eligibleSuccesses / eligibleRequests * 100 : number(value.success_pct), worstProviderSuccessPct: leastReliable?.successPct ?? null, worstProviderRequests: leastReliable?.requests ?? 0, providerCount: providers.length, requests: eligibleRequests || Number(value.requests ?? 0) };
+		});
 		const timeOfDay = (performance.time_of_day_5d ?? []).map((value: Record<string, unknown>) => ({ hour: Number(value.hour ?? 0), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), sampleCount: Number(value.sample_count ?? 0) }));
 		const providerPercentileDaily7d = (Array.isArray(percentileSeries.data) ? percentileSeries.data : []).map((value: Record<string, unknown>) => {
 			const seriesPercentile = Number(value.percentile);

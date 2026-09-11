@@ -812,7 +812,9 @@ describe("public model routes", () => {
 						start: "2026-08-27T09:00:00Z",
 						end: "2026-08-27T10:00:00Z",
 						requests: 1,
-						success_pct: 100,
+						health_requests: 1,
+						health_success_requests: 1,
+						uptime_pct: 100,
 					}],
 				}]), { status: 200 });
 			}
@@ -869,6 +871,8 @@ describe("public model routes", () => {
 		expect(payload.metrics.summary).toMatchObject({ totalRequests: 1, successfulRequests: 1 });
 		expect(payload.metrics.hourly).toHaveLength(1);
 		expect(payload.metrics.successSeries).toHaveLength(1);
+		expect(payload.metrics.successSeries[0]).toMatchObject({ overallSuccessPct: 100, requests: 1 });
+		expect(payload.metrics.providerPerformance[0].uptimeBuckets[0]).toMatchObject({ successPct: 100, errorPct: 0, requests: 1, failedRequests: 0 });
 		expect(payload.metrics.providerHourly7d).toEqual([
 			expect.objectContaining({ requests: 1, cacheTelemetryRequests: 20 }),
 		]);
