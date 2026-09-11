@@ -731,6 +731,47 @@ describe("public model routes", () => {
 		await expect(response.json()).resolves.toMatchObject({ modelId: "openai/gpt-test", metrics: null, performance: null });
 	});
 
+	it("returns the cost totals required to calculate effective pricing", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_effective_pricing_daily")) {
+				return new Response(JSON.stringify([{
+					day_bucket: "2026-09-11",
+					provider_id: "crofai",
+					pricing_plan: "standard",
+					input_tokens: 1_195,
+					output_tokens: 104,
+					cached_read_tokens: 476,
+					cached_write_tokens: 0,
+					input_cost_nanos: 2_500,
+					output_cost_nanos: 8_000,
+					total_cost_nanos: 10_500,
+				}]), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/deepseek%2Fdeepseek-v4.1-flash/effective-pricing-daily?days=30",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toEqual({ rows: [{
+			dayBucket: "2026-09-11",
+			providerId: "crofai",
+			pricingPlan: "standard",
+			inputTokens: 1_195,
+			outputTokens: 104,
+			cachedReadTokens: 476,
+			cachedWriteTokens: 0,
+			inputCostNanos: 2_500,
+			outputCostNanos: 8_000,
+			totalCostNanos: 10_500,
+		}] });
+	});
+
 	it("publishes performance, quality, and cache series for a single-request cohort", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);

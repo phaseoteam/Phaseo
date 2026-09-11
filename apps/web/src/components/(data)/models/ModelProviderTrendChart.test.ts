@@ -3,10 +3,19 @@ import {
 	formatPerformanceTimeHeading,
 	formatPerformanceTimeTick,
 	getPerformanceAxisTickIndexes,
+	getPerformanceXAxisDomain,
 	getHoverDateTextAnchor,
 	getSeriesEmphasis,
 	isUsableMetricValue,
 } from "./ModelProviderTrendChart";
+
+describe("getPerformanceXAxisDomain", () => {
+	it("adds half a bucket of padding around sparse and populated charts", () => {
+		expect(getPerformanceXAxisDomain(1)).toEqual([-0.5, 0.5]);
+		expect(getPerformanceXAxisDomain(2)).toEqual([-0.5, 1.5]);
+		expect(getPerformanceXAxisDomain(7)).toEqual([-0.5, 6.5]);
+	});
+});
 
 describe("hourly performance labels", () => {
 	it("formats seven-day buckets with an explicit UTC hour", () => {

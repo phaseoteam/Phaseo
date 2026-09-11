@@ -350,6 +350,9 @@ function mapEffectivePricingDailyRow(row: Record<string, unknown>, stealthProvid
 		outputTokens: Math.max(0, Number(row.output_tokens ?? 0) || 0),
 		cachedReadTokens: Math.max(0, Number(row.cached_read_tokens ?? 0) || 0),
 		cachedWriteTokens: Math.max(0, Number(row.cached_write_tokens ?? 0) || 0),
+		inputCostNanos: Math.max(0, Number(row.input_cost_nanos ?? 0) || 0),
+		outputCostNanos: Math.max(0, Number(row.output_cost_nanos ?? 0) || 0),
+		totalCostNanos: Math.max(0, Number(row.total_cost_nanos ?? 0) || 0),
 	};
 }
 

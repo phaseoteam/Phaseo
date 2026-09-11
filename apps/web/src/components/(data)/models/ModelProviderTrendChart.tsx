@@ -65,6 +65,10 @@ export function getSeriesEmphasis(
 	};
 }
 
+export function getPerformanceXAxisDomain(pointCount: number): [number, number] {
+	return [-0.5, Math.max(0.5, pointCount - 0.5)];
+}
+
 export function isUsableMetricValue(
 	metric: MetricKey,
 	value: number | null | undefined,
@@ -625,7 +629,7 @@ export default function ModelProviderTrendChart({
 						<XAxis
 							dataKey="index"
 							type="number"
-							domain={chartData.length === 1 ? [-0.5, 0.5] : [0, chartData.length - 1]}
+								domain={getPerformanceXAxisDomain(chartData.length)}
 							ticks={getPerformanceAxisTickIndexes(chartData.length, timeResolution)}
 							allowDataOverflow
 							hide={!detailed}
@@ -679,6 +683,9 @@ export default function ModelProviderTrendChart({
 								activeSeriesKey,
 								provider.seriesKey,
 							);
+							const providerPointCount = filtered.filter(
+								(point) => point.provider === provider.provider,
+							).length;
 							return (
 								<Line
 									key={provider.seriesKey}
@@ -689,7 +696,7 @@ export default function ModelProviderTrendChart({
 									strokeOpacity={isDimmed ? 0.18 : 1}
 									strokeLinecap="round"
 									strokeLinejoin="round"
-									dot={chartData.length === 1 ? { r: 3, strokeWidth: 2, fill: provider.color, stroke: provider.color } : false}
+									dot={providerPointCount === 1 ? { r: 3, strokeWidth: 2, fill: provider.color, stroke: provider.color } : false}
 									activeDot={{ r: 4, strokeWidth: 1, fill: provider.color, stroke: "var(--background)" }}
 									connectNulls
 									isAnimationActive={false}
