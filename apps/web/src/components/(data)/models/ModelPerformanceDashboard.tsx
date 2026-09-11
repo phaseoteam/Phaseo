@@ -256,13 +256,13 @@ export default function ModelPerformanceDashboard({
 					</div>
 					<p className="text-sm text-muted-foreground">{headerDescription}</p>
 				</div>
-				<div className="ml-auto flex items-center gap-2">
+				<div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant="outline"
 								size="sm"
-								className="h-8 gap-2 rounded-lg px-3 text-xs"
+								className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-lg px-3 text-xs sm:flex-none"
 								aria-label="Select performance time range"
 							>
 								<CalendarDays className="size-3.5" />
@@ -290,6 +290,7 @@ export default function ModelPerformanceDashboard({
 							onChange={handlePercentileChange}
 							isLoading={isLoadingPercentile}
 							ariaLabel="Select performance percentile"
+							className="min-w-0 flex-1 justify-center sm:flex-none"
 						/>
 					) : null}
 					<DropdownMenu>
@@ -297,7 +298,7 @@ export default function ModelPerformanceDashboard({
 											<Button
 												variant="outline"
 												size="sm"
-												className="h-8 w-auto max-w-[calc(100vw-2rem)] justify-start gap-2 rounded-lg px-3 text-xs"
+										className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-lg px-3 text-xs sm:w-auto sm:flex-none"
 												aria-busy={isLoadingRegion}
 												aria-label="Filter performance by API location"
 											>
@@ -306,7 +307,7 @@ export default function ModelPerformanceDashboard({
 												) : (
 													<Globe2 className="size-3.5" />
 												)}
-												{regionLabel}
+											<span className="truncate">{regionLabel}</span>
 											</Button>
 										</DropdownMenuTrigger>
 										<DropdownMenuContent
