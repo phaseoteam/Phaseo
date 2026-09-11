@@ -69,6 +69,24 @@ describe("selectMetricData", () => {
 			selectMetricData("cachedInput", false, detailData, cardData, true),
 		).toBe(cardData);
 	});
+
+	it("falls back to provider data when percentile rows lack the metric", () => {
+		const percentileData = [
+			{ ...point("percentile-50", null), cachedInputPct: 60 },
+		];
+		const providerData = [point("poolside", 420)];
+
+		expect(
+			selectMetricData(
+				"endToEnd",
+				true,
+				percentileData,
+				percentileData,
+				true,
+				providerData,
+			),
+		).toBe(providerData);
+	});
 });
 
 describe("hasQualityMetricData", () => {

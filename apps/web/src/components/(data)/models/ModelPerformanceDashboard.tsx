@@ -44,7 +44,7 @@ import {
 	hasPerformanceHistory,
 	isPerformanceDataStale,
 } from "./modelPerformanceFreshness";
-import { buildSingleProviderPercentileSeries } from "./modelPerformancePercentiles";
+import { buildSingleProviderPercentileSeries } from "@/components/(data)/models/modelPerformancePercentiles";
 
 import {
 	Empty,
