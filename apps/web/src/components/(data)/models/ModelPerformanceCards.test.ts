@@ -1,6 +1,10 @@
 import type { ModelProviderDailyPoint } from "@/lib/fetchers/models/getModelPerformance";
 import type { ModelPerformanceQualityPoint } from "@/lib/fetchers/models/getModelPerformance";
-import { hasQualityMetricData, selectMetricData } from "./ModelPerformanceCards";
+import {
+	hasQualityMetricData,
+	selectMetricData,
+	selectProviderTrendData,
+} from "./ModelPerformanceCards";
 
 function point(
 	provider: string,
@@ -86,6 +90,38 @@ describe("selectMetricData", () => {
 				providerData,
 			),
 		).toBe(providerData);
+	});
+});
+
+describe("selectProviderTrendData", () => {
+	const hourlyPoint = (bucket: string) => ({
+		...point("poolside", 420),
+		bucket,
+	});
+
+	it("uses hourly observations for spans up to three days", () => {
+		const hourly = [
+			hourlyPoint("2026-09-08T12:00:00Z"),
+			hourlyPoint("2026-09-11T12:00:00Z"),
+		];
+
+		expect(selectProviderTrendData(hourly, [point("poolside", 420)])).toEqual({
+			data: hourly,
+			resolution: "hour",
+		});
+	});
+
+	it("uses daily observations when the observed span exceeds three days", () => {
+		const hourly = [
+			hourlyPoint("2026-09-07T11:00:00Z"),
+			hourlyPoint("2026-09-11T12:00:00Z"),
+		];
+		const daily = [point("poolside", 420)];
+
+		expect(selectProviderTrendData(hourly, daily)).toEqual({
+			data: daily,
+			resolution: "day",
+		});
 	});
 });
 

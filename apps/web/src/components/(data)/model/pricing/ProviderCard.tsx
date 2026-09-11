@@ -387,6 +387,67 @@ function UptimeSparkline({
 	);
 }
 
+const ERROR_CATEGORY_LABELS: Record<string, string> = {
+	authentication: "Authentication",
+	payment: "Payment",
+	model_unavailable: "Model unavailable",
+	server: "Server",
+	stream: "Stream",
+	other_provider: "Other provider",
+};
+
+function ProviderHourlyUptime({
+	runtimeStats,
+}: {
+	runtimeStats: ProviderRuntimeStats | null | undefined;
+}) {
+	const points = (runtimeStats?.uptimeHourly3d ?? []).slice(-24);
+	const categories = Object.entries(runtimeStats?.errorCategoryCounts3d ?? {})
+		.filter(([, count]) => count > 0)
+		.sort((a, b) => b[1] - a[1]);
+	const totalFailures = categories.reduce((sum, [, count]) => sum + count, 0);
+	const rateLimited = runtimeStats?.rateLimited3d ?? 0;
+	if (points.length === 0 && categories.length === 0 && rateLimited === 0) return null;
+
+	return (
+		<div className="space-y-3 border-t border-zinc-200/80 py-3 dark:border-zinc-800">
+			{points.length > 0 ? (
+				<div>
+					<div className="mb-2 flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
+						<span>Hourly uptime</span>
+						<span>Last 24 hours</span>
+					</div>
+					<div className="grid h-8 grid-flow-col auto-cols-fr items-stretch gap-0.5" role="img" aria-label="Provider uptime by hour over the last 24 hours">
+						{points.map((point) => (
+							<Tooltip key={point.start}>
+								<TooltipTrigger asChild>
+									<span
+										className={cn("min-w-0 rounded-[2px]", point.uptimePct == null ? "bg-muted" : point.uptimePct > 99 ? "bg-emerald-500" : point.uptimePct > 95 ? "bg-amber-500" : "bg-red-500")}
+										tabIndex={0}
+										aria-label={`${new Date(point.start).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${formatPercent(point.uptimePct)}`}
+									/>
+								</TooltipTrigger>
+								<TooltipContent>{new Date(point.start).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC · {formatPercent(point.uptimePct)} uptime{point.failed > 0 ? ` · ${point.failed} failed` : ""}</TooltipContent>
+							</Tooltip>
+						))}
+					</div>
+				</div>
+			) : null}
+			{categories.length > 0 || rateLimited > 0 ? (
+				<div>
+					<p className="text-[11px] text-muted-foreground">Error breakdown · 3 days</p>
+					<div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+						{categories.map(([category, count]) => (
+							<span key={category} className="tabular-nums"><span className="text-muted-foreground">{ERROR_CATEGORY_LABELS[category] ?? category}</span> {totalFailures > 0 ? `${((count / totalFailures) * 100).toFixed(1)}%` : "—"}</span>
+						))}
+						{rateLimited > 0 ? <span className="tabular-nums"><span className="text-muted-foreground">Rate limited</span> {rateLimited.toLocaleString()} <span className="text-muted-foreground">excluded</span></span> : null}
+					</div>
+				</div>
+			) : null}
+		</div>
+	);
+}
+
 function hasTokenTierComparison(tier: TokenTier): boolean {
 	return (
 		tier.basePer1M != null &&
@@ -3508,6 +3569,7 @@ export default function ProviderCard({
 										</div>
 									))}
 								</div>
+								<ProviderHourlyUptime runtimeStats={selectedRuntimeStats} />
 								{routingHealthSummary ? (
 									<div className="border-l-2 border-amber-400 pl-3 text-xs text-amber-900 dark:text-amber-100">
 										<div className="font-semibold">{routingHealthSummary.label}</div>

@@ -1605,11 +1605,11 @@ export default function ModelPricingClient({
                     </div>
                 ) : null}
                 {hasApiProviders ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full items-center gap-2 sm:w-auto">
                         <DropdownMenu>
                             <DropdownMenuTrigger
                                 render={
-                                    <Button type="button" variant="outline" size="sm" className="h-8 gap-2 rounded-md px-3 text-xs" />
+                                    <Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs sm:flex-none" />
                                 }
                             >
                                 <Filter className="size-3.5" />
@@ -1741,6 +1741,7 @@ export default function ModelPricingClient({
                             onChange={handlePercentileChange}
                             isLoading={isLoadingPercentile}
                             ariaLabel="Select provider percentile"
+                            className="min-w-0 flex-1 justify-center sm:flex-none"
                         />
                     </div>
                 ) : null}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import ModelPerformanceCards from "./ModelPerformanceCards";
-import { Activity, CircleAlert, Globe2, Loader2 } from "lucide-react";
+import ModelPerformanceCards, { selectProviderTrendData } from "@/components/(data)/models/ModelPerformanceCards";
+import { Activity, CalendarDays, CircleAlert, Globe2, Loader2 } from "lucide-react";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import type { ModelPerformanceColo } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
@@ -61,6 +61,30 @@ interface ModelPerformanceDashboardProps {
 	headerDescription: string;
 }
 
+type PerformanceRangeDays = 1 | 3 | 7;
+
+const PERFORMANCE_RANGES: Array<{ days: PerformanceRangeDays; label: string }> = [
+	{ days: 1, label: "1 day" },
+	{ days: 3, label: "3 days" },
+	{ days: 7, label: "7 days" },
+];
+
+const pointTimestamp = (point: { bucket?: string; day?: string }) =>
+	Date.parse(point.bucket ?? point.day ?? "");
+
+export function filterPerformanceRange<T extends { bucket?: string; day?: string }>(
+	points: T[],
+	days: PerformanceRangeDays,
+	latestTimestamp: number,
+): T[] {
+	if (!Number.isFinite(latestTimestamp)) return points;
+	const cutoff = latestTimestamp - days * 24 * 60 * 60 * 1000;
+	return points.filter((point) => {
+		const timestamp = pointTimestamp(point);
+		return Number.isFinite(timestamp) && timestamp >= cutoff && timestamp <= latestTimestamp;
+	});
+}
+
 function formatSampleTime(value: string | null): string {
 	if (!value) return "Unknown";
 	return new Intl.DateTimeFormat("en-GB", {
@@ -97,6 +121,7 @@ export default function ModelPerformanceDashboard({
 	const [selectedPercentile, setSelectedPercentile] = useState<ModelPercentile>(
 		() => initialSelection.percentile,
 	);
+	const [selectedRangeDays, setSelectedRangeDays] = useState<PerformanceRangeDays>(3);
 	const successfulSelectionRef = useRef(initialSelection);
 	const isInitialSelection =
 		selectedColo === initialSelection.colo &&
@@ -108,6 +133,7 @@ export default function ModelPerformanceDashboard({
 		modelId,
 		cloudflareColo: selectedColo,
 		percentile: selectedPercentile,
+		rangeDays: selectedRangeDays,
 		fallbackData: isInitialSelection ? metrics : undefined,
 		refreshInterval: MODEL_PERFORMANCE_REFRESH_INTERVAL_MS,
 		onError: () => {
@@ -157,9 +183,40 @@ export default function ModelPerformanceDashboard({
 			(colo) => colo.continent === continent && usageByColo.has(colo.code),
 		),
 	})).filter((group) => group.colos.length > 0);
-	const trendProviderPoints = activeMetrics.providerHourly7d?.length
-		? activeMetrics.providerHourly7d
-		: activeMetrics.providerDaily7d;
+	const allRangePoints = [
+		...(activeMetrics.providerHourly7d ?? []),
+		...activeMetrics.providerDaily7d,
+		...(activeMetrics.providerPercentileDaily7d ?? []),
+		...(activeMetrics.qualitySeries ?? []),
+	];
+	const latestRangeTimestamp = Math.max(
+		...allRangePoints.map(pointTimestamp).filter(Number.isFinite),
+	);
+	const rangeProviderHourly = filterPerformanceRange(
+		activeMetrics.providerHourly7d ?? [],
+		selectedRangeDays,
+		latestRangeTimestamp,
+	);
+	const rangeProviderDaily = filterPerformanceRange(
+		activeMetrics.providerDaily7d,
+		selectedRangeDays,
+		latestRangeTimestamp,
+	);
+	const rangeProviderPercentiles = filterPerformanceRange(
+		activeMetrics.providerPercentileDaily7d ?? [],
+		selectedRangeDays,
+		latestRangeTimestamp,
+	);
+	const rangeQualitySeries = filterPerformanceRange(
+		activeMetrics.qualitySeries ?? [],
+		selectedRangeDays,
+		latestRangeTimestamp,
+	);
+	const chartProviderHourly = selectedRangeDays <= 3 ? rangeProviderHourly : [];
+	const { data: trendProviderPoints } = selectProviderTrendData(
+		chartProviderHourly,
+		rangeProviderDaily,
+	);
 	const providerCount = new Set(
 		trendProviderPoints
 			.filter((point) => point.requests > 0)
@@ -168,7 +225,7 @@ export default function ModelPerformanceDashboard({
 	const showPercentileSelector = providerCount > 1;
 	const singleProviderPercentileSeries = buildSingleProviderPercentileSeries(
 		providerCount,
-		activeMetrics.providerPercentileDaily7d,
+		rangeProviderPercentiles,
 	);
 
 	return (
@@ -201,13 +258,41 @@ export default function ModelPerformanceDashboard({
 					</div>
 					<p className="text-sm text-muted-foreground">{headerDescription}</p>
 				</div>
-				<div className="ml-auto flex items-center gap-2">
+				<div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="outline"
+								size="sm"
+								className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-lg px-3 text-xs sm:flex-none"
+								aria-label="Select performance time range"
+							>
+								<CalendarDays className="size-3.5" />
+								{selectedRangeDays}D
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="min-w-32 rounded-lg">
+							<DropdownMenuRadioGroup
+								value={String(selectedRangeDays)}
+								onValueChange={(value) =>
+									setSelectedRangeDays(Number(value) as PerformanceRangeDays)
+								}
+							>
+								{PERFORMANCE_RANGES.map((range) => (
+									<DropdownMenuRadioItem key={range.days} value={String(range.days)}>
+										{range.label}
+									</DropdownMenuRadioItem>
+								))}
+							</DropdownMenuRadioGroup>
+						</DropdownMenuContent>
+					</DropdownMenu>
 					{showPercentileSelector ? (
 						<ModelPercentileSelect
 							value={selectedPercentile}
 							onChange={handlePercentileChange}
 							isLoading={isLoadingPercentile}
 							ariaLabel="Select performance percentile"
+							className="min-w-0 flex-1 justify-center sm:flex-none"
 						/>
 					) : null}
 					<DropdownMenu>
@@ -215,7 +300,7 @@ export default function ModelPerformanceDashboard({
 											<Button
 												variant="outline"
 												size="sm"
-												className="h-8 w-auto max-w-[calc(100vw-2rem)] justify-start gap-2 rounded-lg px-3 text-xs"
+										className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-lg px-3 text-xs sm:w-auto sm:flex-none"
 												aria-busy={isLoadingRegion}
 												aria-label="Filter performance by API location"
 											>
@@ -224,7 +309,7 @@ export default function ModelPerformanceDashboard({
 												) : (
 													<Globe2 className="size-3.5" />
 												)}
-												{regionLabel}
+											<span className="truncate">{regionLabel}</span>
 											</Button>
 										</DropdownMenuTrigger>
 										<DropdownMenuContent
@@ -287,10 +372,10 @@ export default function ModelPerformanceDashboard({
 					summary={activeMetrics.summary}
 					prevSummary={activeMetrics.prevSummary}
 					hourly={activeMetrics.hourly}
-					providerDaily7d={activeMetrics.providerDaily7d}
-					providerHourly7d={activeMetrics.providerHourly7d ?? []}
+					providerDaily7d={rangeProviderDaily}
+					providerHourly7d={chartProviderHourly}
 					chartProviderDaily7d={singleProviderPercentileSeries ?? undefined}
-					qualitySeries={activeMetrics.qualitySeries}
+					qualitySeries={rangeQualitySeries}
 				/>
 			) : (
 				<Empty className="rounded-lg border p-8">

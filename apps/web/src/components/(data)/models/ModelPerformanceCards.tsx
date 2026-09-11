@@ -112,6 +112,29 @@ export function hasQualityMetricData(
 	});
 }
 
+const HOURLY_TREND_MAX_SPAN_MS = 3 * 24 * 60 * 60 * 1000;
+
+export function selectProviderTrendData(
+	providerHourly7d: ModelProviderHourlyPoint[],
+	providerDaily7d: ModelProviderDailyPoint[],
+): { data: ModelProviderTrendPoint[]; resolution: "hour" | "day" } {
+	const observedTimes = providerHourly7d
+		.filter((point) => point.requests > 0)
+		.map((point) => Date.parse(point.bucket))
+		.filter(Number.isFinite);
+	const observedSpan = observedTimes.length > 1
+		? Math.max(...observedTimes) - Math.min(...observedTimes)
+		: 0;
+
+	if (providerHourly7d.length > 0 && observedSpan <= HOURLY_TREND_MAX_SPAN_MS) {
+		return { data: providerHourly7d, resolution: "hour" };
+	}
+	if (providerDaily7d.length > 0) {
+		return { data: providerDaily7d, resolution: "day" };
+	}
+	return { data: providerHourly7d, resolution: "hour" };
+}
+
 interface ModelPerformanceCardsProps {
 	summary: ModelPerformanceSummary;
 	prevSummary?: ModelPerformanceSummary | null;
@@ -134,10 +157,11 @@ export default function ModelPerformanceCards({
 	void summary;
 	void prevSummary;
 	const hasHourly = hourly.some((point) => point.requests > 0);
-	const usesHourlyData = providerHourly7d.length > 0;
-	const providerData: ModelProviderTrendPoint[] = usesHourlyData
-		? providerHourly7d
-		: providerDaily7d;
+	const { data: providerData, resolution } = selectProviderTrendData(
+		providerHourly7d,
+		providerDaily7d,
+	);
+	const usesHourlyData = resolution === "hour";
 	const detailData: ModelProviderTrendPoint[] =
 		chartProviderDaily7d ?? providerData;
 	const cardData = chartProviderDaily7d

@@ -24,6 +24,14 @@ export type ProviderRuntimeStats = {
 		requests: number;
 		successful: number;
 	}>;
+	uptimeHourly3d: Array<{
+		start: string;
+		uptimePct: number | null;
+		errorPct: number | null;
+		requests: number;
+		failed: number;
+		rateLimited: number;
+	}>;
 	requests30m: number;
 	requests3d: number;
 	successful3d: number;
@@ -38,6 +46,7 @@ export type ProviderRuntimeStats = {
 	totalTokens3d?: number;
 	finishReasonCounts3d?: Record<string, number>;
 	errorCodeCounts3d?: Record<string, number>;
+	errorCategoryCounts3d?: Record<string, number>;
 	lastRequestAt?: string | null;
 };
 
@@ -146,6 +155,7 @@ type RpcProviderHealthMetricsRow = {
 	output_tokens: number | string | null;
 	finish_reason_counts: Record<string, unknown> | null;
 	error_code_counts: Record<string, unknown> | null;
+	error_category_counts?: Record<string, unknown> | null;
 	buckets: unknown;
 	last_request_at: string | null;
 };
@@ -459,6 +469,7 @@ export function mapRpcRuntimeStatsRows(args: {
 			{ hourOffset: 1, uptimePct: null, requests: 0, successful: 0 },
 			{ hourOffset: 2, uptimePct: null, requests: 0, successful: 0 },
 		];
+		const uptimeHourly3d: ProviderRuntimeStats["uptimeHourly3d"] = [];
 
 		if (row && Array.isArray(row.buckets)) {
 			for (const bucket of row.buckets) {
@@ -469,6 +480,19 @@ export function mapRpcRuntimeStatsRows(args: {
 				const successful = toInt(bucketRecord?.success_requests);
 				const healthRequests = toInt(bucketRecord?.health_requests);
 				const healthSuccessful = toInt(bucketRecord?.health_success_requests);
+				const failed = toInt(bucketRecord?.failed_requests) || Math.max(0, healthRequests - healthSuccessful);
+				const rateLimited = toInt(bucketRecord?.rate_limited_requests);
+				const uptimePct = healthRequests > 0
+					? (healthSuccessful / healthRequests) * 100
+					: toFiniteNumber(bucketRecord?.uptime_pct);
+				uptimeHourly3d.push({
+					start: start.toISOString(),
+					uptimePct,
+					errorPct: uptimePct == null ? null : Math.max(0, 100 - uptimePct),
+					requests: healthRequests,
+					failed,
+					rateLimited,
+				});
 				const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, start);
 				if (dayOffset != null) {
 					uptimeDaily3dTotals[dayOffset]!.requests += requests;
@@ -480,10 +504,7 @@ export function mapRpcRuntimeStatsRows(args: {
 				if (hourOffset != null) {
 					uptimeHourly3h[hourOffset] = {
 						hourOffset,
-						uptimePct:
-							healthRequests > 0
-								? (healthSuccessful / healthRequests) * 100
-								: toFiniteNumber(bucketRecord?.uptime_pct),
+						uptimePct,
 						requests,
 						successful,
 					};
@@ -533,6 +554,7 @@ export function mapRpcRuntimeStatsRows(args: {
 			),
 			uptimeDaily3d,
 			uptimeHourly3h,
+			uptimeHourly3d: uptimeHourly3d.sort((a, b) => Date.parse(a.start) - Date.parse(b.start)),
 			requests30m: toInt(row?.requests_30m),
 			requests3d: toInt(row?.requests),
 			successful3d: toInt(row?.success_requests),
@@ -547,6 +569,7 @@ export function mapRpcRuntimeStatsRows(args: {
 			totalTokens3d: toInt(row?.total_tokens),
 			finishReasonCounts3d: toCountRecord(row?.finish_reason_counts),
 			errorCodeCounts3d: toCountRecord(row?.error_code_counts),
+			errorCategoryCounts3d: toCountRecord(row?.error_category_counts),
 			lastRequestAt: row?.last_request_at ?? null,
 		};
 	}

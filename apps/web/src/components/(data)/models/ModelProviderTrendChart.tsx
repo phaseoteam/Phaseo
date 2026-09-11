@@ -65,6 +65,22 @@ export function getSeriesEmphasis(
 	};
 }
 
+export function getPerformanceXAxisDomain(pointCount: number): [number, number] {
+	return [-0.5, Math.max(0.5, pointCount - 0.5)];
+}
+
+export function getPerformancePointerIndex(
+	relativeX: number,
+	plotWidth: number,
+	pointCount: number,
+) {
+	if (pointCount <= 1 || plotWidth <= 0) return 0;
+	const [domainStart, domainEnd] = getPerformanceXAxisDomain(pointCount);
+	const clampedX = Math.max(0, Math.min(relativeX, plotWidth));
+	const domainValue = domainStart + (clampedX / plotWidth) * (domainEnd - domainStart);
+	return Math.max(0, Math.min(pointCount - 1, Math.round(domainValue)));
+}
+
 export function isUsableMetricValue(
 	metric: MetricKey,
 	value: number | null | undefined,
@@ -76,6 +92,17 @@ export function isUsableMetricValue(
 export function calculateCachedInputAverage(
 	points: ModelProviderMetricPoint[],
 ): number | null {
+	const cachePoints = points.filter(
+		(point) => point.cachedInputPct != null && Number.isFinite(point.cachedInputPct),
+	);
+	const hasCompleteTokenTotals = cachePoints.length > 0 && cachePoints.every(
+		(point) =>
+			point.cachedInputTokens != null &&
+			point.effectiveInputTokens != null &&
+			Number.isFinite(point.cachedInputTokens) &&
+			Number.isFinite(point.effectiveInputTokens) &&
+			point.effectiveInputTokens > 0,
+	);
 	const totals = points.reduce(
 		(accumulator, point) => {
 			if (
@@ -91,16 +118,21 @@ export function calculateCachedInputAverage(
 		},
 		{ cached: 0, effective: 0 },
 	);
-	if (totals.effective > 0) {
+	if (hasCompleteTokenTotals && totals.effective > 0) {
 		return Math.min(100, (totals.cached * 100) / totals.effective);
 	}
-	const percentages = points
-		.map((point) => point.cachedInputPct)
-		.filter(
-			(value): value is number => value != null && Number.isFinite(value),
-		);
-	return percentages.length > 0
-		? percentages.reduce((sum, value) => sum + value, 0) / percentages.length
+	const requestWeight = cachePoints.reduce(
+		(sum, point) => sum + Math.max(0, point.requests),
+		0,
+	);
+	if (requestWeight > 0) {
+		return cachePoints.reduce(
+			(sum, point) => sum + (point.cachedInputPct ?? 0) * Math.max(0, point.requests),
+			0,
+		) / requestWeight;
+	}
+	return cachePoints.length > 0
+		? cachePoints.reduce((sum, point) => sum + (point.cachedInputPct ?? 0), 0) / cachePoints.length
 		: null;
 }
 
@@ -568,17 +600,11 @@ export default function ModelProviderTrendChart({
 									? (() => {
 											const relativeX =
 												state.activeCoordinate.x - state.offset.left;
-											const clampedX = Math.max(
-												0,
-												Math.min(relativeX, state.offset.width),
+											const index = getPerformancePointerIndex(
+												relativeX,
+												state.offset.width,
+												chartData.length,
 											);
-											const index =
-												chartData.length === 1
-													? 0
-													: Math.round(
-															(clampedX / state.offset.width) *
-																(chartData.length - 1),
-														);
 											return String(chartData[index]?.time ?? "");
 										})()
 									: null;
@@ -625,7 +651,7 @@ export default function ModelProviderTrendChart({
 						<XAxis
 							dataKey="index"
 							type="number"
-							domain={chartData.length === 1 ? [-0.5, 0.5] : [0, chartData.length - 1]}
+								domain={getPerformanceXAxisDomain(chartData.length)}
 							ticks={getPerformanceAxisTickIndexes(chartData.length, timeResolution)}
 							allowDataOverflow
 							hide={!detailed}
@@ -679,6 +705,9 @@ export default function ModelProviderTrendChart({
 								activeSeriesKey,
 								provider.seriesKey,
 							);
+							const providerPointCount = filtered.filter(
+								(point) => point.provider === provider.provider,
+							).length;
 							return (
 								<Line
 									key={provider.seriesKey}
@@ -689,7 +718,7 @@ export default function ModelProviderTrendChart({
 									strokeOpacity={isDimmed ? 0.18 : 1}
 									strokeLinecap="round"
 									strokeLinejoin="round"
-									dot={chartData.length === 1 ? { r: 3, strokeWidth: 2, fill: provider.color, stroke: provider.color } : false}
+									dot={providerPointCount === 1 ? { r: 3, strokeWidth: 2, fill: provider.color, stroke: provider.color } : false}
 									activeDot={{ r: 4, strokeWidth: 1, fill: provider.color, stroke: "var(--background)" }}
 									connectNulls
 									isAnimationActive={false}

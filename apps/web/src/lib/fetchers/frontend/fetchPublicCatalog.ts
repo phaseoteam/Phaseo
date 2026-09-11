@@ -420,7 +420,7 @@ export async function fetchFrontendModelPerformance(
 	percentile = 50,
 ): Promise<ModelPerformanceMetrics | null> {
 	void windowHours;
-	const params = new URLSearchParams({ percentile: String(percentile) });
+	const params = new URLSearchParams({ percentile: String(percentile), range: "3" });
 	if (cloudflareColo) params.set("colo", cloudflareColo);
 	const query = `?${params.toString()}`;
 	return (await fetchOptionalPublicWebApi<{ metrics: ModelPerformanceMetrics | null }>(`/api/_web/models/${encodeURIComponent(modelId)}/performance${query}`))?.metrics ?? null;

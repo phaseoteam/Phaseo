@@ -731,6 +731,47 @@ describe("public model routes", () => {
 		await expect(response.json()).resolves.toMatchObject({ modelId: "openai/gpt-test", metrics: null, performance: null });
 	});
 
+	it("returns the cost totals required to calculate effective pricing", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_effective_pricing_daily")) {
+				return new Response(JSON.stringify([{
+					day_bucket: "2026-09-11",
+					provider_id: "crofai",
+					pricing_plan: "standard",
+					input_tokens: 1_195,
+					output_tokens: 104,
+					cached_read_tokens: 476,
+					cached_write_tokens: 0,
+					input_cost_nanos: 2_500,
+					output_cost_nanos: 8_000,
+					total_cost_nanos: 10_500,
+				}]), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/deepseek%2Fdeepseek-v4.1-flash/effective-pricing-daily?days=30",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toEqual({ rows: [{
+			dayBucket: "2026-09-11",
+			providerId: "crofai",
+			pricingPlan: "standard",
+			inputTokens: 1_195,
+			outputTokens: 104,
+			cachedReadTokens: 476,
+			cachedWriteTokens: 0,
+			inputCostNanos: 2_500,
+			outputCostNanos: 8_000,
+			totalCostNanos: 10_500,
+		}] });
+	});
+
 	it("publishes performance, quality, and cache series for a single-request cohort", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
@@ -771,11 +812,13 @@ describe("public model routes", () => {
 						start: "2026-08-27T09:00:00Z",
 						end: "2026-08-27T10:00:00Z",
 						requests: 1,
-						success_pct: 100,
+						health_requests: 1,
+						health_success_requests: 1,
+						uptime_pct: 100,
 					}],
 				}]), { status: 200 });
 			}
-			if (url.includes("/rpc/get_v2_model_provider_hourly_performance_v2")) {
+			if (url.includes("/rpc/get_v2_model_provider_30m_performance_v1")) {
 				return new Response(JSON.stringify([{
 					bucket: "2026-08-27T09:00:00Z",
 					provider_id: "test-provider",
@@ -816,7 +859,7 @@ describe("public model routes", () => {
 		}));
 
 		const response = await app.request(
-			"https://phaseo.app/api/_web/models/test%2Flow-volume/performance",
+			"https://phaseo.app/api/_web/models/test%2Flow-volume/performance?range=1",
 			{},
 			env,
 		);
@@ -824,9 +867,12 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(payload.minimumSampleSize).toBe(1);
+		expect(payload.metrics.rangeDays).toBe(1);
 		expect(payload.metrics.summary).toMatchObject({ totalRequests: 1, successfulRequests: 1 });
 		expect(payload.metrics.hourly).toHaveLength(1);
 		expect(payload.metrics.successSeries).toHaveLength(1);
+		expect(payload.metrics.successSeries[0]).toMatchObject({ overallSuccessPct: 100, requests: 1 });
+		expect(payload.metrics.providerPerformance[0].uptimeBuckets[0]).toMatchObject({ successPct: 100, errorPct: 0, requests: 1, failedRequests: 0 });
 		expect(payload.metrics.providerHourly7d).toEqual([
 			expect.objectContaining({ requests: 1, cacheTelemetryRequests: 20 }),
 		]);
@@ -867,7 +913,7 @@ describe("public model routes", () => {
 						{ provider: "unknown", provider_name: "unknown", requests: 1 },
 					],
 					provider_daily_7d: [
-						{ day: "2026-07-23", provider: "poolside", provider_name: "Poolside", requests: 20 },
+						{ day: "2026-07-23", provider: "poolside", provider_name: "Poolside", requests: 20, avg_latency_ms: 230, gateway_e2e_ms: 760 },
 						{ day: "2026-07-23", provider: "unknown", provider_name: "unknown", requests: 1 },
 					],
 				}), { status: 200 });
@@ -916,6 +962,8 @@ describe("public model routes", () => {
 			expect.objectContaining({
 			provider: "poolside",
 			providerColor: "#12AB78",
+			avgLatencyMs: 230,
+			avgEndToEndMs: 760,
 			cachedInputPct: 62.5,
 			cachedInputTokens: 625,
 			effectiveInputTokens: 1000,
@@ -924,7 +972,7 @@ describe("public model routes", () => {
 		}),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
-			expect.objectContaining({ provider: "poolside", requests: 20 }),
+			expect.objectContaining({ provider: "poolside", requests: 20, cachedInputPct: 0 }),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
 			expect.objectContaining({ provider: "poolside", requests: 20 }),
