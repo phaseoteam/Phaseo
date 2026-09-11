@@ -12,6 +12,7 @@ const ranking = (benchmarkId: string, label: string): PublicBenchmarkRanking => 
 	entries: [
 		{ model_id: "openai/gpt-6-astra", model_name: "GPT-6 Astra", organisation_id: "openai", organisation_name: "OpenAI", organisation_colour: "#333333", score: label === "Evaluation Cost" ? 1200 : 52.8, rank: label === "Evaluation Cost" ? 1 : 2, release_date: "2026-09-03T00:00:00Z", other_info: "GPT-6 Astra (max)" },
 		{ model_id: "anthropic/claude-fable-5.1", model_name: "Claude Fable 5.1", organisation_id: "anthropic", organisation_name: "Anthropic", organisation_colour: "#cc785c", score: label === "Evaluation Cost" ? 1500 : 53.4, rank: label === "Evaluation Cost" ? 2 : 1, release_date: "2026-09-01T00:00:00Z", other_info: "Claude Fable 5.1 (max)" },
+		{ model_id: "spacex-ai/grok-4.6", model_name: "Grok 4.6", organisation_id: "spacex-ai", organisation_name: "SpaceXAI", organisation_colour: "#000000", score: label === "Evaluation Cost" ? 1800 : 44.4, rank: 3, release_date: "2026-08-20T00:00:00Z", other_info: "Grok 4.6 (high)" },
 	],
 });
 
@@ -29,6 +30,8 @@ describe("Artificial Analysis metric charts", () => {
 		expect(html).toContain('data-testid="agentic-chart"');
 		expect(html).toContain('data-testid="cost-chart"');
 		expect(html).toContain("Show top 14");
+		expect(html).toContain("background-color:#000000");
+		expect(html).toContain("background-color:#736cd3");
 		expect(html.indexOf('title="Claude Fable 5.1')).toBeLessThan(html.indexOf('title="GPT-6 Astra'));
 	});
 

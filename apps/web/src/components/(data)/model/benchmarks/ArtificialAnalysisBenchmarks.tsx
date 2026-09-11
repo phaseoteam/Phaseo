@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelBenchmarkHighlight, ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
-import { artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { artificialAnalysisChartColour, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 
 const configurationOrder = ["none", "low", "medium", "high", "xhigh", "max"];
 const metricIcons = {
@@ -28,10 +28,6 @@ function configurationLabel(value: string | null) {
 	if (!value || value === "none") return "Non-reasoning";
 	if (value === "xhigh") return "Extra high";
 	return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function safeColour(value: string | null | undefined, fallback: string) {
-	return value && /^#[\da-f]{6}$/i.test(value) ? value : fallback;
 }
 
 function releaseTime(value: string | null | undefined) {
@@ -226,7 +222,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 									const proportionalHeight = (Number(configuration.score) / maxScore) * 205;
 									const height = Math.max(proportionalHeight, 3);
 									const compactBar = proportionalHeight < 30;
-									const colour = safeColour(entry.organisation_colour, "#6b7280");
+									const colour = artificialAnalysisChartColour(entry.organisation_id, entry.organisation_colour);
 									return <HoverCard key={`${entry.model_id}:${configuration.result_key || configuration.variant || "default"}`}><HoverCardTrigger asChild delay={80} closeDelay={80}><div tabIndex={0} aria-label={entry.model_name} className="group flex h-full min-w-12 flex-1 basis-12 cursor-default flex-col items-center justify-end rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className={`relative flex w-8 items-end justify-center rounded-t-[3px] text-[10px] font-semibold tabular-nums sm:w-9 ${compactBar ? "" : "pb-2 text-white"}`} style={{ height }}><span aria-hidden="true" className={`absolute inset-0 rounded-t-[3px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] transition-[filter,opacity] duration-300 group-hover:brightness-110 ${hasSelectedModel && !isSelectedModel ? "opacity-30 saturate-100" : ""}`} style={{ backgroundColor: colour }} /><span className={`relative z-10 ${compactBar ? "absolute bottom-full mb-1 text-foreground" : ""}`}>{barScore(expandedMetric, Number(configuration.score))}</span></span><span className="relative my-1 size-4 shrink-0"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain" /></span><div className="relative h-[112px] w-full"><Link href={`/models/${entry.model_id}`} className="absolute right-1/2 top-0 line-clamp-2 w-24 origin-top-right -rotate-[55deg] whitespace-normal break-words text-right text-[11px] leading-[1.15] decoration-transparent underline-offset-2 hover:underline hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{entry.model_name}{configuration.variant ? <span className="text-muted-foreground"> ({configurationLabel(configuration.variant)})</span> : null}</Link></div></div></HoverCardTrigger><ModelHoverCard entry={entry} configurations={[configuration]} metricLabel={activeMetric?.label} total={entries.length} /></HoverCard>;
 				})}</div>
 				</div></ScrollArea> : <p className="text-sm text-muted-foreground">Select models to compare.</p>}
