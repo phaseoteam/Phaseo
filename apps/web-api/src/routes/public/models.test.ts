@@ -29,13 +29,16 @@ describe("provider health RPC fallback", () => {
 		})).toBe(false);
 	});
 
-	it("publishes a one-request aggregate without exact timestamps or error categories", async () => {
+	it("publishes a redacted one-request stealth aggregate without exact timestamps or error categories", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
-			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([]));
+			if (url.includes("v2_model_provider_routes")) {
+				return new Response(JSON.stringify([{ provider_slug: "private-provider", is_stealth: true }]));
+			}
 			if (url.includes("get_v2_model_provider_tier_health_metrics")) {
 				return new Response(JSON.stringify([{
-					provider_id: "test-provider",
+					provider_id: "private-provider",
+					provider_name: "Private Provider",
 					health_requests: 1,
 					uptime_pct: 100,
 					percentile_latency_ms: 240,
@@ -48,7 +51,7 @@ describe("provider health RPC fallback", () => {
 		}));
 
 		const response = await app.request(
-			"https://phaseo.app/api/_web/models/test%2Flow-volume/provider-health?provider_ids=test-provider",
+			"https://phaseo.app/api/_web/models/test%2Flow-volume/provider-health?provider_ids=stealth",
 			{},
 			env,
 		);
@@ -56,7 +59,8 @@ describe("provider health RPC fallback", () => {
 
 		expect(response.status).toBe(200);
 		expect(payload.rows).toEqual([expect.objectContaining({
-			provider_id: "test-provider",
+			provider_id: "stealth",
+			provider_name: "Stealth",
 			health_requests: 1,
 			uptime_pct: 100,
 		})]);

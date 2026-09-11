@@ -1357,10 +1357,14 @@ publicModelsRouter.get("/:modelId/provider-health", async (c) => {
 		if (!healthError && Array.isArray(healthData)) {
 			const rows = (healthData as Array<Record<string, unknown>>)
 				.filter((row) => providerIds.includes(String(row.provider_id ?? "")) && hasPublicPerformanceSample(row.health_requests ?? row.requests))
-				.map(({ last_request_at: _lastRequestAt, error_code_counts: _errorCodeCounts, ...row }) => ({
-					...row,
-					provider_id: publicProviderId(row.provider_id, stealthProviderIds),
-				}));
+				.map(({ last_request_at: _lastRequestAt, error_code_counts: _errorCodeCounts, ...row }) => {
+					const providerId = publicProviderId(row.provider_id, stealthProviderIds);
+					return {
+						...row,
+						provider_id: providerId,
+						provider_name: publicProviderDisplayName(providerId, row.provider_name),
+					};
+				});
 			return withPublicCache(c.json({ rows, source: "v2" }), sectionPolicy("providerHealth", modelId));
 		}
 		throw healthError ?? new Error("V2 provider health query returned an invalid payload");
