@@ -31,6 +31,16 @@ function regionalLabel(providerName: string, offerLabel: string): string {
 		.trim() || offerLabel.trim();
 }
 
+function hasTrailingOfferLabel(providerName: string, offerLabel: string): boolean {
+	const normalizedProviderName = providerName.trim().toLowerCase();
+	const normalizedOfferLabel = offerLabel.trim().toLowerCase();
+	if (!normalizedProviderName || !normalizedOfferLabel) return false;
+
+	return normalizedProviderName.endsWith(`(${normalizedOfferLabel})`)
+		|| normalizedProviderName.endsWith(` ${normalizedOfferLabel}`)
+		|| normalizedProviderName.endsWith(`-${normalizedOfferLabel}`);
+}
+
 export function formatProviderOfferDisplayName(args: {
 	providerId: string;
 	providerName: string;
@@ -41,10 +51,13 @@ export function formatProviderOfferDisplayName(args: {
 	const offerLabel = String(args.offerLabel ?? "").trim();
 	if (!providerName || !offerLabel || args.offerScope === "global") return providerName;
 	if (args.offerScope === "regional") {
-		return `${providerName} (${regionalLabel(providerName, offerLabel)})`;
+		const label = regionalLabel(providerName, offerLabel);
+		if (hasTrailingOfferLabel(providerName, label)) return providerName;
+		return `${providerName} (${label})`;
 	}
 	if (DISPLAY_NAME_OVERRIDES.has(args.providerId.trim().toLowerCase())) {
 		return providerName;
 	}
+	if (hasTrailingOfferLabel(providerName, offerLabel)) return providerName;
 	return `${providerName} ${offerLabel}`;
 }

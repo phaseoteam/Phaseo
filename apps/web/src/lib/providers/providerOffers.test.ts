@@ -25,6 +25,7 @@ describe("providerOffers", () => {
 
     test("does not repeat specialized offer labels when formatting catalogue names again", () => {
         expect(formatProviderOfferDisplayName({ providerId: "example-fast", providerName: "Example Fast", offerLabel: "Fast", offerScope: "specialized" })).toBe("Example Fast");
+        expect(formatProviderOfferDisplayName({ providerId: "wafer-zdr", providerName: "Wafer (ZDR)", offerLabel: "ZDR", offerScope: "specialized" })).toBe("Wafer (ZDR)");
     });
 
     test("retains the region when offer scope is omitted", () => {
