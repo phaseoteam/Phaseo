@@ -88,7 +88,8 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(html).toContain("Other models dimmed");
 		expect(html).toContain("opacity-20");
 		expect(html).toContain("bg-black");
-		expect(html).toContain("pb-2 text-white");
+		expect(html).toContain("text-foreground");
+		expect(html).toContain("text-white");
 		expect(html).not.toContain("ring-2 ring-[#8842FD]");
 	});
 });
