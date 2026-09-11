@@ -52,7 +52,7 @@ export function formatProviderOfferDisplayName(args: {
 	if (!providerName || !offerLabel || args.offerScope === "global") return providerName;
 	if (args.offerScope === "regional") {
 		const label = regionalLabel(providerName, offerLabel);
-		if (providerName.toLowerCase().endsWith(`(${label.toLowerCase()})`)) return providerName;
+		if (hasTrailingOfferLabel(providerName, label)) return providerName;
 		return `${providerName} (${label})`;
 	}
 	if (DISPLAY_NAME_OVERRIDES.has(args.providerId.trim().toLowerCase())) {

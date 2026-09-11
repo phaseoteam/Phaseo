@@ -75,7 +75,7 @@ function providerDisplayName(provider: Record<string, unknown>): string {
 		const regional = label.split(/\s+/).filter((word) =>
 			!providerWords.has(word.toLowerCase()),
 		).join(" ").trim() || label;
-		if (name.toLowerCase().endsWith(`(${regional.toLowerCase()})`)) return name;
+		if (hasTrailingOfferLabel(name, regional)) return name;
 		return `${name} (${regional})`;
 	}
 	if (hasTrailingOfferLabel(name, label)) return name;
