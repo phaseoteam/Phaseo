@@ -10,7 +10,7 @@ Use this guide to connect coding agents to Phaseo. Choose the Phaseo CLI when yo
 
 | You want to… | Use |
 | --- | --- |
-| Launch Cline, Kilo Code, oh-my-pi, or Muse Code with isolated temporary settings | `phaseo cline`, `phaseo kilo`, `phaseo omp`, or `phaseo muse` |
+| Launch Cline, Kilo Code, oh-my-pi, Muse Code, or MiniMax Code with isolated temporary settings | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, or `phaseo minimax` |
 | Configure an installed agent and keep its settings | `phaseo <integration>` |
 | Configure an agent without the Phaseo CLI | Follow the manual provider steps in the dedicated guide |
 
@@ -31,7 +31,7 @@ Use the product-named command for any persistent integration:
 phaseo codex
 ```
 
-Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`.
+Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. The isolated CLI runners are `cline`, `kilo`, `omp`, `muse`, and `minimax`.
 
 The CLI creates a separate, non-expiring API key named for that assistant. It configures Aider and Continue automatically on clean installations, and writes Zed's provider/model settings automatically. For assistants that keep secrets exclusively in an editor UI, it prints the exact remaining fields, links the dedicated guide, and lets you copy only that assistant's key:
 
@@ -147,6 +147,10 @@ Aider often expects OpenAI-compatible custom models to be prefixed with `openai/
 `phaseo pi` adds a dedicated provider extension that resolves its key from the Phaseo CLI at runtime. `phaseo prime-agent` writes a command-backed provider to `~/.prime/agent/models.json`. Both receive the compatible Phaseo model catalog. `phaseo openclaw` registers the compatible model catalog plus an exec-backed SecretRef, without placing the API key in `openclaw.json`.
 
 `phaseo hermes` offers to run the official Nous Research installer when Hermes is missing, then configures the installed agent. It saves the previous Hermes model settings, configures Phaseo as the custom endpoint, and uses Hermes' official `hermes config set` command to place the dedicated key in `~/.hermes/.env` as `OPENAI_API_KEY`. Hermes deliberately uses this plaintext file for provider credentials; protect it like any other API-key file. Removal restores the previous model settings, removes `OPENAI_API_KEY`, deletes Phaseo's recovery state, and revokes the key.
+
+## MiniMax Code
+
+Use the dedicated [MiniMax Code guide](./minimax-code.mdx) for the `mcode` CLI. `phaseo minimax` creates a temporary MiniMax provider with the Phaseo OpenAI-compatible endpoint, launches the CLI, and removes the temporary data directory when the session ends. MiniMax Code also supports ACP through `mcode acp` when an editor or host speaks ACP directly.
 
 ## Zed
 

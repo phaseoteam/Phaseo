@@ -129,22 +129,23 @@ phaseo zed
 
 Use `--model`, `--catalog all|default`, or `--dry-run` as needed. The older `phaseo integrations setup <integration>` form remains available for compatibility, but is not required.
 
-The CLI can launch Cline, Kilo Code, oh-my-pi, and Muse Code with temporary provider configuration and a dedicated Phaseo key. Each harness has its own integration guide with setup and troubleshooting details: [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), and [Muse Code](./muse-code).
+The CLI can launch Cline, Kilo Code, oh-my-pi, Muse Code, and MiniMax Code with temporary provider configuration and a dedicated Phaseo key. Each harness has its own integration guide with setup and troubleshooting details: [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code), and [MiniMax Code](./minimax-code).
 
 ```bash
 phaseo cline --model openai/gpt-5.6-terra -- --tui
 phaseo kilo --model openai/gpt-5.6-terra --
 phaseo omp --model openai/gpt-5.6-terra --
 phaseo muse --model meta/muse-spark-1.3 --
+phaseo minimax --model openai/gpt-5.6-terra --
 ```
 
-Use `phaseo run <cline|kilo|omp|muse>` for the explicit form. Phaseo flags come before `--`; harness flags come after it. Use `--catalog all` to sync all active Phaseo text/chat models, or preview without creating a credential with:
+Use `phaseo run <cline|kilo|omp|muse|minimax>` for the explicit form. Phaseo flags come before `--`; harness flags come after it. Use `--catalog all` to sync all active Phaseo text/chat models, or preview without creating a credential with:
 
 ```bash
 phaseo cline --model openai/gpt-5.6-terra --dry-run --json
 ```
 
-Missing Cline, Kilo Code, and oh-my-pi installations are offered interactively. Muse Code is installed with Meta's Unix installer; on Windows, install it separately, verify `muse --version`, and use `--skip-install`. The launchers do not overwrite existing Cline, Kilo, oh-my-pi, or Muse Code configuration.
+Missing Cline, Kilo Code, and oh-my-pi installations are offered interactively. Muse Code and MiniMax Code use their official installers when the command is missing. On Windows, MiniMax Code uses its official PowerShell installer; use `--skip-install` when you manage either harness separately. The launchers do not overwrite existing Cline, Kilo, oh-my-pi, Muse Code, or MiniMax Code configuration.
 
 ## OAuth apps
 
@@ -205,3 +206,4 @@ bun add -g @phaseo/cli@latest
 - [Kilo Code](./kilo-code)
 - [oh-my-pi](./oh-my-pi)
 - [Muse Code](./muse-code)
+- [MiniMax Code](./minimax-code)

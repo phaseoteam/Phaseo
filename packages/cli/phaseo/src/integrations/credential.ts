@@ -14,6 +14,7 @@ const KEY_NAMES: Record<string, string> = {
 	cline: "Phaseo CLI: Cline API Key",
 	"roo-code": "Phaseo CLI: Roo Code API Key",
 	"kilo-code": "Phaseo CLI: Kilo Code API Key",
+	"minimax-code": "Phaseo CLI: MiniMax Code API Key",
 	continue: "Phaseo CLI: Continue API Key",
 	cursor: "Phaseo CLI: Cursor API Key",
 	zed: "Phaseo CLI: Zed API Key",

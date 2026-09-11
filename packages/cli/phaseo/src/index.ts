@@ -181,7 +181,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 		usage: [
 			"phaseo login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
 			"phaseo <codex|claude-code|hermes|opencode|pi|prime-agent|deepseek-harness|openclaw|aider|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--catalog all|default] [--dry-run] [--json]",
-			"phaseo <cline|kilo|omp|muse> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]",
+			"phaseo <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]",
 			"phaseo logout [--json]",
 			"phaseo whoami [--json]",
 			"phaseo version | v [--json]",
@@ -223,8 +223,8 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 		usage: ["phaseo setup <integration> [--model <id>] [--catalog all|default] [--dry-run] [--json]"],
 	},
 	run: {
-		description: "Launch Cline, Kilo Code, oh-my-pi, or Muse Code against the Phaseo gateway without changing persistent harness configuration.",
-		usage: ["phaseo run <cline|kilo|omp|muse> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]"],
+		description: "Launch Cline, Kilo Code, oh-my-pi, Muse Code, or MiniMax Code against the Phaseo gateway without changing persistent harness configuration.",
+		usage: ["phaseo run <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]"],
 	},
 	login: {
 		usage: [
@@ -2057,11 +2057,11 @@ async function main() {
 		else if (first === "generation" && second === "get") action = generationGet(parsed.flags);
 		else if (first === "curie" && second === "run") action = runCurie(third, parsed.flags);
 		else if (first === "run") {
-			if (!second || parsed.command.length > 2) throw new Error("Usage: phaseo run <cline|kilo|omp|muse> [flags] -- [harness args]");
+			if (!second || parsed.command.length > 2) throw new Error("Usage: phaseo run <cline|kilo|omp|muse|minimax> [flags] -- [harness args]");
 			action = runRunnerCommand(second, parsed.flags, parsed.passthrough);
 		}
 		else if (isRunnerName(first)) {
-			if (parsed.command.length > 1) throw new Error("Usage: phaseo <cline|kilo|omp|muse> [flags] -- [harness args]");
+			if (parsed.command.length > 1) throw new Error("Usage: phaseo <cline|kilo|omp|muse|minimax> [flags] -- [harness args]");
 			action = runRunnerCommand(first, parsed.flags, parsed.passthrough);
 		}
 		else if (first === "setup") action = runIntegrationCommand(["setup", ...parsed.command.slice(1)], parsed.flags, { installMissing: true });
