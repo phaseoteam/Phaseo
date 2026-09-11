@@ -60,6 +60,12 @@ const METRICS: MetricDefinition[] = [
 		label: "End-to-End Latency",
 		description: "Total time from request start until the complete response is returned.",
 	},
+	{
+		metric: "cachedInput",
+		valueKey: "cachedInputPct",
+		label: "Cache Rate",
+		description: "Share of reported input tokens served from the provider cache.",
+	},
 ];
 
 const METRIC_DEFINITIONS = Object.fromEntries(
@@ -72,9 +78,18 @@ export function selectMetricData(
 	detailData: ModelProviderTrendPoint[],
 	cardData: ModelProviderTrendPoint[],
 	hasPercentileSeries: boolean,
+	fallbackData: ModelProviderTrendPoint[] = detailData,
 ) {
-	if (!hasPercentileSeries || detailed) return detailData;
 	const definition = METRIC_DEFINITIONS[metric];
+	if (
+		!hasPercentileSeries ||
+		!detailData.some((point) =>
+			isUsableMetricValue(metric, point[definition.valueKey]),
+		)
+	) {
+		return fallbackData;
+	}
+	if (detailed) return detailData;
 	return cardData.some((point) =>
 		isUsableMetricValue(metric, point[definition.valueKey]),
 	)
@@ -103,6 +118,7 @@ interface ModelPerformanceCardsProps {
 	hourly: ModelPerformancePoint[];
 	providerDaily7d: ModelProviderDailyPoint[];
 	providerHourly7d: ModelProviderHourlyPoint[];
+	chartProviderDaily7d?: ModelProviderDailyPoint[];
 	qualitySeries?: ModelPerformanceQualityPoint[];
 }
 
@@ -112,30 +128,55 @@ export default function ModelPerformanceCards({
 	hourly,
 	providerDaily7d,
 	providerHourly7d,
+	chartProviderDaily7d,
 	qualitySeries = [],
 }: ModelPerformanceCardsProps) {
 	void summary;
 	void prevSummary;
 	const hasHourly = hourly.some((point) => point.requests > 0);
 	const usesHourlyData = providerHourly7d.length > 0;
-	const detailData: ModelProviderTrendPoint[] = usesHourlyData
+	const providerData: ModelProviderTrendPoint[] = usesHourlyData
 		? providerHourly7d
 		: providerDaily7d;
-	const cardData = detailData;
+	const detailData: ModelProviderTrendPoint[] =
+		chartProviderDaily7d ?? providerData;
+	const cardData = chartProviderDaily7d
+		? chartProviderDaily7d.filter((point) =>
+				["percentile-10", "percentile-50", "percentile-90"].includes(
+					point.provider,
+				),
+			)
+		: providerData;
 	const providerCount = new Set(
-		detailData
+		providerData
 			.filter((point) => point.requests > 0)
 			.map((point) => point.provider),
 	).size;
-	const detailSeriesLabel = `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
+	const detailSeriesLabel = chartProviderDaily7d
+		? "All available percentile bands"
+		: `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
+	const metricUsesPercentiles = (metric: MetricKey) => {
+		if (!chartProviderDaily7d) return false;
+		const definition = METRIC_DEFINITIONS[metric];
+		return chartProviderDaily7d.some((point) =>
+			isUsableMetricValue(metric, point[definition.valueKey]),
+		);
+	};
 	const metricData = (metric: MetricKey, detailed: boolean) =>
 		selectMetricData(
 			metric,
 			detailed,
 			detailData,
 			cardData,
-			false,
+			chartProviderDaily7d != null,
+			providerData,
 		);
+	const metricTimeResolution = (metric: MetricKey) =>
+		metricUsesPercentiles(metric) ? "day" : usesHourlyData ? "hour" : "day";
+	const metricSeriesLabel = (metric: MetricKey) =>
+		metricUsesPercentiles(metric)
+			? detailSeriesLabel
+			: `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
 	const qualityMetrics = [
 		{
 			title: "Tool Call Errors",
@@ -144,10 +185,6 @@ export default function ModelPerformanceCards({
 		{
 			title: "Structured Response Errors",
 			metric: "structuredOutputErrorPct" as const,
-		},
-		{
-			title: "Cache Hit Rate",
-			metric: "cacheHitRatePct" as const,
 		},
 	].filter(({ metric }) => hasQualityMetricData(metric, qualitySeries));
 	return (
@@ -161,7 +198,7 @@ export default function ModelPerformanceCards({
 								data={metricData(definition.metric, false)}
 								metric={definition.metric}
 								maxSeries={3}
-								timeResolution={usesHourlyData ? "hour" : "day"}
+								timeResolution={metricTimeResolution(definition.metric)}
 								headerAction={
 									<DialogTrigger asChild>
 										<button
@@ -180,7 +217,7 @@ export default function ModelPerformanceCards({
 								<DialogTitle className="text-xl">{definition.label}</DialogTitle>
 								<DialogDescription>
 									{definition.description}{" "}
-									{detailSeriesLabel}{" "}
+									{metricSeriesLabel(definition.metric)}{" "}
 									are shown below.
 								</DialogDescription>
 							</DialogHeader>
@@ -190,7 +227,7 @@ export default function ModelPerformanceCards({
 									data={metricData(definition.metric, true)}
 									metric={definition.metric}
 									maxSeries={Number.MAX_SAFE_INTEGER}
-									timeResolution={usesHourlyData ? "hour" : "day"}
+									timeResolution={metricTimeResolution(definition.metric)}
 									detailed
 									showHeader={false}
 								/>
