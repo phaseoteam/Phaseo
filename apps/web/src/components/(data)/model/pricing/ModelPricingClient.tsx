@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
 import useSWR from "swr";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -773,7 +774,8 @@ export function getProviderServiceTierDisplayName(provider: ProviderPricing): st
 
 export default function ModelPricingClient({
 	modelId,
-	providers,
+	providers: initialProviders,
+	refreshPricing = false,
     creatorOrgId,
     initialPricingTimeMs,
     runtimeStats = EMPTY_RUNTIME_STATS,
@@ -784,6 +786,7 @@ export default function ModelPricingClient({
 }: {
     modelId: string;
     providers: ProviderPricing[];
+	refreshPricing?: boolean;
     creatorOrgId?: string | null;
     initialPricingTimeMs: number;
     runtimeStats?: ProviderRuntimeStatsMap;
@@ -793,6 +796,22 @@ export default function ModelPricingClient({
     headerDescription?: string | null;
 }) {
     const pricingTimeMs = usePricingClock(initialPricingTimeMs);
+	const { data: providers = initialProviders } = useSWR<ProviderPricing[]>(
+		refreshPricing ? `/api/_web/models/${encodeURIComponent(modelId)}/pricing` : null,
+		async (path: `/api/_web/${string}`) =>
+			(await fetchPublicWebApi<{ providers: ProviderPricing[] }>(path)).providers,
+		{
+			fallbackData: initialProviders,
+			revalidateOnMount: false,
+			revalidateOnFocus: true,
+			revalidateOnReconnect: true,
+			focusThrottleInterval: 60_000,
+			refreshInterval: 5 * 60_000,
+			refreshWhenHidden: false,
+			refreshWhenOffline: false,
+			keepPreviousData: true,
+		},
+	);
     const pathname = usePathname() ?? "/";
     const router = useRouter();
     const searchParams = useSearchParams();

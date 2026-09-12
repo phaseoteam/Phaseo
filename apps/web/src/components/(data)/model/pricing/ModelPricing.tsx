@@ -260,6 +260,7 @@ export default async function ModelPricing({
 			<ModelPricingClient
 				modelId={modelId}
 				providers={providersForDisplay}
+				refreshPricing={!providersOverride}
 				creatorOrgId={identity.organisationId}
 				initialPricingTimeMs={now.getTime()}
 				runtimeStats={runtimeStats}

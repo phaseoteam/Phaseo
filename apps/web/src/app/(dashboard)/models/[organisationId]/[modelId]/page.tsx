@@ -299,24 +299,30 @@ export async function generateMetadata(props: {
 	});
 }
 
-async function ModelDetailPageBody({ modelId, routeParams, prefetchedOverview, includeHidden }: {
+async function ModelDetailPageBody({
+	modelId,
+	routeParams,
+	prefetchedOverview,
+	includeHidden,
+	benchmarkPromise,
+	subscriptionPromise,
+	availabilityPromise,
+	pricingPromise,
+	gatewayMetadataPromise,
+	abortPricing,
+}: {
 	modelId: string;
 	routeParams: ModelRouteParams;
 	prefetchedOverview: ModelOverviewPage;
 	includeHidden: boolean;
+	benchmarkPromise: ReturnType<typeof fetchFrontendModelBenchmarkHighlights>;
+	subscriptionPromise: ReturnType<typeof fetchFrontendModelSubscriptionPlans>;
+	availabilityPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelAvailability>> | undefined>;
+	pricingPromise: ReturnType<typeof fetchFrontendModelPricing>;
+	gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null>;
+	abortPricing: () => void;
 }) {
 	const modelPromise = Promise.resolve(prefetchedOverview);
-	const benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
-	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
-	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
-	const pricingAbortController = new AbortController();
-	const pricingPromise = fetchFrontendModelPricing(
-		modelId,
-		pricingAbortController.signal,
-	).catch(() => []);
-	const gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId).catch(
-		() => null,
-	);
 	const gatewayMetadataForVisibilityPromise = withOptionalProviderVisibilityTimeout(
 		gatewayMetadataPromise,
 		null,
@@ -326,7 +332,7 @@ async function ModelDetailPageBody({ modelId, routeParams, prefetchedOverview, i
 		pricingPromise,
 		[],
 		MODEL_PROVIDER_VISIBILITY_TIMEOUT_MS,
-		() => pricingAbortController.abort(),
+		abortPricing,
 	);
 	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability, gatewayMetadata, pricingProviders] =
 		await Promise.all([
@@ -488,6 +494,14 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 	if (isFreeRouterModelId(modelId)) {
 		return <ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} requestedAlias={requestedAlias}><FreeRouterOverview /></ModelDetailShell>;
 	}
+	// Start independent section requests alongside the overview so the header can
+	// stream as soon as its own data arrives, without serializing the lower body.
+	const benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
+	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
+	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
+	const pricingAbortController = new AbortController();
+	const pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal).catch(() => []);
+	const gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
 	const modelOverview = await fetchFrontendModelOverview(modelId)
 		.then(async (model) => model ?? await fetchPrivateModelOverview(modelId))
 		.catch(() => fetchPrivateModelOverview(modelId));
@@ -510,7 +524,18 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 	return (
 		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview} requestedAlias={requestedAlias}>
 			<Suspense fallback={<ModelOverviewSectionsSkeleton />}>
-				<ModelDetailPageBody modelId={modelId} routeParams={routeParams} prefetchedOverview={modelOverview} includeHidden={includeHidden} />
+				<ModelDetailPageBody
+					modelId={modelId}
+					routeParams={routeParams}
+					prefetchedOverview={modelOverview}
+					includeHidden={includeHidden}
+					benchmarkPromise={benchmarkPromise}
+					subscriptionPromise={subscriptionPromise}
+					availabilityPromise={availabilityPromise}
+					pricingPromise={pricingPromise}
+					gatewayMetadataPromise={gatewayMetadataPromise}
+					abortPricing={() => pricingAbortController.abort()}
+				/>
 			</Suspense>
 		</ModelDetailShell>
 	);

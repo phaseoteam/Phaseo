@@ -509,6 +509,7 @@ export async function ModelActivitySection({
 	return (
 		<Section id="activity">
 				<ModelActivityChart
+					modelId={modelId}
 					rows={usageRows}
 					showHeading={showHeading}
 					description="Token volume and request traffic for this model over time."

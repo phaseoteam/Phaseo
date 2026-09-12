@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import useSWR from "swr";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { useQueryState } from "nuqs";
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import {
@@ -23,6 +25,7 @@ import {
 import type { ModelUsageDailyBreakdownRow } from "@/lib/fetchers/models/getModelUsageDailyBreakdown";
 
 type ModelActivityChartProps = {
+	modelId: string;
 	rows: ModelUsageDailyBreakdownRow[];
 	showHeading?: boolean;
 	description?: string;
@@ -161,10 +164,27 @@ function RequestsActivityShape({
 }
 
 export default function ModelActivityChart({
-	rows,
+	modelId,
+	rows: initialRows,
 	showHeading = false,
 	description = "Daily gateway activity over the last 30 days, with current UTC-day pace projection.",
 }: ModelActivityChartProps) {
+	const { data: rows = initialRows } = useSWR<ModelUsageDailyBreakdownRow[]>(
+		`/api/_web/models/${encodeURIComponent(modelId)}/usage-daily?days=30`,
+		async (path: `/api/_web/${string}`) =>
+			(await fetchPublicWebApi<{ rows: ModelUsageDailyBreakdownRow[] }>(path)).rows,
+		{
+			fallbackData: initialRows,
+			revalidateOnMount: false,
+			revalidateOnFocus: true,
+			revalidateOnReconnect: true,
+			focusThrottleInterval: 15 * 60_000,
+			refreshInterval: 15 * 60_000,
+			refreshWhenHidden: false,
+			refreshWhenOffline: false,
+			keepPreviousData: true,
+		},
+	);
 	const [modeParam, setModeParam] = useQueryState("activityMetric", {
 		defaultValue: "tokens",
 	});
