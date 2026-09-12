@@ -305,8 +305,10 @@ export default function ModelActivityChart({
 			? INACTIVE_SERIES_OPACITY
 			: 1;
 
+	if (rows.length === 0) return null;
+
 	return (
-		<div className="space-y-4">
+		<section id="activity" className="scroll-mt-28 space-y-4 border-t border-border/60 pt-6">
 			{showHeading ? (
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-1">
@@ -539,6 +541,6 @@ export default function ModelActivityChart({
 					</Tooltip>
 				))}
 			</div>
-		</div>
+		</section>
 	);
 }

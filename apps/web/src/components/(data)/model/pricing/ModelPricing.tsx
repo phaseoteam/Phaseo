@@ -201,7 +201,17 @@ export default async function ModelPricing({
 						/>
 					</div>
 				) : null}
-				<Empty className="rounded-lg border p-8">
+				<ModelPricingClient
+					modelId={modelId}
+					providers={[]}
+					refreshPricing={!providersOverride}
+					creatorOrgId={identity.organisationId}
+					initialPricingTimeMs={now.getTime()}
+					runtimeStats={runtimeStats}
+					routingHealth={routingHealth}
+					workspacePrivacySettings={workspacePrivacySettings}
+					showHeader={false}
+					emptyState={<Empty className="rounded-lg border p-8">
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<CircleAlert className="size-4" />
@@ -234,7 +244,8 @@ export default async function ModelPricing({
 							</EmptyDescription>
 						</EmptyContent>
 					)}
-				</Empty>
+				</Empty>}
+				/>
 			</div>
 		);
 	}
