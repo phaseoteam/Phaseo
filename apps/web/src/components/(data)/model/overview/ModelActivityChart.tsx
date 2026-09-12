@@ -175,7 +175,7 @@ export default function ModelActivityChart({
 			(await fetchPublicWebApi<{ rows: ModelUsageDailyBreakdownRow[] }>(path)).rows,
 		{
 			fallbackData: initialRows,
-			revalidateOnMount: false,
+			revalidateOnMount: initialRows.length === 0,
 			revalidateOnFocus: true,
 			revalidateOnReconnect: true,
 			focusThrottleInterval: 15 * 60_000,

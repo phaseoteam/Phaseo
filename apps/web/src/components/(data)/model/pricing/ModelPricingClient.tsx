@@ -833,7 +833,7 @@ export default function ModelPricingClient({
 		},
 		{
 			fallbackData: initialProviders,
-			revalidateOnMount: false,
+			revalidateOnMount: initialProviders.length === 0,
 			revalidateOnFocus: true,
 			revalidateOnReconnect: true,
 			focusThrottleInterval: 60_000,
