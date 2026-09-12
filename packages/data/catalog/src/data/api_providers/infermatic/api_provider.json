@@ -1,7 +1,7 @@
 {
   "api_provider_id": "infermatic",
   "api_provider_name": "Infermatic",
-  "description": null,
+  "description": "Flat-rate, OpenAI-compatible inference for a curated catalog of third-party open models, including chat, multimodal, embedding, and text-to-speech models.",
   "link": "https://infermatic.ai/models/",
   "residency_mode": "provider_managed",
   "default_execution_regions": null,
@@ -29,13 +29,40 @@
   "docs_url": "https://ui.infermatic.ai/docs",
   "auth_env": "INFERMATIC_API_KEY",
   "api_formats": [
-    "openai_chat"
+    "openai_chat",
+    "openai_completions",
+    "openai_embeddings",
+    "openai_audio_speech"
   ],
-  "service_tiers": [],
-  "sources": [],
+  "service_tiers": [
+    "free",
+    "essential",
+    "standard",
+    "plus"
+  ],
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://ui.infermatic.ai/docs",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Current endpoints, OpenAI compatibility, base URL, flat-rate billing, and plan-dependent rate limits."
+    },
+    {
+      "kind": "provider_model",
+      "url": "https://infermatic.ai/models/",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Current plan-grouped hosted model catalog, exact public model identifiers where exposed, contexts, modalities, and quantization."
+    },
+    {
+      "kind": "pricing",
+      "url": "https://infermatic.ai/pricing/",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Public monthly flat-rate plan pricing and API request limits."
+    }
+  ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-12",
-    "notes": "Verified against Infermatic's current first-party API documentation and troubleshooting reference."
+    "checked_at": "2026-08-24",
+    "notes": "Reconciled against Infermatic's live first-party API documentation, model catalog, pricing, privacy policy, and terms."
   }
 }

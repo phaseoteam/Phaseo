@@ -11,11 +11,11 @@
     "context_length": 100000,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": [
           {
             "param_id": "max_tokens",
@@ -46,14 +46,28 @@
             "notes": null
           },
           {
-            "param_id": "stop",
+            "param_id": "repetition_penalty",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
             "notes": null
           },
           {
-            "param_id": "seed",
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -78,15 +92,24 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "No longer listed in the live catalog; preserved as disabled history."
     },
     "rate_limits": []
   },
@@ -102,11 +125,11 @@
     "context_length": 32768,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-24T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": [
           {
             "param_id": "max_tokens",
@@ -137,14 +160,28 @@
             "notes": null
           },
           {
-            "param_id": "stop",
+            "param_id": "repetition_penalty",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
             "notes": null
           },
           {
-            "param_id": "seed",
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -169,15 +206,24 @@
     },
     "service_tiers": [],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "No longer listed in the live catalog; preserved as disabled history."
     },
     "rate_limits": []
   },
@@ -193,6 +239,120 @@
     "context_length": 128000,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
+    "effective_to": "2026-08-24T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "No longer listed in the live catalog; preserved as disabled history."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "thedrummer/rocinante-12b-v1.1",
+    "provider_api_model_id": "infermatic:TheDrummer-Rocinante-12B-v1.1",
+    "provider_model_slug": "TheDrummer-Rocinante-12B-v1.1",
+    "internal_model_id": "thedrummer/rocinante-12b-v1.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -228,14 +388,28 @@
             "notes": null
           },
           {
-            "param_id": "stop",
+            "param_id": "repetition_penalty",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
             "notes": null
           },
           {
-            "param_id": "seed",
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -258,17 +432,1506 @@
       "execution": null,
       "data": null
     },
-    "service_tiers": [],
+    "service_tiers": [
+      "free",
+      "essential",
+      "standard",
+      "plus"
+    ],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "intfloat/multilingual-e5-base",
+    "provider_api_model_id": "infermatic:intfloat-multilingual-e5-base",
+    "provider_model_slug": "intfloat-multilingual-e5-base",
+    "internal_model_id": "intfloat/multilingual-e5-base",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
+    "context_length": 512,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "essential",
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_embeddings"
+      ],
+      "endpoint": "/v1/embeddings",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "doctor-shotgun/l3.3-70b-magnum-v4-se",
+    "provider_api_model_id": "infermatic:Doctor-Shotgun-L3.3-70B-Magnum-v4-SE",
+    "provider_model_slug": "Doctor-Shotgun-L3.3-70B-Magnum-v4-SE",
+    "internal_model_id": "doctor-shotgun/l3.3-70b-magnum-v4-se",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "essential",
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "thedrummer/cydonia-24b-v4.3",
+    "provider_api_model_id": "infermatic:Infermatic-Cydonia-24B-v4.3-FP8-Dynamic",
+    "provider_model_slug": "Infermatic-Cydonia-24B-v4.3-FP8-Dynamic",
+    "internal_model_id": "thedrummer/cydonia-24b-v4.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 67584,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "essential",
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-embedding-8b",
+    "provider_api_model_id": "infermatic:Qwen-Qwen3-Embedding-8B",
+    "provider_model_slug": "Qwen-Qwen3-Embedding-8B",
+    "internal_model_id": "qwen/qwen3-embedding-8b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "essential",
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_embeddings"
+      ],
+      "endpoint": "/v1/embeddings",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-8b-instruct",
+    "provider_api_model_id": "infermatic:Qwen-Qwen3-VL-8B-Instruct",
+    "provider_model_slug": "Qwen-Qwen3-VL-8B-Instruct",
+    "internal_model_id": "qwen/qwen3-vl-8b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "essential",
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "sao10k/72b-qwen2.5-kunou-v1",
+    "provider_api_model_id": "infermatic:Sao10K-72B-Qwen2.5-Kunou-v1-FP8-Dynamic",
+    "provider_model_slug": "Sao10K-72B-Qwen2.5-Kunou-v1-FP8-Dynamic",
+    "internal_model_id": "sao10k/72b-qwen2.5-kunou-v1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "essential",
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "sao10k/l3.3-70b-euryale-v2.3",
+    "provider_api_model_id": "infermatic:Sao10K-L3.3-70B-Euryale-v2.3-FP8-Dynamic",
+    "provider_model_slug": "Sao10K-L3.3-70B-Euryale-v2.3-FP8-Dynamic",
+    "internal_model_id": "sao10k/l3.3-70b-euryale-v2.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "essential",
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "sao10k/l3.1-70b-hanami-x1",
+    "provider_api_model_id": "infermatic:Sao10K-L3.1-70B-Hanami-x1",
+    "provider_model_slug": "Sao10K-L3.1-70B-Hanami-x1",
+    "internal_model_id": "sao10k/l3.1-70b-hanami-x1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "essential",
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "thedrummer/anubis-70b-v1.1",
+    "provider_api_model_id": "infermatic:TheDrummer-Anubis-70B-v1.1-FP8-Dynamic",
+    "provider_model_slug": "TheDrummer-Anubis-70B-v1.1-FP8-Dynamic",
+    "internal_model_id": "thedrummer/anubis-70b-v1.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "essential",
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "infermatic/strawberrylemonade-l3-70b-v1.1",
+    "provider_api_model_id": "infermatic:Infermatic/Strawberrylemonade-L3-70B-v1.1-FP8-Dynamic",
+    "provider_model_slug": "Infermatic/Strawberrylemonade-L3-70B-v1.1-FP8-Dynamic",
+    "internal_model_id": "infermatic/strawberrylemonade-l3-70b-v1.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-35b-a3b",
+    "provider_api_model_id": "infermatic:Qwen-Qwen3.6-35B-A3B",
+    "provider_model_slug": "Qwen-Qwen3.6-35B-A3B",
+    "internal_model_id": "qwen/qwen3.6-35b-a3b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 67584,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "prometheus-eval/prometheus-7b-v2.0",
+    "provider_api_model_id": "infermatic:prometheus-eval-prometheus-7b-v2.0",
+    "provider_model_slug": "prometheus-eval-prometheus-7b-v2.0",
+    "internal_model_id": "prometheus-eval/prometheus-7b-v2.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Provider confirms the hosted model and context but does not publish its exact API identifier; slug follows Infermatic's documented creator-model normalization and remains non-routable."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Availability verified; exact ID requires authenticated model discovery."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "anthracite-org/magnum-v4-72b",
+    "provider_api_model_id": "infermatic:anthracite-org-magnum-v4-72b-FP8-Dynamic",
+    "provider_model_slug": "anthracite-org-magnum-v4-72b-FP8-Dynamic",
+    "internal_model_id": "anthracite-org/magnum-v4-72b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "repetition_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "standard",
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_chat"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "hexgrad/kokoro-82m",
+    "provider_api_model_id": "infermatic:TTS-hexgrad-Kokoro-82M",
+    "provider_model_slug": "TTS-hexgrad-Kokoro-82M",
+    "internal_model_id": "hexgrad/kokoro-82m",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-08-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [
+      "plus"
+    ],
+    "api": {
+      "formats": [
+        "openai_audio_speech"
+      ],
+      "endpoint": "/v1/audio/speech",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "provider_model",
+        "url": "https://infermatic.ai/models/",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "First-party catalog evidence."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Infermatic's live first-party catalog."
     },
     "rate_limits": []
   }
