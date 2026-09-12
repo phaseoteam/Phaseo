@@ -109,9 +109,9 @@ export const PUBLIC_CATALOG_TABLE_COLUMNS = {
 
 // These fields are fetched only so the exporter can enforce privacy rules;
 // the sanitizer removes them before any snapshot is written.
-export const INTERNAL_CATALOG_FILTER_COLUMNS = {
+export const INTERNAL_CATALOG_FILTER_COLUMNS: Partial<Record<PublicCatalogTableName, readonly string[]>> = {
 	v2_model_provider_routes: ["is_stealth"],
-} as const satisfies Partial<Record<PublicCatalogTableName, readonly string[]>>;
+};
 
 export type PublicCatalogTableName = keyof typeof PUBLIC_CATALOG_TABLES;
 
