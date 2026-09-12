@@ -63,6 +63,7 @@ test("removes identity fields recursively while preserving catalog values", () =
 		name: "Public model",
 		metadata: {
 			colour: "#fff",
+			authored_by: "user-0",
 			owner_user_id: "user-1",
 			sources: [{ url: "https://example.com", submitted_by: "user-2" }],
 		},

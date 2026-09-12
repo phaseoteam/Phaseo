@@ -5,6 +5,7 @@ const PRIVATE_TABLES = new Set(["v2_catalogue_source_overrides"]);
 const PRIVATE_KEYS = new Set([
 	"account_id",
 	"actor_user_id",
+	"authored_by",
 	"catalog_preview",
 	"created_by",
 	"deleted_by",
@@ -23,6 +24,7 @@ const PRIVATE_KEYS = new Set([
 	"webhook_secret_hash",
 	"webhook_secret_iv",
 	"workspace_id",
+	"is_stealth",
 ]);
 
 function isPrivateKey(key: string): boolean {
