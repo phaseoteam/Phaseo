@@ -45,6 +45,15 @@ function derivePricingPlan(body: any, usage: any, card: PriceCard): string {
     if (tier === "batch") return "batch";
     if (tier === "flex") return "flex";
 
+    // Free model variants encode their pricing tier in the model id (for
+    // example, `poolside/laguna-s-2.1:free`) and providers do not always echo
+    // a service_tier in their usage response. Preserve the free SKU in that
+    // case so cache-read and other zero-priced meters are covered as well.
+    const requestedModel = typeof body?.model === "string"
+        ? body.model.trim().toLowerCase()
+        : "";
+    if (requestedModel.endsWith(":free")) return "free";
+
     return "standard";
 }
 

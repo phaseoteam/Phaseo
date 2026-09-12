@@ -66,7 +66,9 @@ export {
 const CONTEXT_CACHE_PREFIX = "gateway:context";
 
 // Multi-tier caching constants (respecting Cloudflare KV 60s minimum)
-const STATIC_CACHE_PREFIX = "gateway:static:v3";
+// Bump when the static context payload changes or a catalogue/pricing repair
+// must invalidate previously cached provider cards across Worker isolates.
+const STATIC_CACHE_PREFIX = "gateway:static:v4";
 const DYNAMIC_CACHE_PREFIX = "gateway:dynamic";
 const PRESET_CACHE_PREFIX = "gateway:preset:v3";
 

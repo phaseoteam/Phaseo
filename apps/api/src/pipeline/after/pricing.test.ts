@@ -198,6 +198,39 @@ describe("after/pricing calculatePricing", () => {
 		expect(result.pricedUsage?.pricing?.lines ?? []).toHaveLength(0);
 	});
 
+	it("uses the free pricing plan for model ids with a :free suffix", () => {
+		const card: PriceCard = {
+			provider: "poolside",
+			model: "poolside/laguna-s-2.1:free",
+			endpoint: "responses",
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: null,
+			rules: [
+				{
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0",
+					currency: "USD",
+					pricing_plan: "free",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{ cached_read_text_tokens: 32 },
+			card,
+			{ model: "poolside/laguna-s-2.1:free" },
+		);
+
+		expect(result.totalNanos).toBe(0);
+		expect(result.pricedUsage?.pricing?.lines?.[0]?.dimension).toBe("cached_read_text_tokens");
+	});
+
 	it("falls back to a matching standard rule when the requested plan conditions do not match", () => {
 		const card: PriceCard = {
 			...TTS_CARD,
