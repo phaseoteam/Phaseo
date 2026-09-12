@@ -59,17 +59,13 @@ internalRouter.get("/cache", async (c) => {
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 
 	const db = getDataClient(c.env);
-	const [generationResult, eventsResult] = await Promise.all([
-		db.from("web_cache_generations").select("scope,generation,updated_at,updated_by").order("scope"),
-		db
-			.from("web_cache_purge_events")
-			.select("id,scope,target_id,tags,browser_generation_bumped,generation,actor_user_id,purge_succeeded,purge_error,created_at")
-			.order("created_at", { ascending: false })
-			.limit(25),
-	]);
-	if (generationResult.error || eventsResult.error) {
+	const eventsResult = await db
+		.from("web_cache_purge_events")
+		.select("id,scope,target_id,tags,actor_user_id,purge_succeeded,purge_error,created_at")
+		.order("created_at", { ascending: false })
+		.limit(25);
+	if (eventsResult.error) {
 		console.error("cache_control_state_failed", {
-			generationError: generationResult.error,
 			eventsError: eventsResult.error,
 		});
 		return c.json({ error: "cache_control_state_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -80,7 +76,6 @@ internalRouter.get("/cache", async (c) => {
 			...scope,
 			tagCount: new Set(scope.tags).size,
 		})),
-		generations: generationResult.data ?? [],
 		events: eventsResult.data ?? [],
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
@@ -94,11 +89,9 @@ internalRouter.post("/cache/purge", async (c) => {
 	const body = await c.req.json<{
 		scope?: unknown;
 		targetId?: unknown;
-		bumpBrowserGeneration?: unknown;
 	}>().catch(() => ({})) as {
 		scope?: unknown;
 		targetId?: unknown;
-		bumpBrowserGeneration?: unknown;
 	};
 	const scope = String(body.scope ?? "");
 	if (!isCacheScopeId(scope)) {
@@ -133,25 +126,11 @@ internalRouter.post("/cache/purge", async (c) => {
 		purgeResult = { success: false, errors: error instanceof Error ? error.message : String(error) };
 	}
 
-	const shouldBumpGeneration = resolved.definition.affectsSearch && body.bumpBrowserGeneration !== false;
-	let generation: number | null = null;
-	let generationWarning: string | null = null;
-	if (purgeResult.success && shouldBumpGeneration) {
-		const result = await db.rpc("bump_web_cache_generation", {
-			p_scope: "search",
-			p_actor_user_id: user.id,
-		});
-		if (result.error) generationWarning = "Edge cache was purged, but browser generation could not be advanced.";
-		else generation = Number(result.data);
-	}
-
 	const auditError = purgeResult.success ? null : JSON.parse(JSON.stringify(purgeResult.errors ?? "unknown"));
 	const auditResult = await db.from("web_cache_purge_events").insert({
 		scope,
 		target_id: resolved.targetId,
 		tags: resolved.tags,
-		browser_generation_bumped: generation !== null,
-		generation,
 		actor_user_id: user.id,
 		purge_succeeded: purgeResult.success,
 		purge_error: auditError,
@@ -167,9 +146,6 @@ internalRouter.post("/cache/purge", async (c) => {
 		scope,
 		targetId: resolved.targetId,
 		tags: resolved.tags,
-		generation,
-		generationWarning,
-		browserRefreshEnabled: generation !== null,
 		purgedAt: new Date().toISOString(),
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });

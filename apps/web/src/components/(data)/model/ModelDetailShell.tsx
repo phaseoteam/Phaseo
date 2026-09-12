@@ -68,6 +68,23 @@ function getVisibleTabKeys(modelStatus?: string | null): string[] {
 	];
 }
 
+async function ModelNotice({ modelId, includeHidden, status }: { modelId: string; includeHidden: boolean; status?: string | null }) {
+	const notice = await fetchFrontendModelPageNotice(modelId, includeHidden).catch(() => null);
+	return notice ? <div className="mb-6"><ModelPageNotice notice={notice} /></div> : <ModelStatusBanner status={status} className="mb-6" />;
+}
+
+async function ModelStickyHeaderContent({ modelId, organisationId, organisationName, modelName, canChat, gatewayMetadataPromise }: {
+	modelId: string; organisationId: string; organisationName: string; modelName: string; canChat: boolean; gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null>;
+}) {
+	const gatewayMetadata = await gatewayMetadataPromise;
+	return <ModelStickyHeader modelId={modelId} organisationId={organisationId} organisationName={organisationName} modelName={modelName} observeId="model-detail-primary-header" canChat={canChat} gatewayMetadata={gatewayMetadata} />;
+}
+
+async function ModelQuickstartAction({ modelId, modelName, gatewayMetadataPromise }: { modelId: string; modelName: string; gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null> }) {
+	const gatewayMetadata = await gatewayMetadataPromise;
+	return <UseModelSheet modelId={modelId} modelName={modelName} gatewayMetadata={gatewayMetadata} triggerId="quickstart" className="col-span-2 w-full min-w-[8.5rem] justify-center sm:w-auto sm:flex-1 xl:flex-none" />;
+}
+
 export default async function ModelDetailShell({
 	modelId,
 	children,
@@ -78,7 +95,7 @@ export default async function ModelDetailShell({
 	requestedAlias,
 }: ModelDetailShellProps) {
 	const isFreeRouter = isFreeRouterModelId(modelId);
-	const [header, modelOverview, modelPageNotice, gatewayMetadata] = isFreeRouter
+	const [header, modelOverview] = isFreeRouter
 		? [
 				{
 					model_id: FREE_ROUTER_MODEL_ID,
@@ -93,21 +110,20 @@ export default async function ModelDetailShell({
 					hidden: false,
 				},
 				null,
-				null,
-				null,
 			]
 		: await Promise.all([
 				prefetchedHeader ?? fetchFrontendModelHeader(modelId, includeHidden).catch(() => null),
 				prefetchedModelOverview !== undefined
 					? Promise.resolve(prefetchedModelOverview)
 					: fetchFrontendModelOverview(modelId).catch(() => null),
-				fetchFrontendModelPageNotice(modelId, includeHidden).catch(() => null),
-				fetchFrontendModelGatewayMetadata(modelId).catch(() => null),
 			]);
 
 	if (!header) {
 		notFound();
 	}
+	const gatewayMetadataPromise = isFreeRouter
+		? Promise.resolve(null)
+		: fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
 	const modelDescription = isFreeRouter
 		? FREE_ROUTER_DESCRIPTION
 		: modelOverview
@@ -125,25 +141,15 @@ export default async function ModelDetailShell({
 
 	return (
 		<main className="flex flex-col">
-			<ModelStickyHeader
-				modelId={modelId}
-				organisationId={header.organisation_id}
-				organisationName={header.organisation.name}
-				modelName={header.name}
-				observeId="model-detail-primary-header"
-				canChat={canChat}
-				gatewayMetadata={gatewayMetadata}
-			/>
+			<Suspense fallback={null}>
+				<ModelStickyHeaderContent modelId={modelId} organisationId={header.organisation_id} organisationName={header.organisation.name} modelName={header.name} canChat={canChat} gatewayMetadataPromise={gatewayMetadataPromise} />
+			</Suspense>
 
 			<div className="container mx-auto px-4 py-8">
 				<AccountPolicyNotice kind="model" id={modelId} />
-				{modelPageNotice ? (
-					<div className="mb-6">
-						<ModelPageNotice notice={modelPageNotice} />
-					</div>
-				) : (
-					<ModelStatusBanner status={header.status} className="mb-6" />
-				)}
+				<Suspense fallback={<ModelStatusBanner status={header.status} className="mb-6" />}>
+					<ModelNotice modelId={modelId} includeHidden={includeHidden} status={header.status} />
+				</Suspense>
 
 				<div
 					id="model-detail-primary-header"
@@ -211,7 +217,7 @@ export default async function ModelDetailShell({
 								Compare
 							</Link>
 						</Button>
-						{canChat ? <UseModelSheet modelId={modelId} modelName={header.name} gatewayMetadata={gatewayMetadata} triggerId="quickstart" className="col-span-2 w-full min-w-[8.5rem] justify-center sm:w-auto sm:flex-1 xl:flex-none" /> : null}
+						{canChat ? <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} modelName={header.name} gatewayMetadataPromise={gatewayMetadataPromise} /></Suspense> : null}
 					</div>
 				</div>
 

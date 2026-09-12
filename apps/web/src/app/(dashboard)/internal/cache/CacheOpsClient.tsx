@@ -18,7 +18,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
 	fetchCacheControlState,
@@ -42,7 +41,6 @@ export default function CacheOpsClient() {
 	const [error, setError] = useState<string | null>(null);
 	const [targets, setTargets] = useState<Record<string, string>>({});
 	const [pendingPurge, setPendingPurge] = useState<PendingPurge | null>(null);
-	const [bumpBrowserGeneration, setBumpBrowserGeneration] = useState(true);
 	const [destructiveConfirmation, setDestructiveConfirmation] = useState("");
 	const [lastResult, setLastResult] = useState<CachePurgeResult | null>(null);
 	const [isPending, startTransition] = useTransition();
@@ -67,7 +65,6 @@ export default function CacheOpsClient() {
 		return () => window.clearTimeout(timeoutId);
 	}, [loadState]);
 
-	const generation = state?.generations.find((item) => item.scope === "search");
 	const quickScopes = useMemo(
 		() => state?.scopes.filter((scope) => !scope.targetLabel && scope.id !== "all-public") ?? [],
 		[state],
@@ -84,7 +81,6 @@ export default function CacheOpsClient() {
 			toast.error(`${scope.targetLabel ?? "Target"} is required`);
 			return;
 		}
-		setBumpBrowserGeneration(scope.affectsSearch);
 		setDestructiveConfirmation("");
 		setPendingPurge({ scope, targetId });
 	}
@@ -97,7 +93,6 @@ export default function CacheOpsClient() {
 				const result = await purgeCacheScopeAction({
 					scope: scope.id as Parameters<typeof purgeCacheScopeAction>[0]["scope"],
 					targetId: targetId || undefined,
-					bumpBrowserGeneration,
 				});
 				setLastResult(result);
 				setPendingPurge(null);
@@ -113,10 +108,7 @@ export default function CacheOpsClient() {
 		<div className="container mx-auto max-w-6xl space-y-6 py-8">
 			<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 				<div className="space-y-1">
-					<div className="flex items-center gap-2">
-						<h1 className="text-2xl font-semibold">Cache Control Centre</h1>
-						{generation ? <Badge variant="secondary">Search generation {generation.generation}</Badge> : null}
-					</div>
+					<h1 className="text-2xl font-semibold">Cache Control Centre</h1>
 					<p className="max-w-2xl text-sm text-muted-foreground">
 						Purge the matching Cloudflare Worker and website cache families in one operation.
 					</p>
@@ -131,9 +123,9 @@ export default function CacheOpsClient() {
 
 			<Alert>
 				<ShieldAlert className="size-4" />
-				<AlertTitle>Automatic invalidation remains the normal path</AlertTitle>
+				<AlertTitle>Manual refresh for direct database edits</AlertTitle>
 				<AlertDescription>
-					Use this page for imports, repairs, or incident recovery. Edge purges cannot remove an object already stored in a visitor&apos;s browser, so search-aware scopes can also advance a tiny browser generation marker.
+					Use this page after direct database edits, imports, or repairs. A purge refreshes matching Cloudflare data and website caches for subsequent requests. Already-open pages refresh when the visitor returns or reloads.
 				</AlertDescription>
 			</Alert>
 
@@ -151,8 +143,6 @@ export default function CacheOpsClient() {
 					<AlertTitle>Full cache purge completed</AlertTitle>
 					<AlertDescription>
 						Purged {lastResult.tags.length} Worker tags and invalidated the matching website cache at {formatTimestamp(lastResult.purgedAt)}.
-						{lastResult.generation ? ` Search generation is now ${lastResult.generation}.` : ""}
-						{lastResult.generationWarning ? ` ${lastResult.generationWarning}` : ""}
 					</AlertDescription>
 				</Alert>
 			) : null}
@@ -249,16 +239,10 @@ export default function CacheOpsClient() {
 					<AlertDialogHeader>
 						<AlertDialogTitle>Purge {pendingPurge?.scope.label}?</AlertDialogTitle>
 						<AlertDialogDescription>
-							Cloudflare will evict {pendingPurge?.scope.tagCount ?? 0} named cache tags
+							Cloudflare will evict {(pendingPurge?.scope.tagCount ?? 0) + (pendingPurge?.targetId ? 1 : 0)} named cache tags
 							{pendingPurge?.targetId ? ` for ${pendingPurge.targetId}` : ""}, and the matching website data and page caches will be expired immediately.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
-					{pendingPurge?.scope.affectsSearch ? (
-						<label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
-							<Checkbox checked={bumpBrowserGeneration} onCheckedChange={(checked) => setBumpBrowserGeneration(checked === true)} />
-							<span><span className="font-medium">Refresh open browser tabs</span><br /><span className="text-muted-foreground">Advance the search generation so returning tabs discover new models without a hard refresh.</span></span>
-						</label>
-					) : null}
 					{pendingPurge?.scope.danger === "high" ? (
 						<div className="space-y-2">
 							<label className="text-sm font-medium" htmlFor="purge-confirmation">Type PURGE to continue</label>

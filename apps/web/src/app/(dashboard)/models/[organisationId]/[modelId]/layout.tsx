@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import ShowFooterStyle from "@/components/layout/ShowFooterStyle";
 import type { ModelRouteParams } from "@/components/(data)/model/model-route-helpers";
 import ScrollToTopOnModelChange from "./ScrollToTopOnModelChange";
+import RefreshModelPageOnResume from "./RefreshModelPageOnResume";
 
 // Model overview pages override this with indexable metadata. Secondary tabs
 // remain noindex to consolidate search signals on the canonical overview URL.
@@ -34,6 +35,7 @@ export default function ModelDetailLayout({
 	return (
 		<>
 			<ShowFooterStyle />
+			<RefreshModelPageOnResume />
 			<Suspense fallback={null}>
 				<ModelRouteEffects params={params} />
 			</Suspense>

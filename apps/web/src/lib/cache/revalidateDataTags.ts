@@ -188,7 +188,7 @@ function revalidatePublicCataloguePaths(options: RevalidateModelDataTagOptions) 
 	revalidatePath("/sitemap.xml");
 
 	if (options.modelId) {
-		revalidatePath(`/models/${options.modelId}`);
+		revalidatePath(`/models/${options.modelId}`, "layout");
 	}
 
 	for (const organisationId of options.organisationIds ?? []) {

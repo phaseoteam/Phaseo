@@ -339,7 +339,6 @@ function expireNextCacheScope(scope: CacheScopeId, targetId: string | null) {
 export async function purgeCacheScopeAction(input: {
 	scope: CacheScopeId;
 	targetId?: string;
-	bumpBrowserGeneration: boolean;
 }): Promise<CachePurgeResult> {
 	const { accessToken } = await getServerAccountContext();
 	if (!accessToken) throw new Error("Your admin session is no longer available. Sign in again.");

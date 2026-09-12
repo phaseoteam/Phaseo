@@ -10,7 +10,7 @@ describe("cache policy helpers", () => {
 			browserTtlSeconds: 0,
 			browserStaleWhileRevalidateSeconds: 0,
 		});
-		expect(headers["Cache-Control"]).toBe("public, max-age=0, s-maxage=300");
+		expect(headers["Cache-Control"]).toBe("public, max-age=0");
 		expect(headers["Cloudflare-CDN-Cache-Control"]).toBe("public, max-age=300, stale-while-revalidate=604800, stale-if-error=604800");
 	});
 

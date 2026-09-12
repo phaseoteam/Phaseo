@@ -2,13 +2,12 @@ import { Hono, type Context } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache } from "@/http/cache";
-import { getCacheGeneration } from "@/cache/generations";
 import { formatProviderOfferDisplayName, type ProviderOfferScope } from "@/lib/provider-display-name";
 
 export const frontendRouter = new Hono<{ Bindings: Env }>();
 
-const SEARCH_CACHE_SECONDS = 24 * 60 * 60;
-const SEARCH_STALE_SECONDS = 7 * SEARCH_CACHE_SECONDS;
+const SEARCH_CACHE_SECONDS = 2 * 60;
+const SEARCH_STALE_SECONDS = 5 * 60;
 
 type CompactSearchData = {
 	m: unknown[];
@@ -17,7 +16,6 @@ type CompactSearchData = {
 	p: unknown[];
 	s: unknown[];
 	c: unknown[];
-	v: number;
 };
 
 async function fetchAllRows<T>(
@@ -47,7 +45,7 @@ function releaseGroupLabel(value: string | null | undefined): string | null {
 
 async function v2SearchIndex(c: Context<{ Bindings: Env }>): Promise<CompactSearchData> {
 	const db = getDataClient(c.env);
-	const [models, organisationsResult, benchmarksResult, providersResult, generation] = await Promise.all([
+	const [models, organisationsResult, benchmarksResult, providersResult] = await Promise.all([
 		fetchAllRows((from, to) => db.from("v2_models")
 			.select("model_slug,name,lab_slug,released_at,announced_at,lab:v2_labs!v2_models_lab_slug_fkey(name)")
 			.eq("hidden", false)
@@ -56,7 +54,6 @@ async function v2SearchIndex(c: Context<{ Bindings: Env }>): Promise<CompactSear
 		db.from("v2_labs").select("lab_slug,name").order("name", { ascending: true }),
 		db.from("v2_benchmarks").select("benchmark_id,name,total_models").order("name", { ascending: true }),
 		db.from("v2_providers").select("provider_slug,name,offer_label,offer_scope").order("name", { ascending: true }),
-		getCacheGeneration(db, "search"),
 	]);
 	for (const result of [organisationsResult, benchmarksResult, providersResult]) {
 		if (result.error) throw result.error;
@@ -86,30 +83,15 @@ async function v2SearchIndex(c: Context<{ Bindings: Env }>): Promise<CompactSear
 		]),
 		s: [],
 		c: [],
-		v: generation.generation,
 	};
 }
-
-frontendRouter.get("/cache-generation/search", async (c) => {
-	try {
-		const generation = await getCacheGeneration(getDataClient(c.env), "search");
-		return withPublicCache(c.json(generation), {
-			browserTtlSeconds: 0,
-			cacheTags: ["web-api-cache-generation"],
-			edgeTtlSeconds: 5 * 60,
-			staleWhileRevalidateSeconds: 5 * 60,
-		});
-	} catch (error) {
-		console.error("[web-api/cache-generation] failed", error);
-		return c.json({ error: "cache_generation_unavailable" }, 503);
-	}
-});
 
 frontendRouter.get("/search", async (c) => {
 	try {
 		const payload = await v2SearchIndex(c);
 		return withPublicCache(c.json(payload), {
-			browserTtlSeconds: SEARCH_CACHE_SECONDS,
+			browserTtlSeconds: 0,
+			browserStaleWhileRevalidateSeconds: 0,
 			cacheTags: ["web-api-search"],
 			edgeTtlSeconds: SEARCH_CACHE_SECONDS,
 			staleWhileRevalidateSeconds: SEARCH_STALE_SECONDS,

@@ -162,6 +162,7 @@ describe("handleModels", () => {
         expect(JSON.stringify(payload)).not.toContain("base_url");
         expect(JSON.stringify(payload)).not.toContain("upstream_model_id");
         expect(response.headers.get("vary")).toBe("Authorization");
+        expect(response.headers.get("cache-control")).toBe("private, max-age=0");
     });
 
     it("merges an attached private offer into its catalogue model", async () => {

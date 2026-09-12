@@ -770,6 +770,7 @@ export async function createModelAction(formData: FormData) {
 		throw error;
 	}
 
+	await refreshSavedModelCaches(modelId);
 	await submitIndexNowUrls(
 		getIndexNowModelUrls(modelId),
 		`create model ${modelId}`,
@@ -783,6 +784,7 @@ export async function updateModelAction(modelId: string, formData: FormData) {
 	const name = requiredString(formData.get("name"), "name");
 	const result = await updateModel({ modelId, name, organisation_id: organisationId, status: normalizeModelStatus(optionalString(formData.get("status"))), previous_model_id: optionalString(formData.get("previous_model_id")), replacement_model_id: optionalString(formData.get("replacement_model_id")), release_date: optionalString(formData.get("release_date")), announcement_date: optionalString(formData.get("announcement_date")), deprecation_date: optionalString(formData.get("deprecation_date")), retirement_date: optionalString(formData.get("retirement_date")), license: optionalString(formData.get("license")), input_types: normalizeCoreTypes(formData.get("input_types")), output_types: normalizeCoreTypes(formData.get("output_types")), hidden: formData.get("hidden") === "on" });
 	if (!result.ok) throw new Error(result.error ?? "Model update failed");
+	await refreshSavedModelCaches(modelId);
 	await submitIndexNowUrls(
 		getIndexNowModelUrls(modelId),
 		`update model ${modelId}`,
@@ -793,11 +795,20 @@ export async function updateModelAction(modelId: string, formData: FormData) {
 // react-doctor-disable-next-line
 export async function deleteModelAction(modelId: string) {
 	await callCatalogMutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
+	await refreshSavedModelCaches(modelId);
 	await submitIndexNowUrls(
 		getIndexNowModelUrls(modelId),
 		`delete model ${modelId}`,
 	);
 	revalidatePath("/internal/data/models");
+}
+
+async function refreshSavedModelCaches(modelId: string) {
+	try {
+		await revalidateSingleModelAllAction(modelId);
+	} catch (error) {
+		throw new Error(`Model change was saved, but public cache refresh failed for ${modelId}. Retry from Cache controls.`, { cause: error });
+	}
 }
 
 // react-doctor-disable-next-line
