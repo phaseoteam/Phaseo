@@ -2,7 +2,7 @@
   "model_id": "dots-studio/dots3-note-prev",
   "organisation_id": "dots-studio",
   "name": "dots3-note Preview",
-  "status": "Preview",
+  "status": "Available",
   "previous_model_id": null,
   "description": "dots3-note Preview is Dots Studio's first open-weight dots3 model: a 280B-total-parameter, 16B-active multimodal Mixture-of-Experts model for reasoning, tool use, long-horizon agents, code, and multimodal understanding.",
   "announced_date": "2026-08-13T00:00:00Z",
