@@ -107,6 +107,12 @@ export const PUBLIC_CATALOG_TABLE_COLUMNS = {
 	v2_subscription_plan_features: ["plan_uuid", "feature_name", "feature_description", "feature_value", "other_info", "effective_to"],
 } as const satisfies Record<PublicCatalogTableName, readonly string[]>;
 
+// These fields are fetched only so the exporter can enforce privacy rules;
+// the sanitizer removes them before any snapshot is written.
+export const INTERNAL_CATALOG_FILTER_COLUMNS = {
+	v2_model_provider_routes: ["is_stealth"],
+} as const satisfies Partial<Record<PublicCatalogTableName, readonly string[]>>;
+
 export type PublicCatalogTableName = keyof typeof PUBLIC_CATALOG_TABLES;
 
 export const PUBLIC_CATALOG_TABLE_NAMES = Object.keys(PUBLIC_CATALOG_TABLES) as PublicCatalogTableName[];

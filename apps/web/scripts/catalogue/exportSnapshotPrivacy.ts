@@ -24,6 +24,7 @@ const PRIVATE_KEYS = new Set([
 	"webhook_secret_hash",
 	"webhook_secret_iv",
 	"workspace_id",
+	"is_stealth",
 ]);
 
 function isPrivateKey(key: string): boolean {
