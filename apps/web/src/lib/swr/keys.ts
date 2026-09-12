@@ -7,6 +7,7 @@ export const publicSWRKeys = {
 		"/api/_web/models?limit=10000&offset=0&shape=table&projection=2",
 	modelsTableV2:
 		"/api/_web/models?limit=10000&offset=0&shape=table&projection=2&catalogue_version=v2",
-	search: "/api/_web/search",
+	// A fixed new key avoids previously cached one-day browser responses after rollout.
+	search: "/api/_web/search?client-cache=no-browser",
 	status: "/api/_web/status",
 } as const;

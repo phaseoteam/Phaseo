@@ -27,7 +27,7 @@ export type CacheScopeDefinition = {
 	tags: readonly string[];
 };
 
-const SEARCH_TAGS = ["web-api-search", "web-api-cache-generation"] as const;
+const SEARCH_TAGS = ["web-api-search"] as const;
 
 const CATALOGUE_TAGS = [
 	"web-api-models",
@@ -62,7 +62,6 @@ const CATALOGUE_TAGS = [
 	"web-api-countries",
 	"web-api-collections",
 	"web-api-search",
-	"web-api-cache-generation",
 ] as const;
 
 const ALL_PUBLIC_TAGS = [

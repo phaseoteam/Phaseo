@@ -25,7 +25,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { purgeCacheScopeAction } from "@/app/(dashboard)/internal/cache/actions";
 import {
 	verifyCacheAdmin,
@@ -124,7 +123,6 @@ function DeveloperPanel({
 
 function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 	const [confirming, setConfirming] = useState(false);
-	const [refreshBrowsers, setRefreshBrowsers] = useState(target?.affectsSearch ?? false);
 	const [lastResult, setLastResult] = useState<CachePurgeResult | null>(null);
 	const [isPending, startTransition] = useTransition();
 
@@ -144,7 +142,6 @@ function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 				const result = await purgeCacheScopeAction({
 					scope: resolvedTarget.scope,
 					targetId: resolvedTarget.targetId,
-					bumpBrowserGeneration: refreshBrowsers,
 				});
 				setLastResult(result);
 				setConfirming(false);
@@ -168,12 +165,6 @@ function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 					</div>
 					<Badge variant="outline">{target.scope}</Badge>
 				</div>
-				{target.affectsSearch ? (
-					<label className="mt-3 flex items-start gap-2 text-xs">
-						<Checkbox checked={refreshBrowsers} onCheckedChange={(checked) => setRefreshBrowsers(checked === true)} />
-						<span><span className="font-medium">Refresh returning browser tabs</span><br /><span className="text-muted-foreground">Advance the search generation after the edge purge.</span></span>
-					</label>
-				) : null}
 			</div>
 
 			<Button type="button" className="w-full" onClick={() => setConfirming(true)} disabled={isPending}>
@@ -182,8 +173,7 @@ function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 			</Button>
 			{lastResult ? (
 				<p className="text-xs text-emerald-700 dark:text-emerald-400">
-					Purged {lastResult.tags.length} tags
-					{lastResult.generation ? ` · search generation ${lastResult.generation}` : ""}.
+					Purged {lastResult.tags.length} tags.
 				</p>
 			) : null}
 

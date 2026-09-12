@@ -13,6 +13,7 @@ import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import ModelOverviewSections, {
 	ModelCreatorModelsSection,
 	ModelCreatorModelsSkeleton,
+	ModelOverviewSectionsSkeleton,
 } from "@/components/(data)/model/overview/ModelOverviewSections";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import ModelPageToc, {
@@ -226,9 +227,8 @@ export async function generateMetadata(props: {
 		false,
 	);
 	const { modelId, modelName, organisationName, modelDescription } = identity;
-	const model = await fetchFrontendModelOverview(modelId).catch(() => null)
-		?? await fetchPrivateModelOverview(modelId).catch(() => null);
-	const [benchmarks, pricing, gatewayMetadata, subscriptions] = await Promise.all([
+	const [model, benchmarks, pricing, gatewayMetadata, subscriptions] = await Promise.all([
+		fetchFrontendModelOverview(modelId).then(async (overview) => overview ?? await fetchPrivateModelOverview(modelId)).catch(() => fetchPrivateModelOverview(modelId).catch(() => null)),
 		fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
 		fetchFrontendModelPricing(modelId).catch(() => []),
 		fetchFrontendModelGatewayMetadata(modelId).catch(() => null),
@@ -299,44 +299,30 @@ export async function generateMetadata(props: {
 	});
 }
 
-export default async function Page({
-	params,
+async function ModelDetailPageBody({
+	modelId,
+	routeParams,
+	prefetchedOverview,
+	includeHidden,
+	benchmarkPromise,
+	subscriptionPromise,
+	availabilityPromise,
+	pricingPromise,
+	gatewayMetadataPromise,
+	abortPricing,
 }: {
-	params: Promise<ModelRouteParams>;
+	modelId: string;
+	routeParams: ModelRouteParams;
+	prefetchedOverview: ModelOverviewPage;
+	includeHidden: boolean;
+	benchmarkPromise: ReturnType<typeof fetchFrontendModelBenchmarkHighlights>;
+	subscriptionPromise: ReturnType<typeof fetchFrontendModelSubscriptionPlans>;
+	availabilityPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelAvailability>> | undefined>;
+	pricingPromise: ReturnType<typeof fetchFrontendModelPricing>;
+	gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null>;
+	abortPricing: () => void;
 }) {
-	const routeParams = await params;
-	const includeHidden = false;
-	const { requestedModelId, canonicalModelId, source } = await resolveModelRouteIds(
-		routeParams,
-		includeHidden,
-	);
-	const isAliasRoute = isModelAliasRoute({ requestedModelId, canonicalModelId, source });
-	if (canonicalModelId !== requestedModelId && !isAliasRoute) {
-		permanentRedirect(getModelPath(canonicalModelId));
-	}
-	const requestedAlias = isAliasRoute ? requestedModelId : undefined;
-	const modelId = canonicalModelId;
-	if (isFreeRouterModelId(modelId)) {
-		return (
-			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} requestedAlias={requestedAlias}>
-				<FreeRouterOverview />
-			</ModelDetailShell>
-		);
-	}
-	const modelPromise = fetchFrontendModelOverview(modelId)
-		.then(async (model) => model ?? await fetchPrivateModelOverview(modelId))
-		.catch(() => fetchPrivateModelOverview(modelId));
-	const benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
-	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
-	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
-	const pricingAbortController = new AbortController();
-	const pricingPromise = fetchFrontendModelPricing(
-		modelId,
-		pricingAbortController.signal,
-	).catch(() => []);
-	const gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId).catch(
-		() => null,
-	);
+	const modelPromise = Promise.resolve(prefetchedOverview);
 	const gatewayMetadataForVisibilityPromise = withOptionalProviderVisibilityTimeout(
 		gatewayMetadataPromise,
 		null,
@@ -346,7 +332,7 @@ export default async function Page({
 		pricingPromise,
 		[],
 		MODEL_PROVIDER_VISIBILITY_TIMEOUT_MS,
-		() => pricingAbortController.abort(),
+		abortPricing,
 	);
 	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability, gatewayMetadata, pricingProviders] =
 		await Promise.all([
@@ -389,21 +375,6 @@ export default async function Page({
 	const modelName = modelOverview?.name ?? modelId.split("/").slice(-1)[0] ?? modelId;
 	const organisationName =
 		modelOverview?.organisation?.name ?? routeParams.organisationId;
-	const modelHeader = modelOverview ? {
-		model_id: modelOverview.model_id,
-		name: modelOverview.name,
-		organisation_id: modelOverview.organisation_id,
-		organisation: {
-			name: modelOverview.organisation.name,
-			country_code: modelOverview.organisation.country_code ?? "",
-			logo_url: modelOverview.organisation.logo_url ?? null,
-		},
-		aliases: modelOverview.aliases ?? [],
-		family_id: modelOverview.family_id ?? undefined,
-		status: modelOverview.status,
-		hidden: false,
-		is_private: isPrivateModel,
-	} : undefined;
 	const datasetSchema = {
 		"@context": "https://schema.org",
 		"@type": "Dataset",
@@ -461,8 +432,7 @@ export default async function Page({
 				id="model-breadcrumb-schema"
 				data={breadcrumbSchema}
 			/>
-			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview} requestedAlias={requestedAlias}>
-				<div className="space-y-10">
+			<div className="space-y-10">
 					<div className="flex flex-col gap-6 lg:flex-row lg:items-start">
 						<ModelPageToc
 							items={modelPageTocItems}
@@ -506,8 +476,67 @@ export default async function Page({
 							/>
 						</Suspense>
 					)}
-				</div>
-			</ModelDetailShell>
+			</div>
 		</>
+	);
+}
+
+export default async function Page({ params }: { params: Promise<ModelRouteParams> }) {
+	const routeParams = await params;
+	const includeHidden = false;
+	const { requestedModelId, canonicalModelId, source } = await resolveModelRouteIds(routeParams, includeHidden);
+	const isAliasRoute = isModelAliasRoute({ requestedModelId, canonicalModelId, source });
+	if (canonicalModelId !== requestedModelId && !isAliasRoute) {
+		permanentRedirect(getModelPath(canonicalModelId));
+	}
+	const requestedAlias = isAliasRoute ? requestedModelId : undefined;
+	const modelId = canonicalModelId;
+	if (isFreeRouterModelId(modelId)) {
+		return <ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} requestedAlias={requestedAlias}><FreeRouterOverview /></ModelDetailShell>;
+	}
+	// Start independent section requests alongside the overview so the header can
+	// stream as soon as its own data arrives, without serializing the lower body.
+	const benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
+	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
+	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
+	const pricingAbortController = new AbortController();
+	const pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal).catch(() => []);
+	const gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
+	const modelOverview = await fetchFrontendModelOverview(modelId)
+		.then(async (model) => model ?? await fetchPrivateModelOverview(modelId))
+		.catch(() => fetchPrivateModelOverview(modelId));
+	if (!modelOverview) notFound();
+	const modelHeader = {
+		model_id: modelOverview.model_id,
+		name: modelOverview.name,
+		organisation_id: modelOverview.organisation_id,
+		organisation: {
+			name: modelOverview.organisation.name,
+			country_code: modelOverview.organisation.country_code ?? "",
+			logo_url: modelOverview.organisation.logo_url ?? null,
+		},
+		aliases: modelOverview.aliases ?? [],
+		family_id: modelOverview.family_id ?? undefined,
+		status: modelOverview.status,
+		hidden: false,
+		is_private: modelOverview.is_private === true,
+	};
+	return (
+		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview} requestedAlias={requestedAlias}>
+			<Suspense fallback={<ModelOverviewSectionsSkeleton />}>
+				<ModelDetailPageBody
+					modelId={modelId}
+					routeParams={routeParams}
+					prefetchedOverview={modelOverview}
+					includeHidden={includeHidden}
+					benchmarkPromise={benchmarkPromise}
+					subscriptionPromise={subscriptionPromise}
+					availabilityPromise={availabilityPromise}
+					pricingPromise={pricingPromise}
+					gatewayMetadataPromise={gatewayMetadataPromise}
+					abortPricing={() => pricingAbortController.abort()}
+				/>
+			</Suspense>
+		</ModelDetailShell>
 	);
 }

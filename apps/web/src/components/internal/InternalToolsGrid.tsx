@@ -77,7 +77,7 @@ const internalTools = [
 		id: "cache-ops",
 		title: "Cache Control Centre",
 		description:
-			"Purge named Cloudflare Worker scopes, advance browser search generations, and review the audit trail.",
+			"Purge named Cloudflare Worker and website caches, and review the audit trail.",
 		icon: RefreshCcw,
 		href: "/internal/cache",
 		comingSoon: false,

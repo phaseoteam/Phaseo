@@ -701,15 +701,15 @@ describe("public model routes", () => {
 		]);
 
 		expect(catalogue.status).toBe(200);
-		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=604800, stale-if-error=604800");
-		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0, s-maxage=300");
+		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=120, stale-while-revalidate=300, stale-if-error=604800");
+		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(benchmarks.status).toBe(200);
-		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=86400, stale-while-revalidate=604800");
-		expect(benchmarks.headers.get("cache-control")).toBe("public, max-age=0, s-maxage=86400");
+		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=120, stale-while-revalidate=300, stale-if-error=604800");
+		expect(benchmarks.headers.get("cache-control")).toBe("public, max-age=0");
 		await expect(benchmarks.json()).resolves.toMatchObject({ highlights: [{ benchmarkId: "mmlu", score: 85, scoreDisplay: "85%", rank: 2 }] });
 		expect(performance.status).toBe(200);
 		expect(performance.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
-		expect(performance.headers.get("cache-control")).toBe("public, max-age=0, s-maxage=900");
+		expect(performance.headers.get("cache-control")).toBe("public, max-age=0");
 	});
 
 	it("keeps the model page healthy when the optional performance rollup fails", async () => {
@@ -1193,6 +1193,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-details");
+		expect(response.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		await expect(response.json()).resolves.toMatchObject({
 			model: {
 				model_id: "openai/gpt-test",
@@ -1358,6 +1359,7 @@ describe("public model routes", () => {
 
 		expect(timeline.status).toBe(200);
 		expect(timeline.headers.get("cache-tag")).toContain("web-api-model-timelines");
+		expect(timeline.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		expect(await timeline.json()).toMatchObject({
 			events: expect.arrayContaining([
 				expect.objectContaining({ eventType: "FutureModel", modelId: "openai/gpt-next" }),
@@ -1366,6 +1368,7 @@ describe("public model routes", () => {
 		});
 		expect(subscriptions.status).toBe(200);
 		expect(subscriptions.headers.get("cache-tag")).toContain("web-api-model-subscriptions");
+		expect(subscriptions.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		await expect(subscriptions.json()).resolves.toMatchObject({
 			subscription_plans: [{
 				plan_id: "pro",
@@ -1404,7 +1407,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=3600, stale-while-revalidate=86400",
+			"public, max-age=120, stale-while-revalidate=300, stale-if-error=604800",
 		);
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-notices");
 		await expect(response.json()).resolves.toEqual({

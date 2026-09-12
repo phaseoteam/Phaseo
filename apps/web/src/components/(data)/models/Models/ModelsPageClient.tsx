@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import useSWR from "swr";
 import { publicSWRKeys } from "@/lib/swr/keys";
 import {
@@ -7,8 +9,11 @@ import {
 	fetchModelsPageDataV2,
 } from "@/lib/swr/models";
 import { useRevalidateOnResume } from "@/lib/swr/useRevalidateOnResume";
-import ModelsDisplay from "./ModelsDisplay";
 import { ModelsPageSkeleton } from "./ModelsPageSkeleton";
+
+const ModelsDisplay = dynamic(() => import("./ModelsDisplay"), {
+	loading: () => <ModelsPageSkeleton />,
+});
 
 type ModelsPageClientProps = {
 	catalogueVersion?: "v1" | "v2";
@@ -24,9 +29,14 @@ export default function ModelsPageClient({
 	const { data, error, mutate } = useSWR(swrKey, fetcher, {
 		revalidateOnFocus: false,
 		revalidateOnReconnect: false,
-		refreshInterval: 0,
+		refreshInterval: 2 * 60 * 1_000,
+		refreshWhenHidden: false,
 	});
 	useRevalidateOnResume(mutate, error);
+	useEffect(() => {
+		// Load the display code alongside the catalogue request, not after it.
+		void import("./ModelsDisplay");
+	}, []);
 
 	if (error && !data) throw error;
 	if (!data) return <ModelsPageSkeleton />;

@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import useSWR from "swr";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { useQueryState } from "nuqs";
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import {
@@ -23,6 +25,7 @@ import {
 import type { ModelUsageDailyBreakdownRow } from "@/lib/fetchers/models/getModelUsageDailyBreakdown";
 
 type ModelActivityChartProps = {
+	modelId: string;
 	rows: ModelUsageDailyBreakdownRow[];
 	showHeading?: boolean;
 	description?: string;
@@ -161,10 +164,27 @@ function RequestsActivityShape({
 }
 
 export default function ModelActivityChart({
-	rows,
+	modelId,
+	rows: initialRows,
 	showHeading = false,
 	description = "Daily gateway activity over the last 30 days, with current UTC-day pace projection.",
 }: ModelActivityChartProps) {
+	const { data: rows = initialRows } = useSWR<ModelUsageDailyBreakdownRow[]>(
+		`/api/_web/models/${encodeURIComponent(modelId)}/usage-daily?days=30`,
+		async (path: `/api/_web/${string}`) =>
+			(await fetchPublicWebApi<{ rows: ModelUsageDailyBreakdownRow[] }>(path)).rows,
+		{
+			fallbackData: initialRows,
+			revalidateOnMount: initialRows.length === 0,
+			revalidateOnFocus: true,
+			revalidateOnReconnect: true,
+			focusThrottleInterval: 15 * 60_000,
+			refreshInterval: 15 * 60_000,
+			refreshWhenHidden: false,
+			refreshWhenOffline: false,
+			keepPreviousData: true,
+		},
+	);
 	const [modeParam, setModeParam] = useQueryState("activityMetric", {
 		defaultValue: "tokens",
 	});
@@ -285,8 +305,10 @@ export default function ModelActivityChart({
 			? INACTIVE_SERIES_OPACITY
 			: 1;
 
+	if (rows.length === 0) return null;
+
 	return (
-		<div className="space-y-4">
+		<section id="activity" className="scroll-mt-28 space-y-4 border-t border-border/60 pt-6">
 			{showHeading ? (
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-1">
@@ -519,6 +541,6 @@ export default function ModelActivityChart({
 					</Tooltip>
 				))}
 			</div>
-		</div>
+		</section>
 	);
 }

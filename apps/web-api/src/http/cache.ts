@@ -33,7 +33,10 @@ export function publicCacheHeaders(policy: PublicCachePolicy): Record<string, st
 		"Cache-Control": [
 			"public",
 			`max-age=${browserTtlSeconds}`,
-			`s-maxage=${policy.edgeTtlSeconds}`,
+			// The Cloudflare-specific header owns the shared cache policy. Avoid
+			// s-maxage on zero-browser-TTL responses because it can disable stale
+			// serving even when stale-while-revalidate is configured at the edge.
+			browserTtlSeconds > 0 ? `s-maxage=${policy.edgeTtlSeconds}` : null,
 			browserStaleSeconds > 0
 				? `stale-while-revalidate=${browserStaleSeconds}`
 				: null,

@@ -504,16 +504,13 @@ export async function ModelActivitySection({
 		[],
 		"model activity"
 	);
-	if (usageRows.length === 0) return null;
-
 	return (
-		<Section id="activity">
-				<ModelActivityChart
-					rows={usageRows}
-					showHeading={showHeading}
-					description="Token volume and request traffic for this model over time."
-				/>
-		</Section>
+		<ModelActivityChart
+			modelId={modelId}
+			rows={usageRows}
+			showHeading={showHeading}
+			description="Token volume and request traffic for this model over time."
+		/>
 	);
 }
 

@@ -3,8 +3,9 @@
 import { useEffect, useRef } from "react";
 import type { KeyedMutator } from "swr";
 
-// Keep resume checks aligned with the public models catalogue cache TTL.
-const RESUME_REVALIDATION_INTERVAL_MS = 30 * 60 * 1_000;
+// Avoid downloading the full catalogue on every focus event, but check promptly
+// when a visitor returns to a long-lived tab.
+const RESUME_REVALIDATION_INTERVAL_MS = 60 * 1_000;
 
 /**
  * Revalidate after a long-lived tab becomes active again.

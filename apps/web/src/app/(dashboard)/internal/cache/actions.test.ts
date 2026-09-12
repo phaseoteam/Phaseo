@@ -15,7 +15,7 @@ jest.mock("@/app/(dashboard)/internal/data/actions", () => ({
 
 describe("complete model page revalidation", () => {
 	const modelId = "deepseek/deepseek-v4.1-flash";
-	const input = { scope: "model" as const, targetId: modelId, bumpBrowserGeneration: true };
+	const input = { scope: "model" as const, targetId: modelId };
 
 	beforeEach(() => {
 		jest.resetAllMocks();
@@ -43,7 +43,7 @@ describe("complete model page revalidation", () => {
 		}
 		expect(updateTag).toHaveBeenCalledWith(`model:api:${modelId}`);
 		expect(updateTag).toHaveBeenCalledWith("public-model-catalogue");
-		expect(revalidatePath).toHaveBeenCalledWith(`/models/${modelId}`);
+		expect(revalidatePath).toHaveBeenCalledWith(`/models/${modelId}`, "layout");
 	});
 
 	it("does not rebuild the website from stale Worker data when the purge fails", async () => {

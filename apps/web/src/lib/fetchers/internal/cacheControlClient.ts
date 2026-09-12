@@ -20,8 +20,6 @@ export type CachePurgeEvent = {
 	scope: string;
 	target_id: string | null;
 	tags: string[];
-	browser_generation_bumped: boolean;
-	generation: number | null;
 	actor_user_id: string | null;
 	purge_succeeded: boolean;
 	purge_error: unknown;
@@ -30,12 +28,6 @@ export type CachePurgeEvent = {
 
 export type CacheControlState = {
 	scopes: CacheScope[];
-	generations: Array<{
-		scope: string;
-		generation: number;
-		updated_at: string;
-		updated_by: string | null;
-	}>;
 	events: CachePurgeEvent[];
 };
 
@@ -44,9 +36,6 @@ export type CachePurgeResult = {
 	scope: string;
 	targetId: string | null;
 	tags: string[];
-	generation: number | null;
-	generationWarning: string | null;
-	browserRefreshEnabled: boolean;
 	purgedAt: string;
 };
 

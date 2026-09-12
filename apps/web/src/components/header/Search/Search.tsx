@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import { usePathname, useRouter } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTheme } from "next-themes";
@@ -55,8 +55,7 @@ import type {
 } from "@/lib/fetchers/search/types";
 import { publicSWRKeys } from "@/lib/swr/keys";
 import {
-	canCheckSearchGeneration,
-	searchIndexPath,
+	canRefreshSearchIndex,
 	wasAwayLongEnough,
 } from "./Search.freshness";
 import { compareSearchCategories, searchContextScore } from "@/components/header/Search/Search.ranking";
@@ -264,7 +263,6 @@ function expandSearchData(value: SearchData | CompactSearchData): SearchData {
 			href,
 			flagIso,
 		})),
-		cacheGeneration: Math.max(1, Number(value.v ?? 1)),
 	};
 }
 
@@ -279,7 +277,7 @@ async function fetchSearchData(path: string): Promise<SearchData> {
 	);
 }
 
-let lastSearchGenerationCheckAt = 0;
+let lastSearchRefreshAt = 0;
 
 const ACTION_SEARCH_INDEX = createSearchIndex(GLOBAL_ACTION_ITEMS);
 const RESOURCE_SEARCH_INDEX = createSearchIndex(EXTERNAL_RESOURCE_ITEMS);
@@ -645,7 +643,8 @@ export default function Search({
 	const queryUpdateTimeoutRef = useRef<number | null>(null);
 	const inputValueRef = useRef("");
 	const awaySinceRef = useRef<number | null>(null);
-	const searchGenerationRef = useRef(1);
+	const hasLoadedSearchRef = useRef(false);
+	const { mutate: mutateGlobalSearch } = useSWRConfig();
 	const [open, setOpen] = useState(initiallyOpen);
 	const [query, setQuery] = useState("");
 	const [activeRowIndex, setActiveRowIndex] = useState(0);
@@ -653,13 +652,14 @@ export default function Search({
 		data: searchData,
 		error: searchDataFetchError,
 		isLoading: isLoadingSearchData,
-		mutate: mutateSearchData,
 	} = useSWR(open ? publicSWRKeys.search : null, fetchSearchData, {
-		dedupingInterval: 24 * 60 * 60 * 1_000,
-		revalidateIfStale: false,
+		dedupingInterval: 60 * 1_000,
+		revalidateIfStale: true,
+		// The resume handler also refreshes the cached index while the palette is closed.
 		revalidateOnFocus: false,
 		revalidateOnReconnect: false,
 	});
+	if (searchData) hasLoadedSearchRef.current = true;
 	const { data: workspaceItems = [] } = useSWR(
 		open ? "/api/search/workspaces" : null,
 		fetchWorkspaceSearchItems,
@@ -671,7 +671,6 @@ export default function Search({
 			shouldRetryOnError: false,
 		},
 	);
-	searchGenerationRef.current = searchData?.cacheGeneration ?? 1;
 	const searchDataError = searchDataFetchError
 		? "Unable to load search data."
 		: null;
@@ -701,30 +700,19 @@ export default function Search({
 		}
 
 		function maybeRefreshAfterAway() {
-			if (!searchData) return;
+			if (!hasLoadedSearchRef.current) return;
 			const now = Date.now();
 			const awaySince = awaySinceRef.current;
 			awaySinceRef.current = null;
 			if (!wasAwayLongEnough(awaySince, now)) return;
-			if (!canCheckSearchGeneration(lastSearchGenerationCheckAt, now)) return;
-			lastSearchGenerationCheckAt = now;
+			if (!canRefreshSearchIndex(lastSearchRefreshAt, now)) return;
+			lastSearchRefreshAt = now;
 
-			void fetch("/api/_web/cache-generation/search", {
-				method: "GET",
-				credentials: "omit",
-			})
-				.then(async (response) => {
-					if (!response.ok) throw new Error("Failed to check search generation");
-					const payload = await response.json() as { generation?: unknown };
-					return Math.max(1, Number(payload.generation ?? 1));
-				})
-				.then(async (generation) => {
-					if (generation <= searchGenerationRef.current) return;
-					await mutateSearchData(
-						fetchSearchData(searchIndexPath(generation)),
-						{ revalidate: false },
-					);
-				})
+			void mutateGlobalSearch(
+				publicSWRKeys.search,
+				fetchSearchData(publicSWRKeys.search),
+				{ revalidate: false },
+			)
 				.catch(() => {
 					// The existing index remains usable; the next eligible focus can retry.
 				});
@@ -744,7 +732,7 @@ export default function Search({
 			window.removeEventListener("blur", markAway);
 			window.removeEventListener("focus", maybeRefreshAfterAway);
 		};
-	}, [mutateSearchData, searchData]);
+	}, [mutateGlobalSearch]);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {

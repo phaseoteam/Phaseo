@@ -10,6 +10,8 @@ import React, {
 } from "react";
 import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
 import useSWR from "swr";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
+import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -773,7 +775,8 @@ export function getProviderServiceTierDisplayName(provider: ProviderPricing): st
 
 export default function ModelPricingClient({
 	modelId,
-	providers,
+	providers: initialProviders,
+	refreshPricing = false,
     creatorOrgId,
     initialPricingTimeMs,
     runtimeStats = EMPTY_RUNTIME_STATS,
@@ -781,9 +784,11 @@ export default function ModelPricingClient({
     workspacePrivacySettings = null,
     showHeader = true,
     headerDescription,
+    emptyState,
 }: {
     modelId: string;
     providers: ProviderPricing[];
+	refreshPricing?: boolean;
     creatorOrgId?: string | null;
     initialPricingTimeMs: number;
     runtimeStats?: ProviderRuntimeStatsMap;
@@ -791,8 +796,53 @@ export default function ModelPricingClient({
     workspacePrivacySettings?: WorkspacePrivacySettings | null;
     showHeader?: boolean;
     headerDescription?: string | null;
+    emptyState?: React.ReactNode;
 }) {
     const pricingTimeMs = usePricingClock(initialPricingTimeMs);
+	const { data: providers = initialProviders } = useSWR<ProviderPricing[]>(
+		refreshPricing ? `/api/_web/models/${encodeURIComponent(modelId)}/pricing` : null,
+		async (path: `/api/_web/${string}`) => {
+			const [pricing, gateway] = await Promise.all([
+				fetchPublicWebApi<{ providers: ProviderPricing[] }>(path),
+				fetchPublicWebApi<{ metadata: ModelGatewayMetadata }>(
+					`/api/_web/models/${encodeURIComponent(modelId)}/gateway-metadata`,
+				).catch(() => null),
+			]);
+			const modesByProvider = new Map<string, boolean[]>();
+			for (const provider of gateway?.metadata.activeProviders ?? []) {
+				const modes = modesByProvider.get(provider.api_provider_id) ?? [];
+				modes.push(provider.credential_mode === "byok_only");
+				modesByProvider.set(provider.api_provider_id, modes);
+			}
+			const initialModes = new Map(initialProviders.map((provider) => [
+				provider.provider.api_provider_id,
+				provider.provider.credential_mode,
+			]));
+			return pricing.providers.map((provider) => ({
+				...provider,
+				provider: {
+					...provider.provider,
+					credential_mode: modesByProvider.has(provider.provider.api_provider_id)
+						? modesByProvider.get(provider.provider.api_provider_id)?.every(Boolean)
+							? "byok_only" as const
+							: "managed_and_byok" as const
+						: initialModes.get(provider.provider.api_provider_id) ??
+							provider.provider.credential_mode ?? "managed_and_byok",
+				},
+			}));
+		},
+		{
+			fallbackData: initialProviders,
+			revalidateOnMount: initialProviders.length === 0,
+			revalidateOnFocus: true,
+			revalidateOnReconnect: true,
+			focusThrottleInterval: 60_000,
+			refreshInterval: 5 * 60_000,
+			refreshWhenHidden: false,
+			refreshWhenOffline: false,
+			keepPreviousData: true,
+		},
+	);
     const pathname = usePathname() ?? "/";
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -1912,7 +1962,7 @@ export default function ModelPricingClient({
                         </EmptyHeader>
                     </Empty>
                 ) : (
-                    <Empty className="rounded-lg border p-8">
+                    emptyState ?? <Empty className="rounded-lg border p-8">
                         <EmptyHeader>
                             <EmptyMedia variant="icon">
                                 <Server className="size-5" />

@@ -669,8 +669,8 @@ export async function handleModels(req: Request) {
 
     const cacheOptions = {
         scope: cacheScope,
-        ttlSeconds: 1800,
-        staleSeconds: 1800,
+        ttlSeconds: 0,
+        staleSeconds: 0,
         varyHeaders: [],
     };
 
@@ -977,8 +977,8 @@ export async function handleModelEndpoints(req: Request) {
             200,
             cacheHeaders({
                 scope: "models:endpoints:shared:v1",
-                ttlSeconds: 1800,
-                staleSeconds: 1800,
+                ttlSeconds: 0,
+                staleSeconds: 0,
                 varyHeaders: [],
             }),
         );
