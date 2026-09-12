@@ -132,7 +132,7 @@ Phaseo is an open model database and OpenAI-compatible gateway for comparing mod
 - Public model and provider browsing pages
 - Pricing and gateway overview pages
 - Machine-readable API discovery metadata
-- Browser-native WebMCP homepage tools for navigation and API discovery
+- Browser-native WebMCP tools for model discovery, evidence, pricing, comparison, and gateway workflows
 `;
 }
 
@@ -308,7 +308,7 @@ export function buildMcpServerCard() {
 				type: "webmcp",
 				url: SITE_URL,
 				description:
-					"Homepage-level browser tools exposed through navigator.modelContext for AI agents running in compatible browsers.",
+					"Site-wide browser tools exposed through document.modelContext for AI agents running in compatible browsers.",
 			},
 		],
 		capabilities: {

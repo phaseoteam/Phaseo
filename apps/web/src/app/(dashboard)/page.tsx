@@ -28,7 +28,6 @@ import {
 import HomeReliabilitySection from "@/components/landingPage/Home/HomeReliabilitySection";
 import PartnerLogos from "@/components/landingPage/PartnerLogos/PartnerLogos";
 import { Logo } from "@/components/Logo";
-import { HomepageModelContext } from "@/components/agents/HomepageModelContext";
 import { Button } from "@/components/ui/button";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import Script from "next/script";
@@ -345,7 +344,6 @@ export default async function Page() {
 					__html: JSON.stringify(organizationSchema),
 				}}
 			/>
-			<HomepageModelContext />
 			<LandingPage
 				isBeta={heroVariant === "experimental"}
 				modelPrices={modelPrices}

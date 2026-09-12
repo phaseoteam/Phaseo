@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,11 @@ interface RequestBuilderProps {
 }
 
 export default function RequestBuilder({ models }: RequestBuilderProps) {
-	const initialModelId = models?.[0]?.modelId ?? "";
+	const searchParams = useSearchParams();
+	const requestedModelId = searchParams.get("model")?.trim() ?? "";
+	const initialModelId = models?.some((entry) => entry.modelId === requestedModelId)
+		? requestedModelId
+		: models?.[0]?.modelId ?? "";
 
 	const [model, setModel] = useState<string>(initialModelId);
 	const [messages, setMessages] = useState<Message[]>([

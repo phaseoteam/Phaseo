@@ -25,6 +25,7 @@ import ThemeAwareFavicon from "@/components/ThemeAwareFavicon";
 import { Suspense } from "react";
 import { PublicSWRProvider } from "@/components/providers/PublicSWRProvider";
 import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
+import WebMCPProvider from "@/components/webmcp/WebMCPProvider";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -92,6 +93,7 @@ export default function RootLayout({
 					"min-h-screen h-full bg-background antialiased"
 				)}
 			>
+				<WebMCPProvider />
 				<CookieConsentManager gaMeasurementId={GA_MEASUREMENT_ID} />
 				<ProductAnalyticsGaBridge />
 				<ConsoleEasterEgg />
