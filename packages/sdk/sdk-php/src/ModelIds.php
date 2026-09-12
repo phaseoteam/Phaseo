@@ -149,26 +149,14 @@ final class ModelIds
     /** Model ID: black-forest-labs/flux-1-dev. Model page: https://phaseo.app/models/black-forest-labs/flux-1-dev */
     public const BLACK_FOREST_LABS_FLUX_1_DEV = 'black-forest-labs/flux-1-dev';
 
-    /** Model ID: black-forest-labs/flux-1-kontext-max. Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-max */
-    public const BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX = 'black-forest-labs/flux-1-kontext-max';
-
-    /** Model ID: black-forest-labs/flux-1-kontext-pro. Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-pro */
-    public const BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO = 'black-forest-labs/flux-1-kontext-pro';
-
     /** Model ID: black-forest-labs/flux-1-schnell. Model page: https://phaseo.app/models/black-forest-labs/flux-1-schnell */
     public const BLACK_FOREST_LABS_FLUX_1_SCHNELL = 'black-forest-labs/flux-1-schnell';
 
     /** Model ID: black-forest-labs/flux-1.1-pro. Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro */
     public const BLACK_FOREST_LABS_FLUX_1_1_PRO = 'black-forest-labs/flux-1.1-pro';
 
-    /** Model ID: black-forest-labs/flux-1.1-pro-ultra. Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro-ultra */
-    public const BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA = 'black-forest-labs/flux-1.1-pro-ultra';
-
     /** Model ID: black-forest-labs/flux-2-dev. Model page: https://phaseo.app/models/black-forest-labs/flux-2-dev */
     public const BLACK_FOREST_LABS_FLUX_2_DEV = 'black-forest-labs/flux-2-dev';
-
-    /** Model ID: black-forest-labs/flux-2-flex. Model page: https://phaseo.app/models/black-forest-labs/flux-2-flex */
-    public const BLACK_FOREST_LABS_FLUX_2_FLEX = 'black-forest-labs/flux-2-flex';
 
     /** Model ID: black-forest-labs/flux-2-klein-4b. Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-4b */
     public const BLACK_FOREST_LABS_FLUX_2_KLEIN_4B = 'black-forest-labs/flux-2-klein-4b';
@@ -380,8 +368,8 @@ final class ModelIds
     /** Model ID: deepseek/deepseek-v4-pro-0813. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
     public const DEEPSEEK_DEEPSEEK_V4_PRO_0813 = 'deepseek/deepseek-v4-pro-0813';
 
-    /** Model ID: deepseek/deepseek-v4.1-flash-beta. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta */
-    public const DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = 'deepseek/deepseek-v4.1-flash-beta';
+    /** Model ID: deepseek/deepseek-v4.1-flash. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash */
+    public const DEEPSEEK_DEEPSEEK_V4_1_FLASH = 'deepseek/deepseek-v4.1-flash';
 
     /** Model ID: deepseek/deepseek-v4.1-flash-preview. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview */
     public const DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW = 'deepseek/deepseek-v4.1-flash-preview';
@@ -692,14 +680,8 @@ final class ModelIds
     /** Model ID: meta/muse-spark-1.2. Model page: https://phaseo.app/models/meta/muse-spark-1.2 */
     public const META_MUSE_SPARK_1_2 = 'meta/muse-spark-1.2';
 
-    /** Model ID: meta/muse-spark-1.2-contributor. Model page: https://phaseo.app/models/meta/muse-spark-1.2-contributor */
-    public const META_MUSE_SPARK_1_2_CONTRIBUTOR = 'meta/muse-spark-1.2-contributor';
-
     /** Model ID: meta/muse-spark-1.3. Model page: https://phaseo.app/models/meta/muse-spark-1.3 */
     public const META_MUSE_SPARK_1_3 = 'meta/muse-spark-1.3';
-
-    /** Model ID: meta/muse-spark-1.3-contributor. Model page: https://phaseo.app/models/meta/muse-spark-1.3-contributor */
-    public const META_MUSE_SPARK_1_3_CONTRIBUTOR = 'meta/muse-spark-1.3-contributor';
 
     /** Model ID: meta/muse-voice-transcribe-1.0. Model page: https://phaseo.app/models/meta/muse-voice-transcribe-1.0 */
     public const META_MUSE_VOICE_TRANSCRIBE_1_0 = 'meta/muse-voice-transcribe-1.0';
@@ -775,9 +757,6 @@ final class ModelIds
 
     /** Model ID: minimax/speech-2.8-turbo. Model page: https://phaseo.app/models/minimax/speech-2.8-turbo */
     public const MINIMAX_SPEECH_2_8_TURBO = 'minimax/speech-2.8-turbo';
-
-    /** Model ID: minimax/speech-2.8:free. Model page: https://phaseo.app/models/minimax/speech-2.8%3Afree */
-    public const MINIMAX_SPEECH_2_8_FREE = 'minimax/speech-2.8:free';
 
     /** Model ID: mistral/codestral. Model page: https://phaseo.app/models/mistral/codestral */
     public const MISTRAL_CODESTRAL = 'mistral/codestral';
@@ -1652,20 +1631,11 @@ final class ModelIds
     /** Model ID: reka/reka-flash. Model page: https://phaseo.app/models/reka/reka-flash */
     public const REKA_REKA_FLASH = 'reka/reka-flash';
 
-    /** Model ID: reka/reka-flash-research. Model page: https://phaseo.app/models/reka/reka-flash-research */
-    public const REKA_REKA_FLASH_RESEARCH = 'reka/reka-flash-research';
-
     /** Model ID: relace/relace-rank. Model page: https://phaseo.app/models/relace/relace-rank */
     public const RELACE_RELACE_RANK = 'relace/relace-rank';
 
     /** Model ID: relace/relace-search. Model page: https://phaseo.app/models/relace/relace-search */
     public const RELACE_RELACE_SEARCH = 'relace/relace-search';
-
-    /** Model ID: sakana/fugu-ultra. Model page: https://phaseo.app/models/sakana/fugu-ultra */
-    public const SAKANA_FUGU_ULTRA = 'sakana/fugu-ultra';
-
-    /** Model ID: sakana/namazu. Model page: https://phaseo.app/models/sakana/namazu */
-    public const SAKANA_NAMAZU = 'sakana/namazu';
 
     /** Model ID: spacex-ai/grok-4.20. Model page: https://phaseo.app/models/spacex-ai/grok-4.20 */
     public const SPACEX_AI_GROK_4_20 = 'spacex-ai/grok-4.20';

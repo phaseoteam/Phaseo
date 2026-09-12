@@ -198,14 +198,6 @@ class ModelIds:
     # Model page: https://phaseo.app/models/black-forest-labs/flux-1-dev
     BLACK_FOREST_LABS_FLUX_1_DEV: Final[str] = "black-forest-labs/flux-1-dev"
 
-    # Model ID: black-forest-labs/flux-1-kontext-max
-    # Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-max
-    BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX: Final[str] = "black-forest-labs/flux-1-kontext-max"
-
-    # Model ID: black-forest-labs/flux-1-kontext-pro
-    # Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-pro
-    BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO: Final[str] = "black-forest-labs/flux-1-kontext-pro"
-
     # Model ID: black-forest-labs/flux-1-schnell
     # Model page: https://phaseo.app/models/black-forest-labs/flux-1-schnell
     BLACK_FOREST_LABS_FLUX_1_SCHNELL: Final[str] = "black-forest-labs/flux-1-schnell"
@@ -214,17 +206,9 @@ class ModelIds:
     # Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro
     BLACK_FOREST_LABS_FLUX_1_1_PRO: Final[str] = "black-forest-labs/flux-1.1-pro"
 
-    # Model ID: black-forest-labs/flux-1.1-pro-ultra
-    # Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro-ultra
-    BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA: Final[str] = "black-forest-labs/flux-1.1-pro-ultra"
-
     # Model ID: black-forest-labs/flux-2-dev
     # Model page: https://phaseo.app/models/black-forest-labs/flux-2-dev
     BLACK_FOREST_LABS_FLUX_2_DEV: Final[str] = "black-forest-labs/flux-2-dev"
-
-    # Model ID: black-forest-labs/flux-2-flex
-    # Model page: https://phaseo.app/models/black-forest-labs/flux-2-flex
-    BLACK_FOREST_LABS_FLUX_2_FLEX: Final[str] = "black-forest-labs/flux-2-flex"
 
     # Model ID: black-forest-labs/flux-2-klein-4b
     # Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-4b
@@ -506,9 +490,9 @@ class ModelIds:
     # Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
     DEEPSEEK_DEEPSEEK_V4_PRO_0813: Final[str] = "deepseek/deepseek-v4-pro-0813"
 
-    # Model ID: deepseek/deepseek-v4.1-flash-beta
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
-    DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA: Final[str] = "deepseek/deepseek-v4.1-flash-beta"
+    # Model ID: deepseek/deepseek-v4.1-flash
+    # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash
+    DEEPSEEK_DEEPSEEK_V4_1_FLASH: Final[str] = "deepseek/deepseek-v4.1-flash"
 
     # Model ID: deepseek/deepseek-v4.1-flash-preview
     # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview
@@ -922,17 +906,9 @@ class ModelIds:
     # Model page: https://phaseo.app/models/meta/muse-spark-1.2
     META_MUSE_SPARK_1_2: Final[str] = "meta/muse-spark-1.2"
 
-    # Model ID: meta/muse-spark-1.2-contributor
-    # Model page: https://phaseo.app/models/meta/muse-spark-1.2-contributor
-    META_MUSE_SPARK_1_2_CONTRIBUTOR: Final[str] = "meta/muse-spark-1.2-contributor"
-
     # Model ID: meta/muse-spark-1.3
     # Model page: https://phaseo.app/models/meta/muse-spark-1.3
     META_MUSE_SPARK_1_3: Final[str] = "meta/muse-spark-1.3"
-
-    # Model ID: meta/muse-spark-1.3-contributor
-    # Model page: https://phaseo.app/models/meta/muse-spark-1.3-contributor
-    META_MUSE_SPARK_1_3_CONTRIBUTOR: Final[str] = "meta/muse-spark-1.3-contributor"
 
     # Model ID: meta/muse-voice-transcribe-1.0
     # Model page: https://phaseo.app/models/meta/muse-voice-transcribe-1.0
@@ -1033,10 +1009,6 @@ class ModelIds:
     # Model ID: minimax/speech-2.8-turbo
     # Model page: https://phaseo.app/models/minimax/speech-2.8-turbo
     MINIMAX_SPEECH_2_8_TURBO: Final[str] = "minimax/speech-2.8-turbo"
-
-    # Model ID: minimax/speech-2.8:free
-    # Model page: https://phaseo.app/models/minimax/speech-2.8%3Afree
-    MINIMAX_SPEECH_2_8_FREE: Final[str] = "minimax/speech-2.8:free"
 
     # Model ID: mistral/codestral
     # Model page: https://phaseo.app/models/mistral/codestral
@@ -2202,10 +2174,6 @@ class ModelIds:
     # Model page: https://phaseo.app/models/reka/reka-flash
     REKA_REKA_FLASH: Final[str] = "reka/reka-flash"
 
-    # Model ID: reka/reka-flash-research
-    # Model page: https://phaseo.app/models/reka/reka-flash-research
-    REKA_REKA_FLASH_RESEARCH: Final[str] = "reka/reka-flash-research"
-
     # Model ID: relace/relace-rank
     # Model page: https://phaseo.app/models/relace/relace-rank
     RELACE_RELACE_RANK: Final[str] = "relace/relace-rank"
@@ -2213,14 +2181,6 @@ class ModelIds:
     # Model ID: relace/relace-search
     # Model page: https://phaseo.app/models/relace/relace-search
     RELACE_RELACE_SEARCH: Final[str] = "relace/relace-search"
-
-    # Model ID: sakana/fugu-ultra
-    # Model page: https://phaseo.app/models/sakana/fugu-ultra
-    SAKANA_FUGU_ULTRA: Final[str] = "sakana/fugu-ultra"
-
-    # Model ID: sakana/namazu
-    # Model page: https://phaseo.app/models/sakana/namazu
-    SAKANA_NAMAZU: Final[str] = "sakana/namazu"
 
     # Model ID: spacex-ai/grok-4.20
     # Model page: https://phaseo.app/models/spacex-ai/grok-4.20
@@ -2775,13 +2735,9 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.BAIDU_ERNIE_5_1,
         ModelIds.BAIDU_ERNIE_X1_1,
         ModelIds.BLACK_FOREST_LABS_FLUX_1_DEV,
-        ModelIds.BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX,
-        ModelIds.BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO,
         ModelIds.BLACK_FOREST_LABS_FLUX_1_SCHNELL,
         ModelIds.BLACK_FOREST_LABS_FLUX_1_1_PRO,
-        ModelIds.BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA,
         ModelIds.BLACK_FOREST_LABS_FLUX_2_DEV,
-        ModelIds.BLACK_FOREST_LABS_FLUX_2_FLEX,
         ModelIds.BLACK_FOREST_LABS_FLUX_2_KLEIN_4B,
         ModelIds.BLACK_FOREST_LABS_FLUX_2_KLEIN_9B,
         ModelIds.BLACK_FOREST_LABS_FLUX_2_MAX,
@@ -2852,7 +2808,7 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
         ModelIds.DEEPSEEK_DEEPSEEK_V4_PRO,
         ModelIds.DEEPSEEK_DEEPSEEK_V4_PRO_0813,
-        ModelIds.DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA,
+        ModelIds.DEEPSEEK_DEEPSEEK_V4_1_FLASH,
         ModelIds.DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW,
         ModelIds.EARLY_ACCESS_EA_29B_A4B,
         ModelIds.ELEVEN_LABS_ELEVEN_FLASH_V2,
@@ -2956,9 +2912,7 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.META_MUSE_GLIMMER_30B,
         ModelIds.META_MUSE_IMAGE_1_0,
         ModelIds.META_MUSE_SPARK_1_2,
-        ModelIds.META_MUSE_SPARK_1_2_CONTRIBUTOR,
         ModelIds.META_MUSE_SPARK_1_3,
-        ModelIds.META_MUSE_SPARK_1_3_CONTRIBUTOR,
         ModelIds.META_MUSE_VOICE_TRANSCRIBE_1_0,
         ModelIds.MICROSOFT_PHI_4,
         ModelIds.MICROSOFT_WIZARDLM_2_8X22B,
@@ -2984,7 +2938,6 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.MINIMAX_SPEECH_2_6_TURBO,
         ModelIds.MINIMAX_SPEECH_2_8_HD,
         ModelIds.MINIMAX_SPEECH_2_8_TURBO,
-        ModelIds.MINIMAX_SPEECH_2_8_FREE,
         ModelIds.MISTRAL_CODESTRAL,
         ModelIds.MISTRAL_CODESTRAL_EMBED,
         ModelIds.MISTRAL_DEVSTRAL_2,
@@ -3276,11 +3229,8 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.REKA_REKA_EDGE,
         ModelIds.REKA_REKA_EDGE_2603,
         ModelIds.REKA_REKA_FLASH,
-        ModelIds.REKA_REKA_FLASH_RESEARCH,
         ModelIds.RELACE_RELACE_RANK,
         ModelIds.RELACE_RELACE_SEARCH,
-        ModelIds.SAKANA_FUGU_ULTRA,
-        ModelIds.SAKANA_NAMAZU,
         ModelIds.SPACEX_AI_GROK_4_20,
         ModelIds.SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA,
         ModelIds.SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309,

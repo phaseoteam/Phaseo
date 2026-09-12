@@ -1,0 +1,1718 @@
+[
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": false,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "anthropic-aws:anthropic/claude-fable-5",
+      "source": "json"
+    },
+    "provider_region_id": "eba52df6-d003-4d20-a9ae-697a9a8a8084",
+    "provider_slug": "anthropic-aws",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": false,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "anthropic:anthropic/claude-opus-4.8",
+      "source": "json"
+    },
+    "provider_region_id": "9e2cfcdc-16f6-4ae9-8eed-610d12198cda",
+    "provider_slug": "anthropic",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": false,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "anthropic-aws-us:anthropic/claude-sonnet-5",
+      "source": "json"
+    },
+    "provider_region_id": "92d878b1-d43d-4d27-8232-d8bb3471e61d",
+    "provider_slug": "anthropic-aws-us",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": false,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "anthropic-aws:anthropic/claude-fable-5",
+      "source": "json"
+    },
+    "provider_region_id": "d05f5e35-576b-4a81-8667-b412d25e0b06",
+    "provider_slug": "anthropic-aws",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "APAC",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "amazon-bedrock:anthropic/claude-opus-4.8",
+      "source": "json"
+    },
+    "provider_region_id": "6a01e6b7-1bdf-41e7-a2fd-4df148924d5c",
+    "provider_slug": "amazon-bedrock",
+    "region_code": "apac",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "AU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "amazon-bedrock:anthropic/claude-opus-4.8",
+      "source": "json"
+    },
+    "provider_region_id": "53d1a118-1b90-4642-bbd5-ef35969aa727",
+    "provider_slug": "amazon-bedrock",
+    "region_code": "au",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "amazon-bedrock:anthropic/claude-opus-4.8",
+      "source": "json"
+    },
+    "provider_region_id": "f44ca28b-1a04-45bd-a30a-cd3b1464791e",
+    "provider_slug": "amazon-bedrock",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "google-vertex-eu:google/gemini-3.1-flash-lite",
+      "source": "json"
+    },
+    "provider_region_id": "acbe1dec-0f37-499e-a394-d78614affc27",
+    "provider_slug": "google-vertex-eu",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "openai-eu:openai/gpt-5.6-terra",
+      "source": "json"
+    },
+    "provider_region_id": "01c51d76-5ce5-4985-aff8-2f7eaa1bfb1a",
+    "provider_slug": "openai-eu",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "ovhcloud:qwen/qwen3.5-9b",
+      "source": "json"
+    },
+    "provider_region_id": "451214be-8995-430a-921b-c621efb2a247",
+    "provider_slug": "ovhcloud",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "tensorix:qwen/qwen3-embedding-8b",
+      "source": "json"
+    },
+    "provider_region_id": "018704d3-cbd0-454f-8278-d9387e1ba940",
+    "provider_slug": "tensorix",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "ac320ca8-04f2-45e3-bdec-4bbb43fb1753",
+    "provider_slug": "scaleway",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "google-vertex:google/gemini-3.5-transcribe",
+      "source": "json"
+    },
+    "provider_region_id": "2002ee87-1e9d-48b8-a7b7-1211d7105e59",
+    "provider_slug": "google-vertex",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "openai:openai/gpt-6-astra-pro",
+      "source": "json"
+    },
+    "provider_region_id": "cbcb4cee-d6c5-49c0-b460-3b5714442982",
+    "provider_slug": "openai",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "JP",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "amazon-bedrock:anthropic/claude-opus-4.8",
+      "source": "json"
+    },
+    "provider_region_id": "557df5ea-a318-4c40-b2cc-ed81c63a738c",
+    "provider_slug": "amazon-bedrock",
+    "region_code": "jp",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "amazon-bedrock:anthropic/claude-opus-4.8",
+      "source": "json"
+    },
+    "provider_region_id": "4c15b697-ef95-474d-8350-d6d7e175feb9",
+    "provider_slug": "amazon-bedrock",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "anthropic-us:anthropic/claude-sonnet-5",
+      "source": "json"
+    },
+    "provider_region_id": "f1a15377-b6d9-4133-bdea-8cda9fe64e01",
+    "provider_slug": "anthropic-us",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-22T10:50:37.634754+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "anthropic:anthropic/claude-opus-4.8",
+      "source": "json"
+    },
+    "provider_region_id": "70089e6b-b83b-4059-b7cb-5cff46f54c0a",
+    "provider_slug": "anthropic",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-22T10:50:37.634754+00:00"
+  },
+  {
+    "created_at": "2026-07-27T16:19:34.655145+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU-NORTH1",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "nebius-token-factory:z-ai/glm-5.1",
+      "source": "json"
+    },
+    "provider_region_id": "187e366b-8053-40f7-96ce-da8602b20975",
+    "provider_slug": "nebius-token-factory",
+    "region_code": "eu-north1",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-27T16:19:34.655145+00:00"
+  },
+  {
+    "created_at": "2026-07-27T16:19:34.655145+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "google-ai-studio:google/gemini-3.5-transcribe",
+      "source": "json"
+    },
+    "provider_region_id": "f18e7351-6da8-4f23-9237-9f06a5dd4c60",
+    "provider_slug": "google-ai-studio",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-27T16:19:34.655145+00:00"
+  },
+  {
+    "created_at": "2026-07-27T16:19:34.655145+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "spacex-ai:x-ai/grok-voice-latest",
+      "source": "json"
+    },
+    "provider_region_id": "00a86f13-d30b-4ba7-9d30-bc31f4b575e3",
+    "provider_slug": "spacex-ai",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-27T16:19:34.655145+00:00"
+  },
+  {
+    "created_at": "2026-07-31T11:48:04.996487+00:00",
+    "data_residency_supported": true,
+    "display_name": "US-CENTRAL1",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "nebius-token-factory:zai-org/GLM-5.3-Flash",
+      "source": "json"
+    },
+    "provider_region_id": "f03f7b3e-f0c9-47d1-898f-ca61de858ae0",
+    "provider_slug": "nebius-token-factory",
+    "region_code": "us-central1",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-07-31T11:48:04.996487+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": false,
+    "display_name": "AP",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "b1d3b39d-bc92-46c2-a2bb-71835dc18ac4",
+    "provider_slug": "byteplus",
+    "region_code": "ap",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": false,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "mistral:mistral/voxtral-mini-transcribe-2",
+      "source": "json"
+    },
+    "provider_region_id": "d433ed4d-f336-491c-a4a6-bc270b357d1a",
+    "provider_slug": "mistral",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": false,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "16ce949e-9d33-4236-8b02-d409e9580d72",
+    "provider_slug": "cloudflare",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": false,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "befbf435-7f42-4abc-b8b6-0deff22f1854",
+    "provider_slug": "fireworks",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": false,
+    "display_name": "NL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "cf5b468a-4643-4fd1-b1b9-cd86f21adb6c",
+    "provider_slug": "elevenlabs",
+    "region_code": "nl",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "54679582-90f2-434f-917d-b152351c1306",
+    "provider_slug": "byteplus",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "ab27eafe-88dd-4875-b028-b2f5df28c0a8",
+    "provider_slug": "nebius",
+    "region_code": "eu",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "aefbe7e0-b1d1-44a5-9308-abcc95ba04d6",
+    "provider_slug": "nebius-token-factory",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "f47564bc-1484-44f9-93a9-42a0b0464828",
+    "provider_slug": "nebius-token-factory-fast",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "IL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "69064aa2-08d3-46f5-9125-dda4c80cddcc",
+    "provider_slug": "nebius-token-factory",
+    "region_code": "il",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "IL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "97968d25-76f7-4111-86f9-340c3ecd8b35",
+    "provider_slug": "nebius",
+    "region_code": "il",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "IL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "f1dd6960-e31f-49b4-8930-a7ccff513e8b",
+    "provider_slug": "nebius-token-factory-fast",
+    "region_code": "il",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "SG",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "126d8820-b837-4373-b973-160c66cd7db7",
+    "provider_slug": "z-ai",
+    "region_code": "sg",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "SG",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "6ed59c31-3414-4b90-87d5-3de958b92e33",
+    "provider_slug": "elevenlabs",
+    "region_code": "sg",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "wafer:GLM-5.3-Flash",
+      "source": "json"
+    },
+    "provider_region_id": "87f153be-160b-4aab-ac74-628467f24ee0",
+    "provider_slug": "wafer",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "0e8d1ded-41d9-40ed-86d1-af47997af0de",
+    "provider_slug": "nebius-token-factory-fast",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "26278d3d-2601-4108-9741-2e53943da6a7",
+    "provider_slug": "nebius-token-factory",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "5a3aeb88-cc70-444b-87a2-a7f90319b16a",
+    "provider_slug": "nebius",
+    "region_code": "us",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "8223d3fc-a5d8-4aae-aff0-82d69263fee0",
+    "provider_slug": "elevenlabs",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T17:11:46.61006+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "8562c4b1-89e7-4ac7-810e-47a1ae7cdd33",
+    "provider_slug": "ionrouter",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T17:11:46.61006+00:00"
+  },
+  {
+    "created_at": "2026-08-11T22:22:28.207356+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "weights-and-biases:qwen/qwen3.6-35b-a3b",
+      "source": "json"
+    },
+    "provider_region_id": "8a6fdd79-7e95-43ba-8273-7c96c03fa227",
+    "provider_slug": "weights-and-biases",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T22:22:28.207356+00:00"
+  },
+  {
+    "created_at": "2026-08-11T22:34:55.763123+00:00",
+    "data_residency_supported": true,
+    "display_name": "US-EAST-1",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "spacex-ai:spacex-ai/grok-transcribe",
+      "source": "json"
+    },
+    "provider_region_id": "181e3def-0931-44bc-9e47-8d9e6fc2226f",
+    "provider_slug": "spacex-ai",
+    "region_code": "us-east-1",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T22:34:55.763123+00:00"
+  },
+  {
+    "created_at": "2026-08-11T22:34:55.763123+00:00",
+    "data_residency_supported": true,
+    "display_name": "US-WEST-2",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "spacex-ai:spacex-ai/grok-imagine-video-1.5",
+      "source": "json"
+    },
+    "provider_region_id": "df875241-3d37-4f33-9099-aa08806af781",
+    "provider_slug": "spacex-ai",
+    "region_code": "us-west-2",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T22:34:55.763123+00:00"
+  },
+  {
+    "created_at": "2026-08-11T22:48:06.272822+00:00",
+    "data_residency_supported": false,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "mistral:z-ai/glm-5.2",
+      "source": "json"
+    },
+    "provider_region_id": "4d7aa96f-c7b2-4b38-be78-5d40208db464",
+    "provider_slug": "mistral",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-11T22:48:06.272822+00:00"
+  },
+  {
+    "created_at": "2026-08-12T00:27:02.469834+00:00",
+    "data_residency_supported": false,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "mistral-eu:z-ai/glm-5.2",
+      "source": "json"
+    },
+    "provider_region_id": "6248d017-48b4-4e10-8911-04080c5f7733",
+    "provider_slug": "mistral-eu",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-12T00:27:02.469834+00:00"
+  },
+  {
+    "created_at": "2026-08-14T10:49:37.373418+00:00",
+    "data_residency_supported": true,
+    "display_name": "FR",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "ovhcloud:nvidia/riva-tts-it-it",
+      "source": "json"
+    },
+    "provider_region_id": "9d1f9079-010b-47d0-b2c3-f085830e5162",
+    "provider_slug": "ovhcloud",
+    "region_code": "fr",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-14T10:49:37.373418+00:00"
+  },
+  {
+    "created_at": "2026-08-14T10:49:37.373418+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "morpheus:text-embedding-bge-m3",
+      "source": "json"
+    },
+    "provider_region_id": "4e7d0b85-baa3-4f58-93a2-4358b339912b",
+    "provider_slug": "morpheus",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-14T10:49:37.373418+00:00"
+  },
+  {
+    "created_at": "2026-08-14T10:49:37.373418+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "novita:baai/bge-reranker-v2-m3",
+      "source": "json"
+    },
+    "provider_region_id": "84a155e6-25c2-4231-b1e3-dd3be3706eac",
+    "provider_slug": "novita",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-14T10:49:37.373418+00:00"
+  },
+  {
+    "created_at": "2026-08-14T10:49:37.373418+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "ovhcloud:qwen/qwen3.6-27b",
+      "source": "json"
+    },
+    "provider_region_id": "1891de26-9e32-4e33-babe-2c424defcab5",
+    "provider_slug": "ovhcloud",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-14T10:49:37.373418+00:00"
+  },
+  {
+    "created_at": "2026-08-14T10:49:37.373418+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "perplexity:pplx-embed-v1-4b",
+      "source": "json"
+    },
+    "provider_region_id": "d77603f7-dd4c-4d87-9b94-61954f784bd9",
+    "provider_slug": "perplexity",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-14T10:49:37.373418+00:00"
+  },
+  {
+    "created_at": "2026-08-14T10:49:37.373418+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "relace:relace-search",
+      "source": "json"
+    },
+    "provider_region_id": "a8d2e31c-2661-4ddc-8a64-eaa86b887867",
+    "provider_slug": "relace",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-14T10:49:37.373418+00:00"
+  },
+  {
+    "created_at": "2026-08-14T10:49:37.373418+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "sambanova:gpt-oss-120b",
+      "source": "json"
+    },
+    "provider_region_id": "e0374005-848e-466e-9dd8-dc8429e85966",
+    "provider_slug": "sambanova",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-14T10:49:37.373418+00:00"
+  },
+  {
+    "created_at": "2026-08-14T18:56:15.870664+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "arcee-ai:moonshotai/kimi-k3",
+      "source": "json"
+    },
+    "provider_region_id": "c134f8ad-403f-443f-9042-c8ec161ae4f4",
+    "provider_slug": "arcee-ai",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-14T18:56:15.870664+00:00"
+  },
+  {
+    "created_at": "2026-08-20T17:24:27.193076+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "together:qwen/qwen3.8-flash",
+      "source": "json"
+    },
+    "provider_region_id": "96dff126-f5f7-48fe-b29f-07eb02be39a4",
+    "provider_slug": "together",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-20T17:24:27.193076+00:00"
+  },
+  {
+    "created_at": "2026-08-20T22:53:15.802552+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "morph:morph/morph-compactor",
+      "source": "json"
+    },
+    "provider_region_id": "933f7614-cf31-4887-a090-f4cbb43eb319",
+    "provider_slug": "morph",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-20T22:53:15.802552+00:00"
+  },
+  {
+    "created_at": "2026-08-20T22:53:15.802552+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "morph:morph-glm53-744b",
+      "source": "json"
+    },
+    "provider_region_id": "7d0b1839-6e22-47e7-8dfa-d9e0b873e97f",
+    "provider_slug": "morph",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-20T22:53:15.802552+00:00"
+  },
+  {
+    "created_at": "2026-08-21T12:17:01.625452+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "akashml:openai/gpt-oss-20b",
+      "source": "json"
+    },
+    "provider_region_id": "b5090062-22e4-4391-a3fc-018f396faa86",
+    "provider_slug": "akashml",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-21T12:17:01.625452+00:00"
+  },
+  {
+    "created_at": "2026-08-21T15:46:17.896297+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "deepinfra:tencent/hy3",
+      "source": "json"
+    },
+    "provider_region_id": "218b4c3e-008b-41e4-a091-ddc245af7729",
+    "provider_slug": "deepinfra",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-21T15:46:17.896297+00:00"
+  },
+  {
+    "created_at": "2026-08-21T18:35:51.110435+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "venice:inception/mercury-2.5",
+      "source": "json"
+    },
+    "provider_region_id": "6dcc874c-af00-49da-8ff0-8592da1c8283",
+    "provider_slug": "venice",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-21T18:35:51.110435+00:00"
+  },
+  {
+    "created_at": "2026-08-23T13:25:32.328627+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "cohere:cohere/parse-v5.0",
+      "source": "json"
+    },
+    "provider_region_id": "6feff21e-8cea-41b7-8387-bd7bdb3324ae",
+    "provider_slug": "cohere",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-23T13:25:32.328627+00:00"
+  },
+  {
+    "created_at": "2026-08-23T14:58:26.778925+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "gmicloud:Qwen/Qwen3.8-Max-0902",
+      "source": "json"
+    },
+    "provider_region_id": "37853f02-886c-4d06-a70f-90ed10dd2a28",
+    "provider_slug": "gmicloud",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-23T14:58:26.778925+00:00"
+  },
+  {
+    "created_at": "2026-08-23T21:09:22.999821+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "siliconflow:minimax/minimax-m3",
+      "source": "json"
+    },
+    "provider_region_id": "692cf5fd-cf3f-48a6-8bc2-57a18deaa6ec",
+    "provider_slug": "siliconflow",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-23T21:09:22.999821+00:00"
+  },
+  {
+    "created_at": "2026-08-25T08:44:50.2629+00:00",
+    "data_residency_supported": false,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "ambient:z-ai/glm-5.2",
+      "source": "json"
+    },
+    "provider_region_id": "536f923c-d29d-4760-8e70-bb728d40954f",
+    "provider_slug": "ambient",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-25T08:44:50.2629+00:00"
+  },
+  {
+    "created_at": "2026-08-25T08:44:50.2629+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "77eee400-8624-4f6f-becd-61397f5f53bf",
+    "provider_slug": "cloudferro-sherlock",
+    "region_code": "eu",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T08:44:50.2629+00:00"
+  },
+  {
+    "created_at": "2026-08-25T08:44:50.2629+00:00",
+    "data_residency_supported": true,
+    "display_name": "SE",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "c86eb07b-5836-442c-81f8-58a05367bd28",
+    "provider_slug": "berget",
+    "region_code": "se",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T08:44:50.2629+00:00"
+  },
+  {
+    "created_at": "2026-08-25T08:44:50.2629+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "atlascloud:zai-org/glm-5v-turbo",
+      "source": "json"
+    },
+    "provider_region_id": "6dd5d7e9-763f-4eaa-91bb-cf352f3be8d4",
+    "provider_slug": "atlascloud",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-25T08:44:50.2629+00:00"
+  },
+  {
+    "created_at": "2026-08-25T09:23:39.112543+00:00",
+    "data_residency_supported": true,
+    "display_name": "CN",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "modelscope:Qwen/Qwen-Image",
+      "source": "json"
+    },
+    "provider_region_id": "5196d750-1040-4609-a25e-9ff2b0a29ea5",
+    "provider_slug": "modelscope",
+    "region_code": "cn",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-25T09:23:39.112543+00:00"
+  },
+  {
+    "created_at": "2026-08-25T09:23:39.112543+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "sakana:fugu-ultra",
+      "source": "json"
+    },
+    "provider_region_id": "09c32a55-2c9c-4d6a-81bf-457ca490d2bf",
+    "provider_slug": "sakana",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-25T09:23:39.112543+00:00"
+  },
+  {
+    "created_at": "2026-08-25T09:23:39.112543+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "bcc0434a-cb17-492d-846f-dfd1f609ab28",
+    "provider_slug": "pioneer",
+    "region_code": "us",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T09:23:39.112543+00:00"
+  },
+  {
+    "created_at": "2026-08-25T09:43:38.985229+00:00",
+    "data_residency_supported": true,
+    "display_name": "AP-SINGAPORE",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "e82fa39f-87fb-4246-8573-16d15ee18875",
+    "provider_slug": "tencent-cloud",
+    "region_code": "ap-singapore",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T09:43:38.985229+00:00"
+  },
+  {
+    "created_at": "2026-08-25T09:43:38.985229+00:00",
+    "data_residency_supported": true,
+    "display_name": "CN-GUANGZHOU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "3e25086c-a075-45ad-8e92-398af76cfad5",
+    "provider_slug": "tencent-cloud",
+    "region_code": "cn-guangzhou",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T09:43:38.985229+00:00"
+  },
+  {
+    "created_at": "2026-08-25T09:43:38.985229+00:00",
+    "data_residency_supported": true,
+    "display_name": "CN",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "8ff85415-ba3f-4b20-9aea-2d5a8add18be",
+    "provider_slug": "alibaba-cn",
+    "region_code": "cn",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T09:43:38.985229+00:00"
+  },
+  {
+    "created_at": "2026-08-25T11:29:31.756422+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU-WEST2",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "nebius-token-factory:moonshotai/kimi-k3",
+      "source": "json"
+    },
+    "provider_region_id": "2ca518e7-117e-4b08-9266-55065357b5dd",
+    "provider_slug": "nebius-token-factory",
+    "region_code": "eu-west2",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-25T11:29:31.756422+00:00"
+  },
+  {
+    "created_at": "2026-08-25T11:29:31.756422+00:00",
+    "data_residency_supported": true,
+    "display_name": "UK-SOUTH1",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "nebius-token-factory:z-ai/glm-5.2",
+      "source": "json"
+    },
+    "provider_region_id": "05d9f157-0f08-4725-9431-50e5de8f974a",
+    "provider_slug": "nebius-token-factory",
+    "region_code": "uk-south1",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-25T11:29:31.756422+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:09:36.292808+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "9fd3c405-83a1-4254-8504-2bfbfa6b9ef2",
+    "provider_slug": "evroc",
+    "region_code": "eu",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T13:09:36.292808+00:00"
+  },
+  {
+    "created_at": "2026-08-25T13:18:40.53317+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "a5bee502-7681-4154-a9a7-e8602eb48505",
+    "provider_slug": "stackit",
+    "region_code": "eu",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T13:18:40.53317+00:00"
+  },
+  {
+    "created_at": "2026-08-25T19:35:01.78447+00:00",
+    "data_residency_supported": false,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "bed64f2b-71a5-40fb-ba3c-59bb8a65fd89",
+    "provider_slug": "requesty",
+    "region_code": "global",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T19:35:01.78447+00:00"
+  },
+  {
+    "created_at": "2026-08-25T19:35:01.78447+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "5b8c3408-ff4c-41db-98c7-b9984117c835",
+    "provider_slug": "openrouter",
+    "region_code": "global",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T19:35:01.78447+00:00"
+  },
+  {
+    "created_at": "2026-08-25T19:35:01.78447+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "06a4ee37-b810-4941-af83-67f8c065d452",
+    "provider_slug": "ionstream",
+    "region_code": "us",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-25T19:35:01.78447+00:00"
+  },
+  {
+    "created_at": "2026-08-26T23:59:31.72638+00:00",
+    "data_residency_supported": false,
+    "display_name": "APAC",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "9976c7ad-30c2-4dac-b3bb-c4ca4e640826",
+    "provider_slug": "fireworks",
+    "region_code": "apac",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-26T23:59:31.72638+00:00"
+  },
+  {
+    "created_at": "2026-08-26T23:59:31.72638+00:00",
+    "data_residency_supported": false,
+    "display_name": "EUROPE",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "2d678c3a-c101-4114-a3d5-ae6d102d928c",
+    "provider_slug": "fireworks",
+    "region_code": "europe",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-26T23:59:31.72638+00:00"
+  },
+  {
+    "created_at": "2026-08-26T23:59:31.72638+00:00",
+    "data_residency_supported": false,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "71922233-307e-41be-a00b-ae8606adea5b",
+    "provider_slug": "fireworks",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-26T23:59:31.72638+00:00"
+  },
+  {
+    "created_at": "2026-08-26T23:59:31.72638+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "0be1e14c-7712-4f58-ba6d-4e53dc596958",
+    "provider_slug": "perplexity",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-26T23:59:31.72638+00:00"
+  },
+  {
+    "created_at": "2026-08-28T16:39:50.37677+00:00",
+    "data_residency_supported": false,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "baseten:zai-org/GLM-5.3",
+      "source": "json"
+    },
+    "provider_region_id": "572c524a-b15b-49b2-9ea2-79c3d08a539f",
+    "provider_slug": "baseten",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-28T16:39:50.37677+00:00"
+  },
+  {
+    "created_at": "2026-08-31T10:49:21.457771+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": true,
+      "source": "json"
+    },
+    "provider_region_id": "4b4c4b19-8da4-4671-975a-d8528e20afe6",
+    "provider_slug": "runinfra",
+    "region_code": "us",
+    "routing_enabled": false,
+    "status": "active",
+    "updated_at": "2026-08-31T10:49:21.457771+00:00"
+  },
+  {
+    "created_at": "2026-08-31T12:26:12.283418+00:00",
+    "data_residency_supported": true,
+    "display_name": "AP-NORTHEAST-1",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "alibaba-cloud:qwen/wan3.0-video-prime",
+      "source": "json"
+    },
+    "provider_region_id": "78c439f2-86f9-4908-adcc-c4ffca0745e0",
+    "provider_slug": "alibaba-cloud",
+    "region_code": "ap-northeast-1",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-31T12:26:12.283418+00:00"
+  },
+  {
+    "created_at": "2026-08-31T12:26:12.283418+00:00",
+    "data_residency_supported": true,
+    "display_name": "AP-SOUTHEAST-1",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "alibaba-cloud:qwen/wan3.0-video-prime",
+      "source": "json"
+    },
+    "provider_region_id": "99b85739-c66e-4cc9-95fd-f541e9d00a05",
+    "provider_slug": "alibaba-cloud",
+    "region_code": "ap-southeast-1",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-31T12:26:12.283418+00:00"
+  },
+  {
+    "created_at": "2026-08-31T12:26:12.283418+00:00",
+    "data_residency_supported": true,
+    "display_name": "CN-BEIJING",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "alibaba-cloud:qwen/wan3.0-video-prime",
+      "source": "json"
+    },
+    "provider_region_id": "edc45776-58d1-4234-9a61-fe284546a12a",
+    "provider_slug": "alibaba-cloud",
+    "region_code": "cn-beijing",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-31T12:26:12.283418+00:00"
+  },
+  {
+    "created_at": "2026-08-31T12:26:12.283418+00:00",
+    "data_residency_supported": true,
+    "display_name": "CN-HONGKONG",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "alibaba-cloud:qwen/wan3.0-video-prime",
+      "source": "json"
+    },
+    "provider_region_id": "2b0d9e5d-d23a-4303-a5e8-c3c44cf33314",
+    "provider_slug": "alibaba-cloud",
+    "region_code": "cn-hongkong",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-31T12:26:12.283418+00:00"
+  },
+  {
+    "created_at": "2026-08-31T12:26:12.283418+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU-CENTRAL-1",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "alibaba-cloud:qwen/wan3.0-video-prime",
+      "source": "json"
+    },
+    "provider_region_id": "2deb2d64-10a2-4922-bcc1-e9391be0b1b8",
+    "provider_slug": "alibaba-cloud",
+    "region_code": "eu-central-1",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-31T12:26:12.283418+00:00"
+  },
+  {
+    "created_at": "2026-08-31T12:26:12.283418+00:00",
+    "data_residency_supported": true,
+    "display_name": "US-EAST-1",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "alibaba-cloud:qwen/wan3.0-video-prime",
+      "source": "json"
+    },
+    "provider_region_id": "ae28b48c-16f8-40d1-ba08-dc4e1978de91",
+    "provider_slug": "alibaba-cloud",
+    "region_code": "us-east-1",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-08-31T12:26:12.283418+00:00"
+  },
+  {
+    "created_at": "2026-09-01T08:09:27.586582+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "wafer:GLM-5.3",
+      "source": "json"
+    },
+    "provider_region_id": "8e8441a4-5dc8-4ae1-86a7-c82e996b723d",
+    "provider_slug": "wafer",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-09-01T08:09:27.586582+00:00"
+  },
+  {
+    "created_at": "2026-09-03T17:21:08.66469+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "google-vertex:google/gemini-3.8-flash",
+      "source": "json"
+    },
+    "provider_region_id": "0f9209e0-00c7-460f-9c2b-d867826b79f1",
+    "provider_slug": "google-vertex",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-09-03T17:21:08.66469+00:00"
+  },
+  {
+    "created_at": "2026-09-03T17:21:08.66469+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "google-vertex:google/gemini-3.8-flash",
+      "source": "json"
+    },
+    "provider_region_id": "dd6bd160-1b2a-472e-b8d4-387c61fdbb9c",
+    "provider_slug": "google-vertex",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-09-03T17:21:08.66469+00:00"
+  },
+  {
+    "created_at": "2026-09-08T01:21:47.033237+00:00",
+    "data_residency_supported": false,
+    "display_name": "CN",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "stepfun:stepfun/step-image-edit-2",
+      "source": "json"
+    },
+    "provider_region_id": "c4a7d8ea-7c91-4b1c-8916-7e165b300ed6",
+    "provider_slug": "stepfun",
+    "region_code": "cn",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-09-08T01:21:47.033237+00:00"
+  },
+  {
+    "created_at": "2026-09-08T01:21:47.033237+00:00",
+    "data_residency_supported": false,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "azure:openai/gpt-4.1-nano",
+      "source": "json"
+    },
+    "provider_region_id": "ad9db70f-c755-4110-8897-3b319f8ffc15",
+    "provider_slug": "azure",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-09-08T01:21:47.033237+00:00"
+  },
+  {
+    "created_at": "2026-09-08T01:21:47.033237+00:00",
+    "data_residency_supported": false,
+    "display_name": "US-CENTRAL1",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "google-vertex:openai/gpt-oss-20b",
+      "source": "json"
+    },
+    "provider_region_id": "4c21ffd0-d207-4b3b-92d3-9600d6e6fcbb",
+    "provider_slug": "google-vertex",
+    "region_code": "us-central1",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-09-08T01:21:47.033237+00:00"
+  },
+  {
+    "created_at": "2026-09-08T01:21:47.033237+00:00",
+    "data_residency_supported": true,
+    "display_name": "CN",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "baidu:qwen/qwen3-reranker-8b:qwen3-reranker-8b",
+      "source": "json"
+    },
+    "provider_region_id": "edd4f637-adc3-40ef-b436-8c30051d19f2",
+    "provider_slug": "baidu",
+    "region_code": "cn",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-09-08T01:21:47.033237+00:00"
+  },
+  {
+    "created_at": "2026-09-08T01:21:47.033237+00:00",
+    "data_residency_supported": true,
+    "display_name": "EU",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "black-forest-labs:black-forest-labs/flux-3-video",
+      "source": "json"
+    },
+    "provider_region_id": "eb68d87b-0fa6-4ebe-af37-bbdbbaecfdad",
+    "provider_slug": "black-forest-labs",
+    "region_code": "eu",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-09-08T01:21:47.033237+00:00"
+  },
+  {
+    "created_at": "2026-09-08T01:21:47.033237+00:00",
+    "data_residency_supported": true,
+    "display_name": "GLOBAL",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "black-forest-labs:black-forest-labs/flux-3-video",
+      "source": "json"
+    },
+    "provider_region_id": "6f8c4a9e-4bf8-4f17-8405-d605bf13467f",
+    "provider_slug": "black-forest-labs",
+    "region_code": "global",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-09-08T01:21:47.033237+00:00"
+  },
+  {
+    "created_at": "2026-09-08T01:21:47.033237+00:00",
+    "data_residency_supported": true,
+    "display_name": "US",
+    "execution_supported": true,
+    "metadata": {
+      "default_execution_region": false,
+      "provider_model_id": "black-forest-labs:black-forest-labs/flux-3-video",
+      "source": "json"
+    },
+    "provider_region_id": "4014f34f-7b42-4608-9b13-5c7e6d50fbfc",
+    "provider_slug": "black-forest-labs",
+    "region_code": "us",
+    "routing_enabled": true,
+    "status": "active",
+    "updated_at": "2026-09-08T01:21:47.033237+00:00"
+  }
+]

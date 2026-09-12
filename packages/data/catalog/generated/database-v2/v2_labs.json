@@ -1,0 +1,2282 @@
+[
+  {
+    "colour": "#000000",
+    "country_code": "CZ",
+    "created_at": "2026-08-21T17:52:19.041916+00:00",
+    "description": "JetBrains is a software development tools company headquartered in Prague, Czech Republic.",
+    "lab_slug": "jetbrains",
+    "metadata": {
+      "colour": "#000000",
+      "display_name": "JetBrains",
+      "legacy_organisation_id": "jetbrains",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "JetBrains",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-21T17:52:19.041916+00:00"
+  },
+  {
+    "colour": "#000000",
+    "country_code": "DE",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Black Forest Labs (BFL) is a frontier AI research and product company with its registered address in Freiburg im Breisgau, Germany. Their mission is to build powerful visual foundation models and tools that let people and organisations generate, control and apply images and video safely at scale, bringing state-of-the-art generative visuals into everyday products and creative workflows.",
+    "lab_slug": "black-forest-labs",
+    "metadata": {
+      "colour": "#000000",
+      "display_name": "Black Forest Labs",
+      "legacy_organisation_id": "black-forest-labs",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Black Forest Labs",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "DE-BW",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#000000",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Liquid AI is a US AI company headquartered in Cambridge, Massachusetts. It builds efficient, general-purpose foundation models for organisations, publishing models and related resources publicly (e.g., on Hugging Face) alongside its main site.",
+    "lab_slug": "liquid-ai",
+    "metadata": {
+      "colour": "#000000",
+      "display_name": "Liquid AI",
+      "legacy_organisation_id": "liquid-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Liquid AI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-MA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#000000",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Relace is an AI company building models and tools for software/product engineering, with its team based in San Francisco, California.",
+    "lab_slug": "relace",
+    "metadata": {
+      "colour": "#000000",
+      "display_name": "Relace",
+      "legacy_organisation_id": "relace",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Relace",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#000000",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "SpaceXAI (formally xAI) is an AI company with an office in Palo Alto, California. Its mission is to craft next-generation model and agent systems which set new standards in capability, deployment and human-machine interaction (public model details remain emerging).",
+    "lab_slug": "spacex-ai",
+    "metadata": {
+      "colour": "#000000",
+      "display_name": "SpaceXAI",
+      "legacy_organisation_id": "spacex-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "SpaceXAI",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#000000",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Vercel is a developer cloud platform headquartered in San Francisco, California, for building and deploying web experiences (including AI apps), providing tooling and infrastructure for shipping and scaling modern frontends.",
+    "lab_slug": "vercel",
+    "metadata": {
+      "colour": "#000000",
+      "display_name": "Vercel",
+      "legacy_organisation_id": "vercel",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Vercel",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#000000",
+    "country_code": "US",
+    "created_at": "2026-08-10T22:54:32.340759+00:00",
+    "description": "Runway builds generative media models and provides them through the Runway API.",
+    "lab_slug": "runway",
+    "metadata": {
+      "colour": "#000000",
+      "display_name": "Runway",
+      "legacy_organisation_id": "runway",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Runway",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-10T22:54:32.340759+00:00"
+  },
+  {
+    "colour": "#0055E9",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Tencent Hunyuan develops open and proprietary AI models for reasoning, multimodal understanding, coding, and agentic workloads through Tencent's Hunyuan model team. Tencent's headquarters are in Shenzhen, China.",
+    "lab_slug": "tencent",
+    "metadata": {
+      "colour": "#0055E9",
+      "display_name": "Tencent Hunyuan",
+      "legacy_organisation_id": "tencent",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Tencent Hunyuan",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "CN-GD",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#0064ff",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "StepFun is a Chinese AI company based in Shanghai. Its mission is to develop large language and multimodal foundation models and make them available for real-world applications across reasoning, agentic workflows and general AI products.",
+    "lab_slug": "stepfun",
+    "metadata": {
+      "colour": "#0064ff",
+      "display_name": "StepFun",
+      "legacy_organisation_id": "stepfun",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "StepFun",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "CN-SH",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#008C8C",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Arcee AI is an AI model company based in San Francisco, California, building domain-specific small language models (SLMs) and generative AI solutions for enterprise use.",
+    "lab_slug": "arcee-ai",
+    "metadata": {
+      "colour": "#008C8C",
+      "display_name": "Arcee AI",
+      "legacy_organisation_id": "arcee-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Arcee AI",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#00ec97",
+    "country_code": "US",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "NEAR AI develops verifiable private-inference infrastructure and operates NEAR AI Cloud through Jasnah Inc.",
+    "lab_slug": "near-ai",
+    "metadata": {
+      "colour": "#00ec97",
+      "display_name": "NEAR AI",
+      "legacy_organisation_id": "near-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "NEAR AI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": "#03C75A",
+    "country_code": "KR",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "NAVER’s HyperCLOVA / HyperCLOVA X is the company’s flagship Korean-centric LLM family, with public releases and research artifacts distributed via NAVER Cloud channels (e.g., GitHub and Hugging Face). NAVER is headquartered in Seongnam-si, Gyeonggi Province, South Korea.",
+    "lab_slug": "naver-hyperclova",
+    "metadata": {
+      "colour": "#03C75A",
+      "display_name": "NAVER",
+      "legacy_organisation_id": "naver-hyperclova",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "NAVER",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#09B6A2",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Windsurf is an AI coding environment now associated with Cognition; Cognition's platform terms list a San Francisco, California address. It is focused on agentic software development, code editing, and developer productivity.",
+    "lab_slug": "windsurf",
+    "metadata": {
+      "colour": "#09B6A2",
+      "display_name": "Windsurf",
+      "legacy_organisation_id": "windsurf",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Windsurf",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#0f172a",
+    "country_code": "PL",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Aion Labs is an AI model lab operated by Deep Forge sp. z o.o., a Polish company with its registered seat in Konstancin-Jeziorna, Poland. They publish models via Hugging Face and provide access/community via their website, Discord, and subreddit.",
+    "lab_slug": "aion-labs",
+    "metadata": {
+      "colour": "#0f172a",
+      "display_name": "Aion Labs",
+      "legacy_organisation_id": "aion-labs",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Aion Labs",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#111111",
+    "country_code": "GB",
+    "created_at": "2026-08-23T19:46:40.133547+00:00",
+    "description": "Stability AI develops open generative media models, including Stable Diffusion.",
+    "lab_slug": "stability-ai",
+    "metadata": {
+      "colour": "#111111",
+      "display_name": "Stability AI",
+      "legacy_organisation_id": "stability-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Stability AI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-23T19:46:40.133547+00:00"
+  },
+  {
+    "colour": "#111111",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Poolside builds frontier foundation models, agents, and enterprise systems for software engineering.",
+    "lab_slug": "poolside",
+    "metadata": {
+      "colour": "#111111",
+      "display_name": "Poolside",
+      "legacy_organisation_id": "poolside",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Poolside",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#111111",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Thinking Machines Lab is an AI research and product company focused on customizable AI systems.",
+    "lab_slug": "thinking-machines",
+    "metadata": {
+      "colour": "#111111",
+      "display_name": "Thinking Machines Lab",
+      "legacy_organisation_id": "thinking-machines",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Thinking Machines Lab",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#111827",
+    "country_code": "xx",
+    "created_at": "2026-08-28T10:14:00.313974+00:00",
+    "description": "Sentence Transformers provides open-source models and tooling for dense vector representations and semantic search.",
+    "lab_slug": "sentence-transformers",
+    "metadata": {
+      "colour": "#111827",
+      "display_name": "Sentence Transformers",
+      "legacy_organisation_id": "sentence-transformers",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Sentence Transformers",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-28T10:14:00.313974+00:00"
+  },
+  {
+    "colour": "#1368aa",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Microsoft is a software, cloud- and AI-company headquartered in Redmond, Washington. Their mission is to build model families, embed them into productivity tools and infrastructure, and ensure that AI augments human capability across work and life.",
+    "lab_slug": "microsoft",
+    "metadata": {
+      "colour": "#1368aa",
+      "display_name": "Microsoft",
+      "legacy_organisation_id": "microsoft",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Microsoft",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-WA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#141618",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Z-AI (Z.AI Co., Ltd.) is an AI company with a corporate address in Beijing, China. Their mission is to advance model- and agent-technologies, offering novel AI services and systems that will enable new use-cases and applications (public documentation is currently limited).",
+    "lab_slug": "z-ai",
+    "metadata": {
+      "colour": "#141618",
+      "display_name": "z.AI",
+      "legacy_organisation_id": "z-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "z.AI",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "CN-BJ",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#1980e1",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Meta is an AI and social-technology company headquartered in Menlo Park, California. Their mission is to develop large-model systems, open-weight research and generative-AI platforms in vision, language and agents to advance how people create and interact.",
+    "lab_slug": "meta",
+    "metadata": {
+      "colour": "#1980e1",
+      "display_name": "Meta",
+      "legacy_organisation_id": "meta",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Meta",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#1C1C1C",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Prime Intellect is a decentralised AI research and infrastructure organisation with its registered office in Dover, Delaware. It is focused on training open models using distributed compute.",
+    "lab_slug": "prime-intellect",
+    "metadata": {
+      "colour": "#1C1C1C",
+      "display_name": "Prime Intellect",
+      "legacy_organisation_id": "prime-intellect",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Prime Intellect",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#1f8f7a",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Nex AGI is an open-source model and agent systems group focused on agency-driven, closed-loop AI systems for real-world productivity and long-horizon task execution.",
+    "lab_slug": "nex-agi",
+    "metadata": {
+      "colour": "#1f8f7a",
+      "display_name": "Nex AGI",
+      "legacy_organisation_id": "nex-agi",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Nex AGI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#20b8cd",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Perplexity AI is an AI application company with its corporate address in San Francisco, California. Their mission is to combine generative models, retrieval-augmented search and agentic interfaces so that people can access accurate information and intelligence in new ways.",
+    "lab_slug": "perplexity",
+    "metadata": {
+      "colour": "#20b8cd",
+      "display_name": "Perplexity",
+      "legacy_organisation_id": "perplexity",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Perplexity",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#22C55E",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Inflection AI develops the Pi family of conversational models and enterprise-focused instruction-following variants.",
+    "lab_slug": "inflection",
+    "metadata": {
+      "colour": "#22C55E",
+      "display_name": "Inflection AI",
+      "legacy_organisation_id": "inflection",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Inflection AI",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#24292f",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "GitHub is a developer platform and Microsoft subsidiary headquartered in San Francisco, California. GitHub Copilot provides AI coding assistance, chat, agent workflows, code review, and access to models from OpenAI, Anthropic, Google, and other providers.",
+    "lab_slug": "github",
+    "metadata": {
+      "colour": "#24292f",
+      "display_name": "GitHub",
+      "legacy_organisation_id": "github",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "GitHub",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#2563EB",
+    "country_code": "CN",
+    "created_at": "2026-08-25T11:29:17.271265+00:00",
+    "description": "OpenBMB develops open-source large language and multimodal models, including the MiniCPM family.",
+    "lab_slug": "openbmb",
+    "metadata": {
+      "colour": "#2563EB",
+      "display_name": "OpenBMB",
+      "legacy_organisation_id": "openbmb",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "OpenBMB",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T11:29:17.271265+00:00"
+  },
+  {
+    "colour": "#2563EB",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Inception Labs is an AI research + product company with its corporate address in Palo Alto, California, building diffusion-based language models (the Mercury family) aimed at very low latency, high throughput, and production deployment (API + on-prem).",
+    "lab_slug": "inception",
+    "metadata": {
+      "colour": "#2563EB",
+      "display_name": "Inception",
+      "legacy_organisation_id": "inception",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Inception",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#267efb",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Inclusion AI is an open-source AI organisation. Their mission is to develop reasoning/agent architectures, frameworks and accessible models so that inclusive, open-model ecosystems and AI infrastructure are available to all.",
+    "lab_slug": "inclusionai",
+    "metadata": {
+      "colour": "#267efb",
+      "display_name": "Inclusion AI",
+      "legacy_organisation_id": "inclusionai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Inclusion AI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#276282",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Nous Research is an AI research organisation. Their mission is to develop large-model systems, agent-architectures and alignment frameworks that enable safe and powerful AI across domains.",
+    "lab_slug": "nous",
+    "metadata": {
+      "colour": "#276282",
+      "display_name": "Nous",
+      "legacy_organisation_id": "nous",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Nous",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#2932E1",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Baidu is an AI model and technology company headquartered in Beijing, China. Their mission is to build large-model families (such as “ERNIE”), covering language, vision and multimodal tasks, so that intelligence can be applied broadly across services.",
+    "lab_slug": "baidu",
+    "metadata": {
+      "colour": "#2932E1",
+      "display_name": "Baidu",
+      "legacy_organisation_id": "baidu",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Baidu",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "CN-BJ",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#333333",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Moonshot AI is an AI company with its address in Beijing, China. Their mission is to pursue ambitious and frontier model/agent development, creating advanced systems that deliver new kinds of intelligence and application.",
+    "lab_slug": "moonshotai",
+    "metadata": {
+      "colour": "#333333",
+      "display_name": "Moonshot",
+      "legacy_organisation_id": "moonshotai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Moonshot",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "CN-BJ",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#333333",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "OpenAI is an AI research and deployment company based in San Francisco, California. Their mission is to ensure that artificial general intelligence (AGI) benefits all of humanity.",
+    "lab_slug": "openai",
+    "metadata": {
+      "colour": "#333333",
+      "display_name": "OpenAI",
+      "legacy_organisation_id": "openai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "OpenAI",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#334155",
+    "country_code": "US",
+    "created_at": "2026-08-25T13:09:29.335435+00:00",
+    "description": "Phala provides confidential AI infrastructure and TEE-backed model inference.",
+    "lab_slug": "phala",
+    "metadata": {
+      "colour": "#334155",
+      "display_name": "Phala",
+      "legacy_organisation_id": "phala",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Phala",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:09:29.335435+00:00"
+  },
+  {
+    "colour": "#3b0c91",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Essential AI is an AI research and platform company with its location in San Francisco, California. Their mission is to build an open platform that accelerates the science and engineering of deep learning, supported by open models and reproducible tooling.",
+    "lab_slug": "essential-ai",
+    "metadata": {
+      "colour": "#3b0c91",
+      "display_name": "Essential AI",
+      "legacy_organisation_id": "essential-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Essential AI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#41584f",
+    "country_code": "CA",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Cohere is an enterprise-AI company with its principal place of business in Toronto, Ontario, Canada. Their mission is to scale intelligence for organisations by delivering powerful foundation models and secure AI solutions tailored for real-world business needs.",
+    "lab_slug": "cohere",
+    "metadata": {
+      "colour": "#41584f",
+      "display_name": "Cohere",
+      "legacy_organisation_id": "cohere",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Cohere",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "CA-ON",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#415eb4",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "IBM is an enterprise-technology and AI company headquartered in Armonk, New York. Their mission is to deliver AI solutions, large-model capabilities and industrial-scale platforms for organisations to apply intelligence across operations.",
+    "lab_slug": "ibm",
+    "metadata": {
+      "colour": "#415eb4",
+      "display_name": "IBM",
+      "legacy_organisation_id": "ibm",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "IBM",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-NY",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#4285F4",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Google is a technology and AI company within Alphabet, whose headquarters are in Mountain View, California. Their mission is to advance multimodal, generative and agentic AI across vision, language and platforms to support users and creators around the world.",
+    "lab_slug": "google",
+    "metadata": {
+      "colour": "#4285F4",
+      "display_name": "Google",
+      "legacy_organisation_id": "google",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Google",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#5b52ff",
+    "country_code": "KR",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Upstage is a South Korean AI company with its registered/business address in Seoul. Its mission is to improve work productivity by building cost-effective enterprise AI, including large language models (e.g., Solar) and document AI/OCR systems that automate and scale knowledge work.",
+    "lab_slug": "upstage",
+    "metadata": {
+      "colour": "#5b52ff",
+      "display_name": "Upstage",
+      "legacy_organisation_id": "upstage",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Upstage",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "KR-11",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#5c4bff",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Poe is Quora's multi-model AI chat product, offering access to a broad catalog of first- and third-party bots and model-backed experiences through point-based subscriptions.",
+    "lab_slug": "poe",
+    "metadata": {
+      "colour": "#5c4bff",
+      "display_name": "Poe",
+      "legacy_organisation_id": "poe",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Poe",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#5d49df",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Qwen is Alibaba Cloud’s model team. Alibaba’s principal executive offices are in Hangzhou, China. Its mission is to create large language and multimodal models that support multilingual, flexible tasks and broaden access to foundational AI capabilities.",
+    "lab_slug": "qwen",
+    "metadata": {
+      "colour": "#5d49df",
+      "display_name": "Qwen",
+      "legacy_organisation_id": "qwen",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Qwen",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#5e71ed",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "DeepSeek is an AI company operated by Hangzhou DeepSeek Artificial Intelligence Co., Ltd. Their mission is to develop open-weight large language models that enable reasoning, tool-use and private deployment, offering an alternative path in the large-model ecosystem.",
+    "lab_slug": "deepseek",
+    "metadata": {
+      "colour": "#5e71ed",
+      "display_name": "DeepSeek",
+      "legacy_organisation_id": "deepseek",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "DeepSeek",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#6366F1",
+    "country_code": "SG",
+    "created_at": "2026-07-25T11:58:08.895574+00:00",
+    "description": "Mind Lab develops the Macaron V1 family of model-specialist systems and has its registered address / HQ in Singapore.",
+    "lab_slug": "mindai",
+    "metadata": {
+      "colour": "#6366F1",
+      "display_name": "Mind Lab",
+      "legacy_organisation_id": "mindai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Mind Lab",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-25T11:58:08.895574+00:00"
+  },
+  {
+    "colour": "#654CFF",
+    "country_code": "GB",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Sourceful is an AI-powered packaging design platform headquartered in Manchester, United Kingdom, that helps teams create and iterate packaging designs through conversational workflows.",
+    "lab_slug": "sourceful",
+    "metadata": {
+      "colour": "#654CFF",
+      "display_name": "Sourceful",
+      "legacy_organisation_id": "sourceful",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Sourceful",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#6b7280",
+    "country_code": "XX",
+    "created_at": "2026-08-22T11:18:14.01322+00:00",
+    "description": "Anonymous model namespace used for the Ox Alpha stealth preview. OpenRouter later attributed Ox Alpha to Z.AI GLM-5.3-Flash, but the historical stealth identity is retained separately.",
+    "lab_slug": "stealth",
+    "metadata": {
+      "colour": "#6b7280",
+      "display_name": "Stealth",
+      "legacy_organisation_id": "stealth",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Stealth",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-22T11:18:14.01322+00:00"
+  },
+  {
+    "colour": "#6B7280",
+    "country_code": "xx",
+    "created_at": "2026-08-31T10:49:16.035071+00:00",
+    "description": "Ornith is the model organisation behind the open-weight Ornith family of language and vision-language models.",
+    "lab_slug": "ornith",
+    "metadata": {
+      "colour": "#6B7280",
+      "display_name": "Ornith",
+      "legacy_organisation_id": "ornith",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Ornith",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-31T10:49:16.035071+00:00"
+  },
+  {
+    "colour": "#6E6E6E",
+    "country_code": "GB",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Eleven Labs is an AI audio-model company with its European headquarters in London, United Kingdom. Their mission is to enable expressive and high-quality voice and audio generation, bringing natural, human-level text-to-speech and voice-cloning to creators and applications.",
+    "lab_slug": "eleven-labs",
+    "metadata": {
+      "colour": "#6E6E6E",
+      "display_name": "ElevenLabs",
+      "legacy_organisation_id": "eleven-labs",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "ElevenLabs",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "GB-ENG",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#74E1DE",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "ByteDance is an AI and technology company with offices in Beijing, China. Their mission is to apply generative, vision-language and agentic AI across content, creation and interaction so that intelligence powers new experience platforms.",
+    "lab_slug": "bytedance",
+    "metadata": {
+      "colour": "#74E1DE",
+      "display_name": "ByteDance",
+      "legacy_organisation_id": "bytedance",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "ByteDance",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "CN-BJ",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#76B900",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "NVIDIA is a hardware- and software-AI company headquartered in Santa Clara, California. Their mission is to enable the training and deployment of large-scale models through specialised architecture, infrastructure and model frameworks.",
+    "lab_slug": "nvidia",
+    "metadata": {
+      "colour": "#76B900",
+      "display_name": "Nvidia",
+      "legacy_organisation_id": "nvidia",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Nvidia",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#7C3AED",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "CrofAI is an OpenAI-compatible inference provider focused on low-cost access to large open models.",
+    "lab_slug": "crofai",
+    "metadata": {
+      "colour": "#7C3AED",
+      "display_name": "CrofAI",
+      "legacy_organisation_id": "crofai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "CrofAI",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#809641",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Voyage is a US AI company located in Palo Alto, California, focused on retrieval infrastructure. Its mission is to power high-quality search and RAG systems with strong embedding and reranking models that help developers build accurate information retrieval and discovery experiences.",
+    "lab_slug": "voyage",
+    "metadata": {
+      "colour": "#809641",
+      "display_name": "Voyage",
+      "legacy_organisation_id": "voyage",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Voyage",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#a50034",
+    "country_code": "KR",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "LG is a technology and electronics company with its corporate office in Seoul, South Korea. Their mission is to integrate advanced AI models into devices, consumer experiences and automation systems so that intelligence becomes embedded everywhere.",
+    "lab_slug": "lg",
+    "metadata": {
+      "colour": "#a50034",
+      "display_name": "LG",
+      "legacy_organisation_id": "lg",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "LG",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "KR-11",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#cc785c",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Anthropic is an AI research and deployment company with its corporate address in San Francisco, California. Their mission is to build reliable, interpretable and steerable AI systems so that increasingly capable technologies remain beneficial to humanity.",
+    "lab_slug": "anthropic",
+    "metadata": {
+      "colour": "#cc785c",
+      "display_name": "Anthropic",
+      "legacy_organisation_id": "anthropic",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Anthropic",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#DD3300",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Venice is a generative-AI service operated by Venice.ai, Inc., whose registered/contact address is in Sheridan, Wyoming.",
+    "lab_slug": "venice",
+    "metadata": {
+      "colour": "#DD3300",
+      "display_name": "Venice",
+      "legacy_organisation_id": "venice",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Venice",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#E91E63",
+    "country_code": "IL",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "AI21 Labs is an AI research and product company with an office in Tel Aviv, Israel. Their mission is to build advanced language models and writing-tools that enable humans and machines to collaborate in thinking and creating.",
+    "lab_slug": "ai21",
+    "metadata": {
+      "colour": "#E91E63",
+      "display_name": "ai21",
+      "legacy_organisation_id": "ai21",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "ai21",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "IL-TA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#e97a35",
+    "country_code": "FR",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Mistral is an AI model company with registered offices in Paris, France. Their mission is to democratise artificial intelligence by building efficient, open-source and high-performance models which organisations can deploy and own.",
+    "lab_slug": "mistral",
+    "metadata": {
+      "colour": "#e97a35",
+      "display_name": "Mistral",
+      "legacy_organisation_id": "mistral",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Mistral",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "FR-IDF",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#EC4899",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Morph builds coding-focused inference products, including apply, search, compaction, embedding and rerank APIs.",
+    "lab_slug": "morph",
+    "metadata": {
+      "colour": "#EC4899",
+      "display_name": "Morph",
+      "legacy_organisation_id": "morph",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Morph",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#EF3E4A",
+    "country_code": "US",
+    "created_at": "2026-08-14T10:49:30.681038+00:00",
+    "description": "Reka AI develops multimodal models and video understanding services.",
+    "lab_slug": "reka",
+    "metadata": {
+      "colour": "#EF3E4A",
+      "display_name": "Reka AI",
+      "legacy_organisation_id": "reka",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Reka AI",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-14T10:49:30.681038+00:00"
+  },
+  {
+    "colour": "#f0529c",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "The Allen Institute for Artificial Intelligence (Ai2) is a Seattle-based non-profit AI research institute. Their mission is to develop foundational AI research and innovation and deliver real-world impact through large-scale open models, data and engineering.",
+    "lab_slug": "allenai",
+    "metadata": {
+      "colour": "#f0529c",
+      "display_name": "AllenAI",
+      "legacy_organisation_id": "allenai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "AllenAI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-WA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#f13e5a",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "MiniMax is an AI company with its headquarters and principal place of business in Shanghai, China. Their mission is to produce model and agent systems that push forward next-generation intelligence, providing novel AI capabilities (public-detailed model info is limited).",
+    "lab_slug": "minimax",
+    "metadata": {
+      "colour": "#f13e5a",
+      "display_name": "MiniMax",
+      "legacy_organisation_id": "minimax",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "MiniMax",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "CN-SH",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#F54E00",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Cursor is an AI-assisted coding product built by Anysphere, Inc., whose official terms list an address in San Francisco, California. Its mission is to accelerate software development by integrating state-of-the-art language models into a developer-first IDE experience for editing, navigation, refactoring and agentic code generation.",
+    "lab_slug": "cursor",
+    "metadata": {
+      "colour": "#F54E00",
+      "display_name": "Cursor",
+      "legacy_organisation_id": "cursor",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Cursor",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-CA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#F97316",
+    "country_code": "JP",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Sakana AI is a Tokyo-based AI research company building nature-inspired foundation model systems and AI orchestration products.",
+    "lab_slug": "sakana",
+    "metadata": {
+      "colour": "#F97316",
+      "display_name": "Sakana AI",
+      "legacy_organisation_id": "sakana",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Sakana AI",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "JP-13",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#FF2442",
+    "country_code": "CN",
+    "created_at": "2026-08-14T08:43:03.941355+00:00",
+    "description": "Dots Studio is the model team behind the Dots family, developed and released by Xiaohongshu (RedNote).",
+    "lab_slug": "dots-studio",
+    "metadata": {
+      "colour": "#FF2442",
+      "display_name": "Dots Studio",
+      "legacy_organisation_id": "dots-studio",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Dots Studio",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-14T08:43:03.941355+00:00"
+  },
+  {
+    "colour": "#FF4B23",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Suno is an AI generative-audio company headquartered in Cambridge, Massachusetts. Their mission is to build models and tools for music and creative audio generation so that creators can generate high-fidelity pieces and new forms of expression via AI.",
+    "lab_slug": "suno",
+    "metadata": {
+      "colour": "#FF4B23",
+      "display_name": "Suno",
+      "legacy_organisation_id": "suno",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Suno",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-MA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#FF6900",
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Xiaomi is a consumer-electronics and smart-manufacturing company with its campus/corporate address in Beijing, China. Smartphones and AIoT products are at its core; its mission is to build amazing products with honest prices so everyone can enjoy a better life through innovative technology.",
+    "lab_slug": "xiaomi",
+    "metadata": {
+      "colour": "#FF6900",
+      "display_name": "Xiaomi",
+      "legacy_organisation_id": "xiaomi",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Xiaomi",
+    "routable": true,
+    "status": "active",
+    "subdivision_code": "CN-BJ",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": "#ff6a00",
+    "country_code": "CN",
+    "created_at": "2026-07-31T11:59:32.264632+00:00",
+    "description": "Alibaba develops AI models and services through teams including Qwen, Wan and Taotian Group, and provides hosted inference through Alibaba Cloud Model Studio. Its principal executive offices are in Hangzhou, China.",
+    "lab_slug": "alibaba",
+    "metadata": {
+      "colour": "#ff6a00",
+      "display_name": "Alibaba",
+      "legacy_organisation_id": "alibaba",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Alibaba",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-04T18:17:46.771339+00:00"
+  },
+  {
+    "colour": "#FF6B4A",
+    "country_code": "US",
+    "created_at": "2026-08-04T16:57:16.97355+00:00",
+    "description": "Fish Audio develops expressive speech generation, voice design, and speech recognition models and APIs.",
+    "lab_slug": "fish-audio",
+    "metadata": {
+      "colour": "#FF6B4A",
+      "display_name": "Fish Audio",
+      "legacy_organisation_id": "fish-audio",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Fish Audio",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-04T16:57:16.97355+00:00"
+  },
+  {
+    "colour": "#FF9900",
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Amazon is a technology and infrastructure company with principal executive offices in Seattle, Washington. Their mission is to make generative AI and foundation models accessible and scalable across businesses and services, helping users solve problems, boost productivity and innovate.",
+    "lab_slug": "amazon",
+    "metadata": {
+      "colour": "#FF9900",
+      "display_name": "Amazon",
+      "legacy_organisation_id": "amazon",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Amazon",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "US-WA",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "KwaiKAT is Kuaishou's coding-model team behind the KAT-Coder family. Kuaishou lists its corporate contact address in Beijing, China. Its public model IDs use the kwaipilot namespace.",
+    "lab_slug": "kwaipilot",
+    "metadata": {
+      "colour": null,
+      "display_name": "KwaiKAT",
+      "legacy_organisation_id": "kwaipilot",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "KwaiKAT",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "CN-BJ",
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": "Meituan is an AI and technology company with headquarters in Beijing and Shanghai, China.",
+    "lab_slug": "meituan",
+    "metadata": {
+      "colour": null,
+      "display_name": "Meituan",
+      "legacy_organisation_id": "meituan",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Meituan",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-08-14T10:49:30.681038+00:00",
+    "description": "The Beijing Academy of Artificial Intelligence develops open research models including the BGE embedding family.",
+    "lab_slug": "baai",
+    "metadata": {
+      "colour": null,
+      "display_name": "BAAI",
+      "legacy_organisation_id": "baai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "BAAI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": "CN-BJ",
+    "updated_at": "2026-08-14T10:49:30.681038+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": null,
+    "lab_slug": "medaibase",
+    "metadata": {
+      "colour": null,
+      "display_name": "MedAIBase",
+      "legacy_organisation_id": "medaibase",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "MedAIBase",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": null,
+    "lab_slug": "opencompass",
+    "metadata": {
+      "colour": null,
+      "display_name": "OpenCompass",
+      "legacy_organisation_id": "opencompass",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "OpenCompass",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": null,
+    "lab_slug": "opengvlab",
+    "metadata": {
+      "colour": null,
+      "display_name": "OpenGVLab",
+      "legacy_organisation_id": "opengvlab",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "OpenGVLab",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": null,
+    "lab_slug": "shanghai-ai-laboratory",
+    "metadata": {
+      "colour": null,
+      "display_name": "Shanghai AI Laboratory",
+      "legacy_organisation_id": "shanghai-ai-laboratory",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Shanghai AI Laboratory",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": null,
+    "lab_slug": "xgenerationlab",
+    "metadata": {
+      "colour": null,
+      "display_name": "XGenerationLab",
+      "legacy_organisation_id": "xgenerationlab",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "XGenerationLab",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-08-25T09:43:32.422509+00:00",
+    "description": "Kuaishou develops generative media models offered through Tencent Cloud TokenHub.",
+    "lab_slug": "kuaishou",
+    "metadata": {
+      "colour": null,
+      "display_name": "Kuaishou",
+      "legacy_organisation_id": "kuaishou",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Kuaishou",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:43:32.422509+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-08-25T09:43:32.422509+00:00",
+    "description": "PixVerse develops generative media models offered through Tencent Cloud TokenHub.",
+    "lab_slug": "pixverse",
+    "metadata": {
+      "colour": null,
+      "display_name": "PixVerse",
+      "legacy_organisation_id": "pixverse",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "PixVerse",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:43:32.422509+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-08-25T09:43:32.422509+00:00",
+    "description": "ShengShu Technology develops generative media models offered through Tencent Cloud TokenHub.",
+    "lab_slug": "shengshu-ai",
+    "metadata": {
+      "colour": null,
+      "display_name": "ShengShu Technology",
+      "legacy_organisation_id": "shengshu-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "ShengShu Technology",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:43:32.422509+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "CN",
+    "created_at": "2026-08-25T13:09:29.335435+00:00",
+    "description": "Kling AI is Kuaishou's generative image and video model platform.",
+    "lab_slug": "kling",
+    "metadata": {
+      "colour": null,
+      "display_name": "Kling AI",
+      "legacy_organisation_id": "kling",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Kling AI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:09:29.335435+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "IL",
+    "created_at": "2026-08-12T08:53:36.598087+00:00",
+    "description": "Lightricks develops the LTX family of multimodal video generation models.",
+    "lab_slug": "lightricks",
+    "metadata": {
+      "colour": null,
+      "display_name": "Lightricks",
+      "legacy_organisation_id": "lightricks",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Lightricks",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-12T08:53:36.598087+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "PL",
+    "created_at": "2026-08-25T08:44:43.967883+00:00",
+    "description": "CYFRAGOVPL publishes Poland's PLLuM language models.",
+    "lab_slug": "cyfragovpl",
+    "metadata": {
+      "colour": null,
+      "display_name": "CYFRAGOVPL",
+      "legacy_organisation_id": "cyfragovpl",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "CYFRAGOVPL",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T08:44:43.967883+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "PL",
+    "created_at": "2026-08-25T08:44:43.967883+00:00",
+    "description": "SpeakLeash develops the Polish-language Bielik model family.",
+    "lab_slug": "speakleash",
+    "metadata": {
+      "colour": null,
+      "display_name": "SpeakLeash",
+      "legacy_organisation_id": "speakleash",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "SpeakLeash",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T08:44:43.967883+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "SE",
+    "created_at": "2026-08-25T13:09:29.335435+00:00",
+    "description": null,
+    "lab_slug": "kblab",
+    "metadata": {
+      "colour": null,
+      "display_name": "KBLab",
+      "legacy_organisation_id": "kblab",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "KBLab",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:09:29.335435+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "SG",
+    "created_at": "2026-08-20T13:06:15.84646+00:00",
+    "description": "Sao10K publishes open model fine-tunes focused on creative writing and roleplay.",
+    "lab_slug": "sao10k",
+    "metadata": {
+      "colour": null,
+      "display_name": "Sao10K",
+      "legacy_organisation_id": "sao10k",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Sao10K",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-20T13:06:15.84646+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "SG",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "OrcaRouter is an AI model routing service operated by CONTINUUM AI PTE. LTD. in Singapore.",
+    "lab_slug": "orcarouter",
+    "metadata": {
+      "colour": null,
+      "display_name": "OrcaRouter",
+      "legacy_organisation_id": "orcarouter",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "OrcaRouter",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "US",
+    "created_at": "2026-07-22T10:23:46.119047+00:00",
+    "description": null,
+    "lab_slug": "cogito",
+    "metadata": {
+      "colour": null,
+      "display_name": "Cogito",
+      "legacy_organisation_id": "cogito",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Cogito",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-07-22T11:09:55.894109+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "US",
+    "created_at": "2026-08-14T10:49:30.681038+00:00",
+    "description": "Hexgrad develops Kokoro, an open-weight text-to-speech model and inference library.",
+    "lab_slug": "hexgrad",
+    "metadata": {
+      "colour": null,
+      "display_name": "Hexgrad",
+      "legacy_organisation_id": "hexgrad",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Hexgrad",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-14T10:49:30.681038+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "US",
+    "created_at": "2026-08-20T17:24:21.64671+00:00",
+    "description": "Prism ML develops efficient machine-learning models.",
+    "lab_slug": "prism-ml",
+    "metadata": {
+      "colour": null,
+      "display_name": "Prism ML",
+      "legacy_organisation_id": "prism-ml",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Prism ML",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-20T17:24:21.64671+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "US",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "Decart develops realtime generative video and world models and provides hosted media APIs.",
+    "lab_slug": "decart",
+    "metadata": {
+      "colour": null,
+      "display_name": "Decart",
+      "legacy_organisation_id": "decart",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Decart",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "US",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "Fastino develops specialized AI models and operates the Pioneer inference and fine-tuning platform.",
+    "lab_slug": "fastino",
+    "metadata": {
+      "colour": null,
+      "display_name": "Fastino",
+      "legacy_organisation_id": "fastino",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Fastino",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "US",
+    "created_at": "2026-08-30T20:54:42.480104+00:00",
+    "description": "Inference.net is an AI inference and model-operations platform operated by Inference R&D, Inc.",
+    "lab_slug": "inference-net",
+    "metadata": {
+      "colour": null,
+      "display_name": "Inference.net",
+      "legacy_organisation_id": "inference-net",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Inference.net",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-30T20:54:42.480104+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T08:44:43.967883+00:00",
+    "description": "Intfloat publishes open embedding and language models, including E5 Mistral 7B Instruct.",
+    "lab_slug": "intfloat",
+    "metadata": {
+      "colour": null,
+      "display_name": "Intfloat",
+      "legacy_organisation_id": "intfloat",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Intfloat",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T08:44:43.967883+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T08:44:43.967883+00:00",
+    "description": "NovaSearch publishes the Stella embedding model family.",
+    "lab_slug": "novasearch",
+    "metadata": {
+      "colour": null,
+      "display_name": "NovaSearch",
+      "legacy_organisation_id": "novasearch",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "NovaSearch",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T08:44:43.967883+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T08:44:43.967883+00:00",
+    "description": "VillanovaAI publishes the Villanova model family.",
+    "lab_slug": "villanova-ai",
+    "metadata": {
+      "colour": null,
+      "display_name": "VillanovaAI",
+      "legacy_organisation_id": "villanova-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "VillanovaAI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T08:44:43.967883+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "01 Ai publishes models available through NVIDIA's hosted NIM API catalog.",
+    "lab_slug": "01-ai",
+    "metadata": {
+      "colour": null,
+      "display_name": "01 Ai",
+      "legacy_organisation_id": "01-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "01 Ai",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "Adept publishes models available through NVIDIA's hosted NIM API catalog.",
+    "lab_slug": "adept",
+    "metadata": {
+      "colour": null,
+      "display_name": "Adept",
+      "legacy_organisation_id": "adept",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Adept",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "Aisingapore publishes models available through NVIDIA's hosted NIM API catalog.",
+    "lab_slug": "aisingapore",
+    "metadata": {
+      "colour": null,
+      "display_name": "Aisingapore",
+      "legacy_organisation_id": "aisingapore",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Aisingapore",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "Bigcode publishes models available through NVIDIA's hosted NIM API catalog.",
+    "lab_slug": "bigcode",
+    "metadata": {
+      "colour": null,
+      "display_name": "Bigcode",
+      "legacy_organisation_id": "bigcode",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Bigcode",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "Databricks publishes models available through NVIDIA's hosted NIM API catalog.",
+    "lab_slug": "databricks",
+    "metadata": {
+      "colour": null,
+      "display_name": "Databricks",
+      "legacy_organisation_id": "databricks",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Databricks",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "Snowflake publishes models available through NVIDIA's hosted NIM API catalog.",
+    "lab_slug": "snowflake",
+    "metadata": {
+      "colour": null,
+      "display_name": "Snowflake",
+      "legacy_organisation_id": "snowflake",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Snowflake",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "Writer publishes models available through OpenRouter.",
+    "lab_slug": "writer",
+    "metadata": {
+      "colour": null,
+      "display_name": "Writer",
+      "legacy_organisation_id": "writer",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Writer",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": "Zyphra publishes models available through NVIDIA's hosted NIM API catalog.",
+    "lab_slug": "zyphra",
+    "metadata": {
+      "colour": null,
+      "display_name": "Zyphra",
+      "legacy_organisation_id": "zyphra",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Zyphra",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T09:23:30.718301+00:00",
+    "description": null,
+    "lab_slug": "early-access",
+    "metadata": {
+      "colour": null,
+      "display_name": "Early Access",
+      "legacy_organisation_id": "early-access",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Early Access",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T09:23:30.718301+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:09:29.335435+00:00",
+    "description": null,
+    "lab_slug": "sapiens-ai",
+    "metadata": {
+      "colour": null,
+      "display_name": "Sapiens AI",
+      "legacy_organisation_id": "sapiens-ai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Sapiens AI",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:09:29.335435+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Anthracite Org publishes models available through OpenRouter.",
+    "lab_slug": "anthracite-org",
+    "metadata": {
+      "colour": null,
+      "display_name": "Anthracite Org",
+      "legacy_organisation_id": "anthracite-org",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Anthracite Org",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Bytedance Seed publishes models available through OpenRouter.",
+    "lab_slug": "bytedance-seed",
+    "metadata": {
+      "colour": null,
+      "display_name": "Bytedance Seed",
+      "legacy_organisation_id": "bytedance-seed",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Bytedance Seed",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Cognitivecomputations publishes models available through OpenRouter.",
+    "lab_slug": "cognitivecomputations",
+    "metadata": {
+      "colour": null,
+      "display_name": "Cognitivecomputations",
+      "legacy_organisation_id": "cognitivecomputations",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Cognitivecomputations",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Ibm Granite publishes models available through OpenRouter.",
+    "lab_slug": "ibm-granite",
+    "metadata": {
+      "colour": null,
+      "display_name": "Ibm Granite",
+      "legacy_organisation_id": "ibm-granite",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Ibm Granite",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Kwaivgi publishes models available through OpenRouter.",
+    "lab_slug": "kwaivgi",
+    "metadata": {
+      "colour": null,
+      "display_name": "Kwaivgi",
+      "legacy_organisation_id": "kwaivgi",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Kwaivgi",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Mancer publishes models available through OpenRouter.",
+    "lab_slug": "mancer",
+    "metadata": {
+      "colour": null,
+      "display_name": "Mancer",
+      "legacy_organisation_id": "mancer",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Mancer",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Mistralai publishes models available through OpenRouter.",
+    "lab_slug": "mistralai",
+    "metadata": {
+      "colour": null,
+      "display_name": "Mistralai",
+      "legacy_organisation_id": "mistralai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Mistralai",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Model developer identified by Requesty's official model catalogue.",
+    "lab_slug": "gryphe",
+    "metadata": {
+      "colour": null,
+      "display_name": "Gryphe",
+      "legacy_organisation_id": "gryphe",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Gryphe",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Nousresearch publishes models available through OpenRouter.",
+    "lab_slug": "nousresearch",
+    "metadata": {
+      "colour": null,
+      "display_name": "Nousresearch",
+      "legacy_organisation_id": "nousresearch",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Nousresearch",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Perceptron publishes models available through OpenRouter.",
+    "lab_slug": "perceptron",
+    "metadata": {
+      "colour": null,
+      "display_name": "Perceptron",
+      "legacy_organisation_id": "perceptron",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Perceptron",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Thedrummer publishes models available through OpenRouter.",
+    "lab_slug": "thedrummer",
+    "metadata": {
+      "colour": null,
+      "display_name": "Thedrummer",
+      "legacy_organisation_id": "thedrummer",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Thedrummer",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Undi95 publishes models available through OpenRouter.",
+    "lab_slug": "undi95",
+    "metadata": {
+      "colour": null,
+      "display_name": "Undi95",
+      "legacy_organisation_id": "undi95",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Undi95",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:29:57.239179+00:00",
+    "description": "Xai publishes models available through OpenRouter.",
+    "lab_slug": "xai",
+    "metadata": {
+      "colour": null,
+      "display_name": "Xai",
+      "legacy_organisation_id": "xai",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Xai",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:29:57.239179+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:50:52.877014+00:00",
+    "description": "Model developer identified by Requesty's official model catalogue.",
+    "lab_slug": "baichuan",
+    "metadata": {
+      "colour": null,
+      "display_name": "Baichuan",
+      "legacy_organisation_id": "baichuan",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Baichuan",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:50:52.877014+00:00"
+  },
+  {
+    "colour": null,
+    "country_code": "xx",
+    "created_at": "2026-08-25T13:50:52.877014+00:00",
+    "description": "Model developer identified by Requesty's official model catalogue.",
+    "lab_slug": "sference",
+    "metadata": {
+      "colour": null,
+      "display_name": "Sference",
+      "legacy_organisation_id": "sference",
+      "routability_derived_from_provider_offers": true,
+      "source": "json"
+    },
+    "name": "Sference",
+    "routable": false,
+    "status": "active",
+    "subdivision_code": null,
+    "updated_at": "2026-08-25T13:50:52.877014+00:00"
+  }
+]

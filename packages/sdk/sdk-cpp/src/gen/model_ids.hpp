@@ -147,27 +147,15 @@ inline constexpr std::string_view BAIDU_ERNIE_X1_1 = "baidu/ernie-x1.1";
 // Model ID: black-forest-labs/flux-1-dev
 // Model page: https://phaseo.app/models/black-forest-labs/flux-1-dev
 inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_DEV = "black-forest-labs/flux-1-dev";
-// Model ID: black-forest-labs/flux-1-kontext-max
-// Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-max
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX = "black-forest-labs/flux-1-kontext-max";
-// Model ID: black-forest-labs/flux-1-kontext-pro
-// Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-pro
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO = "black-forest-labs/flux-1-kontext-pro";
 // Model ID: black-forest-labs/flux-1-schnell
 // Model page: https://phaseo.app/models/black-forest-labs/flux-1-schnell
 inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_SCHNELL = "black-forest-labs/flux-1-schnell";
 // Model ID: black-forest-labs/flux-1.1-pro
 // Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro
 inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_1_PRO = "black-forest-labs/flux-1.1-pro";
-// Model ID: black-forest-labs/flux-1.1-pro-ultra
-// Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro-ultra
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA = "black-forest-labs/flux-1.1-pro-ultra";
 // Model ID: black-forest-labs/flux-2-dev
 // Model page: https://phaseo.app/models/black-forest-labs/flux-2-dev
 inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_2_DEV = "black-forest-labs/flux-2-dev";
-// Model ID: black-forest-labs/flux-2-flex
-// Model page: https://phaseo.app/models/black-forest-labs/flux-2-flex
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_2_FLEX = "black-forest-labs/flux-2-flex";
 // Model ID: black-forest-labs/flux-2-klein-4b
 // Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-4b
 inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_2_KLEIN_4B = "black-forest-labs/flux-2-klein-4b";
@@ -378,9 +366,9 @@ inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_PRO = "deepseek/deepseek-
 // Model ID: deepseek/deepseek-v4-pro-0813
 // Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_PRO_0813 = "deepseek/deepseek-v4-pro-0813";
-// Model ID: deepseek/deepseek-v4.1-flash-beta
-// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
-inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = "deepseek/deepseek-v4.1-flash-beta";
+// Model ID: deepseek/deepseek-v4.1-flash
+// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash
+inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_1_FLASH = "deepseek/deepseek-v4.1-flash";
 // Model ID: deepseek/deepseek-v4.1-flash-preview
 // Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW = "deepseek/deepseek-v4.1-flash-preview";
@@ -690,15 +678,9 @@ inline constexpr std::string_view META_MUSE_IMAGE_1_0 = "meta/muse-image-1.0";
 // Model ID: meta/muse-spark-1.2
 // Model page: https://phaseo.app/models/meta/muse-spark-1.2
 inline constexpr std::string_view META_MUSE_SPARK_1_2 = "meta/muse-spark-1.2";
-// Model ID: meta/muse-spark-1.2-contributor
-// Model page: https://phaseo.app/models/meta/muse-spark-1.2-contributor
-inline constexpr std::string_view META_MUSE_SPARK_1_2_CONTRIBUTOR = "meta/muse-spark-1.2-contributor";
 // Model ID: meta/muse-spark-1.3
 // Model page: https://phaseo.app/models/meta/muse-spark-1.3
 inline constexpr std::string_view META_MUSE_SPARK_1_3 = "meta/muse-spark-1.3";
-// Model ID: meta/muse-spark-1.3-contributor
-// Model page: https://phaseo.app/models/meta/muse-spark-1.3-contributor
-inline constexpr std::string_view META_MUSE_SPARK_1_3_CONTRIBUTOR = "meta/muse-spark-1.3-contributor";
 // Model ID: meta/muse-voice-transcribe-1.0
 // Model page: https://phaseo.app/models/meta/muse-voice-transcribe-1.0
 inline constexpr std::string_view META_MUSE_VOICE_TRANSCRIBE_1_0 = "meta/muse-voice-transcribe-1.0";
@@ -774,9 +756,6 @@ inline constexpr std::string_view MINIMAX_SPEECH_2_8_HD = "minimax/speech-2.8-hd
 // Model ID: minimax/speech-2.8-turbo
 // Model page: https://phaseo.app/models/minimax/speech-2.8-turbo
 inline constexpr std::string_view MINIMAX_SPEECH_2_8_TURBO = "minimax/speech-2.8-turbo";
-// Model ID: minimax/speech-2.8:free
-// Model page: https://phaseo.app/models/minimax/speech-2.8%3Afree
-inline constexpr std::string_view MINIMAX_SPEECH_2_8_FREE = "minimax/speech-2.8:free";
 // Model ID: mistral/codestral
 // Model page: https://phaseo.app/models/mistral/codestral
 inline constexpr std::string_view MISTRAL_CODESTRAL = "mistral/codestral";
@@ -1650,21 +1629,12 @@ inline constexpr std::string_view REKA_REKA_EDGE_2603 = "reka/reka-edge-2603";
 // Model ID: reka/reka-flash
 // Model page: https://phaseo.app/models/reka/reka-flash
 inline constexpr std::string_view REKA_REKA_FLASH = "reka/reka-flash";
-// Model ID: reka/reka-flash-research
-// Model page: https://phaseo.app/models/reka/reka-flash-research
-inline constexpr std::string_view REKA_REKA_FLASH_RESEARCH = "reka/reka-flash-research";
 // Model ID: relace/relace-rank
 // Model page: https://phaseo.app/models/relace/relace-rank
 inline constexpr std::string_view RELACE_RELACE_RANK = "relace/relace-rank";
 // Model ID: relace/relace-search
 // Model page: https://phaseo.app/models/relace/relace-search
 inline constexpr std::string_view RELACE_RELACE_SEARCH = "relace/relace-search";
-// Model ID: sakana/fugu-ultra
-// Model page: https://phaseo.app/models/sakana/fugu-ultra
-inline constexpr std::string_view SAKANA_FUGU_ULTRA = "sakana/fugu-ultra";
-// Model ID: sakana/namazu
-// Model page: https://phaseo.app/models/sakana/namazu
-inline constexpr std::string_view SAKANA_NAMAZU = "sakana/namazu";
 // Model ID: spacex-ai/grok-4.20
 // Model page: https://phaseo.app/models/spacex-ai/grok-4.20
 inline constexpr std::string_view SPACEX_AI_GROK_4_20 = "spacex-ai/grok-4.20";
@@ -2043,7 +2013,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 678> ALL = {
+inline constexpr std::array<std::string_view, 668> ALL = {
 	AI21_JAMBA_1_5_LARGE,
 	AI21_JAMBA_1_5_MINI,
 	AI21_JAMBA_LARGE_1_5,
@@ -2091,13 +2061,9 @@ inline constexpr std::array<std::string_view, 678> ALL = {
 	BAIDU_ERNIE_5_1,
 	BAIDU_ERNIE_X1_1,
 	BLACK_FOREST_LABS_FLUX_1_DEV,
-	BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX,
-	BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO,
 	BLACK_FOREST_LABS_FLUX_1_SCHNELL,
 	BLACK_FOREST_LABS_FLUX_1_1_PRO,
-	BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA,
 	BLACK_FOREST_LABS_FLUX_2_DEV,
-	BLACK_FOREST_LABS_FLUX_2_FLEX,
 	BLACK_FOREST_LABS_FLUX_2_KLEIN_4B,
 	BLACK_FOREST_LABS_FLUX_2_KLEIN_9B,
 	BLACK_FOREST_LABS_FLUX_2_MAX,
@@ -2168,7 +2134,7 @@ inline constexpr std::array<std::string_view, 678> ALL = {
 	DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
 	DEEPSEEK_DEEPSEEK_V4_PRO,
 	DEEPSEEK_DEEPSEEK_V4_PRO_0813,
-	DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA,
+	DEEPSEEK_DEEPSEEK_V4_1_FLASH,
 	DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW,
 	EARLY_ACCESS_EA_29B_A4B,
 	ELEVEN_LABS_ELEVEN_FLASH_V2,
@@ -2272,9 +2238,7 @@ inline constexpr std::array<std::string_view, 678> ALL = {
 	META_MUSE_GLIMMER_30B,
 	META_MUSE_IMAGE_1_0,
 	META_MUSE_SPARK_1_2,
-	META_MUSE_SPARK_1_2_CONTRIBUTOR,
 	META_MUSE_SPARK_1_3,
-	META_MUSE_SPARK_1_3_CONTRIBUTOR,
 	META_MUSE_VOICE_TRANSCRIBE_1_0,
 	MICROSOFT_PHI_4,
 	MICROSOFT_WIZARDLM_2_8X22B,
@@ -2300,7 +2264,6 @@ inline constexpr std::array<std::string_view, 678> ALL = {
 	MINIMAX_SPEECH_2_6_TURBO,
 	MINIMAX_SPEECH_2_8_HD,
 	MINIMAX_SPEECH_2_8_TURBO,
-	MINIMAX_SPEECH_2_8_FREE,
 	MISTRAL_CODESTRAL,
 	MISTRAL_CODESTRAL_EMBED,
 	MISTRAL_DEVSTRAL_2,
@@ -2592,11 +2555,8 @@ inline constexpr std::array<std::string_view, 678> ALL = {
 	REKA_REKA_EDGE,
 	REKA_REKA_EDGE_2603,
 	REKA_REKA_FLASH,
-	REKA_REKA_FLASH_RESEARCH,
 	RELACE_RELACE_RANK,
 	RELACE_RELACE_SEARCH,
-	SAKANA_FUGU_ULTRA,
-	SAKANA_NAMAZU,
 	SPACEX_AI_GROK_4_20,
 	SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA,
 	SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
