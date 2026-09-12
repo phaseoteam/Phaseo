@@ -1,5 +1,125 @@
 # @phaseo/py-sdk
 
+## 3.0.0
+
+### Major Changes
+
+- [#1770](https://github.com/phaseoteam/Phaseo/pull/1770) [`123abbc`](https://github.com/phaseoteam/Phaseo/commit/123abbcfa38d010fedf8e6b8646e0d7ef6b0917d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Reconcile Venice model support and pricing with the live provider inventory. Removed Venice route constants are a breaking SDK change; current replacements and newly supported models are included.
+
+- [#1531](https://github.com/phaseoteam/Phaseo/pull/1531) [`89d937e`](https://github.com/phaseoteam/Phaseo/commit/89d937efad68dfdb6ccd2ce8c7482be9897eddfb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Replace the gateway models response with a Phaseo-native catalogue of lifecycle, modality, token-limit, capability, availability, pricing, and provider-offer data. Update the CLI, MCP server, OpenAPI contract, and generated SDK models for the hard cutover, add bounded and validated CIMD OAuth client discovery while retaining dynamic registration, and verify the stateless MCP 2026-07-28 transport. Improve CLI guidance with scoped command-group help, actionable unknown-command errors, a `v` version alias, published-version checks, and sanitized catalogue output.
+
+### Minor Changes
+
+- [#2222](https://github.com/phaseoteam/Phaseo/pull/2222) [`24368b9`](https://github.com/phaseoteam/Phaseo/commit/24368b945c71baea0020a60ee3376abb098f0374) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Expose authenticated, streamed Anthropic batch result downloads and return the Phaseo download URL in batch responses. Preserve workspace ownership and avoid additional inference charges on downloads. Clarify that webhook retries only follow failed deliveries.
+  
+  Add TypeScript and Python streaming batch-result helpers with cancellation and early-close support for large outputs.
+
+- [#2086](https://github.com/phaseoteam/Phaseo/pull/2086) [`b70d520`](https://github.com/phaseoteam/Phaseo/commit/b70d520f07d879ce124c87570ae91b2f08f8bcb9) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add workspace notification settings, encrypted destinations, destination testing, and event-routing management APIs.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add complete preset lifecycle management for drafts, versions, forks, upstream updates, publisher handles, and archival.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add workspace SSO and SCIM endpoint, token, and audit management with identity add-on enforcement, generated SDKs, docs, and audit events.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add typed workspace settings and versioned dynamic-route management APIs across the gateway, documentation, and generated SDKs.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Publish feature-gated data-contribution consent, classifier lifecycle, analytics, generated SDKs, reference documentation, and audit events.
+
+- [#2086](https://github.com/phaseoteam/Phaseo/pull/2086) [`b70d520`](https://github.com/phaseoteam/Phaseo/commit/b70d520f07d879ce124c87570ae91b2f08f8bcb9) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Publish request log, feedback, custom event, and preset evaluation-run API contracts.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Complete database-backed catalog management with registry editors and a reviewed provider pricing queue. Retire JSON imports, sync benchmarks directly to the database, and generate catalog enums from daily public database exports.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add API-key rotation, cache invalidation, complete limit metadata, generated SDK methods, documentation, and audit events.
+
+- [#2086](https://github.com/phaseoteam/Phaseo/pull/2086) [`b70d520`](https://github.com/phaseoteam/Phaseo/commit/b70d520f07d879ce124c87570ae91b2f08f8bcb9) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add public enterprise directory, department, member override, membership, and directory group-mapping management APIs.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Publish scoped management-key CRUD across the gateway, generated SDKs, reference documentation, and workspace audit log.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add per-model endpoint capability discovery, public model-filter aliases, and a capability-backed endpoint catalogue across the API, documentation, and generated SDKs.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Publish guardrail policy and key/member assignment management across the gateway, generated SDKs, reference documentation, and workspace audit log.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add filtered, paginated workspace analytics and spreadsheet-safe CSV export across the gateway and generated SDKs.
+
+- [#2086](https://github.com/phaseoteam/Phaseo/pull/2086) [`b70d520`](https://github.com/phaseoteam/Phaseo/commit/b70d520f07d879ce124c87570ae91b2f08f8bcb9) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add workspace gateway application metadata and history-merge management APIs.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Publish OAuth application and async webhook endpoint management with generated SDKs, reference docs, one-time secret handling, and audit events.
+
+- [#1274](https://github.com/phaseoteam/Phaseo/pull/1274) [`af29c02`](https://github.com/phaseoteam/Phaseo/commit/af29c0298ead32e754aecebcd023f689e4199fdb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add workspace-scoped Private Models with encrypted OpenAI-compatible endpoint credentials, management APIs, model discovery, and gateway routing.
+
+### Patch Changes
+
+- [#2055](https://github.com/phaseoteam/Phaseo/pull/2055) [`577ec42`](https://github.com/phaseoteam/Phaseo/commit/577ec42a1a73a46e54287c878f2ed948a48a682e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add the Statsig-gated Alpha for the `phaseo/auto` model router with a separately metered low-cost classifier request, complexity-aware capability scoring, a managed text-model universe, workspace spend profiles and pattern restrictions, routing diagnostics, retryable model fallbacks, and a dedicated Auto Routing settings page.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Cohere Parse v5.0, the `/v1/parse` document parsing endpoint, page metering, and generated SDK operations and models.
+
+- [#2156](https://github.com/phaseoteam/Phaseo/pull/2156) [`89d252a`](https://github.com/phaseoteam/Phaseo/commit/89d252ac13ed0392bcd5f6f37fb8a122ef421df1) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add DeepInfra DeepSeek V4 Flash Vision Exp, Novita Ling 3.0 Flash Sante and VL, and Baseten GLM 5.3 Fast priority routing and pricing. Retire Grok Imagine Image Quality without fallback routing and complete the Grok Imagine Image 2.0 catalog metadata.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Meta Muse Spark 1.3 standard and Contributor models, direct Meta routing, pricing, and generated SDK model IDs.
+
+- [#1935](https://github.com/phaseoteam/Phaseo/pull/1935) [`1c2c62e`](https://github.com/phaseoteam/Phaseo/commit/1c2c62e9ee48bf442f4b63f5379517b028633135) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add W&B routing for GLM 5.3 Flash and Novita's free Ling 3.0 Flash Fin model.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Audit Alibaba Cloud Model Studio support, add Qwen 3.6 Flash, and activate verified International hosted-model routes with current pricing.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Activate the verified Amazon Bedrock Mantle text catalogue, including Nova, OpenAI GPT-5.6, and xAI Grok 4.3 routes with recorded pricing.
+
+- [#1897](https://github.com/phaseoteam/Phaseo/pull/1897) [`6230715`](https://github.com/phaseoteam/Phaseo/commit/6230715e1427c4f151a76779ec1a1ef8e4377a3b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Audit Voyage AI's embeddings, contextualized embeddings, multimodal embeddings, and reranker catalogue, routes, limits, lifecycle metadata, and pricing.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Identify every official SDK and Agent SDK as its canonical technical request Source without setting App attribution.
+
+- [#1550](https://github.com/phaseoteam/Phaseo/pull/1550) [`0d4eea3`](https://github.com/phaseoteam/Phaseo/commit/0d4eea3f0e0fea041287aade7e48af8434ff5aac) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Prevent Gemma 4 thinking from exhausting short completion budgets by defaulting hosted requests to minimal thinking, explicitly accept and document the OpenAI-compatible `reasoning_effort` alias across generated SDKs, correctly map explicit Gemma 4 reasoning controls, and add content-free diagnostics for empty provider responses.
+
+- [#1940](https://github.com/phaseoteam/Phaseo/pull/1940) [`a125b93`](https://github.com/phaseoteam/Phaseo/commit/a125b9361c9b46e95f7d1e223f11342b9f9aa832) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Enable DeepInfra support for IBM Granite 4.2 3B, 8B, and 30B with verified routing, capabilities, pricing, and generated SDK model identifiers.
+
+- [#1386](https://github.com/phaseoteam/Phaseo/pull/1386) [`6844207`](https://github.com/phaseoteam/Phaseo/commit/6844207e1d784289fb85150bca0b7557fec248e6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add the complete official DeepSeek V4 Flash 0731 agent benchmark set and expose the newly catalogued benchmark identifiers through the API and generated SDKs.
+
+- [#1379](https://github.com/phaseoteam/Phaseo/pull/1379) [`cc07f80`](https://github.com/phaseoteam/Phaseo/commit/cc07f808d2bc79305ad06ba2d0a982ddb01d0379) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Model DeepSeek V4 Flash 0731 as a separate catalogue and callable model, preserve the original V4 Flash and its third-party deployments, and move only DeepSeek's current direct route and pricing to the 0731 revision.
+
+- [#1373](https://github.com/phaseoteam/Phaseo/pull/1373) [`ae8874c`](https://github.com/phaseoteam/Phaseo/commit/ae8874cc0c9cba19c774b63aa15cb35d788dfa77) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Route official DeepSeek V4 Flash requests through DeepSeek's native Responses API, keep V4 Pro on Chat Completions, refresh V4 Flash metadata and pricing verification, and retire the discontinued direct DeepSeek legacy aliases.
+
+- [#2221](https://github.com/phaseoteam/Phaseo/pull/2221) [`4af5326`](https://github.com/phaseoteam/Phaseo/commit/4af5326382607e552373d560b63e7db6d6f6812b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Disable OVHcloud and Scaleway routes with EUR pricing, including mixed EUR/USD routes, while retaining their published pricing for reference.
+  
+  Refresh SDK callable-model suggestions for models whose final enabled route was disabled.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Enable Cohere production routes for chat, embeddings, and reranking, and catalogue its transcription API.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Enable Meta Muse Spark 1.2 and 1.3 Contributor routes and expose their model IDs through the generated SDKs.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Publish Stealth Ox Alpha under the canonical `stealth/ox-alpha` model ID while retaining Venice as its inference provider.
+
+- [#1501](https://github.com/phaseoteam/Phaseo/pull/1501) [`4e6efde`](https://github.com/phaseoteam/Phaseo/commit/4e6efde552704926ba8fc09285afbeaa5c9fb978) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Grok 4.6 with verified xAI API pricing and capabilities, record Qwen3.8-Max's open-weight release and new Fireworks and DigitalOcean deployments, and move DeepSeek's stable V4 Pro provider route to V4 Pro 0813.
+
+- [#1501](https://github.com/phaseoteam/Phaseo/pull/1501) [`4e6efde`](https://github.com/phaseoteam/Phaseo/commit/4e6efde552704926ba8fc09285afbeaa5c9fb978) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Disable the region-restricted Meta Muse Spark 1.2 Contributor route, document its availability limits, and normalize Fish Audio voice-design request pricing so catalog imports remain valid.
+
+- [#1501](https://github.com/phaseoteam/Phaseo/pull/1501) [`4e6efde`](https://github.com/phaseoteam/Phaseo/commit/4e6efde552704926ba8fc09285afbeaa5c9fb978) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Novita routes and pricing for Ling 3.0 Tiny, Macaron V1 Tall, and Nemotron 3 Nano 30B A3B. Move Ling 3.0 Flash from its expired free route to current paid pricing, and correct Novita's DeepSeek V4 Flash 0731 route metadata.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add and enable OpenAI GPT Image 2.5 Flare and Sunburst with current capabilities and pricing, including typed multi-image edits and image streaming helpers.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Synchronize known model and organisation IDs with the expanded active provider catalog.
+
+- [#2204](https://github.com/phaseoteam/Phaseo/pull/2204) [`dc62aae`](https://github.com/phaseoteam/Phaseo/commit/dc62aae435fad54fac9601fb698921aaf563bfd4) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add the GPT-6 Astra Pro model variant with provider metadata, pricing, generated model identifiers, and OpenAI routing that normalizes to `gpt-6-astra` with `reasoning.mode=pro`.
+
+- [#2264](https://github.com/phaseoteam/Phaseo/pull/2264) [`6b955c0`](https://github.com/phaseoteam/Phaseo/commit/6b955c0b9aa947ff451c2076103c92d7ef7865db) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Artificial Analysis Coding, Agentic, and evaluation-cost benchmark IDs to the generated catalog enums.
+
+- [#2165](https://github.com/phaseoteam/Phaseo/pull/2165) [`ae35df2`](https://github.com/phaseoteam/Phaseo/commit/ae35df23af2d1041bf02d6bc9dee15b2b14f7a25) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add EU and US regional provider-routing deployments, region-filtered model discovery, text-only regional request enforcement, and SDK region selection.
+
+- [#2227](https://github.com/phaseoteam/Phaseo/pull/2227) [`feb2404`](https://github.com/phaseoteam/Phaseo/commit/feb240478dba08ee271150f8ede65d41493ff54b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Fix Realtime Chat authentication and session setup, preserve cached-token billing across normalization, and show database-backed session holds and final charges in Chat and Realtime Sessions logs.
+  
+  Correct the current OpenAI Realtime price cards and refresh generated model suggestions to remove expired MiniMax free routes. Model request fields continue to accept arbitrary string IDs; this catalogue refresh does not remove request operations or change their wire format.
+
+- [#2242](https://github.com/phaseoteam/Phaseo/pull/2242) [`aae218a`](https://github.com/phaseoteam/Phaseo/commit/aae218a8b6ba2d7fcff1d6d119403c68e1aa37d2) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Refresh generated model IDs for the gated OpenAI Realtime and Grok Voice preview.
+
+- [#1782](https://github.com/phaseoteam/Phaseo/pull/1782) [`fe8490b`](https://github.com/phaseoteam/Phaseo/commit/fe8490b0310f3f07ba4d66222894461621c72209) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Rename the Stealth catalogue organisation from Stealth Lab to Stealth and synchronize generated model ID types.
+
+- [#1723](https://github.com/phaseoteam/Phaseo/pull/1723) [`bc4d4f3`](https://github.com/phaseoteam/Phaseo/commit/bc4d4f318efdc30c5ad4055960738347f894c908) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Restore latency and generation metadata on successful moderation responses.
+
+- [#2301](https://github.com/phaseoteam/Phaseo/pull/2301) [`8f54673`](https://github.com/phaseoteam/Phaseo/commit/8f54673c82f93fc243f4410f1a7cb0c652be8a52) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Promote DeepSeek V4.1 Flash from its expiring Preview route to the stable model scheduled for the 10 September 2026 calendar date, retire only the old DeepSeek provider routes, route DeepSeek Pro requests through V4.1 Flash, and retain the scheduled Flash-series cache-hit, cache-miss, output, and weekday peak-hour prices.
+
+- [#1501](https://github.com/phaseoteam/Phaseo/pull/1501) [`4e6efde`](https://github.com/phaseoteam/Phaseo/commit/4e6efde552704926ba8fc09285afbeaa5c9fb978) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add direct Upstage routes and pricing for Solar Pro 4, Solar Pro 3, Solar Pro 2, and Solar Mini, including Solar Pro 4's dated launch promotion. Add Solar Open 100B and Solar Open 2 250B metadata, and correct existing Solar model specifications and lineage.
+
+- [#1547](https://github.com/phaseoteam/Phaseo/pull/1547) [`7b5e0a0`](https://github.com/phaseoteam/Phaseo/commit/7b5e0a078be7447ae01e88b7e17775a7d0e0a4ea) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Normalize video inputs and lifecycle handling across xAI, Alibaba Wan and HappyHorse, BytePlus Seedance, Fal, Runway Gen-4.5, Google AI Studio Veo, and Vertex Veo; deliver durable status-change webhooks; and temporarily disable video cancellation. HappyHorse family IDs now route text, first-frame, reference-image, and video-edit requests through the appropriate Alibaba Cloud async model with validated pricing and lifecycle recovery. Runway now uses its mode-specific task endpoints and mandatory API version, Google AI Studio Veo is routable with current pricing, and BytePlus accepts either supported gateway credential name.
+
+- [#1935](https://github.com/phaseoteam/Phaseo/pull/1935) [`1c2c62e`](https://github.com/phaseoteam/Phaseo/commit/1c2c62e9ee48bf442f4b63f5379517b028633135) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Activate W&B Inference support for IBM Granite 4.2 8B with verified routing, pricing, and generated SDK model identifiers.
+
 ## 2.0.7
 
 ### Patch Changes

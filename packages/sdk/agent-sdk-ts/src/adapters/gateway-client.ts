@@ -232,7 +232,7 @@ export function createGatewayAgentClient(
 		headers: {
 			...(options.clientOptions?.headers ?? {}),
 			"X-Phaseo-Client": "phaseo-agent-typescript",
-			"X-Phaseo-Client-Version": "0.2.0",
+			"X-Phaseo-Client-Version": "0.3.0",
 		},
 	});
 
