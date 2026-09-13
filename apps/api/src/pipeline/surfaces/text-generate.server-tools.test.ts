@@ -586,6 +586,7 @@ describe("runTextGeneratePipeline server tools", () => {
 
 		const args = createArgs({ stream: true });
 		const response = await runTextGeneratePipeline(args);
+		await response.text();
 
 		expect(response.status).toBe(200);
 		expect(buildSyntheticServerToolStreamMock).toHaveBeenCalledWith({
@@ -1074,6 +1075,7 @@ describe("runTextGeneratePipeline server tools", () => {
 		args.pre.ctx.rawBody.tool_choice = "phaseo:web_fetch";
 
 		const response = await runTextGeneratePipeline(args);
+		await response.text();
 
 		expect(response.status).toBe(200);
 		expect(buildSyntheticServerToolStreamMock).toHaveBeenCalledWith({

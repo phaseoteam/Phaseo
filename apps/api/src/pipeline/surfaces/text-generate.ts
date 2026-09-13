@@ -5,6 +5,7 @@
 import type { IRChatRequest, IRChatResponse } from "@core/ir";
 import { handleError } from "@core/error-handler";
 import { detectTextProtocol } from "@protocols/detect";
+import type { UnifiedStreamEvent } from "../after/stream-events";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { doRequestWithIR } from "../execute";
 import { finalizeRequest, settleNonBillableFailure } from "../after";
@@ -12,6 +13,7 @@ import { handleFailureAudit, handleSuccessAudit } from "../after/audit";
 import { makeHeaders, createResponse } from "../after/http";
 import { auditFailure } from "../audit";
 import type { PipelineRunnerArgs } from "./types";
+import { createManagedToolLiveResponse, type ManagedToolLiveSink } from "./server-tools.live";
 import {
 	buildPipelineExecutionErrorResponse,
 	logPipelineExecutionError,
@@ -550,6 +552,7 @@ async function materializeStreamResultToCompleted(args: {
 	requestId: string;
 	model: string;
 	result: any;
+	onEvent?: (event: UnifiedStreamEvent) => void;
 }): Promise<any> {
 	const stream = args.result.stream ?? args.result.upstream?.body ?? null;
 	if (!stream) {
@@ -562,6 +565,7 @@ async function materializeStreamResultToCompleted(args: {
 		requestId: args.requestId,
 		model: args.model,
 		provider: args.result.provider,
+		onEvent: args.onEvent,
 	});
 	const materializedGenerationMs = Math.max(
 		0,
@@ -600,6 +604,24 @@ async function materializeStreamResultToCompleted(args: {
 }
 
 export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise<Response> {
+	if (args.pre.ctx.stream) {
+		const protocol = detectTextProtocol(args.endpoint, new URL(args.req.url).pathname);
+		const prepared = prepareServerToolsForTextRequest(args.pre.ctx.body, protocol);
+		if (prepared.ok && prepared.config.enabled && (
+			protocol === "openai.responses" || protocol === "openai.chat.completions" || protocol === "anthropic.messages"
+		)) {
+			return createManagedToolLiveResponse({
+				protocol,
+				requestId: args.pre.ctx.requestId,
+				model: args.pre.ctx.model,
+				run: (sink) => runTextGeneratePipelineInner(args, sink),
+			});
+		}
+	}
+	return runTextGeneratePipelineInner(args);
+}
+
+async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?: ManagedToolLiveSink): Promise<Response> {
 	const { pre, req, endpoint, timing } = args;
 
 	try {
@@ -765,6 +787,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 		// Execute with IR
 		timing.timer.mark("execute_start");
 		let exec = await doRequestWithIR(pre.ctx, irForExecution, timing);
+		let finalTurnBuffered = !(exec instanceof Response) && exec.result.kind === "completed";
 
 		if (exec instanceof Response) {
 			const header = timing.timer.header();
@@ -788,6 +811,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					requestId: pre.ctx.requestId,
 					model: pre.ctx.model,
 					result: exec.result,
+					onEvent: liveSink?.beginRound(),
 				});
 			} catch {
 				const header = timing.timer.header();
@@ -845,6 +869,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				req,
 			});
 		}
+		liveSink?.ready();
 
 		const serverToolTrace: Array<{
 			id: string;
@@ -880,6 +905,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			let webFetchObservability = pre.ctx.webFetchObservability ?? null;
 
 			while (true) {
+				if (liveSink?.signal.aborted) break;
 				const continuation = await buildServerToolContinuation(
 					latestIrResponse,
 					preparedServerTools.config,
@@ -931,8 +957,10 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 							return { models: matched.map((model) => ({ id: model.model_id, name: model.name, description: model.description, input_modalities: model.input_types, output_modalities: model.output_types, providers: model.providers.map((item) => item.api_provider_id), supported_params: model.supported_params, pricing: model.pricing })), total_results: filtered.length, showing: matched.length };
 						},
 						remainingToolCalls: maxServerToolCalls - serverToolCalls,
+						signal: liveSink?.signal,
 					},
 				);
+				if (liveSink?.signal.aborted) break;
 				if (!continuation) break;
 				if ("limitExceeded" in continuation) {
 					const header = timing.timer.header();
@@ -996,6 +1024,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 						output: result.content,
 						...(result.isError ? { isError: true } : {}),
 					});
+					liveSink?.toolResult(serverToolTrace[serverToolTrace.length - 1]);
 				}
 				if (continuation.advisorUsage) {
 					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.advisorUsage);
@@ -1056,6 +1085,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					});
 				}
 				let followUpResult = followUpExec.result;
+				finalTurnBuffered = followUpResult.kind === "completed";
 				if (followUpResult.kind === "stream") {
 					try {
 						followUpResult = await materializeStreamResultToCompleted({
@@ -1063,6 +1093,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 							requestId: pre.ctx.requestId,
 							model: pre.ctx.model,
 							result: followUpResult,
+							onEvent: liveSink?.beginRound(),
 						});
 					} catch {
 						const header = timing.timer.header();
@@ -1208,6 +1239,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			exec.result.kind === "completed" &&
 			protocolResponse
 		) {
+			if (finalTurnBuffered) liveSink?.markFinalTurnBuffered();
 			const requestStartMs =
 				typeof pre.ctx.meta.upstreamStartMs === "number"
 					? pre.ctx.meta.upstreamStartMs

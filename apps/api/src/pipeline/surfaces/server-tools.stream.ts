@@ -832,6 +832,7 @@ function buildIRFromAccumulatedEvents(args: {
 export async function consumeTextProtocolStreamToIR(args: {
 	protocol: Protocol;
 	stream: ReadableStream<Uint8Array>;
+	onEvent?: (event: UnifiedStreamEvent) => void;
 	requestId: string;
 	model: string;
 	provider: string;
@@ -904,6 +905,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 			});
 
 			for (const event of events) {
+				args.onEvent?.(event);
 				if (event.type === "snapshot" && event.isFinal) {
 					finalSnapshot = event.payload;
 					nativeId = nativeId ?? resolveNativeId(event.payload);
@@ -948,6 +950,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 					frame: payload,
 				});
 				for (const event of events) {
+					args.onEvent?.(event);
 					if (event.type === "snapshot" && event.isFinal) {
 						finalSnapshot = event.payload;
 						nativeId = nativeId ?? resolveNativeId(event.payload);
