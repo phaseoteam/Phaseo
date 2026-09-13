@@ -439,6 +439,26 @@ function getPerformanceMetricLabel(metric: ProviderPerformanceMetricKey): string
 	}
 }
 
+function formatPerformancePeriod(points: ProviderPerformancePoint[]): string | null {
+	const firstPoint = points[0];
+	const lastPoint = points.at(-1);
+	if (!firstPoint || !lastPoint) return null;
+
+	const start = new Date(firstPoint.start);
+	const end = new Date(Date.parse(lastPoint.start) + 60 * 60 * 1000);
+	if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return null;
+
+	const formatter = new Intl.DateTimeFormat("en-GB", {
+		day: "numeric",
+		month: "short",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+		timeZone: "UTC",
+	});
+	return `${formatter.format(start)} – ${formatter.format(end)} UTC`;
+}
+
 function getPerformanceMetricTooltipLabel(metric: ProviderPerformanceMetricKey): string {
 	switch (metric) {
 		case "latency":
@@ -526,7 +546,7 @@ function ProviderHourlyPerformance({
 	runtimeStats: ProviderRuntimeStats | null | undefined;
 	hours?: ProviderUptimeHours;
 	activeMetric: ProviderPerformanceMetricKey;
-	onPointHover: (point: ProviderPerformancePoint) => void;
+	onPointHover: (point: ProviderPerformancePoint, hasData: boolean) => void;
 	onPointLeave: () => void;
 }) {
 	const points = (runtimeStats?.performanceHourly3d ?? []).slice(-hours);
@@ -537,6 +557,7 @@ function ProviderHourlyPerformance({
 	const rateLimited = runtimeStats?.rateLimited3d ?? 0;
 	const metricLabel = getPerformanceMetricLabel(activeMetric);
 	const metricTooltipLabel = getPerformanceMetricTooltipLabel(activeMetric);
+	const performancePeriod = formatPerformancePeriod(points);
 	const metricValues = points
 		.map((point) => getPerformanceMetricValue(activeMetric, point))
 		.filter((value): value is number => hasPerformanceMetricValue(activeMetric, value));
@@ -550,6 +571,11 @@ function ProviderHourlyPerformance({
 		<div className="space-y-3 py-3">
 			{hasHourlyPerformance ? (
 				<div>
+					{performancePeriod ? (
+						<p className="mb-1.5 text-center text-[10px] tabular-nums text-muted-foreground">
+							{performancePeriod}
+						</p>
+					) : null}
 					<div
 						className="grid h-8 grid-flow-col auto-cols-fr items-end gap-0.5"
 						role="img"
@@ -591,8 +617,8 @@ function ProviderHourlyPerformance({
 									style={{ height: barHeight }}
 									tabIndex={0}
 									aria-label={`${new Date(point.start).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${metricTooltipLabel}: ${pointLabel}`}
-									onPointerEnter={() => (hasData ? onPointHover(point) : onPointLeave())}
-									onFocus={() => (hasData ? onPointHover(point) : onPointLeave())}
+									onPointerEnter={() => onPointHover(point, hasData)}
+									onFocus={() => onPointHover(point, hasData)}
 									onPointerLeave={onPointLeave}
 									onBlur={onPointLeave}
 								/>
@@ -1850,9 +1876,22 @@ export default function ProviderCard({
 		useState<ProviderPerformanceMetricKey>("uptime");
 	const [hoveredPerformancePoint, setHoveredPerformancePoint] =
 		useState<ProviderPerformancePoint | null>(null);
+	const [isHoveredPerformancePointMissing, setIsHoveredPerformancePointMissing] =
+		useState(false);
+	const handlePerformancePointHover = (
+		point: ProviderPerformancePoint,
+		hasData: boolean,
+	) => {
+		setHoveredPerformancePoint(point);
+		setIsHoveredPerformancePointMissing(!hasData);
+	};
+	const handlePerformancePointLeave = () => {
+		setHoveredPerformancePoint(null);
+		setIsHoveredPerformancePointMissing(false);
+	};
 	const handlePerformanceMetricChange = (metric: ProviderPerformanceMetricKey) => {
 		setActivePerformanceMetric(metric);
-		setHoveredPerformancePoint(null);
+		handlePerformancePointLeave();
 	};
 	const pricingTimezoneMode = useSyncExternalStore(
 		subscribeToPricingTimezoneMode,
@@ -2382,7 +2421,9 @@ export default function ProviderCard({
 		fallback: number | null | undefined,
 	) =>
 		hoveredPerformancePoint
-			? getPerformanceMetricValue(metric, hoveredPerformancePoint)
+			? isHoveredPerformancePointMissing
+				? null
+				: getPerformanceMetricValue(metric, hoveredPerformancePoint)
 			: fallback ?? null;
 	const tableUptimePct = getDisplayedUptimePct(runtimeStats);
 	const tableUptimeTrendPoints = getUptimeTrendPoints(runtimeStats);
@@ -3762,7 +3803,7 @@ export default function ProviderCard({
 											)}
 										>
 											<ProviderPerformanceMetricValue metric={metric.key} value={metric.value} />
-											{metric.key === "uptime" ? (
+											{metric.key === "uptime" && activePerformanceMetric !== "uptime" ? (
 												<UptimeSparkline points={uptimeTrendPoints} className="h-4 w-10" />
 											) : null}
 										</div>
@@ -3772,8 +3813,8 @@ export default function ProviderCard({
 							<ProviderHourlyPerformance
 								runtimeStats={selectedRuntimeStats}
 								activeMetric={activePerformanceMetric}
-								onPointHover={setHoveredPerformancePoint}
-								onPointLeave={() => setHoveredPerformancePoint(null)}
+								onPointHover={handlePerformancePointHover}
+								onPointLeave={handlePerformancePointLeave}
 							/>
 								{routingHealthSummary ? (
 									<div className="border-l-2 border-amber-400 pl-3 text-xs text-amber-900 dark:text-amber-100">
