@@ -70,7 +70,9 @@ const CONTEXT_CACHE_PREFIX = "gateway:context";
 // must invalidate previously cached provider cards across Worker isolates.
 const STATIC_CACHE_PREFIX = "gateway:static:v4";
 const DYNAMIC_CACHE_PREFIX = "gateway:dynamic";
-const PRESET_CACHE_PREFIX = "gateway:preset:v3";
+// Preset payloads include provider/pricing snapshots too, so invalidate them
+// with the static context when catalogue or pricing data changes.
+const PRESET_CACHE_PREFIX = "gateway:preset:v4";
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;

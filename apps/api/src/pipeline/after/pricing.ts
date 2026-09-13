@@ -52,7 +52,7 @@ function derivePricingPlan(body: any, usage: any, card: PriceCard): string {
     const requestedModel = typeof body?.model === "string"
         ? body.model.trim().toLowerCase()
         : "";
-    if (requestedModel.endsWith(":free")) return "free";
+    if (!tier && requestedModel.endsWith(":free")) return "free";
 
     return "standard";
 }
