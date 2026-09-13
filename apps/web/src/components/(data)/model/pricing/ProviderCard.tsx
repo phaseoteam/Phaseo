@@ -538,7 +538,7 @@ function ProviderPerformanceMetricValue({
 	metric: ProviderPerformanceMetricKey;
 	value: number | null;
 }) {
-	const valueClassName = "inline-flex min-w-[4rem] items-baseline";
+	const valueClassName = "inline-flex min-h-5 min-w-[4rem] items-baseline";
 	if (!hasPerformanceMetricValue(metric, value)) return <span className={valueClassName}>--</span>;
 	const numberFlowProps = getPerformanceMetricNumberFlowProps(metric, value);
 	return (
