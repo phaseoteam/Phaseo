@@ -394,7 +394,7 @@ export async function applyServiceTierRouting(args: {
     if (!requestedPlan) {
 		const candidates = args.candidates.filter((candidate) =>
 			!isTierDedicatedOffer(candidate, "priority") && !isTierSiblingModel(candidate, "priority") &&
-			!isTierDedicatedOffer(candidate, "flex") && !isTierSiblingModel(candidate, "flex") &&
+			!isTierDedicatedOffer(candidate, "flex") &&
 			!requiresExplicitServiceTier(candidate.pricingCard)
 		);
         return {
@@ -410,7 +410,7 @@ export async function applyServiceTierRouting(args: {
 					providerModelSlug: candidate.providerModelSlug ?? null,
 					reason: isTierDedicatedOffer(candidate, "priority") || isTierSiblingModel(candidate, "priority")
 						? "service_tier_priority_required"
-						: isTierDedicatedOffer(candidate, "flex") || isTierSiblingModel(candidate, "flex")
+						: isTierDedicatedOffer(candidate, "flex")
 							? "service_tier_flex_required" : "service_tier_standard_unsupported",
 				})),
                 remappedProviders: [],
@@ -432,7 +432,7 @@ export async function applyServiceTierRouting(args: {
 			});
 			continue;
 		}
-		if (requestedPlan !== "flex" && (isTierDedicatedOffer(candidate, "flex") || isTierSiblingModel(candidate, "flex"))) {
+		if (requestedPlan !== "flex" && isTierDedicatedOffer(candidate, "flex")) {
 			droppedProviders.push({
 				providerId: candidate.providerId,
 				apiModelId: candidate.apiModelId ?? null,

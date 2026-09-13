@@ -147,13 +147,12 @@ describe("applyServiceTierRouting", () => {
     });
 
     it.each([{}, { service_tier: "standard" }])(
-        "rejects a flex sibling model for a standard request %j", async (body) => {
-            const flex = makeCandidate({ providerId: "provider", apiModelId: "google/gemini-3-pro-image-flex",
-                providerModelSlug: "gemini-3-pro-image-flex",
-                pricingCard: makeCard({ provider: "provider", model: "google/gemini-3-pro-image-flex", plans: ["standard"] }) });
-            const result = await applyServiceTierRouting({ candidates: [flex], body, capability: "text.generate" });
-            expect(result.candidates).toEqual([]);
-            expect(result.diagnostics.droppedProviders[0]?.reason).toBe("service_tier_flex_required");
+        "preserves a canonical model whose name ends in flex for a standard request %j", async (body) => {
+            const provider = makeCandidate({ providerId: "provider", apiModelId: "black-forest-labs/flux-2-flex",
+                providerModelSlug: "flux-2-flex",
+                pricingCard: makeCard({ provider: "provider", model: "black-forest-labs/flux-2-flex", plans: ["standard"] }) });
+            const result = await applyServiceTierRouting({ candidates: [provider], body, capability: "image.generate" });
+            expect(result.candidates).toEqual([provider]);
         },
     );
 
