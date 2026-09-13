@@ -2,6 +2,7 @@ import {
 	calculateCacheHitRatePct,
 	calculateObservedEffectivePriceSummary,
 	calculateTokenSharePct,
+	hasObservedTokenUsage,
 } from "./effectivePricing";
 
 describe("calculateObservedEffectivePriceSummary", () => {
@@ -24,6 +25,12 @@ describe("pricing table usage metrics", () => {
 		expect(calculateCacheHitRatePct(0, 1_000)).toBe(0);
 		expect(calculateCacheHitRatePct(10, 0)).toBeNull();
 		expect(calculateCacheHitRatePct(1_100, 1_000)).toBe(100);
+	});
+
+	it("does not treat empty pricing buckets as observed usage", () => {
+		expect(hasObservedTokenUsage(0, 0)).toBe(false);
+		expect(hasObservedTokenUsage(1, 0)).toBe(true);
+		expect(hasObservedTokenUsage(0, 1)).toBe(true);
 	});
 
 	it("calculates token share against the same model-wide provider-tier population", () => {
