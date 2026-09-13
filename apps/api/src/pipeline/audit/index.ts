@@ -96,7 +96,7 @@ export function resolveAuditServiceTiers(args: {
     return {
         requested,
         observed,
-        effective: observed ?? requested,
+        effective: observed ?? requested ?? "standard",
     };
 }
 
@@ -1642,4 +1642,3 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
         releaseRuntime();
     }
 }
-

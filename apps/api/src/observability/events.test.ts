@@ -499,6 +499,19 @@ describe("emitGatewayRequestEvent", () => {
 		});
 	});
 
+	it("records standard for a request with no service tier", async () => {
+		const ctx = {
+			endpoint: "chat.completions",
+			requestId: "req_default_tier",
+			model: "deepseek/deepseek-v4.1-flash",
+			workspaceId: "ws_default_tier",
+			providers: [],
+		} as unknown as PipelineContext;
+		await emitGatewayRequestEvent({ ctx, provider: "crofai", statusCode: 200, success: true });
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event.service_tier).toBe("standard");
+	});
+
 	it("omits null values and duplicate diagnostic fields from compact success events", async () => {
 		clearRuntime();
 		configureRuntime({
