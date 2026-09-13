@@ -26,12 +26,7 @@ export default function ModelsPageClient({
 		catalogueVersion === "v2" ? publicSWRKeys.modelsV2 : publicSWRKeys.models;
 	const fetcher =
 		catalogueVersion === "v2" ? fetchModelsPageDataV2 : fetchModelsPageData;
-	const { data, error, mutate } = useSWR(swrKey, fetcher, {
-		revalidateOnFocus: false,
-		revalidateOnReconnect: false,
-		refreshInterval: 2 * 60 * 1_000,
-		refreshWhenHidden: false,
-	});
+	const { data, error, mutate } = useSWR(swrKey, fetcher);
 	useRevalidateOnResume(mutate, error);
 	useEffect(() => {
 		// Load the display code alongside the catalogue request, not after it.

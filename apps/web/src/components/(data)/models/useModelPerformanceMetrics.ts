@@ -38,7 +38,7 @@ export function useModelPerformanceMetrics({
 	percentile,
 	rangeDays,
 	fallbackData,
-	refreshInterval = 0,
+	refreshInterval = 15 * 60_000,
 	onError,
 	onSuccess,
 }: {

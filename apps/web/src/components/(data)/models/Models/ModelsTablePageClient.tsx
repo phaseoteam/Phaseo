@@ -30,12 +30,7 @@ export default function ModelsTablePageClient({
 		catalogueVersion === "v2"
 			? fetchModelsTableDataV2
 			: fetchModelsTableData;
-	const { data, error, mutate } = useSWR(swrKey, fetcher, {
-		revalidateOnFocus: false,
-		revalidateOnReconnect: false,
-		refreshInterval: 2 * 60 * 1_000,
-		refreshWhenHidden: false,
-	});
+	const { data, error, mutate } = useSWR(swrKey, fetcher);
 	useRevalidateOnResume(mutate, error);
 	useEffect(() => {
 		void import("./ModelsTableDisplay");
