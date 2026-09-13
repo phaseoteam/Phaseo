@@ -854,6 +854,9 @@ function ChatPlaygroundContent({
 		};
 		if (activeThread) {
 			const comparisonModelId = activeThread.modelId || selectedModel;
+			const comparisonSettings = comparisonModelId
+				? { ...activeThread.settings, ...getEffectiveModelSettings(activeThread, comparisonModelId) }
+				: activeThread.settings;
 			const comparisonModelDisplayName =
 				comparisonModelId
 					? activeThread.settings.modelOverridesById?.[
@@ -861,11 +864,11 @@ function ChatPlaygroundContent({
 						]?.displayName?.trim() ||
 						modelDisplayNameById[comparisonModelId]
 					: undefined;
-			const comparisonProviderLabel = activeThread.settings.providerId
-				? providerNameById.get(activeThread.settings.providerId)
+			const comparisonProviderLabel = comparisonSettings.providerId
+				? providerNameById.get(comparisonSettings.providerId)
 				: undefined;
 			const changes = getChangedSettings(
-				activeThread.settings,
+				comparisonSettings,
 				comparisonModelId,
 				comparisonModelDisplayName,
 				comparisonProviderLabel,
