@@ -18,6 +18,7 @@ const inheritedContractByProvider: Record<string, string> = {
 	"ionrouter-minimax": "ionrouter",
 	tensorx: "tensorix",
     wafer: "openai",
+    "wafer-zdr": "openai",
 };
 
 const providersWithDedicatedNativeContractTests = new Set(["elevenlabs", "fal", "private-model"]);
