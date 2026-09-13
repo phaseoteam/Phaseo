@@ -133,6 +133,7 @@ export type ChatModelSettings = {
     systemPrompt?: string;
     stream: boolean;
     providerId?: string;
+    serviceTier?: "standard" | "priority" | "flex";
     reasoningEnabled?: boolean;
     reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
     endpoint?: UnifiedChatEndpoint;

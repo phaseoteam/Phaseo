@@ -735,6 +735,24 @@ export function ModelSettingsDialog({
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div className="grid gap-1.5">
+                            <Label>Service tier</Label>
+                            <Select
+                                value={settings.serviceTier ?? "standard"}
+                                onValueChange={(value) =>
+                                    onUpdate({ serviceTier: value as ChatModelSettings["serviceTier"] })
+                                }
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="standard">Standard</SelectItem>
+                                    <SelectItem value="priority">Priority</SelectItem>
+                                    <SelectItem value="flex">Flex</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     <Separator />
                     <div className="grid gap-1.5">

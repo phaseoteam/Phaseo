@@ -81,6 +81,7 @@ import {
 	generateId,
 	getChangedSettings,
 	getEffectiveModelSettings,
+	getRequestedChatServiceTier,
 	getOrgId,
 	isGeneratedDefaultSystemPrompt,
 	normalizeServerTools,
@@ -1274,6 +1275,10 @@ function ChatPlaygroundContent({
 				effectiveModelSettings.repetitionPenalty,
 			);
 			setOptionalRequestNumber("seed", effectiveModelSettings.seed);
+			const requestedServiceTier = getRequestedChatServiceTier(effectiveModelSettings);
+			if (requestedServiceTier) {
+				requestBody.service_tier = requestedServiceTier;
+			}
 			if (endpoint === "responses") {
 				requestBody.input = input;
 				requestBody.meta = true;
@@ -4171,6 +4176,7 @@ function ChatPlaygroundContent({
 			),
 			stream: DEFAULT_SETTINGS.stream,
 			providerId: DEFAULT_SETTINGS.providerId,
+			serviceTier: DEFAULT_SETTINGS.serviceTier,
 			reasoningEnabled: DEFAULT_SETTINGS.reasoningEnabled,
 			reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
 			endpoint: DEFAULT_SETTINGS.endpoint,
