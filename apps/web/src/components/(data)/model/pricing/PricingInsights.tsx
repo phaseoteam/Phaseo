@@ -105,6 +105,7 @@ import {
 	calculateCacheHitRatePct,
 	calculateObservedEffectivePriceSummary,
 	calculateTokenSharePct,
+	hasObservedTokenUsage,
 } from "@/components/(data)/model/pricing/effectivePricing";
 import { normalizeGatewayStatusValue } from "@/components/(data)/model/pricing/providerGatewayStatus";
 import {
@@ -966,6 +967,9 @@ export default function PricingInsights({
 	const observedUsageByProviderPlan = useMemo(() => {
 		const map = new Map<string, ObservedEffectiveUsageSummary>();
 		for (const row of effectivePricingRows) {
+			// The aggregate API can retain zero-valued plan keys for historical integrity.
+			// They are not observed usage and must not become visible usage tiers.
+			if (!hasObservedTokenUsage(row.inputTokens, row.outputTokens)) continue;
 			const key = `${row.providerId}\u0000${row.pricingPlan}`;
 			const existing = map.get(key) ?? {
 				inputTokens30d: 0,
@@ -1026,6 +1030,9 @@ export default function PricingInsights({
 			});
 			const usage = usageByProvider.get(providerId);
 			const observedUsage = observedUsageByProviderPlan.get(`${providerId}\u0000${selectedProviderPlan}`);
+			const observedUsageWithTokens = observedUsage && observedUsage.totalTokens30d > 0
+				? observedUsage
+				: null;
 			const effectivePrices = observedUsage
 				? calculateObservedEffectivePriceSummary(observedUsage.usageByDay, summaryCutoffMs)
 				: null;
@@ -1056,7 +1063,7 @@ export default function PricingInsights({
 				pricingPlan: selectedProviderPlan,
 				availablePlans: providerPlans,
 				isExternal: normalizeGatewayStatusValue(provider.provider.status) === "external",
-				effectiveUsageEligible: Boolean(observedUsage),
+				effectiveUsageEligible: observedUsageWithTokens !== null,
 				inputPricePer1M:
 					effectivePrices?.weightedInputPricePer1M ?? null,
 				outputPricePer1M:
@@ -1064,15 +1071,15 @@ export default function PricingInsights({
 				listedInputPricePer1M: listInputPricePer1M,
 				listedOutputPricePer1M: listOutputPricePer1M,
 				cacheHitRatePct: useTierAwareUsage
-					? observedUsage
-						? calculateCacheHitRatePct(observedUsage.cachedReadTokens30d, observedUsage.inputTokens30d)
+					? observedUsageWithTokens
+						? calculateCacheHitRatePct(observedUsageWithTokens.cachedReadTokens30d, observedUsageWithTokens.inputTokens30d)
 						: null
 					: usage
 						? calculateCacheHitRatePct(usage.cachedReadInputTokens30d, usage.inputWeightTokens30d)
 						: null,
 				tokenSharePct: useTierAwareUsage
-					? observedUsage
-						? calculateTokenSharePct(observedUsage.totalTokens30d, observedTotalTokensAll)
+					? observedUsageWithTokens
+						? calculateTokenSharePct(observedUsageWithTokens.totalTokens30d, observedTotalTokensAll)
 						: null
 					: usage
 						? calculateTokenSharePct(usage.totalTokens30d, providerTotalTokensAll)
@@ -1102,6 +1109,9 @@ export default function PricingInsights({
 			if (!provider) continue;
 			const tierRows = baseRow.availablePlans.map((providerPlan) => {
 				const observedUsage = observedUsageByProviderPlan.get(`${baseRow.providerId}\u0000${providerPlan}`);
+				const observedUsageWithTokens = observedUsage && observedUsage.totalTokens30d > 0
+					? observedUsage
+					: null;
 				const effectivePrices = observedUsage
 					? calculateObservedEffectivePriceSummary(observedUsage.usageByDay, summaryCutoffMs)
 					: null;
@@ -1119,19 +1129,19 @@ export default function PricingInsights({
 					seriesKey: keyForSeries(`${baseRow.providerId}:${providerPlan}`),
 					color: pricingProviderColours.get(baseRow.providerId) ?? baseRow.color,
 					pricingPlan: providerPlan,
-					effectiveUsageEligible: Boolean(observedUsage),
+					effectiveUsageEligible: observedUsageWithTokens !== null,
 					inputPricePer1M: effectivePrices?.weightedInputPricePer1M ?? null,
 					outputPricePer1M: effectivePrices?.weightedOutputPricePer1M ?? null,
 					listedInputPricePer1M,
 					listedOutputPricePer1M,
-					cacheHitRatePct: observedUsage
-						? calculateCacheHitRatePct(observedUsage.cachedReadTokens30d, observedUsage.inputTokens30d)
+					cacheHitRatePct: observedUsageWithTokens
+						? calculateCacheHitRatePct(observedUsageWithTokens.cachedReadTokens30d, observedUsageWithTokens.inputTokens30d)
 						: null,
 					totalTokens30d: observedUsage?.totalTokens30d ?? 0,
 					inputWeightTokens30d: observedUsage?.inputTokens30d ?? 0,
 					outputWeightTokens30d: observedUsage?.outputTokens30d ?? 0,
-					tokenSharePct: observedUsage
-						? calculateTokenSharePct(observedUsage.totalTokens30d, observedTotalTokensAll)
+					tokenSharePct: observedUsageWithTokens
+						? calculateTokenSharePct(observedUsageWithTokens.totalTokens30d, observedTotalTokensAll)
 						: null,
 				};
 			});
@@ -1592,7 +1602,7 @@ export default function PricingInsights({
 						<TableBody>
 							{sortedRows.map((row) => {
 								const additionalTierRows = (providerTierRowsById.get(row.providerId) ?? [])
-									.filter((tierRow) => tierRow.pricingPlan !== row.pricingPlan);
+									.filter((tierRow) => tierRow.pricingPlan !== row.pricingPlan && tierRow.effectiveUsageEligible);
 								const isExpanded = expandedProviders.has(row.providerId);
 								const isMainSeriesVisible = isSeriesVisible(row);
 
@@ -1786,7 +1796,7 @@ export default function PricingInsights({
 								<TableBody>
 									{sortedRows.map((row) => {
 										const additionalTierRows = (providerTierRowsById.get(row.providerId) ?? [])
-											.filter((tierRow) => tierRow.pricingPlan !== row.pricingPlan);
+											.filter((tierRow) => tierRow.pricingPlan !== row.pricingPlan && tierRow.effectiveUsageEligible);
 										const isExpanded = expandedProviders.has(row.providerId);
 										const isMainSeriesVisible = isSeriesVisible(row);
 
