@@ -1,5 +1,7 @@
 import {
 	getProviderRuntimeStats,
+	fillHourlyPerformanceBuckets,
+	fillHourlyUptimeBuckets,
 	mapRpcRuntimeStatsRows,
 	providerRuntimeStatsKey,
 } from "./getModelProviderRuntimeStats";
@@ -45,6 +47,70 @@ describe("provider runtime stats by service tier", () => {
 			serviceTier: "priority",
 			latencyMs30m: 250,
 			throughput30m: 120,
+		});
+	});
+});
+
+describe("fillHourlyUptimeBuckets", () => {
+	it("keeps a fixed 72-hour timeline and fills missing hours", () => {
+		const points = fillHourlyUptimeBuckets(
+			[
+				{
+					start: "2026-08-30T09:27:00.000Z",
+					uptimePct: 98.5,
+					errorPct: 1.5,
+					requests: 12,
+					failed: 1,
+					rateLimited: 0,
+				},
+			],
+			new Date("2026-08-30T10:42:00.000Z"),
+		);
+
+		expect(points).toHaveLength(72);
+		expect(points.at(-2)).toMatchObject({
+			start: "2026-08-30T09:00:00.000Z",
+			uptimePct: 98.5,
+			requests: 12,
+		});
+		expect(points.at(-1)).toMatchObject({
+			start: "2026-08-30T10:00:00.000Z",
+			uptimePct: null,
+			requests: 0,
+		});
+		expect(points[0]).toMatchObject({
+			start: "2026-08-27T11:00:00.000Z",
+			uptimePct: null,
+			requests: 0,
+		});
+	});
+});
+
+describe("fillHourlyPerformanceBuckets", () => {
+	it("keeps latency and throughput aligned to the fixed hourly timeline", () => {
+		const points = fillHourlyPerformanceBuckets(
+			[
+				{
+					start: "2026-08-30T09:27:00.000Z",
+					uptimePct: 98.5,
+					latencyMs: 820,
+					throughput: 74.2,
+					requests: 12,
+				},
+			],
+			new Date("2026-08-30T10:42:00.000Z"),
+		);
+
+		expect(points).toHaveLength(72);
+		expect(points.at(-2)).toMatchObject({
+			start: "2026-08-30T09:00:00.000Z",
+			latencyMs: 820,
+			throughput: 74.2,
+		});
+		expect(points.at(-1)).toMatchObject({
+			start: "2026-08-30T10:00:00.000Z",
+			latencyMs: null,
+			throughput: null,
 		});
 	});
 });
