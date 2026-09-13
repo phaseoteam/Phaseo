@@ -147,7 +147,6 @@ export type ChatModelSettings = {
 };
 
 export type ChatSettings = ChatModelSettings & {
-    serverToolsStreamingMigrated?: boolean;
     compareMode?: boolean;
     compareModelIds?: string[];
     modelOverridesById?: Record<string, Partial<ChatModelSettings>>;

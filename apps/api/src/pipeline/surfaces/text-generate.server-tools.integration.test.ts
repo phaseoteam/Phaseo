@@ -119,23 +119,49 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 		vi.clearAllMocks();
 		getResponseCacheMock.mockReturnValue(null);
 		finalizeRequestMock.mockImplementation(async (args: any) => {
-			let streamText = "";
-			const stream = args?.exec?.result?.stream;
-			if (stream) {
-				streamText = await new Response(stream).text();
-			}
-			return new Response(
-				JSON.stringify({
-					kind: args?.exec?.result?.kind,
-					normalized: args?.exec?.result?.normalized,
-					streamText,
-				}),
-				{
-					status: 200,
-					headers: { "Content-Type": "application/json" },
-				},
-			);
+			return new Response(args.exec.result.stream, {
+				status: 200,
+				headers: { "Content-Type": "text/event-stream" },
+			});
 		});
+	});
+
+	it("delivers text before the first model turn finishes and then streams the tool follow-up", async () => {
+		const encoder = new TextEncoder();
+		let releaseFirstTurn!: () => void;
+		const firstTurnDone = new Promise<void>((resolve) => { releaseFirstTurn = resolve; });
+		const initialStream = new ReadableStream<Uint8Array>({
+			async start(controller) {
+				controller.enqueue(encoder.encode('event: response.output_text.delta\ndata: {"output_index":0,"delta":"Let me check. "}\n\n'));
+				await firstTurnDone;
+				controller.enqueue(encoder.encode('event: response.function_call_arguments.done\ndata: {"item_id":"call_datetime","output_index":1,"name":"gateway_datetime","arguments":"{\\"timezones\\":[]}"}\n\n'));
+				controller.enqueue(encoder.encode('event: response.completed\ndata: {"response":{"id":"first","status":"completed","usage":{"input_tokens":10,"output_tokens":5}}}\n\n'));
+				controller.close();
+			},
+		});
+		const followUpStream = buildSseStream([
+			'event: response.output_text.delta\ndata: {"output_index":0,"delta":"It is 10:35 UTC."}\n\n',
+			'event: response.completed\ndata: {"response":{"id":"last","status":"completed","usage":{"input_tokens":12,"output_tokens":6}}}\n\n',
+		]);
+		doRequestWithIRMock
+			.mockResolvedValueOnce(createStreamResult(initialStream))
+			.mockResolvedValueOnce(createStreamResult(followUpStream));
+
+		const response = await runTextGeneratePipeline(createArgs());
+		const reader = response.body!.getReader();
+		const first = await reader.read();
+		const second = await reader.read();
+		expect(new TextDecoder().decode(first.value) + new TextDecoder().decode(second.value)).toContain("Let me check.");
+		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
+		releaseFirstTurn();
+		let remaining = "";
+		while (true) {
+			const chunk = await reader.read();
+			if (chunk.done) break;
+			remaining += new TextDecoder().decode(chunk.value);
+		}
+		expect(remaining).toContain("It is 10:35 UTC.");
+		expect(doRequestWithIRMock).toHaveBeenCalledTimes(2);
 	});
 
 	it("executes gateway datetime after an OpenAI Responses stream includes a generic tool_call shadow", async () => {
@@ -224,7 +250,7 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 			.mockResolvedValueOnce(createStreamResult(finalAnswerStream));
 
 		const response = await runTextGeneratePipeline(createArgs());
-		const payload = await response.json() as any;
+		const streamText = await response.text();
 
 		expect(response.status).toBe(200);
 		expect(doRequestWithIRMock).toHaveBeenCalledTimes(2);
@@ -240,12 +266,13 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 			toolResults: [{ toolCallId: "call_datetime" }],
 		});
 
-		expect(payload.streamText).toContain("Right now, the time in UTC is 10:35:03.");
-		expect(payload.streamText).not.toContain("\"name\":\"tool_call\"");
-		expect(payload.streamText).toContain("\"name\":\"gateway_datetime\"");
-		expect(payload.streamText).toContain("\"output\":");
-		expect(payload.streamText).toContain("timezones");
-		expect(payload.normalized.output).toEqual([{
+		expect(streamText).toContain("Right now, the time in UTC is 10:35:03.");
+		expect(streamText).not.toContain("\"name\":\"tool_call\"");
+		expect(streamText).toContain("\"name\":\"gateway_datetime\"");
+		expect(streamText).toContain("\"output\":");
+		expect(streamText).toContain("timezones");
+		const normalized = finalizeRequestMock.mock.calls[0]?.[0]?.exec?.result?.normalized;
+		expect(normalized.output).toEqual([{
 			type: "message",
 			role: "assistant",
 			content: [{
@@ -254,7 +281,7 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 				annotations: [],
 			}],
 		}]);
-		expect(payload.normalized.usage.server_tool_use).toMatchObject({
+		expect(normalized.usage.server_tool_use).toMatchObject({
 			datetime_requests: 1,
 		});
 	});

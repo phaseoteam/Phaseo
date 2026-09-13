@@ -1738,7 +1738,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					label: tool.label,
 					description: DEFAULT_SERVER_TOOL_SET.has(tool.toolType)
 						? selected
-							? "Enabled"
+							? "Enabled by default"
 							: "Disabled"
 						: selected
 							? "Enabled - configure"
