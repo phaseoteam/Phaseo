@@ -38,7 +38,7 @@ export function useModelPerformanceMetrics({
 	percentile,
 	rangeDays,
 	fallbackData,
-	refreshInterval = 15 * 60_000,
+	refreshInterval = MODEL_PERFORMANCE_REFRESH_INTERVAL_MS,
 	onError,
 	onSuccess,
 }: {
@@ -63,7 +63,7 @@ export function useModelPerformanceMetrics({
 		fallbackData,
 		focusThrottleInterval: 60_000,
 		keepPreviousData: true,
-		refreshInterval: refreshInterval ?? 5 * 60_000,
+		refreshInterval,
 		refreshWhenHidden: false,
 		refreshWhenOffline: false,
 		revalidateOnFocus: true,
