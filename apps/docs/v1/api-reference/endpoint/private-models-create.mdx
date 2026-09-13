@@ -1,0 +1,9 @@
+---
+title: "Create a private model"
+sidebarTitle: "Create private model"
+badge: "Beta"
+openapi: "POST /private-models"
+description: "Connect an OpenAI-compatible endpoint to the authenticated workspace."
+---
+
+Requires `private_models:write` and an owner or admin identity. Supply `model_reference` as either an exact catalogue model ID or a short workspace-local slug. Phaseo assigns the final model ID; `credential` is encrypted and write-only.

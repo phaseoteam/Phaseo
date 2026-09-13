@@ -3,7 +3,7 @@ import SpawnClient from "@/components/(experiments)/SpawnClient";
 import ShowFooterStyle from "@/components/layout/ShowFooterStyle";
 
 export const metadata: Metadata = {
-	title: "Experiments Spawn+ (BYOC) - Phaseo",
+	title: "Experiments Spawn+ (BYOC)",
 	description:
 		"Configure Spawn+ BYOC workflows, generate CLI commands, and run bootstrap setup scripts without using a provisioning API.",
 	keywords: ["Experiments Spawn+", "BYOC", "CLI", "Phaseo"],

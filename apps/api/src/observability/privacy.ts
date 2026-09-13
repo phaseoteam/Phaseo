@@ -19,6 +19,7 @@ const PROMPT_COMPLETION_KEYS = new Set([
 	"completion",
 	"completions",
 	"generated_text",
+	"transcript",
 	"html",
 	"markdown",
 	"description",
@@ -109,7 +110,9 @@ function shouldRedactTextValue(
 		return (
 			TEXT_CONTENT_TYPES.has(type) ||
 			TEXT_CONTENT_CHANNELS.has(channel) ||
-			MESSAGE_ROLES.has(role)
+			MESSAGE_ROLES.has(role) ||
+			"transcript" in parent ||
+			"speaker" in parent
 		);
 	}
 

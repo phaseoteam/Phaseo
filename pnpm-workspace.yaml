@@ -27,6 +27,7 @@ allowBuilds:
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   - "@shadcn/react"
+  - "cn"
   # Expo SDK releases are coordinated and must resolve as a compatible set.
   - "@expo/*"
   - "babel-preset-expo"

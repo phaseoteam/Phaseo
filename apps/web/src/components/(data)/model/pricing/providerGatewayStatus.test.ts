@@ -80,6 +80,17 @@ describe("providerGatewayStatus", () => {
 		expect(
 			resolveGatewayStatus({
 				isActiveGateway: false,
+				providerAvailabilityStatus: "coming_soon",
+				phaseoStatus: "planned",
+				accessScope: "public",
+				providerRoutingStatus: "active",
+				modelRoutingStatus: "disabled",
+			}),
+		).toBe("coming_soon");
+
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: false,
 				providerAvailabilityStatus: "available",
 				phaseoStatus: "implementing",
 				accessScope: "public",

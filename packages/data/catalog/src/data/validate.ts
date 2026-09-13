@@ -23,6 +23,7 @@ const OUTPUT_DETAILED_METERS = new Set<string>([
 const REASONING_PARAM_NAMES = new Set<string>(['reasoning', 'reasoning_effort']);
 const KNOWN_REASONING_EFFORTS = new Set<string>([
     'none',
+    'instant',
     'minimal',
     'low',
     'medium',
@@ -67,6 +68,7 @@ export function isMajorError(msg: string): boolean {
         /pricing.*mixed aggregate and detailed.*meters/i,
         /pricing.*non-positive price/i,
         /pricing.*unit_size.*invalid/i,
+        /pricing.*token meter.*unit must be/i,
         /pricing.*bill mode.*invalid/i,
         /pricing.*billing timestamp basis.*invalid/i,
         /pricing.*time window/i,
@@ -187,6 +189,11 @@ export function checkPricingEntrySafety(p: any): string[] {
             }
 
             metersInEntry.add(meter);
+            if (meter.split('_').includes('tokens') && r?.unit !== undefined && r.unit !== 'token') {
+                errs.push(
+                    `pricing: token meter '${meter}' unit must be 'token' for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}`
+                );
+            }
             const unit_size = parseNumericValue(r?.unit_size);
             if (unit_size === undefined || unit_size <= 0) {
                 errs.push(
@@ -335,6 +342,14 @@ export function checkApiProviderModelEntrySafety(
         row?.routing_status === 'disabled';
     if (!normalizeReference(row?.provider_model_slug) && !canOmitProviderModelSlug) {
         errors.push(`API provider model ${rowLabel} missing provider_model_slug`);
+    }
+
+    const accessScope = normalizeReference(row?.access_scope)?.toLowerCase();
+    const integrationStatus = normalizeReference(row?.phaseo_status)?.toLowerCase();
+    if (accessScope === 'internal' && integrationStatus !== 'testing' && integrationStatus !== 'enabled') {
+        errors.push(
+            `API provider model ${rowLabel} with internal access_scope must set phaseo_status to testing or enabled`
+        );
     }
 
     if (row?.availability !== undefined && row?.availability !== null) {
@@ -933,6 +948,12 @@ function checkOrganisations(state: ValidationState): string[] {
         if (data.country_code !== null && !/^[A-Z]{2,3}$/.test(countryCode)) {
             errors.push(`Organisation ${organisationId} has invalid country_code`);
         }
+        const subdivisionCode = typeof data.subdivision_code === 'string' ? data.subdivision_code.trim() : '';
+        if (data.subdivision_code !== undefined && data.subdivision_code !== null && !/^[A-Z]{2}-[A-Z0-9]{1,3}$/.test(subdivisionCode)) {
+            errors.push(`Organisation ${organisationId} has invalid subdivision_code`);
+        } else if (subdivisionCode && countryCode.length === 2 && subdivisionCode.slice(0, 2) !== countryCode) {
+            errors.push(`Organisation ${organisationId} subdivision_code must belong to country_code`);
+        }
         const links = Array.isArray(data.organisation_links) ? data.organisation_links : [];
         const seenPlatforms = new Set<string>();
         for (const [index, link] of links.entries()) {
@@ -1303,6 +1324,13 @@ function checkApiProviders(state: ValidationState): string[] {
         if (data.zero_data_retention === true && data.data_retention_days !== 0) {
             errors.push(`API provider ${providerId} with zero data retention must set data_retention_days to 0`);
         }
+        const subdivisionCode = typeof data.subdivision_code === 'string' ? data.subdivision_code.trim() : '';
+        const countryCode = typeof data.country_code === 'string' ? data.country_code.trim() : '';
+        if (data.subdivision_code !== undefined && data.subdivision_code !== null && !/^[A-Z]{2}-[A-Z0-9]{1,3}$/.test(subdivisionCode)) {
+            errors.push(`API provider ${providerId} has invalid subdivision_code`);
+        } else if (subdivisionCode && countryCode.length === 2 && subdivisionCode.slice(0, 2) !== countryCode) {
+            errors.push(`API provider ${providerId} subdivision_code must belong to country_code`);
+        }
 		const providerModelsPath = path.join(providersDir, provider, 'models.json');
 		const providerModels = fs.existsSync(providerModelsPath)
 			? safeReadJson(providerModelsPath, errors, 'API provider models')
@@ -1521,6 +1549,11 @@ function checkApiProviderModels(
             .filter((entry): entry is readonly [string, ModelEntry] => entry !== null)
     );
     const referencedVariantIds = new Set<string>();
+	const independentlyPricedCanonicalVariants = new Set([
+		'minimax/minimax-m2.5-highspeed',
+		'minimax/speech-2.8-hd',
+		'minimax/speech-2.8-turbo',
+	]);
 
     for (const provider of listDirs(providersDir)) {
         const filePath = path.join(providersDir, provider, 'models.json');
@@ -1601,6 +1634,12 @@ function checkApiProviderModels(
                 errors.push(`API provider model ${rowLabel} missing api_model_id`);
                 continue;
             }
+			if (independentlyPricedCanonicalVariants.has(apiModelId) && internalModelId !== apiModelId) {
+				errors.push(
+					`API provider model ${rowLabel} independently priced variant '${apiModelId}' ` +
+					`must use the same internal_model_id`
+				);
+			}
             state.providerModelKeys.add(`${provider}:${apiModelId}`);
 
             if (apiModelId.toLowerCase().endsWith(':free')) {

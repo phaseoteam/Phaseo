@@ -1,5 +1,7 @@
 import type { SubscriptionPlanDetails } from "@/lib/fetchers/subscription-plans/types";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import SubscriptionPlanFeaturesTable from "./SubscriptionPlanFeaturesTable";
 
 interface SubscriptionPlanOverviewProps {
@@ -24,12 +26,12 @@ export default function SubscriptionPlanOverview({
 						<div className="space-y-3">
 							<SubscriptionPlanFeaturesTable features={topFeatures} />
 							{plan.features && plan.features.length > 5 && (
-								<Link
+								<Button asChild variant="link" className="h-auto p-0"><Link
 									href={`/subscription-plans/${plan.plan_id}/features`}
 									className="text-sm text-primary relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
-									View all {plan.features.length} features →
-								</Link>
+									View all {plan.features.length} features <ArrowRight className="size-4" aria-hidden="true" />
+								</Link></Button>
 							)}
 						</div>
 					) : (
@@ -44,7 +46,7 @@ export default function SubscriptionPlanOverview({
 				<h2 className="text-xl font-semibold">Included Models</h2>
 					{recentModels.length > 0 ? (
 						<div className="divide-y divide-border/70 border-y border-border/70">
-							{recentModels.map((modelInfo, index) => (
+							{recentModels.map((modelInfo) => (
 								<div
 									key={modelInfo.model_id}
 									className="flex items-center justify-between px-1 py-3"
@@ -65,12 +67,12 @@ export default function SubscriptionPlanOverview({
 								</div>
 							))}
 							{plan.models && plan.models.length > 5 && (
-								<Link
+								<Button asChild variant="link" className="h-auto py-3 px-0"><Link
 									href={`/subscription-plans/${plan.plan_id}/models`}
 									className="text-sm text-primary relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
-									View all {plan.models.length} models →
-								</Link>
+									View all {plan.models.length} models <ArrowRight className="size-4" aria-hidden="true" />
+								</Link></Button>
 							)}
 						</div>
 					) : (

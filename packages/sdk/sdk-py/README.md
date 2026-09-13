@@ -41,6 +41,19 @@ client = Phaseo(
 
 App attribution is optional and is never inferred from the SDK itself.
 
+## Regional text routing
+
+Select `eu` or `us` to restrict Chat Completions, Responses, and Messages to
+matching regional provider routes:
+
+```python
+client = Phaseo(region="eu")
+```
+
+Regional endpoints currently accept text-only requests. This is regional
+provider routing, not an end-to-end data residency guarantee. `region` cannot be
+combined with a custom `base_url`.
+
 ## Streaming example
 
 ```python
@@ -155,6 +168,8 @@ client = Phaseo(
     logger=lambda level, message, meta: print(level, message, meta),
 )
 ```
+
+For completed Anthropic batches, `client.batches.stream_results(batch_id)` yields original JSONL byte chunks without buffering the whole download. Write chunks to your output file and close the iterator if stopping early. The configured HTTP timeout applies; downloading does not add inference charges.
 
 ## Environment variables
 

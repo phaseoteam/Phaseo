@@ -27,7 +27,7 @@ vi.mock("@core/video-reservations", () => ({
 
 vi.mock("@core/video-jobs", () => ({
 	saveVideoJobMeta: (...args: unknown[]) => {
-		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
+		if (state.saveVideoJobMetaError && (args[2] as any).submissionState !== "submitting") throw state.saveVideoJobMetaError;
 		return saveVideoJobMetaMock(...args);
 	},
 }));
@@ -265,11 +265,11 @@ describe("runway video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
 		expect(state.releaseCalls).toEqual([]);
 	});
 
-	it("releases a held reservation when Runway returns success without a task id", async () => {
+	it("retains a held reservation when Runway returns success without a task id", async () => {
 		state.reservationResult = {
 			reservationId: "video_hold:req_runway_video_test",
 			held: true,
@@ -299,14 +299,8 @@ describe("runway video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
-		expect(state.releaseCalls).toEqual([
-			{
-				workspaceId: "team_test",
-				reservationId: "video_hold:req_runway_video_test",
-				releaseRefId: "req_runway_video_test",
-			},
-		]);
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
+		expect(state.releaseCalls).toEqual([]);
 	});
 
 	it("does not submit upstream when reservation pricing dimensions are missing", async () => {

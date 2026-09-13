@@ -647,52 +647,54 @@ function KpiMetric({
 			className="group relative block min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 		>
 			<Card className="h-full rounded-lg py-0 transition-colors group-hover:bg-muted/20">
-			<div className="grid min-h-[124px] min-w-0 grid-cols-[minmax(0,1fr)_minmax(96px,0.8fr)] items-center gap-4 px-4 py-4 sm:min-h-[112px] sm:grid-cols-[minmax(0,1fr)_80px] sm:gap-3 sm:py-3">
-				<div className="min-w-0">
-					<CardTitle className="text-xs font-medium leading-tight text-muted-foreground">
+				<div className="grid min-h-[124px] min-w-0 grid-rows-[auto_1fr] gap-2 px-4 py-4 sm:min-h-[112px] sm:gap-2 sm:py-3">
+					<CardTitle className="whitespace-nowrap text-xs font-medium leading-tight text-muted-foreground">
 						{kpi.label}
 					</CardTitle>
-					<div className="mt-1 truncate text-2xl font-semibold tracking-tight">
-						{formatKpiValue(kpi, displayValue)}
-					</div>
-					<div
-						className={cn(
-							"mt-2 inline-flex max-w-full items-center gap-1 text-xs font-medium",
-							hoveredPoint
-								? "text-muted-foreground"
-								: positive
-									? "text-emerald-600"
-									: "text-rose-600",
-						)}
-					>
-						{hoveredPoint ? (
-							<span>{hoveredPoint.label}</span>
-						) : (
-							<UiTooltip delayDuration={750}>
-								<UiTooltipTrigger asChild>
-									<span className="inline-flex items-center gap-1">
-										{kpi.deltaPercent !== null ? (
-											<DeltaIcon className="h-3 w-3" />
-										) : null}
-										<span>{formatCompactDelta(kpi.deltaPercent)}</span>
-									</span>
-								</UiTooltipTrigger>
-								<UiTooltipContent side="bottom" sideOffset={6}>
-									Compared with previous period
-								</UiTooltipContent>
-							</UiTooltip>
-						)}
+					<div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_minmax(96px,0.8fr)] items-center gap-4 sm:grid-cols-[minmax(0,1fr)_80px] sm:gap-3">
+						<div className="min-w-0">
+							<div className="truncate text-2xl font-semibold tracking-tight">
+								{formatKpiValue(kpi, displayValue)}
+							</div>
+							<div
+								className={cn(
+									"mt-2 inline-flex max-w-full items-center gap-1 text-xs font-medium",
+									hoveredPoint
+										? "text-muted-foreground"
+										: positive
+											? "text-emerald-600"
+											: "text-rose-600",
+								)}
+							>
+								{hoveredPoint ? (
+									<span>{hoveredPoint.label}</span>
+								) : (
+									<UiTooltip delayDuration={750}>
+										<UiTooltipTrigger asChild>
+											<span className="inline-flex items-center gap-1">
+												{kpi.deltaPercent !== null ? (
+													<DeltaIcon className="h-3 w-3" />
+												) : null}
+												<span>{formatCompactDelta(kpi.deltaPercent)}</span>
+											</span>
+										</UiTooltipTrigger>
+										<UiTooltipContent side="bottom" sideOffset={6}>
+											Compared with previous period
+										</UiTooltipContent>
+									</UiTooltip>
+								)}
+							</div>
+						</div>
+						<div className="h-10 min-w-0 w-full text-right sm:h-auto">
+							<Sparkline
+								data={kpi.sparkline}
+								height={38}
+								formatValue={(value) => formatKpiValue(kpi, value)}
+								onHoverPoint={setHoveredPoint}
+							/>
+						</div>
 					</div>
 				</div>
-				<div className="h-10 min-w-0 w-full text-right sm:h-auto">
-					<Sparkline
-						data={kpi.sparkline}
-						height={38}
-						formatValue={(value) => formatKpiValue(kpi, value)}
-						onHoverPoint={setHoveredPoint}
-					/>
-				</div>
-			</div>
 			</Card>
 		</Link>
 	);

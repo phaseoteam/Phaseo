@@ -41,6 +41,7 @@ import { fetchWorkspacePolicy, applyWorkspacePolicy } from "./workspacePolicy";
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
 import { parseRequestLabels } from "./request-labels";
 import { generatePublicId } from "./genId";
+import { applyDeploymentRegionPolicy, validateRegionalTextRequest } from "./deployment-region";
 import {
     applyDynamicRouteToBody,
     evaluateDynamicRoute,
@@ -467,6 +468,13 @@ export async function beforeRequest(
 
 	let c: Awaited<ReturnType<typeof guardContext>>;
 	if (isAutoRouterModel(model)) {
+		const regionalAutoRouterBody = applyDeploymentRegionPolicy(
+			body,
+			bindings.GATEWAY_ROUTING_REGION,
+		);
+		const autoRouterBody = regionalAutoRouterBody.ok
+			? regionalAutoRouterBody.body
+			: body;
 		if (body?.routing?.auto != null || body?.provider?.auto != null) {
 			return {
 				ok: false,
@@ -483,11 +491,11 @@ export async function beforeRequest(
 				}),
 			};
 		}
-		const deterministicClassification = deterministicAutoRouterClassification(body);
+		const deterministicClassification = deterministicAutoRouterClassification(autoRouterBody);
 		const classifierPromise = options?.autoRouterClassificationOverride
 			? Promise.resolve(options.autoRouterClassificationOverride)
 			: options?.classifyAutoRouterRequest && !options?.autoRouterModelOverride
-				? timer.span("classifyAutoRouterRequest", () => options.classifyAutoRouterRequest!({ endpoint, body }))
+				? timer.span("classifyAutoRouterRequest", () => options.classifyAutoRouterRequest!({ endpoint, body: autoRouterBody }))
 					.catch((error) => {
 						console.warn("[beforeRequest] auto_router_classifier_failed", {
 							workspaceId,
@@ -508,10 +516,10 @@ export async function beforeRequest(
 			});
 			return { ok: false, response: err("gateway_error", { reason: "auto_router_config_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
 		}
-		const classification = applyAutoRouterHardRequirements(body, await classifierPromise ?? deterministicClassification);
+		const classification = applyAutoRouterHardRequirements(autoRouterBody, await classifierPromise ?? deterministicClassification);
 		let candidateUniverse: Awaited<ReturnType<typeof loadManagedAutoRouterCandidates>>;
 		try {
-			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(config, body, classification));
+			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(config, autoRouterBody, classification));
 		} catch (error) {
 			console.error("[beforeRequest] auto_router_candidates_fetch_failed", {
 				workspaceId,
@@ -536,7 +544,7 @@ export async function beforeRequest(
 		}
 		const selection = await timer.span("selectAutoRouterModel", () => selectAutoRouterModel({
 			endpoint,
-			body,
+			body: autoRouterBody,
 			config: selectionConfig,
 			classification,
 			modelOverride: options?.autoRouterModelOverride,
@@ -548,7 +556,7 @@ export async function beforeRequest(
 				const policyResult = applyWorkspacePolicy({
 					providers: candidateContext.value.providers,
 					resolvedModel: candidateResolvedModel,
-					body,
+					body: autoRouterBody,
 					workspacePolicy: policyLoad.value,
 					teamSettings: candidateContext.value.context.teamSettings ?? null,
 				});
@@ -565,7 +573,7 @@ export async function beforeRequest(
 				const capabilityResult = await validateCapabilities({
 					endpoint,
 					rawBody,
-					body,
+					body: autoRouterBody,
 					requestId,
 					workspaceId,
 					providers: executableProviders,
@@ -576,7 +584,7 @@ export async function beforeRequest(
 				}
 				const quantizationResult = filterQuantizationCandidates(
 					capabilityResult.providers,
-					getEffectiveRoutingHints(body).quantizations,
+					getEffectiveRoutingHints(autoRouterBody).quantizations,
 				);
 				if (!quantizationResult.ok || !quantizationResult.providers.length) {
 					return { ok: false as const, reason: "request_quantization_unsupported" };
@@ -621,6 +629,9 @@ export async function beforeRequest(
     const contextTelemetry = context.contextTelemetry ?? null;
     const contextTimingSpans = {
         context_total: contextTelemetry?.totalMs,
+        context_preset_access: contextTelemetry?.presetAccessMs,
+        context_private_model: contextTelemetry?.privateModelMs,
+        context_byok_hydration: contextTelemetry?.byokHydrationMs,
         context_key_version: contextTelemetry?.keyVersionMs,
         context_cache_read: contextTelemetry?.cacheReadMs,
         context_credit_refresh: contextTelemetry?.creditRefreshMs,
@@ -852,6 +863,61 @@ export async function beforeRequest(
             resolvedRoutingMode = dynamicRouteEvaluation.action.routingMode;
         }
     }
+
+	const regionalRequestViolation = validateRegionalTextRequest(
+		endpoint,
+		mergedBody,
+		bindings.GATEWAY_ROUTING_REGION,
+	);
+	if (regionalRequestViolation) {
+		return {
+			ok: false,
+			response: err("not_supported", {
+				reason: `regional_${regionalRequestViolation.reason}`,
+				description:
+					"Regional gateways currently support text-only Chat Completions, Responses, and Messages requests.",
+				details: [{
+					message: "This request uses a feature that is not available on a regional gateway.",
+					path: regionalRequestViolation.path,
+					keyword: `regional_${regionalRequestViolation.reason}`,
+					params: { value: regionalRequestViolation.value ?? null },
+				}],
+				request_id: requestId,
+				workspace_id: workspaceId,
+			}),
+		};
+	}
+
+	const deploymentRegionResult = applyDeploymentRegionPolicy(
+		mergedBody,
+		bindings.GATEWAY_ROUTING_REGION,
+	);
+	if (deploymentRegionResult.ok === false) {
+		return {
+			ok: false,
+			response: err("validation_error", {
+				reason: "deployment_region_conflict",
+				description:
+					`This gateway only routes requests whose execution and data regions are ${deploymentRegionResult.region.toUpperCase()}.`,
+				error_type: "user",
+				error_origin: "user",
+				error_operational_kind: "deployment_region_conflict",
+				details: [{
+					message:
+						`Requested region "${deploymentRegionResult.requestedRegion}" conflicts with the ${deploymentRegionResult.region.toUpperCase()} gateway.`,
+					path: ["provider", deploymentRegionResult.field],
+					keyword: "deployment_region_conflict",
+					params: {
+						gateway_region: deploymentRegionResult.region,
+						requested_region: deploymentRegionResult.requestedRegion,
+					},
+				}],
+				request_id: requestId,
+				workspace_id: workspaceId,
+			}),
+		};
+	}
+	mergedBody = deploymentRegionResult.body;
 
     // Keep this as the final request-level provider constraint before workspace
     // policy enforcement. A provider-qualified model is an exact pair, not a

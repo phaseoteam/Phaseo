@@ -11,7 +11,7 @@ import TeamsMembers from "./members/TeamsMembers";
 import TeamsAccessPanel from "./TeamsAccessPanel";
 import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 
-type Team = { id: string; name: string; publisherHandle?: string | null };
+type Team = { id: string; name: string; publisherHandle?: string | null; logoUrl?: string | null };
 
 type Props = {
 	teams: Team[];

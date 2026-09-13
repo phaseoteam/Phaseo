@@ -1,13 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import useSWR from "swr";
 import { publicSWRKeys } from "@/lib/swr/keys";
 import {
 	fetchModelsTableData,
 	fetchModelsTableDataV2,
 } from "@/lib/swr/modelsTable";
-import ModelsTableDisplay from "@/components/(data)/models/Models/ModelsTableDisplay";
+import { useRevalidateOnResume } from "@/lib/swr/useRevalidateOnResume";
 import { ModelsTablePageSkeleton } from "@/components/(data)/models/Models/ModelsTablePageSkeleton";
+
+const ModelsTableDisplay = dynamic(() => import("./ModelsTableDisplay"), {
+	loading: () => <ModelsTablePageSkeleton />,
+});
 
 type ModelsTablePageClientProps = {
 	catalogueVersion?: "v1" | "v2";
@@ -24,9 +30,18 @@ export default function ModelsTablePageClient({
 		catalogueVersion === "v2"
 			? fetchModelsTableDataV2
 			: fetchModelsTableData;
-	const { data, error } = useSWR(swrKey, fetcher);
+	const { data, error, mutate } = useSWR(swrKey, fetcher, {
+		// The resume listener covers focus, restored tabs, and reconnects.
+		revalidateOnFocus: false,
+		revalidateOnReconnect: false,
+		refreshInterval: 15 * 60_000,
+	});
+	useRevalidateOnResume(mutate, error);
+	useEffect(() => {
+		void import("./ModelsTableDisplay");
+	}, []);
 
-	if (error) throw error;
+	if (error && !data) throw error;
 	if (!data) return <ModelsTablePageSkeleton />;
 
 	return (

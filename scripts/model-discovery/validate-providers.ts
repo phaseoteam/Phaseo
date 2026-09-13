@@ -116,6 +116,13 @@ function isValidHttpsUrl(value: string): boolean {
 }
 
 function payloadForProvider(providerId: string): unknown {
+    if (providerId === "openai") {
+        // Deliberately use a future major-version shape here. OpenAI model discovery
+        // must remain version-agnostic so launch-day IDs are not hidden by an
+        // allowlist that only knows about the current GPT generation.
+        return { data: [{ id: "gpt-next-readiness-test" }] };
+    }
+
     if (providerId === "google-ai-studio") {
         return { models: [{ name: "models/test-model" }] };
     }
@@ -231,8 +238,10 @@ async function validateProviderEndpoint(
         });
     }) as typeof fetch;
 
+    let discoveredModels: Awaited<ReturnType<ProviderDefinition["fetchModels"]>> = [];
+
     try {
-        await provider.fetchModels();
+        discoveredModels = await provider.fetchModels();
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         errors.push(`Provider ${provider.id} failed fetchModels under stubbed response: ${message}`);
@@ -248,6 +257,13 @@ async function validateProviderEndpoint(
 
     if (!requestedUrls.some((requestedUrl) => endpointMatches(requestedUrl, rule.modelsEndpoint))) {
         errors.push(`Provider ${provider.id} requested ${requestedUrls.join(", ")}, expected ${rule.modelsEndpoint}`);
+    }
+
+    if (
+        provider.id === "openai" &&
+        !discoveredModels.some((model) => model.id === "gpt-next-readiness-test")
+    ) {
+        errors.push("Provider openai filtered an unknown future GPT model id.");
     }
 }
 

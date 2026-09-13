@@ -267,6 +267,7 @@ export function shapeUsageForClient(
         "doc_size_bytes",
         "document_bytes",
         "bfl_credits",
+        "deepinfra_cost_usd",
         "server_tool_use",
         "service_tier",
         "serviceTier",
@@ -312,4 +313,3 @@ export function shapeUsageForClient(
 
     return shaped;
 }
-

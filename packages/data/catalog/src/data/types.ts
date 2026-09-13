@@ -5,6 +5,7 @@ export interface Organisation {
     name: string;
     website: string | null;
     country_code: string | null;
+    subdivision_code: string | null;
     description: string | null;
     colour: string | null;
     created_at: string;
@@ -32,6 +33,7 @@ export interface Provider {
     name: string;
     website: string | null;
     country_code: string | null;
+    subdivision_code?: string | null;
     description: string | null;
     colour: string | null;
     socials: SocialLink[];        // instead of individual nullable fields
@@ -53,11 +55,14 @@ export interface BenchmarkResult {
     is_self_reported: boolean | number; // Changed to allow number since your JSON uses 1.0
     source_link: string | null;
     other_info?: string | null; // Made optional as it's not always present
+    variant?: string | null;
 }
 
 export interface APIProvider {
     api_provider_id: string;
     api_provider_name: string;
+    country_code?: string | null;
+    subdivision_code?: string | null;
     description: string | null;
     link: string | null;
     provider_family_id?: string | null;
@@ -135,6 +140,7 @@ export interface APIProvider {
     api_base_url?: string | null;
     docs_url?: string | null;
     auth_env?: string[] | null;
+	credential_mode?: "managed_and_byok" | "byok_only";
     api_formats?: string[];
     service_tiers?: string[];
     sources?: SourceMetadata[];

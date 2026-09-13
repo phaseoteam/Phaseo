@@ -138,6 +138,19 @@ describe("resolveProviderState", () => {
 });
 
 describe("groupProviders", () => {
+	test("marks a provider family BYOK-only only when every offer is BYOK-only", () => {
+		const only = groupProviders(makeMetadata([
+			makeProvider({ provider: { api_provider_id: "openai", api_provider_name: "OpenAI", credential_mode: "byok_only" } }),
+		]))[0];
+		expect(only.credentialMode).toBe("byok_only");
+
+		const mixed = groupProviders(makeMetadata([
+			makeProvider({ id: "one", provider: { api_provider_id: "openai", api_provider_name: "OpenAI", provider_family_id: "openai", credential_mode: "byok_only" } }),
+			makeProvider({ id: "two", api_provider_id: "openai-regional", provider: { api_provider_id: "openai-regional", api_provider_name: "OpenAI Regional", provider_family_id: "openai", credential_mode: "managed_and_byok" } }),
+		]))[0];
+		expect(mixed.credentialMode).toBe("managed_and_byok");
+	});
+
 	test("preserves preview_only as the grouped provider state", () => {
 		const [provider] = groupProviders(
 			makeMetadata([

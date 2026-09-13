@@ -1,0 +1,16 @@
+{
+  "key": "fireworks:z-ai/glm-5.3:text.generate",
+  "api_provider_id": "fireworks",
+  "provider_slug": "fireworks",
+  "api_model_id": "z-ai/glm-5.3",
+  "capability_id": "text.generate",
+  "rules": [
+    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":2.1,"currency":"USD","pricing_plan":"fast","note":"Fireworks GLM-5.3 Fast uncached input price.","match":[],"priority":100,"effective_from":"2026-09-04T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://app.fireworks.ai/models/fireworks/glm-5p3"},
+    {"meter":"cached_read_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.39,"currency":"USD","pricing_plan":"fast","note":"Fireworks GLM-5.3 Fast cached-input price.","match":[],"priority":100,"effective_from":"2026-09-04T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://app.fireworks.ai/models/fireworks/glm-5p3"},
+    {"meter":"output_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":6.6,"currency":"USD","pricing_plan":"fast","note":"Fireworks GLM-5.3 Fast output price.","match":[],"priority":100,"effective_from":"2026-09-04T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://app.fireworks.ai/models/fireworks/glm-5p3"}
+  ],
+  "regions": [],
+  "service_tiers": ["fast"],
+  "sources": [{"url":"https://app.fireworks.ai/models/fireworks/glm-5p3","kind":"provider_pricing","accessed_at":"2026-09-04T00:00:00Z","notes":"Fireworks' authenticated GLM-5.3 dashboard lists the Fast serving path at $2.10 input, $0.39 cached input, and $6.60 output per million tokens."}],
+  "verification": {"status":"verified","checked_at":"2026-09-04T00:00:00Z","notes":"Fast-tier pricing and the accounts/fireworks/routers/glm-5p3-fast route were verified in Fireworks' authenticated model dashboard."}
+}

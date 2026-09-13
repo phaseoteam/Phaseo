@@ -3,8 +3,8 @@
   "organisation_id": "spacex-ai",
   "name": "Grok Imagine Image 2.0",
   "status": "Available",
-  "previous_model_id": "spacex-ai/grok-imagine-image-quality",
-  "description": "Grok Imagine Image 2.0 is SpaceXAI's image generation and editing model. It accepts text and image inputs, produces 1K or 2K images at low or medium quality, and is available through the xAI Imagine API.",
+  "previous_model_id": null,
+  "description": "Grok Imagine Image 2.0 is SpaceXAI's image generation and editing model. It accepts text and image inputs, produces 1K or 2K images at low, medium, or auto quality, supports batch generation and up to five source images for editing, and is available through the xAI Imagine API.",
   "announced_date": "2026-08-11T00:00:00",
   "release_date": "2026-08-11T00:00:00",
   "deprecation_date": null,
@@ -23,9 +23,57 @@
       "title": "Pricing",
       "kind": "pricing",
       "url": "https://docs.x.ai/developers/pricing"
+    },
+    {
+      "title": "Image generation",
+      "kind": "documentation",
+      "url": "https://docs.x.ai/developers/model-capabilities/images/generation"
+    },
+    {
+      "title": "Image editing",
+      "kind": "documentation",
+      "url": "https://docs.x.ai/developers/model-capabilities/images/editing"
+    },
+    {
+      "title": "Multi-image editing",
+      "kind": "documentation",
+      "url": "https://docs.x.ai/developers/model-capabilities/images/multi-image-editing"
     }
   ],
-  "details": [],
+  "details": [
+    {
+      "name": "regions",
+      "value": "us-east-1, us-west-2"
+    },
+    {
+      "name": "batch_api",
+      "value": "Supported"
+    },
+    {
+      "name": "resolutions",
+      "value": "1k, 2k"
+    },
+    {
+      "name": "quality",
+      "value": "low, medium, auto; auto currently selects low for generation and medium for editing"
+    },
+    {
+      "name": "aspect_ratios",
+      "value": "1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 2:1, 1:2, 19.5:9, 9:19.5, 20:9, 9:20, 21:9, 5:2, auto"
+    },
+    {
+      "name": "max_reference_images",
+      "value": "5"
+    },
+    {
+      "name": "max_images_per_request",
+      "value": "10"
+    },
+    {
+      "name": "response_format",
+      "value": "url or b64_json; url default"
+    }
+  ],
   "benchmarks": [],
   "family_id": null,
   "page_notice": null,
@@ -50,34 +98,46 @@
     "options": []
   },
   "capabilities": {
-    "attachment": null,
-    "tool_call": null,
-    "structured_output": null,
-    "temperature": null,
-    "streaming": null,
-    "web_search": null
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": false,
+    "streaming": false,
+    "web_search": false
   },
   "open_weights": false,
   "sources": [
     {
       "kind": "api_reference",
       "url": "https://docs.x.ai/developers/models/grok-imagine-image-2.0",
-      "accessed_at": "2026-08-11T00:00:00",
-      "notes": "Documents the model slug, modalities, regions, output resolutions and quality levels, pricing, and rate limit."
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Documents the model slug, modalities, regions, batch support, output resolutions and quality levels, pricing, and rate limit."
     },
     {
       "kind": "pricing",
       "url": "https://docs.x.ai/developers/pricing",
-      "accessed_at": "2026-08-11T00:00:00",
-      "notes": "Lists Image 2.0 input and output prices for the xAI Imagine API."
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Lists Image 2.0 input and output prices by resolution and quality for the xAI Imagine API."
+    },
+    {
+      "kind": "documentation",
+      "url": "https://docs.x.ai/developers/model-capabilities/images/generation",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Documents batch generation, count up to 10, aspect ratios, 1K/2K resolution, auto quality, and URL/base64 response formats."
+    },
+    {
+      "kind": "documentation",
+      "url": "https://docs.x.ai/developers/model-capabilities/images/multi-image-editing",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Documents up to five source images per edit and aspect-ratio control."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-11T00:00:00",
-    "notes": "Model identity, API availability, modalities, regions, rate limit, and pricing verified against xAI documentation."
+    "checked_at": "2026-09-03T00:00:00Z",
+    "notes": "Model identity, API availability, modalities, regions, batch support, image counts, quality, resolution, aspect ratios, rate limit, and pricing verified against xAI documentation."
   },
-  "last_updated": "2026-08-11T00:00:00",
+  "last_updated": "2026-09-03T00:00:00Z",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

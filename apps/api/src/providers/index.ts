@@ -25,6 +25,8 @@ import { normalizeProviderId } from "@/lib/config/providerAliases";
 // See apps/api/src/pipeline/index.ts:49 "IR PIPELINE (MANDATORY - ONLY EXECUTION PATH)"
 
 // Adapter registry (default per-provider)
+const PRIVATE_MODEL_ADAPTER = createOpenAICompatibleAdapter("private-model");
+
 const ADAPTERS: Record<string, ProviderAdapter> = {
     openai: OpenAIAdapter,
     "openai-eu": createOpenAICompatibleAdapter("openai-eu"),
@@ -92,6 +94,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     moonshotai: createOpenAICompatibleAdapter("moonshotai"),
     "moonshotai-turbo": createOpenAICompatibleAdapter("moonshotai-turbo"),
     morph: createOpenAICompatibleAdapter("morph"),
+    modelscope: createOpenAICompatibleAdapter("modelscope"),
     morpheus: createOpenAICompatibleAdapter("morpheus"),
     "nebius-token-factory": createOpenAICompatibleAdapter("nebius-token-factory"),
     "nebius-token-factory-eu-north-1": createOpenAICompatibleAdapter("nebius-token-factory-eu-north-1"),
@@ -218,6 +221,7 @@ export function allProviderNames(): string[] {
 
 export function adapterFor(providerId: string, endpoint: Endpoint): ProviderAdapter | null {
 	const canonicalProviderId = normalizeProviderId(providerId);
+	if (canonicalProviderId === "private-model") return PRIVATE_MODEL_ADAPTER;
 	const override = ADAPTERS_BY_CAPABILITY[endpoint]?.[canonicalProviderId];
 	return override ?? ADAPTERS[canonicalProviderId] ?? null;
 }

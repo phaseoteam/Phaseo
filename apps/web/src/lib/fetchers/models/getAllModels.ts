@@ -13,7 +13,8 @@ export interface ModelCard {
     name: string;
     organisation_id: string;
     organisation_name: string | null;
-    organisation_colour: string | null;
+	organisation_colour: string | null;
+	organisation_logo_url?: string | null;
     description?: string | null;
     status?: string | null;
     hidden?: boolean;

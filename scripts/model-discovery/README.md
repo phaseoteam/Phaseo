@@ -31,6 +31,9 @@ The Worker also watches the public or authenticated catalogs used by models.dev,
 
 See [AUTOMATION_COVERAGE.md](./AUTOMATION_COVERAGE.md) for source parity, credential requirements, automatic-PR safety boundaries, and the explicit manual pricing queue.
 
+See [OPENAI_GPT6_READINESS.md](./OPENAI_GPT6_READINESS.md) for the evidence,
+automation coverage, and publication gates for a possible OpenAI GPT-6 launch.
+
 Provider `/models` Discord alerts are filtered to provider model IDs already known in the database table `data_api_provider_models` (`provider_model_slug` and the `api_model_id` tail), regardless of `is_active_gateway` status. The internal pricing-rule monitor is disabled in production because it observes Phaseo-owned catalog edits; upstream provider and official pricing source monitors remain available. GitHub issue sync is intentionally not filtered by that allowlist: unknown upstream models are included in triage issues so newly exposed provider or Hugging Face models are not silently discarded.
 
 Issue state is stored in `scripts/model-discovery/state/provider-change-issues.json`. Issue threads are grouped by source, provider/org, and action type so provider API and Hugging Face signals cannot collide.

@@ -63,6 +63,7 @@ export type GroupedProvider = {
 	providerIds: Set<string>;
 	logoProviderId: string;
 	providerName: string;
+	credentialMode: "managed_and_byok" | "byok_only";
 	offerLabels: Set<string>;
 	endpoints: Set<string>;
 	modelSlugs: Set<string>;
@@ -664,6 +665,9 @@ export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[
 			});
 
 		if (current) {
+			if ((item.provider?.credential_mode ?? "managed_and_byok") !== "byok_only") {
+				current.credentialMode = "managed_and_byok";
+			}
 			if (item.endpoint) current.endpoints.add(item.endpoint);
 			current.providerIds.add(providerId);
 			current.offerLabels.add(offerLabel);
@@ -755,6 +759,10 @@ export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[
 		grouped.set(familyId, {
 			providerId,
 			providerIds: new Set([providerId]),
+			credentialMode:
+				item.provider?.credential_mode === "byok_only"
+					? "byok_only"
+					: "managed_and_byok",
 			logoProviderId: resolveProviderLogoId({
 				providerId,
 				providerFamilyId: familyId,

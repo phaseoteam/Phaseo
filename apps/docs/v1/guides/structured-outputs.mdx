@@ -68,7 +68,27 @@ curl https://api.phaseo.app/v1/chat/completions \
 - For `json_schema`, include a schema object (`response_format.json_schema.schema` on chat-style payloads, or `text.format.schema` on responses-style payloads).
 - Validate JSON on your server before downstream use.
 
-## Next guides
+## Design your schema
 
-1. [Structured Output Schemas](./structured-outputs-schemas)
-2. [Validation and Fallback Patterns](./structured-outputs-validation)
+Start with a small object, mark required fields explicitly, and use enums for known categories. Set `additionalProperties: false` when extra keys must be rejected. Keep the requested schema and your server validator in sync; version them together.
+
+## Validate the result
+
+Parse and validate the complete result before using it downstream. This TypeScript example uses Zod and matches the weather schema above:
+
+```typescript
+import { z } from "zod";
+
+const Weather = z.object({
+  city: z.string(),
+  weather: z.string(),
+}).strict();
+
+function parseWeather(content: string) {
+  return Weather.parse(JSON.parse(content));
+}
+```
+
+Handle refusals, missing content, and truncated responses before parsing. If validation fails, allow at most a bounded corrective retry, then return a safe failure. Retried generations can incur additional charges. Valid JSON does not establish that the values are factually correct or authorise an action.
+
+Track validation failures by model and schema version. Recheck your evaluation cases when either changes. For malformed JSON recovery, see [response healing](../cookbook/response-healing-for-structured-json.mdx).

@@ -1,6 +1,6 @@
 {
   "key": "ovhcloud:stability-ai/stable-diffusion-xl-base-1.0:image.generate", "api_provider_id": "ovhcloud", "provider_slug": "ovhcloud", "api_model_id": "stability-ai/stable-diffusion-xl-base-1.0", "capability_id": "image.generate",
-  "rules": [{ "meter": "output_image", "unit": "image", "unit_size": 1, "price_per_unit": 0, "currency": "EUR", "pricing_plan": "free", "note": "OVHcloud lists this endpoint as free.", "match": [], "priority": 100, "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/stable-diffusion-xl/", "effective_from": null, "effective_to": null }],
+  "rules": [{ "meter": "output_image", "unit": "image", "unit_size": 1, "price_per_unit": 0, "currency": "USD", "pricing_plan": "free", "note": "OVHcloud lists this endpoint as free. Zero EUR is normalized to zero USD for gateway billing; no exchange rate is required.", "match": [], "priority": 100, "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/stable-diffusion-xl/", "effective_from": null, "effective_to": null }],
   "regions": ["FR"], "service_tiers": ["free"], "sources": [{ "kind": "pricing", "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/stable-diffusion-xl/", "accessed_at": "2026-08-23T00:00:00Z", "notes": null }],
   "verification": { "status": "verified", "checked_at": "2026-08-23T00:00:00Z", "notes": "Verified against OVHcloud's current model page." }
 }

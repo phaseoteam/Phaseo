@@ -1,0 +1,220 @@
+{
+  "key": "amazon-bedrock:openai/gpt-6-astra:text.generate",
+  "api_provider_id": "amazon-bedrock",
+  "provider_slug": "amazon-bedrock",
+  "api_model_id": "openai/gpt-6-astra",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 11,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "In-region price for requests with up to 272K input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 272000,
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-08T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "In-region cache-read price for requests with up to 272K input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 272000,
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-08T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 13.75,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "In-region 30-minute cache-write price for requests with up to 272K input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 272000,
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-08T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 55,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "In-region price for requests with up to 272K input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "value": 272000,
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-08T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 22,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "In-region price for requests with more than 272K input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000,
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-08T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "In-region cache-read price for requests with more than 272K input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000,
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-08T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "In-region 30-minute cache-write price for requests with more than 272K input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000,
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-08T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 75,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "In-region price for requests with more than 272K input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000,
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-08T00:00:00Z",
+      "region": "US",
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html"
+    }
+  ],
+  "regions": [
+    "US"
+  ],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-astra.html",
+      "accessed_at": "2026-09-09T00:00:00Z",
+      "notes": "AWS Bedrock GPT-6 Astra in-region pricing; Mantle is available in us-west-2."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-09T00:00:00Z",
+    "notes": "Verified against AWS's GPT-6 Astra model card. Mantle supports standard tier only; priority and flex are not supported."
+  }
+}

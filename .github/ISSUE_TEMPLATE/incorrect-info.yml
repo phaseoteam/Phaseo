@@ -4,6 +4,9 @@ title: "[Incorrect Info] "
 assignees:
     - DanielButler1
 body:
+    - type: markdown
+      attributes:
+          value: "For catalog corrections, include the Phaseo page or record ID and supporting sources. Maintainers review the issue and update the database editor; no catalog JSON pull request is needed."
     - type: dropdown
       id: area
       attributes:

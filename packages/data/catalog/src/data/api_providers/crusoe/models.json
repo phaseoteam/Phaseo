@@ -674,7 +674,7 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "audio.generate",
+        "capability_id": "audio.realtime",
         "status": "disabled",
         "params": [],
         "reasoning": null,
@@ -715,8 +715,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Exact hosted ID, availability, model type, and context verified from Crusoe's official current inventory; routing remains disabled pending authenticated contract validation."
+      "checked_at": "2026-09-08T00:00:00Z",
+      "notes": "Official inventory identifies speech-to-speech, not text-to-speech. Disabled pending realtime protocol support and sales-quoted pricing."
     },
     "rate_limits": []
   },

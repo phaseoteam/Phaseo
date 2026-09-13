@@ -1,183 +1,45 @@
 ---
 icon: "folder-open"
 title: "Repository Structure"
-description: "Understand how the Phaseo repository is organized - where to find data, documentation, and configuration files."
+description: "Find Phaseo application code, documentation, SDKs, and catalog exports."
 ---
 
-Before contributing to Phaseo, it's important to understand the **layout of the repository**.
-The project is designed for clarity and scalability - separating data, documentation, and app logic so you can easily find what you need.
+Phaseo is a pnpm and Turborepo monorepo. Use this reference to find the files for a code or documentation change. For catalog record changes, [open an issue](./overview.mdx).
 
----
+## Applications and packages
 
-## Overview
+| Path | Purpose |
+| --- | --- |
+| `apps/web` | Next.js 16 website, dashboard, and internal catalog editor. |
+| `apps/web-api` | Public catalog reads and authenticated account and admin APIs. |
+| `apps/api` | Gateway routing and provider execution on Cloudflare Workers. |
+| `apps/docs` | Mintlify documentation; MDX pages are in `v1`, navigation in `docs.json`. |
+| `packages/data/catalog` | Catalog schemas, compatibility fixtures, and generated public snapshots. |
+| `packages/sdk` | TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust, and C++ SDKs. |
+| `supabase/migrations` | Database schema and permission migrations. |
+| `scripts` | Validation, SDK generation, and automation utilities. |
+| `.github/workflows` | CI, deployment, catalog synchronization, and snapshot schedules. |
+| `.changeset` | Release metadata for versioned packages. |
 
-Here's what the root directory of the repository looks like:
+## Catalog data
 
-```bash
-Phaseo/
-+-- apps/
-¦   +-- web/ # The main Phaseo Next.js website (contains data)
-¦   +-- api/ # The Phaseo Gateway API (Hono/Cloudflare Workers)
-¦   +-- docs/ # The Mintlify-powered documentation site
-¦
-+-- packages/ # SDKs and shared tooling
-¦   +-- sdk-ts/
-¦   +-- sdk-py/
-¦   +-- sdk-go/
-¦   +-- sdk-csharp/
-¦   +-- sdk-php/
-¦   +-- sdk-ruby/
-¦   +-- sdk-java/
-¦   +-- sdk-rust/
-¦   +-- sdk-cpp/
-¦   +-- ai-sdk-phaseo/
-¦
-+-- scripts/ # Automation scripts and utilities
-+-- .changeset/ # Release metadata
-+-- turbo.json # Turborepo configuration
-+-- package.json # Global scripts and dependencies
-+-- README.md # Root readme file
-```
+The database is the source of truth for models, providers, organisations, pricing, benchmarks, and supporting catalog settings. Admins manage records through [Internal data](https://phaseo.app/internal/data). Public contributions are reviewed through GitHub issues.
 
----
+- `packages/data/catalog/generated/database-v2` contains daily public snapshots and the generated model enum index used by OpenAPI and SDK tooling.
+- `packages/data/catalog/src/data` contains archived compatibility fixtures.
+- Editing either directory does not update live catalog records. The legacy JSON-to-database importer is retired.
 
-## Data folders
+Schema and application changes still use migrations and pull requests. Generated snapshots and SDK artifacts should be updated through their generation commands.
 
-Phaseo stores its structured data in **JSON files** under the `/packages/data/catalog/src/data` directory.
-These files act as the source of truth for models, benchmarks, and pricing.
+## Catalog automation
 
-### `/packages/data/catalog/src/data/models`
+Provider sync queues proposed prices for review in [Provider updates](https://phaseo.app/internal/data/imports). Benchmark and model lifecycle jobs use the database. Daily public exports produce reviewable snapshot pull requests.
 
-Contains one JSON file per model.
-Each file describes the model's metadata, pricing, benchmarks, and capabilities.
-
-Example:
-`/packages/data/catalog/src/data/models/openai/gpt-5-2025-08-07/model.json`
-
----
-
-### `/packages/data/catalog/src/data/organisations`
-
-Describes companies or research groups behind models.
-Each JSON file includes name, description, founding date, website, and country.
-
-Example:
-`/packages/data/catalog/src/data/organisations/openai.json`
-
----
-
-### `/packages/data/catalog/src/data/benchmarks`
-
-Contains benchmark metadata and aggregated results across models.
-Each benchmark has an ID, name, description, category, and metrics.
-
-Example:
-`/packages/data/catalog/src/data/benchmarks/mmlu.json`
-
----
-
-### `/packages/data/catalog/src/data/api_providers`
-
-Lists all supported API providers with their supported models.
-This links to both models and organisations.
-
-Example:
-`/packages/data/catalog/src/data/api_providers/openai.json`
-
----
-
-### `/packages/data/catalog/src/data/pricing`
-
-Tracks historical pricing data over time for trend analysis.
-Files are timestamped and often aggregated by provider.
-
----
-
-## Documentation folders
-
-Documentation is written in **MDX** and lives in `/apps/docs/v1/`.
-Each folder maps directly to a group in the Mintlify configuration.
-
-| Folder                        | Purpose                                                 |
-| ----------------------------- | ------------------------------------------------------- |
-| `/apps/docs/v1/exploring`     | Explains data concepts (models, benchmarks, providers). |
-| `/apps/docs/v1/contributing`  | Step-by-step guides for contributors.                   |
-| `/apps/docs/v1/developers`    | Integration and API usage guides.                       |
-| `/apps/docs/v1/api-reference` | Detailed reference for every endpoint.                  |
-| `/apps/docs/v1/community`     | Support, FAQ, and community pages.                      |
-
----
-
-## Application folders
-
-| Path         | Description                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------- |
-| `/apps/web`  | Main Phaseo website, built with Next.js 15 and TailwindCSS. Reads canonical data from `packages/data/catalog/src/data`. |
-| `/apps/api`  | The API Gateway - routes, caching, and model proxy logic.                                         |
-| `/apps/docs` | The Mintlify documentation project you're reading now.                                           |
-
-Each app runs independently but shares types and configuration through `/packages`.
-
----
-
-## SDK packages
-
-The `/packages` directory contains SDKs for various programming languages to interact with the Phaseo API.
-
-| SDK          | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `sdk-ts`     | TypeScript SDK for Node.js and web applications. |
-| `sdk-py`     | Python SDK.                                      |
-| `sdk-go`     | Go SDK.                                          |
-| `sdk-csharp` | C# SDK.                                          |
-| `sdk-php`    | PHP SDK.                                         |
-| `sdk-ruby`   | Ruby SDK.                                        |
-| `sdk-java`   | Java SDK.                                        |
-| `sdk-rust`   | Rust SDK.                                        |
-| `sdk-cpp`    | C++ SDK.                                         |
-| `ai-sdk-phaseo` | Vercel AI SDK provider.                      |
-
----
-
-## Automation and scripts
-
-Phaseo uses automation to keep data up to date:
-
--   **Importers** - pull new data from sources like Hugging Face or provider APIs.
--   **Watchers** - run on a schedule (via GitHub Actions) to detect and commit updates.
--   **Utilities** - handle validation, schema checking, and JSON formatting.
-
-You can explore these under `/scripts/`.
-
----
+Catalog-only records do not automatically enable Gateway routing. Route and price changes require the appropriate admin review.
 
 ## Where to start
 
-If you're contributing:
-
--   **Data:** Look in `/packages/data/catalog/src/data/` for JSON files.
--   **Documentation:** Look in `/apps/docs/v1/` for MDX files.
--   **Code:** Explore `/apps/web` or `/apps/api`.
--   **Automation:** Modify or inspect `/scripts/`.
--   **SDKs:** Check `/packages/` for language-specific SDKs.
-
----
-
-## Related pages
-
-<Columns cols={2}>
-	<Card
-		title="Editing a Model"
-		icon="brain"
-		href="./editing-a-model.mdx"
-	>
-		Learn how to update or add model data.
-	</Card>
-	<Card
-		title="Editing an Organisation"
-		icon="building"
-		href="./editing-an-organisation.mdx"
-	>
-		Understand how to modify organization data safely.
-	</Card>
-</Columns>
+- [Report a model update](./editing-a-model.mdx).
+- [Report an organisation update](./editing-an-organisation.mdx).
+- [Submit benchmark scores](../research/submitting-scores.mdx).
+- [Contribute code or documentation](./how-to-contribute.mdx).

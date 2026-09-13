@@ -33,7 +33,7 @@ const PHASEO_CLI_SCOPES = [
 	"pricing:read", "credits:read", "activity:read", "analytics:read", "generations:read",
 	"workspaces:read", "workspaces:write", "workspaces:delete", "keys:read", "keys:write",
 	"keys:delete", "presets:read", "presets:write", "presets:delete", "settings:read",
-	"settings:write", "provider_credentials:read", "provider_credentials:write", "provider_credentials:delete",
+	"settings:write", "provider_credentials:read", "provider_credentials:write", "provider_credentials:delete", "private_models:read", "private_models:write", "private_models:delete",
 	"guardrails:read", "guardrails:write", "guardrails:delete",
 	"management_keys:read", "management_keys:write", "management_keys:delete",
 	"oauth_clients:read", "oauth_clients:write", "oauth_clients:delete",
@@ -47,6 +47,16 @@ function normalizeBetaFeatures(value: unknown): Record<string, boolean> {
 			typeof entry[1] === "boolean",
 		),
 	);
+}
+
+function hasTrailingOfferLabel(providerName: string, offerLabel: string): boolean {
+	const normalizedProviderName = providerName.trim().toLowerCase();
+	const normalizedOfferLabel = offerLabel.trim().toLowerCase();
+	if (!normalizedProviderName || !normalizedOfferLabel) return false;
+
+	return normalizedProviderName.endsWith(`(${normalizedOfferLabel})`)
+		|| normalizedProviderName.endsWith(` ${normalizedOfferLabel}`)
+		|| normalizedProviderName.endsWith(`-${normalizedOfferLabel}`);
 }
 
 function providerDisplayName(provider: Record<string, unknown>): string {
@@ -65,8 +75,10 @@ function providerDisplayName(provider: Record<string, unknown>): string {
 		const regional = label.split(/\s+/).filter((word) =>
 			!providerWords.has(word.toLowerCase()),
 		).join(" ").trim() || label;
+		if (hasTrailingOfferLabel(name, regional)) return name;
 		return `${name} (${regional})`;
 	}
+	if (hasTrailingOfferLabel(name, label)) return name;
 	return `${name} ${label}`;
 }
 
@@ -204,11 +216,11 @@ accountSettingsRouter.get("/contact-personalization", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const [spendResult, workspaceResult] = await Promise.all([
-		context.client.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
+		context.userClient.rpc("monthly_spend_prev_cents", { p_workspace_id: workspaceId }),
 		context.client.from("workspaces").select("slug").eq("id", workspaceId).maybeSingle(),
 	]);
 	if (spendResult.error || workspaceResult.error) return c.json(base, 200, PRIVATE_NO_STORE_HEADERS);
-	const lastMonthUsd = Number(spendResult.data ?? 0) / 1_000_000_000;
+	const lastMonthUsd = Number(spendResult.data ?? 0) / 100;
 	return c.json({ ...base, defaultInternalId: workspaceResult.data?.slug ?? workspaceId, tierLabel: lastMonthUsd >= 10_000 ? "Enterprise" : "Basic" }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
@@ -1186,6 +1198,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 		context.client.from("wallets").select("stripe_customer_id").eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("credit_ledger")
 			.select("id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at")
+			// Usage debits belong in usage logs; filter before the billing history limit.
+			.or("kind.is.null,kind.not.in.(charge,usage)")
 			.eq("workspace_id", workspaceId).order("event_time", { ascending: false }).limit(250),
 	]);
 	if (walletResult.error || transactionsResult.error) {

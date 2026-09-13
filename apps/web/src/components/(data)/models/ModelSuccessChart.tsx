@@ -21,7 +21,7 @@ const successChartConfig: ChartConfig = {
 		color: "hsl(142, 76%, 36%)",
 	},
 	worst: {
-		label: "Least stable provider",
+		label: "Without Phaseo Routing",
 		color: "hsl(340, 82%, 52%)",
 	},
 };
@@ -78,6 +78,7 @@ export function buildUptimeChartData(
 				: null,
 			bucket,
 			requests,
+			worstRequests: point?.worstProviderRequests ?? 0,
 		};
 	});
 }
@@ -114,6 +115,19 @@ export default function ModelSuccessChart({
 						0,
 					) / measuredRequests
 				: null;
+	const measuredWorstPoints = chartData.filter(
+		(point) => point.worstRequests > 0 && point.worst != null,
+	);
+	const measuredWorstRequests = measuredWorstPoints.reduce(
+		(sum, point) => sum + point.worstRequests,
+		0,
+	);
+	const withoutRoutingUptime = measuredWorstRequests > 0
+		? measuredWorstPoints.reduce(
+				(sum, point) => sum + (point.worst ?? 0) * point.worstRequests,
+				0,
+			) / measuredWorstRequests
+		: null;
 
 	return (
 		<div className="grid gap-4 rounded-lg border border-border/70 bg-background p-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-center">
@@ -125,21 +139,12 @@ export default function ModelSuccessChart({
 					{formatUptime(summaryUptime)}
 				</p>
 				<p className="mt-1 text-xs text-muted-foreground">Last 24 hours</p>
-				<p className="mt-0.5 text-xs text-muted-foreground">
-					{totalRequests > 0
-						? `${totalRequests.toLocaleString()} request${totalRequests === 1 ? "" : "s"} observed`
-						: "No requests observed"}
-				</p>
 			</div>
 			<div className="min-w-0">
-				<div className="mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-					<span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-					Uptime per hour
-				</div>
 				<div
 					className="h-[112px] w-full"
 					role="img"
-					aria-label={`Hourly model uptime over the last 24 hours. ${formatUptime(summaryUptime)} uptime from ${totalRequests.toLocaleString()} requests.`}
+					aria-label={`Hourly model uptime over the last 24 hours. Phaseo Routing: ${formatUptime(summaryUptime)}.${showLeastStableProvider ? ` Without Phaseo Routing: ${formatUptime(withoutRoutingUptime)}.` : ""}`}
 				>
 				<ChartContainer
 					config={successChartConfig}
@@ -184,7 +189,7 @@ export default function ModelSuccessChart({
 											{showLeastStableProvider ? (
 												<p className="text-sm">
 													<span className="font-semibold">
-														Worst provider:
+												Without Phaseo Routing:
 													</span>{" "}
 													{formatUptime(payload[0].payload.worst)}
 												</p>
@@ -200,6 +205,7 @@ export default function ModelSuccessChart({
 									stroke="var(--color-worst)"
 									strokeWidth={2}
 									dot={false}
+									activeDot={false}
 									strokeDasharray="4 3"
 									connectNulls
 								/>
@@ -209,12 +215,25 @@ export default function ModelSuccessChart({
 								dataKey="overall"
 								stroke="var(--color-overall)"
 								strokeWidth={3}
-								dot={{ r: 2, strokeWidth: 0 }}
+								dot={false}
+								activeDot={false}
 								connectNulls
 							/>
 						</LineChart>
 					</ResponsiveContainer>
 				</ChartContainer>
+				</div>
+				<div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+					<span className="inline-flex items-center gap-1.5">
+						<span className="h-0.5 w-4 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />
+						Phaseo Routing <span className="font-medium tabular-nums text-foreground">{formatUptime(summaryUptime)}</span>
+					</span>
+					{showLeastStableProvider ? (
+						<span className="inline-flex items-center gap-1.5">
+							<span className="w-4 border-t-2 border-dashed border-pink-600 dark:border-pink-400" aria-hidden="true" />
+							Without Phaseo Routing <span className="font-medium tabular-nums text-foreground">{formatUptime(withoutRoutingUptime)}</span>
+						</span>
+					) : null}
 				</div>
 			</div>
 		</div>

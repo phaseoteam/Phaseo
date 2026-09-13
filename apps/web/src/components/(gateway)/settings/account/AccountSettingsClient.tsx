@@ -273,7 +273,7 @@ export default function AccountSettingsClient({
 		try {
 			await toast.promise(updateAccount(updatePayload), {
 				loading: "Saving your settings...",
-				success: "Saved [PASS]",
+				success: "Account settings updated",
 				error: (err: any) => err?.message || "Could not save settings",
 			});
 			applyObfuscationMode(Boolean(parsed.data.obfuscate_info));

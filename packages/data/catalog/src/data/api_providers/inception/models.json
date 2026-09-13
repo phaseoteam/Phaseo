@@ -1,5 +1,90 @@
 [
   {
+    "api_model_id": "inception/mercury-2.5",
+    "provider_api_model_id": "inception:inception/mercury-2.5",
+    "provider_model_slug": "mercury-2.5",
+    "internal_model_id": "inception/mercury-2.5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-09-07T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": 1,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "max_tokens is shared between internal reasoning and the visible response."
+          },
+          {
+            "param_id": "reasoning_effort",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "medium",
+            "values": ["instant", "medium", "high"],
+            "notes": "Native Inception reasoning_effort values."
+          },
+          "temperature",
+          "stop",
+          "stream",
+          "tools",
+          "tool_choice",
+          "response_format",
+          "reasoning"
+        ],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "streaming": true,
+        "attachment": false,
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": ["openai-chat-completions"],
+      "endpoint": "/v1/chat/completions",
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "model_card",
+        "url": "https://www.inceptionlabs.ai/models",
+        "accessed_at": "2026-09-06T00:00:00Z",
+        "notes": "Official Mercury 2.5 model metadata and launch pricing."
+      },
+      {
+        "kind": "api_reference",
+        "url": "https://docs.inceptionlabs.ai/get-started/models",
+        "accessed_at": "2026-09-06T00:00:00Z",
+        "notes": "Official OpenAI-compatible Inception API model documentation."
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-09-06T00:00:00Z",
+      "notes": "Provider metadata is verified from Inception's public model page and API documentation. Live routing smoke test remains pending the direct production key and the GA window."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "inception/mercury-2",
     "provider_api_model_id": "inception:inception/mercury-2",
     "provider_model_slug": "mercury-2",

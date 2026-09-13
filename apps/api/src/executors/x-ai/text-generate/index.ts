@@ -44,6 +44,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		modelForRouting,
 		"openai",
 		args.capabilityParams,
+		args.providerId,
 	);
 
 	requestPayload.stream = true;
@@ -242,7 +243,6 @@ export const executor: ProviderExecutor = async (execArgs: ExecutorExecuteArgs) 
 	const processed = cherryPickIRParams(normalized, execArgs.capabilityParams);
 	return executeXAi({ ...execArgs, ir: processed });
 };
-
 
 
 

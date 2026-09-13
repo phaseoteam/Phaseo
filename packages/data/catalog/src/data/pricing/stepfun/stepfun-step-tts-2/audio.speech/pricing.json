@@ -9,9 +9,9 @@
       "meter": "input_characters",
       "unit": "character",
       "unit_size": 10000,
-      "price_per_unit": 2.8,
-      "note": "One Chinese character counts as one character; two Latin letters or two punctuation marks count as one character.",
-      "currency": "CNY",
+      "price_per_unit": 0.417232094777,
+      "note": "One Chinese character counts as one character; two Latin letters or two punctuation marks count as one character. Converted from 2.8 CNY using ECB 2026-09-04 cross rate: 1.1622 USD / 7.7994 CNY.",
+      "currency": "USD",
       "pricing_plan": "standard",
       "match": [],
       "priority": 100,
@@ -34,6 +34,11 @@
       "url": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
       "accessed_at": "2026-08-24T00:00:00Z",
       "notes": "Current official StepFun mainland-China API pricing."
+    },
+    {
+      "kind": "exchange_rate",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX%3AC%2F2026%2F04600",
+      "accessed_at": "2026-09-07T21:50:00Z"
     }
   ],
   "verification": {

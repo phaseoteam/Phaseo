@@ -3,6 +3,7 @@
 import { BarChart3, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -30,12 +31,14 @@ export default function ModelPercentileSelect({
 	isLoading = false,
 	disabled = false,
 	ariaLabel = "Select percentile",
+	className,
 }: {
 	value: ModelPercentile;
 	onChange: (value: ModelPercentile) => void;
 	isLoading?: boolean;
 	disabled?: boolean;
 	ariaLabel?: string;
+	className?: string;
 }) {
 	const selector = (
 		<DropdownMenu>
@@ -43,7 +46,7 @@ export default function ModelPercentileSelect({
 				<Button
 					variant="outline"
 					size="sm"
-					className="h-8 gap-2 rounded-md px-3 text-xs"
+					className={cn("h-8 gap-2 rounded-md px-3 text-xs", className)}
 					aria-label={ariaLabel}
 					title={disabled ? "Coming Soon" : undefined}
 					disabled={disabled || isLoading}

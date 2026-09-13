@@ -3,6 +3,7 @@
 // How: Creates session rows, reserves $5 increments, prices final usage, and settles atomically.
 
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { refreshRealtimeBillingReviews, syncRealtimeBillingReviewSummaries } from "./realtime-billing-review";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { computeBill } from "@pipeline/pricing/engine";
@@ -11,6 +12,7 @@ import { fetchGatewayContext } from "@pipeline/before/context";
 import { buildProviderCandidatesWithDiagnostics } from "@pipeline/before/utils";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { enqueueAsyncGenAiOtlpExport } from "@observability/otlp-export";
+import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveUsageMeters, LIVE_VOICES } from "./live-sessions";
 
 export const REALTIME_INITIAL_HOLD_NANOS = 5_000_000_000;
 export const REALTIME_HOLD_INCREMENT_NANOS = 5_000_000_000;
@@ -209,33 +211,33 @@ function secondsFromDuration(source: any, kind: "input" | "output" | "total"): n
 	return minutes != null ? Math.max(0, minutes * 60) : null;
 }
 
-function providerFromModel(model: string, explicitProvider?: string | null): RealtimeProvider | null {
+export function providerFromModel(model: string, explicitProvider?: string | null): RealtimeProvider | null {
 	const provider = String(explicitProvider ?? "").trim().toLowerCase();
 	if (provider === "openai") return "openai";
-	if (provider === "xai" || provider === "x-ai" || provider === "spacex-ai") return "x-ai";
+	if (provider === "xai" || provider === "x-ai" || provider === "spacex-ai") return "spacex-ai";
 	if (provider === "google" || provider === "google-ai-studio") return "google-ai-studio";
 	const normalized = model.trim().toLowerCase();
 	if (normalized.startsWith("openai/")) return "openai";
-	if (normalized.startsWith("x-ai/") || normalized.startsWith("xai/")) return "x-ai";
+	if (/^(x-ai|xai|spacex-ai)\//.test(normalized)) return "spacex-ai";
 	if (normalized.startsWith("google/")) return "google-ai-studio";
 	return null;
 }
 
-function canonicalModel(provider: RealtimeProvider, model: string): string {
+export function canonicalModel(provider: RealtimeProvider, model: string): string {
 	const trimmed = model.trim();
 	if (!trimmed.includes("/")) {
 		if (provider === "openai") return `openai/${trimmed}`;
-		if (provider === "x-ai") return `x-ai/${trimmed}`;
+		if (provider === "x-ai" || provider === "spacex-ai") return `spacex-ai/${trimmed}`;
 		return `google/${trimmed}`;
 	}
-	if (provider === "x-ai" && trimmed.startsWith("xai/")) return `x-ai/${trimmed.slice(4)}`;
+	if (provider === "x-ai" || provider === "spacex-ai") return trimmed.replace(/^(xai|x-ai)\//, "spacex-ai/");
 	return trimmed;
 }
 
 function providerModel(provider: RealtimeProvider, model: string): string {
 	const canonical = canonicalModel(provider, model);
 	if (provider === "openai") return canonical.replace(/^openai\//, "");
-	if (provider === "x-ai") return canonical.replace(/^x-ai\//, "");
+	if (provider === "x-ai" || provider === "spacex-ai") return canonical.replace(/^spacex-ai\//, "");
 	return canonical.replace(/^google\//, "");
 }
 
@@ -400,7 +402,9 @@ export function pcm16Base64DurationMs(base64: string, sampleRate: number): numbe
 	const padding = normalized.endsWith("==") ? 2 : normalized.endsWith("=") ? 1 : 0;
 	const byteLength = Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
 	const samples = Math.floor(byteLength / 2);
-	return Math.round((samples / sampleRate) * 1000);
+	// Preserve fractional milliseconds across chunks; rounding each packet
+	// makes a duration-based bill depend on the provider's packet sizes.
+	return (samples / sampleRate) * 1000;
 }
 
 export function resolveRealtimeFinalCostNanos(args: {
@@ -581,7 +585,8 @@ function modalityTokens(details: unknown, modality: string): number {
 }
 
 export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>): Record<string, unknown> {
-	const source = rawUsage && typeof rawUsage === "object" ? rawUsage as any : {};
+	const source = rawUsage && typeof rawUsage === "object"
+		? { ...rawUsage, ...(rawUsage.live_started === true ? liveUsageMeters(rawUsage) : {}) } as any : {};
 	const usageMetadata = source.usageMetadata && typeof source.usageMetadata === "object"
 		? source.usageMetadata as any
 		: source;
@@ -639,9 +644,10 @@ export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>): Recor
 
 	return {
 		...source,
-		...(inputText != null ? { input_text_tokens: Math.max(0, inputText - (cachedText ?? 0)) } : {}),
+		// Canonical meters already exclude cache reads. Only split raw provider totals.
+		...(inputText != null ? { input_text_tokens: Math.max(0, inputText - (source.input_text_tokens != null ? 0 : cachedText ?? 0)) } : {}),
 		...(inputAudio != null
-			? { input_audio_tokens: Math.max(0, inputAudio - (cachedAudio ?? 0)) }
+			? { input_audio_tokens: Math.max(0, inputAudio - (source.input_audio_tokens != null ? 0 : cachedAudio ?? 0)) }
 			: {}),
 		...(outputText != null ? { output_text_tokens: outputText } : {}),
 		...(outputAudio != null
@@ -684,7 +690,7 @@ export function assertRealtimeBillingMetersPresent(args: {
 	usage: Record<string, unknown>;
 	costNanos: number;
 }) {
-	if (args.provider === "x-ai") return;
+	if (args.provider === "x-ai" || args.provider === "spacex-ai") return;
 	const responseInFlight = args.usage.assistant_response_in_flight === true;
 	if (responseInFlight) {
 		throw new Error(`${args.provider}_realtime_authoritative_usage_pending`);
@@ -717,11 +723,13 @@ async function evaluateActiveRealtimePolicy(
 	session: RealtimeSessionRow,
 	estimatedCostNanos: number,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
+	const live = isLiveModel(session.model_id);
+	const policyModel = live ? liveConfig(session.metadata).backendModel : session.model_id;
 	const context = await fetchGatewayContext({
 		workspaceId: session.workspace_id,
 		apiKeyId: session.key_id ?? "00000000-0000-0000-0000-000000000000",
-		model: session.model_id,
-		endpoint: "audio.realtime",
+		model: policyModel,
+		endpoint: live ? "text.generate" : "audio.realtime",
 	});
 	if (!context.key.ok) return { ok: false, reason: "realtime_key_invalid" };
 	if (!context.keyLimit.ok && context.keyLimit.limitMetric !== "requests") {
@@ -741,6 +749,10 @@ async function evaluateActiveRealtimePolicy(
 		teamSettings: context.teamSettings ?? null,
 	});
 	if (!policyResult.ok) {
+		return { ok: false, reason: "realtime_workspace_policy_blocked" };
+	}
+	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(candidates), resolvedModel: session.model_id,
+		body: { model: session.model_id, provider }, workspacePolicy, teamSettings: context.teamSettings ?? null }).ok) {
 		return { ok: false, reason: "realtime_workspace_policy_blocked" };
 	}
 	if (!provider || !policyResult.providers.some((candidate) => candidate.providerId === provider)) {
@@ -765,6 +777,8 @@ export async function createRealtimeSession(args: {
 	metadata?: Record<string, unknown>;
 	otelTraceContext?: RealtimeOtelContext | null;
 	relay?: boolean;
+	liveBackendModel?: string;
+	liveBackendSettings?: unknown;
 }): Promise<{
 	session: RealtimeSessionRow;
 	clientSecret: string;
@@ -777,8 +791,13 @@ export async function createRealtimeSession(args: {
 	const modelId = canonicalModel(provider, args.model);
 	const providerModelId = providerModel(provider, args.model);
 	const voice = defaultVoice(provider, args.voice);
-	const card = await requireRealtimePriceCard(provider, modelId);
-	void card;
+	const live = isLiveModel(modelId);
+	if (live && (!args.liveBackendModel || args.source !== "chat" || !args.auth.userId || args.relay === false)) {
+		throw new Error("live_playground_only");
+	}
+	if (live && !LIVE_VOICES.includes(voice as typeof LIVE_VOICES[number])) throw new Error("live_voice_not_supported");
+	const liveSettings = live ? await createLiveConfig(args.liveBackendModel!, args.liveBackendSettings) : null;
+	if (!live) await requireRealtimePriceCard(provider, modelId);
 
 	const supabase = getSupabaseAdmin();
 	const sessionId = `rt_${ulid().toLowerCase()}`;
@@ -799,6 +818,7 @@ export async function createRealtimeSession(args: {
 	};
 	const sessionMetadata = {
 		...(args.metadata ?? {}),
+		live: liveSettings,
 		...(useRelay ? { relay: true, instructions: args.instructions ?? null } : {}),
 		phaseo_otel_parent_context: args.otelTraceContext ?? null,
 		phaseo_otel_submission_context: submissionContext,
@@ -860,7 +880,7 @@ export async function createRealtimeSession(args: {
 			clientSecret: relaySecret!,
 			connect: {
 				transport: "websocket",
-				url: `/v1/realtime/sessions/${encodeURIComponent(sessionId)}/relay`,
+				url: `/v1/${live ? "live" : "realtime"}/sessions/${encodeURIComponent(sessionId)}/relay`,
 			},
 			raw: { relay: true },
 		};
@@ -990,12 +1010,14 @@ export async function extendRealtimeSessionHold(args: {
 export async function markRealtimeSessionConnected(args: {
 	auth: RealtimeAuthContext;
 	sessionId: string;
+	providerSessionId?: string;
 }): Promise<RealtimeSessionRow> {
 	const now = new Date().toISOString();
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_realtime_sessions")
 		.update({
 			status: "connected",
+			...(args.providerSessionId ? { provider_session_id: args.providerSessionId } : {}),
 			connected_at: now,
 			last_event_at: now,
 			updated_at: now,
@@ -1035,9 +1057,10 @@ export async function updateRealtimeSessionUsage(args: {
 	}
 	const provider = providerFromModel(session.model_id, session.provider);
 	if (!provider) throw new Error("realtime_provider_required");
-	const card = await requireRealtimePriceCard(provider, session.model_id);
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? session.usage ?? {});
-	const pricedUsage = computeBill(normalizedUsage, card, { endpoint: "audio.realtime" });
+	const pricedUsage = isLiveModel(session.model_id)
+		? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
+		: computeBill(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id), { endpoint: "audio.realtime" });
 	const pricedNanos = pricedTotalNanos(pricedUsage);
 	const estimatedCostNanos = Math.max(
 		Math.max(0, Number(session.estimated_cost_nanos ?? 0) || 0),
@@ -1147,16 +1170,18 @@ export async function settleRealtimeSession(args: {
 	}
 	const provider = providerFromModel(session.model_id, session.provider);
 	if (!provider) throw new Error("realtime_provider_required");
-	const card = await requireRealtimePriceCard(provider, session.model_id);
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? {});
-	const pricedUsage = computeBill(normalizedUsage, card, { endpoint: "audio.realtime" });
-	const costNanos = resolveRealtimeFinalCostNanos({
+	const live = isLiveModel(session.model_id);
+	const pricedUsage = live ? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
+		: computeBill(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id), { endpoint: "audio.realtime" });
+	const costNanos = live ? pricedTotalNanos(pricedUsage) : resolveRealtimeFinalCostNanos({
 		auth: args.auth,
 		finalCostNanos: args.finalCostNanos,
 		pricedCostNanos: pricedTotalNanos(pricedUsage),
 	});
 	const lines = pricingLines(pricedUsage);
-	assertRealtimeBillingMetersPresent({ provider, usage: normalizedUsage, costNanos });
+	if (live) assertLiveFinalUsage(normalizedUsage);
+	else assertRealtimeBillingMetersPresent({ provider, usage: normalizedUsage, costNanos });
 	const rpc = await supabase.rpc("gateway_realtime_settle_once", {
 		p_workspace_id: args.auth.workspaceId,
 		p_session_id: args.sessionId,
@@ -1294,7 +1319,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 			}
 			if (session.status !== "created") {
 				const provider = providerFromModel(session.model_id, session.provider);
-				if (provider !== "x-ai") {
+				if (provider !== "spacex-ai") {
 					await markRealtimeSessionBillingUnresolved({
 						auth: {
 							requestId: `realtime_reconcile_unresolved:${session.session_id}`,
@@ -1335,6 +1360,12 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 		}
 	}
 
+	await refreshRealtimeBillingReviews().catch((error) => {
+		console.error("realtime_billing_review_refresh_failed", { error });
+	});
+	await syncRealtimeBillingReviewSummaries().catch((error) => {
+		console.error("realtime_billing_review_summary_sync_failed", { error });
+	});
 	const unresolvedCutoff = new Date(Date.now() - 60_000).toISOString();
 	const { count: unresolvedCount, error: unresolvedError } = await supabase
 		.from("gateway_realtime_sessions")

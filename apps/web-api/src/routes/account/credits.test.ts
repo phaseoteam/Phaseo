@@ -5,6 +5,24 @@ import { parseLowBalanceThresholdNanos } from "./credits";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account credit routes", () => {
+	it("rejects unsupported notification sample kinds before calling the gateway", async () => {
+		const calls: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			calls.push(url);
+			if (url.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.includes("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/credits/notification-destinations/test", {
+			method: "POST",
+			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", type: "email", target: "owner@example.com", kind: "other" }),
+		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
+		expect(response.status).toBe(400);
+		expect(calls.some((url) => url.includes("/internal/notification-tests"))).toBe(false);
+	});
 	it("accepts non-negative low-balance thresholds with up to two decimal places", () => {
 		expect(parseLowBalanceThresholdNanos(0)).toBe(0);
 		expect(parseLowBalanceThresholdNanos(12)).toBe(12_000_000_000);

@@ -336,14 +336,14 @@ async function cacheKey(kid: string, row: KeyRow) {
             useL1Cache: true,
             l1TtlMs: KEY_VERSION_L1_TTL_MS,
         });
-        await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
+        writeKeyLookupL1(kid, versionToken, row);
+        // This request already has the authoritative row. Keep the versioned
+        // write alive without making authentication wait for KV persistence.
+        dispatchBackground(getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
             expirationTtl: KEY_CACHE_TTL_SECONDS,
-        });
+        }).catch(() => undefined));
     } catch {
         // Ignore KV write failures.
-    }
-    if (versionToken) {
-        writeKeyLookupL1(kid, versionToken, row);
     }
 }
 

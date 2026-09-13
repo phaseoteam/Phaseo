@@ -8,6 +8,7 @@
 import type { ProviderQuirks } from "./types";
 import { aionQuirks } from "../providers/aion-labs/quirks";
 import { minimaxQuirks } from "../providers/minimax/quirks";
+import { vertexOpenModelQuirks } from "../providers/google-vertex/quirks";
 import { zaiQuirks } from "../providers/z-ai/quirks";
 import { deepseekQuirks } from "../providers/deepseek/quirks";
 import { xiaomiQuirks } from "../providers/xiaomi/quirks";
@@ -59,6 +60,8 @@ import { defaultQuirks } from "./default";
  * Add new providers here as they need custom handling
  */
 const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
+	"google-vertex": vertexOpenModelQuirks,
+	"google-vertex-eu": vertexOpenModelQuirks,
 	"aion-labs": aionQuirks,
 	aionlabs: aionQuirks,
 	minimax: minimaxQuirks,

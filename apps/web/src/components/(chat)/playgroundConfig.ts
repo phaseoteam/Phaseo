@@ -2,25 +2,25 @@ import { getRoomScopedStorageKey } from "@/lib/chat/rooms";
 
 // Default favorites use API MODEL ID - NOT internal model ID.
 export const FEATURED_MODEL_IDS = [
-	"z-ai/glm-5.2",
+	"z-ai/glm-5.3",
 	"moonshotai/kimi-k3",
-	"anthropic/claude-fable-5",
+	"anthropic/claude-fable-5.1",
 	"minimax/minimax-m3",
 	"anthropic/claude-opus-5",
-	"spacex-ai/grok-4.5",
-	"openai/gpt-5.6-sol",
-	"google/gemini-3.6-flash",
+	"spacex-ai/grok-4.6",
+	"openai/gpt-6-astra",
+	"google/gemini-3.8-flash",
 ];
 
 export const CHAT_DEFAULT_MODEL_IDS = [
-	"z-ai/glm-5.2",
+	"z-ai/glm-5.3",
 	"moonshotai/kimi-k3",
-	"anthropic/claude-fable-5",
+	"anthropic/claude-fable-5.1",
 	"minimax/minimax-m3",
 	"anthropic/claude-opus-5",
-	"spacex-ai/grok-4.5",
-	"openai/gpt-5.6-sol",
-	"google/gemini-3.6-flash",
+	"spacex-ai/grok-4.6",
+	"openai/gpt-6-astra",
+	"google/gemini-3.8-flash",
 ];
 
 export const MODEL_SELECTOR_FAVORITES_STORAGE_KEY = getRoomScopedStorageKey(

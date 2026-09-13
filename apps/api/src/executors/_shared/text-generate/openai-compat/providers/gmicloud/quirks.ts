@@ -5,6 +5,10 @@
 import type { ProviderQuirks } from "../../quirks/types";
 
 export const gmiCloudQuirks: ProviderQuirks = {
+	extractReasoning: ({ choice, rawContent }) => {
+		const reasoning = choice?.message?.reasoning_content;
+		return { main: rawContent, reasoning: typeof reasoning === "string" && reasoning ? [reasoning] : [] };
+	},
 	transformRequest: ({ request, ir }) => {
 		const options = (ir.vendor as any)?.gmicloud;
 		if (typeof options?.ignore_eos === "boolean") {

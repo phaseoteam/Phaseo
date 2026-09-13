@@ -10,6 +10,8 @@
 		"packages/*/*"
 	],
 	"scripts": {
+		"test:catalogue-history": "node scripts/tests/catalogue-history.mjs",
+		"test:realtime-billing-review": "node --test scripts/realtime-billing-review.test.mjs",
 		"dev": "turbo run dev --parallel",
 		"dev:cloudflare-web": "node scripts/dev-cloudflare-web.mjs",
 		"build": "turbo run build",
@@ -51,13 +53,10 @@
 		"validate:ci-security": "node --test scripts/validate-ci-secret-boundaries.test.mjs && node scripts/validate-ci-secret-boundaries.mjs",
 		"validate:trust": "node scripts/validate-trust-materials.mjs",
 		"validate:domains": "node scripts/check-canonical-domain.mjs",
-		"data:update-statuses": "tsx scripts/update-model-statuses.ts",
-		"data:recompute-benchmark-ranks": "pnpm --filter @phaseo/web run catalog:recompute-benchmark-ranks",
-		"data:recompute-benchmark-ranks:db": "pnpm --filter @phaseo/web run db:recompute-benchmark-ranks",
+		"data:update-statuses": "tsx scripts/update-database-model-statuses.ts",
 		"data:sync-artificial-analysis": "tsx scripts/sync-artificial-analysis-benchmarks.ts",
 		"data:prep-pr": "pnpm run data:sync-manifest && pnpm run openapi:gen && pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway && pnpm run validate:docs",
 		"data:precommit": "pnpm run data:prep-pr",
-		"data:reconcile-api-model-links": "pnpm --filter @phaseo/web run db:reconcile-api-model-links",
 		"data:check-new-models": "tsx scripts/model-discovery/run.ts",
 		"data:check-new-models:internal-public": "tsx scripts/model-discovery/run-internal-public.ts",
 		"data:check-new-models:hf-private": "tsx scripts/model-discovery/run-hf-private.ts",
@@ -69,9 +68,7 @@
 		"data:test-sampling-params": "node scripts/test-sampling-params.js",
 		"docs:links": "cd apps/docs && pnpm run check:links",
 		"docs:build": "cd apps/docs && pnpm run build",
-		"docs:openapi": "node scripts/openapi/build-public-docs-spec.mjs",
-		"docs:openapi:check": "node scripts/openapi/build-public-docs-spec.mjs --check",
-		"docs:public-safety": "pnpm run docs:openapi:check && node scripts/validate-public-docs.mjs",
+		"docs:public-safety": "node scripts/validate-public-docs.mjs",
 		"validate:docs": "pnpm run docs:public-safety && pnpm run docs:links && pnpm run docs:build",
 		"smoke:sdk": "tsx scripts/smoke-sdk.ts",
 		"smoke:sdk:devtools:all": "node scripts/smoke-sdk-devtools-all.mjs",
@@ -139,14 +136,16 @@
 	"devDependencies": {
 		"@changesets/changelog-github": "^1.0.0",
 		"@changesets/cli": "^3.0.1",
+		"@electric-sql/pglite": "0.5.8",
 		"@stoplight/spectral-cli": "^6.16.3",
 		"ajv": "^8.20.0",
 		"dotenv-cli": "^11.0.0",
 		"js-yaml": "^4.2.0",
+		"jsonc-parser": "^3.3.1",
 		"knip": "^6.6.1",
 		"rimraf": "^6.0.0",
 		"supabase": "^2.89.1",
-		"tsx": "^4.21.0",
+		"tsx": "^4.23.13",
 		"turbo": "^2.10.8"
 	},
 	"pnpm": {
@@ -186,7 +185,8 @@
 			"@mintlify/previewing>tar": "7.5.19"
 		},
 		"patchedDependencies": {
-			"statsig-node-lite@0.5.2": "patches/statsig-node-lite@0.5.2.patch"
+			"statsig-node-lite@0.5.2": "patches/statsig-node-lite@0.5.2.patch",
+			"next-navigation-guard@0.2.0": "patches/next-navigation-guard@0.2.0.patch"
 		}
 	}
 }

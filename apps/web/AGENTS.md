@@ -8,7 +8,7 @@ These instructions apply only to `apps/web` and extend the repository-level `AGE
 - Routes, layouts, metadata, route handlers, and server actions live under `src/app`; route groups such as `(auth)` and `(dashboard)` organize routes without changing URLs.
 - Shared components live in `src/components`, with reusable primitives in `src/components/ui`. Shared hooks, domain logic, types, and utilities live in `src/hooks`, `src/lib`, `src/types`, and `src/utils`.
 - Keep feature-specific code close to its route or domain. Promote it to a shared directory only after it has a genuine second consumer.
-- Canonical model, provider, pricing, and benchmark data belongs to `packages/data/catalog`; do not create a competing web-only source of truth.
+- Canonical model, provider, pricing, and benchmark data lives in the database and is managed through `/internal/data`. Catalog JSON files are archived fixtures or generated exports, not an import feed. Public catalog corrections should link to GitHub issues; keep direct editing restricted to admins.
 - Use the `@/` alias and prefer direct implementation imports over new barrel files.
 
 ## Scoped Commands

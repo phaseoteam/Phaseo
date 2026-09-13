@@ -1,4 +1,6 @@
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
@@ -8,7 +10,9 @@ import type {
 	ProviderPricing,
 } from "@/lib/fetchers/models/getModelPricing";
 import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
+import { markdownToPlainText } from "@/lib/models/modelDescription";
 import { PRICING_METER_OPTIONS } from "@/lib/pricing/meters";
+import { modelMarkdownComponents } from "../modelMarkdown";
 import type { ModelLineageLinks } from "./modelOverviewMetadata";
 import ModelFaqAccordion from "./ModelFaqAccordion";
 
@@ -119,6 +123,22 @@ function getStatusDescription(status: ModelOverviewPage["status"]): string {
 		default:
 			return "an AI model";
 	}
+}
+
+function ensureSentencePunctuation(value: string): string {
+	const trimmed = value.trim();
+	return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+function descriptionStartsWithModelName(
+	description: string,
+	modelName: string,
+): boolean {
+	const normalizedDescription = description.toLocaleLowerCase();
+	const normalizedModelName = modelName.trim().toLocaleLowerCase();
+	return Boolean(
+		normalizedModelName && normalizedDescription.startsWith(normalizedModelName),
+	);
 }
 
 type PricingHighlight = {
@@ -279,6 +299,7 @@ export default function ModelFaqSection({
 	pricing,
 	relatedModels,
 	gatewayMetadata,
+	showProviders = true,
 }: {
 	model: ModelOverviewPage;
 	benchmarkCount: number;
@@ -287,9 +308,19 @@ export default function ModelFaqSection({
 	pricing: ProviderPricing[];
 	relatedModels?: ModelLineageLinks;
 	gatewayMetadata?: ModelGatewayMetadata | null;
+	showProviders?: boolean;
 }) {
 	const modelName = model.name;
 	const organisationName = model.organisation.name;
+	const modelDescription = model.description?.trim();
+	const plainModelDescription = markdownToPlainText(modelDescription);
+	const descriptionPrefix =
+		plainModelDescription && descriptionStartsWithModelName(plainModelDescription, modelName)
+			? ""
+			: `${modelName} is `;
+	const aboutAnswerText = plainModelDescription
+		? `${descriptionPrefix}${ensureSentencePunctuation(plainModelDescription)}`
+		: `${modelName} is ${getStatusDescription(model.status)} from ${organisationName}.`;
 	const releaseDate = model.release_date ?? model.announcement_date ?? null;
 	const inputTypes = parseTypes(model.input_types);
 	const outputTypes = parseTypes(model.output_types);
@@ -316,7 +347,17 @@ export default function ModelFaqSection({
 	const items = [
 		{
 			question: `What is ${modelName}?`,
-			answer: (
+			answer: modelDescription && plainModelDescription ? (
+				<>
+					{descriptionPrefix}
+					<ReactMarkdown
+						remarkPlugins={[remarkGfm]}
+						components={modelMarkdownComponents}
+					>
+						{modelDescription}
+					</ReactMarkdown>
+				</>
+			) : (
 				<>
 					{modelName} is {getStatusDescription(model.status)} from{" "}
 					<Link
@@ -370,53 +411,57 @@ export default function ModelFaqSection({
 					},
 				]
 			: []),
-		{
-			question: `What providers serve ${modelName}, and can I use it via API?`,
-			answer: (
-				<>
-					{isGatewayActive && activeProviderCount > 0
-						? `${modelName} is available through the Phaseo API, with ${activeProviderCount} active ${activeProviderCount === 1 ? "provider" : "providers"} currently recorded. `
-						: `${modelName} is not currently marked as active in the Phaseo Gateway. `}
-					{faqProviders.visible.length > 0 ? (
+		...(showProviders
+			? [
+					{
+						question: `What providers serve ${modelName}, and can I use it via API?`,
+						answer: (
 						<>
-							Recorded providers include{" "}
-							{faqProviders.visible.map((provider, index) => {
-								const isLast = index === faqProviders.visible.length - 1;
-								const separator =
-									index === 0
-										? ""
-										: faqProviders.remainingCount > 0
-											? ", "
-											: faqProviders.visible.length === 2
-												? " and "
-												: isLast
-													? ", and "
-													: ", ";
-								return (
-									<span key={provider.id}>
-										{separator}
-										<Link
-											href={`/api-providers/${provider.id}`}
-											className="font-medium underline underline-offset-4"
-										>
-											{provider.name}
-										</Link>
-									</span>
-								);
-							})}
-							{faqProviders.remainingCount > 0
-								? `, and ${faqProviders.remainingCount} more. `
-								: ". "}
+							{isGatewayActive && activeProviderCount > 0
+								? `${modelName} is available through the Phaseo API, with ${activeProviderCount} active ${activeProviderCount === 1 ? "provider" : "providers"} currently recorded. `
+								: `${modelName} is not currently marked as active in the Phaseo Gateway. `}
+							{faqProviders.visible.length > 0 ? (
+								<>
+									Recorded providers include{" "}
+									{faqProviders.visible.map((provider, index) => {
+										const isLast = index === faqProviders.visible.length - 1;
+										const separator =
+											index === 0
+												? ""
+												: faqProviders.remainingCount > 0
+													? ", "
+													: faqProviders.visible.length === 2
+														? " and "
+														: isLast
+															? ", and "
+															: ", ";
+										return (
+											<span key={provider.id}>
+												{separator}
+												<Link
+													href={`/api-providers/${provider.id}`}
+													className="font-medium underline underline-offset-4"
+												>
+													{provider.name}
+												</Link>
+											</span>
+										);
+									})}
+									{faqProviders.remainingCount > 0
+										? `, and ${faqProviders.remainingCount} more. `
+										: ". "}
+								</>
+							) : null}
+							The{" "}
+							<Link href="#providers" className="font-medium underline underline-offset-4">
+								providers section
+							</Link>{" "}
+							shows the routes and availability currently recorded by Phaseo.
 						</>
-					) : null}
-					The{" "}
-					<Link href="#providers" className="font-medium underline underline-offset-4">
-						providers section
-					</Link>{" "}
-					shows the routes and availability currently recorded by Phaseo.
-				</>
-			),
-		},
+						),
+					},
+				]
+			: []),
 		{
 			question: `Does ${modelName} support tool calling?`,
 			answer: capabilityAnswer({
@@ -534,7 +579,7 @@ export default function ModelFaqSection({
 				name: `What is ${modelName}?`,
 				acceptedAnswer: {
 					"@type": "Answer",
-					text: `${modelName} is ${getStatusDescription(model.status)} from ${organisationName}.`,
+					text: aboutAnswerText,
 				},
 			},
 			...(inputContextLength || outputContextLength
@@ -547,14 +592,18 @@ export default function ModelFaqSection({
 					},
 				}]
 				: []),
-			{
-				"@type": "Question",
-				name: `What providers serve ${modelName}, and can I use it via API?`,
-				acceptedAnswer: {
-					"@type": "Answer",
-					text: `${isGatewayActive && activeProviderCount > 0 ? `${modelName} is available through the Phaseo API, with ${activeProviderCount} active ${activeProviderCount === 1 ? "provider" : "providers"} currently recorded.` : `${modelName} is not currently marked as active in the Phaseo Gateway.`}${faqProviders.visible.length > 0 ? ` Recorded providers include ${joinNaturalList(faqProviders.visible.map((provider) => provider.name))}${faqProviders.remainingCount > 0 ? ` and ${faqProviders.remainingCount} more` : ""}.` : ""}`,
-				},
-			},
+			...(showProviders
+				? [
+						{
+							"@type": "Question",
+							name: `What providers serve ${modelName}, and can I use it via API?`,
+							acceptedAnswer: {
+								"@type": "Answer",
+								text: `${isGatewayActive && activeProviderCount > 0 ? `${modelName} is available through the Phaseo API, with ${activeProviderCount} active ${activeProviderCount === 1 ? "provider" : "providers"} currently recorded.` : `${modelName} is not currently marked as active in the Phaseo Gateway.`}${faqProviders.visible.length > 0 ? ` Recorded providers include ${joinNaturalList(faqProviders.visible.map((provider) => provider.name))}${faqProviders.remainingCount > 0 ? ` and ${faqProviders.remainingCount} more` : ""}.` : ""}`,
+							},
+						},
+					]
+				: []),
 			{
 				"@type": "Question",
 				name: `Does ${modelName} support tool calling?`,

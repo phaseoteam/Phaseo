@@ -1,6 +1,7 @@
 import TeamsSettingsContainer from "@/components/(gateway)/settings/teams/TeamsSettingsContainer";
 import { fetchSettingsTeamsInitialData } from "@/lib/fetchers/internal/fetchSettingsTeamsInitialData";
 import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
+import { connection } from "next/server";
 
 export const metadata = {
 	title: "Workspace Settings - Settings",
@@ -13,6 +14,7 @@ export default async function WorkspaceSettingsPage({
 }: {
 	searchParams: Promise<SearchParams>;
 }) {
+	await connection();
 	const params = await searchParams;
 	const preferredWorkspaceId = Array.isArray(params.workspaceId)
 		? params.workspaceId[0]

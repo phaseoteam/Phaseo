@@ -25,6 +25,10 @@ import {
 
 const internalTools = [
 	{
+		id: "realtime-billing", title: "Realtime Billing", description: "Review missing usage, held funds, and audited billing decisions.",
+		icon: Shield, href: "/internal/realtime-billing", comingSoon: false,
+	},
+	{
 		id: "model-test-playground",
 		title: "Model Test Lab",
 		description:
@@ -73,7 +77,7 @@ const internalTools = [
 		id: "cache-ops",
 		title: "Cache Control Centre",
 		description:
-			"Purge named Cloudflare Worker scopes, advance browser search generations, and review the audit trail.",
+			"Purge named Cloudflare Worker and website caches, and review the audit trail.",
 		icon: RefreshCcw,
 		href: "/internal/cache",
 		comingSoon: false,

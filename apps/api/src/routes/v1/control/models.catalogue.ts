@@ -95,6 +95,8 @@ type ProviderDetails = {
     country_code: string | null;
     status: string | null;
     routing_status: string | null;
+    execution_regions: string[];
+    data_regions: string[];
 };
 
 type OrganisationDetails = {
@@ -109,6 +111,8 @@ type CatalogueProvider = {
     api_provider_name: string | null;
     link: string | null;
     country_code: string | null;
+    execution_regions: string[];
+    data_regions: string[];
     endpoints: Endpoint[];
     provider_model_slug: string | null;
     is_active_gateway: boolean;
@@ -170,6 +174,8 @@ export type SupportedParamDetails = Record<string, SupportedParamDetail>;
 export type ProviderInfo = {
     api_provider_id: string;
     api_provider_name: string | null;
+    execution_regions: string[];
+    data_regions: string[];
     provider_model_slug: string | null;
     is_active_gateway: boolean;
     availability_status: "active" | "coming_soon" | "inactive";
@@ -290,6 +296,8 @@ export type CatalogueFilters = {
     providerAvailabilityStatuses?: string[];
     providerAvailabilityReasons?: string[];
     availability?: "active" | "all";
+    region?: "eu" | "us";
+    textOnly?: boolean;
 };
 
 const PRICING_METERS = [
@@ -344,6 +352,13 @@ function toStringArray(value: unknown): string[] {
             .filter((part) => part.length > 0);
     }
     return [];
+}
+
+export function providerMatchesCatalogueRegion(
+	provider: Pick<ProviderInfo, "execution_regions" | "data_regions">,
+	region: "eu" | "us",
+): boolean {
+	return provider.execution_regions.includes(region) && provider.data_regions.includes(region);
 }
 
 function parseEffectiveDate(value: unknown): Date | null {
@@ -1085,7 +1100,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const modelQuery = supabase
         .from("v2_models")
         .select(
-            "model_id:model_slug, base_model_id:base_model_slug, variant_kind, previous_model_id:previous_model_slug, replacement_model_id:replacement_model_slug, name, description, release_date:released_at, deprecation_date:deprecated_at, retirement_date:retired_at, status, organisation_id:lab_slug, input_types:input_modalities, output_types:output_modalities, organisation:v2_labs(lab_slug, name, country_code, metadata)"
+            "model_id:model_slug, base_model_id:base_model_slug, variant_kind, previous_model_id:previous_model_slug, replacement_model_id:replacement_model_slug, metadata, name, description, release_date:released_at, deprecation_date:deprecated_at, retirement_date:retired_at, status, organisation_id:lab_slug, input_types:input_modalities, output_types:output_modalities, organisation:v2_labs(lab_slug, name, country_code, metadata)"
         )
         .eq("hidden", false);
     const { data: modelRows, error: modelError } = await modelQuery;
@@ -1122,7 +1137,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             base_model_id: model.base_model_id ?? model.model_id,
             variant_kind: model.variant_kind ?? "standard",
             previous_model_id: model.previous_model_id ?? null,
-            replacement_model_id: model.replacement_model_id ?? null,
+            replacement_model_id: model.replacement_model_id ?? (typeof model.metadata === "object" && model.metadata !== null && !Array.isArray(model.metadata) && typeof model.metadata.replacement_model_id === "string" ? model.metadata.replacement_model_id : null),
             name: model.name ?? null,
             description: model.description ?? null,
             release_date: model.release_date ?? null,
@@ -1288,7 +1303,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         for (const providerIdChunk of chunkArray(Array.from(providerIdSet), 200)) {
             const { data, error: providerDetailsError } = await supabase
                 .from("v2_providers")
-                .select("provider_slug, name, metadata, country_code, status, routing_enabled")
+                .select("provider_slug, name, metadata, country_code, status, routing_enabled, default_execution_regions, default_data_regions")
                 .in("provider_slug", providerIdChunk);
             if (providerDetailsError) {
                 throw new Error(`Failed to load provider metadata: ${providerDetailsError.message || "unknown error"}`);
@@ -1300,6 +1315,8 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                 country_code: row.country_code ?? null,
                 status: row.status ?? null,
                 routing_status: row.routing_enabled ? "active" : "disabled",
+                execution_regions: toStringArray(row.default_execution_regions).map((region) => region.toLowerCase()),
+                data_regions: toStringArray(row.default_data_regions).map((region) => region.toLowerCase()),
             })) as ProviderDetails[]);
         }
         for (const provider of providerDetails) {
@@ -1311,6 +1328,8 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                 country_code: provider.country_code ?? null,
                 status: (provider as any).status ?? null,
                 routing_status: (provider as any).routing_status ?? null,
+                execution_regions: [...provider.execution_regions],
+                data_regions: [...provider.data_regions],
             });
         }
     }
@@ -1497,6 +1516,8 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                     api_provider_name: providerDetails?.api_provider_name ?? null,
                     link: providerDetails?.link ?? null,
                     country_code: providerDetails?.country_code ?? null,
+                    execution_regions: [...(providerDetails?.execution_regions ?? [])],
+                    data_regions: [...(providerDetails?.data_regions ?? [])],
                     endpoints: [String(cap.capability_id) as Endpoint],
                     provider_model_slug: row.provider_model_slug ?? null,
                     is_active_gateway: Boolean(row.is_active_gateway),
@@ -1539,6 +1560,17 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             : providerEntries.filter(isPubliclyRoutableProvider);
 
         const filteredProviderEntries = visibleProviderEntries.filter((entry) => {
+            if (filter.textOnly && !entry.endpoints.some((endpoint) =>
+				String(endpoint) === "chat.completions" ||
+				String(endpoint) === "chat/completions" ||
+				endpoint === "responses" ||
+				endpoint === "messages"
+            )) {
+                return false;
+            }
+            if (filter.region && !providerMatchesCatalogueRegion(entry, filter.region)) {
+                return false;
+            }
             if (
                 endpointsFilter &&
                 !entry.endpoints.some((endpoint) => matchesEndpointFilter(endpoint, endpointsFilter))
@@ -1646,6 +1678,8 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                 providerEndpoints[endpoint] = {
                     api_provider_id: entry.api_provider_id,
                     api_provider_name: entry.api_provider_name,
+                    execution_regions: [...entry.execution_regions],
+                    data_regions: [...entry.data_regions],
                     provider_model_slug: entry.provider_model_slug,
                     is_active_gateway: entry.is_active_gateway,
                     availability_status: entry.availability_status,
@@ -1673,6 +1707,8 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                 providerMapForModel.set(entry.api_provider_id, {
                     api_provider_id: entry.api_provider_id,
                     api_provider_name: entry.api_provider_name,
+                    execution_regions: [...entry.execution_regions],
+                    data_regions: [...entry.data_regions],
                     provider_model_slug: entry.provider_model_slug,
                     is_active_gateway: entry.is_active_gateway,
                     availability_status: entry.availability_status,

@@ -15,7 +15,7 @@
     {
       "feature_name": "Pricing",
       "feature_value": "Custom",
-      "feature_description": "The current subscription-plan importer requires numeric prices, so this is represented as 0 with explicit custom-pricing metadata.",
+      "feature_description": "The archived subscription-plan fixture format requires numeric prices, so this is represented as 0 with explicit custom-pricing metadata.",
       "other_info": null
     },
     {

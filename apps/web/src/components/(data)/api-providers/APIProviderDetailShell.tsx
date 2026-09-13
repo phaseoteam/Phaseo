@@ -11,6 +11,7 @@ import AccountPolicyNotice from "../AccountPolicyNotice";
 import ModelPageToc, { type ModelPageTocItem } from "../model/ModelPageToc";
 import EntityStickyHeader from "../EntityStickyHeader";
 import { Button } from "@/components/ui/button";
+import { formatLocation } from "@/lib/locations";
 
 interface APIProviderDetailShellProps {
 	apiProviderId: string;
@@ -70,9 +71,7 @@ export default async function APIProviderDetailShell({
 			</main>
 		);
 	}
-	const countryName = header.country_code
-		? new Intl.DisplayNames(["en"], { type: "region" }).of(header.country_code.toUpperCase()) ?? header.country_code
-		: null;
+	const location = formatLocation(header.country_code, header.subdivision_code);
 
 	return (
 		<main className="flex flex-col">
@@ -95,11 +94,16 @@ export default async function APIProviderDetailShell({
 							<h1 className="truncate text-3xl font-bold tracking-tight">
 								{header.api_provider_name}
 							</h1>
-							{countryName ? (
+							{location ? header.country_code ? (
 								<Link href={`/countries/${header.country_code.toLowerCase()}`} className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground hover:underline hover:underline-offset-4">
 									<MapPin className="size-3.5" />
-									{countryName}
+									{location}
 								</Link>
+							) : (
+								<span className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+									<MapPin className="size-3.5" />
+									{location}
+								</span>
 							) : null}
 						</div>
 					</div>

@@ -9,7 +9,7 @@ import { isSafeOAuthRedirectUrl } from "@/lib/oauth/safeUrls";
 import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
 
 export const metadata = {
-	title: "Authorize Application - Phaseo",
+	title: "Authorize Application",
 	description:
 		"Authorize a third-party application to access your Phaseo account, choose permitted team scopes, and review exactly what the integration can read or modify before approval.",
 };

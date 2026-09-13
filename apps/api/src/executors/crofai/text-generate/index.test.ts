@@ -31,6 +31,14 @@ describe("CrofAI current public text contract", () => {
 		expect(wire.service_tier).toBeUndefined();
 	});
 
+	it("forwards reasoning effort to CrofAI's OpenAI-compatible request", () => {
+		const ir = request();
+		ir.reasoning = { effort: "high" };
+		const wire = irToOpenAIChat(ir, "greg-2-super", "crofai");
+
+		expect(wire.reasoning_effort).toBe("high");
+	});
+
 	it("preserves CrofAI reasoning and usage in normalized output", () => {
 		const ir = openAIChatToIR({
 			id: "chatcmpl_crofai",

@@ -35,7 +35,7 @@ const METRICS: Record<QualityMetric, {
 		color: "hsl(221, 83%, 53%)",
 	},
 	toolCallErrorPct: {
-		label: "Tool call errors",
+		label: "Tool Call Errors",
 		description: "Share of generated tool calls with invalid JSON arguments, a schema mismatch, or an unknown tool name. Historical traffic without response validation is shown as 0%.",
 		emptyMessage: "No validated tool-call responses were recorded in this period.",
 		color: "hsl(0, 72%, 51%)",
@@ -47,13 +47,13 @@ const METRICS: Record<QualityMetric, {
 		color: "hsl(262, 83%, 58%)",
 	},
 	structuredOutputErrorPct: {
-		label: "Structured response errors",
+		label: "Structured Response Errors",
 		description: "Share of requested structured responses with invalid JSON, a schema mismatch, or no structured output. Historical traffic without response validation is shown as 0%.",
 		emptyMessage: "No validated structured responses were recorded in this period.",
 		color: "hsl(25, 95%, 53%)",
 	},
 	cacheHitRatePct: {
-		label: "Cache hit rate",
+		label: "Cache Hit Rate",
 		description: "Cached read tokens as a percentage of reported input tokens.",
 		emptyMessage: "Not enough input-token and cache-read telemetry was recorded in this period.",
 		color: "hsl(142, 71%, 45%)",

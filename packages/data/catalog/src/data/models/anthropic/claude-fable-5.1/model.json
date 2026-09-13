@@ -1,0 +1,280 @@
+{
+  "model_id": "anthropic/claude-fable-5.1",
+  "organisation_id": "anthropic",
+  "name": "Claude Fable 5.1",
+  "status": "Available",
+  "hidden": false,
+  "previous_model_id": "anthropic/claude-fable-5",
+  "description": "Claude Fable 5.1 is Anthropic's successor to Claude Fable 5. It is currently available through Phaseo using the direct Anthropic provider.",
+  "announced_date": null,
+  "release_date": "2026-09-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "anthropic/claude-fable-5.1",
+  "family_id": "anthropic/claude-5",
+  "links": [
+    {
+      "title": "Migration guide",
+      "kind": "docs",
+      "url": "https://platform.claude.com/docs/en/models/fable-5-1/migration-guide"
+    }
+  ],
+  "details": [
+    { "name": "input_context_length", "value": 1000000 },
+    { "name": "output_context_length", "value": 128000 },
+    { "name": "prompt_cache_minimum_tokens", "value": 512 },
+    { "name": "data_retention", "value": "30 days; unavailable under zero data retention unless expressly authorized" },
+    { "name": "tool_choice", "value": "Supports auto and none. Forced any or named-tool selection is not supported." },
+    {
+      "name": "availability",
+      "value": "Claude Fable 5.1 is enabled through the direct Anthropic provider. Anthropic also confirms availability on Amazon Bedrock, Claude Platform on AWS, Google Cloud, and Microsoft Foundry; Phaseo tracks those mappings as supported but non-routable pending provider-specific IDs, regions, and pricing verification."
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 50.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "low",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Low Effort, Default Fallback); Artificial Analysis ID 05776db7-f5c0-40f7-b824-079160f8cfa8; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-low",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 75.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "low",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Low Effort, Default Fallback); Artificial Analysis ID 05776db7-f5c0-40f7-b824-079160f8cfa8; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-low",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 48,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "low",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Low Effort, Default Fallback); Artificial Analysis ID 05776db7-f5c0-40f7-b824-079160f8cfa8; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-low",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 1883.83,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "low",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Low Effort, Default Fallback); Artificial Analysis ID 05776db7-f5c0-40f7-b824-079160f8cfa8; Intelligence Index v4.3; USD 1.7001 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-low",
+      "rank": 73
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 52.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "medium",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Medium Effort, Default Fallback); Artificial Analysis ID 3b7de71c-e034-4591-8ca6-6b6be2fa471f; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-medium",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 77.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "medium",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Medium Effort, Default Fallback); Artificial Analysis ID 3b7de71c-e034-4591-8ca6-6b6be2fa471f; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-medium",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 50.9,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "medium",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Medium Effort, Default Fallback); Artificial Analysis ID 3b7de71c-e034-4591-8ca6-6b6be2fa471f; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-medium",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 2534.14,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "medium",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Medium Effort, Default Fallback); Artificial Analysis ID 3b7de71c-e034-4591-8ca6-6b6be2fa471f; Intelligence Index v4.3; USD 2.139 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-medium",
+      "rank": 78
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 56.8,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "max",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback); Artificial Analysis ID 3e87c73e-a257-495e-9730-367a66229811; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 81.6,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "max",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback); Artificial Analysis ID 3e87c73e-a257-495e-9730-367a66229811; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 58.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "max",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback); Artificial Analysis ID 3e87c73e-a257-495e-9730-367a66229811; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 10815.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "max",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback); Artificial Analysis ID 3e87c73e-a257-495e-9730-367a66229811; Intelligence Index v4.3; USD 6.1169 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1",
+      "rank": 90
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 56.2,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "xhigh",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Xhigh Effort, Default Fallback); Artificial Analysis ID 9b166bf3-42db-4f63-8338-1c4a1244ffe8; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-xhigh",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 80.7,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "xhigh",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Xhigh Effort, Default Fallback); Artificial Analysis ID 9b166bf3-42db-4f63-8338-1c4a1244ffe8; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-xhigh",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 57.4,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "xhigh",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Xhigh Effort, Default Fallback); Artificial Analysis ID 9b166bf3-42db-4f63-8338-1c4a1244ffe8; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-xhigh",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 7037.01,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "xhigh",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, Xhigh Effort, Default Fallback); Artificial Analysis ID 9b166bf3-42db-4f63-8338-1c4a1244ffe8; Intelligence Index v4.3; USD 4.6416 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-xhigh",
+      "rank": 88
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 54.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "high",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, High Effort, Default Fallback); Artificial Analysis ID 9d7d72cd-d95d-45a0-b109-4ad292c9aabd; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-high",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "aa-coding-index-v4",
+      "score": 79.1,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "high",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, High Effort, Default Fallback); Artificial Analysis ID 9d7d72cd-d95d-45a0-b109-4ad292c9aabd; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-high",
+      "rank": 3
+    },
+    {
+      "benchmark_id": "aa-agentic-index-v4",
+      "score": 53.5,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "high",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, High Effort, Default Fallback); Artificial Analysis ID 9d7d72cd-d95d-45a0-b109-4ad292c9aabd; Intelligence Index v4.3",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-high",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "aa-intelligence-index-cost-v4",
+      "score": 3602.54,
+      "is_self_reported": false,
+      "updated_at": "2026-09-08T10:38:34.750Z",
+      "variant": "high",
+      "other_info": "Claude Fable 5.1 (Adaptive Reasoning, High Effort, Default Fallback); Artificial Analysis ID 9d7d72cd-d95d-45a0-b109-4ad292c9aabd; Intelligence Index v4.3; USD 2.8611 per task",
+      "source_link": "https://artificialanalysis.ai/models/claude-fable-5-1-high",
+      "rank": 82
+    }
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2026-06-01T00:00:00",
+  "limits": {
+    "context": 1000000,
+    "input": 1000000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": ["text", "image/*"],
+    "output": ["text"]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": true,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": true,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "docs",
+      "url": "https://platform.claude.com/docs/en/models/fable-5-1/migration-guide",
+      "accessed_at": "2026-09-01T00:00:00Z",
+      "notes": "Official migration guide for model IDs, limits, pricing, adaptive thinking, cache minimums, tool-choice restrictions, and retention requirements."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-01T00:00:00Z",
+    "notes": "Anthropic's migration guide verifies the model ID, 1M context, 128K maximum output, adaptive thinking, cache behavior, and API restrictions. The June 2026 knowledge cutoff remains corroborated by a user-supplied Claude Code 2.1.257 release report."
+  },
+  "last_updated": "2026-09-01T00:00:00",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

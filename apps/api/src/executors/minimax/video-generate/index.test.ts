@@ -29,7 +29,7 @@ vi.mock("@core/video-reservations", () => ({
 vi.mock("@core/video-jobs", () => ({
 	saveVideoJobMeta: (...args: unknown[]) => {
 		state.saveVideoJobMetaCalls.push(args);
-		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
+		if (state.saveVideoJobMetaError && (args[2] as any).submissionState !== "submitting") throw state.saveVideoJobMetaError;
 		return saveVideoJobMetaMock(...args);
 	},
 }));
@@ -79,6 +79,41 @@ afterAll(() => {
 });
 
 describe("minimax video executor", () => {
+	it("normalizes public lowercase resolution before native submission", async () => {
+		const mock = installFetchMock([{ match: (url) => url.includes("/video_generation"), response: jsonResponse({ task_id: "task-512", base_resp: { status_code: 0 } }) }]);
+		try {
+			await execute(buildArgs({ model: "minimax/hailuo-02", prompt: "A sphere", duration: 6, size: "512p", inputReference: "https://example.com/image.png" }, "MiniMax-Hailuo-02"));
+			expect(mock.calls[0]?.bodyJson.resolution).toBe("512P");
+		} finally { mock.restore(); }
+	});
+	it("rejects 512P text-to-video before reserving or submitting", async () => {
+		const mock = installFetchMock([]);
+		try {
+			const result = await execute(buildArgs({ model: "minimax/hailuo-02", prompt: "A sphere", duration: 6, size: "512p" }, "MiniMax-Hailuo-02"));
+			expect(result.upstream?.status).toBe(400);
+			expect(mock.calls).toHaveLength(0);
+			expect(state.saveVideoJobMetaCalls).toHaveLength(0);
+		} finally { mock.restore(); }
+	});
+	it.each([
+		{ model: "MiniMax-H3", duration: 3 },
+		{ model: "MiniMax-H3-Max", duration: 4 },
+		{ model: "MiniMax-H3-Max", size: "2K" },
+		{ model: "MiniMax-H3", duration: 6.5 },
+		{ model: "MiniMax-H3", sampleCount: 2 },
+		{ model: "MiniMax-H3", aspectRatio: "adaptive" },
+		{ model: "MiniMax-H3-Max", inputReferences: [{ type: "image", role: "reference", url: "https://example.com/ref.jpg" }] },
+		{ model: "MiniMax-H3", inputReference: "https://example.com/first.jpg", inputReferences: [{ type: "image", role: "reference", url: "https://example.com/ref.jpg" }] },
+		{ model: "MiniMax-H3", inputReferences: [{ type: "video", role: "reference", url: "https://example.com/ref.mp4" }] },
+	] as IRVideoGenerationRequest[])("rejects unsupported H3 combinations before submitting: %j", async (options) => {
+		const mock = installFetchMock([]);
+		try {
+			const result = await execute(buildArgs({ prompt: "A simple sphere", ...options }, options.model));
+			expect(result.upstream?.status).toBe(400);
+			expect(mock.calls).toHaveLength(0);
+			expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		} finally { mock.restore(); }
+	});
 	beforeEach(() => {
 		saveVideoJobMetaMock.mockClear();
 		state.reservationResult = null;
@@ -204,7 +239,7 @@ describe("minimax video executor", () => {
 		expect(await result.upstream?.json()).toMatchObject({
 			error: {
 				type: "unsupported_option",
-				message: expect.stringContaining("prompt_optimizer and fast_pretreatment"),
+				message: expect.stringContaining("prompt_optimizer or fast_pretreatment"),
 			},
 		});
 	});
@@ -249,8 +284,8 @@ describe("minimax video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
-		expect(state.saveVideoJobMetaCalls).toHaveLength(1);
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
+		expect(state.saveVideoJobMetaCalls).toHaveLength(2);
 		expect(state.releaseCalls).toEqual([]);
 	});
 
@@ -408,7 +443,7 @@ describe("minimax video executor", () => {
 		expect(state.releaseCalls).toHaveLength(1);
 	});
 
-	it("releases a held reservation when MiniMax returns success without a task id", async () => {
+	it("retains a held reservation when MiniMax returns success without a task id", async () => {
 		state.reservationResult = {
 			reservationId: "video_hold:req_minimax_video_test",
 			held: true,
@@ -444,14 +479,8 @@ describe("minimax video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
-		expect(state.releaseCalls).toEqual([
-			{
-				workspaceId: "team_test",
-				reservationId: "video_hold:req_minimax_video_test",
-				releaseRefId: "req_minimax_video_test",
-			},
-		]);
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
+		expect(state.releaseCalls).toEqual([]);
 	});
 
 	it("does not submit upstream when reservation pricing dimensions are missing", async () => {

@@ -12,10 +12,9 @@
       "price_per_unit": 0.15,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice live models API input price.",
+      "note": "Venice models API metadata as of 2026-09-07.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-08-27T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
@@ -28,10 +27,9 @@
       "price_per_unit": 0.03,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice live models API cached-input price.",
+      "note": "Venice models API metadata as of 2026-09-07.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-08-27T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
@@ -44,10 +42,9 @@
       "price_per_unit": 0.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice live models API output price.",
+      "note": "Venice models API metadata as of 2026-09-07.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-08-27T00:00:00Z",
       "region": null,
       "cache_duration_seconds": null,
       "conditions": [],
@@ -55,18 +52,20 @@
     }
   ],
   "regions": [],
-  "service_tiers": ["standard"],
+  "service_tiers": [
+    "standard"
+  ],
   "sources": [
     {
-      "url": "https://api.venice.ai/api/v1/models",
       "kind": "provider_pricing",
-      "accessed_at": "2026-08-27T00:00:00Z",
-      "notes": "Venice's live models API lists GLM 5.3 Flash at $0.15 input, $0.03 cached input, and $0.50 output per 1M tokens."
+      "url": "https://api.venice.ai/api/v1/models",
+      "accessed_at": "2026-09-07T23:17:00Z",
+      "notes": "Verified against the live Venice models API; USD units are explicit on each rule."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-27T00:00:00Z",
-    "notes": "Pricing is verified against Venice's live first-party models API."
+    "checked_at": "2026-09-07",
+    "notes": "Verified against the live Venice models API; USD units are explicit on each rule."
   }
 }

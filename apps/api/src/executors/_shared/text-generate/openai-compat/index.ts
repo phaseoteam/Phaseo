@@ -18,6 +18,7 @@ import {
 	resolveOpenAICompatModel,
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
+import { resolveProviderKey } from "@providers/keys";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
@@ -77,17 +78,24 @@ export async function executeOpenAIWire(
 	policy: OpenAIWirePolicy = {},
 ): Promise<ExecutorResult> {
 	// Resolve API key (gateway or BYOK)
-	const keyInfo = resolveOpenAICompatKey({
-		providerId: args.providerId,
-		byokMeta: args.byokMeta,
-	} as any);
+	const keyInfo = args.privateEndpoint
+		? resolveProviderKey(
+			{ providerId: args.providerId, byokMeta: args.byokMeta },
+			() => undefined,
+		)
+		: resolveOpenAICompatKey({
+			providerId: args.providerId,
+			byokMeta: args.byokMeta,
+		} as any);
 
 	// Choose endpoint based on provider capabilities
 	const modelForRouting = resolveOpenAICompatModel(
 		args.providerId,
 		args.providerModelSlug?.trim() || args.ir.model,
 	);
-	const defaultRoute = resolveOpenAICompatRoute(args.providerId, modelForRouting);
+	const defaultRoute = args.privateEndpoint
+		? (args.privateEndpoint.supportsResponses ? "responses" : "chat")
+		: resolveOpenAICompatRoute(args.providerId, modelForRouting);
 	let route: "responses" | "chat" = policy.forceChat ? "chat" : defaultRoute;
 
 	const endpointForRoute = (targetRoute: "responses" | "chat") =>
@@ -141,12 +149,23 @@ export async function executeOpenAIWire(
 		const bytePlusMcpBeta = args.providerId === "byteplus"
 			&& Array.isArray(sanitized.request.tools)
 			&& sanitized.request.tools.some((tool: any) => tool?.type === "mcp");
-		const response = await fetchUpstream(args, openAICompatUrl(policy.urlProviderId ?? args.providerId, endpointForRoute(targetRoute)), {
-			method: "POST",
-			headers: openAICompatHeaders(args.providerId, keyInfo.key, {
+		const upstreamUrl = args.privateEndpoint
+			? `${args.privateEndpoint.baseUrl.replace(/\/+$/, "")}${endpointForRoute(targetRoute)}`
+			: openAICompatUrl(policy.urlProviderId ?? args.providerId, endpointForRoute(targetRoute));
+		const upstreamHeaders = args.privateEndpoint
+			? {
+				Authorization: `Bearer ${keyInfo.key}`,
+				"Content-Type": "application/json",
+				...upstreamTestHeaders(args.meta),
+			}
+			: openAICompatHeaders(args.providerId, keyInfo.key, {
 				...upstreamTestHeaders(args.meta),
 				...(bytePlusMcpBeta ? { "ark-beta-mcp": "true" } : {}),
-			}),
+			});
+		const response = await fetchUpstream(args, upstreamUrl, {
+			method: "POST",
+			...(args.privateEndpoint ? { redirect: "manual" as const } : {}),
+			headers: upstreamHeaders,
 			body: requestBody,
 		});
 

@@ -108,7 +108,7 @@ export default function WorkspaceIdentitySettings({ workspaceId, initialSettings
 						<p className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-500" />{summary?.grandfathered ? "Included for this workspace" : periodEnd ? summary?.cancelAtPeriodEnd ? `Cancels ${periodEnd}` : `Renews ${periodEnd}` : "Subscription active"}</p>
 						{summary?.includedMembers ? <p className="mt-1 text-xs text-muted-foreground">Up to {summary.includedMembers} members{summary.feePolicy === "included_allowance" ? ` · $${summary.remainingCardTopUpUsd.toLocaleString("en-US")} fee-free card allowance remaining` : " · Standard credit top-up fee"}</p> : null}
 					</div>
-					{summary?.provider === "stripe" ? <Button variant="outline" onClick={openPortal} disabled={working || !canEdit}>Manage subscription <ArrowUpRight className="ml-2 h-4 w-4" /></Button> : <Button asChild variant="outline"><Link href="/settings/credits">Manage subscription <ArrowUpRight className="ml-2 h-4 w-4" /></Link></Button>}
+					{summary?.provider === "stripe" ? <Button variant="outline" onClick={openPortal} disabled={working || !canEdit}>Manage subscription <ArrowUpRight className="ml-2 h-4 w-4" /></Button> : <p className="max-w-xs text-right text-xs text-muted-foreground">Included for this workspace; there is no separate card subscription to manage.</p>}
 				</div>
 			</section>
 		</div>

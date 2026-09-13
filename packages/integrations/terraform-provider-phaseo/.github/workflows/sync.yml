@@ -1,0 +1,107 @@
+name: Sync from Phaseo monorepo
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-from-phaseo-monorepo
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      source-sha: ${{ steps.source-revision.outputs.sha }}
+    steps:
+      - name: Check out Phaseo monorepo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: phaseoteam/Phaseo
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+          path: phaseo
+
+      - name: Capture source revision
+        id: source-revision
+        working-directory: phaseo
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: phaseo/packages/integrations/terraform-provider-phaseo/go.mod
+          cache-dependency-path: phaseo/packages/integrations/terraform-provider-phaseo/go.sum
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: "1.15.8"
+          terraform_wrapper: false
+
+      - name: Export provider history
+        working-directory: phaseo
+        run: git subtree split --prefix=packages/integrations/terraform-provider-phaseo --branch=terraform-provider-export
+
+      - name: Test provider export
+        working-directory: phaseo/packages/integrations/terraform-provider-phaseo
+        run: |
+          go test -race ./...
+          TF_ACC=1 go test ./internal/provider -run '^TestAcc' -count=1
+          go vet ./...
+          go build .
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out tested Phaseo monorepo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: phaseoteam/Phaseo
+          ref: ${{ needs.test.outputs.source-sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: phaseo
+
+      - name: Export provider history
+        working-directory: phaseo
+        run: git subtree split --prefix=packages/integrations/terraform-provider-phaseo --branch=terraform-provider-export
+
+      - name: Push provider repository
+        working-directory: phaseo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch "$remote" main
+          expected=$(git rev-parse FETCH_HEAD)
+          git -c core.hooksPath=/dev/null push \
+            --force-with-lease="refs/heads/main:${expected}" \
+            "$remote" terraform-provider-export:main
+
+      - name: Keep scheduled synchronization active
+        working-directory: phaseo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git remote add generated "$remote"
+          if git fetch generated sync-heartbeat; then
+            last_activity=$(git show -s --format=%ct FETCH_HEAD)
+            age=$(( $(date +%s) - last_activity ))
+            if [ "$age" -lt 2592000 ]; then
+              exit 0
+            fi
+            git switch --detach FETCH_HEAD
+          else
+            git switch --orphan sync-heartbeat
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit --allow-empty -m "chore: keep provider sync active"
+          git -c core.hooksPath=/dev/null push generated HEAD:sync-heartbeat

@@ -96,6 +96,12 @@ function makeProviderPricing(): ProviderPricing {
 }
 
 describe("providerPlanRouting", () => {
+	it("keeps a standard offering visible when a provider has no pricing yet", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [];
+		expect(getProviderAvailablePlans(provider)).toEqual(["standard"]);
+	});
+
 	it("keeps Standard as the multiplier baseline when Batch is selected globally", () => {
 		expect(
 			getProviderPlanComparisonBase(

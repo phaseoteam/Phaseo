@@ -21,33 +21,50 @@ function normalizeObservedServiceTier(value: unknown): string {
     return normalizeTextServiceTier(value) ?? "";
 }
 
-function normalizePricingServiceTier(body: any, usage: any): string {
+function normalizePricingServiceTier(body: any, usage: any, card?: PriceCard): string {
     const observedTier =
         normalizeObservedServiceTier(usage?.service_tier) ||
         normalizeObservedServiceTier(usage?.serviceTier);
+    const requestedTier = normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? "";
+    // Dedicated priority routes cannot downgrade to an unpriced standard SKU.
+    // Honor observed downgrades on cards that actually offer standard pricing.
+    if (observedTier === "standard" && (requestedTier === "priority" || requestedTier === "fast") &&
+        card?.rules.some((rule) => rule.pricing_plan === "priority") &&
+        !card.rules.some((rule) => rule.pricing_plan === "standard")) {
+        return requestedTier;
+    }
     if (observedTier) return observedTier;
 
-    return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? "";
+    return requestedTier;
 }
 
-function derivePricingPlan(body: any, usage: any): string {
-    const tier = normalizePricingServiceTier(body, usage);
+function derivePricingPlan(body: any, usage: any, card: PriceCard): string {
+    const tier = normalizePricingServiceTier(body, usage, card);
 
     if (tier === "fast" || tier === "priority") return "priority";
     if (tier === "batch") return "batch";
     if (tier === "flex") return "flex";
 
+    // Free model variants encode their pricing tier in the model id (for
+    // example, `poolside/laguna-s-2.1:free`) and providers do not always echo
+    // a service_tier in their usage response. Preserve the free SKU in that
+    // case so cache-read and other zero-priced meters are covered as well.
+    const requestedModel = typeof body?.model === "string"
+        ? body.model.trim().toLowerCase()
+        : "";
+    if (!tier && requestedModel.endsWith(":free")) return "free";
+
     return "standard";
 }
 
-function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: string): Record<string, unknown> {
+function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: string, card: PriceCard): Record<string, unknown> {
     const options: Record<string, unknown> = {
         ...deriveCachePricingContext(body),
         ...buildImagePricingRequestOptions(body ?? {}, usage),
         pricing_plan: pricingPlan,
     };
 
-    const serviceTier = normalizePricingServiceTier(body, usage);
+    const serviceTier = normalizePricingServiceTier(body, usage, card);
     if (serviceTier) {
         options.service_tier = serviceTier;
         options.serviceTier = serviceTier;
@@ -162,9 +179,9 @@ export function calculatePricing(
 
     if (card) {
         try {
-            const pricingPlan = derivePricingPlan(body, usage);
+            const pricingPlan = derivePricingPlan(body, usage, card);
             const requestOptions = attachBillingTimestamps(
-                buildTrustedPricingRequestOptions(body, usage, pricingPlan),
+                buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
                 meta,
             );
 

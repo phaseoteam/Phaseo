@@ -118,13 +118,13 @@ describe("provider capability profiles", () => {
 		expect(supportsAdapterBackedCapability("google-ai-studio", "image.generate")).toBe(true);
 		expect(supportsAdapterBackedCapability("google-ai-studio", "image.edit")).toBe(false);
 		expect(supportsAdapterBackedCapability("google-ai-studio", "audio.speech")).toBe(true);
-		expect(supportsAdapterBackedCapability("google-ai-studio", "audio.transcription")).toBe(false);
+		expect(supportsAdapterBackedCapability("google-ai-studio", "audio.transcription")).toBe(true);
 		expect(supportsAdapterBackedCapability("google-ai-studio", "audio.translations")).toBe(false);
 		expect(supportsAdapterBackedCapability("google-ai-studio", "video.generate")).toBe(true);
 		expect(supportsAdapterBackedCapability("google-vertex", "image.generate")).toBe(false);
 		expect(supportsAdapterBackedCapability("google-vertex", "image.edit")).toBe(false);
 		expect(supportsAdapterBackedCapability("google-vertex", "audio.speech")).toBe(false);
-		expect(supportsAdapterBackedCapability("google-vertex", "audio.transcription")).toBe(false);
+		expect(supportsAdapterBackedCapability("google-vertex", "audio.transcription")).toBe(true);
 		expect(supportsAdapterBackedCapability("google-vertex", "audio.translations")).toBe(false);
 		expect(supportsAdapterBackedCapability("google-vertex", "video.generate")).toBe(true);
 		expect(supportsAdapterBackedCapability("google-vertex-eu", "video.generate")).toBe(false);
@@ -146,7 +146,7 @@ describe("provider capability profiles", () => {
 			expect(supportsAdapterBackedCapability(provider, "audio.speech")).toBe(false);
 			expect(supportsAdapterBackedCapability(provider, "audio.transcription")).toBe(false);
 			expect(supportsAdapterBackedCapability(provider, "audio.translations")).toBe(false);
-			expect(supportsAdapterBackedCapability(provider, "video.generate")).toBe(false);
+			expect(supportsAdapterBackedCapability(provider, "video.generate")).toBe(true);
 		}
 	});
 

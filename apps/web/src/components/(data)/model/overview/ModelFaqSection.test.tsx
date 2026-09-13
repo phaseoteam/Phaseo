@@ -93,6 +93,7 @@ const model: ModelOverviewPage = {
 	model_id: "acme/alpha-1",
 	name: "Alpha 1",
 	organisation_id: "acme",
+	description: "A multimodal model for reasoning across text and images.",
 	status: "Available",
 	release_date: "2026-07-01",
 	input_types: "text,image",
@@ -146,6 +147,7 @@ describe("ModelFaqSection", () => {
 		);
 
 		expect(html).toContain("What is Alpha 1?");
+		expect(html).toContain("Alpha 1 is A multimodal model for reasoning across text and images.");
 		expect(html).toContain("Does Alpha 1 support tool calling?");
 		expect(html).toContain("Does Alpha 1 support structured outputs?");
 		expect(html).toContain("At least one active provider route for Alpha 1 currently advertises tool calling support");
@@ -167,6 +169,28 @@ describe("ModelFaqSection", () => {
 		expect(html).toContain("grid-rows-[0fr]");
 		expect(html).toContain('href="#pricing"');
 		expect(html).toContain('href="/organisations/acme"');
+	});
+
+	it("does not repeat the model name and renders description markdown", () => {
+		const html = renderToStaticMarkup(
+			<ModelFaqSection
+				model={{
+					...model,
+					description: "**Alpha 1** is a [multimodal model](https://example.com).",
+				}}
+				benchmarkCount={0}
+				activeProviderCount={0}
+				isGatewayActive={false}
+				pricing={[]}
+			/>,
+		);
+
+		expect(html).not.toContain("Alpha 1 is Alpha 1 is");
+		expect(html).toContain("multimodal model");
+		expect(html).toContain('href="https://example.com"');
+		expect(html).toContain(
+			"Alpha 1 is a multimodal model.",
+		);
 	});
 
 	it("caps the provider-name summary and reports the remainder", () => {
@@ -272,6 +296,22 @@ describe("ModelFaqSection", () => {
 		expect(html).not.toContain("How much does Alpha 1 cost?");
 		expect(html).not.toContain('href="#pricing"');
 		expect(html).not.toContain('href="#benchmarks"');
+	});
+
+	it("omits provider FAQ content when the provider section is hidden", () => {
+		const html = renderToStaticMarkup(
+			<ModelFaqSection
+				model={model}
+				benchmarkCount={0}
+				activeProviderCount={0}
+				isGatewayActive={false}
+				pricing={[]}
+				showProviders={false}
+			/>,
+		);
+
+		expect(html).not.toContain("What providers serve Alpha 1, and can I use it via API?");
+		expect(html).not.toContain('href="#providers"');
 	});
 
 	it("explains previous, next, and family relationships", () => {

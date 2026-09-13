@@ -80,6 +80,17 @@ describe("textParamPolicy", () => {
 			"reasoning_split",
 		]);
 	});
+
+	it("recognizes OpenAI prompt cache options on Responses requests", () => {
+		const body = {
+			model: "openai/gpt-6-astra",
+			input: "Hello",
+			prompt_cache_options: { mode: "explicit", ttl: "30m" },
+		};
+
+		expect(getUnknownTopLevelParams("responses", body)).toEqual([]);
+		expect(extractRequestedParams("responses", body)).toContain("prompt_cache_options");
+	});
 });
 
 describe("providerSupportsParam", () => {

@@ -30,6 +30,7 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { resolveWeeklyUsageDisplay } from "./weeklyUsage";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
@@ -996,14 +997,14 @@ function ModelCardImpl({
 						scroll
 					>
 						<div className="w-10 h-10 relative flex items-center justify-center rounded-lg border bg-background ml-1 md:ml-0">
-							<div className="w-6 h-6 relative">
+							{model.organisation_logo_url ? <Avatar className="size-full rounded-md after:rounded-md"><AvatarImage src={model.organisation_logo_url} alt={`${model.organisation_name ?? "Workspace"} logo`} className="rounded-md object-cover" /><AvatarFallback className="rounded-md">{(model.organisation_name ?? "W").slice(0, 2).toUpperCase()}</AvatarFallback></Avatar> : <div className="w-6 h-6 relative">
 								<Logo
 									id={model.organisation_id}
 									alt={model.organisation_name || "Provider Logo"}
 									className="object-contain"
 									fill
 								/>
-							</div>
+							</div>}
 						</div>
 					</Link>
 

@@ -1,8 +1,50 @@
+import { getSettingsSidebar } from "@/components/(gateway)/settings/Sidebar.config";
 import type { PaletteItem } from "./Search.types";
 
 export type GlobalNavigationItem = PaletteItem & { href: string };
 
-export const GLOBAL_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
+export type SearchCapabilities = {
+	autoRouting: boolean;
+	enterprise: boolean;
+	webhooks: boolean;
+	video: boolean;
+	realtime: boolean;
+	games: boolean;
+};
+
+export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
+	autoRouting: false,
+	enterprise: false,
+	webhooks: false,
+	video: false,
+	realtime: false,
+	games: false,
+};
+
+const GATED_DESTINATIONS: ReadonlyArray<[string, keyof SearchCapabilities]> = [
+	["/settings/routing/auto", "autoRouting"],
+	["/settings/workspaces/enterprise", "enterprise"],
+	["/settings/webhooks", "webhooks"],
+	["/chat/video", "video"],
+	["/chat/realtime", "realtime"],
+	["/games", "games"],
+];
+
+export function isSearchDestinationEnabled(
+	href: string | undefined,
+	capabilities: SearchCapabilities,
+): boolean {
+	const pathname = href?.split(/[?#]/)[0];
+	return GATED_DESTINATIONS.every(([prefix, capability]) =>
+		pathname !== prefix && !pathname?.startsWith(`${prefix}/`) || capabilities[capability],
+	);
+}
+
+export function getGlobalNavigationItems(capabilities: SearchCapabilities): GlobalNavigationItem[] {
+	return GLOBAL_NAVIGATION_ITEMS.filter((item) => isSearchDestinationEnabled(item.href, capabilities));
+}
+
+const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-home", title: "Home", subtitle: "Phaseo overview", href: "/", keywords: ["dashboard", "landing"], shortcut: ["G", "H"] },
 	{ id: "nav-models", title: "Models", subtitle: "Browse the AI model catalogue", href: "/models", keywords: ["model catalogue", "llms", "ai models"], shortcut: ["G", "M"] },
 	{ id: "nav-model-table", title: "Model Table", subtitle: "View models in a compact table", href: "/models/table", keywords: ["models", "catalogue", "data table"] },
@@ -70,3 +112,55 @@ export const GLOBAL_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-contribute", title: "Contribute", subtitle: "Contribute data and improvements", href: "/contribute", keywords: ["github", "community", "submit"] },
 	{ id: "nav-contact", title: "Contact", subtitle: "Contact the Phaseo team", href: "/contact", keywords: ["support", "email", "sales"] },
 ];
+
+// Derive settings pages from the sidebar so new subpages remain discoverable.
+const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true }).flatMap((group) =>
+	group.items.filter((item) => !item.disabled && !item.external).flatMap((item) => [
+		{ id: `nav-${item.href.slice(1).replaceAll("/", "-")}`, title: item.label, href: item.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label] },
+		...(item.children ?? []).map((child) => ({ id: `nav-${child.href.slice(1).replaceAll("/", "-")}`, title: `${item.label}: ${child.label}`, href: child.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label, child.label] })),
+	]),
+);
+
+const additionalPages: Array<[string, string]> = [
+	["/settings/webhooks/new", "Create Webhook"],
+	["/settings/workspaces/private-models/new", "Create Private Model"],
+	["/settings/routing/demo", "Dynamic Routing Demo"],
+	["/api-providers/table", "Provider Table"],
+	["/api-providers/compare", "Compare Providers"],
+	["/chat/audio", "Audio Chat"],
+	["/chat/image", "Image Playground"],
+	["/chat/video", "Video Playground"],
+	["/chat/music", "Music Playground"],
+	["/chat/speech", "Text to Speech"],
+	["/chat/speech-to-text", "Speech to Text"],
+	["/chat/realtime", "Realtime Chat"],
+	["/chat/embeddings", "Embeddings Playground"],
+	["/chat/moderation", "Moderation Playground"],
+	["/chat/fusion", "Fusion"],
+	["/experiments", "Experiments"],
+	["/experiments/spawn", "Spawn"],
+	["/experiments/council", "Council"],
+	["/tools/latency-comparison", "Latency Comparison"],
+	["/trust", "Trust Centre"],
+	["/trust/security", "Security"],
+	["/trust/dpa", "Data Processing Agreement"],
+	["/trust/subprocessors", "Subprocessors"],
+	["/terms", "Terms of Service"],
+	["/privacy", "Privacy Policy"],
+	["/mission", "Our Mission"],
+	["/acknowledgements", "Acknowledgements"],
+	["/games", "Games"],
+	["/redeem", "Redeem Credits"],
+	["/settings/account/privacy", "Account Privacy"],
+	["/settings/credits/onboarding", "Set Up Billing"],
+	["/settings/guardrails/new", "Create Guardrail"],
+	["/settings/presets/new", "Create Routing Preset"],
+	["/how-phaseo-normalises-ai-benchmarks", "How Benchmarks Are Normalised"],
+	["/how-phaseo-measures-latency-throughput", "How Performance Is Measured"],
+	["/how-phaseo-calculates-model-pricing", "How Pricing Is Calculated"],
+	["/how-phaseo-tracks-provider-availability", "How Provider Availability Is Tracked"],
+];
+
+export const GLOBAL_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = Array.from(
+	new Map([...settingsPages, ...additionalPages.map(([href, title]) => ({ id: `nav-${href.slice(1).replaceAll("/", "-")}`, href, title })), ...CURATED_NAVIGATION_ITEMS].map((item) => [item.href, item])).values(),
+);

@@ -2,6 +2,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import type { IRVideoGenerationRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { execute } from "./index";
+import { VideoGenerationSchema } from "@core/schemas";
+import { decodeOpenAIVideoRequestToIR } from "@pipeline/surfaces/video-codec";
+import { selectVideoProviderOptions } from "@core/video-provider-options";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 
@@ -27,9 +30,10 @@ vi.mock("@core/video-reservations", () => ({
 
 vi.mock("@core/video-jobs", () => ({
 	saveVideoJobMeta: (...args: unknown[]) => {
-		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
+		if (state.saveVideoJobMetaError && saveVideoJobMetaMock.mock.calls.length > 0) throw state.saveVideoJobMetaError;
 		return saveVideoJobMetaMock(...args);
 	},
+	setVideoJobStatus: vi.fn(async () => undefined),
 }));
 
 vi.mock("@core/wallet-reservations", () => ({
@@ -74,6 +78,49 @@ afterAll(() => {
 });
 
 describe("atlascloud video executor", () => {
+	it("uses the submitted Seedance audio and inferred ratio in billing metadata", async () => {
+		let body: any;
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/api/v1/model/generateVideo"),
+			response: jsonResponse({ data: { id: "defaults", status: "processing" } }),
+			onRequest: (call) => { body = call.bodyJson; },
+		}]);
+		try {
+			await execute(buildArgs({ model: "bytedance/seedance-2.5/text-to-video", prompt: "test", durationSeconds: 6, size: "1280x720" } as any));
+			expect(body).toMatchObject({ generate_audio: true, ratio: "16:9" });
+			expect(saveVideoJobMetaMock).toHaveBeenCalledWith("team_test", "req_atlas_video_test", expect.objectContaining({ audio: true, aspectRatio: "16:9" }), "defaults", "in_progress");
+		} finally { mock.restore(); }
+	});
+	it("passes Seedance 2.5 multimodal references through the public schema and IR", async () => {
+		let body: any;
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/api/v1/model/generateVideo"),
+			response: jsonResponse({ data: { id: "seedance_refs", status: "processing" } }),
+			onRequest: (call) => { body = call.bodyJson; },
+		}]);
+		try {
+			const parsed = VideoGenerationSchema.parse({
+				model: "bytedance/seedance-2.5/reference-to-video", prompt: "@Image1 dances to @Audio1", duration: 6,
+				resolution: "720p", aspect_ratio: "16:9", generate_audio: false,
+				input_video_duration: 4, input_audio_duration: 5,
+				input_references: [
+					{ type: "image_url", role: "reference", image_url: { url: "https://example.com/character.png" } },
+					{ type: "video_url", media_url: { url: "https://example.com/motion.mp4" } },
+					{ type: "audio_url", media_url: { url: "https://example.com/music.mp3" } },
+				],
+				provider_options: { atlascloud: { watermark: false }, byteplus: { camera_fixed: true } },
+			});
+			await execute(buildArgs(selectVideoProviderOptions(decodeOpenAIVideoRequestToIR(parsed), "atlascloud")));
+			expect(body).toMatchObject({
+				resolution: "720p", ratio: "16:9", duration: 6, generate_audio: false, watermark: false,
+				reference_images: ["https://example.com/character.png"],
+				reference_videos: ["https://example.com/motion.mp4"],
+				reference_audios: ["https://example.com/music.mp3"],
+			});
+			expect(body.camera_fixed).toBeUndefined();
+			expect(body.video).toBeUndefined();
+		} finally { mock.restore(); }
+	});
 	beforeEach(() => {
 		saveVideoJobMetaMock.mockClear();
 		state.reservationResult = null;
@@ -108,6 +155,9 @@ describe("atlascloud video executor", () => {
 		mock.restore();
 
 		expect(capturedBody?.model).toBe("bytedance/seedance-2.0-pro");
+		expect(capturedBody?.resolution).toBe("720p");
+		expect(capturedBody?.ratio).toBe("16:9");
+		expect(capturedBody?.size).toBeUndefined();
 		expect(capturedBody?.prompt).toBe("A cinematic drone shot over Icelandic cliffs");
 		expect((result as any).ir?.nativeId).toContain("atlsvid_");
 		expect(saveVideoJobMetaMock).toHaveBeenCalledWith(
@@ -161,11 +211,11 @@ describe("atlascloud video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
 		expect(state.releaseCalls).toEqual([]);
 	});
 
-	it("releases a held reservation when AtlasCloud returns success without a prediction id", async () => {
+	it("retains the journal and hold when AtlasCloud returns success without a prediction id", async () => {
 		state.reservationResult = {
 			reservationId: "video_hold:req_atlas_video_test",
 			held: true,
@@ -199,14 +249,8 @@ describe("atlascloud video executor", () => {
 			},
 		});
 		expect(result.ir).toBeUndefined();
-		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
-		expect(state.releaseCalls).toEqual([
-			{
-				workspaceId: "team_test",
-				reservationId: "video_hold:req_atlas_video_test",
-				releaseRefId: "req_atlas_video_test",
-			},
-		]);
+		expect(saveVideoJobMetaMock).toHaveBeenCalledTimes(1);
+		expect(state.releaseCalls).toEqual([]);
 	});
 
 	it("does not submit upstream when reservation pricing dimensions are missing", async () => {

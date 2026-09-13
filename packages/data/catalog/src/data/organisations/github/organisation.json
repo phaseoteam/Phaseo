@@ -2,6 +2,7 @@
   "organisation_id": "github",
   "name": "GitHub",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "GitHub is a developer platform and Microsoft subsidiary headquartered in San Francisco, California. GitHub Copilot provides AI coding assistance, chat, agent workflows, code review, and access to models from OpenAI, Anthropic, Google, and other providers.",
   "colour": "#24292f",
   "organisation_links": [

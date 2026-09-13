@@ -1,0 +1,96 @@
+{
+  "model_id": "inclusionai/ling-3.0-flash-sante",
+  "organisation_id": "inclusionai",
+  "name": "Ling 3.0 Flash Sante",
+  "status": "Available",
+  "previous_model_id": "inclusionai/ling-3.0-flash",
+  "description": "Ling 3.0 Flash Sante is Inclusion AI's health and medicine enhanced 124B-parameter mixture-of-experts model with approximately 5.1B active parameters per token. It is designed for medical knowledge reasoning, clinical safety, evidence-based retrieval, and long-horizon medical tasks while retaining general reasoning, coding, and agentic capabilities.",
+  "announced_date": "2026-09-03T03:39:27Z",
+  "release_date": "2026-09-03T03:39:27Z",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "inclusionai/ling-3.0-flash-sante",
+  "family_id": null,
+  "links": [
+    {
+      "title": "Novita model API",
+      "kind": "provider_models",
+      "url": "https://api.novita.ai/openai/v1/models"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameters",
+      "value": "124B total; approximately 5.1B active"
+    },
+    {
+      "name": "specialization",
+      "value": "Health and medicine"
+    },
+    {
+      "name": "input_context_length",
+      "value": 262144
+    },
+    {
+      "name": "output_context_length",
+      "value": 32768
+    },
+    {
+      "name": "pricing_note",
+      "value": "Novita currently reports zero input, cached-input, and output token prices; no promotion end date is published."
+    }
+  ],
+  "benchmarks": [],
+  "page_notice": {
+    "tone": "info",
+    "markdown": "Novita currently reports this model as free; no promotion end date is published."
+  },
+  "model_type": "language",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 262144,
+    "input": 262144,
+    "output": 32768
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": true,
+    "structured_output": null,
+    "temperature": true,
+    "streaming": true,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "provider_models",
+      "url": "https://api.novita.ai/openai/v1/models",
+      "accessed_at": "2026-09-03T03:39:27Z",
+      "notes": "Novita's first-party model inventory reports the exact identifier, description, 124B/5.1B architecture, 256K context, 32K output limit, text modalities, serverless function calling and reasoning, and zero token prices."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-03T03:39:27Z",
+    "notes": "Verified against Novita's live OpenAI-compatible model inventory."
+  },
+  "last_updated": "2026-09-03T03:39:27Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

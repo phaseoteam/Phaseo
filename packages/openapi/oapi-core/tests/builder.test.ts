@@ -3,6 +3,18 @@ import assert from "node:assert/strict";
 import type { OpenAPIV3 } from "openapi-types";
 import { buildIR } from "../src/builder.js";
 
+test("classifies JSONL downloads as text rather than a single JSON value", () => {
+	const { ir } = buildIR({
+		openapi: "3.0.3",
+		info: { title: "Results", version: "1" },
+		paths: { "/results": { get: { operationId: "results", responses: {
+			"200": { description: "JSONL", content: { "application/x-ndjson": { schema: { type: "string" } } } }
+		} } } },
+	});
+	assert.equal(ir.operations[0]?.responses[0]?.kind, "text");
+	assert.deepEqual(ir.operations[0]?.responses[0]?.schema, { kind: "primitive", type: "string" });
+});
+
 test("buildIR sorts models and operations deterministically", () => {
 	const doc: OpenAPIV3.Document = {
 		openapi: "3.0.3",

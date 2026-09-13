@@ -1,0 +1,96 @@
+{
+  "key": "venice:spacex-ai/grok-imagine-image-quality:image.edit",
+  "api_provider_id": "venice",
+  "provider_slug": "venice",
+  "api_model_id": "spacex-ai/grok-imagine-image-quality",
+  "capability_id": "image.edit",
+  "regions": [],
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.06,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "value": "1K"
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "value": "1K"
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.09,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "value": "2K"
+        }
+      ],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "value": "2K"
+        }
+      ],
+      "source": "https://api.venice.ai/api/v1/models"
+    },
+    {
+      "meter": "input_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.0115,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice models API metadata as of 2026-09-07.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://api.venice.ai/api/v1/models",
+      "included_quantity": 0
+    }
+  ],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "provider_pricing",
+      "url": "https://api.venice.ai/api/v1/models",
+      "accessed_at": "2026-09-07T23:17:00Z",
+      "notes": "Verified against the live Venice models API; USD units are explicit on each rule."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07",
+    "notes": "Verified against the live Venice models API; USD units are explicit on each rule."
+  }
+}

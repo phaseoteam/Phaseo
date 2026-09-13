@@ -2,6 +2,7 @@
   "organisation_id": "baai",
   "name": "BAAI",
   "country_code": "CN",
+  "subdivision_code": "CN-BJ",
   "description": "The Beijing Academy of Artificial Intelligence develops open research models including the BGE embedding family.",
   "colour": null,
   "organisation_links": [

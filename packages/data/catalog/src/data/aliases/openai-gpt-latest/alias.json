@@ -1,8 +1,0 @@
-{
-  "alias_slug": "openai/gpt-latest",
-  "resolved_api_model_id": "openai/gpt-5.6-sol",
-  "resolved_model_id": "openai/gpt-5.6-sol",
-  "channel": "stable",
-  "is_enabled": true,
-  "notes": "Latest stable OpenAI GPT alias; GPT-5.6 routes to the Sol tier."
-}

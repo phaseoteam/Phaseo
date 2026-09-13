@@ -16,7 +16,7 @@ import { audioSpeechRoutes } from "./audio-speech";
 import { audioTranscriptionRoutes } from "./audio-transcription";
 import { audioTranslationRoutes } from "./audio-translation";
 import { musicGenerateRoutes } from "./music-generate";
-import { realtimeSessionsRoutes } from "./realtime-sessions";
+import { realtimeSessionsRoutes, liveSessionsRoutes } from "./realtime-sessions";
 import { imagesGenerationsRoutes } from "./images-generations";
 import { imagesEditsRoutes } from "./images-edits";
 import { batchRoutes } from "./batches";
@@ -39,6 +39,8 @@ inferenceRouter.route("/audio/transcriptions", audioTranscriptionRoutes);
 inferenceRouter.route("/audio/translations", audioTranslationRoutes);
 inferenceRouter.route("/audio/realtime/sessions", realtimeSessionsRoutes);
 inferenceRouter.route("/realtime/sessions", realtimeSessionsRoutes);
+// Deliberately gated to authenticated playground identities, not general API keys.
+inferenceRouter.route("/live/sessions", liveSessionsRoutes);
 inferenceRouter.route("/images/generations", imagesGenerationsRoutes);
 inferenceRouter.route("/images/edits", imagesEditsRoutes);
 inferenceRouter.route("/videos", videosRoutes);
@@ -54,7 +56,6 @@ inferenceRouter.route("/async", asyncJobsRoutes);
 
 // Backward-compatible alias for existing imports.
 export const dataRouter = inferenceRouter;
-
 
 
 

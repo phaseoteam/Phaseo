@@ -15,6 +15,7 @@ import {
 	Clock3,
 	FlaskConical,
 	Info,
+	KeyRound,
 	ShieldBan,
 	XCircle,
 } from "lucide-react";
@@ -82,6 +83,7 @@ import {
 } from "@/components/(data)/model/pricing/providerPlanRouting";
 import {
 	formatProviderOfferDisplayName,
+	resolveProviderDisplayName,
 } from "@/lib/providers/providerOffers";
 import {
 	chooseGatewayStatus,
@@ -382,6 +384,67 @@ function UptimeSparkline({
 				strokeLinecap="round"
 			/>
 		</svg>
+	);
+}
+
+const ERROR_CATEGORY_LABELS: Record<string, string> = {
+	authentication: "Authentication",
+	payment: "Payment",
+	model_unavailable: "Model unavailable",
+	server: "Server",
+	stream: "Stream",
+	other_provider: "Other provider",
+};
+
+function ProviderHourlyUptime({
+	runtimeStats,
+}: {
+	runtimeStats: ProviderRuntimeStats | null | undefined;
+}) {
+	const points = (runtimeStats?.uptimeHourly3d ?? []).slice(-24);
+	const categories = Object.entries(runtimeStats?.errorCategoryCounts3d ?? {})
+		.filter(([, count]) => count > 0)
+		.sort((a, b) => b[1] - a[1]);
+	const totalFailures = categories.reduce((sum, [, count]) => sum + count, 0);
+	const rateLimited = runtimeStats?.rateLimited3d ?? 0;
+	if (points.length === 0 && categories.length === 0 && rateLimited === 0) return null;
+
+	return (
+		<div className="space-y-3 border-t border-zinc-200/80 py-3 dark:border-zinc-800">
+			{points.length > 0 ? (
+				<div>
+					<div className="mb-2 flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
+						<span>Hourly uptime</span>
+						<span>Last 24 hours</span>
+					</div>
+					<div className="grid h-8 grid-flow-col auto-cols-fr items-stretch gap-0.5" role="img" aria-label="Provider uptime by hour over the last 24 hours">
+						{points.map((point) => (
+							<Tooltip key={point.start}>
+								<TooltipTrigger asChild>
+									<span
+										className={cn("min-w-0 rounded-[2px]", point.uptimePct == null ? "bg-muted" : point.uptimePct > 99 ? "bg-emerald-500" : point.uptimePct > 95 ? "bg-amber-500" : "bg-red-500")}
+										tabIndex={0}
+										aria-label={`${new Date(point.start).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${formatPercent(point.uptimePct)}`}
+									/>
+								</TooltipTrigger>
+								<TooltipContent>{new Date(point.start).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC · {formatPercent(point.uptimePct)} uptime{point.failed > 0 ? ` · ${point.failed} failed` : ""}</TooltipContent>
+							</Tooltip>
+						))}
+					</div>
+				</div>
+			) : null}
+			{categories.length > 0 || rateLimited > 0 ? (
+				<div>
+					<p className="text-[11px] text-muted-foreground">Error breakdown · 3 days</p>
+					<div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+						{categories.map(([category, count]) => (
+							<span key={category} className="tabular-nums"><span className="text-muted-foreground">{ERROR_CATEGORY_LABELS[category] ?? category}</span> {totalFailures > 0 ? `${((count / totalFailures) * 100).toFixed(1)}%` : "—"}</span>
+						))}
+						{rateLimited > 0 ? <span className="tabular-nums"><span className="text-muted-foreground">Rate limited</span> {rateLimited.toLocaleString()} <span className="text-muted-foreground">excluded</span></span> : null}
+					</div>
+				</div>
+			) : null}
+		</div>
 	);
 }
 
@@ -1440,6 +1503,13 @@ function collectDiscountEntriesFromSections(
 	];
 }
 
+export function getProviderTableDiscountBadge(
+	sections: ReturnType<typeof buildProviderSections>,
+): string | null {
+	const entries = collectDiscountEntriesFromSections(sections);
+	return entries.length ? formatDiscountBadge(entries) : null;
+}
+
 function parseRuleAudioMode(value: unknown): "with-audio" | "without-audio" | null {
 	const values = parseRuleConditionValues(value);
 	const parsed = values
@@ -1571,6 +1641,7 @@ export default function ProviderCard({
 	navigationProviders,
 	privacyIgnoredReasons,
 	runtimeStats,
+	runtimeStatsByServiceTier,
 	routingStatus,
 	pricingTimeMs,
 	displayNameOverride,
@@ -1578,7 +1649,9 @@ export default function ProviderCard({
 	showCacheReadColumn = false,
 	isLastVisible = false,
 	serviceTiersExpanded = false,
+	showServiceTierDisclosureGutter = false,
 	onToggleServiceTiers,
+	isSummaryActive,
 }: {
 	provider: ProviderPricing;
 	defaultPlan: string;
@@ -1587,6 +1660,7 @@ export default function ProviderCard({
 	navigationProviders: ProviderPricing[];
 	privacyIgnoredReasons?: string[] | null;
 	runtimeStats: ProviderRuntimeStats | null;
+	runtimeStatsByServiceTier?: Record<string, ProviderRuntimeStats | null>;
 	routingStatus: ProviderRoutingStatus | null;
 	pricingTimeMs: number;
 	displayNameOverride?: string | null;
@@ -1594,7 +1668,9 @@ export default function ProviderCard({
 	showCacheReadColumn?: boolean;
 	isLastVisible?: boolean;
 	serviceTiersExpanded?: boolean;
+	showServiceTierDisclosureGutter?: boolean;
 	onToggleServiceTiers?: () => void;
+	isSummaryActive?: boolean;
 }) {
 	const [selectedPlan, setSelectedPlan] = useState(defaultPlan);
 	const [expanded, setExpanded] = useState(false);
@@ -1701,6 +1777,7 @@ export default function ProviderCard({
 		[pricingTimeMs, provider, selectedPlan]
 	);
 	const tablePlan = defaultPlan;
+	const isCustomerManagedPricing = provider.provider_models.some((model) => model.id.startsWith("private-model:"));
 	const tableSec = useMemo(
 		() => buildProviderSections(provider, tablePlan, pricingTimeMs),
 		[pricingTimeMs, provider, tablePlan],
@@ -2118,29 +2195,33 @@ export default function ProviderCard({
 
 	if (allEmpty && !isFreePlan && hasPlanPricing) return null;
 
-	const uptimePct = getDisplayedUptimePct(runtimeStats);
-	const uptimeTrendPoints = getUptimeTrendPoints(runtimeStats);
-	const throughputValue = formatThroughputValue(runtimeStats?.throughput30m);
+	const selectedRuntimeStats = selectedPlan === "batch"
+		? null
+		: runtimeStatsByServiceTier?.[selectedPlan] ??
+			(selectedPlan === tablePlan ? runtimeStats : null);
+	const uptimePct = getDisplayedUptimePct(selectedRuntimeStats);
+	const uptimeTrendPoints = getUptimeTrendPoints(selectedRuntimeStats);
+	const throughputValue = formatThroughputValue(selectedRuntimeStats?.throughput30m);
+	const tableUptimePct = getDisplayedUptimePct(runtimeStats);
+	const tableUptimeTrendPoints = getUptimeTrendPoints(runtimeStats);
+	const tableThroughputValue = formatThroughputValue(runtimeStats?.throughput30m);
 	const activeDiscountEntries = collectDiscountEntriesFromSections(sec);
 	// A promotion can have an open-ended published duration. Show its discount
 	// without fabricating a deadline; the countdown remains conditional below.
 	const activePromotionEntries = activeDiscountEntries;
-	const tableActiveDiscountEntries = collectDiscountEntriesFromSections(tableSec);
 	const discountCount = activePromotionEntries.length;
-	const tableDiscountCount = tableActiveDiscountEntries.length;
 	const soonestDiscountEnd = activePromotionEntries
 		.map((entry) => entry.endsAt)
 		.filter((value): value is string => Boolean(value))
 		.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0];
 	const discountBadge = discountCount ? formatDiscountBadge(activePromotionEntries) : null;
-	const tableDiscountBadge = tableDiscountCount
-		? formatDiscountBadge(tableActiveDiscountEntries)
-		: null;
+	const tableDiscountBadge = getProviderTableDiscountBadge(tableSec);
 	const discountTimeRemaining =
 		discountCount && soonestDiscountEnd
 			? formatDiscountTimeRemaining(soonestDiscountEnd)
 			: null;
 	const selectedPlanLabel = getPricingPlanLabel(selectedPlan);
+	const tablePlanLabel = getPricingPlanLabel(tablePlan);
 	const selectedPlanTheme = getPlanTheme(selectedPlan);
 	const tablePlanTheme = getPlanTheme(tablePlan);
 	const performanceMetrics = [
@@ -2148,8 +2229,8 @@ export default function ProviderCard({
 			key: "latency",
 			label: "Latency",
 			value:
-				runtimeStats?.latencyMs30m != null
-					? formatLatencySeconds(runtimeStats.latencyMs30m)
+				selectedRuntimeStats?.latencyMs30m != null
+					? formatLatencySeconds(selectedRuntimeStats.latencyMs30m)
 					: "--",
 			valueClassName:
 				hasSelectedAlternativeServiceTier(selectedPlan, planComparisonBase)
@@ -2167,6 +2248,26 @@ export default function ProviderCard({
 			label: "Uptime",
 			value: formatPercent(uptimePct),
 			valueClassName: selectedPlanTheme.accent,
+		},
+	] as const;
+	const tablePerformanceMetrics = [
+		{
+			value:
+				tablePlan === "batch" || runtimeStats?.latencyMs30m == null
+					? "--"
+					: formatLatencySeconds(runtimeStats.latencyMs30m),
+			valueClassName: tablePlanTheme.accent,
+		},
+		{
+			value:
+				tablePlan === "batch" || !tableThroughputValue
+					? "--"
+					: `${tableThroughputValue} tps`,
+			valueClassName: tablePlanTheme.accent,
+		},
+		{
+			value: formatPercent(tableUptimePct),
+			valueClassName: tablePlanTheme.accent,
 		},
 	] as const;
 	const formattedDisplayName =
@@ -2214,9 +2315,7 @@ export default function ProviderCard({
 				candidate.provider.api_provider_id,
 				{
 					id: candidate.provider.api_provider_id,
-					name:
-						candidate.provider.api_provider_name ||
-						candidate.provider.api_provider_id,
+					name: resolveProviderDisplayName({ providerId: candidate.provider.api_provider_id, providerName: candidate.provider.api_provider_name || candidate.provider.api_provider_id, offerLabel: candidate.provider.offer_label, offerScope: candidate.provider.offer_scope }),
 				},
 			]),
 		).values(),
@@ -2226,7 +2325,7 @@ export default function ProviderCard({
 			candidate.provider.api_provider_id,
 			{
 				id: candidate.provider.api_provider_id,
-				name: candidate.provider.api_provider_name || candidate.provider.api_provider_id,
+				name: resolveProviderDisplayName({ providerId: candidate.provider.api_provider_id, providerName: candidate.provider.api_provider_name || candidate.provider.api_provider_id, offerLabel: candidate.provider.offer_label, offerScope: candidate.provider.offer_scope }),
 			},
 		]),
 	);
@@ -2309,6 +2408,10 @@ export default function ProviderCard({
 			options.serviceTier,
 		);
 	};
+	const selectServiceTier = (serviceTier: string) => {
+		setSelectedPlan(serviceTier);
+		openInspectorForProvider(inspectorProviderId, { serviceTier });
+	};
 	const toggleExpanded = () => {
 		if (expanded) {
 			window[PROVIDER_INSPECTOR_STATE_KEY] = null;
@@ -2322,6 +2425,7 @@ export default function ProviderCard({
 			),
 		});
 	};
+	const summaryActive = isSummaryActive ?? expanded;
 	const handleSummaryRowClick = (event: React.MouseEvent<HTMLTableRowElement>) => {
 		const interactiveTarget = (event.target as HTMLElement).closest(
 			"a, button, input, select, textarea, [role='button']",
@@ -2510,7 +2614,12 @@ export default function ProviderCard({
 	).filter(
 		(value): value is string => typeof value === "string" && value.trim().length > 0,
 	);
-	const pricingPrimaryContent = !hasPlanPricing ? (
+	const pricingPrimaryContent = isCustomerManagedPricing ? (
+		<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 px-3 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/30">
+			<div className="font-semibold text-foreground">Customer managed</div>
+			<p className="mt-1 text-xs leading-5 text-muted-foreground">Upstream inference costs are billed directly by your deployment provider.</p>
+		</div>
+	) : !hasPlanPricing ? (
 		isInternalTestingProvider ? (
 			<div className="rounded-xl border border-sky-200/80 bg-sky-50/60 px-3 py-2.5 text-xs text-sky-900 dark:border-sky-900/70 dark:bg-sky-950/30 dark:text-sky-100">
 				<div className="inline-flex items-center gap-1.5 font-semibold">
@@ -2862,7 +2971,7 @@ export default function ProviderCard({
 			<TableRow
 				role="button"
 				tabIndex={0}
-				aria-selected={expanded}
+				aria-pressed={summaryActive}
 				aria-expanded={expanded}
 				data-provider-inspector-open={expanded ? "true" : undefined}
 				onPointerDownCapture={handleSummaryRowPointerDownCapture}
@@ -2874,7 +2983,7 @@ export default function ProviderCard({
 				)}
 			>
 				<TableCell className="relative min-w-[280px] py-1 pl-3 pr-2">
-					{expanded ? (
+					{summaryActive ? (
 						<motion.span
 							aria-hidden="true"
 							className="absolute inset-y-0 left-0 w-0.5 bg-primary"
@@ -2888,15 +2997,15 @@ export default function ProviderCard({
 						/>
 					) : null}
 					<div className="flex items-center gap-1.5">
-						{availablePlans.length > 1 && onToggleServiceTiers ? (
+						{showServiceTierDisclosureGutter && availablePlans.length > 1 && onToggleServiceTiers ? (
 							<button
 								type="button"
 								aria-expanded={serviceTiersExpanded}
 								aria-label={`${serviceTiersExpanded ? "Collapse" : "Expand"} ${displayName} service tiers`}
 								onClick={onToggleServiceTiers}
-								className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+								className="inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 							>
-								<ChevronDown className={cn("size-3.5 transition-transform", !serviceTiersExpanded && "-rotate-90")} aria-hidden="true" />
+								<ChevronDown className={cn("size-3 transition-transform", !serviceTiersExpanded && "-rotate-90")} aria-hidden="true" />
 							</button>
 						) : null}
 						<div>
@@ -2916,12 +3025,35 @@ export default function ProviderCard({
 										/>
 									</div>
 								</div>
-								<span className="whitespace-nowrap font-semibold text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] group-hover/provider:text-foreground group-hover/provider:decoration-current">
-									{displayName}
+								<span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+									<span className="font-semibold text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] group-hover/provider:text-foreground group-hover/provider:decoration-current">
+										{displayName}
+									</span>
+									{availablePlans.length > 1 ? (
+										<span className={cn("font-medium", tablePlanTheme.accent)}>
+											({tablePlanLabel})
+										</span>
+									) : null}
 								</span>
 							</Link>
-
 							<div className="flex shrink-0 items-center gap-1">
+								{provider.provider.credential_mode === "byok_only" ? (
+									<HoverCard openDelay={120} closeDelay={80}>
+										<HoverCardTrigger asChild>
+											<button
+												type="button"
+												aria-label="BYOK only: requires your provider key"
+												className="inline-flex h-6 w-6 items-center justify-center rounded-md text-amber-700 transition-colors hover:bg-muted/60 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:text-amber-300 dark:hover:text-amber-200"
+											>
+												<KeyRound className="h-3.5 w-3.5" />
+											</button>
+										</HoverCardTrigger>
+										<HoverCardContent align="start" className="w-auto p-2 text-xs">
+											<p className="font-semibold">BYOK only</p>
+											<p className="mt-1 text-muted-foreground">Requires your provider key.</p>
+										</HoverCardContent>
+									</HoverCard>
+								) : null}
 								<HoverCard openDelay={120} closeDelay={80}>
 									<HoverCardTrigger asChild>
 										<button
@@ -3031,32 +3163,30 @@ export default function ProviderCard({
 						</div>
 					</div>
 				</TableCell>
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-					{renderTablePriceSummary(tableInputPriceSummary, tablePlanTheme.accent)}
-				</TableCell>
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-					{renderTablePriceSummary(tableOutputPriceSummary, tablePlanTheme.accent)}
-				</TableCell>
+				{isCustomerManagedPricing ? <TableCell colSpan={2} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">Customer managed</TableCell> : <>
+					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableInputPriceSummary, tablePlanTheme.accent)}</TableCell>
+					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableOutputPriceSummary, tablePlanTheme.accent)}</TableCell>
+				</>}
 				{showCacheReadColumn && tableCacheReadPriceSummary ? (
 					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
 						{renderTablePriceSummary(tableCacheReadPriceSummary, tablePlanTheme.accent)}
 					</TableCell>
 				) : null}
 				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-					<div className="font-medium text-foreground">{performanceMetrics[0].value}</div>
+					<div className="font-medium text-foreground">{tablePerformanceMetrics[0].value}</div>
 				</TableCell>
 				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-					<div className="font-medium text-foreground">{performanceMetrics[1].value}</div>
+					<div className="font-medium text-foreground">{tablePerformanceMetrics[1].value}</div>
 				</TableCell>
 				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
 					<div
 						className={cn(
 							"inline-flex items-center justify-end gap-2 font-medium tabular-nums",
-							performanceMetrics[2].valueClassName,
+							tablePerformanceMetrics[2].valueClassName,
 						)}
 					>
-						<span>{performanceMetrics[2].value}</span>
-						<UptimeSparkline points={uptimeTrendPoints} />
+						<span>{tablePerformanceMetrics[2].value}</span>
+						<UptimeSparkline points={tableUptimeTrendPoints} />
 					</div>
 				</TableCell>
 			</TableRow>
@@ -3254,7 +3384,7 @@ export default function ProviderCard({
 									</ProviderSheetSectionLink>
 									<PricingPlanSelect
 										value={selectedPlan}
-										onChange={setSelectedPlan}
+										onChange={selectServiceTier}
 										plans={availablePlans}
 										planMetaLabels={planMultiplierLabels}
 										compact
@@ -3419,7 +3549,7 @@ export default function ProviderCard({
 														>
 															<UptimeHoverContent
 																uptimePct={uptimePct}
-																runtimeStats={runtimeStats}
+																runtimeStats={selectedRuntimeStats}
 															/>
 														</HoverCardContent>
 													</HoverCard>
@@ -3439,6 +3569,7 @@ export default function ProviderCard({
 										</div>
 									))}
 								</div>
+								<ProviderHourlyUptime runtimeStats={selectedRuntimeStats} />
 								{routingHealthSummary ? (
 									<div className="border-l-2 border-amber-400 pl-3 text-xs text-amber-900 dark:text-amber-100">
 										<div className="font-semibold">{routingHealthSummary.label}</div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CatalogIssueButton } from "@/components/(data)/CatalogIssueButton";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
@@ -43,7 +44,7 @@ export default async function ModelEditButton({
 	}));
 
 	if (!authStatus.isAdmin) {
-		return null;
+		return <CatalogIssueButton entity="Model" id={modelId} />;
 	}
 
 	const editorTab = mapPageTabToEditorTab(tab);

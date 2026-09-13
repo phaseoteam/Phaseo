@@ -11,7 +11,15 @@ describe("SCIM User validation", () => {
 
 	it("rejects missing userName and unknown top-level attributes", () => {
 		expect(() => parseScimUserInput({ active: true })).toThrow(ScimProtocolError);
-		expect(() => parseScimUserInput({ userName: "alice@example.com", password: "secret" })).toThrow(ScimProtocolError);
+		expect(() => parseScimUserInput({ userName: "alice@example.com", unexpected: true })).toThrow(ScimProtocolError);
+	});
+
+	it("accepts but never persists provider-supplied server and write-only attributes", () => {
+		const input = parseScimUserInput({ id: "provider-copy", meta: { resourceType: "User" }, userName: "alice@example.com", password: "temporary-secret", groups: [{ value: "engineering", display: "Engineering" }] });
+		expect(userInputToRow(input)).not.toHaveProperty("id");
+		expect(userInputToRow(input)).not.toHaveProperty("meta");
+		expect(userInputToRow(input)).not.toHaveProperty("password");
+		expect(userInputToRow(input)).not.toHaveProperty("groups");
 	});
 
 	it("enforces Entra-compatible unique multi-value types and primary values", () => {

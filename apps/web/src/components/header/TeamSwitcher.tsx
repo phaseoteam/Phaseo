@@ -9,7 +9,7 @@ import {
 	CreditCard,
 	Key as KeyIcon,
 	Activity,
-	ScrollText,
+	Logs,
 	Check,
 	Settings,
 	LifeBuoy,
@@ -368,7 +368,7 @@ export default function TeamSwitcher({
 								activeWorkspaceId ?? "",
 							)}`}
 						>
-							<ScrollText className="h-4 w-4" />
+							<Logs className="h-4 w-4" />
 							<span>Logs</span>
 						</Link>
 					</DropdownMenuItem>

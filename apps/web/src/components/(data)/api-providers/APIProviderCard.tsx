@@ -16,6 +16,7 @@ import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { ProviderModalityBadge } from "./ProviderModalityBadge";
+import { formatLocation } from "@/lib/locations";
 
 type Props = {
 	api_provider: APIProviderCardType;
@@ -66,6 +67,7 @@ function formatTokens(value: number): string {
 export default function APIProviderCard({ api_provider }: Props) {
 	const id = api_provider.api_provider_id;
 	const name = api_provider.api_provider_name;
+	const location = formatLocation(api_provider.country_code, api_provider.subdivision_code);
 	const isExternal = isExternalProvider(api_provider);
 	const totalModels = Number(api_provider.total_models ?? 0);
 	const freeModels = Number(api_provider.free_models ?? 0);
@@ -132,6 +134,7 @@ export default function APIProviderCard({ api_provider }: Props) {
 							{isExternal ? <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300"><ArrowUpRight className="size-3" />External</span> : null}
 						</div>
 						<div className="truncate font-mono text-xs leading-[1.15] text-muted-foreground">{id}</div>
+						{location ? <div className="truncate text-xs leading-[1.15] text-muted-foreground">{location}</div> : null}
 					</div>
 					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0"><Link href={href} prefetch={false} aria-label={`Open ${name} provider page`} className="group/open"><ArrowUpRight className={cn("h-4 w-4 text-muted-foreground transition-colors", api_provider.colour ? "group-hover:text-[var(--provider-accent)]" : "group-hover:text-primary")} /></Link></Button>
 				</div>

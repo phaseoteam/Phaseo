@@ -200,7 +200,7 @@ async function ByokProvidersSection() {
 						Store and deterministically order up to {MAX_BYOK_KEYS_PER_PROVIDER} credentials per provider. Each request can attempt up to {MAX_BYOK_KEYS_PER_PROVIDER} BYOK credentials across its route.
 					</p>
 					<p className="mt-1 text-xs text-muted-foreground">
-						Batch jobs currently use Phaseo-managed credentials and do not use BYOK keys.
+						Batch jobs use the same priority and fallback provider-key routing as synchronous requests.
 					</p>
 				</div>
 

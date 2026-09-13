@@ -1,0 +1,83 @@
+{
+  "model_id": "suno/suno-v6-mini",
+  "organisation_id": "suno",
+  "name": "Suno V6 Mini",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Suno V6 Mini is the faster, more efficient member of Suno's v6 music-model generation. Suno says it is available to everyone and makes it easier to turn an idea into a song.",
+  "announced_date": "2026-09-09T00:00:00",
+  "release_date": "2026-09-09T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,audio,image,video",
+  "output_types": "music",
+  "api_model_id": null,
+  "links": [
+    { "title": "Introducing v6", "kind": "announcement", "url": "https://suno.com/blog/introducing-v6" }
+  ],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Available to everyone.",
+      "source_link": "https://suno.com/blog/introducing-v6"
+    },
+    {
+      "name": "supported_inputs",
+      "value": "Suno describes creation with text, audio, images, and video across the v6 models.",
+      "source_link": "https://suno.com/blog/introducing-v6"
+    },
+    {
+      "name": "pricing",
+      "value": "The announcement does not publish an API price or per-generation credit rate.",
+      "source_link": "https://suno.com/blog/introducing-v6"
+    }
+  ],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": {
+    "tone": "warning",
+    "markdown": "Suno V6 Mini is a consumer product release available to everyone. Suno has not published an official API model ID or API pricing in this announcement, so no Phaseo API route is asserted."
+  },
+  "model_type": "music",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": ["text", "audio/*", "image/*", "video/*"],
+    "output": ["audio/*"]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": null,
+    "streaming": null,
+    "web_search": false
+  },
+  "open_weights": false,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://suno.com/blog/introducing-v6",
+      "accessed_at": "2026-09-09T00:00:00Z",
+      "notes": "Official announcement dated September 9, 2026 names v6-mini, describes it as faster and more efficient, and says it is available to everyone."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-09T00:00:00Z",
+    "notes": "Official product name, release date, availability, and product modalities verified. API model ID, API route, and API pricing remain unpublished."
+  },
+  "last_updated": "2026-09-09T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

@@ -7,6 +7,48 @@ export const logoManifest = {
 		light: "/logo_light.svg",
 		dark: "/logo_dark.svg",
 	},
+
+	// Coding agent integrations
+	aider: {
+		color: "/logos/aider.svg",
+	},
+	"claude-code": {
+		color: "/logos/claudecode.svg",
+	},
+	continue: {
+		light: "/logos/continue_light.svg",
+		dark: "/logos/continue_dark.svg",
+	},
+	"deepseek-harness": {
+		color: "/logos/deepseek.svg",
+	},
+	"kilo-code": {
+		light: "/logos/kilo_light.svg",
+		dark: "/logos/kilo_dark.svg",
+	},
+	"muse-code": {
+		color: "/logos/meta.svg",
+	},
+	"oh-my-pi": {
+		light: "/logos/oh-my-pi_light.svg",
+		dark: "/logos/oh-my-pi_dark.svg",
+	},
+	pi: {
+		light: "/logos/pi_light.svg",
+		dark: "/logos/pi_dark.svg",
+	},
+	"prime-agent": {
+		light: "/logos/prime-intellect_light.svg",
+		dark: "/logos/prime-intellect_dark.svg",
+	},
+	"roo-code": {
+		light: "/logos/roo-code_light.svg",
+		dark: "/logos/roo-code_dark.svg",
+	},
+	zed: {
+		light: "/logos/zed_light.svg",
+		dark: "/logos/zed_dark.svg",
+	},
 	aionlabs: {
 		color: "/logos/aionlabs.svg",
 	},
@@ -76,6 +118,9 @@ export const logoManifest = {
 	bytedance: {
 		color: "/logos/bytedance.svg",
 	},
+	"canopy-wave": {
+		color: "/logos/canopy-wave.svg",
+	},
 	"bytedance-seed": {
 		color: "/logos/bytedance.svg",
 	},
@@ -122,6 +167,9 @@ export const logoManifest = {
 	},
 	cogito: {
 		color: "/logos/cogito.svg",
+	},
+	crofai: {
+		color: "/logos/crofai.svg",
 	},
 	cursor: {
 		light: "/logos/cursor-light.svg",
@@ -500,6 +548,9 @@ export const logoManifest = {
 	tinker: {
 		color: "/logos/tinker.svg",
 	},
+	tinyfish: {
+		color: "/logos/tinyfish.svg",
+	},
 	"thinking-machines": {
 		color: "/logos/thinking-machines.svg",
 	},
@@ -574,11 +625,31 @@ export const logoManifest = {
 		light: "/observability/axiom_light.svg",
 		dark: "/observability/axiom_dark.svg",
 	},
+	"observability-arize": {
+		color: "/observability/arize.svg",
+	},
+	"observability-braintrust": {
+		light: "/observability/braintrust_light.svg",
+		dark: "/observability/braintrust_dark.svg",
+	},
+	"observability-clickhouse": {
+		color: "/observability/clickhouse.svg",
+	},
 	"observability-datadog": {
 		color: "/observability/datadog.svg",
 	},
+	"observability-dynatrace": {
+		color: "/observability/dynatrace.svg",
+	},
+	"observability-fiddler": {
+		color: "/observability/fiddler.svg",
+	},
 	"observability-grafana": {
 		color: "/observability/grafana.svg",
+	},
+	"observability-honeyhive": {
+		light: "/observability/honeyhive_light.svg",
+		dark: "/observability/honeyhive_dark.svg",
 	},
 	"observability-langfuse": {
 		color: "/observability/langfuse.svg",
@@ -586,11 +657,39 @@ export const logoManifest = {
 	"observability-langsmith": {
 		color: "/observability/langsmith.svg",
 	},
+	"observability-middleware": {
+		color: "/observability/middleware.svg",
+	},
+	"observability-mona": {
+		light: "/observability/mona.svg",
+		dark: "/observability/mona_dark.svg",
+	},
+	"observability-newrelic": {
+		color: "/observability/newrelic.svg",
+	},
+	"observability-opentelemetry": {
+		light: "/observability/opentelemetry_light.svg",
+		dark: "/observability/opentelemetry_dark.svg",
+	},
+	"observability-opik": {
+		color: "/observability/opik.svg",
+	},
+	"observability-posthog": {
+		light: "/observability/posthog_light.svg",
+		dark: "/observability/posthog_dark.svg",
+	},
 	"observability-sentry": {
 		color: "/observability/sentry.svg",
 	},
 	"observability-snowflake": {
 		color: "/observability/snowflake.svg",
+	},
+	"observability-supabase": {
+		color: "/observability/supabase.svg",
+	},
+	"observability-whylabs": {
+		light: "/observability/whylabs_light.svg",
+		dark: "/observability/whylabs_dark.svg",
 	},
 
 	// Languages

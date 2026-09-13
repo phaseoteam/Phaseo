@@ -260,6 +260,11 @@ async function callWebhookDeliveryRpc(name: string, args: {
 	deliveryKey: string;
 	claimToken: string;
 	staleAfterSeconds?: number;
+	eventType?: string;
+	phase?: string;
+	progress?: number | null;
+	previousStatus?: string | null;
+	currentStatus?: string | null;
 }): Promise<boolean> {
 	const params: Record<string, unknown> = {
 		p_workspace_id: args.workspaceId,
@@ -269,6 +274,12 @@ async function callWebhookDeliveryRpc(name: string, args: {
 		p_claim_token: args.claimToken,
 	};
 	if (args.staleAfterSeconds != null) params.p_stale_after_seconds = args.staleAfterSeconds;
+	if (name === "claim_gateway_async_webhook_delivery" && args.eventType) {
+		Object.assign(params, {
+			p_event_type: args.eventType, p_phase: args.phase, p_progress: args.progress ?? null,
+			p_previous_status: args.previousStatus ?? null, p_current_status: args.currentStatus ?? null,
+		});
+	}
 	const result = await getSupabaseAdmin().rpc(name, params);
 	if (result.error) throw result.error;
 	return result.data === true;
@@ -281,6 +292,11 @@ export function claimAsyncWebhookDelivery(args: {
 	deliveryKey: string;
 	claimToken: string;
 	staleAfterSeconds?: number;
+	eventType?: string;
+	phase?: string;
+	progress?: number | null;
+	previousStatus?: string | null;
+	currentStatus?: string | null;
 }): Promise<boolean> {
 	return callWebhookDeliveryRpc("claim_gateway_async_webhook_delivery", args);
 }
@@ -307,16 +323,17 @@ export function releaseAsyncWebhookDeliveryClaim(args: {
 
 export async function listPendingAsyncWebhookDeliveries(limit = 100): Promise<PendingAsyncWebhookDelivery[]> {
 	const normalizedLimit = Number.isFinite(limit) ? Math.max(1, Math.min(500, Math.trunc(limit))) : 100;
+	const now = Date.now();
+	const staleBefore = new Date(now - 300_000).toISOString();
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_async_webhook_deliveries")
 		.select("workspace_id,kind,internal_id,delivery_key,event_type,phase,progress,previous_status,current_status")
-		.eq("status", "pending")
+		.or(`and(status.eq.pending,next_attempt_at.lte.${new Date(now).toISOString()}),and(status.eq.claimed,claimed_at.lte.${staleBefore})`)
 		.in("kind", ["video", "batch"])
 		.not("event_type", "is", null)
 		.neq("event_type", "")
 		.not("phase", "is", null)
 		.neq("phase", "")
-		.lte("next_attempt_at", new Date().toISOString())
 		.order("next_attempt_at", { ascending: true })
 		.limit(normalizedLimit);
 	if (error) throw error;
@@ -342,6 +359,7 @@ export async function recordAsyncWebhookDeliveryResult(args: {
 	kind: AsyncOperationKind;
 	internalId: string;
 	deliveryKey: string;
+	claimToken?: string;
 	attempt: Record<string, unknown>;
 	retryState?: Record<string, unknown> | null;
 	deliveredAt?: string | null;
@@ -355,6 +373,7 @@ export async function recordAsyncWebhookDeliveryResult(args: {
 		p_internal_id: args.internalId,
 		p_delivery_key: args.deliveryKey,
 		p_attempt: args.attempt,
+		...(args.claimToken ? { p_claim_token: args.claimToken } : {}),
 		p_retry_state: args.retryState ?? null,
 		p_delivered_at: args.deliveredAt ?? null,
 		p_next_retry_at: args.nextRetryAt ?? null,
@@ -517,11 +536,14 @@ export async function getAsyncOperation(
 	workspaceIdRaw: string,
 	kind: AsyncOperationKind,
 	internalIdRaw: string,
+	options?: { fresh?: boolean },
 ): Promise<AsyncOperationRecord | null> {
 	const workspaceId = normalizeText(workspaceIdRaw);
 	const internalId = normalizeText(internalIdRaw);
 	if (!workspaceId || !internalId) return null;
 	const cacheKey = asyncOperationCacheKey(workspaceId, kind, internalId);
+	// Also discard an in-flight read started before the claim was acquired.
+	if (options?.fresh) invalidateAsyncOperationCache(workspaceId, kind, internalId);
 	const cached = readAsyncOperationL1(cacheKey);
 	if (cached !== undefined) return cached;
 
@@ -731,4 +753,3 @@ export async function patchAsyncOperationIdentity(args: {
 	if (error) throw error;
 	invalidateAsyncOperationCache(workspaceId, args.kind, internalId);
 }
-

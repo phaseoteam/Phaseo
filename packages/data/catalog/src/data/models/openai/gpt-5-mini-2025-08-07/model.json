@@ -2,13 +2,13 @@
   "model_id": "openai/gpt-5-mini-2025-08-07",
   "organisation_id": "openai",
   "name": "gpt-5-mini-2025-08-07",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": null,
   "description": "gpt-5-mini-2025-08-07 is available through OrcaRouter under the exact model ID openai/gpt-5-mini-2025-08-07.",
   "announced_date": null,
   "release_date": null,
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-06-11T00:00:00",
+  "retirement_date": "2026-12-11T00:00:00",
   "license": null,
   "input_types": "text,image,file",
   "output_types": "text",
@@ -54,15 +54,21 @@
       "url": "https://api.orcarouter.ai/v1/models",
       "accessed_at": "2026-08-24T00:00:00Z",
       "notes": "OrcaRouter live model catalogue metadata."
+    },
+    {
+      "kind": "documentation",
+      "url": "https://developers.openai.com/api/docs/deprecations",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Official OpenAI deprecations page lists the June 11, 2026 deprecation and December 11, 2026 shutdown for this exact snapshot, and recommends openai/gpt-5.6-terra."
     }
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-08-24T00:00:00Z",
-    "notes": "Exact model ID, availability, limits, modalities, description, and pricing metadata verified against OrcaRouter's live official catalogue."
+    "checked_at": "2026-09-03T00:00:00Z",
+    "notes": "Exact model ID, availability, limits, modalities, description, and pricing metadata verified against OrcaRouter's live official catalogue. Lifecycle dates and replacement model verified against OpenAI's official deprecations page."
   },
-  "last_updated": "2026-08-24T00:00:00Z",
+  "last_updated": "2026-09-03T00:00:00Z",
   "removal_date": null,
-  "replacement_model_id": null,
+  "replacement_model_id": "openai/gpt-5.6-terra",
   "license_url": null
 }

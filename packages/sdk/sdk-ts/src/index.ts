@@ -75,6 +75,8 @@ export type AppAttribution = {
 type Options = {
   apiKey?: string;
   baseUrl?: string;
+  /** Select a Phaseo regional provider-routing endpoint. Cannot be combined with baseUrl. */
+  region?: PhaseoRegion;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
   devtools?: Partial<DevToolsConfig>;
@@ -168,6 +170,7 @@ export type MessageStreamChunk = Record<string, unknown> & {
   usage?: GatewayStreamUsage | null;
   reasoningTokens?: number | null;
 };
+export type ImageStreamChunk = Record<string, unknown>;
 
 export type VideoCreateRequest = {
   model: ModelId;
@@ -293,6 +296,20 @@ export type ChatCompletionsParams = Omit<ChatCompletionsRequest, "model" | "mess
 };
 
 const DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
+const REGIONAL_BASE_URLS = {
+  global: DEFAULT_BASE_URL,
+  eu: "https://eu.api.phaseo.app/v1",
+  us: "https://us.api.phaseo.app/v1",
+} as const;
+
+export type PhaseoRegion = keyof typeof REGIONAL_BASE_URLS;
+
+function resolveBaseUrl(options: Pick<Options, "baseUrl" | "region">): string {
+  if (options.baseUrl !== undefined && options.region !== undefined) {
+    throw new Error("baseUrl and region cannot be used together");
+  }
+  return options.baseUrl ?? REGIONAL_BASE_URLS[options.region ?? "global"];
+}
 
 function trimTrailingSlashes(value: string): string {
   let end = value.length;
@@ -418,6 +435,8 @@ export class Phaseo {
     create: async (req: BatchCreateRequest): Promise<BatchResponse> => this.createBatch(req),
     list: async (params: Record<string, unknown> = {}): Promise<BatchListResponse> => this.listBatches(params),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
+    streamResults: (batchId: string, options: { signal?: AbortSignal } = {}): Promise<ReadableStream<Uint8Array>> =>
+      this.streamBatchResults(batchId, options),
     cancel: async (batchId: string): Promise<BatchResponse> => this.cancelBatch(batchId),
     listRequests: async (batchId: string, options: BatchRequestListOptions = {}): Promise<BatchRequestRowsResponse> =>
       this.listBatchRequests(batchId, options),
@@ -481,7 +500,7 @@ export class Phaseo {
 
   constructor(private readonly opts: Options = {}) {
     const apiKey = resolveApiKey(opts.apiKey);
-    this.basePath = trimTrailingSlashes(opts.baseUrl ?? DEFAULT_BASE_URL);
+    this.basePath = trimTrailingSlashes(resolveBaseUrl(opts));
     this.headers = {
       Authorization: `Bearer ${apiKey}`,
       "X-Phaseo-Client": "phaseo-typescript",
@@ -756,17 +775,36 @@ export class Phaseo {
     );
   }
 
+  async *streamImage(req: ImagesGenerationRequest): AsyncGenerator<ImageStreamChunk> {
+    const payload = { ...req, stream: true };
+    await this.maybeWarnForPayload(payload);
+
+    const generator = async function* (this: Phaseo) {
+      const res = await this.fetchImpl(`${this.basePath}/images/generations`, {
+        method: "POST",
+        headers: { ...this.headers, "Content-Type": "application/json", Accept: "text/event-stream" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text();
+        throw createStreamHttpError(res, text);
+      }
+      for await (const line of readSseLines(res)) {
+        const chunk = parseImageStreamLine(line);
+        if (chunk) yield chunk;
+      }
+    }.bind(this);
+
+    yield* this.telemetry.wrapStream("images.generations", generator(), () => payload);
+  }
+
   async generateImageEdit(req: ImagesEditRequest): Promise<ImagesEditResponse> {
     await this.maybeWarnForPayload(req);
     return this.telemetry.wrap(
       "images.edits",
       async () => {
         const form = new FormData();
-        Object.entries(req).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            form.append(key, value as string | Blob);
-          }
-        });
+        appendMultipartFields(form, req);
         const res = await this.fetchImpl(`${this.basePath}/images/edits`, {
           method: "POST",
           headers: this.headers,
@@ -780,6 +818,35 @@ export class Phaseo {
       },
       () => ({ ...req, image: req.image ? "[File]" : undefined }),
       extractImageMetadata
+    );
+  }
+
+  async *streamImageEdit(req: ImagesEditRequest): AsyncGenerator<ImageStreamChunk> {
+    const payload = { ...req, stream: true };
+    await this.maybeWarnForPayload(payload);
+
+    const generator = async function* (this: Phaseo) {
+      const form = new FormData();
+      appendMultipartFields(form, payload);
+      const res = await this.fetchImpl(`${this.basePath}/images/edits`, {
+        method: "POST",
+        headers: { ...this.headers, Accept: "text/event-stream" },
+        body: form
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text();
+        throw createStreamHttpError(res, text);
+      }
+      for await (const line of readSseLines(res)) {
+        const chunk = parseImageStreamLine(line);
+        if (chunk) yield chunk;
+      }
+    }.bind(this);
+
+    yield* this.telemetry.wrapStream(
+      "images.edits",
+      generator(),
+      () => ({ ...payload, image: payload.image ? "[File]" : undefined })
     );
   }
 
@@ -978,6 +1045,19 @@ export class Phaseo {
       () => req,
       extractBatchMetadata
     );
+  }
+
+  /** Stream batch JSONL without buffering. Cancel the stream or signal to stop downloading. */
+  async streamBatchResults(batchId: string, options: { signal?: AbortSignal } = {}): Promise<ReadableStream<Uint8Array>> {
+    const res = await this.fetchImpl(`${this.basePath}/batches/${encodeURIComponent(batchId)}/results`, {
+      method: "GET",
+      headers: { ...this.headers, Accept: "application/x-ndjson" },
+      signal: options.signal,
+      redirect: "error",
+    });
+    if (!res.ok) throw createHttpError(res, await res.text());
+    if (!res.body) throw new Error("Batch results response has no body");
+    return res.body;
   }
 
   getBatch(batchId: string): Promise<BatchResponse> {
@@ -1466,6 +1546,23 @@ function parseMessageStreamLine(line: string): MessageStreamChunk | null {
     usage,
     reasoningTokens: extractReasoningTokens(usage)
   };
+}
+
+function parseImageStreamLine(line: string): ImageStreamChunk | null {
+  const parsed = parseSseJson(line);
+  if (parsed === null) return null;
+  return isRecord(parsed) ? parsed : { raw: parsed };
+}
+
+function appendMultipartFields(form: FormData, fields: object): void {
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) form.append(key, item as string | Blob);
+      continue;
+    }
+    form.append(key, value as string | Blob);
+  }
 }
 
 function parseSseJson(line: string): unknown | null {

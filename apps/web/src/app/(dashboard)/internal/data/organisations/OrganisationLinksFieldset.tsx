@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Link2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,11 +89,10 @@ export default function OrganisationLinksFieldset({
 	);
 
 	return (
-		<div className="space-y-3 rounded-lg border p-3">
+		<div className="space-y-5 border-t pt-6">
 			<div className="flex items-center justify-between">
 				<div>
-					<h3 className="text-sm font-medium">Social links</h3>
-					<p className="text-xs text-muted-foreground">Add organisation profiles and website links.</p>
+					<h2 className="flex items-center gap-2 font-medium"><Link2 className="size-4 text-muted-foreground" />Social links</h2>
 				</div>
 				<Button
 					type="button"
@@ -119,7 +118,7 @@ export default function OrganisationLinksFieldset({
 			{links.length === 0 ? (
 				<p className="text-xs text-muted-foreground">No social links yet.</p>
 			) : (
-				<div className="space-y-2">
+				<div className="space-y-4">
 					{links.map((link) => (
 						<div key={link.id} className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr_auto]">
 							<div>
@@ -141,7 +140,7 @@ export default function OrganisationLinksFieldset({
 									}
 								>
 									<SelectTrigger className="w-full text-sm">
-										<SelectValue placeholder="Select platform" />
+										<SelectValue>{PLATFORM_OPTIONS.find((option) => option.value === link.platform)?.label ?? "Select platform"}</SelectValue>
 									</SelectTrigger>
 									<SelectContent>
 										{PLATFORM_OPTIONS.map((option) => {

@@ -6,6 +6,7 @@ import {
 import { reserveWalletCredits } from "@core/wallet-reservations";
 import { computeBill } from "@pipeline/pricing/engine";
 import { loadPriceCard } from "@pipeline/pricing/loader";
+import { BYOK_SERVICE_FEE_RATE } from "@pipeline/pricing/byok-fee";
 import { normalizeBatchEndpoint } from "@core/batch-endpoints";
 
 export const BATCH_RESERVATION_PREFIX = "batch_hold:";
@@ -15,6 +16,7 @@ const BATCH_REQUEST_TOKEN_OVERHEAD = 16;
 
 export type BatchReservationRequest = {
 	body: unknown;
+	model?: string | null;
 	endpoint?: string | null;
 	method?: string | null;
 };
@@ -158,7 +160,7 @@ async function quotedRequestCost(providerId: string, request: BatchReservationRe
 	if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) throw new Error("invalid_batch_reservation_body");
 	const body = request.body as Record<string, unknown>;
 	validatePriceableTextRequest(providerId, request, body);
-	const model = text(body.model);
+	const model = text(request.model) ?? text(body.model);
 	if (!model) throw new Error("missing_batch_reservation_model");
 	let card: Awaited<ReturnType<typeof loadPriceCard>> | null = null;
 	for (const capability of endpointCapability(request.endpoint)) {
@@ -197,6 +199,7 @@ export async function reserveBatchCredits(args: {
 	apiKeyId: string;
 	requestId: string;
 	providerId: string;
+	isByok?: boolean;
 	requests: BatchReservationRequest[];
 }): Promise<{
 	reservationId: string;
@@ -216,6 +219,7 @@ export async function reserveBatchCredits(args: {
 		inputTokenUpperBound += quote.inputTokenUpperBound;
 		outputTokenUpperBound += quote.outputTokenUpperBound;
 	}
+	if (args.isByok) reservedNanos = Math.ceil(reservedNanos * BYOK_SERVICE_FEE_RATE);
 	if (reservedNanos <= 0) throw new Error("batch_reservation_zero_cost");
 	const reservationId = `${BATCH_RESERVATION_PREFIX}${args.requestId}`;
 	const result = await reserveWalletCredits({

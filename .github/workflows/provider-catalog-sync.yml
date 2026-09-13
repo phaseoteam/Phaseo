@@ -42,32 +42,10 @@ jobs:
                   fi
                   echo "providers=$providers" >> "$GITHUB_OUTPUT"
 
-            - name: Create GitHub App token with label access
-              id: app-token-with-labels
-              continue-on-error: true
-              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
-              with:
-                  client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
-                  private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
-                  permission-contents: write
-                  permission-issues: write
-                  permission-pull-requests: write
-
-            - name: Create GitHub App token without label access
-              id: app-token
-              if: steps.app-token-with-labels.outcome == 'failure'
-              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
-              with:
-                  client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
-                  private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
-                  permission-contents: write
-                  permission-pull-requests: write
-
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
               with:
                   ref: main
                   fetch-depth: 0
-                  token: ${{ steps.app-token-with-labels.outputs.token || steps.app-token.outputs.token }}
                   persist-credentials: false
 
             - name: Setup pnpm
@@ -85,12 +63,6 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Synchronize official provider pricing
-              run: pnpm --filter @phaseo/web catalog:sync:official-pricing -- --providers="${{ steps.provider-filter.outputs.providers }}"
-
-            - name: Fill missing provider pricing from models.dev
-              run: pnpm --filter @phaseo/web catalog:sync:models-dev-pricing -- --providers="${{ steps.provider-filter.outputs.providers }}"
-
             - name: Synchronize provider discovery state
               env:
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -103,66 +75,13 @@ jobs:
                   POE_API_KEY: ${{ secrets.POE_API_KEY }}
                   REQUESTY_API_KEY: ${{ secrets.REQUESTY_API_KEY }}
                   ZENMUX_API_KEY: ${{ secrets.ZENMUX_API_KEY }}
-              run: pnpm --filter @phaseo/web catalog:sync:provider-discovery -- --live --providers="${{ steps.provider-filter.outputs.providers }}"
+              run: pnpm --filter @phaseo/web catalog:sync:database --providers="${{ steps.provider-filter.outputs.providers }}"
 
-            - name: Validate catalog changes
-              run: |
-                  pnpm validate:data
-                  pnpm validate:pricing
-                  pnpm validate:gateway
-
-            - name: Ensure automation labels
-              if: steps.app-token-with-labels.outcome == 'success'
-              env:
-                  GH_TOKEN: ${{ steps.app-token-with-labels.outputs.token }}
-              shell: bash
-              run: |
-                  gh label create automation --color 0E8A16 --description "Automated repository change" --force
-                  gh label create model-sync --color 1D76DB --description "Automated provider model and pricing sync" --force
-                  gh label create provider:batch --color C5DEF5 --description "Batched provider catalog change" --force
-
-            - name: Resolve batch branch
-              id: sync-branch
-              env:
-                  GH_TOKEN: ${{ steps.app-token-with-labels.outputs.token || steps.app-token.outputs.token }}
-              shell: bash
-              run: |
-                  prefix="automation/provider-catalog-batch"
-                  branch="$(gh pr list --state open --base main --json headRefName --jq '.[] | select(.headRefName | startswith("automation/provider-catalog-batch-")) | .headRefName' | head -n 1)"
-                  if [[ -z "$branch" ]]; then
-                    branch="$prefix-$GITHUB_RUN_ID"
-                  fi
-                  echo "branch=$branch" >> "$GITHUB_OUTPUT"
-
-            - name: Create or update batch pull request
-              id: pull-request
-              uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
+            - name: Upload sync report
+              if: always()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
               with:
-                  token: ${{ steps.app-token-with-labels.outputs.token || steps.app-token.outputs.token }}
-                  branch: ${{ steps.sync-branch.outputs.branch }}
-                  base: main
-                  delete-branch: false
-                  draft: false
-                  add-paths: |
-                      packages/data/catalog/src/data/api_providers/**
-                      packages/data/catalog/src/data/pricing/**
-                      packages/data/catalog/src/data/models/**
-                  commit-message: "chore(data): sync provider catalog"
-                  title: "chore(data): sync provider catalog"
-                  body-path: apps/web/.sync/provider-catalog-sync.md
-                  labels: ${{ steps.app-token-with-labels.outcome == 'success' && 'automation,model-sync,provider:batch' || '' }}
-
-            - name: Notify Discord
-              if: steps.pull-request.outputs.pull-request-operation != ''
-              env:
-                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-                  PR_URL: ${{ steps.pull-request.outputs.pull-request-url }}
-                  OPERATION: ${{ steps.pull-request.outputs.pull-request-operation }}
-              shell: bash
-              run: |
-                  if [[ -z "$DISCORD_WEBHOOK_URL" ]]; then
-                    echo "DISCORD_WEBHOOK_URL is not configured; skipping notification."
-                    exit 0
-                  fi
-                  payload="$(jq -cn --arg operation "$OPERATION" --arg url "$PR_URL" '{content:("Batched provider catalog PR " + $operation + ": " + $url),allowed_mentions:{parse:[]}}')"
-                  curl --fail-with-body --retry 3 --header 'Content-Type: application/json' --data "$payload" "$DISCORD_WEBHOOK_URL"
+                  name: database-catalog-sync
+                  path: apps/web/.sync/database-catalog-sync.json
+                  retention-days: 90
+                  if-no-files-found: ignore

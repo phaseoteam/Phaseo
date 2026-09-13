@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - Monorepo managed by pnpm + turbo: `apps/web` (Next.js 16 App Router, React 19, Tailwind 4, shared UI in `src/components` and `src/components/ui`), `apps/api` (Cloudflare Workers + Hono), `apps/docs` (Mintlify site).
 - SDKs: `packages/sdk/sdk-ts` TypeScript client (`src`, generated `src/oapi-gen`, builds to `dist`); `packages/sdk/sdk-py` Python client (`src`, tests in `packages/sdk/sdk-py/tests`).
-- Shared tooling lives in `scripts/`, release metadata in `.changeset/`; canonical data/benchmarks sit under `packages/data/catalog/src/data` with Jest cases nearby.
+- Shared tooling lives in `scripts/`, release metadata in `.changeset/`; the database owns catalog data. `packages/data/catalog/src/data` contains archived compatibility fixtures; daily public exports live under `packages/data/catalog/generated/database-v2`.
 
 ## Build, Test, and Development Commands
 - Install: `pnpm install` (Node >=22.12.0).

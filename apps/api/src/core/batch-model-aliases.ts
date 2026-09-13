@@ -34,6 +34,13 @@ function stripProviderPrefix(providerId: string, model: string): string {
 	return model;
 }
 
+export function normalizeOpenAIProBatchModel(model: string): { model: string; proMode: boolean } {
+	const tail = stripProviderPrefix("openai", model.trim());
+	const match = tail.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-astra)-pro$/iu);
+	if (!match) return { model: tail, proMode: false };
+	return { model: match[1]!.toLowerCase(), proMode: true };
+}
+
 function anthropicNativeFromPublicTail(tail: string): string {
 	return ANTHROPIC_PUBLIC_TO_NATIVE[tail] ?? tail;
 }
@@ -64,6 +71,7 @@ function anthropicPublicTailFromNative(tail: string): string | null {
 export function toProviderNativeBatchModelId(providerId: string, model: string): string {
 	const trimmed = model.trim();
 	const tail = stripProviderPrefix(providerId, trimmed);
+	if (providerId === "openai") return normalizeOpenAIProBatchModel(trimmed).model;
 	if (providerId === "anthropic") return anthropicNativeFromPublicTail(tail);
 	if (providerId === "mistral") return MISTRAL_PUBLIC_TO_NATIVE[tail] ?? tail;
 	return tail;

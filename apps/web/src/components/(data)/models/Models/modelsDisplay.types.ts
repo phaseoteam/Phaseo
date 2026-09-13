@@ -37,6 +37,7 @@ export type ModelsPageModel = Omit<
 		| "organisation_id"
 		| "organisation_name"
 		| "organisation_colour"
+		| "organisation_logo_url"
 		| "status"
 		| "deprecation_date"
 		| "retirement_date"

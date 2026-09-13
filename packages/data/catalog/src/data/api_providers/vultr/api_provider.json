@@ -28,6 +28,7 @@
   "pricing_source_url": "https://api.vultrinference.com/v1/provider",
   "regional_pricing_notes": null,
   "country_code": "US",
+  "subdivision_code": "US-FL",
   "status": "Active",
   "colour": null,
   "gateway_kind": "catalogue",

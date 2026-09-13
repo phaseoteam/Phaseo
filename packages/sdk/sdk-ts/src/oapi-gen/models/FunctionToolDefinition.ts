@@ -1,4 +1,5 @@
 export interface FunctionToolDefinition {
+  async?: boolean;
   function: {
     description?: string;
     name: string;

@@ -30,6 +30,7 @@ import {
 import { buildCachedResponseRecord } from "@/core/response-cache";
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
+import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -236,6 +237,13 @@ function dispatchNonStreamSuccessSideEffects(args: {
                 costNanos: totalNanos,
                 endpoint: ctx.endpoint,
             });
+			await recordManagedProviderTokensOnce({
+				ctx,
+				providerId: result.provider,
+				keySource: result.keySource,
+				usage: usageForBilling,
+				reservation: result.providerRateLimitReservation,
+			});
 
             await handleSuccessAudit(
                 ctx,
@@ -609,8 +617,6 @@ async function handleNonStreamResponse(
     const responseStatus = result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
 }
-
-
 
 
 

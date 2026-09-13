@@ -1,0 +1,9 @@
+---
+title: "Update a private model"
+sidebarTitle: "Update private model"
+badge: "Beta"
+openapi: "PATCH /private-models/{id}"
+description: "Update endpoint settings or rotate the write-only credential."
+---
+
+Requires `private_models:write` and an owner or admin identity. Submit `slug` to rename the workspace-local model; `model_id` cannot be supplied directly.

@@ -27,6 +27,7 @@ describe("realtime relay security boundaries", () => {
 	});
 
 	it("rejects malformed, oversized, and faster-than-realtime input", () => {
+		expect(validateRealtimeAudioIngress({ base64: "AAAA==", sampleRate: 24_000, currentInputMs: 0, elapsedMs: 0 })).toEqual({ ok: false, reason: "realtime_audio_invalid_base64" });
 		expect(validateRealtimeAudioIngress({
 			base64: "not base64!",
 			sampleRate: 24_000,
@@ -47,7 +48,7 @@ describe("realtime relay security boundaries", () => {
 		})).toEqual({ ok: false, reason: "realtime_audio_rate_exceeded" });
 	});
 
-	it("accumulates Google turn usage and bills thinking as output text", () => {
+	 it("accumulates Google turn usage and bills thinking as output text", () => {
 		const first = googleUsageToAggregate({}, {
 			promptTokensDetails: [{ modality: "AUDIO", tokenCount: 100 }],
 			responseTokensDetails: [{ modality: "AUDIO", tokenCount: 50 }],

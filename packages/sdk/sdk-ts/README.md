@@ -41,6 +41,22 @@ const client = new Phaseo({
 
 App attribution is optional and is never inferred from the SDK itself.
 
+## Regional text routing
+
+Select `eu` or `us` to restrict Chat Completions, Responses, and Messages to
+matching regional provider routes:
+
+```ts
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  region: "eu",
+});
+```
+
+Regional endpoints currently accept text-only requests. This is regional
+provider routing, not an end-to-end data residency guarantee. `region` cannot be
+combined with a custom `baseUrl`.
+
 ## Streaming example
 
 ```ts
@@ -85,7 +101,8 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.responses.create(...)`
 - `client.chat.completions.create(...)`
 - `client.messages.create(...)`
-- `client.streamChat(...)`, `client.streamResponses(...)`, and `client.streamMessages(...)` for parsed streaming chunks with `text`, `usage`, and `reasoningTokens`
+- `client.streamChat(...)`, `client.streamResponses(...)`, and `client.streamMessages(...)` for parsed text streaming chunks with `text`, `usage`, and `reasoningTokens`
+- `client.streamImage(...)` and `client.streamImageEdit(...)` for incremental image-generation and image-edit events
 - `client.models.list(...)`
 - `client.listOrganisations(...)` for paginated `/organisations` discovery
 - `client.listPricingModels(...)` for `/pricing/models` catalogue pricing discovery
@@ -173,6 +190,8 @@ const rows = await client.batches.listRequests(completed.id!, {
 ```
 
 For large prebuilt JSONL inputs, upload with `client.uploadFile({ model, purpose: "batch", file })` and create the batch with `input_file_id`. The default path above lets Phaseo create provider files or inline requests for you.
+
+For completed Anthropic batches, `await client.batches.streamResults(batchId, { signal })` returns the original JSONL as a `ReadableStream<Uint8Array>`. Pipe it to a file without buffering; cancel the stream or abort the signal to stop early. This download has no fixed total timeout and does not add inference charges.
 
 Webhook consumers can verify Phaseo signatures before processing the payload:
 

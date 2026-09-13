@@ -1,4 +1,21 @@
-import { resolveSiteUrl } from "./seo";
+import { resolveTitle } from "next/dist/lib/metadata/resolvers/resolve-title";
+import { buildMetadata, resolveSiteUrl } from "./seo";
+
+describe("page title branding", () => {
+	it.each([
+		["About", "About | Phaseo"],
+		["GPT 5.6 Luna API Pricing — Compare 22 Providers | Phaseo", "GPT 5.6 Luna API Pricing — Compare 22 Providers | Phaseo"],
+		["Benchmarks | Phaseo", "Benchmarks | Phaseo"],
+		["Music Room - Phaseo Chat", "Music Room - Phaseo Chat"],
+		["Phaseo vs Example", "Phaseo vs Example"],
+		["Phaseo: AI Gateway and Open Model Catalog", "Phaseo: AI Gateway and Open Model Catalog"],
+	])("resolves %s with exactly one brand", (title, expected) => {
+		const metadata = buildMetadata({ title, description: "Description", path: "/example" });
+		expect(resolveTitle(metadata.title, "%s | Phaseo").absolute).toBe(expected);
+		expect(metadata.openGraph?.title).toBe(title);
+		expect(metadata.twitter?.title).toBe(title);
+	});
+});
 
 describe("resolveSiteUrl", () => {
 	const legacyAiStatsUrl = `https://${["ai-stats", "phaseo", "app"].join(".")}`;

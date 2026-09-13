@@ -6,6 +6,7 @@
 import { getSupabaseAdmin, ensureRuntimeForBackground, isLocalTestingModeEnabled } from "@/runtime/env";
 import { ensureAppId } from "../after/apps";
 import type { Endpoint, RequestLabel } from "@core/types";
+import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 import {
 	buildGatewayRequestUsageColumns,
@@ -45,6 +46,58 @@ function cachedInputTokensAreSubset(usage: unknown): boolean {
         typeof details === "object" &&
         typeof (details as Record<string, unknown>).cached_tokens === "number"
     );
+}
+
+type CanonicalServiceTier = "standard" | "priority" | "flex" | "batch";
+
+function canonicalServiceTier(value: unknown): CanonicalServiceTier | null {
+    if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === "default") return "standard";
+    }
+    const normalized = normalizeTextServiceTier(value);
+    if (normalized === "fast" || normalized === "priority") return "priority";
+    return normalized ?? null;
+}
+
+function nestedValue(root: unknown, path: string[]): unknown {
+    let current = root;
+    for (const key of path) {
+        if (!current || typeof current !== "object") return undefined;
+        current = (current as Record<string, unknown>)[key];
+    }
+    return current;
+}
+
+export function resolveAuditServiceTiers(args: {
+    endpoint: Endpoint;
+    requestPayload?: unknown;
+    usage?: unknown;
+    gatewayResponse?: unknown;
+}): {
+    requested: CanonicalServiceTier | null;
+    observed: CanonicalServiceTier | null;
+    effective: CanonicalServiceTier | null;
+} {
+    const requested = args.endpoint === "batch"
+        ? "batch"
+        : canonicalServiceTier(readRequestedServiceTier(args.requestPayload).value);
+    const observedCandidates = [
+        nestedValue(args.usage, ["service_tier"]),
+        nestedValue(args.usage, ["serviceTier"]),
+        nestedValue(args.gatewayResponse, ["service_tier"]),
+        nestedValue(args.gatewayResponse, ["serviceTier"]),
+        nestedValue(args.gatewayResponse, ["usage", "service_tier"]),
+        nestedValue(args.gatewayResponse, ["usage", "serviceTier"]),
+    ];
+    const observed = observedCandidates
+        .map(canonicalServiceTier)
+        .find((tier): tier is CanonicalServiceTier => tier !== null) ?? null;
+    return {
+        requested,
+        observed,
+        effective: observed ?? requested,
+    };
 }
 
 const DEFAULT_RETRY_ATTEMPTS = 3;
@@ -275,6 +328,7 @@ async function upsertV2RequestFact(args: {
     routingDiagnostics?: Record<string, unknown> | null;
     labels?: RequestLabel[] | null;
 }) {
+	const serviceTier = resolveAuditServiceTiers(args);
 	const publicRoutedModel = (() => {
 		const requested = args.requestedModel.trim();
 		const routed = args.routedModel?.trim() ?? "";
@@ -483,6 +537,9 @@ async function upsertV2RequestFact(args: {
             // The v2 catalogue resolves concrete provider/model routes by the
             // upstream-facing model slug, not the legacy provider-model row ID.
             provider_api_model_id: args.providerModelSlug ?? args.providerApiModelId ?? null,
+            service_tier_requested: serviceTier.requested,
+            service_tier_observed: serviceTier.observed,
+            service_tier: serviceTier.effective,
             status_code: args.statusCode ?? null,
             success: args.success,
             error_code: args.errorCode ?? null,
@@ -532,6 +589,9 @@ async function upsertV2RequestFact(args: {
             safe_metadata: {
                 provider: args.provider ?? null,
                 routed_model: publicRoutedModel ?? args.requestedModel,
+				service_tier_requested: serviceTier.requested,
+				service_tier_observed: serviceTier.observed,
+				service_tier: serviceTier.effective,
 				labels: args.labels ?? [],
 				cached_input_tokens_are_subset_of_input: cachedInputTokensAreSubset(args.usage),
                 edge_country: args.edgeCountry ? args.edgeCountry.trim().toUpperCase() : null,
@@ -1582,6 +1642,4 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
         releaseRuntime();
     }
 }
-
-
 

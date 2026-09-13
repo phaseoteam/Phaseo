@@ -1,0 +1,45 @@
+{
+  "model_id": "meta/muse-voice-transcribe-1.0",
+  "organisation_id": "meta",
+  "name": "Muse Voice Transcribe 1.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Muse Voice Transcribe 1.0 is Meta's real-time audio perception model for multilingual speech recognition, speaker diarization, and endpointing. It supports seamless code-switching, keyword and language biasing, audio longer than one hour when streamed, and more than 20 speakers.",
+  "announced_date": "2026-09-01T00:00:00",
+  "release_date": "2026-09-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "audio",
+  "output_types": "text,audio_stt",
+  "api_model_id": "meta/muse-voice-transcribe-1.0",
+  "links": [
+    { "title": "Introducing Muse Voice Transcribe", "kind": "announcement", "url": "https://research.meta.ai/blog/introducing-muse-voice-transcribe" },
+    { "title": "Speech to text", "kind": "documentation", "url": "https://dev.meta.ai/docs/speech-to-text" },
+    { "title": "Voice API reference", "kind": "api_reference", "url": "https://dev.meta.ai/docs/api-reference/voice" }
+  ],
+  "details": [
+    { "name": "availability", "value": "Available through Meta Model API as a realtime WebSocket endpoint and a one-shot transcription endpoint." },
+    { "name": "language_coverage", "value": "Trained with more than 70 languages; Meta recommends 25 extensively validated languages at launch." },
+    { "name": "api_limits", "value": "Realtime sessions support up to 60 minutes. The one-shot endpoint accepts at most 10 minutes or 32 MB per request." }
+  ],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "speech-to-text",
+  "knowledge_cutoff": null,
+  "limits": { "context": null, "input": null, "output": null },
+  "modalities": { "input": ["audio"], "output": ["text", "audio_stt"] },
+  "reasoning": { "supported": false, "options": [] },
+  "capabilities": { "attachment": true, "tool_call": false, "structured_output": false, "temperature": false, "streaming": true, "web_search": false },
+  "open_weights": false,
+  "sources": [
+    { "kind": "announcement", "url": "https://research.meta.ai/blog/introducing-muse-voice-transcribe", "accessed_at": "2026-09-01T00:00:00Z", "notes": "Launch date, architecture, languages, diarization, endpointing, code-switching, and long-context capabilities." },
+    { "kind": "documentation", "url": "https://github.com/meta-models/meta-model-cookbook/tree/main/06_muse_voice/01_voice_api_fundamentals", "accessed_at": "2026-09-01T00:00:00Z", "notes": "Official Meta cookbook documents the model ID, one-shot and realtime endpoints, formats, modes, and limits." }
+  ],
+  "verification": { "status": "verified", "checked_at": "2026-09-01T00:00:00Z", "notes": "Release metadata and API contract verified against Meta's launch post and official model cookbook." },
+  "last_updated": "2026-09-01T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

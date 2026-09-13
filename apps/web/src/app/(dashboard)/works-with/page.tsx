@@ -182,33 +182,11 @@ export default function WorksWithPage() {
 					<div className="space-y-3">
 						<h3 className="text-base font-semibold text-zinc-900">How to submit</h3>
 						<ol className="list-decimal space-y-2 pl-5">
-							<li>Fork this repository.</li>
-							<li>
-								Add your app entry to{" "}
-								<code className="rounded bg-zinc-100 px-1 py-0.5">packages/data/catalog/src/data/works-with-phaseo.json</code>.
-							</li>
-							<li>
-								Add your logo to{" "}
-								<code className="rounded bg-zinc-100 px-1 py-0.5">apps/web/public/works-with-phaseo/&lt;your-app-name&gt;/logo.png</code>.
-							</li>
-							<li>Submit a pull request.</li>
+							<li><a href="https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Open a data request</a> for your app.</li>
+							<li>Include the app name, a short description, website, Phaseo integration guide, and a logo link.</li>
+							<li>Add relevant categories and a source repository link if the app is open source.</li>
+							<li>Track review and publication in the issue.</li>
 						</ol>
-					</div>
-
-					<div className="space-y-3">
-						<h3 className="text-base font-semibold text-zinc-900">Entry format</h3>
-						<pre className="overflow-auto rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-800">
-{`{
-  "name": "Your App Name",
-  "description": "A brief description of your app (1-2 sentences, max 300 characters)",
-  "url": "https://your-app-url.com",
-  "docs": "https://your-app-url.com/docs/phaseo",
-  "tags": ["chat"],
-  "open_source": "https://github.com/you/your-app",
-  "date_added": "2026-01-28",
-  "logo": "/works-with-phaseo/your-app-name/logo.png"
-}`}
-						</pre>
 					</div>
 
 					<div className="space-y-2">

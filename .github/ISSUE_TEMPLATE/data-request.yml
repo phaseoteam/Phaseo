@@ -4,6 +4,9 @@ title: "[Data Request] "
 assignees:
     - DanielButler1
 body:
+    - type: markdown
+      attributes:
+          value: "Request missing models, providers, organisations, benchmarks, or other catalog data here. Maintainers review the sources and add approved records through the database editor."
     - type: dropdown
       id: area
       attributes:

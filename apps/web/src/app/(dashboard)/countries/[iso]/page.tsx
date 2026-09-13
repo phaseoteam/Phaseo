@@ -79,7 +79,7 @@ export default async function CountryDetailPage({
 		notFound();
 		return (
 			<CountryDetailShell iso={iso} country={undefined}>
-				<div className="rounded-2xl border border-dashed border-zinc-300 bg-white/70 p-6 text-sm text-muted-foreground dark:border-zinc-700 dark:bg-zinc-900/70">
+				<div className="rounded-md border border-dashed border-border bg-muted/30 p-6 text-sm text-muted-foreground">
 					We do not yet have organisations or models mapped to this
 					country. Check back soon as we expand coverage.
 				</div>
@@ -141,7 +141,7 @@ export default async function CountryDetailPage({
 										href={`/organisations/${latestModel.organisation_id}`}
 									>
 										<div
-											className="relative flex h-10 w-10 items-center justify-center rounded-lg border bg-white dark:border-zinc-800 dark:bg-zinc-900"
+											className="relative flex size-10 items-center justify-center rounded-md border border-border/70 bg-background"
 											style={{ borderColor: latestAccent }}
 										>
 											<Logo

@@ -1,0 +1,38 @@
+{
+  "key": "novita:bytedance/seedance-1.5-pro:video.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "bytedance/seedance-1.5-pro",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_video_seconds", "unit": "second", "unit_size": 1,
+      "price_per_unit": 0.012, "currency": "USD", "pricing_plan": "standard",
+      "match": [{ "path": "size", "op": "eq", "value": "480p", "or_group": 1, "and_index": 1 }, { "path": "audio", "op": "eq", "value": false, "or_group": 1, "and_index": 2 }],
+      "priority": 100, "effective_from": "2026-09-06T00:00:00Z",
+      "source": "https://blogs.novita.ai/seedance-1-5-pro-on-novita-ai-complete-developer-guide/"
+    },
+    {
+      "meter": "output_video_seconds", "unit": "second", "unit_size": 1,
+      "price_per_unit": 0.024, "currency": "USD", "pricing_plan": "standard",
+      "match": [{ "path": "size", "op": "eq", "value": "480p", "or_group": 1, "and_index": 1 }, { "path": "audio", "op": "eq", "value": true, "or_group": 1, "and_index": 2 }],
+      "priority": 100, "effective_from": "2026-09-06T00:00:00Z",
+      "source": "https://blogs.novita.ai/seedance-1-5-pro-on-novita-ai-complete-developer-guide/"
+    },
+    {
+      "meter": "output_video_seconds", "unit": "second", "unit_size": 1,
+      "price_per_unit": 0.026, "currency": "USD", "pricing_plan": "standard",
+      "match": [{ "path": "size", "op": "eq", "value": "720p", "or_group": 1, "and_index": 1 }, { "path": "audio", "op": "eq", "value": false, "or_group": 1, "and_index": 2 }],
+      "priority": 100, "effective_from": "2026-09-06T00:00:00Z",
+      "source": "https://blogs.novita.ai/seedance-1-5-pro-on-novita-ai-complete-developer-guide/"
+    },
+    {
+      "meter": "output_video_seconds", "unit": "second", "unit_size": 1,
+      "price_per_unit": 0.052, "currency": "USD", "pricing_plan": "standard",
+      "match": [{ "path": "size", "op": "eq", "value": "720p", "or_group": 1, "and_index": 1 }, { "path": "audio", "op": "eq", "value": true, "or_group": 1, "and_index": 2 }],
+      "priority": 100, "effective_from": "2026-09-06T00:00:00Z",
+      "source": "https://blogs.novita.ai/seedance-1-5-pro-on-novita-ai-complete-developer-guide/"
+    }
+  ],
+  "regions": [], "service_tiers": ["standard"]
+}

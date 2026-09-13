@@ -243,14 +243,14 @@ export async function createOrganisationAction(formData: FormData) {
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
 	const name = requiredString(formData.get("name"), "name");
 	const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
-	await callCatalogMutation("/api/account/models/catalog/organisations", "POST", { organisation_id: organisationId, name, description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
+	await callCatalogMutation("/api/account/models/catalog/organisations", "POST", { organisation_id: organisationId, name, description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), subdivision_code: optionalString(formData.get("subdivision_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
 	revalidatePath("/internal/data/organisations");
 }
 
 // react-doctor-disable-next-line
 export async function updateOrganisationAction(organisationId: string, formData: FormData) {
 	const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
-	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "PUT", { name: requiredString(formData.get("name"), "name"), description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
+	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "PUT", { name: requiredString(formData.get("name"), "name"), description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), subdivision_code: optionalString(formData.get("subdivision_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
 	revalidatePath("/internal/data/organisations");
 }
 
@@ -258,6 +258,17 @@ export async function updateOrganisationAction(organisationId: string, formData:
 export async function deleteOrganisationAction(organisationId: string) {
 	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "DELETE");
 	revalidatePath("/internal/data/organisations");
+}
+
+function providerOfferFields(formData: FormData) {
+  return {
+    ...(formData.has("offer_scope") ? { offer_scope: requiredString(formData.get("offer_scope"), "offer_scope") } : {}),
+    ...(formData.has("offer_label") ? { offer_label: optionalString(formData.get("offer_label")) } : {}),
+    ...(formData.has("parent_provider_slug") ? { parent_provider_slug: optionalString(formData.get("parent_provider_slug")) } : {}),
+    ...(formData.has("base_url") ? { base_url: optionalString(formData.get("base_url")) } : {}),
+    ...(formData.has("residency_mode") ? { residency_mode: requiredString(formData.get("residency_mode"), "residency_mode") } : {}),
+    ...(formData.has("default_data_regions") ? { default_data_regions: optionalStringArray(formData.get("default_data_regions")) } : {}),
+  };
 }
 
 // react-doctor-disable-next-line
@@ -279,12 +290,15 @@ export async function createAPIProviderAction(formData: FormData) {
 
 	await callCatalogMutation("/api/account/models/catalog/providers", "POST", {
 		api_provider_id: apiProviderId,
+        ...providerOfferFields(formData),
 		api_provider_name: apiProviderName,
 		description: optionalString(formData.get("description")),
 		link: optionalString(formData.get("link")),
 		country_code: optionalString(formData.get("country_code")),
+		subdivision_code: optionalString(formData.get("subdivision_code")),
 		default_execution_regions: optionalStringArray(formData.get("default_execution_regions")),
 		byok_available: formData.get("byok_available") === "on",
+		credential_mode: formData.get("credential_mode") === "byok_only" ? "byok_only" : "managed_and_byok",
 		prompt_training_policy: promptTrainingPolicy,
 		prompt_training_notes: optionalString(formData.get("prompt_training_notes")),
 		prompt_training_source_url: optionalString(formData.get("prompt_training_source_url")),
@@ -294,7 +308,7 @@ export async function createAPIProviderAction(formData: FormData) {
 		data_policy_contract_notes: optionalString(
 			formData.get("data_policy_contract_notes"),
 		),
-		status: "Active",
+		status: optionalString(formData.get("status")) ?? "active",
 	});
 	await submitIndexNowUrls(
 		getIndexNowProviderUrls(apiProviderId),
@@ -318,12 +332,16 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 		formData.get("data_policy_contract_mode"),
 	);
 	await callCatalogMutation(`/api/account/models/catalog/providers/${encodeURIComponent(apiProviderId)}`, "PUT", {
+            ...providerOfferFields(formData),
+            ...(formData.has("status") ? { status: optionalString(formData.get("status")) } : {}),
 			api_provider_name: requiredString(formData.get("api_provider_name"), "api_provider_name"),
 			description: optionalString(formData.get("description")),
 			link: optionalString(formData.get("link")),
 			country_code: optionalString(formData.get("country_code")),
+			subdivision_code: optionalString(formData.get("subdivision_code")),
 			default_execution_regions: optionalStringArray(formData.get("default_execution_regions")),
 			byok_available: formData.get("byok_available") === "on",
+			credential_mode: formData.get("credential_mode") === "byok_only" ? "byok_only" : "managed_and_byok",
 			prompt_training_policy: promptTrainingPolicy,
 			prompt_training_notes: optionalString(formData.get("prompt_training_notes")),
 			prompt_training_source_url: optionalString(formData.get("prompt_training_source_url")),
@@ -752,6 +770,7 @@ export async function createModelAction(formData: FormData) {
 		throw error;
 	}
 
+	await refreshSavedModelCaches(modelId);
 	await submitIndexNowUrls(
 		getIndexNowModelUrls(modelId),
 		`create model ${modelId}`,
@@ -765,6 +784,7 @@ export async function updateModelAction(modelId: string, formData: FormData) {
 	const name = requiredString(formData.get("name"), "name");
 	const result = await updateModel({ modelId, name, organisation_id: organisationId, status: normalizeModelStatus(optionalString(formData.get("status"))), previous_model_id: optionalString(formData.get("previous_model_id")), replacement_model_id: optionalString(formData.get("replacement_model_id")), release_date: optionalString(formData.get("release_date")), announcement_date: optionalString(formData.get("announcement_date")), deprecation_date: optionalString(formData.get("deprecation_date")), retirement_date: optionalString(formData.get("retirement_date")), license: optionalString(formData.get("license")), input_types: normalizeCoreTypes(formData.get("input_types")), output_types: normalizeCoreTypes(formData.get("output_types")), hidden: formData.get("hidden") === "on" });
 	if (!result.ok) throw new Error(result.error ?? "Model update failed");
+	await refreshSavedModelCaches(modelId);
 	await submitIndexNowUrls(
 		getIndexNowModelUrls(modelId),
 		`update model ${modelId}`,
@@ -775,6 +795,7 @@ export async function updateModelAction(modelId: string, formData: FormData) {
 // react-doctor-disable-next-line
 export async function deleteModelAction(modelId: string) {
 	await callCatalogMutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
+	await refreshSavedModelCaches(modelId);
 	await submitIndexNowUrls(
 		getIndexNowModelUrls(modelId),
 		`delete model ${modelId}`,
@@ -782,13 +803,21 @@ export async function deleteModelAction(modelId: string) {
 	revalidatePath("/internal/data/models");
 }
 
+async function refreshSavedModelCaches(modelId: string) {
+	try {
+		await revalidateSingleModelAllAction(modelId);
+	} catch (error) {
+		throw new Error(`Model change was saved, but public cache refresh failed for ${modelId}. Retry from Cache controls.`, { cause: error });
+	}
+}
+
 // react-doctor-disable-next-line
 export async function revalidateSingleModelDataAction(modelId: string) {
-	await revalidateCloudflare(["web-api-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-notices", "web-api-search"]);
 	revalidateModelDataOnlyTags({ modelId });
 	revalidatePath(`/internal/data/models/edit/${modelId}`);
 	revalidatePath("/models");
 	revalidatePath(`/models/${modelId}`);
+	await revalidateCloudflare(["web-api-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-notices", "web-api-search"]);
 
 	return { ok: true as const, message: "Model data cache revalidated." };
 }

@@ -8,6 +8,7 @@ export interface OrganisationOverview {
 	organisation_id: string;
 	name: string;
 	country_code: string | null;
+	subdivision_code: string | null;
 	description: string | null;
 	colour: string | null;
 	updated_at?: string | null;
@@ -28,4 +29,5 @@ export interface OrganisationOverviewHeader {
 	organisation_id: string;
 	name: string;
 	country_code: string | null;
+	subdivision_code: string | null;
 }

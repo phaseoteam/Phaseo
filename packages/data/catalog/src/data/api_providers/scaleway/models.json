@@ -4,7 +4,7 @@
     "provider_api_model_id": "scaleway:meta/llama-3.3-70b",
     "provider_model_slug": "llama-3.3-70b-instruct",
     "internal_model_id": "meta/llama-3.3-70b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -27,8 +27,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": [
         "eu"
@@ -56,7 +56,7 @@
     "provider_api_model_id": "scaleway:mistral/mistral-small-3.2",
     "provider_model_slug": "mistral-small-3.2-24b-instruct-2506",
     "internal_model_id": "mistral/mistral-small-3.2",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -79,8 +79,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": [
         "eu"
@@ -108,7 +108,7 @@
     "provider_api_model_id": "scaleway:openai/gpt-oss-120b",
     "provider_model_slug": "gpt-oss-120b",
     "internal_model_id": "openai/gpt-oss-120b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -131,8 +131,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": [
         "eu"
@@ -160,7 +160,7 @@
     "provider_api_model_id": "scaleway:qwen/qwen3-coder-30b-a3b",
     "provider_model_slug": "qwen3-coder-30b-a3b-instruct",
     "internal_model_id": "qwen/qwen3-coder-30b-a3b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -183,8 +183,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": [
         "eu"
@@ -212,7 +212,7 @@
     "provider_api_model_id": "scaleway:qwen/qwen3-embedding-8b",
     "provider_model_slug": "qwen3-embedding-8b",
     "internal_model_id": "qwen/qwen3-embedding-8b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "embeddings",
@@ -248,8 +248,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": [
         "eu"
@@ -277,7 +277,7 @@
     "provider_api_model_id": "scaleway:openai/whisper-large-v3",
     "provider_model_slug": "whisper-large-v3",
     "internal_model_id": "openai/whisper-large-v3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "fp16",
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -298,8 +298,8 @@
       "output_modalities": ["text"],
       "modes": []
     }],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": { "execution": ["eu"], "data": ["eu"] },
     "service_tiers": [],
     "api": { "formats": ["openai-audio-transcription"], "endpoint": "/v1/audio/transcriptions", "deployment": null },

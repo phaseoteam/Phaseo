@@ -116,11 +116,13 @@ function buildSupabaseAdminMock() {
 					select() {
 						const builder: any = {
 							in() { return builder; }, eq() { return builder; }, lte() { return builder; }, or() { return builder; },
-							order: async () => ({ data: [{
+							order() { return builder; },
+							then(resolve: (value: unknown) => unknown) { return Promise.resolve({ data: [{
 								sku_id: "sku-veo-lite", provider_model_id: "pm-veo-lite", service_tier_slug: "standard",
 								operation: "video.generate", status: "active", currency: "USD",
 								effective_from: "2026-01-01T00:00:00Z", effective_to: null, metadata: {}, updated_at: "2026-06-10T00:00:00Z",
-							}], error: null }),
+								meters: [{ sku_meter_id: "meter-veo-lite", sku_id: "sku-veo-lite", meter_key: "output_video_seconds", unit: "second", unit_quantity: "1", price_nanos: "30000000", meter_order: 1, metadata: {}, updated_at: "2026-06-10T00:00:00Z" }],
+							}], error: null }).then(resolve); },
 						};
 						return builder;
 					},
@@ -459,6 +461,7 @@ function buildExecutorArgs(
 		requestId,
 		workspaceId: "ws_video_e2e",
 		providerId: "google-vertex",
+		apiKeyId: "key_video_e2e",
 		endpoint: "video.generation",
 		protocol: "google.vertex.video",
 		capability: "video.generate",

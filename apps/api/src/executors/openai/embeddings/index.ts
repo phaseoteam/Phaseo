@@ -7,7 +7,7 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { encodeOpenAIEmbeddingsRequest } from "@protocols/openai-embeddings/encode";
 import { decodeOpenAIEmbeddingsResponse } from "@protocols/openai-embeddings/decode";
-import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
+import { resolveOpenAITransport } from "@providers/shared/openai-transport";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
 
@@ -403,8 +403,6 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			"Morpheus embeddings do not support the dimensions parameter.",
 		);
 	}
-	const keyInfo = await resolveOpenAICompatKey(args as any);
-	const key = keyInfo.key;
 
 	const requestBody = buildRequestBody(ir, args);
 
@@ -419,13 +417,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				? "/contextualizedembeddings"
 				: "/embeddings"
 		: "/embeddings";
-	const res = await fetchUpstream(args, openAICompatUrl(args.providerId, endpointPath), {
+	const { keyInfo, url, headers, deployment } = resolveOpenAITransport({ ...args, model: ir.model, forceGatewayKey: args.meta.forceGatewayKey } as any, endpointPath, {
+		"Idempotency-Key": args.requestId,
+		...upstreamTestHeaders(args.meta),
+	});
+	const res = await fetchUpstream(args, url, {
 		method: "POST",
-		headers: openAICompatHeaders(args.providerId, key, {
-			"Idempotency-Key": args.requestId,
-			...upstreamTestHeaders(args.meta),
-		}),
-		body: JSON.stringify(requestBody),
+		headers,
+		body: JSON.stringify(deployment ? { ...requestBody, model: deployment } : requestBody),
 	});
 
 	const json = await res.clone().json().catch(() => null);

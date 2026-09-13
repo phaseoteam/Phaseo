@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+const state = vi.hoisted(() => ({ provider: "fal" }));
 
 vi.mock("@pipeline/before/guards", () => ({
 	guardAuth: vi.fn(async () => ({
@@ -17,7 +18,7 @@ vi.mock("@pipeline/before/guards", () => ({
 vi.mock("@core/video-reconciliation", () => ({
 	fetchVideoProviderStatus: vi.fn(async () => ({
 		status: "cancelled",
-		providerId: "fal",
+		providerId: state.provider,
 		model: "fal/kling-video/v2.5/turbo/pro/text-to-video",
 		raw: { status: "CANCELLED" },
 	})),
@@ -33,13 +34,13 @@ vi.mock("./videos.helpers", async () => {
 				workspaceId: "ws_fal_cancelled",
 				videoId: "video_fal_cancelled",
 				nativeId: "fal-task-cancelled",
-				provider: "fal",
+				provider: state.provider,
 				model: "fal/kling-video/v2.5/turbo/pro/text-to-video",
 				status: "in_progress",
 				createdAt: "2026-08-10T20:00:00.000Z",
 				updatedAt: "2026-08-10T20:01:00.000Z",
 			},
-			meta: { provider: "fal" },
+			meta: { provider: state.provider },
 		})),
 		finalizeVideoStatusIfTerminal: vi.fn(async () => undefined),
 	};
@@ -49,7 +50,8 @@ import { getVideoContentHandler } from "./videos.get-content";
 import * as videoHelpers from "./videos.helpers";
 
 describe("getVideoContentHandler Fal cancellation", () => {
-	it("persists upstream cancellation and returns a normalized unavailable response", async () => {
+	it.each(["fal", "ltx"])("persists %s cancellation and returns an unavailable response", async (provider) => {
+		state.provider = provider;
 		const response = await getVideoContentHandler(
 			new Request("https://api.phaseo.app/v1/videos/video_fal_cancelled/content"),
 		);
@@ -64,7 +66,7 @@ describe("getVideoContentHandler Fal cancellation", () => {
 		expect(videoHelpers.finalizeVideoStatusIfTerminal).toHaveBeenCalledWith(
 			expect.objectContaining({
 				videoId: "video_fal_cancelled",
-				providerId: "fal",
+				providerId: provider,
 				status: "cancelled",
 			}),
 		);

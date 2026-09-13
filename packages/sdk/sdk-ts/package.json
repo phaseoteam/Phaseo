@@ -42,7 +42,7 @@
 		"gen": "pnpm -w oapi:gen:ts",
 		"build": "rimraf dist && tsc -p tsconfig.build.json",
 		"prepublishOnly": "pnpm run build",
-		"test:unit": "pnpm exec vitest run tests/client-async-jobs.test.ts tests/client-batches.test.ts tests/client-chat.test.ts tests/client-endpoints.test.ts tests/client-files.test.ts tests/client-video.test.ts tests/devtools.test.ts tests/package-metadata.test.ts tests/webhooks.test.ts",
+		"test:unit": "pnpm exec vitest run tests/client-async-jobs.test.ts tests/client-batches.test.ts tests/client-chat.test.ts tests/client-endpoints.test.ts tests/client-files.test.ts tests/client-health.test.ts tests/client-video.test.ts tests/devtools.test.ts tests/package-metadata.test.ts tests/webhooks.test.ts",
 		"test:smoke": "pnpm smoke:all",
 		"smoke:chat": "dotenv -e .env.local -- tsx tests/smoke.ts --operation chat",
 		"smoke:responses": "dotenv -e .env.local -- tsx tests/smoke.ts --operation responses",
@@ -57,7 +57,7 @@
 		"@types/node": "^26.1.2",
 		"rimraf": "^6.0.0",
 		"ts-node": "^10.9.2",
-		"tsx": "^4.7.0",
+		"tsx": "^4.23.13",
 		"typescript": "^6.0.3"
 	},
 	"repository": {

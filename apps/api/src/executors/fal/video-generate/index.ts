@@ -10,7 +10,7 @@ import { buildVideoPricingRequestOptions, resolveVideoSize } from "@core/video-r
 import { isInsufficientVideoReservationStatus, reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { asyncVideoJobPersistenceFailureResult } from "@executors/_shared/async-job-persistence";
-import { fetchUpstream } from "@executors/_shared/timing/upstream";
+import { fetchVideoSubmission as fetchUpstream, configureVideoSubmission, canReleaseVideoSubmission } from "@executors/_shared/video-submission";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { resolveProviderKey } from "@providers/keys";
 import type { ProviderExecutor } from "../../types";
@@ -54,7 +54,7 @@ function referenceSource(entry: NonNullable<IRVideoGenerationRequest["inputRefer
 
 function references(ir: IRVideoGenerationRequest, type: "image" | "video" | "audio") {
 	return (ir.inputReferences ?? [])
-		.filter((entry) => entry.type === type)
+		.filter((entry) => entry.type === type && (type !== "image" || entry.role === "reference"))
 		.map(referenceSource)
 		.filter((entry): entry is string => Boolean(entry));
 }
@@ -64,7 +64,7 @@ function resolveEndpoint(ir: IRVideoGenerationRequest, configured: string): stri
 	const videoUrls = references(ir, "video");
 	const audioUrls = references(ir, "audio");
 	const hasImage = imageUrls.length > 0 || Boolean(sourceUrl(ir.inputImage ?? ir.input?.image ?? ir.inputReference));
-	const hasMultimodalReferences = videoUrls.length > 0 || audioUrls.length > 0 || imageUrls.length > 1;
+	const hasMultimodalReferences = videoUrls.length > 0 || audioUrls.length > 0 || imageUrls.length > 0;
 	if (configured.includes("/text-to-video") || configured.includes("/image-to-video") || configured.includes("/reference-to-video")) {
 		return configured;
 	}
@@ -80,12 +80,13 @@ function buildFalInput(ir: IRVideoGenerationRequest): Record<string, unknown> {
 	const imageUrls = references(ir, "image");
 	const videoUrls = references(ir, "video");
 	const audioUrls = references(ir, "audio");
-	const firstImage = sourceUrl(ir.inputImage ?? ir.input?.image ?? ir.inputReference) ?? imageUrls[0];
+	const firstImage = sourceUrl(ir.inputImage ?? ir.input?.image ?? ir.inputReference);
 	const lastImage = sourceUrl(ir.lastFrame ?? ir.input?.lastFrame) ??
 		(ir.inputReferences ?? []).find((entry) => entry.role === "last_frame")?.url;
 	const duration = positiveNumber(ir.durationSeconds ?? ir.duration ?? ir.seconds);
 	const resolution = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
 	return {
+		...(ir.providerParams ?? {}),
 		prompt: ir.prompt,
 		...(duration ? { duration: String(Math.trunc(duration)) } : {}),
 		...(resolution ? { resolution } : {}),
@@ -97,7 +98,6 @@ function buildFalInput(ir: IRVideoGenerationRequest): Record<string, unknown> {
 		...(imageUrls.length > 0 ? { image_urls: imageUrls } : {}),
 		...(videoUrls.length > 0 ? { video_urls: videoUrls } : {}),
 		...(audioUrls.length > 0 ? { audio_urls: audioUrls } : {}),
-		...(ir.providerParams ?? {}),
 	};
 }
 
@@ -105,6 +105,21 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const ir = args.ir as IRVideoGenerationRequest;
 	const configuredModel = args.providerModelSlug || ir.model;
 	const endpoint = resolveEndpoint(ir, configuredModel);
+	const hasFirstFrame = Boolean(sourceUrl(ir.inputImage ?? ir.input?.image ?? ir.inputReference));
+	const hasLastFrame = Boolean(sourceUrl(ir.lastFrame ?? ir.input?.lastFrame));
+	const hasReferences = ["image", "video", "audio"].some((type) => references(ir, type as "image" | "video" | "audio").length > 0);
+	if (configuredModel.startsWith("bytedance/seedance-2.0") && (
+		(hasLastFrame && !hasFirstFrame) ||
+		(hasReferences && (hasFirstFrame || hasLastFrame)) ||
+		(endpoint.endsWith("/text-to-video") && (hasFirstFrame || hasLastFrame || hasReferences)) ||
+		(endpoint.endsWith("/image-to-video") && (!hasFirstFrame || hasReferences)) ||
+		(endpoint.endsWith("/reference-to-video") && (hasFirstFrame || hasLastFrame))
+	)) {
+		return {
+			kind: "completed", ir: undefined, bill: { cost_cents: 0, currency: "USD" },
+			upstream: new Response(JSON.stringify({ error: { type: "validation_error", message: "Fal Seedance frame mode requires a first frame and cannot be combined with reference inputs. Inputs must match the selected endpoint." } }), { status: 400, headers: { "Content-Type": "application/json" } }),
+		};
+	}
 	const seconds = positiveNumber(ir.durationSeconds ?? ir.duration ?? ir.seconds);
 	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
 	const allowedResolutions = configuredModel.includes("seedance-2.0/fast") ? ["720p"] : ["720p", "1080p"];
@@ -131,6 +146,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let reservedNanos: number | null = null;
 	try {
 		const reservation = await reserveVideoGenerationCredits({
+			keyId: args.apiKeyId,
+			authMethod: args.meta.authMethod,
+			onReservationDenied: args.onReservationDenied,
 			workspaceId: args.workspaceId,
 			videoId: args.requestId,
 			providerId: args.providerId,
@@ -191,7 +209,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
+	configureVideoSubmission(args, { model: configuredModel, reservationId, reservedNanos, reservationStatus, keySource: keyInfo.source, byokKeyId: keyInfo.byokId });
 	const releaseReservation = async () => {
+		if (!canReleaseVideoSubmission(args)) return;
 		if (!reservationId) return;
 		await releaseWalletReservation({ workspaceId: args.workspaceId, reservationId, releaseRefId: args.requestId }).catch(() => null);
 	};

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
 	Activity,
-	ScrollText,
+	Logs,
 	Boxes,
 	BookOpenText,
 	Check,
@@ -424,7 +424,7 @@ export default function HeaderClient({
 									)}`}
 									prefetch={false}
 								>
-									<ScrollText className="h-4 w-4" />
+									<Logs className="h-4 w-4" />
 									<span>Logs</span>
 								</Link>
 							</DropdownMenuItem>

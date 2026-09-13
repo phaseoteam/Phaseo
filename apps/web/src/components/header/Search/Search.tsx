@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import { usePathname, useRouter } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTheme } from "next-themes";
@@ -32,7 +32,7 @@ import {
 	Sparkles,
 	Trophy,
 } from "lucide-react";
-import { GLOBAL_NAVIGATION_ITEMS } from "./Search.navigation";
+import { DEFAULT_SEARCH_CAPABILITIES, getGlobalNavigationItems, isSearchDestinationEnabled, type SearchCapabilities } from "@/components/header/Search/Search.navigation";
 import {
 	EXTERNAL_RESOURCE_ITEMS,
 	getContextItems,
@@ -55,16 +55,16 @@ import type {
 } from "@/lib/fetchers/search/types";
 import { publicSWRKeys } from "@/lib/swr/keys";
 import {
-	canCheckSearchGeneration,
-	searchIndexPath,
+	canRefreshSearchIndex,
 	wasAwayLongEnough,
 } from "./Search.freshness";
-import { compareSearchCategories } from "./Search.ranking";
+import { compareSearchCategories, searchContextScore } from "@/components/header/Search/Search.ranking";
 
 interface Props {
 	className?: string;
 	mobileGhost?: boolean;
 	initiallyOpen?: boolean;
+	capabilities?: SearchCapabilities;
 }
 
 type SearchableItem = PaletteItem;
@@ -110,6 +110,8 @@ type SearchResultCategory = {
 		| "actions"
 		| "apiProviders"
 		| "benchmarks"
+		| "countries"
+		| "subscriptionPlans"
 		| "context"
 		| "models"
 		| "navigation"
@@ -136,6 +138,8 @@ type IndexedSearchItem<T extends SearchableItem> = {
 };
 
 type SearchIndex = {
+	countries: IndexedSearchItem<SearchData["countries"][number]>[];
+	subscriptionPlans: IndexedSearchItem<SearchData["subscriptionPlans"][number]>[];
 	models: IndexedSearchItem<SearchData["models"][number]>[];
 	apiProviders: IndexedSearchItem<SearchData["apiProviders"][number]>[];
 	organisations: IndexedSearchItem<SearchData["organisations"][number]>[];
@@ -259,7 +263,6 @@ function expandSearchData(value: SearchData | CompactSearchData): SearchData {
 			href,
 			flagIso,
 		})),
-		cacheGeneration: Math.max(1, Number(value.v ?? 1)),
 	};
 }
 
@@ -274,16 +277,10 @@ async function fetchSearchData(path: string): Promise<SearchData> {
 	);
 }
 
-let lastSearchGenerationCheckAt = 0;
+let lastSearchRefreshAt = 0;
 
-const NAVIGATION_SEARCH_INDEX = createSearchIndex(GLOBAL_NAVIGATION_ITEMS);
 const ACTION_SEARCH_INDEX = createSearchIndex(GLOBAL_ACTION_ITEMS);
 const RESOURCE_SEARCH_INDEX = createSearchIndex(EXTERNAL_RESOURCE_ITEMS);
-const KEYBOARD_SHORTCUT_ITEMS = [
-	...GLOBAL_NAVIGATION_ITEMS,
-	...GLOBAL_ACTION_ITEMS,
-	...EXTERNAL_RESOURCE_ITEMS,
-].filter((item) => item.shortcut);
 
 function getIndexedMatchScore<T extends SearchableItem>(
 	indexedItem: IndexedSearchItem<T>,
@@ -344,9 +341,14 @@ function filterAndSortIndexed<T extends SearchableItem>(
 	term: string,
 	limit: number,
 	showAllWhenEmpty = false,
+	pathname = "/",
 ): T[] {
 	if (!term) {
-		return showAllWhenEmpty ? items.slice(0, limit).map(({ item }) => item) : [];
+		return showAllWhenEmpty
+			? items.map(({ item }) => item)
+				.sort((left, right) => searchContextScore(pathname, right.href) - searchContextScore(pathname, left.href))
+				.slice(0, limit)
+			: [];
 	}
 
 	return items
@@ -361,7 +363,7 @@ function filterAndSortIndexed<T extends SearchableItem>(
 				return right.score - left.score;
 			}
 
-			return left.sourceIndex - right.sourceIndex;
+			return searchContextScore(pathname, right.item.href) - searchContextScore(pathname, left.item.href) || left.sourceIndex - right.sourceIndex;
 		})
 		.map(({ item }) => item)
 		.slice(0, limit);
@@ -625,7 +627,15 @@ export default function Search({
 	className,
 	mobileGhost = false,
 	initiallyOpen = false,
+	capabilities = DEFAULT_SEARCH_CAPABILITIES,
 }: Props) {
+	const navigationItems = useMemo(() => getGlobalNavigationItems(capabilities), [capabilities]);
+	const navigationSearchIndex = useMemo(() => createSearchIndex(navigationItems), [navigationItems]);
+	const keyboardShortcutItems = useMemo(() => [
+		...navigationItems,
+		...GLOBAL_ACTION_ITEMS,
+		...EXTERNAL_RESOURCE_ITEMS,
+	].filter((item) => item.shortcut), [navigationItems]);
 	const router = useRouter();
 	const pathname = usePathname() ?? "/";
 	const { resolvedTheme, setTheme } = useTheme();
@@ -633,7 +643,8 @@ export default function Search({
 	const queryUpdateTimeoutRef = useRef<number | null>(null);
 	const inputValueRef = useRef("");
 	const awaySinceRef = useRef<number | null>(null);
-	const searchGenerationRef = useRef(1);
+	const hasLoadedSearchRef = useRef(false);
+	const { mutate: mutateGlobalSearch } = useSWRConfig();
 	const [open, setOpen] = useState(initiallyOpen);
 	const [query, setQuery] = useState("");
 	const [activeRowIndex, setActiveRowIndex] = useState(0);
@@ -641,25 +652,23 @@ export default function Search({
 		data: searchData,
 		error: searchDataFetchError,
 		isLoading: isLoadingSearchData,
-		mutate: mutateSearchData,
 	} = useSWR(open ? publicSWRKeys.search : null, fetchSearchData, {
-		dedupingInterval: 24 * 60 * 60 * 1_000,
-		revalidateIfStale: false,
+		dedupingInterval: 60 * 1_000,
+		revalidateIfStale: true,
+		// The resume handler also refreshes the cached index while the palette is closed.
 		revalidateOnFocus: false,
 		revalidateOnReconnect: false,
 	});
+	if (searchData) hasLoadedSearchRef.current = true;
 	const { data: workspaceItems = [] } = useSWR(
 		open ? "/api/search/workspaces" : null,
 		fetchWorkspaceSearchItems,
 		{
 			dedupingInterval: 5 * 60 * 1_000,
 			revalidateIfStale: false,
-			revalidateOnFocus: false,
-			revalidateOnReconnect: false,
 			shouldRetryOnError: false,
 		},
 	);
-	searchGenerationRef.current = searchData?.cacheGeneration ?? 1;
 	const searchDataError = searchDataFetchError
 		? "Unable to load search data."
 		: null;
@@ -689,30 +698,19 @@ export default function Search({
 		}
 
 		function maybeRefreshAfterAway() {
-			if (!searchData) return;
+			if (!hasLoadedSearchRef.current) return;
 			const now = Date.now();
 			const awaySince = awaySinceRef.current;
 			awaySinceRef.current = null;
 			if (!wasAwayLongEnough(awaySince, now)) return;
-			if (!canCheckSearchGeneration(lastSearchGenerationCheckAt, now)) return;
-			lastSearchGenerationCheckAt = now;
+			if (!canRefreshSearchIndex(lastSearchRefreshAt, now)) return;
+			lastSearchRefreshAt = now;
 
-			void fetch("/api/_web/cache-generation/search", {
-				method: "GET",
-				credentials: "omit",
-			})
-				.then(async (response) => {
-					if (!response.ok) throw new Error("Failed to check search generation");
-					const payload = await response.json() as { generation?: unknown };
-					return Math.max(1, Number(payload.generation ?? 1));
-				})
-				.then(async (generation) => {
-					if (generation <= searchGenerationRef.current) return;
-					await mutateSearchData(
-						fetchSearchData(searchIndexPath(generation)),
-						{ revalidate: false },
-					);
-				})
+			void mutateGlobalSearch(
+				publicSWRKeys.search,
+				fetchSearchData(publicSWRKeys.search),
+				{ revalidate: false },
+			)
 				.catch(() => {
 					// The existing index remains usable; the next eligible focus can retry.
 				});
@@ -732,7 +730,7 @@ export default function Search({
 			window.removeEventListener("blur", markAway);
 			window.removeEventListener("focus", maybeRefreshAfterAway);
 		};
-	}, [mutateSearchData, searchData]);
+	}, [mutateGlobalSearch]);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
@@ -860,7 +858,7 @@ export default function Search({
 			const key = event.key.toUpperCase();
 			if (key.length !== 1) return;
 			if (pendingKey) {
-				const item = KEYBOARD_SHORTCUT_ITEMS.find(
+				const item = keyboardShortcutItems.find(
 					(candidate) => candidate.shortcut?.[0] === pendingKey && candidate.shortcut[1] === key,
 				);
 				resetChord();
@@ -870,7 +868,7 @@ export default function Search({
 				return;
 			}
 
-			if (!KEYBOARD_SHORTCUT_ITEMS.some((item) => item.shortcut?.[0] === key)) return;
+			if (!keyboardShortcutItems.some((item) => item.shortcut?.[0] === key)) return;
 			event.preventDefault();
 			pendingKey = key;
 			resetTimer = window.setTimeout(resetChord, 900);
@@ -881,7 +879,7 @@ export default function Search({
 			window.removeEventListener("keydown", onShortcut);
 			if (resetTimer) window.clearTimeout(resetTimer);
 		};
-	}, [handleSelect, open]);
+	}, [handleSelect, keyboardShortcutItems, open]);
 
 	const handleQueryChange = (value: string) => {
 		inputValueRef.current = value;
@@ -907,6 +905,8 @@ export default function Search({
 
 		return {
 			models: createSearchIndex(searchData.models),
+			countries: createSearchIndex(searchData.countries),
+			subscriptionPlans: createSearchIndex(searchData.subscriptionPlans),
 			apiProviders: createSearchIndex(searchData.apiProviders),
 			organisations: createSearchIndex(searchData.organisations),
 			benchmarks: createSearchIndex(searchData.benchmarks),
@@ -930,7 +930,7 @@ export default function Search({
 		const includesScope = (scope: typeof searchScope) =>
 			searchScope === "all" || searchScope === scope;
 		const navigation = includesScope("navigation")
-			? filterAndSortIndexed(NAVIGATION_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
+			? filterAndSortIndexed(navigationSearchIndex, searchTerm, navigationItems.length, showAllWhenScoped, pathname)
 			: [];
 		const actions = includesScope("actions")
 			? filterAndSortIndexed(ACTION_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
@@ -953,6 +953,8 @@ export default function Search({
 		const benchmarks = searchScope === "all" && searchIndex
 			? filterAndSortIndexed(searchIndex.benchmarks, searchTerm, resultLimit)
 			: [];
+		const countries = searchScope === "all" && searchIndex ? filterAndSortIndexed(searchIndex.countries, searchTerm, resultLimit) : [];
+		const subscriptionPlans = searchScope === "all" && searchIndex ? filterAndSortIndexed(searchIndex.subscriptionPlans, searchTerm, resultLimit) : [];
 		const workspaces = searchScope === "all"
 			? filterAndSortIndexed(workspaceSearchIndex, searchTerm, 12)
 			: [];
@@ -971,7 +973,7 @@ export default function Search({
 			{
 				name: "navigation" as const,
 				items: navigation,
-				score: getFirstResultScore(NAVIGATION_SEARCH_INDEX, navigation, searchTerm),
+				score: getFirstResultScore(navigationSearchIndex, navigation, searchTerm),
 			},
 			{
 				name: "resources" as const,
@@ -1007,15 +1009,28 @@ export default function Search({
 					: 0,
 			},
 			{
+				name: "countries" as const,
+				items: countries,
+				score: searchIndex ? getFirstResultScore(searchIndex.countries, countries, searchTerm) : 0,
+			},
+			{
+				name: "subscriptionPlans" as const,
+				items: subscriptionPlans,
+				score: searchIndex ? getFirstResultScore(searchIndex.subscriptionPlans, subscriptionPlans, searchTerm) : 0,
+			},
+			{
 				name: "workspaces" as const,
 				items: workspaces,
 				score: getFirstResultScore(workspaceSearchIndex, workspaces, searchTerm),
 			},
 		]
 			.filter((category) => category.items.length > 0)
-			.sort(compareSearchCategories);
+			.sort((left, right) => compareSearchCategories(left, right) || searchContextScore(pathname, right.items[0]?.href) - searchContextScore(pathname, left.items[0]?.href));
 	}, [
 		contextSearchIndex,
+		navigationItems,
+		navigationSearchIndex,
+		pathname,
 		hasQuery,
 		searchIndex,
 		searchScope,
@@ -1026,7 +1041,17 @@ export default function Search({
 	const defaultCategories = useMemo<DefaultSearchCategory[]>(() => {
 		if (hasQuery) return [];
 
+		const nearbyPages = navigationItems
+			.filter((item) => item.href !== pathname && searchContextScore(pathname, item.href) > 0)
+			.sort((left, right) => searchContextScore(pathname, right.href) - searchContextScore(pathname, left.href))
+			.slice(0, 8);
 		return [
+			{
+				key: "nearby",
+				heading: pathname.startsWith("/settings") ? "Settings" : "In this area",
+				items: nearbyPages,
+				type: "navigation" as const,
+			},
 			{
 				key: "models",
 				heading: "Models",
@@ -1036,7 +1061,7 @@ export default function Search({
 			{
 				key: "pinned",
 				heading: "Pinned",
-				items: pinnedItems,
+				items: pinnedItems.filter((item) => isSearchDestinationEnabled(item.href, capabilities)),
 			},
 			{
 				key: "context",
@@ -1068,8 +1093,11 @@ export default function Search({
 				heading: "API Providers",
 				items: searchData?.apiProviders ?? [],
 			},
-		].filter((category) => category.items.length > 0);
-	}, [contextItems, hasQuery, pinnedItems, searchData, workspaceItems]);
+		].filter((category) => category.items.length > 0).sort((left, right) => {
+			const order = ["pinned", "context", "nearby", "quick-actions", "workspaces", "models", "apiProviders", "resources"];
+			return order.indexOf(left.key) - order.indexOf(right.key);
+		});
+	}, [capabilities, navigationItems, pathname, contextItems, hasQuery, pinnedItems, searchData, workspaceItems]);
 
 	const defaultBrowseRows = useMemo<DefaultBrowseRow[]>(() => {
 		if (hasQuery) return [];
@@ -1295,6 +1323,8 @@ export default function Search({
 								) : (
 									orderedCategories.map((category, index) => {
 										const categoryConfig = {
+											countries: { heading: "Countries", type: undefined, showSubtitle: true },
+											subscriptionPlans: { heading: "Subscription Plans", type: undefined, showSubtitle: true },
 											actions: { heading: "Actions", type: "action" as const, showSubtitle: true },
 											context: { heading: "On this page", type: "context" as const, showSubtitle: true },
 											navigation: { heading: "Navigation", type: "navigation" as const, showSubtitle: true },

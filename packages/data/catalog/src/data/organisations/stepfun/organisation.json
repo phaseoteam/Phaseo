@@ -2,6 +2,7 @@
   "organisation_id": "stepfun",
   "name": "StepFun",
   "country_code": "CN",
+  "subdivision_code": "CN-SH",
   "description": "StepFun is a Chinese AI company based in Shanghai. Its mission is to develop large language and multimodal foundation models and make them available for real-world applications across reasoning, agentic workflows and general AI products.",
   "colour": "#0064ff",
   "organisation_links": [

@@ -888,7 +888,7 @@
     "api_model_id": "minimax/minimax-m2.5-highspeed",
     "provider_api_model_id": "merge-gateway:minimax/minimax-m2.5-highspeed",
     "provider_model_slug": "minimax/minimax-m2.5-highspeed",
-    "internal_model_id": "minimax/minimax-m2.5",
+    "internal_model_id": "minimax/minimax-m2.5-highspeed",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",

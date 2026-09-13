@@ -8,6 +8,7 @@
   "description": "StepFun's mainland-China first-party API for text, vision, video understanding, image generation and editing, speech, transcription, realtime audio, search, files, and vector stores. Step Plan subscription and Model Lab availability constraints are recorded per model.",
   "link": "https://platform.stepfun.com/",
   "country_code": "CN",
+  "residency_mode": "provider_managed",
   "status": "Active",
   "colour": "#0064FF",
   "privacy_policy_url": "https://stepfun.ai/legal/privacy",

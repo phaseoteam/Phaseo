@@ -7,7 +7,7 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
-import { saveVideoJobMeta } from "@core/video-jobs";
+import { saveVideoJobMeta, setVideoJobStatus } from "@core/video-jobs";
 import { isInsufficientVideoReservationStatus, reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { buildVideoPricingRequestOptions, resolveVideoSize } from "@core/video-request-options";
@@ -102,11 +102,22 @@ function extractAtlasConfig(rawRequest: Record<string, any>): Record<string, any
 }
 
 function buildAtlasVideoRequest(ir: IRVideoGenerationRequest, model: string): Record<string, any> {
+	const isSeedance = model.startsWith("bytedance/seedance-");
 	const rawRequest = ((ir.rawRequest ?? {}) as Record<string, any>);
 	const atlasConfig = extractAtlasConfig(rawRequest);
 	const seconds = parseDurationSeconds(ir);
 	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
-	const aspectRatio = toNonEmptyString(atlasConfig.aspect_ratio) ?? toNonEmptyString(atlasConfig.aspectRatio) ?? ir.aspectRatio;
+	const dimensions = size?.match(/^(\d+)x(\d+)$/);
+	const width = dimensions ? Number(dimensions[1]) : undefined;
+	const height = dimensions ? Number(dimensions[2]) : undefined;
+	const resolution = isSeedance && width && height ? `${Math.min(width, height)}p` : size;
+	const inferredRatio = width && height
+		? ["16:9", "9:16", "4:3", "3:4", "1:1", "21:9"].find((ratio) => {
+			const [x, y] = ratio.split(":").map(Number);
+			return Math.abs(width / height - x / y) < 0.01;
+		})
+		: undefined;
+	const aspectRatio = ir.aspectRatio ?? inferredRatio;
 	const inputImage = normalizeInputSource(
 		ir.inputReference ??
 		ir.inputImage ??
@@ -132,15 +143,22 @@ function buildAtlasVideoRequest(ir: IRVideoGenerationRequest, model: string): Re
 		model,
 		prompt: ir.prompt,
 		...(typeof seconds === "number" ? { duration: seconds } : {}),
-		...(size ? { size } : {}),
+		...(size ? (isSeedance ? { resolution } : { size }) : {}),
 		...(ir.quality ? { quality: ir.quality } : {}),
 		...(typeof ir.seed === "number" ? { seed: ir.seed } : {}),
-		...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+		...(aspectRatio ? (isSeedance ? { ratio: aspectRatio } : { aspect_ratio: aspectRatio }) : {}),
+		...(typeof ir.generateAudio === "boolean" ? { generate_audio: ir.generateAudio } : isSeedance ? { generate_audio: true } : {}),
 		...(ir.negativePrompt ? { negative_prompt: ir.negativePrompt } : {}),
-		...(inputImage ? { image: inputImage } : {}),
-		...(inputVideo ? { video: inputVideo } : {}),
-		...(lastFrame ? { last_frame: lastFrame } : {}),
-		...(referenceImages ? { reference_images: referenceImages } : {}),
+		...(inputImage && !model.endsWith("/reference-to-video") ? { image: inputImage } : {}),
+		...(inputVideo && !model.endsWith("/reference-to-video") ? { video: inputVideo } : {}),
+		...(lastFrame ? (isSeedance ? { last_image: lastFrame } : { last_frame: lastFrame }) : {}),
+		...(model.endsWith("/reference-to-video") && inputImage
+			? { reference_images: [inputImage, ...(referenceImages ?? [])] }
+			: referenceImages ? { reference_images: referenceImages } : {}),
+		...(isSeedance && model.endsWith("/reference-to-video") ? {
+			reference_videos: ir.inputReferences?.filter((ref) => ref.type === "video").map((ref) => ref.url).filter(Boolean),
+			reference_audios: ir.inputReferences?.filter((ref) => ref.type === "audio").map((ref) => ref.url).filter(Boolean),
+		} : {}),
 		...(ir.callbackUrl ? { callback_url: ir.callbackUrl } : {}),
 	};
 
@@ -222,6 +240,24 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		},
 	);
 	const requestObject = buildAtlasVideoRequest(ir, model);
+	const pricingSize = requestObject.resolution ?? size;
+	const inputVideoCount = requestObject.reference_videos?.length ?? (requestObject.video ? 1 : 0);
+	const inputAudioCount = requestObject.reference_audios?.length ?? 0;
+	const inputImageCount = requestObject.reference_images?.length ?? (requestObject.image ? 1 : 0);
+	const validationError =
+		inputVideoCount > 0 && !ir.inputVideoDurationSeconds ? "input_video_duration is required for video references" :
+		inputAudioCount > 0 && !ir.inputAudioDurationSeconds ? "input_audio_duration is required for audio references" :
+		model.startsWith("bytedance/seedance-2.5/") && (inputImageCount > 30 || inputVideoCount > 10 || inputAudioCount > 10)
+			? "Seedance 2.5 supports at most 30 images, 10 videos and 10 audio references" :
+		(ir.sampleCount ?? ir.numberOfVideos ?? 1) !== 1 ? "AtlasCloud video requests support one output per request" : null;
+	if (validationError) {
+		return {
+			kind: "completed", ir: undefined,
+			bill: { cost_cents: 0, currency: "USD", usage: undefined as any, upstream_id: undefined, finish_reason: null },
+			upstream: Response.json({ error: { type: "invalid_request_error", message: validationError } }, { status: 400 }),
+			keySource: keyInfo.source, byokKeyId: keyInfo.byokId,
+		};
+	}
 	const requestBody = JSON.stringify(requestObject);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest)
 		? requestBody
@@ -233,6 +269,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let reservationGateError: { status: number; type: string; message: string } | null = null;
 	try {
 		const reserved = await reserveVideoGenerationCredits({
+			keyId: args.apiKeyId,
+			authMethod: args.meta.authMethod,
+			onReservationDenied: args.onReservationDenied,
 			workspaceId: args.workspaceId,
 			videoId: args.requestId,
 			providerId: args.providerId,
@@ -240,9 +279,15 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			seconds: seconds ?? null,
 			pricingCard: args.pricingCard,
 			requestOptions: buildVideoPricingRequestOptions({
-				size,
+				size: pricingSize,
 				resolution: ir.resolution,
 				quality,
+				audio: requestObject.generate_audio ?? (model.startsWith("bytedance/seedance-") ? true : undefined),
+				aspect_ratio: requestObject.ratio ?? requestObject.aspect_ratio,
+				input_image_count: inputImageCount,
+				input_video_count: inputVideoCount,
+				input_video_seconds: ir.inputVideoDurationSeconds,
+				input_audio_seconds: ir.inputAudioDurationSeconds,
 			}),
 			isByok: keyInfo.source === "byok",
 		});
@@ -349,6 +394,25 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const baseUrl = String(bindings.ATLAS_CLOUD_BASE_URL || DEFAULT_ATLASCLOUD_BASE_URL).replace(/\/+$/, "");
+	const submissionMeta = {
+		provider: args.providerId, requestId: args.requestId, model,
+		seconds: seconds ?? null, resolution: pricingSize ?? null, quality,
+		reservationId, reservedNanos, reservationStatus,
+		keySource: keyInfo.source, byokKeyId: keyInfo.byokId,
+		webhook: ir.webhook as Record<string, unknown> | null,
+		submissionState: "submitting" as const,
+	};
+	try {
+		await saveVideoJobMeta(args.workspaceId, args.requestId, submissionMeta, null, "pending");
+	} catch (error) {
+		await releaseReservationOnFailure();
+		throw error;
+	}
+	const markSubmissionUnknown = async () => {
+		await setVideoJobStatus(args.workspaceId, args.requestId, "pending", { submissionState: "unknown" }).catch((error) => {
+			console.error("atlascloud_video_submission_journal_update_failed", { requestId: args.requestId, error });
+		});
+	};
 
 	let res: Response;
 	try {
@@ -361,7 +425,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			body: requestBody,
 		});
 	} catch (fetchErr) {
-		await releaseReservationOnFailure();
+		await markSubmissionUnknown();
 		throw fetchErr;
 	}
 
@@ -374,7 +438,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	};
 
 	if (!res.ok) {
-		await releaseReservationOnFailure();
+		if (res.status >= 500 || res.status === 408) {
+			await markSubmissionUnknown();
+		} else {
+			await releaseReservationOnFailure();
+			await setVideoJobStatus(args.workspaceId, args.requestId, "failed", { submissionState: "rejected" });
+		}
 		return {
 			kind: "completed",
 			ir: undefined,
@@ -392,7 +461,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const encodedId = predictionId ? encodeAtlasPredictionId(predictionId) : undefined;
 	const status = toAtlasStatus(payload.status);
 	if (!encodedId) {
-		await releaseReservationOnFailure();
+		await markSubmissionUnknown();
 		const upstream = new Response(
 			JSON.stringify({
 				error: {
@@ -417,6 +486,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	if (encodedId) {
 		try {
 			await saveVideoJobMeta(args.workspaceId, args.requestId, {
+				submissionState: "accepted",
 				provider: args.providerId,
 				providerTaskId: predictionId ?? encodedId,
 				requestId: args.requestId,
@@ -424,8 +494,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				appId: args.meta.appId ?? null,
 				model,
 				seconds: seconds ?? null,
-				resolution: size ?? null,
+				resolution: pricingSize ?? null,
 				quality,
+				audio: requestObject.generate_audio ?? (model.startsWith("bytedance/seedance-") ? true : undefined),
+				aspectRatio: requestObject.ratio ?? requestObject.aspect_ratio,
+				inputImageCount,
+				inputVideoCount,
+				inputVideoSeconds: ir.inputVideoDurationSeconds,
+				inputAudioSeconds: ir.inputAudioDurationSeconds,
 				outputAccess: ir.outputAccess ?? "both",
 				webhook: ir.webhook as Record<string, unknown> | null,
 				reservationId,

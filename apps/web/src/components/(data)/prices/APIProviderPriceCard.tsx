@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import { ArrowUpRight } from "lucide-react";
 import { ExtendedModel, Price, APIProvider } from "@/data/types";
 
@@ -46,8 +47,7 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 					(typeof price.api_provider === "string"
 						? price.api_provider
 						: "unknown");
-				const apiProviderName =
-					apiProviderObj?.api_provider_name ?? apiProviderId;
+				const apiProviderName = resolveProviderDisplayName({ providerId: apiProviderId, providerName: apiProviderObj?.api_provider_name ?? apiProviderId });
 
 				// Parse prices
 				const inputPrice =

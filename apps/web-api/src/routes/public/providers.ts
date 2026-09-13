@@ -16,9 +16,10 @@ const UPDATES_CACHE: PublicCachePolicy = {
 const IDENTITY_CACHE: PublicCachePolicy = { edgeTtlSeconds: 24 * 60 * 60, staleWhileRevalidateSeconds: 7 * 24 * 60 * 60, cacheTags: ["web-api-providers"] };
 const MODALITIES = ["text", "image", "video", "audio", "moderation", "embedding"] as const;
 type Modality = typeof MODALITIES[number];
-type Variant = { id: string; name: string; colour: string | null; country: string; dataCenters: string[]; dataRegions: string[]; family: string | null; offerLabel: string | null; offerScope: string | null; isGatewayProvider: boolean; providerStatus: string | null; byokAvailable: boolean; promptTrainingPolicy: string | null; dataPolicyTier: string | null; zeroDataRetention: boolean; dataRetentionDays: number | null; privacyPolicyUrl: string | null; termsOfServiceUrl: string | null; totalIds: string[]; activeIds: string[]; freeIds: string[]; dailyRequests: number; dailyTokens: number; monthlyTokens: number; updatedAt: string | null; modalities: Record<Modality, { input: string[]; output: string[] }> };
+type Variant = { id: string; name: string; colour: string | null; country: string; subdivision: string | null; dataCenters: string[]; dataRegions: string[]; family: string | null; offerLabel: string | null; offerScope: string | null; isGatewayProvider: boolean; providerStatus: string | null; byokAvailable: boolean; promptTrainingPolicy: string | null; dataPolicyTier: string | null; zeroDataRetention: boolean; dataRetentionDays: number | null; privacyPolicyUrl: string | null; termsOfServiceUrl: string | null; totalIds: string[]; activeIds: string[]; freeIds: string[]; dailyRequests: number; dailyTokens: number; monthlyTokens: number; updatedAt: string | null; modalities: Record<Modality, { input: string[]; output: string[] }> };
 type ProviderIndexRpcRow = {
 	provider_slug: string; provider_name: string; colour: string | null; country_code: string | null;
+	subdivision_code: string | null;
 	default_execution_regions: string[] | null; default_data_regions: string[] | null;
 	provider_family_id: string | null; offer_label: string | null; offer_scope: string | null; is_gateway_provider: boolean; provider_status: string | null; byok_available: boolean | null;
 	prompt_training_policy: string | null; data_policy_tier: string | null; zero_data_retention: boolean | string | null; data_retention_days: number | null;
@@ -92,12 +93,13 @@ function providerCards(variants: Variant[]) {
 		const providerStatus = !isGatewayProvider && group.some((item) => String(item.providerStatus ?? "").trim().toLowerCase() === "external")
 			? "external"
 			: representative.providerStatus;
-		return { api_provider_id: representative.id, api_provider_name: ["anthropic-aws", "anthropic-aws-us"].includes(representative.id) ? "Anthropic on AWS" : representative.name, colour: representative.colour, country_code: representative.country, default_execution_regions: unique(group.flatMap((item) => item.dataCenters), []), default_data_regions: unique(group.flatMap((item) => item.dataRegions), []), is_gateway_provider: isGatewayProvider, provider_status: providerStatus, byok_available: group.some((item) => item.byokAvailable), prompt_training_policy: representative.promptTrainingPolicy, data_policy_tier: representative.dataPolicyTier, zero_data_retention: representative.zeroDataRetention, data_retention_days: representative.dataRetentionDays, privacy_policy_url: representative.privacyPolicyUrl, terms_of_service_url: representative.termsOfServiceUrl, last_updated_at: latest(group.map((item) => item.updatedAt)), total_models: new Set(group.flatMap((item) => item.totalIds)).size, active_models: new Set(group.flatMap((item) => item.activeIds)).size, free_models: new Set(group.flatMap((item) => item.freeIds)).size, total_daily_tokens: group.reduce((sum, item) => sum + Math.max(0, item.dailyTokens), 0), total_monthly_tokens: group.reduce((sum, item) => sum + Math.max(0, item.monthlyTokens), 0), daily_share_pct: totalDailyRequests ? groupRequests / totalDailyRequests * 100 : 0, modality_support: modalitySupport };
+		return { api_provider_id: representative.id, api_provider_name: ["anthropic-aws", "anthropic-aws-us"].includes(representative.id) ? "Anthropic on AWS" : representative.name, colour: representative.colour, country_code: representative.country, subdivision_code: representative.subdivision, default_execution_regions: unique(group.flatMap((item) => item.dataCenters), []), default_data_regions: unique(group.flatMap((item) => item.dataRegions), []), is_gateway_provider: isGatewayProvider, provider_status: providerStatus, byok_available: group.some((item) => item.byokAvailable), prompt_training_policy: representative.promptTrainingPolicy, data_policy_tier: representative.dataPolicyTier, zero_data_retention: representative.zeroDataRetention, data_retention_days: representative.dataRetentionDays, privacy_policy_url: representative.privacyPolicyUrl, terms_of_service_url: representative.termsOfServiceUrl, last_updated_at: latest(group.map((item) => item.updatedAt)), total_models: new Set(group.flatMap((item) => item.totalIds)).size, active_models: new Set(group.flatMap((item) => item.activeIds)).size, free_models: new Set(group.flatMap((item) => item.freeIds)).size, total_daily_tokens: group.reduce((sum, item) => sum + Math.max(0, item.dailyTokens), 0), total_monthly_tokens: group.reduce((sum, item) => sum + Math.max(0, item.monthlyTokens), 0), daily_share_pct: totalDailyRequests ? groupRequests / totalDailyRequests * 100 : 0, modality_support: modalitySupport };
 	});
 }
 
 async function providerIndex(env: Env) {
-	const result = await getDataClient(env).rpc("get_public_provider_index");
+	const client = getDataClient(env);
+	const result = await client.rpc("get_public_provider_index");
 	if (result.error) throw result.error;
 	const rows = (result.data ?? []) as ProviderIndexRpcRow[];
 	const variants: Variant[] = rows.map((row) => ({
@@ -105,6 +107,7 @@ async function providerIndex(env: Env) {
 		name: row.provider_name,
 		colour: row.colour,
 		country: row.country_code ?? "",
+		subdivision: row.subdivision_code ?? null,
 		dataCenters: row.default_execution_regions ?? [], dataRegions: row.default_data_regions ?? [],
 		family: row.provider_family_id,
 		offerLabel: row.offer_label,
@@ -350,13 +353,38 @@ export const publicProvidersRouter = new Hono<{ Bindings: Env }>();
 
 publicProvidersRouter.use("/:providerId/*", async (c, next) => {
 	const providerId = c.req.param("providerId");
-	const visibility = await getDataClient(c.env).from("v2_model_provider_routes")
+	const client = getDataClient(c.env);
+	const visibility = await client.from("v2_model_provider_routes")
 		.select("provider_model_id")
 		.eq("provider_slug", providerId)
 		.eq("is_stealth", false)
 		.limit(1);
 	if (visibility.error) return c.json({ error: "provider_unavailable" }, 503);
-	if (!visibility.data?.length) return c.json({ error: "provider_not_found" }, 404);
+	if (!visibility.data?.length) {
+		const provider = await client.from("v2_providers")
+			.select("provider_slug")
+			.eq("provider_slug", providerId)
+			.maybeSingle();
+		if (provider.error) return c.json({ error: "provider_unavailable" }, 503);
+		if (!provider.data) return c.json({ error: "provider_not_found" }, 404);
+
+		// A provider identity is public even when all of its routes are stealth.
+		// Short-circuit every child resource so aggregate telemetry cannot reveal
+		// the existence, names, traffic, or applications of those routes.
+		const resource = c.req.path.split("/").pop();
+		if (resource === "models" || resource === "top-models") {
+			return withPublicCache(c.json({ models: [] }), providerPolicy(resource === "models" ? UPDATES_CACHE : TELEMETRY_CACHE, providerId));
+		}
+		if (resource === "top-apps") return withPublicCache(c.json({ apps: [] }), providerPolicy(TELEMETRY_CACHE, providerId));
+		if (resource === "updates") return withPublicCache(c.json({ newModels: [], recentModels: [], recentTokens: 0 }), providerPolicy(UPDATES_CACHE, providerId));
+		if (resource === "metrics") return withPublicCache(c.json({
+			summary: { uptimePct: null, avgLatencyMs: null, avgThroughput: null, avgGenerationMs: null, requests24h: 0, successful24h: 0 },
+			timeseries: { latency: [], throughput: [] },
+			dailyModelLeaderboards: {},
+		}), providerPolicy(TELEMETRY_CACHE, providerId));
+		if (resource === "model-token-timeseries") return withPublicCache(c.json({ models: [], points: [] }), providerPolicy(TELEMETRY_CACHE, providerId));
+		if (resource === "app-token-timeseries") return withPublicCache(c.json({ apps: [], points: [] }), providerPolicy(TELEMETRY_CACHE, providerId));
+	}
 	await next();
 });
 

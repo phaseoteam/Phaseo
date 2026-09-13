@@ -154,6 +154,22 @@ function activateDeepSeekV4ProPeakWindows(card: PriceCard): PriceCard {
 }
 
 describe("after/pricing calculatePricing", () => {
+    it.each([
+        [{}, { service_tier: "priority" }],
+        [{ service_tier: "default" }, { service_tier: "fast" }],
+        [{ serviceTier: "standard" }, { serviceTier: "priority" }],
+    ])("bills an explicitly requested dedicated priority route with usage %j", (observed, body) => {
+        const card: PriceCard = { ...TTS_CARD, provider: "fireworks", model: "z-ai/glm-5.3",
+            rules: [{ ...TTS_CARD.rules[0], pricing_plan: "priority", price_per_unit: "2" }] };
+        const result = calculatePricing({ input_text_tokens: 1_000_000, ...observed }, card, body);
+        expect(result.totalNanos).toBe(2_000_000_000);
+    });
+
+    it("rejects default billing against a priority-only card", () => {
+        const card: PriceCard = { ...TTS_CARD, rules: [{ ...TTS_CARD.rules[0], pricing_plan: "priority" }] };
+        expect(() => calculatePricing({ input_text_tokens: 1_000 }, card, {})).toThrow("pricing_plan_missing:standard");
+    });
+
 	beforeEach(() => {
 		loadPriceCardMock.mockReset();
 	});
@@ -180,6 +196,82 @@ describe("after/pricing calculatePricing", () => {
 		expect(result.totalNanos).toBe(0);
 		expect(result.totalCents).toBe(0);
 		expect(result.pricedUsage?.pricing?.lines ?? []).toHaveLength(0);
+	});
+
+	it("uses the free pricing plan for model ids with a :free suffix", () => {
+		const card: PriceCard = {
+			provider: "poolside",
+			model: "poolside/laguna-s-2.1:free",
+			endpoint: "responses",
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: null,
+			rules: [
+				{
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0",
+					currency: "USD",
+					pricing_plan: "free",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{ cached_read_text_tokens: 32 },
+			card,
+			{ model: "poolside/laguna-s-2.1:free" },
+		);
+
+		expect(result.totalNanos).toBe(0);
+		expect(result.pricedUsage?.pricing?.lines?.[0]?.dimension).toBe("cached_read_text_tokens");
+	});
+
+	it("preserves an observed standard service tier on a :free model id", () => {
+		const card: PriceCard = {
+			provider: "poolside",
+			model: "poolside/laguna-s-2.1:free",
+			endpoint: "responses",
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: null,
+			rules: [
+				{
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0",
+					currency: "USD",
+					pricing_plan: "free",
+					match: [],
+					priority: 100,
+				},
+				{
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "1",
+					currency: "USD",
+					pricing_plan: "standard",
+					match: [],
+					priority: 90,
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{ cached_read_text_tokens: 32, service_tier: "standard" },
+			card,
+			{ model: "poolside/laguna-s-2.1:free" },
+		);
+
+		expect(result.totalNanos).toBe(32_000);
+		expect(result.pricedUsage?.pricing?.lines?.[0]?.unit_price_usd).toBe("1.000000000");
 	});
 
 	it("falls back to a matching standard rule when the requested plan conditions do not match", () => {

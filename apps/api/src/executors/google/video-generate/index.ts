@@ -4,7 +4,7 @@
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
-import { fetchUpstream } from "@executors/_shared/timing/upstream";
+import { fetchVideoSubmission as fetchUpstream, configureVideoSubmission, canReleaseVideoSubmission } from "@executors/_shared/video-submission";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { saveVideoJobMeta } from "@core/video-jobs";
@@ -137,7 +137,7 @@ function irToGoogleVideoRequest(ir: IRVideoGenerationRequest, normalized: Normal
 		aspectRatio: normalized.aspectRatio,
 		resolution: normalized.resolution,
 		...(ir.negativePrompt ? { negativePrompt: ir.negativePrompt } : {}),
-		numberOfVideos: normalized.outputCount,
+		// Veo's single-output REST request rejects the SDK's numberOfVideos field.
 		...(typeof ir.seed === "number" ? { seed: ir.seed } : {}),
 		...(ir.personGeneration ? { personGeneration: ir.personGeneration } : {}),
 	};
@@ -240,6 +240,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	try {
 		const reserved = await reserveVideoGenerationCredits({
+			keyId: args.apiKeyId,
+			authMethod: args.meta.authMethod,
+			onReservationDenied: args.onReservationDenied,
 			workspaceId: args.workspaceId,
 			videoId: args.requestId,
 			providerId: args.providerId,
@@ -287,7 +290,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
+	configureVideoSubmission(args, { model, reservationId, reservedNanos, reservationStatus, keySource: keyInfo.source, byokKeyId: keyInfo.byokId });
 	const releaseReservationOnFailure = async () => {
+		if (!canReleaseVideoSubmission(args)) return;
 		if (!reservationId) return;
 		try {
 			await releaseWalletReservation({
@@ -520,5 +525,3 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 }
 
 export const executor: ProviderExecutor = execute;
-
-

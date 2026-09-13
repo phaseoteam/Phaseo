@@ -447,7 +447,7 @@ export default function BroadcastDestinationCreateClient(props: {
 					})),
 				})),
 			});
-			toast.success("Destination saved");
+			toast.success("Broadcast destination saved");
 			router.push("/settings/broadcast");
 			router.refresh();
 		} catch (error) {
@@ -470,10 +470,10 @@ export default function BroadcastDestinationCreateClient(props: {
 				body: JSON.stringify({ destinationId: destination.id, config, workspaceId }),
 			});
 			if (result.ok) {
-				toast.success(result.status || "Connected");
+				toast.success("Connection verified");
 				return;
 			}
-			toast.error(result.status || "Connection check failed");
+			toast.error("Connection check failed");
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Connection check failed";
 			toast.error(message);

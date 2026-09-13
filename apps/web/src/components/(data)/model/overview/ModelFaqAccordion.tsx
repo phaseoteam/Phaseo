@@ -59,7 +59,7 @@ export default function ModelFaqAccordion({
 							className={`grid transition-[grid-template-rows,opacity] duration-[320ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
 						>
 							<div className="overflow-hidden">
-								<p className="max-w-3xl pb-4 pr-8 text-sm leading-6 text-muted-foreground">
+								<p className="w-full pb-4 pr-8 text-sm leading-6 text-muted-foreground">
 									{item.answer}
 								</p>
 							</div>

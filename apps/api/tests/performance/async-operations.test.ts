@@ -113,6 +113,28 @@ describe("async operations warm-cache performance", () => {
 		__resetAsyncOperationCachesForTests();
 	});
 
+	it("fresh reads bypass cached webhook state", async () => {
+		await getAsyncOperation("team_async_perf", "video", "video_123");
+		runtime.state.row = { ...runtime.state.row!, meta: { webhookDeliveries: { "video.completed": "delivered" } } };
+		const fresh = await getAsyncOperation("team_async_perf", "video", "video_123", { fresh: true });
+		expect(fresh?.meta).toEqual({ webhookDeliveries: { "video.completed": "delivered" } });
+		expect(runtime.maybeSingle).toHaveBeenCalledTimes(2);
+	});
+
+	it("a pre-claim in-flight read cannot replace the fresh cache", async () => {
+		const staleRow = runtime.state.row;
+		let finish!: (value: { data: typeof staleRow; error: null }) => void;
+		runtime.maybeSingle.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+		const stale = getAsyncOperation("team_async_perf", "video", "video_123");
+		runtime.state.row = { ...staleRow!, status: "completed" };
+		const fresh = await getAsyncOperation("team_async_perf", "video", "video_123", { fresh: true });
+		expect(fresh?.status).toBe("completed");
+		finish({ data: staleRow, error: null });
+		await stale;
+		expect((await getAsyncOperation("team_async_perf", "video", "video_123"))?.status).toBe("completed");
+		expect(runtime.maybeSingle).toHaveBeenCalledTimes(2);
+	});
+
 	it("deduplicates concurrent cold point reads to one Supabase lookup", async () => {
 		const [a, b, c] = await Promise.all([
 			getAsyncOperation("team_async_perf", "video", "video_123"),

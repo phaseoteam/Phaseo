@@ -40,6 +40,7 @@ import {
 	Video,
 	CalendarDays,
 	XCircle,
+	LockKeyhole,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1161,6 +1162,13 @@ export default function ModelsTableDisplay({
 			(option) =>
 				option.value === sortField && option.direction === sortDirection,
 		) ?? TABLE_SORT_OPTIONS[0];
+	const hasPrivateModels = initialModelData.some((model) => model.tier === "private");
+	const privateOnly = selectedTiers.includes("private");
+	const privateFilterButton = hasPrivateModels ? (
+		<Button type="button" size="sm" variant={privateOnly ? "default" : "outline"} className="h-8 gap-1.5 rounded-md" onClick={() => setSelectedTiers(privateOnly ? selectedTiers.filter((value) => value !== "private") : [...selectedTiers, "private"])} aria-pressed={privateOnly}>
+			<LockKeyhole className="h-3.5 w-3.5" />Private
+		</Button>
+	) : null;
 
 	const filterButton = (compact = false) => (
 		<Button
@@ -1591,8 +1599,9 @@ export default function ModelsTableDisplay({
 							<h1 className="font-bold text-xl leading-8">Models</h1>
 						</div>
 
-						<div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+						<div className="flex items-center gap-2">
 							{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
+							{privateFilterButton}
 							{filterButton()}
 							{viewSwitcher}
 						</div>
@@ -1638,6 +1647,7 @@ export default function ModelsTableDisplay({
 									{sortSelect(
 										"h-8 w-[12.5rem] rounded-md bg-background text-sm 2xl:w-[13.5rem]",
 									)}
+									{privateFilterButton}
 									{viewSwitcher}
 								</div>
 							</div>
@@ -1647,6 +1657,7 @@ export default function ModelsTableDisplay({
 							<div className="flex h-8 items-center justify-between gap-3">
 								<h1 className="font-bold text-xl leading-8">Models</h1>
 								<div className="flex shrink-0 items-center justify-end gap-2">
+									{privateFilterButton}
 									{filterButton()}
 									{viewSwitcher}
 								</div>

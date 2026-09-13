@@ -182,6 +182,21 @@ describe("decodeAnthropicMessagesRequest", () => {
 		});
 	});
 
+	it("preserves async on Messages tools", () => {
+		const ir = decodeAnthropicMessagesRequest({
+			model: "openai/gpt-6-astra",
+			max_tokens: 1024,
+			messages: [{ role: "user", content: "Start the lookup." }],
+			tools: [{
+				name: "lookup",
+				input_schema: { type: "object" },
+				async: true,
+			}],
+		});
+
+		expect(ir.tools?.[0]).toMatchObject({ name: "lookup", async: true });
+	});
+
 	it("should decode tool_choice - auto", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",

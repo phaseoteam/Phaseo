@@ -1,0 +1,78 @@
+{
+  "key": "fireworks:deepseek/deepseek-v4-flash-vision-exp:text.generate",
+  "api_provider_id": "fireworks",
+  "provider_slug": "fireworks",
+  "api_model_id": "deepseek/deepseek-v4-flash-vision-exp",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.007,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Fireworks DeepSeek V4 Flash Vision Exp cached-input rate",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-31T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://fireworks.ai/models/deepseek-ai/deepseek-v4-flash-vision-exp"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.22,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Fireworks DeepSeek V4 Flash Vision Exp input rate",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-31T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://fireworks.ai/models/deepseek-ai/deepseek-v4-flash-vision-exp"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.66,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Fireworks DeepSeek V4 Flash Vision Exp output rate",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-08-31T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://fireworks.ai/models/deepseek-ai/deepseek-v4-flash-vision-exp"
+    }
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://fireworks.ai/models/deepseek-ai/deepseek-v4-flash-vision-exp",
+      "accessed_at": "2026-09-02T00:00:00Z",
+      "notes": "Official Fireworks model page with the serverless model path, image-input support, and token rates."
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.com/FireworksAI_HQ/status/2094847757358137779",
+      "accessed_at": "2026-09-02T00:00:00Z",
+      "notes": "Official announcement of availability on serverless and priority tiers."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-02T00:00:00Z",
+    "notes": "Verified against Fireworks' official announcement and live model page."
+  }
+}

@@ -33,7 +33,17 @@ vi.mock("./upstream-requests", () => ({
 	persistGatewayUpstreamRequests: (...args: any[]) => persistGatewayUpstreamRequestsMock(...args),
 }));
 
-import { auditFailure, auditSuccess } from "./index";
+import { auditFailure, auditSuccess, resolveAuditServiceTiers } from "./index";
+
+describe("audit service tier attribution", () => {
+	it("keeps requests without requested or observed tier evidence unclassified", () => {
+		expect(resolveAuditServiceTiers({ endpoint: "chat.completions" })).toEqual({
+			requested: null,
+			observed: null,
+			effective: null,
+		});
+	});
+});
 
 describe("audit request detail persistence", () => {
 	beforeEach(() => {
@@ -548,8 +558,12 @@ describe("audit request detail persistence", () => {
 			requestPayload: {
 				messages: [{ role: "user", content: "private prompt" }],
 				response_format: { type: "json_object" },
+				service_tier: "fast",
 			},
-			gatewayResponse: { output_text: '{"result":"private response"}' },
+			gatewayResponse: {
+				output_text: '{"result":"private response"}',
+				usage: { service_tier: "priority" },
+			},
 			providerRequest: { secret: "provider request" },
 			providerResponse: { secret: "provider response" },
 			providerAttempts: [{
@@ -619,6 +633,9 @@ describe("audit request detail persistence", () => {
 			tool_call_succeeded: true,
 			structured_output_attempted: true,
 			structured_output_succeeded: true,
+			service_tier_requested: "priority",
+			service_tier_observed: "priority",
+			service_tier: "priority",
 		}));
 		expect(event.usage_meters).toEqual(expect.arrayContaining([
 			expect.objectContaining({ meter_key: "input_tokens", quantity: 10 }),
@@ -627,6 +644,7 @@ describe("audit request detail persistence", () => {
 		]));
 		expect(event.safe_metadata).toEqual(expect.objectContaining({
 			cached_input_tokens_are_subset_of_input: true,
+			service_tier: "priority",
 		}));
 		expect(event.routing_decisions).toEqual([
 			expect.objectContaining({

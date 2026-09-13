@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1684 1536" role="img" aria-labelledby="title">
+  <title id="title">CrofAI</title>
+  <defs>
+    <linearGradient id="crofai-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1684" y2="0">
+      <stop offset="0" stop-color="#9B30FF"/>
+      <stop offset="1" stop-color="#4169E1"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#crofai-gradient)" transform="translate(0 1511)">
+    <path d="M985 0H686V-147H682Q579 25 377 25Q228 25 142.5-59.5Q57-144 57-285Q57-583 410-629L688-666Q688-834 506-834Q323-834 158-725V-963Q224-997 338.5-1023Q453-1049 547-1049Q985-1049 985-612ZM688-416V-485L502-461Q348-441 348-322Q348-268 385.5-233.5Q423-199 487-199Q576-199 632-260.5Q688-322 688-416Z"/>
+    <path d="M1395-1186Q1315-1186 1264-1233.5Q1213-1281 1213-1350Q1213-1421 1264-1466Q1315-1511 1395-1511Q1476-1511 1526.5-1466Q1577-1421 1577-1350Q1577-1278 1526.5-1232Q1476-1186 1395-1186ZM1551 0H1235V-1024H1551Z"/>
+  </g>
+</svg>

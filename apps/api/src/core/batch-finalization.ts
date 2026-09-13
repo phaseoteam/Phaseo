@@ -27,6 +27,7 @@ import {
 	OPENAI_BATCH_PROVIDER_ID,
 } from "@core/batch-provider-adapters";
 import { computeBill } from "@pipeline/pricing/engine";
+import { applyByokServiceFee } from "@pipeline/pricing/byok-fee";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { recordUsageAndCharge } from "@pipeline/pricing/persist";
 import { resolveProviderKey } from "@providers/keys";
@@ -456,7 +457,7 @@ async function resolveBatchPriceCard(args: {
 					);
 					return { capability, pricingPlan: hasBatch ? "batch" : "free", card };
 				}
-				if (card && isImageBatchEndpoint(args.endpoint)) {
+				if (card && args.providerId === OPENAI_BATCH_PROVIDER_ID && isImageBatchEndpoint(args.endpoint)) {
 					const derived = deriveOpenAiImageBatchPriceCard(card);
 					if (derived && Array.isArray((derived as any).rules)) {
 						return { capability, pricingPlan: "batch", card: derived };
@@ -696,7 +697,7 @@ async function recordBatchKeyUsage(args: {
 	await setKeyVersion("id", apiKeyId, Date.now());
 }
 
-async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promise<BatchSettlementComputation> {
+async function computeBatchSettlement(meta: BatchJobMeta, status: string, workspaceId: string, batchId: string): Promise<BatchSettlementComputation> {
 	const completedCount = meta.requestCounts?.completed ?? null;
 	const outputFileId = normalizeText(meta.outputFileId);
 	const providerId = normalizeText(meta.provider) ?? OPENAI_BATCH_PROVIDER_ID;
@@ -725,7 +726,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		};
 	}
 
-	const entries = await fetchProviderBatchOutputEntries(meta);
+	const entries = await fetchProviderBatchOutputEntries(meta, workspaceId);
 	const downloadedSuccessfulResponses = entries.reduce(
 		(total, entry) => total + (extractResponseBody(entry) ? 1 : 0),
 		0,
@@ -739,7 +740,11 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		(isVideoBatchEndpoint(meta.endpoint) || isImageBatchEndpoint(meta.endpoint)) &&
 		normalizeText(meta.inputFileId)
 	) {
-		const inputText = await fetchProviderFileText(providerId, String(meta.inputFileId));
+		const inputText = await fetchProviderFileText(providerId, String(meta.inputFileId), 20 * 1024 * 1024, {
+			workspaceId,
+			keySource: meta.keySource,
+			byokKeyId: meta.byokKeyId,
+		});
 		for (const inputEntry of parseJsonLines(inputText)) {
 			const customId = extractCustomId(inputEntry);
 			if (customId) inputEntriesByCustomId.set(customId, inputEntry);
@@ -763,6 +768,15 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		const endpoint = extractRequestEndpoint(requestEntry, meta.endpoint);
 		const usage = body.usage;
 		const videoEndpoint = isVideoBatchEndpoint(endpoint);
+		if (videoEndpoint) {
+			const videoStatus = String(body.status ?? "").toLowerCase();
+			if (["failed", "cancelled", "canceled", "expired"].includes(videoStatus)) {
+				rowCostsByIndex[index] = 0;
+				pricedResponses += 1;
+				continue;
+			}
+			if (videoStatus !== "completed") return { ok: false, reason: "video_output_not_terminal" };
+		}
 		const imageEndpoint = isImageBatchEndpoint(endpoint);
 		const moderationEndpoint = isModerationBatchEndpoint(endpoint);
 		if ((!usage || typeof usage !== "object") && !videoEndpoint && !imageEndpoint && !moderationEndpoint) {
@@ -867,7 +881,33 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		return { ok: false, reason: "missing_successful_output_rows" };
 	}
 
-	const costNanos = Math.max(0, Math.round(totalNanos));
+	const providerReferenceNanos = Math.max(0, Math.round(totalNanos));
+	let costNanos = providerReferenceNanos;
+	let pricedUsage = buildAggregatePricedUsage({
+		usage: usageAggregate,
+		costNanos: providerReferenceNanos,
+		pricingLines: serializePricingLineAggregates(pricingLines),
+	});
+	if (meta.keySource === "byok" && successfulResponses > 0) {
+		const pricedIndexes = rowCostsByIndex
+			.map((cost, index) => cost == null ? null : { cost, index })
+			.filter((entry): entry is { cost: number; index: number } => entry !== null);
+		const byok = await applyByokServiceFee({
+			workspaceId,
+			idempotencyKey: `batch:${batchId}`,
+			isByok: true,
+			requestCount: successfulResponses,
+			baseCostNanos: providerReferenceNanos,
+			baseCostsNanos: pricedIndexes.map((entry) => entry.cost),
+			pricedUsage,
+		});
+		costNanos = byok.totalNanos;
+		pricedUsage = byok.pricedUsage;
+		byok.chargedCostsNanos?.forEach((cost, index) => {
+			const outputIndex = pricedIndexes[index]?.index;
+			if (outputIndex != null) rowCostsByIndex[outputIndex] = cost;
+		});
+	}
 	const partialSuccess = isPartialSuccess(meta);
 	const reason =
 		costNanos > 0
@@ -887,11 +927,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		costUsd: costNanos / 1e9,
 		charged: costNanos > 0,
 		reason,
-		pricedUsage: buildAggregatePricedUsage({
-			usage: usageAggregate,
-			costNanos,
-			pricingLines: serializePricingLineAggregates(pricingLines),
-		}),
+		pricedUsage,
 		pricingBreakdown: {
 			total_nanos: costNanos,
 			total_usd_str: (costNanos / 1e9).toFixed(9),
@@ -899,6 +935,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 			completed_requests: successfulResponses,
 			failed_requests: meta.requestCounts?.failed ?? null,
 			total_requests: meta.requestCounts?.total ?? null,
+			...(meta.keySource === "byok" ? { byok_reference_total_nanos: providerReferenceNanos } : {}),
 		},
 		outputEntries: entries,
 		rowCostsByIndex,
@@ -933,7 +970,11 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 	}
 	status = status === "canceled" ? "cancelled" : status;
 
-	const finalizedAt = new Date().toISOString();
+	const previousFinalizedAt = record.meta.finalizedAt;
+	const finalizedAt = isTerminalBatchStatus(currentStatus) &&
+		typeof previousFinalizedAt === "string" && Number.isFinite(Date.parse(previousFinalizedAt))
+		? previousFinalizedAt
+		: new Date().toISOString();
 	const finalizedAtMs = Date.parse(finalizedAt);
 	const providerDispatchedAtMs = Number(record.meta.providerDispatchedAtMs);
 	const generationMs = Number.isFinite(providerDispatchedAtMs)
@@ -1040,7 +1081,7 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		};
 	}
 
-	const settlement = await computeBatchSettlement(record.meta, status);
+	const settlement = await computeBatchSettlement(record.meta, status, args.workspaceId, args.batchId);
 	if (!settlement.ok) {
 		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
 			...completionTimingPatch,
@@ -1056,6 +1097,17 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		};
 	}
 
+	if (settlement.costNanos === 0 && Number(record.meta.reservedNanos) > 0 && record.meta.keySource !== "byok" && Number(settlement.pricedUsage.requests) > 0) {
+		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+			...completionTimingPatch, finalizedAt, charged: false, billingReason: "unexpected_zero_cost",
+			pricedUsage: settlement.pricedUsage, pricingBreakdown: settlement.pricingBreakdown,
+		});
+		if (record.meta.billingReason !== "unexpected_zero_cost") await emitGatewayOperationalFailure({
+			workflow: "batch_finalization", workspaceId: args.workspaceId, resourceId: args.batchId,
+			reason: "unexpected_zero_cost", error: new Error("Successful batch rows priced at zero despite a paid reservation; hold retained"),
+		});
+		return { status, charged: false, billed: false, reason: "unexpected_zero_cost" };
+	}
 	let settlementReason = settlement.reason;
 	let reservationStatus: string | null = null;
 	let chargeApplied = settlement.costNanos <= 0;

@@ -12,30 +12,39 @@
       "price_per_unit": 7,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "No video included in input",
       "match": [
         {
           "path": "input_video_seconds",
           "op": "eq",
-          "or_group": 1,
-          "and_index": 1,
           "value": 0
+        },
+        {
+          "path": "resolution",
+          "op": "in",
+          "value": [
+            "480p",
+            "720p"
+          ]
         }
       ],
-      "priority": 100,
-      "effective_from": "2026-01-28T00:00:00Z",
-      "region": null,
-      "cache_duration_seconds": null,
       "conditions": [
         {
           "path": "input_video_seconds",
           "op": "eq",
-          "or_group": 1,
-          "and_index": 1,
           "value": 0
+        },
+        {
+          "path": "resolution",
+          "op": "in",
+          "value": [
+            "480p",
+            "720p"
+          ]
         }
       ],
-      "source": null
+      "priority": 100,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "source": "https://www.byteplus.com/en/product/modelark"
     },
     {
       "meter": "total_tokens",
@@ -44,40 +53,132 @@
       "price_per_unit": 4.3,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Video included in input",
       "match": [
         {
           "path": "input_video_seconds",
           "op": "gt",
-          "or_group": 1,
-          "and_index": 1,
           "value": 0
+        },
+        {
+          "path": "resolution",
+          "op": "in",
+          "value": [
+            "480p",
+            "720p"
+          ]
         }
       ],
-      "priority": 100,
-      "effective_from": "2026-01-28T00:00:00Z",
-      "region": null,
-      "cache_duration_seconds": null,
       "conditions": [
         {
           "path": "input_video_seconds",
           "op": "gt",
-          "or_group": 1,
-          "and_index": 1,
           "value": 0
+        },
+        {
+          "path": "resolution",
+          "op": "in",
+          "value": [
+            "480p",
+            "720p"
+          ]
         }
       ],
-      "source": null
+      "priority": 100,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "source": "https://www.byteplus.com/en/product/modelark"
+    },
+    {
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 7.7,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [
+        {
+          "path": "input_video_seconds",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "path": "resolution",
+          "op": "in",
+          "value": [
+            "1080p"
+          ]
+        }
+      ],
+      "conditions": [
+        {
+          "path": "input_video_seconds",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "path": "resolution",
+          "op": "in",
+          "value": [
+            "1080p"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "source": "https://www.byteplus.com/en/product/modelark"
+    },
+    {
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.7,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [
+        {
+          "path": "input_video_seconds",
+          "op": "gt",
+          "value": 0
+        },
+        {
+          "path": "resolution",
+          "op": "in",
+          "value": [
+            "1080p"
+          ]
+        }
+      ],
+      "conditions": [
+        {
+          "path": "input_video_seconds",
+          "op": "gt",
+          "value": 0
+        },
+        {
+          "path": "resolution",
+          "op": "in",
+          "value": [
+            "1080p"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-06T00:00:00Z",
+      "source": "https://www.byteplus.com/en/product/modelark"
     }
   ],
   "regions": [],
   "service_tiers": [
     "standard"
   ],
-  "sources": [],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://www.byteplus.com/en/product/modelark"
+    }
+  ],
   "verification": {
-    "status": "unverified",
-    "checked_at": null,
-    "notes": null
+    "status": "verified",
+    "checked_at": "2026-09-06T00:00:00Z",
+    "notes": "Token rates verified against the official ModelArk price table. Route enablement still requires live billing validation."
   }
 }

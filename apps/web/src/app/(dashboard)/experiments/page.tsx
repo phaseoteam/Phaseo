@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-	title: "Experiments - Phaseo",
+	title: "Experiments",
 	description:
 		"Experiments is where we test and iterate on early Phaseo product experiments.",
 	keywords: ["Experiments", "Labs", "Phaseo"],

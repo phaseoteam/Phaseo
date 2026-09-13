@@ -95,6 +95,7 @@ export type AnthropicTool = {
 	input_schema: Record<string, any>;
 	cache_control?: AnthropicCacheControl;
 	strict?: boolean;
+	async?: boolean;
 };
 
 export type AnthropicNativeWebSearchTool = {
@@ -491,6 +492,7 @@ function decodeAnthropicTool(
 		description: (tool as AnthropicTool).description,
 		parameters: (tool as AnthropicTool).input_schema,
 		strict: (tool as AnthropicTool).strict,
+		async: typeof (tool as AnthropicTool).async === "boolean" ? (tool as AnthropicTool).async : undefined,
 		cacheControl: normalizeAnthropicCacheControl((tool as AnthropicTool).cache_control),
 	};
 }

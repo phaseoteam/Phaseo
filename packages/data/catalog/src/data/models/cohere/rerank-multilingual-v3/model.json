@@ -44,11 +44,18 @@
     "web_search": null
   },
   "open_weights": null,
-  "sources": [],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://docs.cohere.com/docs/rerank",
+      "accessed_at": "2026-09-08T00:00:00Z",
+      "notes": "Cohere's current Rerank model catalogue."
+    }
+  ],
   "verification": {
-    "status": "unverified",
-    "checked_at": null,
-    "notes": null
+    "status": "verified",
+    "checked_at": "2026-09-08T00:00:00Z",
+    "notes": "Verified against Cohere's current Rerank documentation."
   },
   "last_updated": null,
   "removal_date": null,

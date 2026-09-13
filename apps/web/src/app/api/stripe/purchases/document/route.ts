@@ -5,9 +5,6 @@ import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const TOP_UP_KINDS = new Set(["top_up", "top_up_one_off", "auto_top_up"]);
-type ChargeWithInvoice = Stripe.Charge & {
-    invoice?: string | Stripe.Invoice | null;
-};
 
 function parsePaymentIntentId(body: any): string | null {
     const raw = body?.paymentIntentId ?? body?.payment_intent_id ?? null;
@@ -16,12 +13,29 @@ function parsePaymentIntentId(body: any): string | null {
     return id.startsWith("pi_") ? id : null;
 }
 
-async function resolveChargeWithInvoice(
+function isMissingStripePaymentIntentError(error: unknown): boolean {
+    if (!error || typeof error !== "object") return false;
+
+    const candidate = error as {
+        code?: string;
+        param?: string;
+        message?: string;
+        raw?: { code?: string; param?: string; message?: string };
+    };
+    const code = String(candidate.code ?? candidate.raw?.code ?? "");
+    const param = String(candidate.param ?? candidate.raw?.param ?? "").toLowerCase();
+    const message = String(candidate.message ?? candidate.raw?.message ?? "").toLowerCase();
+
+    return code === "resource_missing" &&
+        (param === "payment_intent" || message.includes("no such payment_intent"));
+}
+
+async function resolveChargeWithReceipt(
     stripe: Stripe,
     paymentIntentId: string
 ): Promise<Stripe.Charge | null> {
     const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
-        expand: ["latest_charge", "latest_charge.invoice"],
+        expand: ["latest_charge"],
     });
 
     const latestCharge = pi.latest_charge;
@@ -32,7 +46,6 @@ async function resolveChargeWithInvoice(
     }
 
     return stripe.charges.retrieve(latestCharge, {
-        expand: ["invoice"],
     });
 }
 
@@ -60,9 +73,9 @@ export async function POST(req: NextRequest) {
         }
 
         const stripe = getStripe();
-        const charge = await resolveChargeWithInvoice(stripe, paymentIntentId);
+        const charge = await resolveChargeWithReceipt(stripe, paymentIntentId);
         if (!charge) {
-            return NextResponse.json({ error: "Document not available yet" }, { status: 404 });
+            return NextResponse.json({ error: "Receipt not available yet" }, { status: 404 });
         }
 
         const chargeCustomerId =
@@ -71,19 +84,6 @@ export async function POST(req: NextRequest) {
                 : charge.customer?.id ?? null;
         if (!chargeCustomerId || chargeCustomerId !== customerId) {
             return NextResponse.json({ error: "Customer mismatch" }, { status: 403 });
-        }
-
-        const invoice = (charge as ChargeWithInvoice).invoice;
-        if (invoice && typeof invoice !== "string") {
-            const invoiceUrl = invoice.hosted_invoice_url ?? invoice.invoice_pdf ?? null;
-            if (invoiceUrl) {
-                return NextResponse.json({
-                    ok: true,
-                    type: "invoice",
-                    url: invoiceUrl,
-                    message: "Invoice ready",
-                });
-            }
         }
 
         if (charge.receipt_url) {
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        return NextResponse.json({ error: "Document not available yet" }, { status: 404 });
+        return NextResponse.json({ error: "Receipt not available for this payment" }, { status: 404 });
     } catch (err: any) {
         if (err?.message === "unauthorized") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -103,6 +103,14 @@ export async function POST(req: NextRequest) {
         if (err?.message === "missing_team" || err?.message === "missing_stripe_customer") {
             return NextResponse.json({ error: err.message }, { status: 400 });
         }
-        return NextResponse.json({ error: err?.message ?? "document_lookup_failed" }, { status: 500 });
+        if (isMissingStripePaymentIntentError(err)) {
+            return NextResponse.json({
+                error: "Receipt unavailable. This payment may have been created in Stripe test mode or in a different Stripe account.",
+            }, { status: 404 });
+        }
+        console.error("[stripe-receipt] Failed to load payment receipt", {
+            error: err?.message ?? String(err),
+        });
+        return NextResponse.json({ error: "Unable to load receipt" }, { status: 500 });
     }
 }

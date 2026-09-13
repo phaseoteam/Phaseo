@@ -189,6 +189,12 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createPrivateModel(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/private-models"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createProviderCredential(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/byok"
@@ -348,6 +354,12 @@ module Phaseo
       def self.deletePreset(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.deletePrivateModel(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/private-models/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -570,6 +582,12 @@ module Phaseo
       def self.getPresetTestRun(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/preset-test-runs/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getPrivateModel(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/private-models/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -849,6 +867,12 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listPrivateModels(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/private-models"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.listProviderCredentials(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/byok"
@@ -1065,6 +1089,18 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.retrieveBatchResults(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batches/#{URI.encode_uri_component(path["batch_id"].to_s)}/results"
+        client.request_bytes(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.retrieveBatchResultsAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batch/#{URI.encode_uri_component(path["id"].to_s)}/results"
+        client.request_bytes(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.retrieveFile(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/files/#{URI.encode_uri_component(path["file_id"].to_s)}"
@@ -1188,6 +1224,12 @@ module Phaseo
       def self.updatePresetTestRun(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/preset-test-runs/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.updatePrivateModel(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/private-models/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 

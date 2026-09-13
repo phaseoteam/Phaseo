@@ -10,7 +10,7 @@ describe("public provider routes", () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("get_public_provider_index")) return new Response(JSON.stringify([{
-				provider_slug: "openai", provider_name: "OpenAI", colour: "#000", country_code: "US",
+				provider_slug: "openai", provider_name: "OpenAI", colour: "#000", country_code: "US", subdivision_code: "US-CA",
 				provider_family_id: "openai", offer_label: null, offer_scope: "global", is_gateway_provider: true, provider_status: "active", byok_available: true, default_execution_regions: ["US", "EU"], default_data_regions: ["US", "EU"],
 				prompt_training_policy: "no_train", data_policy_tier: "private", zero_data_retention: "default", data_retention_days: 0,
 				privacy_policy_url: "https://openai.com/policies/privacy-policy/", terms_of_service_url: "https://openai.com/policies/services-agreement/",
@@ -26,7 +26,7 @@ describe("public provider routes", () => {
 		const response = await app.request("https://phaseo.app/api/_web/api-providers", {}, env);
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
-		await expect(response.json()).resolves.toMatchObject({ providers: [{ api_provider_id: "openai", api_provider_name: "OpenAI", provider_status: "active", byok_available: true, default_execution_regions: ["US", "EU"], default_data_regions: ["US", "EU"], prompt_training_policy: "no_train", zero_data_retention: true, data_retention_days: 0, privacy_policy_url: "https://openai.com/policies/privacy-policy/", terms_of_service_url: "https://openai.com/policies/services-agreement/", total_models: 1, active_models: 1, free_models: 1, total_daily_tokens: 100, total_monthly_tokens: 100, modality_support: { text: { input: 1, output: 1 }, image: { input: 1, output: 0 } } }] });
+		await expect(response.json()).resolves.toMatchObject({ providers: [{ api_provider_id: "openai", api_provider_name: "OpenAI", provider_status: "active", byok_available: true, country_code: "US", subdivision_code: "US-CA", default_execution_regions: ["US", "EU"], default_data_regions: ["US", "EU"], prompt_training_policy: "no_train", zero_data_retention: true, data_retention_days: 0, privacy_policy_url: "https://openai.com/policies/privacy-policy/", terms_of_service_url: "https://openai.com/policies/services-agreement/", total_models: 1, active_models: 1, free_models: 1, total_daily_tokens: 100, total_monthly_tokens: 100, modality_support: { text: { input: 1, output: 1 }, image: { input: 1, output: 0 } } }] });
 	});
 
 	it("loads the provider index through one aggregate RPC without raw catalogue reads", async () => {
@@ -43,22 +43,57 @@ describe("public provider routes", () => {
 		expect(requestedUrls.some((url) => url.includes("v2_model_provider_routes") || url.includes("v2_models") || url.includes("v2_providers"))).toBe(false);
 	});
 
-	it("does not expose telemetry for a provider that has only stealth routes", async () => {
+	it("keeps a stealth-only provider addressable without exposing its routes or telemetry", async () => {
 		const requestedUrls: string[] = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			requestedUrls.push(url);
+			if (url.includes("v2_providers")) {
+				return new Response(JSON.stringify({ provider_slug: "secret-provider" }), { status: 200 });
+			}
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 
-		const response = await app.request(
-			"https://phaseo.app/api/_web/api-providers/secret-provider/top-models",
-			{},
-			env,
-		);
+		const [models, topModels, updates] = await Promise.all([
+			app.request("https://phaseo.app/api/_web/api-providers/secret-provider/models", {}, env),
+			app.request("https://phaseo.app/api/_web/api-providers/secret-provider/top-models", {}, env),
+			app.request("https://phaseo.app/api/_web/api-providers/secret-provider/updates", {}, env),
+		]);
 
-		expect(response.status).toBe(404);
+		expect(models.status).toBe(200);
+		await expect(models.json()).resolves.toEqual({ models: [] });
+		expect(topModels.status).toBe(200);
+		await expect(topModels.json()).resolves.toEqual({ models: [] });
+		expect(updates.status).toBe(200);
+		await expect(updates.json()).resolves.toEqual({ newModels: [], recentModels: [], recentTokens: 0 });
 		expect(requestedUrls.some((url) => url.includes("get_top_models_stats_tokens"))).toBe(false);
+		expect(requestedUrls.some((url) => url.includes("get_provider_token_usage"))).toBe(false);
+	});
+
+	it("keeps known providers without model routes addressable with empty resources", async () => {
+		const requestedUrls: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			requestedUrls.push(url);
+			if (url.includes("v2_providers")) {
+				return new Response(JSON.stringify({ provider_slug: "featherless" }), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const [models, metrics] = await Promise.all([
+			app.request("https://phaseo.app/api/_web/api-providers/featherless/models", {}, env),
+			app.request("https://phaseo.app/api/_web/api-providers/featherless/metrics?hours=24", {}, env),
+		]);
+
+		expect(models.status).toBe(200);
+		await expect(models.json()).resolves.toEqual({ models: [] });
+		expect(metrics.status).toBe(200);
+		await expect(metrics.json()).resolves.toMatchObject({
+			summary: { requests24h: 0, successful24h: 0 },
+			timeseries: { latency: [], throughput: [] },
+		});
+		expect(requestedUrls.some((url) => url.includes("v2_providers"))).toBe(true);
 	});
 
 	it("keeps legitimate inactive providers addressable", async () => {

@@ -209,9 +209,9 @@ function buildTemplates(args: {
 					},
 				],
 				replyToEmail: args.replyToEmail,
-				includeUnsubscribe: false,
+				includeUnsubscribe: true,
 			}),
-			text: `Hi {{{user_name}}},\n\nWelcome to Phaseo.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nNeed help? Reply to this email and we'll get back to you at ${args.replyToEmail}.`,
+			text: `Hi {{{user_name}}},\n\nWelcome to Phaseo.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nReply to ${args.replyToEmail} if you want help with setup.\n\nManage email preferences: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_PURCHASED_7D,

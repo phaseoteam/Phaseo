@@ -141,6 +141,7 @@ export interface ProviderInfo {
     country_code?: string | null;
     status?: string | null;
     routing_status?: string | null;
+	credential_mode?: "managed_and_byok" | "byok_only";
     residency_mode?:
         | "unknown"
         | "provider_managed"
@@ -257,11 +258,13 @@ function isMissingProviderModelColumnError(error: unknown): boolean {
 export default async function getModelPricing(
     modelId: string,
     includeHidden: boolean,
-    includeInternal = false
+    includeInternal = false,
+	signal?: AbortSignal,
 ): Promise<ProviderPricing[]> {
 	if (!includeHidden && !includeInternal) {
 		return (await fetchPublicWebApi<{ providers: ProviderPricing[] }>(
 			`/api/_web/models/${encodeURIComponent(modelId)}/pricing`,
+			{ signal },
 		)).providers;
 	}
     // console.log(`[getModelPricing] Starting for modelId: ${modelId}`);

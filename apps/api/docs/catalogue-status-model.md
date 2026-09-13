@@ -112,8 +112,9 @@ The rollout is additive:
 
 - legacy `status`, `routing_status`, `routable`, and
   `is_active_gateway` remain readable;
-- the importer writes the new explicit fields and derives legacy routing
-  switches from `phaseo_status` and `access_scope`;
+- the catalog editor and approved database automations write the new explicit
+  fields and derive legacy routing switches from `phaseo_status` and
+  `access_scope`;
 - existing active routes backfill to provider `available` and Phaseo
   `enabled`; inactive routes backfill conservatively;
 - missing or unrecognised authored values normalise to `unknown` and do not

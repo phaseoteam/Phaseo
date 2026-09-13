@@ -2,6 +2,7 @@
   "organisation_id": "bytedance",
   "name": "ByteDance",
   "country_code": "CN",
+  "subdivision_code": "CN-BJ",
   "description": "ByteDance is an AI and technology company with offices in Beijing, China. Their mission is to apply generative, vision-language and agentic AI across content, creation and interaction so that intelligence powers new experience platforms.",
   "colour": "#74E1DE",
   "organisation_links": [

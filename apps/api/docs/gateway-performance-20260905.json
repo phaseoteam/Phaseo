@@ -1,0 +1,3114 @@
+{
+  "baselineRevision": "0d58d7dc0",
+  "environment": "Windows, Node 24.15.0, local Wrangler, remote Supabase and Poolside Free",
+  "pricing": {
+    "before": {
+      "samples": 16,
+      "p50Ms": 93.64269999999988,
+      "p95Ms": 193.6484999999999,
+      "httpCalls": 4
+    },
+    "after": {
+      "samples": 16,
+      "p50Ms": 52.446899999999914,
+      "p95Ms": 86.91950000000008,
+      "httpCalls": 1
+    }
+  },
+  "byok": {
+    "before": {
+      "samples": 50,
+      "p50Ms": 0.9014999999999986,
+      "p95Ms": 1.525000000000034
+    },
+    "after": {
+      "samples": 50,
+      "p50Ms": 0.7504999999999882,
+      "p95Ms": 1.5143000000000484
+    }
+  },
+  "discardedContextOverlap": {
+    "before": {
+      "samples": 24,
+      "p50Ms": 176.58269999999993,
+      "p95Ms": 218.32550000000083,
+      "httpCalls": 6
+    },
+    "after": {
+      "samples": 24,
+      "p50Ms": 177.66620000000012,
+      "p95Ms": 221.33220000000074,
+      "httpCalls": 6
+    }
+  },
+  "live": {
+    "baselineWarm": {
+      "model": "poolside/laguna-s-2.1:free",
+      "requests": 12,
+      "concurrency": 1,
+      "maxTokens": 8,
+      "statusCounts": {
+        "200": 12
+      },
+      "firstContentMs": {
+        "p50": 637.7709000000004,
+        "p95": 2066.4519,
+        "p99": 2066.4519
+      },
+      "gatewayOverheadMs": {
+        "p50": 37,
+        "p95": 53,
+        "p99": 53
+      }
+    },
+    "finalWarm": {
+      "model": "poolside/laguna-s-2.1:free",
+      "requests": 12,
+      "concurrency": 1,
+      "maxTokens": 8,
+      "statusCounts": {
+        "200": 12
+      },
+      "firstContentMs": {
+        "p50": 957.0226000000002,
+        "p95": 2398.3081,
+        "p99": 2398.3081
+      },
+      "gatewayOverheadMs": {
+        "p50": 40,
+        "p95": 89,
+        "p99": 89
+      },
+      "privateModelLookupMs": {
+        "p50": 37,
+        "p95": 84,
+        "p99": 84
+      }
+    },
+    "baselineConcurrent": {
+      "model": "poolside/laguna-s-2.1:free",
+      "requests": 12,
+      "concurrency": 3,
+      "maxTokens": 8,
+      "statusCounts": {
+        "200": 12
+      },
+      "firstContentMs": {
+        "p50": 1191.3919000000005,
+        "p95": 1953.5302000000001,
+        "p99": 1953.5302000000001
+      },
+      "gatewayOverheadMs": {
+        "p50": 77,
+        "p95": 140,
+        "p99": 140
+      }
+    },
+    "finalConcurrent": {
+      "model": "poolside/laguna-s-2.1:free",
+      "requests": 12,
+      "concurrency": 3,
+      "maxTokens": 8,
+      "statusCounts": {
+        "200": 12
+      },
+      "firstContentMs": {
+        "p50": 736.1332000000002,
+        "p95": 1428.8626,
+        "p99": 1428.8626
+      },
+      "gatewayOverheadMs": {
+        "p50": 62,
+        "p95": 102,
+        "p99": 102
+      },
+      "privateModelLookupMs": {
+        "p50": 58,
+        "p95": 98,
+        "p99": 98
+      }
+    },
+    "xs": {
+      "model": "poolside/laguna-xs-2.1:free",
+      "requests": 3,
+      "concurrency": 1,
+      "maxTokens": 128,
+      "statusCounts": {
+        "200": 3
+      },
+      "firstContentMs": {
+        "p50": 688.5649999999998,
+        "p95": 718.9459000000002,
+        "p99": 718.9459000000002
+      },
+      "gatewayOverheadMs": {
+        "p50": 38,
+        "p95": 41,
+        "p99": 41
+      },
+      "privateModelLookupMs": {
+        "p50": 35,
+        "p95": 38,
+        "p99": 38
+      }
+    }
+  },
+  "openaiVerification": {
+    "model": "openai/gpt-5.6-luna",
+    "provider": "openai",
+    "maxTokens": 128,
+    "baselineRevision": "0d58d7dc0",
+    "pricing": {
+      "before": {
+        "samples": 16,
+        "p50Ms": 137.39120000000003,
+        "p95Ms": 323.7843,
+        "httpCalls": 4
+      },
+      "after": {
+        "samples": 16,
+        "p50Ms": 73.68800000000033,
+        "p95Ms": 96.66109999999992,
+        "httpCalls": 1
+      },
+      "ruleSetParity": true,
+      "billingCasesPerComparison": 24
+    },
+    "live": {
+      "baseline": {
+        "internal": {
+          "n": 8,
+          "p50": 102,
+          "p95": 372
+        },
+        "content": {
+          "n": 8,
+          "p50": 924.2571999999999,
+          "p95": 1196.4316000000001
+        },
+        "context": {
+          "n": 8,
+          "p50": 99,
+          "p95": 368
+        },
+        "upstream": {
+          "n": 8,
+          "p50": 668,
+          "p95": 965
+        }
+      },
+      "current": {
+        "internal": {
+          "n": 8,
+          "p50": 88,
+          "p95": 151
+        },
+        "content": {
+          "n": 8,
+          "p50": 681.3658,
+          "p95": 1387.1549
+        },
+        "context": {
+          "n": 8,
+          "p50": 86,
+          "p95": 148
+        },
+        "upstream": {
+          "n": 8,
+          "p50": 533,
+          "p95": 1217
+        }
+      }
+    },
+    "notes": [
+      "One smoke request per version excluded; eight alternating measured requests per version.",
+      "Rule order differs for equal meter_order; normalized rules, bill totals and selected rule IDs match across standard, priority, flex and batch at six input token counts.",
+      "Measured inference requests used cached pricing and refreshed credit; end-to-end differences do not isolate the pricing improvement."
+    ]
+  },
+  "privateModelIndexVerification": {
+    "ttlMs": 5000,
+    "method": "Same optimized worktree before/after private-model index; sequential local Poolside streaming requests, two excluded warmups per run. Isolated alternating exact lookup/index comparison.",
+    "before": {
+      "gatewayUrl": "http://127.0.0.1:8795",
+      "model": "poolside/laguna-s-2.1:free",
+      "warmups": 2,
+      "requests": 12,
+      "concurrency": 1,
+      "maxTokens": 8,
+      "provider": "poolside",
+      "statusCounts": {
+        "200": 12
+      },
+      "client": {
+        "responseHeadersMs": {
+          "p50": 678.4560000000001,
+          "p95": 2055.345799999999,
+          "p99": 2055.345799999999
+        },
+        "firstSseFrameMs": {
+          "p50": 678.7990000000009,
+          "p95": 2056.7573999999986,
+          "p99": 2056.7573999999986
+        },
+        "firstContentMs": {
+          "p50": 678.8587000000007,
+          "p95": 2056.788999999999,
+          "p99": 2056.788999999999
+        },
+        "streamCompleteMs": {
+          "p50": 703.5825999999997,
+          "p95": 2250.5446999999986,
+          "p99": 2250.5446999999986
+        }
+      },
+      "serverTiming": {
+        "adapter_start": {
+          "p50": 584,
+          "p95": 2005,
+          "p99": 2005
+        },
+        "applyServiceTierRouting": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_breaker": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_executor_total": {
+          "p50": 583,
+          "p95": 2005,
+          "p99": 2005
+        },
+        "attempt_1_normalize_ir": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_provider_rate_limit": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_request_build": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "attempt_1_resolve_executor": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_retry_delay": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_upstream_headers": {
+          "p50": 583,
+          "p95": 2004,
+          "p99": 2004
+        },
+        "before_start": {
+          "p50": 44,
+          "p95": 149,
+          "p99": 149
+        },
+        "context_byok_hydration": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "context_cache_read": {
+          "p50": 2,
+          "p95": 4,
+          "p99": 4
+        },
+        "context_key_version": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "context_preset_access": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "context_private_model": {
+          "p50": 39,
+          "p95": 143,
+          "p99": 143
+        },
+        "context_total": {
+          "p50": 42,
+          "p95": 147,
+          "p99": 147
+        },
+        "execute_filter_modalities": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "execute_guard_candidates": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "execute_rank_providers": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "execute_total": {
+          "p50": 584,
+          "p95": 2005,
+          "p99": 2005
+        },
+        "fetchWorkspacePolicy": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "guardAuth": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "guardContext": {
+          "p50": 42,
+          "p95": 147,
+          "p99": 147
+        },
+        "guardJson": {
+          "p50": 1,
+          "p95": 2,
+          "p99": 2
+        },
+        "guardModel": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "guardZod": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "internal_latency_ms": {
+          "p50": 44,
+          "p95": 149,
+          "p99": 149
+        },
+        "ir_decode": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "ir_encode": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "protocol_detect": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "resolveTestingMode": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "validateCapabilities": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        }
+      },
+      "requestIdsObserved": 12,
+      "samples": [
+        {
+          "status": 200,
+          "headersMs": 545.9171999999999,
+          "firstFrameMs": 546.2188999999998,
+          "firstContentMs": 546.2484,
+          "completeMs": 568.6158,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 41,
+            "context_total": 41,
+            "context_preset_access": 0,
+            "context_private_model": 38,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 42,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 44,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 496,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 496,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 496,
+            "ir_encode": 0,
+            "execute_total": 497
+          },
+          "requestId": "5a39935d-43a2-4cfa-a691-adb73e91c299"
+        },
+        {
+          "status": 200,
+          "headersMs": 883.0938999999998,
+          "firstFrameMs": 932.7673999999997,
+          "firstContentMs": 932.8137999999999,
+          "completeMs": 947.0772999999999,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 37,
+            "context_total": 37,
+            "context_preset_access": 0,
+            "context_private_model": 34,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 38,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 38,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 838,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 838,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 838,
+            "ir_encode": 0,
+            "execute_total": 838
+          },
+          "requestId": "ca1c5ac4-011f-46b1-abbc-5cb3ffad6bc9"
+        },
+        {
+          "status": 200,
+          "headersMs": 560.4684999999995,
+          "firstFrameMs": 560.6723999999999,
+          "firstContentMs": 560.7154999999998,
+          "completeMs": 619.1835999999998,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 2,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 54,
+            "context_total": 54,
+            "context_preset_access": 0,
+            "context_private_model": 51,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 56,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 56,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 499,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 498,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 499,
+            "ir_encode": 0,
+            "execute_total": 499
+          },
+          "requestId": "ac5c6d26-1b63-4f35-a15b-71fa395df254"
+        },
+        {
+          "status": 200,
+          "headersMs": 738.3910999999998,
+          "firstFrameMs": 738.5959999999995,
+          "firstContentMs": 738.6355999999996,
+          "completeMs": 770.6409999999996,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 1,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 147,
+            "context_total": 147,
+            "context_preset_access": 0,
+            "context_private_model": 143,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 4,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 149,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 149,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 583,
+            "attempt_1_request_build": 1,
+            "attempt_1_upstream_headers": 583,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 584,
+            "ir_encode": 0,
+            "execute_total": 584
+          },
+          "requestId": "5dad531a-f4bc-492b-a9f7-3fa096b71a29"
+        },
+        {
+          "status": 200,
+          "headersMs": 826.9386000000004,
+          "firstFrameMs": 827.2260000000006,
+          "firstContentMs": 827.2547000000004,
+          "completeMs": 881.1882000000005,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 1,
+            "guardZod": 1,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 42,
+            "context_total": 42,
+            "context_preset_access": 0,
+            "context_private_model": 40,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 45,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 46,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 775,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 775,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 775,
+            "ir_encode": 0,
+            "execute_total": 776
+          },
+          "requestId": "a7505ed8-60d5-4446-adf1-3bf94499fcb6"
+        },
+        {
+          "status": 200,
+          "headersMs": 1067.9039000000002,
+          "firstFrameMs": 1068.1625999999997,
+          "firstContentMs": 1068.1922000000004,
+          "completeMs": 1092.7366000000002,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 46,
+            "context_total": 46,
+            "context_preset_access": 0,
+            "context_private_model": 44,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 1,
+            "applyServiceTierRouting": 0,
+            "before_start": 48,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 48,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 1013,
+            "attempt_1_request_build": 1,
+            "attempt_1_upstream_headers": 1013,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 1014,
+            "ir_encode": 0,
+            "execute_total": 1014
+          },
+          "requestId": "920b5f64-7ffc-417b-890e-e94e82c95348"
+        },
+        {
+          "status": 200,
+          "headersMs": 1206.6422000000011,
+          "firstFrameMs": 1220.9718000000003,
+          "firstContentMs": 1221.0366999999997,
+          "completeMs": 1221.4231000000009,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 42,
+            "context_total": 42,
+            "context_preset_access": 0,
+            "context_private_model": 39,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 44,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 44,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 1156,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 1155,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 1156,
+            "ir_encode": 0,
+            "execute_total": 1156
+          },
+          "requestId": "d962374e-acb1-4464-9f5e-bd6027690d6b"
+        },
+        {
+          "status": 200,
+          "headersMs": 678.4560000000001,
+          "firstFrameMs": 678.7990000000009,
+          "firstContentMs": 678.8587000000007,
+          "completeMs": 703.5825999999997,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 0,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 52,
+            "context_total": 52,
+            "context_preset_access": 0,
+            "context_private_model": 50,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 53,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 1,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 54,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 619,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 619,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 619,
+            "ir_encode": 0,
+            "execute_total": 620
+          },
+          "requestId": "1be6fdc9-fc30-4093-a374-75ea24b0eb0c"
+        },
+        {
+          "status": 200,
+          "headersMs": 549.5568000000003,
+          "firstFrameMs": 549.8279000000002,
+          "firstContentMs": 549.8654999999999,
+          "completeMs": 573.2312000000002,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 42,
+            "context_total": 42,
+            "context_preset_access": 0,
+            "context_private_model": 40,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 44,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 44,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 500,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 500,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 500,
+            "ir_encode": 0,
+            "execute_total": 500
+          },
+          "requestId": "bd9f0028-0697-4c70-be0e-3ad9ca83269c"
+        },
+        {
+          "status": 200,
+          "headersMs": 554.5924999999988,
+          "firstFrameMs": 554.8302999999996,
+          "firstContentMs": 554.8760000000002,
+          "completeMs": 601.8948,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 38,
+            "context_total": 38,
+            "context_preset_access": 0,
+            "context_private_model": 35,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 39,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 40,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 509,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 509,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 509,
+            "ir_encode": 0,
+            "execute_total": 510
+          },
+          "requestId": "c3327cb6-8613-4c18-b428-6430d2437f34"
+        },
+        {
+          "status": 200,
+          "headersMs": 2055.345799999999,
+          "firstFrameMs": 2056.7573999999986,
+          "firstContentMs": 2056.788999999999,
+          "completeMs": 2250.5446999999986,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 42,
+            "context_total": 42,
+            "context_preset_access": 0,
+            "context_private_model": 38,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 4,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 44,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 44,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 2005,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 2004,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 2005,
+            "ir_encode": 0,
+            "execute_total": 2005
+          },
+          "requestId": "9d5be020-a6f9-488f-b1e0-f574bb7fc227"
+        },
+        {
+          "status": 200,
+          "headersMs": 552.7222999999994,
+          "firstFrameMs": 553.034599999999,
+          "firstContentMs": 553.0710999999992,
+          "completeMs": 575.9547999999995,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 38,
+            "context_total": 38,
+            "context_preset_access": 0,
+            "context_private_model": 36,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 39,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 40,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 508,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 508,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 508,
+            "ir_encode": 0,
+            "execute_total": 509
+          },
+          "requestId": "eaa09f5b-6780-463e-a68f-4d1fbccd5426"
+        }
+      ]
+    },
+    "after": {
+      "gatewayUrl": "http://127.0.0.1:8795",
+      "model": "poolside/laguna-s-2.1:free",
+      "warmups": 2,
+      "requests": 12,
+      "concurrency": 1,
+      "maxTokens": 8,
+      "provider": "poolside",
+      "statusCounts": {
+        "200": 12
+      },
+      "client": {
+        "responseHeadersMs": {
+          "p50": 820.1188000000002,
+          "p95": 2198.2363000000005,
+          "p99": 2198.2363000000005
+        },
+        "firstSseFrameMs": {
+          "p50": 820.4038,
+          "p95": 2198.443300000001,
+          "p99": 2198.443300000001
+        },
+        "firstContentMs": {
+          "p50": 820.456900000001,
+          "p95": 2198.4688000000006,
+          "p99": 2198.4688000000006
+        },
+        "streamCompleteMs": {
+          "p50": 851.8381000000008,
+          "p95": 2552.9882,
+          "p99": 2552.9882
+        }
+      },
+      "serverTiming": {
+        "adapter_start": {
+          "p50": 811,
+          "p95": 2189,
+          "p99": 2189
+        },
+        "applyServiceTierRouting": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_breaker": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_executor_total": {
+          "p50": 811,
+          "p95": 2189,
+          "p99": 2189
+        },
+        "attempt_1_normalize_ir": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "attempt_1_provider_rate_limit": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_request_build": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "attempt_1_resolve_executor": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_retry_delay": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_upstream_headers": {
+          "p50": 809,
+          "p95": 2189,
+          "p99": 2189
+        },
+        "before_start": {
+          "p50": 4,
+          "p95": 306,
+          "p99": 306
+        },
+        "context_byok_hydration": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "context_cache_read": {
+          "p50": 2,
+          "p95": 3,
+          "p99": 3
+        },
+        "context_key_version": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "context_preset_access": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "context_private_model": {
+          "p50": 0,
+          "p95": 301,
+          "p99": 301
+        },
+        "context_total": {
+          "p50": 2,
+          "p95": 304,
+          "p99": 304
+        },
+        "execute_filter_modalities": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "execute_guard_candidates": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "execute_rank_providers": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "execute_total": {
+          "p50": 811,
+          "p95": 2190,
+          "p99": 2190
+        },
+        "fetchWorkspacePolicy": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "guardAuth": {
+          "p50": 1,
+          "p95": 2,
+          "p99": 2
+        },
+        "guardContext": {
+          "p50": 3,
+          "p95": 304,
+          "p99": 304
+        },
+        "guardJson": {
+          "p50": 1,
+          "p95": 1,
+          "p99": 1
+        },
+        "guardModel": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "guardZod": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "internal_latency_ms": {
+          "p50": 5,
+          "p95": 307,
+          "p99": 307
+        },
+        "ir_decode": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "ir_encode": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "protocol_detect": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "resolveTestingMode": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "validateCapabilities": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        }
+      },
+      "requestIdsObserved": 12,
+      "samples": [
+        {
+          "status": 200,
+          "headersMs": 957.7045,
+          "firstFrameMs": 972.0127,
+          "firstContentMs": 972.0697000000002,
+          "completeMs": 972.2084000000002,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 3,
+            "protocol_detect": 0,
+            "ir_decode": 1,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 4,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 947,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 947,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 947,
+            "ir_encode": 0,
+            "execute_total": 947
+          },
+          "requestId": "2c4c86c0-4ab2-4f56-b8c3-a60a782a7907"
+        },
+        {
+          "status": 200,
+          "headersMs": 977.1010000000001,
+          "firstFrameMs": 977.3441000000003,
+          "firstContentMs": 977.3699999999999,
+          "completeMs": 1048.0121,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 0,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 3,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 4,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 5,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 965,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 965,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 965,
+            "ir_encode": 0,
+            "execute_total": 966
+          },
+          "requestId": "725e300a-5829-4ebe-a7a0-a24439d13755"
+        },
+        {
+          "status": 200,
+          "headersMs": 517.9958000000001,
+          "firstFrameMs": 518.2418000000002,
+          "firstContentMs": 518.2952,
+          "completeMs": 548.7829999999999,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 3,
+            "context_total": 3,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 6,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 7,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 502,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 502,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 502,
+            "ir_encode": 0,
+            "execute_total": 503
+          },
+          "requestId": "2d6b5cbd-d3dc-488d-9676-72a532377fee"
+        },
+        {
+          "status": 200,
+          "headersMs": 512.098,
+          "firstFrameMs": 512.3081999999995,
+          "firstContentMs": 512.3467999999993,
+          "completeMs": 535.0394999999999,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 0,
+            "guardZod": 1,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 5,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 5,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 1,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 499,
+            "attempt_1_request_build": 1,
+            "attempt_1_upstream_headers": 499,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 500,
+            "ir_encode": 0,
+            "execute_total": 500
+          },
+          "requestId": "8783458a-d85c-438c-bdf9-b4057a10d73f"
+        },
+        {
+          "status": 200,
+          "headersMs": 661.2893999999997,
+          "firstFrameMs": 661.5981999999995,
+          "firstContentMs": 661.6333999999997,
+          "completeMs": 695.7197999999999,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 3,
+            "context_total": 3,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 4,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 5,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 649,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 649,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 650,
+            "ir_encode": 0,
+            "execute_total": 651
+          },
+          "requestId": "03bf3769-032a-4634-a23a-41b060f1e956"
+        },
+        {
+          "status": 200,
+          "headersMs": 1616.9508000000005,
+          "firstFrameMs": 1617.1891000000005,
+          "firstContentMs": 1617.2291000000005,
+          "completeMs": 1983.9250000000002,
+          "serverTiming": {
+            "guardAuth": 2,
+            "guardJson": 1,
+            "guardZod": 1,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 79,
+            "context_total": 79,
+            "context_preset_access": 0,
+            "context_private_model": 76,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 83,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 84,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 1527,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 1526,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 1527,
+            "ir_encode": 0,
+            "execute_total": 1528
+          },
+          "requestId": "8a42fa82-d9b6-4d80-a0c9-473d04f59e88"
+        },
+        {
+          "status": 200,
+          "headersMs": 505.52190000000064,
+          "firstFrameMs": 505.7335000000012,
+          "firstContentMs": 505.76520000000073,
+          "completeMs": 529.9978000000001,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 0,
+            "guardZod": 1,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 3,
+            "context_total": 3,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 5,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 6,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 494,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 494,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 494,
+            "ir_encode": 0,
+            "execute_total": 495
+          },
+          "requestId": "31de582a-1714-47b2-84e0-f582ec3b2f42"
+        },
+        {
+          "status": 200,
+          "headersMs": 820.1188000000002,
+          "firstFrameMs": 820.4038,
+          "firstContentMs": 820.456900000001,
+          "completeMs": 851.8381000000008,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 0,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 1,
+            "applyServiceTierRouting": 0,
+            "before_start": 4,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 4,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 811,
+            "attempt_1_request_build": 1,
+            "attempt_1_upstream_headers": 809,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 811,
+            "ir_encode": 0,
+            "execute_total": 811
+          },
+          "requestId": "4d524399-b545-4c79-a878-5849045b475b"
+        },
+        {
+          "status": 200,
+          "headersMs": 1167.748300000001,
+          "firstFrameMs": 1167.9575000000004,
+          "firstContentMs": 1167.9941,
+          "completeMs": 1846.2973000000002,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 4,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 4,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 1157,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 1157,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 1157,
+            "ir_encode": 0,
+            "execute_total": 1158
+          },
+          "requestId": "29cb03a4-e0c4-4285-89ba-b61ac6f59a99"
+        },
+        {
+          "status": 200,
+          "headersMs": 1790.2164999999986,
+          "firstFrameMs": 1790.444599999999,
+          "firstContentMs": 1790.4761999999992,
+          "completeMs": 2552.9882,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 0,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 304,
+            "context_total": 304,
+            "context_preset_access": 0,
+            "context_private_model": 301,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 306,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 307,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 1477,
+            "attempt_1_request_build": 1,
+            "attempt_1_upstream_headers": 1477,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 1478,
+            "ir_encode": 0,
+            "execute_total": 1478
+          },
+          "requestId": "01be5ca4-c361-4441-b098-d5272072c474"
+        },
+        {
+          "status": 200,
+          "headersMs": 585.4488000000001,
+          "firstFrameMs": 585.6836999999996,
+          "firstContentMs": 585.7150000000001,
+          "completeMs": 609.6984999999986,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 3,
+            "context_total": 3,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 4,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 4,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 577,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 576,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 577,
+            "ir_encode": 0,
+            "execute_total": 577
+          },
+          "requestId": "6eaf0264-de3e-45fb-b48f-34f8dbd369c7"
+        },
+        {
+          "status": 200,
+          "headersMs": 2198.2363000000005,
+          "firstFrameMs": 2198.443300000001,
+          "firstContentMs": 2198.4688000000006,
+          "completeMs": 2356.1890000000003,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 3,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 4,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 2189,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 2189,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 2189,
+            "ir_encode": 0,
+            "execute_total": 2190
+          },
+          "requestId": "1e0886f9-2e3d-41d6-86c6-b65bd9422803"
+        }
+      ]
+    },
+    "repeat": {
+      "gatewayUrl": "http://127.0.0.1:8795",
+      "model": "poolside/laguna-s-2.1:free",
+      "warmups": 2,
+      "requests": 24,
+      "concurrency": 1,
+      "maxTokens": 8,
+      "provider": "poolside",
+      "statusCounts": {
+        "200": 24
+      },
+      "client": {
+        "responseHeadersMs": {
+          "p50": 704.9904000000006,
+          "p95": 2562.2034999999996,
+          "p99": 2571.8322000000007
+        },
+        "firstSseFrameMs": {
+          "p50": 719.6811000000007,
+          "p95": 2600.783599999999,
+          "p99": 2822.7382
+        },
+        "firstContentMs": {
+          "p50": 719.7239,
+          "p95": 2600.8112,
+          "p99": 2822.762600000002
+        },
+        "streamCompleteMs": {
+          "p50": 726.2577999999994,
+          "p95": 3063.7852999999996,
+          "p99": 3141.0136999999995
+        }
+      },
+      "serverTiming": {
+        "adapter_start": {
+          "p50": 648,
+          "p95": 2555,
+          "p99": 2565
+        },
+        "applyServiceTierRouting": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_breaker": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_executor_total": {
+          "p50": 648,
+          "p95": 2555,
+          "p99": 2565
+        },
+        "attempt_1_normalize_ir": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 1
+        },
+        "attempt_1_provider_rate_limit": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_request_build": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "attempt_1_resolve_executor": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_retry_delay": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "attempt_1_upstream_headers": {
+          "p50": 648,
+          "p95": 2555,
+          "p99": 2565
+        },
+        "before_start": {
+          "p50": 3,
+          "p95": 90,
+          "p99": 273
+        },
+        "context_byok_hydration": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 1
+        },
+        "context_cache_read": {
+          "p50": 2,
+          "p95": 3,
+          "p99": 5
+        },
+        "context_key_version": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "context_preset_access": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "context_private_model": {
+          "p50": 0,
+          "p95": 85,
+          "p99": 270
+        },
+        "context_total": {
+          "p50": 2,
+          "p95": 88,
+          "p99": 272
+        },
+        "execute_filter_modalities": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "execute_guard_candidates": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "execute_rank_providers": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "execute_total": {
+          "p50": 649,
+          "p95": 2556,
+          "p99": 2566
+        },
+        "fetchWorkspacePolicy": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 2
+        },
+        "guardAuth": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "guardContext": {
+          "p50": 2,
+          "p95": 88,
+          "p99": 272
+        },
+        "guardJson": {
+          "p50": 1,
+          "p95": 1,
+          "p99": 2
+        },
+        "guardModel": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "guardZod": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        },
+        "internal_latency_ms": {
+          "p50": 4,
+          "p95": 91,
+          "p99": 273
+        },
+        "ir_decode": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 1
+        },
+        "ir_encode": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "protocol_detect": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "resolveTestingMode": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "validateCapabilities": {
+          "p50": 0,
+          "p95": 1,
+          "p99": 1
+        }
+      },
+      "requestIdsObserved": 24,
+      "samples": [
+        {
+          "status": 200,
+          "headersMs": 704.9904000000006,
+          "firstFrameMs": 719.6811000000007,
+          "firstContentMs": 719.7239,
+          "completeMs": 720.3205000000007,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 5,
+            "context_total": 5,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 5,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 7,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 7,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 690,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 690,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 690,
+            "ir_encode": 0,
+            "execute_total": 690
+          },
+          "requestId": "9e618626-b984-415e-8025-521cff6d2a3f"
+        },
+        {
+          "status": 200,
+          "headersMs": 1527.0389000000005,
+          "firstFrameMs": 1527.7682000000004,
+          "firstContentMs": 1528.2678000000005,
+          "completeMs": 1562.5611,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 3,
+            "context_total": 3,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 4,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 4,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 1,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 1515,
+            "attempt_1_request_build": 1,
+            "attempt_1_upstream_headers": 1515,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 1516,
+            "ir_encode": 0,
+            "execute_total": 1516
+          },
+          "requestId": "98b8bfc2-0126-4220-89aa-b3366bc0b57c"
+        },
+        {
+          "status": 200,
+          "headersMs": 745.0957000000008,
+          "firstFrameMs": 745.4560000000001,
+          "firstContentMs": 745.5120999999999,
+          "completeMs": 768.9294,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 2,
+            "guardContext": 88,
+            "context_total": 88,
+            "context_preset_access": 0,
+            "context_private_model": 85,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 90,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 91,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 648,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 648,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 648,
+            "ir_encode": 0,
+            "execute_total": 649
+          },
+          "requestId": "e51d2bdd-1b4c-4a93-bcf0-2f3b41f7189d"
+        },
+        {
+          "status": 200,
+          "headersMs": 655.9755999999998,
+          "firstFrameMs": 656.1895000000004,
+          "firstContentMs": 656.2936,
+          "completeMs": 734.2790999999997,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 0,
+            "guardZod": 1,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 3,
+            "context_total": 3,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 5,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 5,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 643,
+            "attempt_1_request_build": 1,
+            "attempt_1_upstream_headers": 643,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 644,
+            "ir_encode": 0,
+            "execute_total": 644
+          },
+          "requestId": "a3ea5af0-6c4f-461b-9c29-9efaecd8fd40"
+        },
+        {
+          "status": 200,
+          "headersMs": 965.3085000000001,
+          "firstFrameMs": 965.5322000000006,
+          "firstContentMs": 965.6032000000005,
+          "completeMs": 1175.8541999999989,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 5,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 5,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 952,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 952,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 953,
+            "ir_encode": 0,
+            "execute_total": 953
+          },
+          "requestId": "2f2d823f-4872-4705-9b0e-02e2c93cd253"
+        },
+        {
+          "status": 200,
+          "headersMs": 519.3474999999999,
+          "firstFrameMs": 519.6266999999989,
+          "firstContentMs": 519.6583999999984,
+          "completeMs": 543.0362999999998,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 2,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 3,
+            "context_total": 3,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 1,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 5,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 5,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 506,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 506,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 506,
+            "ir_encode": 0,
+            "execute_total": 506
+          },
+          "requestId": "9bd918e4-bc45-40c2-89ef-6e8412943548"
+        },
+        {
+          "status": 200,
+          "headersMs": 966.3954999999987,
+          "firstFrameMs": 966.7171999999991,
+          "firstContentMs": 966.7452999999987,
+          "completeMs": 1159.4043999999994,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 3,
+            "context_total": 3,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 1,
+            "applyServiceTierRouting": 0,
+            "before_start": 5,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 5,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 953,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 953,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 953,
+            "ir_encode": 0,
+            "execute_total": 953
+          },
+          "requestId": "9e219772-383d-4075-a98b-f2ebfbc3fa61"
+        },
+        {
+          "status": 200,
+          "headersMs": 505.9286000000011,
+          "firstFrameMs": 506.1189000000013,
+          "firstContentMs": 506.15300000000025,
+          "completeMs": 525.8396000000012,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 3,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 5,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 496,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 496,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 496,
+            "ir_encode": 0,
+            "execute_total": 496
+          },
+          "requestId": "b4f79dcb-5d08-4bdf-a15d-950b81eb2a02"
+        },
+        {
+          "status": 200,
+          "headersMs": 702.9513999999999,
+          "firstFrameMs": 703.1149000000005,
+          "firstContentMs": 703.1406000000006,
+          "completeMs": 723.9494000000013,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 3,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 3,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 696,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 696,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 696,
+            "ir_encode": 0,
+            "execute_total": 696
+          },
+          "requestId": "e019fb82-18a8-468c-a4ce-67971e1724c0"
+        },
+        {
+          "status": 200,
+          "headersMs": 2340.3644000000004,
+          "firstFrameMs": 2340.6000000000004,
+          "firstContentMs": 2340.630500000001,
+          "completeMs": 2923.4552999999996,
+          "serverTiming": {
+            "guardAuth": 1,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 78,
+            "context_total": 78,
+            "context_preset_access": 0,
+            "context_private_model": 76,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 80,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 81,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 2255,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 2255,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 2255,
+            "ir_encode": 0,
+            "execute_total": 2256
+          },
+          "requestId": "e3d72a27-0249-4c24-996d-297536c3d789"
+        },
+        {
+          "status": 200,
+          "headersMs": 808.5681999999997,
+          "firstFrameMs": 808.856600000001,
+          "firstContentMs": 808.8924000000006,
+          "completeMs": 839.3546999999999,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 3,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 4,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 800,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 800,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 800,
+            "ir_encode": 0,
+            "execute_total": 801
+          },
+          "requestId": "3cad75d1-c453-4fb2-ac7e-c2c9e9c4921a"
+        },
+        {
+          "status": 200,
+          "headersMs": 602.6958999999988,
+          "firstFrameMs": 602.9423999999999,
+          "firstContentMs": 602.976999999999,
+          "completeMs": 618.307499999999,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 3,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 3,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 595,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 595,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 595,
+            "ir_encode": 0,
+            "execute_total": 595
+          },
+          "requestId": "4e144d24-eeb9-426a-9177-3c24c96e31e5"
+        },
+        {
+          "status": 200,
+          "headersMs": 505.22710000000006,
+          "firstFrameMs": 505.3787000000011,
+          "firstContentMs": 505.40000000000146,
+          "completeMs": 531.4278000000013,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 3,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 3,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 497,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 497,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 497,
+            "ir_encode": 0,
+            "execute_total": 497
+          },
+          "requestId": "17c264c1-5f45-42c8-94bc-6b437c569cf7"
+        },
+        {
+          "status": 200,
+          "headersMs": 716.0744999999988,
+          "firstFrameMs": 725.9749999999985,
+          "firstContentMs": 726.004399999998,
+          "completeMs": 726.2577999999994,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 1,
+            "context_total": 1,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 1,
+            "validateCapabilities": 1,
+            "applyServiceTierRouting": 0,
+            "before_start": 3,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 3,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 709,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 709,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 709,
+            "ir_encode": 0,
+            "execute_total": 709
+          },
+          "requestId": "5c51920d-0eee-4318-bc7b-1504ee999de8"
+        },
+        {
+          "status": 200,
+          "headersMs": 884.519400000001,
+          "firstFrameMs": 884.6599999999999,
+          "firstContentMs": 884.6814999999988,
+          "completeMs": 908.0671999999977,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 71,
+            "context_total": 71,
+            "context_preset_access": 0,
+            "context_private_model": 69,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 72,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 73,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 808,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 808,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 808,
+            "ir_encode": 0,
+            "execute_total": 808
+          },
+          "requestId": "6965b205-5ebb-4eb6-a27d-d39858c7b4ea"
+        },
+        {
+          "status": 200,
+          "headersMs": 503.0665999999983,
+          "firstFrameMs": 503.2707999999984,
+          "firstContentMs": 503.3097000000016,
+          "completeMs": 563.0132000000012,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 0,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 2,
+            "protocol_detect": 0,
+            "ir_decode": 1,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 3,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 496,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 496,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 496,
+            "ir_encode": 0,
+            "execute_total": 496
+          },
+          "requestId": "433139b4-c634-4037-b858-b09784c67b44"
+        },
+        {
+          "status": 200,
+          "headersMs": 742.8176999999996,
+          "firstFrameMs": 744.6726999999992,
+          "firstContentMs": 744.6965999999993,
+          "completeMs": 855.5911999999989,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 3,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 4,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 734,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 734,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 734,
+            "ir_encode": 0,
+            "execute_total": 735
+          },
+          "requestId": "b741c9c6-3243-48ba-bd15-b9a1da77f3d8"
+        },
+        {
+          "status": 200,
+          "headersMs": 2571.8322000000007,
+          "firstFrameMs": 2822.7382,
+          "firstContentMs": 2822.762600000002,
+          "completeMs": 3063.7852999999996,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 0,
+            "guardZod": 1,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 1,
+            "context_total": 1,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 1,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 2,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 3,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 2565,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 2565,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 2565,
+            "ir_encode": 0,
+            "execute_total": 2566
+          },
+          "requestId": "48ecaa64-a81c-44fb-ab5f-80651b797761"
+        },
+        {
+          "status": 200,
+          "headersMs": 624.3846000000012,
+          "firstFrameMs": 635.858400000001,
+          "firstContentMs": 635.886400000003,
+          "completeMs": 636.0872000000018,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 30,
+            "context_total": 30,
+            "context_preset_access": 0,
+            "context_private_model": 29,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 1,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 31,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 32,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 588,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 588,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 588,
+            "ir_encode": 0,
+            "execute_total": 590
+          },
+          "requestId": "da32de78-2ea3-4dbd-893e-f8beefc19015"
+        },
+        {
+          "status": 200,
+          "headersMs": 2562.2034999999996,
+          "firstFrameMs": 2600.783599999999,
+          "firstContentMs": 2600.8112,
+          "completeMs": 3141.0136999999995,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 0,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 1,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 2,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 1,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 3,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 2555,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 2555,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 2555,
+            "ir_encode": 0,
+            "execute_total": 2556
+          },
+          "requestId": "7c333705-b16f-4600-9f3e-20c247c0377f"
+        },
+        {
+          "status": 200,
+          "headersMs": 525.8218000000015,
+          "firstFrameMs": 525.9991999999984,
+          "firstContentMs": 526.0249000000003,
+          "completeMs": 554.5865000000013,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 0,
+            "guardZod": 1,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 1,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 1,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 3,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 3,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 518,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 518,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 518,
+            "ir_encode": 0,
+            "execute_total": 518
+          },
+          "requestId": "d8d4ca40-9370-499b-8463-5dd64dc45812"
+        },
+        {
+          "status": 200,
+          "headersMs": 505.1879999999983,
+          "firstFrameMs": 505.3766999999971,
+          "firstContentMs": 505.40849999999773,
+          "completeMs": 634.7219999999979,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 0,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 2,
+            "context_total": 2,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 2,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 2,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 2,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 499,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 499,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 499,
+            "ir_encode": 0,
+            "execute_total": 499
+          },
+          "requestId": "945c9ad3-1a60-454c-9228-7ed949b591ac"
+        },
+        {
+          "status": 200,
+          "headersMs": 533.5892999999996,
+          "firstFrameMs": 578.7212999999974,
+          "firstContentMs": 578.7494000000006,
+          "completeMs": 589.0214999999989,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 0,
+            "guardZod": 1,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 3,
+            "context_total": 3,
+            "context_preset_access": 0,
+            "context_private_model": 0,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 3,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 4,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 4,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 526,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 526,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 526,
+            "ir_encode": 0,
+            "execute_total": 526
+          },
+          "requestId": "b02bb627-468c-46e2-9293-0275f45e70b3"
+        },
+        {
+          "status": 200,
+          "headersMs": 781.8832000000002,
+          "firstFrameMs": 781.9985000000015,
+          "firstContentMs": 782.020800000002,
+          "completeMs": 803.8623000000007,
+          "serverTiming": {
+            "guardAuth": 0,
+            "guardJson": 1,
+            "guardZod": 0,
+            "guardModel": 0,
+            "resolveTestingMode": 0,
+            "fetchWorkspacePolicy": 0,
+            "guardContext": 272,
+            "context_total": 272,
+            "context_preset_access": 0,
+            "context_private_model": 270,
+            "context_byok_hydration": 0,
+            "context_key_version": 0,
+            "context_cache_read": 1,
+            "validateCapabilities": 0,
+            "applyServiceTierRouting": 0,
+            "before_start": 273,
+            "protocol_detect": 0,
+            "ir_decode": 0,
+            "execute_guard_candidates": 0,
+            "execute_filter_modalities": 0,
+            "execute_rank_providers": 0,
+            "attempt_1_breaker": 0,
+            "internal_latency_ms": 273,
+            "attempt_1_resolve_executor": 0,
+            "attempt_1_normalize_ir": 0,
+            "attempt_1_provider_rate_limit": 0,
+            "attempt_1_executor_total": 505,
+            "attempt_1_request_build": 0,
+            "attempt_1_upstream_headers": 505,
+            "attempt_1_retry_delay": 0,
+            "adapter_start": 505,
+            "ir_encode": 0,
+            "execute_total": 505
+          },
+          "requestId": "2a6ef9a3-6a03-4e71-890a-6551120dde9f"
+        }
+      ]
+    },
+    "isolated": {
+      "parity": true,
+      "results": [
+        {
+          "variant": "fresh-lookup",
+          "ms": 83.75929999999994,
+          "calls": 1
+        },
+        {
+          "variant": "warm-index",
+          "ms": 42.765499999999975,
+          "calls": 1
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.02369999999996253,
+          "calls": 0
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 41.68690000000015,
+          "calls": 1
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 46.459100000000035,
+          "calls": 1
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.0342000000000553,
+          "calls": 0
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.009600000000091313,
+          "calls": 0
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 42.59719999999993,
+          "calls": 1
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 34.42370000000005,
+          "calls": 1
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.025599999999940337,
+          "calls": 0
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.007700000000113505,
+          "calls": 0
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 51.18160000000012,
+          "calls": 1
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 39.970800000000054,
+          "calls": 1
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.023999999999887223,
+          "calls": 0
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.006700000000137152,
+          "calls": 0
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 39.87239999999997,
+          "calls": 1
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 34.54790000000003,
+          "calls": 1
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.02549999999996544,
+          "calls": 0
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.02289999999993597,
+          "calls": 0
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 37.85410000000002,
+          "calls": 1
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 36.89339999999993,
+          "calls": 1
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.02369999999996253,
+          "calls": 0
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.00659999999993488,
+          "calls": 0
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 53.326499999999896,
+          "calls": 1
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 43.84699999999998,
+          "calls": 1
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.03700000000003456,
+          "calls": 0
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.02750000000014552,
+          "calls": 0
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 44.25189999999998,
+          "calls": 1
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 34.85429999999997,
+          "calls": 1
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.0464999999999236,
+          "calls": 0
+        },
+        {
+          "variant": "warm-index",
+          "ms": 0.005000000000109139,
+          "calls": 0
+        },
+        {
+          "variant": "fresh-lookup",
+          "ms": 51.234300000000076,
+          "calls": 1
+        },
+        {
+          "variant": "cold-index",
+          "ms": 28.75579999999991,
+          "calls": 1
+        },
+        {
+          "variant": "cold-index",
+          "ms": 41.88869999999997,
+          "calls": 1
+        },
+        {
+          "variant": "cold-index",
+          "ms": 36.85789999999997,
+          "calls": 1
+        },
+        {
+          "variant": "cold-index",
+          "ms": 42.77949999999987,
+          "calls": 1
+        },
+        {
+          "variant": "cold-index",
+          "ms": 46.328500000000076,
+          "calls": 1
+        },
+        {
+          "variant": "cold-index",
+          "ms": 54.391799999999876,
+          "calls": 1
+        },
+        {
+          "variant": "cold-index",
+          "ms": 51.910499999999956,
+          "calls": 1
+        },
+        {
+          "variant": "cold-index",
+          "ms": 48.82079999999996,
+          "calls": 1
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "key": "modelscope:qwen/qwen-image:image.generate",
+  "api_provider_id": "modelscope",
+  "provider_slug": "modelscope",
+  "api_model_id": "qwen/qwen-image",
+  "capability_id": "image.generate",
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-07T00:00:00Z",
+      "region": null,
+      "conditions": [],
+      "source": "https://modelscope.cn/docs/model-service/API-Inference/limits"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://modelscope.cn/docs/model-service/API-Inference/limits",
+      "accessed_at": "2026-09-07T00:00:00Z",
+      "notes": "Free non-commercial API-Inference; provider account and quota restrictions apply."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T00:00:00Z",
+    "notes": "Published free service; no live inference test."
+  }
+}

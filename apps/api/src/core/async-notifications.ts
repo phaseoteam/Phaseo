@@ -1,7 +1,6 @@
 import { dispatchBackground, getBindings } from "@/runtime/env";
 import {
 	claimAsyncWebhookDelivery,
-	completeAsyncWebhookDelivery,
 	discardPendingAsyncWebhookDelivery,
 	markPendingAsyncWebhookDeliveryDelivered,
 	getAsyncOperation,
@@ -1287,7 +1286,6 @@ export async function dispatchAsyncWebhookEvent(args: {
 	}
 	if (!args.force && retryQueue[deliveryKey]) return false;
 	if (
-		!args.force &&
 		webhookAttempts.some(
 			(attempt) => attempt.delivery_key === deliveryKey && attempt.status === "failed_permanently",
 		)
@@ -1301,8 +1299,23 @@ export async function dispatchAsyncWebhookEvent(args: {
 		internalId: args.internalId,
 		deliveryKey,
 		claimToken,
+		eventType: specificEvent, phase: args.phase, progress: progressBucket,
+		previousStatus: args.previousStatus, currentStatus: args.currentStatus,
 	});
 	if (!claimed) return false;
+	// Another worker may finish between our initial read and acquiring the lease.
+	// Never send from that stale snapshot, even when this is a scheduled retry.
+	const claimedRecord = await getAsyncOperation(args.workspaceId, args.kind, args.internalId, { fresh: true });
+	const claimedMeta = (claimedRecord?.meta ?? {}) as AsyncNotificationMeta;
+	const claimedRetry = normalizeAsyncWebhookRetryQueue(claimedMeta.webhookRetryQueue ?? claimedMeta.webhook_retry_queue)[deliveryKey];
+	const claimedAttempts = normalizeAsyncWebhookAttempts(claimedMeta.webhookAttempts ?? claimedMeta.webhook_attempts);
+	if (!claimedRecord ||
+		JSON.stringify(claimedRetry) !== JSON.stringify(retryQueue[deliveryKey]) ||
+		(claimedMeta.webhookDeliveries as Record<string, unknown> | undefined)?.[deliveryKey] ||
+		claimedAttempts.some((attempt) => attempt.delivery_key === deliveryKey && attempt.status === "failed_permanently")) {
+		await releaseAsyncWebhookDeliveryClaim({ workspaceId: args.workspaceId, kind: args.kind, internalId: args.internalId, deliveryKey, claimToken });
+		return false;
+	}
 	const eventId = buildWebhookEventId({ kind: args.kind, internalId: args.internalId, deliveryKey });
 	const attemptNumber = Math.max(1, (retryQueue[deliveryKey]?.attemptCount ?? 0) + 1);
 	const payload = {
@@ -1316,13 +1329,13 @@ export async function dispatchAsyncWebhookEvent(args: {
 		},
 		data: await buildAsyncNotificationData({
 			baseUrl: args.baseUrl ?? null,
-			record,
+			record: claimedRecord,
 			progress: progressBucket ?? args.progress ?? null,
 		}),
 		...(args.phase === "status_changed" ? {
 			status_change: {
 				previous_status: normalizeText(args.previousStatus),
-				status: normalizeText(args.currentStatus) ?? toAsyncLifecycleStatus(record.status),
+				status: normalizeText(args.currentStatus) ?? toAsyncLifecycleStatus(claimedRecord.status),
 			},
 		} : {}),
 	};
@@ -1358,13 +1371,6 @@ export async function dispatchAsyncWebhookEvent(args: {
 		maxAttempts: MAX_WEBHOOK_ATTEMPTS,
 	});
 	if (!requestResult.ok) {
-		await releaseAsyncWebhookDeliveryClaim({
-			workspaceId: args.workspaceId,
-			kind: args.kind,
-			internalId: args.internalId,
-			deliveryKey,
-			claimToken,
-		}).catch((error) => console.error("async_user_webhook_claim_release_failed", { error, deliveryKey }));
 		const nextRetryDelayMs = computeRetryDelayMsForAttempt(attemptNumber);
 		const nextRetryAt = nextRetryDelayMs != null
 			? new Date(Date.now() + nextRetryDelayMs).toISOString()
@@ -1418,6 +1424,7 @@ export async function dispatchAsyncWebhookEvent(args: {
 			kind: args.kind,
 			internalId: args.internalId,
 			deliveryKey,
+			claimToken,
 			attempt: attempts.at(-1) as unknown as Record<string, unknown>,
 			retryState: nextRetryAt ? nextRetryQueue[deliveryKey] as unknown as Record<string, unknown> : null,
 			nextRetryAt,
@@ -1428,23 +1435,15 @@ export async function dispatchAsyncWebhookEvent(args: {
 				lastWebhookDispatchedAt: nowIso,
 			},
 		});
+		// Persist the attempt and retry time before another worker can claim it.
+		await releaseAsyncWebhookDeliveryClaim({
+			workspaceId: args.workspaceId, kind: args.kind, internalId: args.internalId,
+			deliveryKey, claimToken,
+		}).catch((error) => console.error("async_user_webhook_claim_release_failed", { error, deliveryKey }));
 		return false;
 	}
-	const completedClaim = await completeAsyncWebhookDelivery({
-		workspaceId: args.workspaceId,
-		kind: args.kind,
-		internalId: args.internalId,
-		deliveryKey,
-		claimToken,
-	});
-	if (!completedClaim) {
-		console.error("async_user_webhook_claim_completion_failed", {
-			workspaceId: args.workspaceId,
-			kind: args.kind,
-			internalId: args.internalId,
-			deliveryKey,
-		});
-	}
+	// The result RPC atomically records the attempt and marks the outbox delivered.
+	// Marking it delivered separately first could lose the audit record on a crash.
 	const nextRetryQueue = { ...retryQueue };
 	delete nextRetryQueue[deliveryKey];
 	const attempts = appendWebhookAttempt(webhookAttempts, {
@@ -1466,6 +1465,7 @@ export async function dispatchAsyncWebhookEvent(args: {
 		kind: args.kind,
 		internalId: args.internalId,
 		deliveryKey,
+		claimToken,
 		attempt: attempts.at(-1) as unknown as Record<string, unknown>,
 		retryState: null,
 		deliveredAt: nowIso,

@@ -14,7 +14,7 @@
       "pricing_plan": "standard",
       "note": "Per output second for full HD-class (hd) text-to-video or image-to-video generation.",
       "match": [
-        { "path": "video_params.mode", "op": "neq", "or_group": 1, "and_index": 1, "value": "v2v" },
+        { "path": "video_params.mode", "op": "ne", "or_group": 1, "and_index": 1, "value": "v2v" },
         { "path": "video_params.resolution", "op": "eq", "or_group": 1, "and_index": 2, "value": "hd" },
         { "path": "video_params.draft", "op": "eq", "or_group": 1, "and_index": 3, "value": false }
       ],
@@ -23,7 +23,7 @@
       "region": "global",
       "cache_duration_seconds": null,
       "conditions": [
-        { "path": "video_params.mode", "op": "neq", "or_group": 1, "and_index": 1, "value": "v2v" },
+        { "path": "video_params.mode", "op": "ne", "or_group": 1, "and_index": 1, "value": "v2v" },
         { "path": "video_params.resolution", "op": "eq", "or_group": 1, "and_index": 2, "value": "hd" },
         { "path": "video_params.draft", "op": "eq", "or_group": 1, "and_index": 3, "value": false }
       ],
@@ -32,17 +32,17 @@
     {
       "meter": "output_video_seconds", "unit": "second", "unit_size": 1, "price_per_unit": 0.29, "currency": "USD", "pricing_plan": "standard",
       "note": "Per output second for full-render FHD text-to-video or image-to-video generation.",
-      "match": [{ "path": "video_params.mode", "op": "neq", "or_group": 1, "and_index": 1, "value": "v2v" }, { "path": "video_params.resolution", "op": "eq", "or_group": 1, "and_index": 2, "value": "fhd" }, { "path": "video_params.draft", "op": "eq", "or_group": 1, "and_index": 3, "value": false }],
+      "match": [{ "path": "video_params.mode", "op": "ne", "or_group": 1, "and_index": 1, "value": "v2v" }, { "path": "video_params.resolution", "op": "eq", "or_group": 1, "and_index": 2, "value": "fhd" }, { "path": "video_params.draft", "op": "eq", "or_group": 1, "and_index": 3, "value": false }],
       "priority": 100, "effective_from": "2026-08-04T00:00:00Z", "region": "global", "cache_duration_seconds": null,
-      "conditions": [{ "path": "video_params.mode", "op": "neq", "or_group": 1, "and_index": 1, "value": "v2v" }, { "path": "video_params.resolution", "op": "eq", "or_group": 1, "and_index": 2, "value": "fhd" }, { "path": "video_params.draft", "op": "eq", "or_group": 1, "and_index": 3, "value": false }],
+      "conditions": [{ "path": "video_params.mode", "op": "ne", "or_group": 1, "and_index": 1, "value": "v2v" }, { "path": "video_params.resolution", "op": "eq", "or_group": 1, "and_index": 2, "value": "fhd" }, { "path": "video_params.draft", "op": "eq", "or_group": 1, "and_index": 3, "value": false }],
       "source": "https://docs.bfl.ai/flux_3/flux3_overview"
     },
     {
       "meter": "output_video_seconds", "unit": "second", "unit_size": 1, "price_per_unit": 0.06, "currency": "USD", "pricing_plan": "standard",
       "note": "Per output second for draft text-to-video or image-to-video generation; drafts render at hd.",
-      "match": [{ "path": "video_params.mode", "op": "neq", "or_group": 1, "and_index": 1, "value": "v2v" }, { "path": "video_params.draft", "op": "eq", "or_group": 1, "and_index": 2, "value": true }],
+      "match": [{ "path": "video_params.mode", "op": "ne", "or_group": 1, "and_index": 1, "value": "v2v" }, { "path": "video_params.draft", "op": "eq", "or_group": 1, "and_index": 2, "value": true }],
       "priority": 110, "effective_from": "2026-08-04T00:00:00Z", "region": "global", "cache_duration_seconds": null,
-      "conditions": [{ "path": "video_params.mode", "op": "neq", "or_group": 1, "and_index": 1, "value": "v2v" }, { "path": "video_params.draft", "op": "eq", "or_group": 1, "and_index": 2, "value": true }],
+      "conditions": [{ "path": "video_params.mode", "op": "ne", "or_group": 1, "and_index": 1, "value": "v2v" }, { "path": "video_params.draft", "op": "eq", "or_group": 1, "and_index": 2, "value": true }],
       "source": "https://docs.bfl.ai/flux_3/flux3_overview"
     },
     {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deepseekQuirks } from "../../providers/deepseek/quirks";
+import { applyReasoningParams } from "../../reasoning";
 
 describe("DeepSeek quirks", () => {
 	it("keeps json_object response_format and rewrites developer role", () => {
@@ -90,5 +91,19 @@ describe("DeepSeek quirks", () => {
 			cached_tokens: 80,
 			cache_miss_tokens: 20,
 		});
+	});
+
+	it("maps reasoning effort for the temporary V4.1 Flash Beta deployment", () => {
+		const request: Record<string, any> = {};
+
+		applyReasoningParams({
+			ir: { reasoning: { effort: "max" } } as any,
+			request,
+			providerId: "deepseek",
+			providerModelSlug: "deepseek-v4.1-flash-expires-on-0910",
+		});
+
+		expect(request.reasoning_effort).toBe("max");
+		expect(request.thinking).toEqual({ type: "enabled" });
 	});
 });

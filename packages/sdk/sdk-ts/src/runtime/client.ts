@@ -91,6 +91,9 @@ export class Client {
 					headers: Object.fromEntries(response.headers.entries())
 				});
 			}
+			if (response.headers.get("content-type")?.split(";")[0].trim().toLowerCase() === "application/x-ndjson") {
+				return text as T;
+			}
 			if (!text) {
 				return undefined as T;
 			}

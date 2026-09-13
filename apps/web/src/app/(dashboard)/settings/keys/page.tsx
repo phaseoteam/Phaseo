@@ -49,7 +49,6 @@ async function KeysContent({
 		<div className="space-y-6">
 			<SettingsPageHeader
 				title="API Keys"
-				description="Create and manage gateway API keys for this workspace."
 				actions={
 					<div className="flex flex-wrap items-center gap-2">
 						<Button asChild variant="outline" size="sm">
@@ -58,7 +57,7 @@ async function KeysContent({
 								target="_blank"
 								rel="noreferrer"
 							>
-								Quick start
+								Quick Start
 								<ArrowUpRight className="ml-1 h-4 w-4" />
 							</Link>
 						</Button>

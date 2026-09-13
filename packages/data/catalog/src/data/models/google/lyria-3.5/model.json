@@ -97,10 +97,10 @@
   ],
   "verification": {
     "status": "verified",
-    "checked_at": "2026-07-29T00:00:00",
-    "notes": "Model identity and capabilities verified against Google DeepMind. No public API model identifier was documented at verification time."
+    "checked_at": "2026-09-03T00:00:00Z",
+    "notes": "Model identity and capabilities verified against Google DeepMind. Google's current Gemini API music guide still documents only the Lyria 3 Clip and Pro preview identifiers, so no public Lyria 3.5 API route is available."
   },
-  "last_updated": "2026-07-29T00:00:00",
+  "last_updated": "2026-09-03T00:00:00Z",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

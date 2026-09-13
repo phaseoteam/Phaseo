@@ -104,6 +104,36 @@ function makeCandidate(args: {
 }
 
 describe("applyServiceTierRouting", () => {
+    it.each(["on-demand", "llm-plus"])("preserves default routing for provider SKU %s", async (plan) => {
+        const card = makeCard({ provider: "provider", model: "model", plans: ["standard"] });
+        card.rules = card.rules.map((rule) => ({ ...rule, pricing_plan: plan }));
+        const provider = makeCandidate({ providerId: "provider", pricingCard: card });
+        expect((await applyServiceTierRouting({ candidates: [provider], body: {}, capability: "text.generate" })).candidates).toEqual([provider]);
+    });
+    it("preserves default routing for explicitly free cards", async () => {
+        const card = makeCard({ provider: "free", model: "model", plans: ["standard"] });
+        card.rules = card.rules.map((rule) => ({ ...rule, pricing_plan: "free", price_per_unit: "0" }));
+        const free = makeCandidate({ providerId: "free", pricingCard: card });
+        expect((await applyServiceTierRouting({ candidates: [free], body: {}, capability: "text.generate" })).candidates).toEqual([free]);
+    });
+    it.each([{}, { service_tier: "standard" }, { serviceTier: "standard" }])(
+        "rejects a global priority-only route for a default request %j", async (body) => {
+            const fast = makeCandidate({ providerId: "fireworks", apiModelId: "z-ai/glm-5.3",
+                providerModelSlug: "accounts/fireworks/routers/glm-5p3-fast", offerScope: "global",
+                pricingCard: makeCard({ provider: "fireworks", model: "z-ai/glm-5.3", plans: ["priority"] }) });
+            const standard = makeCandidate({ providerId: "other", pricingCard: makeCard({ provider: "other", model: "z-ai/glm-5.3", plans: ["standard"] }) });
+            const result = await applyServiceTierRouting({ candidates: [fast, standard], body, capability: "text.generate" });
+            expect(result.candidates).toEqual([standard]);
+        },
+    );
+
+    it.each(["fast", "priority"])("keeps a global priority-only route for an explicit %s request", async (tier) => {
+        const fast = makeCandidate({ providerId: "fireworks", apiModelId: "z-ai/glm-5.3",
+            pricingCard: makeCard({ provider: "fireworks", model: "z-ai/glm-5.3", plans: ["priority"] }) });
+        const result = await applyServiceTierRouting({ candidates: [fast], body: { service_tier: tier }, capability: "text.generate" });
+        expect(result.candidates).toEqual([fast]);
+    });
+
     beforeEach(() => {
         queryState.providerRows = [];
         queryState.capabilityRows = [];

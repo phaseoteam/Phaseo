@@ -1,0 +1,71 @@
+{
+  "model_id": "openai/gpt-6-astra-pro",
+  "organisation_id": "openai",
+  "name": "GPT-6 Astra Pro",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "GPT-6 Astra Pro is the same underlying GPT-6 Astra model served with reasoning.mode set to pro for higher-quality responses on complex tasks.",
+  "announced_date": "2026-09-01T00:00:00",
+  "release_date": "2026-09-03T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-6-astra-pro",
+  "family_id": null,
+  "links": [
+    { "title": "GPT-6 Astra: A new generation of intelligence", "kind": "announcement", "url": "https://openai.com/index/gpt-6-astra/" },
+    { "title": "GPT-6 Astra model documentation", "kind": "api_reference", "url": "https://developers.openai.com/api/docs/models/gpt-6-astra" },
+    { "title": "GPT-6 Astra System Card", "kind": "paper", "url": "https://deploymentsafety.openai.com/gpt-6-astra" },
+    { "title": "Path to Astra", "kind": "announcement", "url": "https://openai.com/index/path-to-astra/" }
+  ],
+  "details": [
+    { "name": "base_model", "value": "openai/gpt-6-astra" },
+    { "name": "reasoning_mode", "value": "Uses reasoning.mode=pro by default; standard mode remains available on the base GPT-6 Astra model slug." },
+    { "name": "input_context_length", "value": 1050000 },
+    { "name": "max_input_tokens", "value": 922000 },
+    { "name": "output_context_length", "value": 128000 },
+    { "name": "knowledge_cutoff", "value": "2026-04-30T00:00:00" },
+    { "name": "availability", "value": "Available through Phaseo for OpenAI API accounts with GPT-6 Astra access." },
+    { "name": "endpoints", "value": "Responses, Chat Completions, and Batch" },
+    { "name": "reasoning_effort", "value": "Supports low, medium, high, xhigh, and max." },
+    { "name": "prompt_caching", "value": "Cached input is $1 per million tokens and cache writes are $12.50 per million tokens at Standard rates." },
+    { "name": "long_context_pricing", "value": "Requests above 272K input tokens use 2x input and cache rates and 1.5x output rates for the full request." },
+    { "name": "service_tiers", "value": "Batch and Flex cost 50% of Standard rates; Fast mode costs 2x the applicable rates." },
+    { "name": "zero_data_retention", "value": "Supported for eligible OpenAI API customers." }
+  ],
+  "benchmarks": [],
+  "page_notice": {
+    "tone": "info",
+    "markdown": "GPT-6 Astra Pro is a Phaseo model variant that requests OpenAI's documented gpt-6-astra API model with reasoning.mode set to pro. Availability depends on the connected OpenAI account having access."
+  },
+  "model_type": null,
+  "knowledge_cutoff": "2026-04-30T00:00:00",
+  "limits": { "context": 1050000, "input": 922000, "output": 128000 },
+  "modalities": { "input": ["text", "image/*"], "output": ["text"] },
+  "reasoning": { "supported": true, "options": ["low", "medium", "high", "xhigh", "max"] },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": true,
+    "structured_output": true,
+    "temperature": false,
+    "streaming": true,
+    "web_search": true
+  },
+  "open_weights": false,
+  "sources": [
+    { "kind": "announcement", "url": "https://openai.com/index/gpt-6-astra/", "accessed_at": "2026-09-03T00:00:00Z", "notes": "Official launch, availability, pricing, capability, benchmark, safety, and privacy information." },
+    { "kind": "api_reference", "url": "https://developers.openai.com/api/docs/models/gpt-6-astra", "accessed_at": "2026-09-03T00:00:00Z", "notes": "Official base model ID, snapshot, modalities, limits, knowledge cutoff, pricing, endpoints, features, tools, and rate limits. The Pro entry is a Phaseo routing variant." },
+    { "kind": "paper", "url": "https://deploymentsafety.openai.com/gpt-6-astra", "accessed_at": "2026-09-03T00:00:00Z", "notes": "Official GPT-6 Astra system card and safety evaluation record." }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-03T00:00:00Z",
+    "notes": "Verified against OpenAI's official GPT-6 Astra launch post, model documentation, and system card. The Pro entry is a Phaseo variant that normalizes to the documented gpt-6-astra API model and injects reasoning.mode=pro."
+  },
+  "last_updated": "2026-09-03T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

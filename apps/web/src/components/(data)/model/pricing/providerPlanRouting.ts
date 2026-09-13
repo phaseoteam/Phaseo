@@ -120,7 +120,8 @@ export function getProviderAvailablePlans(provider: ProviderPricing): string[] {
     const extras = Array.from(set)
         .filter((plan) => !PLAN_ORDER.includes(plan as never))
         .sort();
-    return [...ordered, ...extras];
+    const plans = [...ordered, ...extras];
+    return plans.length > 0 || provider.provider_models.length === 0 ? plans : ["standard"];
 }
 
 export function getProviderPlanComparisonBase(

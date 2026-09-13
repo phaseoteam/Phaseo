@@ -5,122 +5,15 @@
   "api_model_id": "z-ai/glm-5.1",
   "capability_id": "text.generate",
   "rules": [
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.26,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": "Official DigitalOcean serverless inference price.",
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-08-21T00:00:00Z",
-      "effective_to": null,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": "https://docs.digitalocean.com/products/inference/details/pricing/"
-    },
-    {
-      "meter": "input_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 1.3,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": "Official DigitalOcean serverless inference price.",
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-08-21T00:00:00Z",
-      "effective_to": null,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": "https://docs.digitalocean.com/products/inference/details/pricing/"
-    },
-    {
-      "meter": "output_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 4.3,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": "Official DigitalOcean serverless inference price.",
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-08-21T00:00:00Z",
-      "effective_to": null,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": "https://docs.digitalocean.com/products/inference/details/pricing/"
-    },
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.26,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null,
-      "effective_to": "2026-08-21T00:00:00Z"
-    },
-    {
-      "meter": "input_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.975,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null,
-      "effective_to": "2026-08-21T00:00:00Z"
-    },
-    {
-      "meter": "output_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 4.3,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null,
-      "effective_to": "2026-08-21T00:00:00Z"
-    }
+    {"meter":"cached_read_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.26,"currency":"USD","pricing_plan":"standard","note":"Official DigitalOcean serverless inference price.","match":[],"priority":100,"effective_from":"2026-08-21T00:00:00Z","effective_to":"2026-09-09T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://docs.digitalocean.com/products/inference/details/pricing/"},
+    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":1.3,"currency":"USD","pricing_plan":"standard","note":"Official DigitalOcean serverless inference price.","match":[],"priority":100,"effective_from":"2026-08-21T00:00:00Z","effective_to":"2026-09-09T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://docs.digitalocean.com/products/inference/details/pricing/"},
+    {"meter":"output_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":4.3,"currency":"USD","pricing_plan":"standard","note":"Official DigitalOcean serverless inference price.","match":[],"priority":100,"effective_from":"2026-08-21T00:00:00Z","effective_to":"2026-09-09T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://docs.digitalocean.com/products/inference/details/pricing/"},
+    {"meter":"cached_read_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.26,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"region":null,"cache_duration_seconds":null,"conditions":[],"source":null,"effective_to":"2026-08-21T00:00:00Z"},
+    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.975,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-05-29T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":null,"effective_to":"2026-08-21T00:00:00Z"},
+    {"meter":"output_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":4.3,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-05-29T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":null,"effective_to":"2026-08-21T00:00:00Z"}
   ],
   "regions": [],
-  "service_tiers": [
-    "standard"
-  ],
-  "sources": [
-    {
-      "url": "https://docs.digitalocean.com/products/inference/details/pricing/",
-      "kind": "pricing",
-      "accessed_at": "2026-08-23T00:00:00Z",
-      "notes": "Official pricing."
-    }
-  ],
-  "verification": {
-    "status": "verified",
-    "checked_at": "2026-08-23T00:00:00Z",
-    "notes": "Verified against official DigitalOcean pricing."
-  }
+  "service_tiers": ["standard"],
+  "sources": [{"url":"https://docs.digitalocean.com/products/inference/details/pricing/","kind":"pricing","accessed_at":"2026-08-23T00:00:00Z","notes":"Official pricing."}],
+  "verification": {"status":"verified","checked_at":"2026-08-23T00:00:00Z","notes":"Verified against official DigitalOcean pricing; current rules end-dated after manually confirmed model removal."}
 }
-

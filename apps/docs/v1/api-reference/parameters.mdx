@@ -13,7 +13,7 @@ Use it when you want to know:
 - the typical range or accepted values
 - whether it changes quality, cost, latency, or routing behavior
 
-If you want tuning advice instead of field definitions, use [Inference Parameters](/v1/guides/inference-parameters) and [Sampling and Decoding](/v1/guides/sampling-and-decoding).
+If you want tuning advice instead of field definitions, use [Inference Parameters](/v1/guides/inference-parameters) and [Sampling and Decoding](../guides/sampling-and-decoding.mdx).
 
 Parameter support still varies by endpoint, model, and provider. The model quickstart table shows support aggregated across currently active providers for a specific route.
 
@@ -46,6 +46,7 @@ Parameter support still varies by endpoint, model, and provider. The model quick
 | [`include_reasoning`](#include_reasoning) | `boolean` | Returning reasoning content or summaries where supported. |
 | [`service_tier`](#service_tier) | `string` | Choosing a supported request tier such as `priority` or `flex`; OpenAI also accepts `fast` as an alias. |
 | [`prompt_cache_key`](#prompt_cache_key) | `string` | Keeping cache-aware routing sticky for related requests. |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | Setting OpenAI prompt-cache mode and TTL controls. |
 | [`cache_control`](#cache_control) | `object` | Applying provider-neutral prompt cache hints or breakpoints. |
 | [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Setting OpenAI-compatible prompt cache retention. |
 | [`provider`](#provider) | `object` | Influencing routing and provider selection. |
@@ -448,6 +449,19 @@ Provides a stable cache affinity key for prompt-cache-aware routing.
 
 Use this when a series of requests share stable prompt prefixes and should prefer the same upstream provider or region when possible. Phaseo can also derive cache affinity from request context, but an explicit key is better for long-running conversations, agent sessions, and repeated workflows.
 
+<span id="prompt_cache_options"></span>
+<h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
+
+Passes OpenAI prompt-cache controls through supported OpenAI routes.
+
+| Field | Value |
+| --- | --- |
+| Type | `object` |
+| Common fields | `mode`, `ttl` |
+| Astra TTL | `30m` |
+
+For GPT-6 Astra, use `{"mode":"explicit","ttl":"30m"}` when you want explicit prompt caching. Phaseo preserves this object through its request normalization and sends it to OpenAI unchanged.
+
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
 
@@ -602,13 +616,13 @@ Debug payloads can contain sensitive request context. Use them only in developme
 If you want the deeper "how should I tune this?" guidance rather than the raw field reference, use these next:
 
 - [Inference Parameters](/v1/guides/inference-parameters) for practical advice on temperature, top_p, top_k, max token limits, stop sequences, and tuning workflow
-- [Sampling and Decoding](/v1/guides/sampling-and-decoding) for how randomness, penalties, and decoding controls change model behavior
+- [Sampling and Decoding](../guides/sampling-and-decoding.mdx) for how randomness, penalties, and decoding controls change model behavior
 
 ## Related pages
 
 - [Inference Parameters](/v1/guides/inference-parameters)
-- [Sampling and Decoding](/v1/guides/sampling-and-decoding)
-- [Streaming](./streaming.mdx)
+- [Sampling and Decoding](../guides/sampling-and-decoding.mdx)
+- [Streaming](../guides/streaming.mdx)
 - [Limits](./limits.mdx)
 - [Errors and Debugging](/v1/api-reference/errors)
 

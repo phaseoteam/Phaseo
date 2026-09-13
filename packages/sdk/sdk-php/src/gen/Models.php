@@ -161,6 +161,8 @@ class AnthropicMessagesResponse
 
 class AnthropicTool
 {
+	/** @var bool|null */
+	public $async;
 	/** @var string|null */
 	public $description;
 	/** @var array<string, mixed>|null */
@@ -741,6 +743,8 @@ class BatchRequest
 	public $prompts;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
 	/** @var array|null */
 	public $requests;
 	/** @var string|null */
@@ -889,6 +893,8 @@ class BatchResponse
 	public $request_counts;
 	/** @var string|null */
 	public $request_id;
+	/** @var string|null */
+	public $results_url;
 	/** @var string|null */
 	public $session_id;
 	/** @var string|null */
@@ -1671,6 +1677,8 @@ class FileUploadRequest
 
 class FunctionToolDefinition
 {
+	/** @var bool|null */
+	public $async;
 	/** @var array<string, mixed> */
 	public $function;
 	/** @var string */
@@ -2085,12 +2093,18 @@ class GatewayWebFetchToolDefinition
 
 class GatewayWebSearchToolDefinition
 {
+	/** @var string|null */
+	public $engine;
 	/** @var bool|null */
 	public $include_highlights;
 	/** @var bool|null */
 	public $include_text;
+	/** @var string|null */
+	public $language;
 	/** @var int|null */
 	public $max_results;
+	/** @var int|null */
+	public $page;
 	/** @var array<string, mixed>|null */
 	public $parameters;
 	/** @var string */
@@ -2509,22 +2523,40 @@ class ImageModerationInput
 
 class ImagesEditRequest
 {
-	/** @var string */
+	/** @var string|null */
+	public $background;
+	/** @var string|array */
 	public $image;
+	/** @var string|null */
+	public $input_fidelity;
 	/** @var string|null */
 	public $mask;
 	/** @var bool|null */
 	public $meta;
 	/** @var string */
 	public $model;
+	/** @var string|null */
+	public $moderation;
 	/** @var int|null */
 	public $n;
+	/** @var int|null */
+	public $output_compression;
+	/** @var string|null */
+	public $output_format;
+	/** @var int|null */
+	public $partial_images;
 	/** @var string */
 	public $prompt;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var string|null */
+	public $quality;
+	/** @var string|null */
+	public $resolution;
+	/** @var string|null */
 	public $size;
+	/** @var bool|null */
+	public $stream;
 	/** @var bool|null */
 	public $usage;
 	/** @var string|null */
@@ -2541,10 +2573,20 @@ class ImagesEditResponse
 
 class ImagesGenerationRequest
 {
+	/** @var string|null */
+	public $background;
 	/** @var string */
 	public $model;
+	/** @var string|null */
+	public $moderation;
 	/** @var int|null */
 	public $n;
+	/** @var int|null */
+	public $output_compression;
+	/** @var string|null */
+	public $output_format;
+	/** @var int|null */
+	public $partial_images;
 	/** @var string */
 	public $prompt;
 	/** @var array<string, mixed>|null */
@@ -2552,9 +2594,13 @@ class ImagesGenerationRequest
 	/** @var string|null */
 	public $quality;
 	/** @var string|null */
+	public $resolution;
+	/** @var string|null */
 	public $response_format;
 	/** @var string|null */
 	public $size;
+	/** @var bool|null */
+	public $stream;
 	/** @var string|null */
 	public $style;
 	/** @var string|null */
@@ -3869,6 +3915,140 @@ class PresetVersionResponse
 
 class PresetVisibility { }
 
+class PrivateModel
+{
+	/** @var string */
+	public $base_url;
+	/** @var string|null */
+	public $catalog_model_id;
+	/** @var int|null */
+	public $context_length;
+	/** @var string|null */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string|null */
+	public $credential_prefix;
+	/** @var string|null */
+	public $credential_suffix;
+	/** @var string|null */
+	public $custom_provider_name;
+	/** @var string|null */
+	public $custom_provider_url;
+	/** @var string|null */
+	public $description;
+	/** @var bool */
+	public $enabled;
+	/** @var string|null */
+	public $host_provider_id;
+	/** @var string */
+	public $id;
+	/** @var array|null */
+	public $input_modalities;
+	/** @var string|null */
+	public $local_slug;
+	/** @var int|null */
+	public $max_output_tokens;
+	/** @var string */
+	public $model_id;
+	/** @var string */
+	public $name;
+	/** @var array|null */
+	public $output_modalities;
+	/** @var string|null */
+	public $routing_policy;
+	/** @var bool */
+	public $supports_responses;
+	/** @var string|null */
+	public $updated_at;
+	/** @var string */
+	public $upstream_model_id;
+	/** @var string */
+	public $workspace_id;
+}
+
+class PrivateModelCreateRequest
+{
+	/** @var string */
+	public $base_url;
+	/** @var int|null */
+	public $context_length;
+	/** @var string */
+	public $credential;
+	/** @var string|null */
+	public $custom_provider_name;
+	/** @var string|null */
+	public $custom_provider_url;
+	/** @var string|null */
+	public $description;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $host_provider_id;
+	/** @var int|null */
+	public $max_output_tokens;
+	/** @var string */
+	public $model_reference;
+	/** @var string */
+	public $name;
+	/** @var string|null */
+	public $routing_policy;
+	/** @var bool|null */
+	public $supports_responses;
+	/** @var string */
+	public $upstream_model_id;
+}
+
+class PrivateModelDeleteResponse
+{
+	/** @var bool */
+	public $deleted;
+}
+
+class PrivateModelListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class PrivateModelResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class PrivateModelUpdateRequest
+{
+	/** @var string|null */
+	public $base_url;
+	/** @var int|null */
+	public $context_length;
+	/** @var string|null */
+	public $credential;
+	/** @var string|null */
+	public $custom_provider_name;
+	/** @var string|null */
+	public $custom_provider_url;
+	/** @var string|null */
+	public $description;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $host_provider_id;
+	/** @var int|null */
+	public $max_output_tokens;
+	/** @var string|null */
+	public $model_reference;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $routing_policy;
+	/** @var bool|null */
+	public $supports_responses;
+	/** @var string|null */
+	public $upstream_model_id;
+}
+
 class Provider
 {
 	/** @var string|null */
@@ -4517,6 +4697,8 @@ class VideoGenerationRequest
 	public $duration;
 	/** @var bool|null */
 	public $enhance_prompt;
+	/** @var array|null */
+	public $frame_images;
 	/** @var bool|null */
 	public $generate_audio;
 	/** @var float|null */
@@ -4537,6 +4719,8 @@ class VideoGenerationRequest
 	public $prompt;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_options;
 	/** @var array<string, mixed>|null */
 	public $provider_params;
 	/** @var string|null */

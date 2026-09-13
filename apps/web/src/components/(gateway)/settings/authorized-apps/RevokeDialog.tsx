@@ -63,7 +63,16 @@ export default function RevokeDialog({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+		<Dialog
+			open={open}
+			onOpenChange={(nextOpen) => {
+				if (nextOpen) {
+					setOpen(true);
+					return;
+				}
+				handleClose();
+			}}
+		>
 			<DialogTrigger asChild>
 				<Button variant="outline" size="sm" className="w-full shrink-0 rounded-md sm:w-auto">
 					<X className="h-4 w-4 mr-1" />

@@ -1,0 +1,46 @@
+name: Artificial Analysis benchmark sync
+
+on:
+    schedule:
+        - cron: "23 4 * * *"
+    workflow_dispatch:
+
+concurrency:
+    group: artificial-analysis-benchmark-sync
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+
+jobs:
+    sync:
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+              with:
+                  persist-credentials: false
+            - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              with:
+                  version: 10.33.0
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              with:
+                  node-version: 24
+                  cache: pnpm
+            - run: pnpm install --frozen-lockfile
+            - name: Test benchmark matching
+              run: pnpm exec tsx --test scripts/artificial-analysis/core.test.ts
+            - name: Fetch benchmark snapshot
+              env:
+                  ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
+                  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+              run: pnpm data:sync-artificial-analysis --write --report=artificial-analysis-report.json
+            - name: Upload matching report
+              if: always()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+              with:
+                  name: artificial-analysis-matching
+                  path: artificial-analysis-report.json
+                  if-no-files-found: ignore

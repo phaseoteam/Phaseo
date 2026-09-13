@@ -461,6 +461,26 @@ export async function guardAllFailed(
             Number(stage?.afterCount ?? 0) === 0
         )
         : null;
+	const allProviderCapacityLimited = attemptErrors.length > 0 && attemptErrors.every(
+		(entry) => entry?.type === "provider_rate_limited",
+	);
+	if (allProviderCapacityLimited) {
+		captureTimingSnapshot(ctx, timing);
+		const retryAfter = attemptErrors
+			.map((entry) => Number(entry?.upstream_rate_limit_headers?.["Retry-After"] ?? NaN))
+			.filter((value) => Number.isFinite(value) && value > 0)
+			.sort((a, b) => a - b)[0] ?? null;
+		const response = err("provider_capacity_exhausted", {
+			reason: "all_candidates_rate_limited",
+			description: "All eligible providers are temporarily at capacity.",
+			model: ctx.model,
+			endpoint: ctx.endpoint,
+			request_id: ctx.requestId,
+			failed_providers: !isStealthRequest(ctx) && failedProviders.length ? failedProviders : null,
+		});
+		if (retryAfter != null) response.headers.set("Retry-After", String(retryAfter));
+		return { ok: false, response };
+	}
     if (geographicAvailabilityStage) {
         captureTimingSnapshot(ctx, timing);
         if (isStealthRequest(ctx)) {
@@ -563,6 +583,5 @@ export async function guardAllFailed(
 
     return { ok: false, response: res };
 }
-
 
 

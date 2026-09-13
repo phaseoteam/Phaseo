@@ -1,10 +1,18 @@
 ---
-title: "Coding Assistants"
+title: "Coding Agents"
 icon: "compass"
-description: "Add Phaseo as a model provider in Cursor, VS Code, Codex, Claude Code, and other coding tools."
+description: "Connect coding agents to Phaseo with the CLI or manual provider settings."
 ---
 
-Use this guide to add Phaseo as the model provider in coding assistants that support custom OpenAI-compatible or Anthropic-compatible endpoints.
+Use this guide to connect coding agents to Phaseo. Choose the Phaseo CLI when you want managed credentials and configuration, or use the manual provider values when you want to keep setup inside the agent.
+
+## Choose a setup
+
+| You want to… | Use |
+| --- | --- |
+| Launch Cline, Kilo Code, oh-my-pi, Muse Code, or MiniMax Code with isolated temporary settings | `phaseo cline`, `phaseo kilo`, `phaseo omp`, `phaseo muse`, or `phaseo minimax` |
+| Configure an installed agent and keep its settings | `phaseo <integration>` |
+| Configure an agent without the Phaseo CLI | Follow the manual provider steps in the dedicated guide |
 
 ## Set up with the Phaseo CLI
 
@@ -17,13 +25,13 @@ phaseo codex
 
 This command checks whether the harness is installed. When it is missing in an interactive terminal, Phaseo shows the supported install command and asks before running it. Phaseo then creates the harness's dedicated key and writes its configuration. Non-interactive runs print actionable installation guidance without making an unattended system change. OpenCode, DeepSeek Harness, Pi, Prime Agent, and OpenClaw also receive every active text model compatible with Chat Completions. Use `--skip-install`, `--catalog default`, or `--dry-run` when you need narrower behavior.
 
-Use the lower-level command for other integrations or when installation is managed separately:
+Use the product-named command for any persistent integration:
 
 ```bash
-phaseo integrations setup codex
+phaseo codex
 ```
 
-Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`.
+Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. The isolated CLI runners are `cline`, `kilo`, `omp`, `muse`, and `minimax`.
 
 The CLI creates a separate, non-expiring API key named for that assistant. It configures Aider and Continue automatically on clean installations, and writes Zed's provider/model settings automatically. For assistants that keep secrets exclusively in an editor UI, it prints the exact remaining fields, links the dedicated guide, and lets you copy only that assistant's key:
 
@@ -34,13 +42,13 @@ phaseo integrations credential codex
 Preview any file changes before setup, and disconnect cleanly later:
 
 ```bash
-phaseo integrations setup codex --dry-run
+phaseo codex --dry-run
 phaseo integrations remove codex
 ```
 
 Removal deletes Phaseo-owned configuration and revokes that assistant's key. It does not remove unrelated settings.
 
-## Provider settings
+## Manual provider settings
 
 Use these values unless the tool asks for a different field name:
 
@@ -69,7 +77,7 @@ Cursor supports custom OpenAI-compatible endpoints through its OpenAI API key se
 4. Paste your Phaseo API key.
 5. Enable `Override OpenAI Base URL`.
 6. Set the base URL to `https://api.phaseo.app/v1`.
-7. Add a custom model using A Phaseo model id, for example `openai/gpt-5-nano`.
+7. Add a custom model using a Phaseo model id, for example `openai/gpt-5-nano`.
 8. Enable the model and verify it from the Cursor model picker.
 
 If Cursor rejects a model id with `/`, create the closest local alias the UI allows and route that alias to the Phaseo model in your own config when the client supports aliases.
@@ -83,7 +91,7 @@ VS Code supports adding models through the Language Models editor when the OpenA
 3. Choose `OpenAI Compatible` or `OAI Compatible`.
 4. Enter your Phaseo API key.
 5. Set the endpoint or base URL to `https://api.phaseo.app/v1`.
-6. Add A Phaseo model id, for example `openai/gpt-5-nano`.
+6. Add a Phaseo model id, for example `openai/gpt-5-nano`.
 7. Select the new model from the chat model picker.
 
 If your VS Code build does not show an OpenAI-compatible provider, use an extension that supports custom providers, such as Continue, Cline, Roo Code, or Kilo Code.
@@ -119,7 +127,7 @@ These tools expose similar provider settings.
 2. Choose `OpenAI Compatible` as the provider.
 3. Set the base URL to `https://api.phaseo.app/v1`.
 4. Paste your Phaseo API key.
-5. Enter A Phaseo model id.
+5. Enter a Phaseo model id.
 6. Save and run a small chat request before using file-editing tools.
 
 ## Aider
@@ -140,9 +148,13 @@ Aider often expects OpenAI-compatible custom models to be prefixed with `openai/
 
 `phaseo hermes` offers to run the official Nous Research installer when Hermes is missing, then configures the installed agent. It saves the previous Hermes model settings, configures Phaseo as the custom endpoint, and uses Hermes' official `hermes config set` command to place the dedicated key in `~/.hermes/.env` as `OPENAI_API_KEY`. Hermes deliberately uses this plaintext file for provider credentials; protect it like any other API-key file. Removal restores the previous model settings, removes `OPENAI_API_KEY`, deletes Phaseo's recovery state, and revokes the key.
 
+## MiniMax Code
+
+Use the dedicated [MiniMax Code guide](./minimax-code.mdx) for the `mcode` CLI. `phaseo minimax` creates a temporary MiniMax provider with the Phaseo OpenAI-compatible endpoint, launches the CLI, and removes the temporary data directory when the session ends. MiniMax Code also supports ACP through `mcode acp` when an editor or host speaks ACP directly.
+
 ## Zed
 
-Run `phaseo integrations setup zed`, then follow the printed steps to add an OpenAI-compatible provider in Zed's settings. Use the generated key only in Zed's credential prompt.
+Run `phaseo zed`, then follow the printed steps to add an OpenAI-compatible provider in Zed's settings. Use the generated key only in Zed's credential prompt.
 
 ## Codex
 
@@ -183,7 +195,7 @@ claude
 
 ## Claude Desktop
 
-Claude Desktop supports MCP servers, but it does not expose the same custom model-provider setup as coding assistants such as Cursor, Codex, or Claude Code. Use [Docs MCP](./docs-mcp.mdx) to add Phaseo documentation context to Claude Desktop. Use Claude Code when you need Phaseo to be the model gateway.
+Claude Desktop supports MCP servers, but it does not expose the same custom model-provider setup as coding agents such as Cursor, Codex, or Claude Code. Use [Docs MCP](./docs-mcp.mdx) to add Phaseo documentation context to Claude Desktop. Use Claude Code when you need Phaseo to be the model gateway.
 
 ## Deep Agents CLI and LangChain tools
 
@@ -194,11 +206,11 @@ export OPENAI_API_KEY="your_phaseo_api_key"
 export OPENAI_BASE_URL="https://api.phaseo.app/v1"
 ```
 
-Then pass A Phaseo model id in the tool's model field.
+Then pass a Phaseo model id in the tool's model field.
 
 ## Notes
 
-- Coding assistants vary in how they handle slashes in model ids. If the UI rejects `openai/gpt-5-nano`, create a local alias if the tool supports aliases.
+- Coding agents vary in how they handle slashes in model ids. If the UI rejects `openai/gpt-5-nano`, create a local alias if the tool supports aliases.
 - Test file-editing workflows carefully. `phaseo:apply_patch` is Responses-only.
 - Add [Docs MCP](./docs-mcp.mdx) when you want the assistant to read Phaseo docs during a session.
 - Prefer Chat Completions for older coding tools unless the tool explicitly supports Responses events and server tools.

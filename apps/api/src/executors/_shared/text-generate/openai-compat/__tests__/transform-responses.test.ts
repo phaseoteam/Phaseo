@@ -1098,6 +1098,34 @@ describe("irToOpenAIResponses", () => {
 		]);
 	});
 
+	it("passes async tools only to first-party OpenAI Responses providers", () => {
+		const ir = {
+			model: "openai/gpt-6-astra",
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			stream: false,
+			tools: [
+				{ name: "lookup", parameters: { type: "object" }, async: true },
+				{ name: "wait", type: "custom", parameters: {}, async: true, raw: { type: "custom", name: "wait", format: { type: "text" }, async: true } },
+				{ name: "shell", type: "custom", parameters: {}, async: true, raw: { type: "custom", async: true, custom: { name: "shell", description: "Run a command", format: { type: "text" } } } },
+			],
+		} as any;
+
+		const openAIRequest = irToOpenAIResponses(ir, "gpt-6-astra", "openai");
+		const compatibleRequest = irToOpenAIResponses(ir, "gpt-6-astra", "deepseek");
+		const azureRequest = irToOpenAIResponses(ir, "gpt-6-astra", "openai", null, "azure");
+		const xAIRequest = irToOpenAIResponses(ir, "gpt-6-astra", "openai", null, "x-ai");
+
+		expect(openAIRequest.tools).toEqual([
+			expect.objectContaining({ type: "function", name: "lookup", async: true }),
+			expect.objectContaining({ type: "custom", name: "wait", async: true }),
+			expect.objectContaining({ type: "custom", name: "shell", description: "Run a command", format: { type: "text" }, async: true }),
+		]);
+		expect(openAIRequest.tools[2].custom).toBeUndefined();
+		expect(compatibleRequest.tools.every((tool: any) => tool.async === undefined)).toBe(true);
+		expect(azureRequest.tools.every((tool: any) => tool.async === undefined)).toBe(true);
+		expect(xAIRequest.tools.every((tool: any) => tool.async === undefined)).toBe(true);
+	});
+
 	it("round-trips Responses custom tool calls and outputs", () => {
 		const decoded = openAIResponsesToIR({
 			id: "resp_custom",
@@ -1180,5 +1208,18 @@ describe("irToOpenAIResponses", () => {
 			role: "assistant",
 		});
 		expect("phase" in request.input[0]).toBe(false);
+	});
+});
+
+describe("Alibaba Cloud Responses reasoning request contract", () => {
+	it("maps reasoning effort to the OpenAI-compatible reasoning object", () => {
+		const request = irToOpenAIResponses({
+			model: "qwen3.8-max-0902",
+			messages: [{ role: "user", content: [{ type: "text", text: "Plan the migration." }] }],
+			stream: false,
+			reasoning: { effort: "high" },
+		} as any, "qwen3.8-max-0902", "alibaba-cloud");
+
+		expect(request.reasoning).toEqual({ effort: "xhigh" });
 	});
 });

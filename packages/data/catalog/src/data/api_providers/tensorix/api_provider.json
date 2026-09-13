@@ -22,6 +22,7 @@
   "pricing_source_url": "https://tensorx.ai/pricing/",
   "regional_pricing_notes": "TensorX publishes one pay-as-you-go developer price per model across its EU-hosted platform; dedicated and shared clusters use custom pricing.",
   "country_code": "IE",
+  "subdivision_code": "IE-D",
   "status": "Active",
   "colour": "#2563EB",
   "privacy_policy_url": "https://tensorx.ai/privacy-policy/",

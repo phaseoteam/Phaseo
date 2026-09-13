@@ -10,7 +10,7 @@ on:
     workflow_dispatch:
         inputs:
             deploy_production:
-                description: "Deploy main after confirming production migrations are already applied"
+                description: "Apply pending production migrations and deploy main"
                 required: false
                 type: boolean
                 default: false
@@ -19,15 +19,6 @@ on:
                 required: false
                 type: boolean
                 default: false
-            importer_mode:
-                description: "Explicit production importer action"
-                required: false
-                type: choice
-                options:
-                    - skip
-                    - dry-run
-                    - run
-                default: skip
 permissions:
     contents: read
 
@@ -200,8 +191,19 @@ jobs:
             - name: Test model-discovery GitHub issue sync helpers
               run: pnpm exec tsx scripts/model-discovery/github-issues.test.ts
 
+            - name: Test database catalog cutover
+              run: |
+                  pnpm test:catalogue-history
+                  pnpm test:realtime-billing-review
+                  node scripts/tests/workspace-provisioning.mjs
+                  pnpm exec tsx apps/web/scripts/catalogue/enumSnapshot.test.ts
+                  pnpm exec tsx --test scripts/update-model-statuses.test.ts
+
             - name: Validate data files
               run: pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway
+
+            - name: Enforce EUR routing restriction
+              run: pnpm --filter @phaseo/web test --runTestsByPath scripts/eur-routing.test.ts
 
     check-paths:
         name: Check changed paths
@@ -233,7 +235,11 @@ jobs:
         if: >-
             always() &&
             needs.check-paths.result == 'success' &&
-            needs.check-paths.outputs.migrations-changed == 'true'
+            (needs.check-paths.outputs.migrations-changed == 'true' ||
+            ((github.event_name == 'push' ||
+            (github.event_name == 'workflow_dispatch' && inputs.deploy_production == true)) &&
+            github.ref == 'refs/heads/main' &&
+            vars.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true'))
         permissions:
             contents: read
         steps:
@@ -254,10 +260,10 @@ jobs:
             - migration-validation
         if: >-
             always() &&
-            github.event_name == 'push' &&
+            (github.event_name == 'push' ||
+            (github.event_name == 'workflow_dispatch' && inputs.deploy_production == true)) &&
             github.ref == 'refs/heads/main' &&
             needs.check-paths.result == 'success' &&
-            needs.check-paths.outputs.migrations-changed == 'true' &&
             needs.migration-validation.result == 'success' &&
             vars.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true'
         environment: production-database
@@ -351,7 +357,7 @@ jobs:
             - name: Validate SDK version literals
               run: pnpm run sdk:check-version-literals
 
-            - name: Sync OpenAPI enums from manifest
+            - name: Sync OpenAPI enums from database snapshot
               run: pnpm run openapi:sync-enums
 
             - name: Lint OpenAPI spec
@@ -360,7 +366,7 @@ jobs:
             - name: Ensure OpenAPI enum sync is committed
               run: |
                   if ! git diff --ignore-cr-at-eol --ignore-space-at-eol --quiet apps/docs/openapi/v1/openapi.yaml; then
-                    echo "::error::OpenAPI enums are out of sync with manifest data."
+                    echo "::error::OpenAPI enums are out of sync with the database snapshot."
                     echo "::error::Run 'pnpm run openapi:sync-enums' and commit apps/docs/openapi/v1/openapi.yaml."
                     git diff apps/docs/openapi/v1/openapi.yaml
                     exit 1
@@ -478,219 +484,6 @@ jobs:
               run: |
                   pnpm --filter @phaseo/devtools-core run build
                   pnpm --filter @phaseo/devtools-viewer run build
-
-    importer:
-        name: Run importer on main
-        runs-on: ubuntu-latest
-        outputs:
-            state_changed: ${{ steps.importer-state-change.outputs.changed }}
-        concurrency:
-            group: importer-main
-            cancel-in-progress: false
-        needs:
-            - data
-            - check-paths
-            - migrate-production
-        if: >-
-            always() && needs.data.result == 'success' && github.ref == 'refs/heads/main' &&
-            ((github.event_name == 'push' &&
-            needs.check-paths.outputs.migrations-changed == 'true' &&
-            needs.migrate-production.result == 'success') ||
-            (github.event_name == 'push' &&
-            needs.check-paths.outputs.data-changed == 'true' &&
-            needs.check-paths.outputs.migrations-changed != 'true' &&
-            (needs.migrate-production.result == 'success' || needs.migrate-production.result == 'skipped')) ||
-            (github.event_name == 'workflow_dispatch' && inputs.importer_mode != 'skip'))
-        env:
-            SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-            NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-              with:
-                  fetch-depth: 0
-                  persist-credentials: false
-
-            - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
-              with:
-                  version: 10.33.0
-                  run_install: false
-                  standalone: true
-            - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-              with:
-                  node-version: ${{ env.NODE_VERSION }}
-
-            - name: Restore lockfile (guard setup-node cache mutation)
-              run: git checkout -- pnpm-lock.yaml
-
-            - name: Install dependencies
-              run: corepack pnpm install --frozen-lockfile
-
-            - name: Restore importer hash state
-              id: importer-state-cache
-              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-              with:
-                  path: packages/data/catalog/src/data/.import-state.json
-                  key: importer-state-main-${{ github.run_id }}
-                  restore-keys: |
-                      importer-state-main-
-
-            - name: Validate importer configuration
-              shell: bash
-              run: |
-                  set -euo pipefail
-                  missing=()
-                  [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] && missing+=("SUPABASE_SERVICE_ROLE_KEY")
-                  [ -z "${NEXT_PUBLIC_SUPABASE_URL:-}" ] && missing+=("NEXT_PUBLIC_SUPABASE_URL")
-                  if [ "${#missing[@]}" -gt 0 ]; then
-                    echo "::error::Missing importer secret(s): ${missing[*]}"
-                    exit 1
-                  fi
-
-            - name: Run importer (all sections)
-              env:
-                  SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
-                  NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
-              shell: bash
-              run: |
-                  set -euo pipefail
-                  importer_args=(--section=all)
-                  if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.importer_mode }}" == "dry-run" ]]; then
-                    importer_args+=(--dry-run)
-                  fi
-                  for attempt in 1 2 3; do
-                    echo "Running importer attempt ${attempt}/3"
-                    set +e
-                    (cd apps/web && pnpm exec tsx scripts/importer/main.ts "${importer_args[@]}")
-                    exit_code=$?
-                    set -e
-                    if [ "${exit_code}" -eq 0 ]; then
-                      echo "Importer succeeded on attempt ${attempt}"
-                      exit 0
-                    fi
-                    if [ "${exit_code}" -ne 75 ]; then
-                      echo "Importer failed with a deterministic error (exit ${exit_code}); not retrying."
-                      exit "${exit_code}"
-                    fi
-                    if [ "${attempt}" -lt 3 ]; then
-                      sleep_for=$((attempt * 15))
-                      echo "Importer failed, retrying in ${sleep_for}s..."
-                      sleep "${sleep_for}"
-                    fi
-                  done
-                  echo "Importer failed after 3 attempts"
-                  exit 1
-
-            - name: Verify changed models are publicly available
-              if: github.event_name == 'push'
-              env:
-                  IMPORT_BASE_SHA: ${{ github.event.before }}
-              run: node scripts/verify-published-models.mjs
-
-            - name: Save importer hash state
-              if: success() && inputs.importer_mode != 'dry-run'
-              uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-              with:
-                  path: packages/data/catalog/src/data/.import-state.json
-                  key: ${{ steps.importer-state-cache.outputs.cache-primary-key }}
-
-            - name: Check importer state update
-              id: importer-state-change
-              if: success() && inputs.importer_mode != 'dry-run' && env.SUPABASE_SERVICE_ROLE_KEY != '' && env.NEXT_PUBLIC_SUPABASE_URL != ''
-              shell: bash
-              run: |
-                  set -euo pipefail
-                  state_file="packages/data/catalog/src/data/.import-state.json"
-                  if git diff --quiet -- "${state_file}"; then
-                    echo "changed=false" >> "${GITHUB_OUTPUT}"
-                    echo "Importer state is already committed."
-                    exit 0
-                  fi
-                  echo "changed=true" >> "${GITHUB_OUTPUT}"
-
-            - name: Upload importer state
-              if: steps.importer-state-change.outputs.changed == 'true'
-              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-              with:
-                  name: importer-state-${{ github.run_id }}-${{ github.run_attempt }}
-                  path: packages/data/catalog/src/data/.import-state.json
-                  include-hidden-files: true
-                  if-no-files-found: error
-                  retention-days: 1
-
-    importer-state-pr:
-        name: Publish importer state PR
-        runs-on: ubuntu-latest
-        needs: importer
-        if: needs.importer.result == 'success' && needs.importer.outputs.state_changed == 'true'
-        concurrency:
-            group: importer-state-pr
-            cancel-in-progress: false
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-              with:
-                  fetch-depth: 0
-                  persist-credentials: false
-
-            - name: Download importer state
-              uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-              with:
-                  name: importer-state-${{ github.run_id }}-${{ github.run_attempt }}
-                  path: importer-state-artifact
-
-            - name: Validate importer state artifact
-              shell: bash
-              run: |
-                  set -euo pipefail
-                  artifact="importer-state-artifact/.import-state.json"
-                  state_file="packages/data/catalog/src/data/.import-state.json"
-                  [[ -f "${artifact}" && ! -L "${artifact}" ]]
-                  [[ "$(wc -c < "${artifact}")" -le 4194304 ]]
-                  python -m json.tool "${artifact}" >/dev/null
-                  install -m 0644 "${artifact}" "${state_file}"
-
-            - name: Create minimal GitHub App token
-              id: importer-app-token
-              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
-              with:
-                  client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
-                  private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
-                  permission-contents: write
-                  permission-pull-requests: write
-
-            - name: Publish importer state update
-              env:
-                  GH_TOKEN: ${{ steps.importer-app-token.outputs.token }}
-              shell: bash
-              run: |
-                  set -euo pipefail
-                  state_file="packages/data/catalog/src/data/.import-state.json"
-                  branch="automation/importer-state"
-                  git config user.name "github-actions[bot]"
-                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-                  git fetch origin "${branch}" || true
-                  remote_branch_sha=""
-                  if git show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
-                    remote_branch_sha="$(git rev-parse "refs/remotes/origin/${branch}")"
-                  fi
-                  git switch --force-create "${branch}" HEAD
-                  git add "${state_file}"
-                  git commit -m "chore(data): persist importer state"
-                  remote_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-                  if [[ -n "${remote_branch_sha}" ]]; then
-                    git push --force-with-lease="${branch}:${remote_branch_sha}" "${remote_url}" "${branch}"
-                  else
-                    git push --set-upstream "${remote_url}" "${branch}"
-                  fi
-                  existing_pr="$(gh pr list --state open --base main --head "${branch}" --json number --jq '.[0].number')"
-                  if [[ -z "${existing_pr}" ]]; then
-                    gh pr create \
-                      --base main \
-                      --head "${branch}" \
-                      --title "chore(data): persist importer state" \
-                      --body "Automated update of the committed importer hash state after a successful main import. This PR is intentionally reused and updated by subsequent imports."
-                  fi
 
     sdk-gen:
         name: Generate SDKs
@@ -915,11 +708,16 @@ jobs:
             github.ref == 'refs/heads/main' &&
             needs.apps.result == 'success' &&
             needs.check-paths.result == 'success' &&
-            github.event_name == 'push' &&
-            (needs.check-paths.outputs.migrations-changed != 'true' ||
-            needs.migrate-production.result == 'success')
+            (github.event_name == 'push' ||
+            (github.event_name == 'workflow_dispatch' && inputs.deploy_production == true)) &&
+            ((vars.ENABLE_PRODUCTION_DB_MIGRATIONS == 'true' &&
+            needs.migrate-production.result == 'success') ||
+            (github.event_name == 'push' && vars.ENABLE_PRODUCTION_DB_MIGRATIONS != 'true' &&
+            needs.check-paths.outputs.migrations-changed != 'true' &&
+            needs.migrate-production.result == 'skipped'))
         permissions:
             contents: read
+            id-token: write
         strategy:
             fail-fast: false
             matrix:
@@ -928,6 +726,10 @@ jobs:
                       name: Deploy Web
                     - target: api
                       name: Deploy API
+                    - target: api-eu
+                      name: Deploy API (EU)
+                    - target: api-us
+                      name: Deploy API (US)
                     - target: web-api
                       name: Deploy Web API
                     - target: mcp
@@ -977,11 +779,11 @@ jobs:
               run: git checkout -- pnpm-lock.yaml
 
             - name: Install dependencies (for Cloudflare Workers)
-              if: matrix.target == 'api' || matrix.target == 'web-api' || matrix.target == 'mcp'
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp'
               run: corepack pnpm install --frozen-lockfile
 
             - name: Validate Cloudflare API deploy secrets
-              if: matrix.target == 'api' || matrix.target == 'web-api' || matrix.target == 'mcp'
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp'
               shell: bash
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -1020,6 +822,27 @@ jobs:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   workingDirectory: apps/api
+
+            - name: Load regional gateway secrets from Infisical
+              if: matrix.target == 'api-eu' || matrix.target == 'api-us'
+              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              with:
+                  method: oidc
+                  identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+                  project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+                  env-slug: prod
+                  secret-path: /
+
+            - name: Deploy regional API Worker to Cloudflare
+              if: matrix.target == 'api-eu' || matrix.target == 'api-us'
+              shell: pwsh
+              working-directory: apps/api
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              run: |
+                  $region = if ("${{ matrix.target }}" -eq "api-eu") { "eu" } else { "us" }
+                  ./scripts/deploy-regional.ps1 -Region $region -SecretsFromEnvironment -Deploy
 
             - name: Deploy Web API Worker to Cloudflare
               if: matrix.target == 'web-api'

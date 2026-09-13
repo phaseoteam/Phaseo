@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aa-intelligence-index-v5",
+  "benchmark_name": "Artificial Analysis Intelligence Index v5",
+  "category": "general",
+  "ascending_order": true,
+  "type": "numerical",
+  "link": "https://artificialanalysis.ai/data-api/docs",
+  "total_models": 0
+}

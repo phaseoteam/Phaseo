@@ -122,6 +122,10 @@ export function getBindings(): GatewayBindings {
     return ensureRuntime().bindings;
 }
 
+export function getBindingsIfConfigured(): GatewayBindings | null {
+	return runtimeState?.bindings ?? null;
+}
+
 export function isLocalTestingModeEnabled(bindings?: Partial<GatewayBindings> | null): boolean {
     const value = bindings?.GATEWAY_LOCAL_TESTING_MODE ?? ensureRuntime().bindings.GATEWAY_LOCAL_TESTING_MODE;
     if (typeof value === "boolean") return value;
@@ -161,6 +165,5 @@ export function getByokKey(version: number): string {
     const s = String(raw).trim().replace(/^["']|["']$/g, "");
     return s.startsWith("base64:") ? s.slice(7) : s;
 }
-
 
 

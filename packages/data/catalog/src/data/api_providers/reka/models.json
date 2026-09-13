@@ -32,11 +32,11 @@
     "sources": [{ "kind": "documentation", "url": "https://docs.reka.ai/chat/models", "accessed_at": "2026-08-12T00:00:00Z" }], "verification": { "status": "verified", "checked_at": "2026-08-12T00:00:00Z", "notes": "Versioned alias documented by Reka." }, "rate_limits": []
   },
   {
-    "api_model_id": "reka-flash-research", "canonical_model_id": "reka/reka-flash-research", "provider_api_model_id": "reka:reka-flash-research", "provider_model_slug": "reka-flash-research", "internal_model_id": "reka/reka-flash-research", "is_active_gateway": true,
+    "api_model_id": "reka-flash-research", "canonical_model_id": "reka/reka-flash-research", "provider_api_model_id": "reka:reka-flash-research", "provider_model_slug": "reka-flash-research", "internal_model_id": "reka/reka-flash-research", "is_active_gateway": false,
     "quantization_scheme": null, "input_modalities": "text", "output_modalities": "text", "context_length": null, "max_output_tokens": null, "effective_from": null, "effective_to": null,
     "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": [{ "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "JSON Schema structured output supported." }], "reasoning": true, "tool_call": false, "structured_output": true, "temperature": null, "attachment": false, "input_modalities": ["text"], "output_modalities": ["text"], "modes": ["research"] }],
-    "routing_status": "active", "routable": true, "regions": { "execution": null, "data": null }, "service_tiers": [], "api": { "formats": ["openai.chat.completions"], "endpoint": "/v1/chat/completions", "deployment": null },
-    "sources": [{ "kind": "documentation", "url": "https://docs.reka.ai/research/api-reference/create-chat-completion", "accessed_at": "2026-08-12T00:00:00Z" }], "verification": { "status": "verified", "checked_at": "2026-08-12T00:00:00Z", "notes": "Optional research.web_search and parallel_thinking extensions are provider-native and not advertised by the generic text parameter profile." }, "rate_limits": []
+    "routing_status": "disabled", "routable": false, "regions": { "execution": null, "data": null }, "service_tiers": [], "api": { "formats": ["openai.chat.completions"], "endpoint": "/v1/chat/completions", "deployment": null },
+    "sources": [{ "kind": "documentation", "url": "https://docs.reka.ai/research/api-reference/create-chat-completion", "accessed_at": "2026-08-12T00:00:00Z" }], "verification": { "status": "verified", "checked_at": "2026-08-12T00:00:00Z", "notes": "Optional research.web_search and parallel_thinking extensions are provider-native and not advertised by the generic text parameter profile. Gateway routing is disabled pending a published rate card for this model." }, "rate_limits": []
   },
   {
     "api_model_id": "z-ai/glm-5.3-flash",
@@ -44,7 +44,7 @@
     "provider_api_model_id": "reka:reka/fp8",
     "provider_model_slug": "reka/fp8",
     "internal_model_id": "z-ai/glm-5.3-flash",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "fp8",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -77,8 +77,8 @@
       "output_modalities": ["text"],
       "modes": []
     }],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": { "execution": null, "data": null },
     "service_tiers": [],
     "api": { "formats": ["openai.chat.completions"], "endpoint": "/v1/chat/completions", "deployment": null },
@@ -99,7 +99,7 @@
     "verification": {
       "status": "partial",
       "checked_at": "2026-08-27T00:00:00Z",
-      "notes": "The account-scoped reka/fp8 deployment, limits, precision, and gateway-compatible parameters were verified from current provider model discovery; it is not advertised in Reka's baseline public model list."
+      "notes": "The account-scoped reka/fp8 deployment, limits, precision, and gateway-compatible parameters were verified from current provider model discovery; it is not advertised in Reka's baseline public model list and gateway routing is disabled pending published pricing."
     },
     "rate_limits": []
   }

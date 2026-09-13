@@ -5,9 +5,15 @@ import {
 	parseLiveDiscoveryRows,
 	renderSyncMarkdown,
 	safePricingRules,
+	simpleNonTokenPricing,
 } from "./sync-provider-discovery";
 
 describe("provider discovery catalog sync", () => {
+	test.each(["second", "minute", undefined])("does not flatten OrcaRouter video %s prices into a request fee", (request_unit) => {
+		expect(simpleNonTokenPricing("orcarouter", {
+			pricing: { request: "0.08", request_unit },
+		}, "video.generate")).toBeNull();
+	});
 	test("accepts only non-empty payload objects as usable discovery details", () => {
 		expect(hasUsableDiscoveryDetails(null)).toBe(false);
 		expect(hasUsableDiscoveryDetails(undefined)).toBe(false);

@@ -12,30 +12,9 @@
       "price_per_unit": 0.14,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-08-03T00:00:00Z",
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null
-    },
-    {
-      "meter": "cached_read_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.07,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-08-03T00:00:00Z",
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null
+      "source": "https://www.parasail.io/models/deepseek-v4-flash"
     },
     {
       "meter": "output_text_tokens",
@@ -44,14 +23,20 @@
       "price_per_unit": 0.28,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-08-03T00:00:00Z",
-      "region": null,
-      "cache_duration_seconds": null,
-      "conditions": [],
-      "source": null
+      "source": "https://www.parasail.io/models/deepseek-v4-flash"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.07,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://www.parasail.io/models/deepseek-v4-flash"
     }
   ],
   "regions": [],
@@ -61,14 +46,13 @@
   "sources": [
     {
       "kind": "pricing",
-      "url": "https://docs.parasail.io/parasail-docs/serverless-and-models",
-      "accessed_at": "2026-08-03T00:00:00Z",
-      "notes": "Provider deployment pricing recorded for this model route."
+      "url": "https://www.parasail.io/models/deepseek-v4-flash",
+      "accessed_at": "2026-09-07T22:05:00Z"
     }
   ],
   "verification": {
-    "status": "partial",
-    "checked_at": "2026-08-03T00:00:00Z",
-    "notes": "Pricing recorded while direct provider verification remains partial."
+    "status": "verified",
+    "checked_at": "2026-09-07T22:05:00Z",
+    "notes": "Native endpoint ID and all rates checked against the public provider model page."
   }
 }

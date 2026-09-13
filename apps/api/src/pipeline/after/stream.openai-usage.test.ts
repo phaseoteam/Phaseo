@@ -9,6 +9,7 @@ const reportProbeResultMock = vi.fn();
 const maybeOpenOnRecentErrorsMock = vi.fn();
 const maybeWriteStickyRoutingFromUsageMock = vi.fn();
 const classifyProviderHealthImpactMock = vi.fn();
+const recordManagedProviderTokensOnceMock = vi.fn();
 
 vi.mock("../audit", () => ({
 	auditSuccess: (...args: any[]) => auditSuccessMock(...args),
@@ -21,6 +22,10 @@ vi.mock("@observability/events", () => ({
 
 vi.mock("./charge", () => ({
 	recordUsageAndChargeOnce: (...args: any[]) => recordUsageAndChargeOnceMock(...args),
+}));
+
+vi.mock("@core/provider-rate-limits", () => ({
+	recordManagedProviderTokensOnce: (...args: any[]) => recordManagedProviderTokensOnceMock(...args),
 }));
 
 vi.mock("../execute/health", () => ({
@@ -221,6 +226,7 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 		maybeOpenOnRecentErrorsMock.mockReset().mockResolvedValue(undefined);
 		maybeWriteStickyRoutingFromUsageMock.mockReset().mockResolvedValue(undefined);
 		classifyProviderHealthImpactMock.mockReset().mockReturnValue("failure");
+		recordManagedProviderTokensOnceMock.mockReset().mockResolvedValue(undefined);
 
 		const upstream = makeIncompleteOpenAIStream();
 		const response = await handleStreamResponse(
@@ -240,6 +246,10 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
 		expect(recordUsageAndChargeOnceMock).not.toHaveBeenCalled();
+		expect(recordManagedProviderTokensOnceMock).toHaveBeenCalledWith(expect.objectContaining({
+			providerId: "openai",
+			usage: expect.objectContaining({ input_tokens: 10 }),
+		}));
 		expect(auditSuccessMock).not.toHaveBeenCalled();
 		expect(auditFailureMock).toHaveBeenCalledTimes(1);
 	});

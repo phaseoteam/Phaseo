@@ -572,6 +572,7 @@ const ToolCallSchema = z.object({
 
 const FunctionToolSchema = z.object({
 	type: z.literal("function"),
+	async: z.boolean().optional(),
 	function: z.object({
 		name: z.string(),
 		description: z.string().optional(),
@@ -582,6 +583,7 @@ const FunctionToolSchema = z.object({
 
 const OpenAICustomToolSchema = z.object({
 	type: z.literal("custom"),
+	async: z.boolean().optional(),
 	custom: z.object({
 		name: z.string().min(1),
 		description: z.string().optional(),
@@ -600,7 +602,7 @@ const GatewayDatetimeToolSchema = z.object({
 const GatewayWebSearchToolSchema = z.object({
 	type: z.enum(["phaseo:web_search", "gateway:web_search"]),
 	parameters: z.object({
-		engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity"]).optional(),
+		engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"]).optional(),
 		max_results: z.number().int().positive().max(25).optional(),
 		max_total_results: z.number().int().positive().max(100).optional(),
 		search_context_size: z.enum(["low", "medium", "high"]).optional(),
@@ -613,8 +615,10 @@ const GatewayWebSearchToolSchema = z.object({
 		include_text: z.boolean().optional(),
 		include_highlights: z.boolean().optional(),
 		user_location: z.record(z.string(), z.any()).optional(),
+		language: z.string().optional(),
+		page: z.number().int().min(0).max(10).optional(),
 	}).optional(),
-	engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity"]).optional(),
+	engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"]).optional(),
 	max_results: z.number().int().positive().max(25).optional(),
 	max_total_results: z.number().int().positive().max(100).optional(),
 	search_context_size: z.enum(["low", "medium", "high"]).optional(),
@@ -627,6 +631,8 @@ const GatewayWebSearchToolSchema = z.object({
 	include_text: z.boolean().optional(),
 	include_highlights: z.boolean().optional(),
 	user_location: z.record(z.string(), z.any()).optional(),
+	language: z.string().optional(),
+	page: z.number().int().min(0).max(10).optional(),
 });
 
 const GatewayWebFetchToolSchema = z.object({
@@ -985,6 +991,7 @@ const AnthropicToolSchema = z.object({
     input_schema: z.record(z.string(), z.any()),
     cache_control: CacheControlSchema.optional(),
 	strict: z.boolean().optional(),
+	async: z.boolean().optional(),
 });
 
 const AnthropicNativeToolSchema = z.object({
@@ -1166,11 +1173,42 @@ function validateMiniMaxImageRequest(
     });
 }
 
+function isGptImage25Model(model: string | undefined): boolean {
+    return model === "gpt-image-latest" || (model != null && /^gpt-image-2\.5(?:$|-)/.test(model));
+}
+
+function validateGptImage2Size(
+    request: { size?: string },
+    model: string | undefined,
+    ctx: z.RefinementCtx,
+): void {
+    if (!model || (!/^gpt-image-2(?:\.5)?(?:$|-)/.test(model) && model !== "gpt-image-latest")) return;
+    if (!request.size || request.size === "auto") return;
+    const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
+    if (!dimensions) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["size"], message: "GPT Image 2 size must be auto or WIDTHxHEIGHT" });
+        return;
+    }
+    const width = Number(dimensions[1]);
+    const height = Number(dimensions[2]);
+    const shortEdge = Math.min(width, height);
+    const longEdge = Math.max(width, height);
+    const pixels = width * height;
+    if (width % 16 !== 0 || height % 16 !== 0 || longEdge > 3840 || longEdge / shortEdge > 3 || pixels < 655_360 || pixels > 8_294_400) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["size"],
+            message: "GPT Image 2 dimensions must be multiples of 16, at most 3840px per edge, within a 3:1 ratio, and between 655360 and 8294400 pixels",
+        });
+    }
+}
+
 // Images Generation schema
 export const ImagesGenerationSchema = z.object({
     model: z.string().min(1),
     prompt: z.string().min(1),
     size: z.string().optional(),
+    resolution: z.string().min(1).optional(),
     n: z.number().int().min(1).max(10).optional(),
     quality: z.string().optional(),
     stream: z.boolean().optional(),
@@ -1201,8 +1239,11 @@ export const ImagesGenerationSchema = z.object({
     if (request.prompt.length > 32_000) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["prompt"], message: "GPT Image prompts must be at most 32000 characters" });
     }
-    if (request.quality && !["auto", "low", "medium", "high"].includes(request.quality)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["quality"], message: "GPT Image quality must be auto, low, medium, or high" });
+    const qualityValues = isGptImage25Model(model)
+        ? ["auto", "low", "medium", "high", "xhigh", "max"]
+        : ["auto", "low", "medium", "high"];
+    if (request.quality && !qualityValues.includes(request.quality)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["quality"], message: `GPT Image quality must be ${qualityValues.join(", ")}` });
     }
     if (request.response_format !== undefined) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["response_format"], message: "response_format is not supported by GPT Image models" });
@@ -1217,26 +1258,7 @@ export const ImagesGenerationSchema = z.object({
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["background"], message: "transparent backgrounds require png or webp output_format" });
     }
 
-    const isGptImage2 = /^gpt-image-2(?:$|-)/.test(model);
-    if (!isGptImage2) return;
-    if (!request.size || request.size === "auto") return;
-    const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
-    if (!dimensions) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["size"], message: "gpt-image-2 size must be auto or WIDTHxHEIGHT" });
-        return;
-    }
-    const width = Number(dimensions[1]);
-    const height = Number(dimensions[2]);
-    const shortEdge = Math.min(width, height);
-    const longEdge = Math.max(width, height);
-    const pixels = width * height;
-    if (width % 16 !== 0 || height % 16 !== 0 || longEdge > 3840 || longEdge / shortEdge > 3 || pixels < 655_360 || pixels > 8_294_400) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["size"],
-            message: "gpt-image-2 dimensions must be multiples of 16, at most 3840px per edge, within a 3:1 ratio, and between 655360 and 8294400 pixels",
-        });
-    }
+    validateGptImage2Size(request, model, ctx);
 });
 export type ImagesGenerationRequest = z.infer<typeof ImagesGenerationSchema>;
 
@@ -1275,8 +1297,9 @@ export const ImagesEditSchema = z.object({
     mask: ImageEditUploadSchema.optional(),
     prompt: z.string().min(1).max(32000),
     size: z.string().optional(),
+    resolution: z.string().min(1).optional(),
     n: ImageEditOptionalInteger(1, 10),
-    quality: z.enum(["standard", "low", "medium", "high", "auto"]).optional(),
+    quality: z.enum(["standard", "low", "medium", "high", "xhigh", "max", "auto"]).optional(),
     stream: ImageEditOptionalBoolean,
     partial_images: ImageEditOptionalInteger(0, 3),
     response_format: z.enum(["url", "b64_json"]).optional(),
@@ -1312,6 +1335,28 @@ export const ImagesEditSchema = z.object({
     const model = body.model.split("/").pop()?.toLowerCase();
     const isDallE2 = model === "dall-e-2";
     const isGptImage = model?.startsWith("gpt-image-") || model === "chatgpt-image-latest";
+    const isGptImage25 = isGptImage25Model(model);
+    const isGrokImagineImage2 = model === "grok-imagine-image-2.0";
+    if (isGrokImagineImage2) {
+        const size = body.size?.toLowerCase();
+        const resolution = body.resolution?.toLowerCase();
+        if (size && resolution && size !== resolution) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["size"],
+                message: "Grok Imagine Image 2.0 size and resolution must match when both are provided",
+            });
+        }
+        for (const [field, value] of [["size", size], ["resolution", resolution]] as const) {
+            if (value && value !== "1k" && value !== "2k") {
+                ctx.addIssue({
+                    code: "custom",
+                    path: [field],
+                    message: `Grok Imagine Image 2.0 ${field} must be 1k or 2k`,
+                });
+            }
+        }
+    }
     if (isDallE2) {
         if (body.prompt.length > 1000) {
             ctx.addIssue({
@@ -1342,6 +1387,14 @@ export const ImagesEditSchema = z.object({
             message: "GPT Image quality must be low, medium, high, or auto",
         });
     }
+    if (!isGptImage25 && (body.quality === "xhigh" || body.quality === "max")) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["quality"],
+            message: "GPT Image xhigh and max quality require a GPT Image 2.5 model",
+        });
+    }
+    validateGptImage2Size(body, model, ctx);
     if (isGptImage && body.response_format != null) {
         ctx.addIssue({
             code: "custom",
@@ -1605,9 +1658,11 @@ export const AudioTranscriptionSchema = z.object({
     const model = body.model.split("/").pop()?.toLowerCase() ?? "";
     const isMistralTranscription = body.model.toLowerCase().startsWith("mistral/") || model.startsWith("voxtral-");
     const isGptTranscribe = model === "gpt-transcribe";
+    const isStepTranscription = ["stepaudio-2.5-asr", "stepaudio-2-asr-pro", "step-asr-1.1-stream"].includes(model);
     const isDiarize = model === "gpt-4o-transcribe-diarize";
     const isMorpheusTranscription = body.model.toLowerCase().startsWith("morpheus/");
 	const isXAiTranscription = model === "grok-transcribe";
+	const isMetaTranscription = model === "muse-voice-transcribe-1.0";
 	const isElevenLabsTranscription = body.model.toLowerCase().startsWith("eleven-labs/") || model.startsWith("scribe-");
     const sources = [body.file, body.file_url, body.s3_presigned_url, body.file_id].filter(Boolean);
     if (isMistralTranscription && sources.length !== 1) {
@@ -1620,9 +1675,9 @@ export const AudioTranscriptionSchema = z.object({
 		ctx.addIssue({ code: "custom", path: ["file"], message: "Morpheus transcription requires exactly one of file, file_url, or s3_presigned_url" });
     }
 	const isOvhWhisper = model === "whisper-large-v3" || model === "whisper-large-v3-turbo";
-	const maxFileBytes = isElevenLabsTranscription ? 5 * 1024 * 1024 * 1024 : isXAiTranscription ? 500 * 1024 * 1024 : isOvhWhisper ? 2048 * 1024 * 1024 : 25 * 1024 * 1024;
+	const maxFileBytes = isElevenLabsTranscription ? 5 * 1024 * 1024 * 1024 : isXAiTranscription ? 500 * 1024 * 1024 : isMetaTranscription ? 32 * 1024 * 1024 : isOvhWhisper ? 2048 * 1024 * 1024 : 25 * 1024 * 1024;
     if (!isMistralTranscription && body.file && body.file.size > maxFileBytes) {
-		ctx.addIssue({ code: "custom", path: ["file"], message: `Transcription files must be ${isElevenLabsTranscription ? "5 GB" : isXAiTranscription ? "500 MB" : isOvhWhisper ? "2048 MB" : "25 MB"} or smaller` });
+		ctx.addIssue({ code: "custom", path: ["file"], message: `Transcription files must be ${isElevenLabsTranscription ? "5 GB" : isXAiTranscription ? "500 MB" : isMetaTranscription ? "32 MB" : isOvhWhisper ? "2048 MB" : "25 MB"} or smaller` });
     }
     const file = body.file;
     const filename = file && typeof File !== "undefined" && file instanceof File ? file.name.toLowerCase() : "";
@@ -1645,8 +1700,8 @@ export const AudioTranscriptionSchema = z.object({
     if (body.languages && !isGptTranscribe) {
         ctx.addIssue({ code: "custom", path: ["languages"], message: "languages is only supported by gpt-transcribe" });
     }
-	if (body.keywords && !isGptTranscribe && !isXAiTranscription && !isElevenLabsTranscription) {
-        ctx.addIssue({ code: "custom", path: ["keywords"], message: "keywords is only supported by gpt-transcribe" });
+	if (body.keywords && !isGptTranscribe && !isXAiTranscription && !isElevenLabsTranscription && !isMetaTranscription && !isStepTranscription) {
+        ctx.addIssue({ code: "custom", path: ["keywords"], message: "keywords is not supported by this transcription model" });
     }
     if (body.language && body.languages) {
         ctx.addIssue({ code: "custom", path: ["languages"], message: "Send either language or languages, not both" });
@@ -1746,6 +1801,9 @@ const VideoMediaInputReferenceSchema = z.object({
 }).strict();
 
 const VideoInputReferenceSchema = z.union([VideoImageInputReferenceSchema, VideoMediaInputReferenceSchema]);
+const VideoFrameImageSchema = VideoImageInputReferenceSchema.omit({ role: true, reference_type: true }).extend({
+	frame_type: z.enum(["first_frame", "last_frame"]),
+});
 
 const VideoOutputConfigSchema = z.object({
 	access: z.enum(["bytes", "signed_url", "both"]).default("both"),
@@ -1767,6 +1825,28 @@ const VideoWebhookSchema = z.object({
 });
 
 const VIDEO_PROVIDER_CONTROLLED_KEYS = new Set([
+	"imageurl", "imageurls", "videourl", "videourls", "audiourl", "audiourls",
+	"imageuri", "videouri", "audiouri", "endimageurl", "firstframeimage", "lastframeimage",
+	"firstframe", "lastframe", "referenceimage", "referencevideo", "referenceaudio",
+	"inputimage", "inputvideo", "inputaudio", "inputreference", "inputreferences",
+	"promptimage", "promptvideo", "frameimages", "quality", "n", "numvideos", "numframes",
+	"inputresolution", "inputvideoseconds", "inputaudioseconds", "inputimagecount", "inputvideocount",
+	"totaltokens",
+	"generate_audio",
+	"generateaudio",
+	"audio",
+	"reference_images",
+	"referenceimages",
+	"reference_videos",
+	"referencevideos",
+	"reference_audios",
+	"referenceaudios",
+	"image",
+	"video",
+	"input_image",
+	"input_video",
+	"last_image",
+	"last_frame",
 	"request",
 	"model",
 	"prompt",
@@ -1855,7 +1935,9 @@ export const VideoGenerationSchema = z.object({
 	person_generation: z.string().optional(),
 	resize_mode: z.string().optional(),
 	input_references: z.array(VideoInputReferenceSchema).optional(),
+	frame_images: z.array(VideoFrameImageSchema).min(1).max(2).optional(),
 	provider_params: VideoProviderParamsSchema.optional(),
+	provider_options: z.record(z.string(), VideoProviderParamsSchema).optional(),
 	output: VideoOutputConfigSchema.optional(),
 	webhook: VideoWebhookSchema.optional(),
 	echo_upstream_request: z.boolean().optional(),
@@ -1864,7 +1946,19 @@ export const VideoGenerationSchema = z.object({
 	provider: ProviderRoutingSchema,
 	routing: ProviderRoutingSchema,
 }).strict().superRefine((obj, ctx) => {
-	const hasImageInput = obj.input_reference != null || obj.input_references?.some((reference) => reference.type === "image_url");
+	if (obj.provider_params && obj.provider_options) {
+		ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["provider_options"], message: "Use provider_options or provider_params, not both" });
+	}
+	if (obj.seconds !== undefined && obj.duration !== undefined && Number(obj.seconds) !== obj.duration) {
+		ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["duration"], message: "duration must match seconds when both are supplied" });
+	}
+	if (obj.frame_images) {
+		const roles = obj.frame_images.map((frame) => frame.frame_type);
+		if (new Set(roles).size !== roles.length || obj.input_reference != null || obj.input_references?.some((reference) => reference.role === "first_frame" || reference.role === "last_frame")) {
+			ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["frame_images"], message: "Supply each frame once using frame_images or input references" });
+		}
+	}
+	const hasImageInput = obj.input_reference != null || obj.frame_images?.length || obj.input_references?.some((reference) => reference.type === "image_url");
 	if (!obj.prompt.trim() && !hasImageInput) {
 		ctx.addIssue({
 			code: z.ZodIssueCode.custom,

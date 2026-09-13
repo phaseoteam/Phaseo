@@ -45,6 +45,7 @@ import {
 	Video,
 	CalendarDays,
 	Globe2,
+	LockKeyhole,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1062,6 +1063,8 @@ function ModelsDisplayContent({
 	});
 	const [sort, setSort] = useQueryState("sort", sortParser);
 	const selectedSort = normalizeSortOption(sort);
+	const hasPrivateModels = models.some((model) => model.gateway_tiers?.includes("private"));
+	const privateOnly = selectedTiers.includes("private");
 	const [showMobileFilterFab, setShowMobileFilterFab] = useState(false);
 	const [isMobileViewport, setIsMobileViewport] = useState(false);
 	const [sidebarCountsReady, setSidebarCountsReady] = useState(false);
@@ -1694,6 +1697,19 @@ function ModelsDisplayContent({
 			) : null}
 		</Button>
 	);
+	const privateFilterButton = hasPrivateModels ? (
+		<Button
+			type="button"
+			size="sm"
+			variant={privateOnly ? "default" : "outline"}
+			className="h-8 gap-1.5 rounded-md"
+			onClick={() => setSelectedTiers(privateOnly ? without(selectedTiers, "private") : [...selectedTiers, "private"])}
+			aria-pressed={privateOnly}
+		>
+			<LockKeyhole className="h-3.5 w-3.5" />
+			Private
+		</Button>
+	) : null;
 
 	const viewSwitcherItemClass = (active: boolean, isFirst = false) =>
 		cn(
@@ -2087,8 +2103,9 @@ function ModelsDisplayContent({
 							</div>
 						) : null}
 
-						<div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+						<div className="flex items-center gap-2">
 							{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
+							{privateFilterButton}
 							{filterButton()}
 							{showPrimaryHeader ? viewSwitcher : null}
 						</div>
@@ -2136,6 +2153,7 @@ function ModelsDisplayContent({
 									{sortSelect(
 										"h-8 w-[12.5rem] rounded-md bg-background text-sm 2xl:w-[13.5rem]",
 									)}
+									{privateFilterButton}
 									{showPrimaryHeader ? viewSwitcher : null}
 								</div>
 							</div>
@@ -2149,6 +2167,7 @@ function ModelsDisplayContent({
 									<div />
 								)}
 								<div className="flex shrink-0 items-center justify-end gap-2">
+									{privateFilterButton}
 									{filterButton()}
 									{showPrimaryHeader ? viewSwitcher : null}
 								</div>

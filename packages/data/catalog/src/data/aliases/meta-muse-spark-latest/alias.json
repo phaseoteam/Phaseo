@@ -1,8 +1,8 @@
 {
   "alias_slug": "meta/muse-spark-latest",
-  "resolved_model_id": "meta/muse-spark-1.2",
-  "resolved_api_model_id": "meta/muse-spark-1.2",
+  "resolved_model_id": "meta/muse-spark-1.3",
+  "resolved_api_model_id": "meta/muse-spark-1.3",
   "channel": "preview",
   "is_enabled": true,
-  "notes": "Points to the standard, no-training Muse Spark 1.2 route."
+  "notes": "Points to the standard, no-training Muse Spark 1.3 route."
 }

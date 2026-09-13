@@ -19,6 +19,10 @@ const deepSeekV4FlashVisionPricingPath = path.join(
     repoRoot,
     "packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-flash-vision-exp/text.generate/pricing.json",
 );
+const deepSeekV41FlashPricingPath = path.join(
+    repoRoot,
+    "packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4.1-flash/text.generate/pricing.json",
+);
 
 const makeDeepSeekCard = (): PriceCard => ({
     provider: "deepseek",
@@ -158,6 +162,13 @@ const deepSeekWeekendCatalogCases = [
         pricingPath: deepSeekV4FlashVisionPricingPath,
         offPeakTotal: "0.887000000",
         peakTotal: "1.774000000",
+    },
+];
+
+const deepSeekV41CatalogCases = [
+    {
+        label: "DeepSeek V4.1 Flash",
+        pricingPath: deepSeekV41FlashPricingPath,
     },
 ];
 
@@ -599,6 +610,56 @@ describe("DeepSeek V4 catalog time-period pricing", () => {
             expect(saturday.lines.every((line) => line.pricing_time_window === null)).toBe(true);
             expect(monday.cost_usd_str).toBe(peakTotal);
             expect(monday.lines.every((line) => line.pricing_time_window !== null)).toBe(true);
+        },
+    );
+
+    it.each(deepSeekV41CatalogCases)(
+        "applies the September 10 Flash-series price schedule for $label",
+        ({ pricingPath }) => {
+            const card = loadActiveCatalogPriceCard(pricingPath, "2026-09-10T04:00:00.000Z");
+            const usage = {
+                input_text_tokens: 1_000_000,
+                cached_read_text_tokens: 1_000_000,
+                output_text_tokens: 1_000_000,
+            };
+
+            expect(card.rules).toHaveLength(3);
+            expect(card.rules.map((rule) => rule.price_per_unit)).toEqual(["0.15", "0.003", "0.6"]);
+            expect(card.rules.every((rule) => rule.time_windows?.length === 2)).toBe(true);
+
+            const offPeak = computeBillSummary(
+                usage,
+                card,
+                { upstreamStartMs: Date.parse("2026-09-10T05:00:00Z") },
+                "standard",
+            );
+            const peak = computeBillSummary(
+                usage,
+                card,
+                { upstreamStartMs: Date.parse("2026-09-10T06:30:00Z") },
+                "standard",
+            );
+
+            expect(offPeak.cost_usd_str).toBe("0.753000000");
+            expect(offPeak.lines.every((line) => line.pricing_time_window === null)).toBe(true);
+            expect(peak.cost_usd_str).toBe("1.506000000");
+            expect(peak.lines).toEqual([
+                expect.objectContaining({
+                    dimension: "input_text_tokens",
+                    unit_price_usd: "0.300000000",
+                    pricing_time_window: expect.objectContaining({ label: "peak", timezone: "UTC" }),
+                }),
+                expect.objectContaining({
+                    dimension: "cached_read_text_tokens",
+                    unit_price_usd: "0.006000000",
+                    pricing_time_window: expect.objectContaining({ label: "peak", timezone: "UTC" }),
+                }),
+                expect.objectContaining({
+                    dimension: "output_text_tokens",
+                    unit_price_usd: "1.200000000",
+                    pricing_time_window: expect.objectContaining({ label: "peak", timezone: "UTC" }),
+                }),
+            ]);
         },
     );
 });

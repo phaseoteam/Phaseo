@@ -74,6 +74,16 @@ function renderModel(model: IRModel, modelTypes: ModelTypeResolver): string {
 	if (model.schema.kind === "object") {
 		const required = new Set(model.schema.required);
 		const fields = Object.keys(model.schema.properties).sort((a, b) => a.localeCompare(b));
+		if (fields.some((field) => !isPythonClassFieldIdentifier(field))) {
+			const lines: string[] = [`${model.name} = TypedDict(${JSON.stringify(model.name)}, {`];
+			for (const field of fields) {
+				const value = pyType(model.schema.properties[field], modelTypes, model.name, true);
+				const annotation = required.has(field) ? value : `NotRequired[${value}]`;
+				lines.push(`\t${JSON.stringify(field)}: ${annotation},`);
+			}
+			lines.push("})");
+			return lines.join("\n");
+		}
 		const lines: string[] = [`class ${model.name}(TypedDict):`];
 		if (fields.length === 0) {
 			lines.push("\tpass");
@@ -127,6 +137,8 @@ function renderClient(): string {
 		"\t\treq = urllib.request.Request(url, data=payload, headers=request_headers, method=method.upper())",
 		"\t\twith urllib.request.urlopen(req) as resp:",
 		"\t\t\traw = resp.read().decode(\"utf-8\")",
+		"\t\t\tif resp.headers.get_content_type() == \"application/x-ndjson\":",
+		"\t\t\t\treturn raw",
 		"\t\t\tif not raw:",
 		"\t\t\t\treturn None",
 		"\t\t\ttry:",
@@ -370,8 +382,19 @@ function isModelLifecycleObject(schema: IRSchema): boolean {
 }
 
 function sanitizeIdentifier(name: string): string {
-	if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
-		return name;
-	}
-	return name.replace(/[^A-Za-z0-9_]/g, "_");
+	const sanitized = /^[A-Za-z_][A-Za-z0-9_]*$/.test(name)
+		? name
+		: name.replace(/[^A-Za-z0-9_]/g, "_");
+	return PYTHON_KEYWORDS.has(sanitized) ? `${sanitized}_` : sanitized;
+}
+
+const PYTHON_KEYWORDS = new Set([
+	"False", "None", "True", "and", "as", "assert", "async", "await", "break", "class",
+	"continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global",
+	"if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return",
+	"try", "while", "with", "yield"
+]);
+
+function isPythonClassFieldIdentifier(name: string): boolean {
+	return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) && !PYTHON_KEYWORDS.has(name);
 }

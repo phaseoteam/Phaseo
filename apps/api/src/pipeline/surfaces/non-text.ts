@@ -171,6 +171,7 @@ function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefine
 		"output_video_tokens",
 		"embedding_tokens",
 		"bfl_credits",
+		"deepinfra_cost_usd",
 	];
 
 	for (const key of passthroughNumericKeys) {

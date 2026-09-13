@@ -38,6 +38,11 @@ function isMissingCountryColumn(error: unknown) {
 	return ["declared_country_code", "country_declared_at"].some((column) => message.includes(column));
 }
 
+// Gateway keys were renamed from the legacy `aistats` namespace to `phaseo`.
+// Keep accepting both here so the test endpoint does not reject a key before
+// the gateway gets a chance to authenticate it.
+const GATEWAY_API_KEY_PATTERN = /^(?:phaseo_v1|aistats(?:_v\d+)?)_sk_[A-Za-z0-9_-]{16,}$/;
+
 export const accountAuthRouter = new Hono<{ Bindings: Env }>();
 
 accountAuthRouter.get("/status", async (c) => {
@@ -140,7 +145,7 @@ accountAuthRouter.post("/test-key", async (c) => {
 	if (!user) return c.json({ ok: false, message: "Sign in to test API keys." }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: { apiKey?: unknown } = await c.req.json().catch(() => ({}));
 	const apiKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
-	if (!/^aistats(_v\d+)?_sk_[A-Za-z0-9_-]{16,}$/.test(apiKey)) return c.json({ ok: false, message: "This does not look like an AI Stats API key." }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (!GATEWAY_API_KEY_PATTERN.test(apiKey)) return c.json({ ok: false, message: "This does not look like a Phaseo API key." }, 400, PRIVATE_NO_STORE_HEADERS);
 	const raw = c.env.NEXT_PUBLIC_GATEWAY_API_URL ?? c.env.NEXT_PUBLIC_API_URL ?? c.env.AI_STATS_GATEWAY_URL ?? "https://api.phaseo.app";
 	const base = raw.replace(/\/+$/, ""); const gateway = base.endsWith("/v1") ? base : `${base}/v1`;
 	try {

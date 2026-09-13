@@ -2,6 +2,7 @@ import type { SettingsUsageLogsInitialData } from "@/lib/fetchers/internal/setti
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { resolveAccessibleWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 type UsageLogsView = SettingsUsageLogsInitialData["view"];
 
@@ -50,6 +51,9 @@ export async function fetchSettingsUsageLogsInitialData(
 			`/api/account/settings/usage/logs?${params.toString()}`,
 			context.accessToken,
 		);
+		if (data.data?.providerNameEntries) {
+			data.data.providerNameEntries = data.data.providerNameEntries.map(([providerId, providerName]) => [providerId, resolveProviderDisplayName({ providerId, providerName })]);
+		}
 		return { ...data, loadState: "ready" };
 	} catch (error) {
 		if (error instanceof WebApiError && error.status === 401) {

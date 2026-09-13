@@ -1,0 +1,46 @@
+# Regional provider-routing deployment. This uses a Workers placement hint;
+# it does not provide guaranteed US data residency without Regional Services.
+name = "phaseo-gateway-us"
+main = "src/index.ts"
+compatibility_date = "2025-10-01"
+compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close"]
+workers_dev = false
+preview_urls = false
+
+[vars]
+ENV = "prod"
+SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
+GATEWAY_ROUTING_REGION = "us"
+GATEWAY_PUBLIC_BASE_URL = "https://us.api.phaseo.app"
+MODEL_DISCOVERY_ENABLED = "false"
+VIDEO_RECONCILIATION_ENABLED = "false"
+BATCH_RECONCILIATION_ENABLED = "false"
+OTEL_EXPORT_ENABLED = "false"
+EMAIL_OUTBOX_DRAIN_ENABLED = "false"
+DATA_CONTRIBUTION_CLASSIFIER_ENABLED = "false"
+PRICING_MONITOR_ENABLED = "false"
+PRICING_PAGE_MONITOR_ENABLED = "false"
+VIDEO_API_ENABLED = "false"
+
+[placement]
+region = "aws:us-east-1"
+
+[[routes]]
+pattern = "us.api.phaseo.app"
+custom_domain = true
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 0.1
+invocation_logs = true
+
+[[kv_namespaces]]
+binding = "GATEWAY_CACHE"
+id = "f5e23068fcd94125ad9860c817c543d9"
+preview_id = "f5e23068fcd94125ad9860c817c543d9"
+
+[[durable_objects.bindings]]
+name = "PROVIDER_RATE_LIMITS"
+class_name = "ProviderRateLimitDurableObject"
+script_name = "phaseo-gateway"

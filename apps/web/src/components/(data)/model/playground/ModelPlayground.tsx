@@ -3094,6 +3094,8 @@ export default function ModelPlayground({
 						</div>
 					</div>
 				) : (
+					// The room renderer reads stable media refs to bind the existing elements.
+					// eslint-disable-next-line react-hooks/refs
 					renderInlineRoom()
 				)}
 			</div>

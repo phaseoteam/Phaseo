@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
 import { fetchSettingsTeamsInitialData } from "@/lib/fetchers/internal/fetchSettingsTeamsInitialData";
 import WorkspaceIdentitySettings from "./WorkspaceIdentitySettings";
@@ -33,7 +36,20 @@ export default async function WorkspaceEnterpriseRoute({ mode, searchParams }: {
 		return (
 			<div className="space-y-6">
 				<SettingsPageHeader title={copy.title} description={copy.description} />
-				<section className="border-y border-border/60 py-5"><p className="text-sm font-medium">Choose a shared workspace</p><p className="mt-1 text-sm text-muted-foreground">Enterprise identity is configured per shared workspace, not on your personal workspace.</p></section>
+				<section className="space-y-3 border-y border-border/60 py-5">
+					<div>
+						<p className="text-sm font-medium">Enterprise requires a shared workspace</p>
+						<p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+							Enterprise cannot be enabled on your personal workspace. Create a shared workspace first, then open Enterprise settings there to subscribe and configure identity features.
+						</p>
+					</div>
+					<Button asChild variant="outline" size="sm">
+						<Link href="/settings/account/workspaces">
+							Create a shared workspace
+							<ArrowUpRight className="ml-2 h-3.5 w-3.5" />
+						</Link>
+					</Button>
+				</section>
 			</div>
 		);
 	}

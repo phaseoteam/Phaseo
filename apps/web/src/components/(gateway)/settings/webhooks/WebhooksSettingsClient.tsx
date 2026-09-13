@@ -1,12 +1,22 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState, useTransition } from "react";
-import { CheckCircle2, Copy, MoreHorizontal, Plus, RotateCw, Trash2, Webhook } from "lucide-react";
+import { useState, useTransition } from "react";
+import { CheckCircle2, Copy, MoreHorizontal, RotateCw, Trash2, Webhook } from "lucide-react";
 import { toast } from "sonner";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,21 +24,14 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import {
-	createWebhookEndpointAction,
 	deleteWebhookEndpointAction,
 	rotateWebhookEndpointSecretAction,
 	updateWebhookEndpointStatusAction,
 } from "@/app/(dashboard)/settings/webhooks/actions";
-
-const DEFAULT_EVENTS = [
-	"batch.completed",
-	"batch.failed",
-	"batch.cancelled",
-	"video.completed",
-	"video.failed",
-	"video.cancelled",
-];
+import { getWebhookEventLabel } from "./webhook-events";
+import WebhookSecretNotice from "./WebhookSecretNotice";
 
 export type WebhookEndpoint = {
 	id: string;
@@ -41,28 +44,13 @@ export type WebhookEndpoint = {
 	updatedAt: string | null;
 };
 
-type Props = {
-	endpoints: WebhookEndpoint[];
-};
-
-type EndpointActionResult = {
-	ok: boolean;
-	signingSecret?: string;
-};
+type Props = { endpoints: WebhookEndpoint[] };
+type RevealedSecret = { id: string; secret: string };
 
 function formatDate(value: string | null) {
 	if (!value) return "Never";
 	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return "Never";
-	return date.toLocaleDateString();
-}
-
-function parseEvents(value: string): string[] {
-	const events = value
-		.split(",")
-		.map((event) => event.trim().toLowerCase())
-		.filter(Boolean);
-	return [...new Set(events.length > 0 ? events : DEFAULT_EVENTS)];
+	return Number.isNaN(date.getTime()) ? "Never" : date.toLocaleDateString();
 }
 
 async function copyToClipboard(value: string, label: string) {
@@ -76,45 +64,29 @@ async function copyToClipboard(value: string, label: string) {
 
 export default function WebhooksSettingsClient({ endpoints }: Props) {
 	const router = useRouter();
-	const [name, setName] = useState("Async webhooks");
-	const [url, setUrl] = useState("");
-	const [events, setEvents] = useState(DEFAULT_EVENTS.join(", "));
-	const [revealedSecret, setRevealedSecret] = useState<{ id: string; secret: string } | null>(null);
+	const [revealedSecret, setRevealedSecret] = useState<RevealedSecret | null>(null);
+	const [deleteEndpoint, setDeleteEndpoint] = useState<WebhookEndpoint | null>(null);
 	const [pendingEndpointId, setPendingEndpointId] = useState<string | null>(null);
 	const [isPending, startTransition] = useTransition();
 
-	const eventPreview = useMemo(() => parseEvents(events), [events]);
-
-	function submit(event: FormEvent<HTMLFormElement>) {
-		event.preventDefault();
-		startTransition(async () => {
-			try {
-				const result = await createWebhookEndpointAction({
-					name,
-					url,
-					events: eventPreview,
-				});
-				setRevealedSecret({ id: result.id, secret: result.signingSecret });
-				setUrl("");
-				toast.success("Webhook endpoint created");
-				router.refresh();
-			} catch (error) {
-				toast.error(error instanceof Error ? error.message : "Failed to create webhook");
-			}
-		});
-	}
-
-	function runEndpointAction(id: string, action: () => Promise<EndpointActionResult>) {
+	function runEndpointAction(
+		id: string,
+		action: () => Promise<unknown>,
+		successMessage: string,
+	) {
 		setPendingEndpointId(id);
 		startTransition(async () => {
 			try {
 				const result = await action();
-				if (result.signingSecret) {
+				if (
+					result &&
+					typeof result === "object" &&
+					"signingSecret" in result &&
+					typeof result.signingSecret === "string"
+				) {
 					setRevealedSecret({ id, secret: result.signingSecret });
-					toast.success("Signing secret rotated");
-				} else {
-					toast.success("Webhook endpoint updated");
 				}
+				toast.success(successMessage);
 				router.refresh();
 			} catch (error) {
 				toast.error(error instanceof Error ? error.message : "Action failed");
@@ -126,162 +98,115 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 
 	return (
 		<div className="space-y-5">
-			<form
-				onSubmit={submit}
-				className="grid gap-3 rounded-md border border-border/60 p-4 md:grid-cols-[minmax(140px,180px)_minmax(220px,1fr)_minmax(180px,260px)_auto]"
-			>
-				<Input
-					value={name}
-					onChange={(event) => setName(event.target.value)}
-					placeholder="Name"
-					aria-label="Webhook name"
-					maxLength={120}
-				/>
-				<Input
-					value={url}
-					onChange={(event) => setUrl(event.target.value)}
-					placeholder="https://example.com/api/webhooks/aistats"
-					aria-label="Webhook URL"
-					type="url"
-					required
-				/>
-				<Input
-					value={events}
-					onChange={(event) => setEvents(event.target.value)}
-					placeholder="batch.completed, batch.failed"
-					aria-label="Webhook events"
-				/>
-				<Button type="submit" disabled={isPending}>
-					<Plus className="mr-2 h-4 w-4" />
-					Create
-				</Button>
-			</form>
-
-			{revealedSecret ? (
-				<div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100">
-					<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-						<div className="min-w-0">
-							<p className="font-medium">Signing secret</p>
-							<code className="mt-1 block truncate rounded bg-background/70 px-2 py-1 font-mono text-xs">
-								{revealedSecret.secret}
-							</code>
-						</div>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => copyToClipboard(revealedSecret.secret, "Signing secret")}
+			{revealedSecret ? <WebhookSecretNotice endpointId={revealedSecret.id} secret={revealedSecret.secret} /> : null}
+			<AlertDialog open={deleteEndpoint !== null} onOpenChange={(open) => !open && setDeleteEndpoint(null)}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete {deleteEndpoint?.name ?? "this endpoint"}?</AlertDialogTitle>
+						<AlertDialogDescription>New jobs will no longer deliver to this endpoint. Existing delivery history is retained.</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Keep endpoint</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							onClick={() => {
+								if (!deleteEndpoint) return;
+								const endpointId = deleteEndpoint.id;
+								setDeleteEndpoint(null);
+								runEndpointAction(endpointId, () => deleteWebhookEndpointAction(endpointId), "Endpoint deleted");
+							}}
 						>
-							<Copy className="mr-2 h-4 w-4" />
-							Copy
-						</Button>
-					</div>
-				</div>
-			) : null}
+							Delete endpoint
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
-			<div className="rounded-md border border-border/60">
-				{endpoints.length > 0 ? (
-					endpoints.map((endpoint) => {
+			{endpoints.length > 0 ? (
+				<div className="space-y-3">
+					{endpoints.map((endpoint) => {
 						const pending = isPending && pendingEndpointId === endpoint.id;
 						return (
-							<div
-								key={endpoint.id}
-								className="grid items-center gap-3 border-b border-border/50 px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1fr)_150px_130px_auto]"
-							>
-								<div className="min-w-0">
-									<div className="flex min-w-0 items-center gap-2">
-										<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-muted/70 text-muted-foreground">
-											<Webhook className="h-4 w-4" />
+							<div key={endpoint.id} className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+								<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+									<div className="flex min-w-0 items-start gap-3">
+										<div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+											<Webhook className="size-4" />
 										</div>
 										<div className="min-w-0">
-											<p className="truncate text-sm font-medium">{endpoint.name}</p>
-											<p className="truncate text-xs text-muted-foreground">{endpoint.url}</p>
+											<div className="flex flex-wrap items-center gap-2">
+												<h2 className="truncate font-medium">{endpoint.name}</h2>
+												<Badge variant={endpoint.status === "active" ? "default" : "outline"}>
+													{endpoint.status === "active" ? <CheckCircle2 className="mr-1 size-3" /> : null}
+													{endpoint.status === "active" ? "Active" : "Paused"}
+												</Badge>
+											</div>
+											<p className="mt-1 truncate text-sm text-muted-foreground">{endpoint.url}</p>
 										</div>
 									</div>
-									<div className="mt-2 flex flex-wrap gap-1.5">
-										{endpoint.events.slice(0, 4).map((event) => (
-											<Badge key={event} variant="secondary" className="text-[10px]">
-												{event}
-											</Badge>
-										))}
-										{endpoint.events.length > 4 ? (
-											<Badge variant="outline" className="text-[10px]">
-												+{endpoint.events.length - 4}
-											</Badge>
-										) : null}
+									<div className="flex items-center gap-2 self-end sm:self-start">
+										<Button asChild variant="outline" size="sm">
+											<Link href={`/settings/webhooks/${encodeURIComponent(endpoint.id)}`}>Edit</Link>
+										</Button>
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button size="icon" variant="ghost" disabled={pending} aria-label={`Actions for ${endpoint.name}`}>
+													<MoreHorizontal className="size-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end" className="w-56">
+												<DropdownMenuItem onClick={() => copyToClipboard(endpoint.id, "Endpoint ID")}>
+													<Copy className="mr-2 size-4" />
+													Copy endpoint ID
+												</DropdownMenuItem>
+												<DropdownMenuItem onClick={() => runEndpointAction(endpoint.id, () => rotateWebhookEndpointSecretAction(endpoint.id), "Signing secret rotated")}>
+													<RotateCw className="mr-2 size-4" />
+													Rotate signing secret
+												</DropdownMenuItem>
+												<DropdownMenuItem onClick={() => runEndpointAction(endpoint.id, () => updateWebhookEndpointStatusAction(endpoint.id, endpoint.status === "active" ? "disabled" : "active"), endpoint.status === "active" ? "Endpoint paused" : "Endpoint enabled")}>
+													{endpoint.status === "active" ? "Pause endpoint" : "Enable endpoint"}
+												</DropdownMenuItem>
+													<DropdownMenuSeparator />
+													<DropdownMenuItem variant="destructive" onClick={() => setDeleteEndpoint(endpoint)}>
+														<Trash2 className="mr-2 size-4" />
+														Delete endpoint
+													</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
 									</div>
 								</div>
-								<div className="text-xs text-muted-foreground">
-									Updated {formatDate(endpoint.updatedAt ?? endpoint.createdAt)}
-								</div>
-								<div>
-									<Badge variant={endpoint.status === "active" ? "default" : "outline"}>
-										{endpoint.status === "active" ? (
-											<CheckCircle2 className="mr-1 h-3 w-3" />
-										) : null}
-										{endpoint.status}
-									</Badge>
-								</div>
-								<div className="flex justify-end">
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button size="icon" variant="ghost" disabled={pending}>
-												<MoreHorizontal className="h-4 w-4" />
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end" className="w-52">
-											<DropdownMenuItem
-												onClick={() =>
-													runEndpointAction(endpoint.id, () =>
-														rotateWebhookEndpointSecretAction(endpoint.id),
-													)
-												}
-											>
-												<RotateCw className="mr-2 h-4 w-4" />
-												Rotate signing secret
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												onClick={() => copyToClipboard(endpoint.id, "Endpoint ID")}
-											>
-												<Copy className="mr-2 h-4 w-4" />
-												Copy endpoint ID
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												onClick={() =>
-													runEndpointAction(endpoint.id, () =>
-														updateWebhookEndpointStatusAction(
-															endpoint.id,
-															endpoint.status === "active" ? "disabled" : "active",
-														),
-													)
-												}
-											>
-												{endpoint.status === "active" ? "Disable" : "Enable"}
-											</DropdownMenuItem>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem
-												className="text-red-600"
-												onClick={() =>
-													runEndpointAction(endpoint.id, () =>
-														deleteWebhookEndpointAction(endpoint.id),
-													)
-												}
-											>
-												<Trash2 className="mr-2 h-4 w-4" />
-												Delete
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
+
+								<div className="mt-4 flex flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-end sm:justify-between">
+									<div>
+										<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Subscribed events</p>
+										<div className="mt-2 flex flex-wrap gap-1.5">
+											{endpoint.events.map((event) => (
+												<Badge key={event} variant="secondary" className="font-normal">{getWebhookEventLabel(event)}</Badge>
+											))}
+										</div>
+									</div>
+									<div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+										<p className="text-xs text-muted-foreground">Updated {formatDate(endpoint.updatedAt ?? endpoint.createdAt)}</p>
+										<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+											<span>Endpoint ID</span>
+											<code className="max-w-48 truncate rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">{endpoint.id}</code>
+											<Button type="button" variant="ghost" size="icon-xs" aria-label={`Copy endpoint ID for ${endpoint.name}`} onClick={() => copyToClipboard(endpoint.id, "Endpoint ID")}><Copy className="size-3" /></Button>
+										</div>
+									</div>
 								</div>
 							</div>
 						);
-					})
-				) : (
-					<div className="p-6 text-sm text-muted-foreground">
-						No webhook endpoints configured.
-					</div>
-				)}
-			</div>
+					})}
+				</div>
+			) : (
+				<Empty className="rounded-xl border border-dashed border-border/80 p-10">
+					<EmptyHeader>
+						<EmptyMedia variant="icon"><Webhook className="size-5" /></EmptyMedia>
+						<EmptyTitle>No webhook endpoints yet</EmptyTitle>
+						<EmptyDescription>Create an endpoint to receive signed updates for your async video and batch jobs.</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
+			)}
 		</div>
 	);
 }

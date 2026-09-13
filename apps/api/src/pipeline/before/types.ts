@@ -75,7 +75,7 @@ export type ByokKeyMeta = {
     fingerprintSha256: string;
     keyVersion: string | null;
     alwaysUse: boolean;
-	routingMode?: "priority" | "fallback";
+	routingMode?: "priority" | "balanced" | "fallback";
 	sortOrder?: number;
 	allowedModelSlugs?: string[] | null;
 	allowedApiKeyIds?: string[] | null;
@@ -191,6 +191,7 @@ export type RouteAvailabilityPolicy = import("@/lib/config/routeAvailability").R
  */
 export type GatewayProviderSnapshot = {
     providerId: string;
+	credentialMode?: "managed_and_byok" | "byok_only";
     providerFamilyId?: string | null;
     offerScope?: "global" | "regional" | "specialized" | null;
     offerLabel?: string | null;
@@ -234,6 +235,10 @@ export type GatewayProviderSnapshot = {
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
     providerModelSlug: string | null;
+    privateEndpoint?: {
+        baseUrl: string;
+        supportsResponses: boolean;
+    } | null;
     quantizationScheme?: string | null;
     inputModalities?: string[] | null;
     outputModalities?: string[] | null;
@@ -307,6 +312,9 @@ export type KeyEnrichment = {
 };
 
 export type ContextFetchTelemetry = {
+    presetAccessMs?: number | null;
+    privateModelMs?: number | null;
+    byokHydrationMs?: number | null;
     cacheStatus: "hit" | "miss" | "bypass" | "credit_refresh";
     totalMs: number;
     keyVersionMs?: number | null;
@@ -345,6 +353,7 @@ export type GatewayContextData = {
  */
 export type ProviderCandidate = {
     providerId: string;
+	credentialMode?: "managed_and_byok" | "byok_only";
     providerFamilyId?: string | null;
     offerScope?: "global" | "regional" | "specialized" | null;
     offerLabel?: string | null;
@@ -389,6 +398,10 @@ export type ProviderCandidate = {
     byokMeta: ByokKeyMeta[];
     pricingCard: PriceCard | null;
     providerModelSlug: string | null;
+    privateEndpoint?: {
+        baseUrl: string;
+        supportsResponses: boolean;
+    } | null;
     quantizationScheme?: string | null;
     inputModalities?: string[] | null;
     outputModalities?: string[] | null;
@@ -465,6 +478,7 @@ export type ProviderAttemptLog = {
         | "upstream_non_2xx"
         | "error"
         | "retryable_error"
+		| "rate_limited"
         | "blocked"
         | "no_pricing"
         | "unsupported_executor";
@@ -475,7 +489,7 @@ export type ProviderAttemptLog = {
     retryable?: boolean | null;
     key_source?: "gateway" | "byok" | null;
     byok_key_id?: string | null;
-    credential_phase?: "priority_byok" | "gateway" | "fallback_byok";
+    credential_phase?: "priority_byok" | "balanced_byok" | "gateway" | "fallback_byok";
     upstream_url?: string | null;
     upstream_error_code?: string | null;
     upstream_error_type?: string | null;
@@ -698,7 +712,7 @@ export type PipelineContext = {
     credentialPlan?: Array<{
         attempt_number: number;
         provider: string;
-        credential_phase: "priority_byok" | "gateway" | "fallback_byok";
+        credential_phase: "priority_byok" | "balanced_byok" | "gateway" | "fallback_byok";
         key_source: "gateway" | "byok";
         byok_key_id: string | null;
     }>;

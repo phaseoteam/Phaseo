@@ -8,8 +8,8 @@ preview_urls = false
 [vars]
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
-AMAZON_BEDROCK_REGION = "us-east-1"
-AMAZON_BEDROCK_MANTLE_BASE_URL = "https://bedrock-mantle.us-east-1.api.aws"
+AMAZON_BEDROCK_REGION = "us-west-2"
+AMAZON_BEDROCK_MANTLE_BASE_URL = "https://bedrock-mantle.us-west-2.api.aws"
 MODEL_DISCOVERY_ENABLED = "true"
 ACCOUNT_DELETION_PURGE_ENABLED = "true"
 MODEL_DISCOVERY_RETENTION_DAYS = "7"
@@ -126,6 +126,14 @@ period = 60
 name = "REALTIME_RELAY"
 class_name = "RealtimeRelayDurableObject"
 
+[[durable_objects.bindings]]
+name = "PROVIDER_RATE_LIMITS"
+class_name = "ProviderRateLimitDurableObject"
+
 [[migrations]]
 tag = "v1-realtime-relay"
 new_sqlite_classes = ["RealtimeRelayDurableObject"]
+
+[[migrations]]
+tag = "v2-provider-rate-limits"
+new_sqlite_classes = ["ProviderRateLimitDurableObject"]

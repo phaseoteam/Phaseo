@@ -116,6 +116,9 @@ const runtime = vi.hoisted(() => {
     ];
 
     const from = vi.fn((table: string) => {
+        if (table === "workspace_private_models") {
+            return { select: () => ({ eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }) };
+        }
         if (table === "v2_model_provider_routes") {
             return {
                 select: () => ({

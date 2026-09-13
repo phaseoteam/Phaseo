@@ -33,6 +33,9 @@ const runtime = vi.hoisted(() => {
         return { data: [contextPayload], error: null };
     });
     const from = vi.fn((table: string) => {
+        if (table === "workspace_private_models") {
+            return { select: () => ({ eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }) };
+        }
         if (table === "workspace_settings") {
             return {
                 select: () => ({
@@ -122,5 +125,24 @@ describe("fetchGatewayContext inflight dedupe", () => {
         expect(c.workspaceId).toBe("team_inflight");
         expect(a).not.toBe(b);
         expect(b).not.toBe(c);
+    });
+
+    it("includes private-model lookup and hydration in total context timing", async () => {
+        const pending: Array<() => void> = [];
+        runtime.supabase.rpc.mockImplementation(async () => {
+            await new Promise<void>((resolve) => pending.push(resolve));
+            return { data: [{ workspace_id: "team_inflight", resolved_model: "model", key_ok: { ok: true, reason: null }, key_limit_ok: { ok: true, reason: null }, credit_ok: { ok: true, reason: null }, providers: [], pricing: {} }], error: null };
+        });
+        const { fetchGatewayContext } = await import("./context");
+        const request = fetchGatewayContext({ workspaceId: "team_inflight", apiKeyId: "key_parallel", model: "model", endpoint: "text.generate" });
+        try {
+            await vi.waitFor(() => expect(pending.length).toBeGreaterThan(0));
+            expect(runtime.supabase.from).toHaveBeenCalledWith("workspace_private_models");
+        } finally {
+            for (const resolve of pending) resolve();
+        }
+        const result = await request;
+        expect(result.contextTelemetry?.totalMs).toBeGreaterThanOrEqual(result.contextTelemetry?.privateModelMs ?? 0);
+        expect(result.contextTelemetry?.byokHydrationMs).toBeGreaterThanOrEqual(0);
     });
 });

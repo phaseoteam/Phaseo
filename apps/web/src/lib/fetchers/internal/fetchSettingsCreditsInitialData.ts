@@ -12,11 +12,12 @@ export async function fetchSettingsCreditsInitialData(): Promise<SettingsCredits
 		`/api/account/settings/credits?${params.toString()}`,
 		context.accessToken,
 	);
-	if (!context.workspaceId) return initialData;
+	if (!context.workspaceId) return { ...initialData, workspaceId: null };
 
 	const stripe = await getActiveTeamStripeSummary();
 	return {
 		...initialData,
+		workspaceId: context.workspaceId,
 		stripeInfo: {
 			customer: stripe.customer,
 			defaultPaymentMethodId: stripe.defaultPaymentMethodId,

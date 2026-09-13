@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import React from "react";
 
 import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 import RequestDetailDialog from "./RequestDetailDialog";
@@ -21,6 +22,13 @@ jest.mock("@/components/ui/dialog", () => ({
 	DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 	DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 	DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+}));
+
+jest.mock("@/components/(data)/model/pricing/ProviderInspectorSheet", () => ({
+	ProviderInspectorSheet: ({ children, ...props }: { children: React.ReactNode; disablePointerDismissal?: boolean }) => (
+		<div data-disable-pointer-dismissal={String(props.disablePointerDismissal)}>{children}</div>
+	),
+	ProviderInspectorSheetContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 const historicalRequestWithoutCollections = {
@@ -51,6 +59,21 @@ describe("RequestDetailDialog", () => {
 				/>,
 			),
 		).not.toThrow();
+	});
+
+	it("keeps the loading sheet from dismissing during request transitions", () => {
+		const markup = renderToStaticMarkup(
+			<RequestDetailDialog
+				open
+				loading
+				presentation="sheet"
+				disablePointerDismissal
+				onOpenChange={() => {}}
+				request={historicalRequestWithoutCollections}
+			/>,
+		);
+
+		expect(markup).toContain('data-disable-pointer-dismissal="true"');
 	});
 
 	it("renders a retryable state when a route detail cannot load", () => {

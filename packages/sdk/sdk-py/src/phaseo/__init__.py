@@ -19,6 +19,11 @@ from .model_ids import MODEL_IDS, ModelIds
 from .webhooks import compute_async_webhook_signature, verify_async_webhook_signature
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
+REGIONAL_BASE_URLS = {
+    "global": DEFAULT_BASE_URL,
+    "eu": "https://eu.api.phaseo.app/v1",
+    "us": "https://us.api.phaseo.app/v1",
+}
 DEFAULT_USER_AGENT = "phaseo-python/2.0.7"
 
 
@@ -122,6 +127,9 @@ class _BatchesResource:
 
     def retrieve(self, batch_id: str) -> dict[str, Any]:
         return self._parent.get_batch(batch_id)
+
+    def stream_results(self, batch_id: str) -> Iterator[bytes]:
+        return self._parent.stream_batch_results(batch_id)
 
     def cancel(self, batch_id: str) -> dict[str, Any]:
         return self._parent.cancel_batch(batch_id)
@@ -343,12 +351,17 @@ class Phaseo:
         app: Optional[dict[str, str]] = None,
         client_source: Optional[str] = None,
         client_source_version: Optional[str] = None,
+        region: Optional[Literal["global", "eu", "us"]] = None,
     ):
         api_key = api_key or os.getenv("PHASEO_API_KEY")
         if not api_key:
             raise ValueError("api_key is required (pass api_key or set PHASEO_API_KEY)")
 
-        host = (base_url or DEFAULT_BASE_URL).rstrip("/")
+        if base_url is not None and region is not None:
+            raise ValueError("base_url and region cannot be used together")
+        if region is not None and region not in REGIONAL_BASE_URLS:
+            raise ValueError("region must be one of: global, eu, us")
+        host = (base_url or REGIONAL_BASE_URLS[region or "global"]).rstrip("/")
         self._base_url = host
         self._headers = {
             "Authorization": f"Bearer {api_key}",
@@ -1008,6 +1021,13 @@ class Phaseo:
 
     def list_batch_models(self) -> dict[str, Any]:
         return self.request("GET", "/batches/models")
+
+    def stream_batch_results(self, batch_id: str) -> Iterator[bytes]:
+        """Stream batch JSONL. Close the iterator when stopping early."""
+        url = f"{self._base_url}/batches/{quote(batch_id, safe='')}/results"
+        with httpx.stream("GET", url, headers={**self._headers, "Accept": "application/x-ndjson"}, timeout=self._timeout, follow_redirects=False) as response:
+            response.raise_for_status()
+            yield from response.iter_bytes()
 
     def get_batch(self, batch_id: str) -> dict[str, Any]:
         request = {"batch_id": batch_id}

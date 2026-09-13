@@ -9,6 +9,8 @@ import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { getTextMany, keyVersionToken } from "@/core/kv";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
+import { normalizePrivateModelBaseUrl } from "@/core/private-models";
+import { mayHavePrivateModel } from "./privateModelIndex";
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
@@ -64,9 +66,13 @@ export {
 const CONTEXT_CACHE_PREFIX = "gateway:context";
 
 // Multi-tier caching constants (respecting Cloudflare KV 60s minimum)
-const STATIC_CACHE_PREFIX = "gateway:static:v3";
+// Bump when the static context payload changes or a catalogue/pricing repair
+// must invalidate previously cached provider cards across Worker isolates.
+const STATIC_CACHE_PREFIX = "gateway:static:v4";
 const DYNAMIC_CACHE_PREFIX = "gateway:dynamic";
-const PRESET_CACHE_PREFIX = "gateway:preset:v3";
+// Preset payloads include provider/pricing snapshots too, so invalidate them
+// with the static context when catalogue or pricing data changes.
+const PRESET_CACHE_PREFIX = "gateway:preset:v4";
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
@@ -172,7 +178,9 @@ async function hydrateByokKeys(
 	if (!providerIds.length) return context;
 	const keyIds = Array.from(new Set(
 		(context.providers ?? []).flatMap((provider) =>
-			(provider.byokMeta ?? []).map((key) => key.id).filter(Boolean),
+			provider.privateEndpoint
+				? []
+				: (provider.byokMeta ?? []).map((key) => key.id).filter(Boolean),
 		),
 	));
 	// The cached/RPC context contains only metadata. Avoid a Supabase read entirely
@@ -194,7 +202,7 @@ async function hydrateByokKeys(
 			...context,
 			providers: (context.providers ?? []).map((provider) => ({
 				...provider,
-				byokMeta: [],
+				byokMeta: provider.privateEndpoint ? provider.byokMeta : [],
 			})),
 		};
 	}
@@ -221,9 +229,10 @@ async function hydrateByokKeys(
 			return orderedRows.slice(0, maxKeysPerProvider);
 		});
 
+	const importedKeys = new Map<number, Promise<CryptoKey>>();
 	const decrypted = await Promise.all(selectedRows.map(async (row) => {
 		try {
-			const decryptedBytes = await decryptBYOK(row);
+			const decryptedBytes = await decryptBYOK(row, importedKeys);
 			let key: string;
 			try {
 				key = bytesToString(decryptedBytes);
@@ -272,8 +281,122 @@ async function hydrateByokKeys(
 		...context,
 		providers: (context.providers ?? []).map((provider) => ({
 			...provider,
-			byokMeta: byProvider.get(provider.providerId) ?? [],
+			byokMeta: provider.privateEndpoint
+				? provider.byokMeta
+				: byProvider.get(provider.providerId) ?? [],
 		})),
+	};
+}
+
+type WorkspacePrivateModelRow = {
+	id: string;
+	workspace_id: string;
+	model_id: string;
+	base_url: string;
+	upstream_model_id: string;
+	supports_responses: boolean;
+	input_modalities: string[] | null;
+	output_modalities: string[] | null;
+	context_length: number | null;
+	max_output_tokens: number | null;
+	catalog_model_id: string | null;
+	host_provider_id: string | null;
+	custom_provider_name: string | null;
+	routing_policy: "preferred" | "balanced" | "fallback";
+	provider_id: string;
+	enc_value: string;
+	enc_iv: string;
+	enc_tag: string;
+	key_version: number;
+	enc_aad_version: number;
+	fingerprint_sha256: string;
+};
+
+export async function loadWorkspacePrivateModel(args: {
+	workspaceId: string;
+	model: string;
+	endpoint: string;
+	apiKeyId?: string;
+	disableCache?: boolean;
+}): Promise<{ provider: GatewayProviderSnapshot; pricingKey: string; pricing: GatewayContextData["pricing"][string]; attached: boolean } | null> {
+	if (args.endpoint !== "text.generate") return null;
+	if (args.apiKeyId && !args.disableCache && !await mayHavePrivateModel({ ...args, apiKeyId: args.apiKeyId })) return null;
+	const { data, error } = await getSupabaseAdmin().from("workspace_private_models")
+		.select("id,workspace_id,model_id,base_url,upstream_model_id,supports_responses,input_modalities,output_modalities,context_length,max_output_tokens,catalog_model_id,host_provider_id,custom_provider_name,routing_policy,provider_id,enc_value,enc_iv,enc_tag,key_version,enc_aad_version,fingerprint_sha256")
+		.eq("workspace_id", args.workspaceId)
+		.eq("model_id", args.model)
+		.eq("enabled", true)
+		.maybeSingle();
+	if (error) throw new Error(`private_model_lookup_failed:${error.message ?? "unknown"}`);
+	if (!data) return null;
+	const row = data as WorkspacePrivateModelRow;
+	const decrypted = await decryptBYOK(row);
+	let credential: string;
+	try {
+		credential = bytesToString(decrypted);
+	} finally {
+		decrypted.fill(0);
+	}
+	const pricingKey = `private-model:${row.id}`;
+	return {
+		attached: Boolean(row.catalog_model_id),
+		provider: {
+			providerId: "private-model",
+			providerFamilyId: "private-model",
+			offerScope: "specialized",
+			offerLabel: "Private",
+			apiModelId: row.model_id,
+			pricingKey,
+			providerStatus: "active",
+			providerRoutingStatus: "active",
+			modelRoutingStatus: "active",
+			capabilityStatus: "active",
+			residencyMode: "customer_selectable",
+			executionRegions: null,
+			dataRegions: null,
+			zeroDataRetention: true,
+			promptTrainingPolicy: "enterprise_no_train",
+			dataPolicyTier: "private",
+			dataPolicyConfidence: "confirmed",
+			dataPolicyContractMode: "customer_agreement",
+			supportsEndpoint: true,
+			baseWeight: 1,
+			byokMeta: [{
+				id: row.id,
+				providerId: "private-model",
+				fingerprintSha256: row.fingerprint_sha256,
+				keyVersion: String(row.key_version),
+				alwaysUse: row.routing_policy === "preferred",
+				routingMode: row.routing_policy === "preferred" ? "priority" : row.routing_policy,
+				sortOrder: row.routing_policy === "fallback" ? 10_000 : 0,
+				key: credential,
+				value: credential,
+			}],
+			providerModelSlug: row.upstream_model_id,
+			privateEndpoint: {
+				baseUrl: normalizePrivateModelBaseUrl(row.base_url),
+				supportsResponses: row.supports_responses,
+			},
+			inputModalities: row.input_modalities ?? ["text"],
+			outputModalities: row.output_modalities ?? ["text"],
+			capabilityParams: {},
+			maxInputTokens: row.context_length,
+			maxOutputTokens: row.max_output_tokens,
+		},
+		pricingKey,
+		pricing: {
+			provider: "private-model",
+			model: row.model_id,
+			endpoint: args.endpoint,
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: "workspace-private-v1",
+			rules: [
+				{ pricing_plan: "standard", meter: "input_tokens", unit: "token", unit_size: 1, price_per_unit: "0", currency: "USD", match: [], priority: 100 },
+				{ pricing_plan: "standard", meter: "output_tokens", unit: "token", unit_size: 1, price_per_unit: "0", currency: "USD", match: [], priority: 100 },
+			],
+		},
 	};
 }
 
@@ -948,10 +1071,14 @@ export async function fetchGatewayContext(args: {
     includeTestingMode?: boolean;
     disableCache?: boolean;
 }): Promise<GatewayContextData> {
+	const fetchStartedAt = performance.now();
 	await assertPresetAccess(args);
+	const presetAccessMs = round3(performance.now() - fetchStartedAt);
+	const privateModelStartedAt = performance.now();
+	const privateModel = await loadWorkspacePrivateModel(args);
+	const privateModelMs = round3(performance.now() - privateModelStartedAt);
     const supabase = getSupabaseAdmin();
     const cache = getCache();
-    const fetchStartedAt = performance.now();
     const telemetry: ContextFetchTelemetry = {
         cacheStatus: args.disableCache ? "bypass" : "miss",
         totalMs: 0,
@@ -962,10 +1089,26 @@ export async function fetchGatewayContext(args: {
         enrichMs: null,
         cacheWriteMs: null,
         fallbackRemap: false,
+        presetAccessMs,
+        privateModelMs,
     };
+    async function finishContext(value: GatewayContextData): Promise<GatewayContextData> {
+        const startedAt = performance.now();
+        const hydrated = await hydrateByokKeys(value, args.workspaceId, args.model, args.apiKeyId);
+        return {
+            ...hydrated,
+            contextTelemetry: {
+                ...(value.contextTelemetry ?? telemetry),
+                presetAccessMs,
+                privateModelMs,
+                byokHydrationMs: round3(performance.now() - startedAt),
+                totalMs: round3(performance.now() - fetchStartedAt),
+            },
+        };
+    }
     // Check if model is a preset
     const isPreset = args.model.startsWith("@");
-    const shouldUseCache = !args.disableCache;
+    const shouldUseCache = !args.disableCache && !privateModel;
     const needsVersionToken = shouldUseCache;
     let versionToken = "v0";
     if (needsVersionToken) {
@@ -1049,14 +1192,14 @@ export async function fetchGatewayContext(args: {
                         credit: creditContext,
                         endpoint: args.endpoint,
                     });
-					return hydrateByokKeys({
+					return finishContext({
                         ...merged,
                         contextTelemetry: {
                             ...telemetry,
                             cacheStatus,
                             totalMs: round3(performance.now() - fetchStartedAt),
                         },
-					}, args.workspaceId, args.model, args.apiKeyId);
+					});
                 }
             }
         } catch {
@@ -1070,7 +1213,7 @@ export async function fetchGatewayContext(args: {
 		const inflight = contextInflight.get(inflightKey);
 		if (inflight) {
 			return inflight.then((value) =>
-				hydrateByokKeys(cloneGatewayContextData(value), args.workspaceId, args.model, args.apiKeyId),
+				finishContext(cloneGatewayContextData(value)),
 			);
         }
     }
@@ -1192,6 +1335,20 @@ export async function fetchGatewayContext(args: {
                 };
             }
         }
+
+		if (privateModel) {
+			parsed = {
+				...parsed,
+				resolvedModel: args.model,
+				providers: privateModel.attached
+					? [privateModel.provider, ...(parsed.providers ?? [])]
+					: [privateModel.provider],
+				pricing: {
+					...(parsed.pricing ?? {}),
+					[privateModel.pricingKey]: privateModel.pricing,
+				},
+			};
+		}
 
         parsed = applyNebiusRegionalModelAllowlist({
             parsed,
@@ -1366,9 +1523,14 @@ export async function fetchGatewayContext(args: {
             const providerStatusQuery = providerIds.length
                 ? supabase
                     .from("v2_providers")
-                    .select("provider_slug,status,routing_enabled,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,data_policy_variant,stream_cancellation_support,stream_cancellation_stops_provider_billing,stream_cancellation_usage_recovery,stream_cancellation_evidence_kind,stream_cancellation_source_url,metadata")
+                    .select("provider_slug,status,routing_enabled,credential_mode,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,data_policy_variant,stream_cancellation_support,stream_cancellation_stops_provider_billing,stream_cancellation_usage_recovery,stream_cancellation_evidence_kind,stream_cancellation_source_url,metadata")
                     .in("provider_slug", providerIds)
                 : Promise.resolve({ data: [], error: null } as any);
+			const routeCredentialModeQuery = providerIds.length
+				? supabase.from("v2_model_provider_routes").select("provider_slug,credential_mode")
+					.in("provider_slug", providerIds).eq("model_slug", parsed.resolvedModel ?? args.model)
+					.eq("routing_enabled", true).in("status", ["active", "degraded"])
+				: Promise.resolve({ data: [], error: null } as any);
 
             const settingsQuery = (async () => {
                 const columns = "routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,privacy_zdr_only,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,io_logging_enabled,io_logging_include_provider_payloads,data_contribution_enabled,data_contribution_policy_version,data_contribution_sample_rate_bps,data_contribution_classifier_sample_rate_bps,data_contribution_discount_bps,response_healing_enabled,response_healing_locked,response_healing_mode";
@@ -1393,9 +1555,10 @@ export async function fetchGatewayContext(args: {
                     .maybeSingle();
             })();
 
-            const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
+            const [settingsResult, providerStatusResult, routeCredentialModeResult, teamResult] = await Promise.all([
                 settingsQuery,
                 providerStatusQuery,
+				routeCredentialModeQuery,
                 supabase
                     .from("workspaces")
                     .select("billing_mode")
@@ -1412,6 +1575,9 @@ export async function fetchGatewayContext(args: {
             if (providerStatusResult?.error) {
                 throw new Error(`provider_status_enrichment_failed:${providerStatusResult.error.message ?? "unknown"}`);
             }
+			if (routeCredentialModeResult?.error) {
+				throw new Error(`route_credential_mode_enrichment_failed:${routeCredentialModeResult.error.message ?? "unknown"}`);
+			}
             if (teamResult?.error || !teamResult?.data) {
                 throw new Error(`workspace_billing_enrichment_failed:${teamResult?.error?.message ?? "missing"}`);
             }
@@ -1476,6 +1642,7 @@ export async function fetchGatewayContext(args: {
             };
 
             const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
+			const credentialModeByProvider = new Map<string, GatewayProviderSnapshot["credentialMode"]>();
             const routingStatusByProvider = new Map<string, RoutingStatus>();
             const providerFamilyByProvider = new Map<string, string | null>();
             const offerScopeByProvider = new Map<string, GatewayProviderSnapshot["offerScope"]>();
@@ -1509,6 +1676,7 @@ export async function fetchGatewayContext(args: {
                         providerId,
                         normalizeProviderStatus(row.status),
                     );
+					credentialModeByProvider.set(providerId, row.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok");
                     routingStatusByProvider.set(
                         providerId,
                         row.routing_enabled === true ? "active" : "disabled",
@@ -1605,6 +1773,11 @@ export async function fetchGatewayContext(args: {
                     );
                 }
             }
+			for (const row of routeCredentialModeResult?.data ?? []) {
+				if (row?.credential_mode === "byok_only" && typeof row?.provider_slug === "string") {
+					credentialModeByProvider.set(row.provider_slug, "byok_only");
+				}
+			}
 
             parsed.providers = (parsed.providers ?? []).map((provider) => {
                 const residency = getProviderResidencyMetadata({
@@ -1613,6 +1786,7 @@ export async function fetchGatewayContext(args: {
                 });
                 return {
                     ...provider,
+					credentialMode: credentialModeByProvider.get(provider.providerId) ?? provider.credentialMode ?? "managed_and_byok",
                     providerFamilyId:
                         providerFamilyByProvider.get(provider.providerId) ??
                         provider.providerFamilyId ??
@@ -1774,17 +1948,10 @@ export async function fetchGatewayContext(args: {
     }
 
     try {
-		return await hydrateByokKeys(await dbLoader, args.workspaceId, args.model, args.apiKeyId);
+		return await finishContext(await dbLoader);
     } finally {
         if (inflightKey && contextInflight.get(inflightKey) === dbLoader) {
             contextInflight.delete(inflightKey);
         }
     }
 }
-
-
-
-
-
-
-

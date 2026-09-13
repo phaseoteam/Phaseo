@@ -33,6 +33,7 @@ import { MINIMAX_OPENAI_COMPAT_CONFIGS } from "../minimax/config";
 import { MISTRAL_OPENAI_COMPAT_CONFIGS } from "../mistral/config";
 import { MOONSHOT_OPENAI_COMPAT_CONFIGS } from "../moonshotai/config";
 import { MORPH_OPENAI_COMPAT_CONFIGS } from "../morph/config";
+import { MODELSCOPE_OPENAI_COMPAT_CONFIGS } from "../modelscope/config";
 import { MORPHEUS_OPENAI_COMPAT_CONFIGS } from "../morpheus/config";
 import { NOVITA_OPENAI_COMPAT_CONFIGS } from "../novita/config";
 import { NVIDIA_OPENAI_COMPAT_CONFIGS } from "../nvidia/config";
@@ -113,6 +114,7 @@ export const OPENAI_COMPAT_CONFIG = {
 	...MISTRAL_OPENAI_COMPAT_CONFIGS,
 	...MOONSHOT_OPENAI_COMPAT_CONFIGS,
 	...MORPH_OPENAI_COMPAT_CONFIGS,
+	...MODELSCOPE_OPENAI_COMPAT_CONFIGS,
 	...MORPHEUS_OPENAI_COMPAT_CONFIGS,
 	...NOVITA_OPENAI_COMPAT_CONFIGS,
 	...NVIDIA_OPENAI_COMPAT_CONFIGS,

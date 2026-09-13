@@ -34,6 +34,10 @@ export type ProviderExecuteArgs = {
 
     // Provider-specific model slug for the request
     providerModelSlug?: string | null;
+    privateEndpoint?: {
+        baseUrl: string;
+        supportsResponses: boolean;
+    } | null;
 
     // Whether the current invocation expects a streaming response
 	stream: boolean;
@@ -89,7 +93,6 @@ export function mergeUsage(base: NormalizedUsage, add?: NormalizedUsage): Normal
     }
     return out;
 }
-
 
 
 

@@ -1595,6 +1595,71 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "z-ai/glm-5.3-fast",
+    "provider_api_model_id": "baseten:z-ai/glm-5.3-fast",
+    "provider_model_slug": "zai-org/GLM-5.3-Fast",
+    "internal_model_id": "z-ai/glm-5.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-09-03T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": true,
+        "attachment": false,
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "US"
+      ],
+      "data": null
+    },
+    "service_tiers": [
+      "priority"
+    ],
+    "api": {
+      "formats": [
+        "openai.chat.completions"
+      ],
+      "endpoint": "/v1/chat/completions",
+      "deployment": "serverless"
+    },
+    "sources": [
+      {
+        "kind": "models",
+        "url": "https://www.baseten.co/products/model-apis/",
+        "accessed_at": "2026-09-03T00:00:00Z",
+        "notes": "Baseten's shared Model API catalogue lists the GLM-5.3 Fast service-tier slug."
+      }
+    ],
+    "verification": {
+      "status": "verified",
+      "checked_at": "2026-09-03T00:00:00Z",
+      "notes": "Hidden sibling selected when z-ai/glm-5.3 requests the priority service tier; Baseten serves the same underlying model at zai-org/GLM-5.3-Fast."
+    },
+    "rate_limits": []
+  },
+  {
     "api_model_id": "z-ai/glm-5.3-flash",
     "provider_api_model_id": "baseten:zai-org/GLM-5.3-Flash",
     "provider_model_slug": "zai-org/GLM-5.3-Flash",

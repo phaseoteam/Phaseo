@@ -26,7 +26,7 @@ export type SettingsObservabilityData = {
 	keys: Array<{ id: string; name: string | null; prefix: string | null }>;
 	labelFacets: UsageLabelFacet[];
 	labelSummary: UsageLabelSummary | null;
-	modelMetadataEntries: Array<[string, { organisationId: string; organisationName: string; modelName?: string }]>;
+	modelMetadataEntries: Array<[string, { organisationId: string; organisationName: string; canonicalModelId?: string; modelName?: string }]>;
 	previous: ObservabilityRequestResult;
 	signedIn: boolean;
 	workspaceId: string | null;

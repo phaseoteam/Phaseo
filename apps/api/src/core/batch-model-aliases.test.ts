@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	normalizeOpenAIProBatchModel,
 	resolveBatchPricingModelCandidates,
 	resolveBatchPricingProviderCandidates,
 	toProviderNativeBatchModelId,
@@ -45,6 +46,14 @@ describe("batch-model-aliases", () => {
 			.toContain("mistral/mistral-small-4");
 		expect(resolveBatchPricingModelCandidates("mistral", "mistral-small-2603-batch"))
 			.toContain("mistral/mistral-small-4");
+	});
+
+	it("normalizes OpenAI Pro aliases to the native model and preserves Pro mode metadata", () => {
+		expect(normalizeOpenAIProBatchModel("openai/gpt-6-astra-pro"))
+			.toEqual({ model: "gpt-6-astra", proMode: true });
+		expect(toProviderNativeBatchModelId("openai", "openai/gpt-6-astra-pro")).toBe("gpt-6-astra");
+		expect(normalizeOpenAIProBatchModel("gpt-5.6-sol-pro"))
+			.toEqual({ model: "gpt-5.6-sol", proMode: true });
 	});
 
 	it("maps the current SpaceXAI catalog namespace to the native xAI model", () => {

@@ -62,7 +62,8 @@ export async function attemptProvider(
         }
     }
 
-    if (!pricingCard) {
+    if (!pricingCard || (pricingCard.currency && pricingCard.currency.toUpperCase() !== "USD") ||
+        pricingCard.rules.some((rule) => rule.currency && rule.currency.toUpperCase() !== "USD")) {
         attemptErrors.push({
             provider: adapter.name,
             endpoint: ctx.endpoint,
@@ -278,7 +279,6 @@ export async function attemptProvider(
         return { ok: false, error: e };
     }
 }
-
 
 
 

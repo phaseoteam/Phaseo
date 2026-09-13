@@ -154,7 +154,7 @@ describe("groupProviderIndexCards", () => {
 			total_daily_tokens: 150,
 		});
 		expect(byId.get("anthropic-aws")).toMatchObject({
-			api_provider_name: "Anthropic on AWS",
+			api_provider_name: "Claude Platform for AWS",
 			total_daily_tokens: 100,
 		});
 	});

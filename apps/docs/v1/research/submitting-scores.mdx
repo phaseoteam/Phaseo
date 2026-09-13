@@ -1,64 +1,29 @@
 ---
 icon: "upload"
-title: "Submitting Scores"
-description: "Share new benchmark results with the Phaseo community in a structured, reviewable way."
+title: "Submit Benchmark Scores"
+description: "Report new or corrected benchmark results with the evidence needed for review."
 ---
 
-We welcome contributions from providers, researchers, and power users. Follow the workflow below to ensure your submission is processed quickly.
+Submit benchmark results through a GitHub issue. Maintainers verify the evidence and publish approved scores through the database editor.
 
----
+## Prepare your evidence
 
-## 1. Prepare your data
+Include:
 
--   Confirm the benchmark exists in `/data/benchmarks`. If not, create an issue to propose it.
--   Collect the raw results, including prompt format, evaluation harness, and hardware details.
--   Provide a public citation (blog post, paper, or dataset repository) when available.
+- Model ID, provider, and the Phaseo page if one exists.
+- Benchmark name, version, split, score, and units.
+- Evaluation date, prompt format, harness, and relevant hardware or sampling settings.
+- A public paper, results page, dataset, or reproducible evaluation log.
+- Whether the result is provider-reported or independently measured.
 
-> ✅ **Tip**
-> Sharing a reproducible script or notebook speeds up verification significantly.
+## Submit the issue
 
----
+[Request new benchmark data](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) for a new result or benchmark. [Report incorrect information](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) to correct an existing score, including its current and proposed values.
 
-## 2. Fork the repository
+Do not include credentials, private prompts, or customer data in public reports.
 
-1.  Fork [github.com/phaseoteam/data](https://github.com/phaseoteam/data).
-2.  Create a new branch (for example `add-claude-3.5-sonnet-mmlu`).
-3.  Update the relevant benchmark JSON with your scores and metadata.
+## Track publication
 
----
+Maintainers may ask for clarification in the issue before updating the database. Daily JSON snapshots reflect published data; editing archived benchmark JSON does not publish a score.
 
-## 3. Run validation
-
-Use the repository tooling to ensure structure and ranges are correct:
-
-```bash
-pnpm install
-pnpm run validate:benchmarks
-```
-
-Fix any reported issues before submitting your pull request.
-
----
-
-## 4. Open a pull request
-
-Include the following in your PR description:
-
--   Benchmark name and split (for example `GSM8K test`).
--   Model ID and provider.
--   Links to citations or evaluation logs.
--   Summary of how the score was produced.
-
-Maintainers will review, request clarifications if needed, and merge once approved.
-
----
-
-## 5. Track publication
-
-After merge, the score appears in the next scheduled data sync. You can follow progress in the #data-updates channel on Discord or the public changelog.
-
----
-
-## Need help?
-
-Reach out in the [community Discord](https://discord.gg/aQyywCvgZ5) or email [support](mailto:daniel@phaseo.app). We are happy to collaborate on large imports or partner-driven research.
+For help preparing a submission, use the [community Discord](https://discord.gg/aQyywCvgZ5).

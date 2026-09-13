@@ -40,6 +40,18 @@ export type ModelMetadataIdentity = {
 	modelDescription: string | null;
 };
 
+export function isModelAliasRoute({
+	requestedModelId,
+	canonicalModelId,
+	source,
+}: {
+	requestedModelId: string;
+	canonicalModelId: string;
+	source: Awaited<ReturnType<typeof fetchFrontendCanonicalModelId>>["source"];
+}): boolean {
+	return source === "alias" && requestedModelId !== canonicalModelId;
+}
+
 export async function getModelMetadataIdentity(
 	params: ModelRouteParams,
 	includeHidden: boolean,
@@ -170,6 +182,7 @@ export async function resolveModelRouteIds(
 	requestedModelId: string;
 	canonicalModelId: string;
 	internalModelId: string | null;
+	source: Awaited<ReturnType<typeof fetchFrontendCanonicalModelId>>["source"];
 }> {
 	const requestedModelId = getModelIdFromParams(params);
 	if (isFreeRouterModelId(requestedModelId)) {
@@ -177,6 +190,7 @@ export async function resolveModelRouteIds(
 			requestedModelId: FREE_ROUTER_MODEL_ID,
 			canonicalModelId: FREE_ROUTER_MODEL_ID,
 			internalModelId: null,
+			source: "direct",
 		};
 	}
 	let resolved: Awaited<ReturnType<typeof fetchFrontendCanonicalModelId>>;
@@ -193,11 +207,13 @@ export async function resolveModelRouteIds(
 			requestedModelId,
 			canonicalModelId: requestedModelId,
 			internalModelId: null,
+			source: "unresolved",
 		};
 	}
 	return {
 		requestedModelId,
 		canonicalModelId: resolved.canonicalModelId ?? requestedModelId,
 		internalModelId: resolved.internalModelId ?? null,
+		source: resolved.source,
 	};
 }

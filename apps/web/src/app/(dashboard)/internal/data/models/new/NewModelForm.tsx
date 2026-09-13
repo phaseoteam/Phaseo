@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useMemo, useRef, useState } from "react";
+import { UnsavedChangesGuard } from "@/components/(data)/UnsavedChangesGuard";
+import { useCatalogFormChanges } from "@/components/(data)/useCatalogFormChanges";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -287,6 +289,8 @@ export default function NewModelForm({
 }) {
 	const router = useRouter();
 	const [modelId, setModelId] = useState("");
+	const { attach: formRef, isDirty, allowSavedNavigation } = useCatalogFormChanges();
+	const saved = useRef(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedFamilyId, setSelectedFamilyId] = useState("");
 	const [newFamilyId, setNewFamilyId] = useState("");
@@ -691,13 +695,17 @@ export default function NewModelForm({
 
 		void promise
 			.then(() => {
+				saved.current = true;
+				allowSavedNavigation();
 				router.push("/internal/data/models");
 			})
+			.catch(() => { /* The toast reports the error; keep the draft and guard. */ })
 			.finally(() => setIsSubmitting(false));
 	};
 
 	return (
-		<form onSubmit={handleSubmit} className="space-y-6 rounded-lg border p-4">
+		<form ref={formRef} onSubmit={handleSubmit} className="space-y-6 rounded-lg border p-4">
+			<UnsavedChangesGuard dirty={isDirty} saving={isSubmitting} allowNavigation={() => saved.current} />
 			<input type="hidden" name="family_payload" value={familyPayload} />
 			<input type="hidden" name="provider_models_payload" value={providerModelPayload} />
 			<input type="hidden" name="provider_capabilities_payload" value={providerCapabilityPayload} />

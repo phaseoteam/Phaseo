@@ -1,134 +1,37 @@
 "use client";
 
-import React from "react";
+import { useState } from "react";
 import Link from "next/link";
-
-import { Card } from "@/components/ui/card";
+import { ChevronDown, ExternalLink, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 
-interface ModelBenchmarksGridProps {
-	highlights: ModelBenchmarkHighlight[];
-}
-
-function sortHighlights(highlights: ModelBenchmarkHighlight[]) {
-	return [...highlights].sort((a, b) => {
-		const totalA = a.totalModels ?? -1;
-		const totalB = b.totalModels ?? -1;
-		if (totalA !== totalB) return totalB - totalA;
-
-		const nameA = (a.benchmarkName || "").toLowerCase();
-		const nameB = (b.benchmarkName || "").toLowerCase();
-		return nameA.localeCompare(nameB);
-	});
-}
-
-function clampScore(value: number | null | undefined): number {
-	if (typeof value !== "number" || !Number.isFinite(value)) return 0;
-	return Math.min(100, Math.max(0, value));
-}
-
-function ScoreIndicator({
-	score,
-	isPercentage,
-	label,
-}: {
-	score: number | null;
-	isPercentage: boolean;
-	label: string;
-}) {
-	if (!isPercentage || score == null) {
-		return (
-			<span
-				className="h-2.5 w-2.5 rounded-full bg-muted-foreground/45"
-				title={`${label} score recorded`}
-				aria-label={`${label} score recorded`}
-			/>
-		);
-	}
-
-	const normalizedScore = clampScore(score);
-
-	return (
-		<span
-			className="relative h-5 w-5 shrink-0 rounded-full"
-			style={{
-				background: `conic-gradient(var(--primary) ${normalizedScore}%, var(--muted) 0)`,
-			}}
-			title={`${label}: ${normalizedScore.toFixed(
-				normalizedScore % 1 === 0 ? 0 : 1
-			)}%`}
-			aria-label={`${label}: ${normalizedScore.toFixed(
-				normalizedScore % 1 === 0 ? 0 : 1
-			)}%`}
-		>
-			<span className="absolute inset-[4px] rounded-full bg-card" />
-		</span>
-	);
-}
-
-export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
-	const [showAllOnMobile, setShowAllOnMobile] = React.useState(false);
-
-	if (!highlights.length) {
-		return (
-			<div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-				No benchmark results available for this model yet.
-			</div>
-		);
-	}
-
-	const sorted = sortHighlights(highlights);
-
-	return (
-		<div className="mb-8 w-full space-y-3">
-			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-				{sorted.map((highlight, index) => {
-					return (
-						<Card
-							key={`${highlight.benchmarkId}`}
-							className={`min-h-0 flex-col justify-center rounded-lg border border-border/80 bg-card p-3 text-card-foreground shadow-xs ${
-								index >= 6 && !showAllOnMobile ? "hidden sm:flex" : "flex"
-							}`}
-							style={{ minHeight: 0 }}
-						>
-							<div className="flex flex-col gap-1">
-								<div className="truncate text-xs font-semibold leading-tight text-card-foreground">
-									<Link
-										href={`/benchmarks/${highlight.benchmarkId}`}
-									>
-										<span className="relative truncate font-semibold underline decoration-transparent hover:decoration-current transition-colors duration-200">
-											{highlight.benchmarkName ||
-												"Unnamed Benchmark"}
-										</span>
-									</Link>
-								</div>
-								<div className="flex items-center justify-between font-mono text-base text-foreground">
-									<span className="truncate text-sm text-muted-foreground">
-										{highlight.scoreDisplay}
-									</span>
-									<ScoreIndicator
-										score={highlight.score}
-										isPercentage={highlight.isPercentage}
-										label={highlight.benchmarkName}
-									/>
-								</div>
-							</div>
-						</Card>
-					);
-				})}
-			</div>
-			{sorted.length > 6 ? (
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					className="w-full sm:hidden"
-					onClick={() => setShowAllOnMobile((current) => !current)}
-				>
-					{showAllOnMobile ? "Show less" : `Show ${sorted.length - 6} more`}
-				</Button>
-			) : null}
+function BenchmarkRow({ item }: { item: ModelBenchmarkHighlight }) {
+	const [open, setOpen] = useState(false);
+	return <Collapsible open={open} onOpenChange={setOpen} className="border-b">
+		<div className="flex min-h-14 items-center gap-3 py-2">
+			<div className="min-w-0 flex-1"><Link href={`/benchmarks/${item.benchmarkId}`} className="text-sm font-medium hover:underline">{item.benchmarkName}</Link>{item.isSelfReported ? <span className="ml-2 text-xs text-muted-foreground">Self-reported</span> : null}</div>
+			<span className="shrink-0 text-sm font-semibold tabular-nums">{item.scoreDisplay}</span>
+			{item.sourceLink ? <Tooltip><TooltipTrigger asChild><Button asChild variant="ghost" size="icon-sm"><a href={item.sourceLink} target="_blank" rel="noreferrer" aria-label={`Open source for ${item.benchmarkName}`}><ExternalLink /></a></Button></TooltipTrigger><TooltipContent>Open {item.benchmarkName} source</TooltipContent></Tooltip> : null}
+			{item.otherInfo ? <Tooltip><TooltipTrigger asChild><CollapsibleTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={`${open ? "Hide" : "Show"} details for ${item.benchmarkName}`} className={open ? "text-foreground" : "text-muted-foreground"}><Info /></Button></CollapsibleTrigger></TooltipTrigger><TooltipContent>{open ? "Hide" : "Show"} benchmark details</TooltipContent></Tooltip> : null}
 		</div>
-	);
+		{item.otherInfo ? <CollapsibleContent className="pb-3 pr-20 text-xs leading-5 text-muted-foreground">{item.otherInfo}</CollapsibleContent> : null}
+	</Collapsible>;
+}
+
+export function ModelBenchmarksGrid({ highlights }: { highlights: ModelBenchmarkHighlight[] }) {
+	const [search, setSearch] = useState("");
+	const [showAll, setShowAll] = useState(false);
+	const filtered = [...highlights].filter((item) => item.benchmarkName.toLowerCase().includes(search.toLowerCase())).sort((a, b) => (b.totalModels ?? 0) - (a.totalModels ?? 0) || a.benchmarkName.localeCompare(b.benchmarkName));
+	const visible = showAll || search ? filtered : filtered.slice(0, 8);
+	return <div>
+		{highlights.length > 8 ? <Input aria-label="Search model benchmarks" placeholder="Search benchmarks" value={search} onChange={(event) => setSearch(event.target.value)} className="mb-2 sm:max-w-xs" /> : null}
+		<div>{visible.map((item) => <BenchmarkRow key={item.benchmarkId} item={item} />)}</div>
+		{!filtered.length ? <p className="py-6 text-sm text-muted-foreground">No benchmarks match your search.</p> : null}
+		{!search && filtered.length > 8 ? <Button variant="ghost" size="sm" className="mt-2" onClick={() => setShowAll(!showAll)}>{showAll ? "Show fewer benchmarks" : `Show all ${filtered.length} benchmarks`}<ChevronDown className={cn("transition-transform", showAll && "rotate-180")} /></Button> : null}
+	</div>;
 }

@@ -23,7 +23,10 @@ function mockFetch(role: "admin" | "member", events = defaultEvents, auditUrls?:
 		if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "admin@example.com", app_metadata: {}, user_metadata: {} }), { status: 200 });
 		if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role }]), { status: 200 });
 		if (url.includes("workspace_audit_events")) { auditUrls?.push(url); return new Response(JSON.stringify(events), { status: 200 }); }
-		if (url.includes("/users")) return new Response(JSON.stringify([{ user_id: "user-1", display_name: "Ada", email: "admin@example.com" }]), { status: 200 });
+		if (url.includes("/users")) {
+			expect(url).toContain("select=user_id%2Cdisplay_name");
+			return new Response(JSON.stringify([{ user_id: "user-1", display_name: "Ada" }]), { status: 200 });
+		}
 		return new Response(JSON.stringify([]), { status: 200 });
 	});
 }

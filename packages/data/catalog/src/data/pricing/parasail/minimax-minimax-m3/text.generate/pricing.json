@@ -1,0 +1,58 @@
+{
+  "key": "parasail:minimax/minimax-m3:text.generate",
+  "api_provider_id": "parasail",
+  "provider_slug": "parasail",
+  "api_model_id": "minimax/minimax-m3",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://www.parasail.io/models/minimax-m3"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://www.parasail.io/models/minimax-m3"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.06,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://www.parasail.io/models/minimax-m3"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://www.parasail.io/models/minimax-m3",
+      "accessed_at": "2026-09-07T22:05:00Z"
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T22:05:00Z",
+    "notes": "Native endpoint ID and all rates checked against the public provider model page."
+  }
+}

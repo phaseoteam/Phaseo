@@ -2,13 +2,13 @@
   "model_id": "openai/gpt-4o-transcribe-diarize",
   "organisation_id": "openai",
   "name": "GPT 4o Transcribe Diarize",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": null,
   "description": "The gpt-4o-audio-preview model adds support for audio inputs as prompts. This enhancement allows the model to detect nuances within audio recordings and add depth to generated user experiences.",
   "announced_date": "2025-10-15T00:00:00",
   "release_date": "2025-10-15T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-08-26T00:00:00",
+  "retirement_date": "2027-02-26T00:00:00",
   "license": "Proprietary",
   "input_types": "text,audio",
   "output_types": "text,audio_stt",
@@ -353,14 +353,21 @@
     "web_search": null
   },
   "open_weights": null,
-  "sources": [],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://developers.openai.com/api/docs/deprecations",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "Official OpenAI deprecations page lists the August 26, 2026 deprecation and February 26, 2027 shutdown, and recommends openai/gpt-transcribe or openai/gpt-live-transcribe."
+    }
+  ],
   "verification": {
     "status": "unverified",
     "checked_at": null,
-    "notes": null
+    "notes": "Lifecycle fields verified against OpenAI's official deprecations page; remaining model metadata is unverified."
   },
-  "last_updated": null,
+  "last_updated": "2026-09-03T00:00:00Z",
   "removal_date": null,
-  "replacement_model_id": null,
+  "replacement_model_id": "openai/gpt-transcribe",
   "license_url": null
 }

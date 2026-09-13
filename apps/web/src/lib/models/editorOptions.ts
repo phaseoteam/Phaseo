@@ -53,6 +53,12 @@ export const MODEL_MODALITY_OPTIONS = [
 
 export type ModelModalityOption = (typeof MODEL_MODALITY_OPTIONS)[number]
 
+export const QUANTIZATION_OPTIONS = [
+  "fp32", "fp16", "bf16", "fp8", "fp4", "int8", "int4", "nvfp4", "mxfp4",
+  "awq", "gptq", "Q2_K", "Q4_0", "Q4_K_M", "Q6_K", "Q8_0",
+  "FP16/FP8", "FP8/NVFP4", "INT8/BINARY",
+] as const
+
 export const MODEL_CAPABILITY_OPTIONS = [
   "text.generate",
   "text.embed",
@@ -94,4 +100,14 @@ export function normalizeCapabilityStatus(
     return "deranked_lvl3"
   if (normalized === "deranked") return "deranked_lvl1"
   return "active"
+}
+
+export function editorOptionLabel(value: string): string {
+  const labels: Record<string, string> = {
+    "text.generate": "Text generation", "text.embed": "Text embeddings", "text.rerank": "Text reranking", "text.moderate": "Text moderation",
+    "image.generate": "Image generation", "image.edit": "Image editing", "audio.transcribe": "Audio transcription", "audio.transcription": "Audio transcription (legacy)",
+    "audio.translations": "Audio translation", "audio.realtime": "Realtime audio", realtime: "Realtime", ocr: "Optical character recognition",
+    "video.edit": "Video editing", "video.generate": "Video generation", deranked_lvl1: "Deprioritized · Level 1", deranked_lvl2: "Deprioritized · Level 2", deranked_lvl3: "Deprioritized · Level 3",
+  }
+  return labels[value] ?? value.replace(/[_.-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
 }

@@ -1,0 +1,36 @@
+{
+  "key": "baidu:qwen/qwen3-reranker-8b:rerank",
+  "api_provider_id": "baidu",
+  "provider_slug": "baidu",
+  "api_model_id": "qwen/qwen3-reranker-8b",
+  "capability_id": "rerank",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000,
+      "price_per_unit": 0.00011920917,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "match": [],
+      "priority": 100,
+      "source": "https://cloud.baidu.com/doc/qianfan/s/wmh4sv6ya"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://cloud.baidu.com/doc/qianfan/s/wmh4sv6ya",
+      "accessed_at": "2026-09-07T21:55:00Z"
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-07T21:55:00Z",
+    "notes": "Published CNY rates converted to USD using ECB 2026-09-04 reference cross rate: 1.1622 USD / 7.7994 CNY per EUR (C/2026/4600)."
+  }
+}

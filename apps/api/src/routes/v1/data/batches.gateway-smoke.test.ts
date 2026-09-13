@@ -108,6 +108,14 @@ vi.mock("@providers/keys", () => ({
 	resolveProviderKey: vi.fn(() => ({ key: "test-openai-key" })),
 }));
 
+vi.mock("@core/batch-credentials", () => ({
+	resolveBatchSubmissionCredential: vi.fn(async () => ({
+		credential: { key: "test-openai-key", source: "gateway", byokKeyId: null },
+		credentialMode: "managed_and_byok",
+	})),
+	reloadBatchCredential: vi.fn(async () => ({ key: "test-openai-key", source: "gateway", byokKeyId: null })),
+}));
+
 vi.mock("@core/async-notifications", () => ({
 	dispatchAsyncWebhookEventInBackground: vi.fn((payload: Record<string, unknown>) => {
 		state.webhookEvents.push(payload);

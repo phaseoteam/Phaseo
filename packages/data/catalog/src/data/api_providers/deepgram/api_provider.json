@@ -1,0 +1,38 @@
+{
+  "api_provider_id": "deepgram",
+  "api_provider_name": "Deepgram",
+  "description": "Speech recognition and speech synthesis APIs.",
+  "link": "https://deepgram.com",
+  "status": "NotReady",
+  "zero_data_retention": false,
+  "data_policy_tier": "logs",
+  "data_policy_confidence": "maybe",
+  "data_policy_contract_mode": "none",
+  "country_code": null,
+  "colour": null,
+  "privacy_policy_url": null,
+  "prompt_training_policy": null,
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null,
+  "gateway_kind": null,
+  "routable": false,
+  "routing_enabled": false,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://developers.deepgram.com/docs/pre-recorded-audio",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [
+    {
+      "kind": "documentation",
+      "url": "https://developers.deepgram.com/docs/pre-recorded-audio",
+      "accessed_at": "2026-09-07T22:10:00Z"
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-09-07T22:10:00Z",
+    "notes": "Provider identity verified from first-party sources. No model offers added; direct routing requires separately verified model contracts, pricing and credentials."
+  }
+}

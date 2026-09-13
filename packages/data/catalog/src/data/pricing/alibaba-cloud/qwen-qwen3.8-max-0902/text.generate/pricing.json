@@ -1,0 +1,116 @@
+{
+  "key": "alibaba-cloud:qwen/qwen3.8-max-0902:text.generate",
+  "api_provider_id": "alibaba-cloud",
+  "provider_slug": "alibaba-cloud",
+  "api_model_id": "qwen/qwen3.8-max-0902",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Official Qwen Cloud Qwen3.8-Max-0902 pricing.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "meter": "implicit_cached_input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Official Qwen Cloud implicit cache-hit pricing.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Official Qwen Cloud explicit cache-creation pricing.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.17,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Official Qwen Cloud explicit cache-read pricing.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Official Qwen Cloud Qwen3.8-Max-0902 pricing.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    },
+    {
+      "meter": "native_web_search_requests",
+      "unit": "request",
+      "unit_size": 1000,
+      "price_per_unit": 10,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Official Qwen Cloud web-search tool pricing.",
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://www.qwencloud.com/models/qwen3.8-max-0902"
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://www.qwencloud.com/models/qwen3.8-max-0902",
+      "accessed_at": "2026-09-02T00:00:00Z",
+      "notes": "Official token, cache and web-search tool pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-09-02T00:00:00Z",
+    "notes": "Verified against the official Qwen Cloud model page and launch announcement."
+  }
+}

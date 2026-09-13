@@ -57,25 +57,54 @@ export async function metadataForIds(context: Awaited<ReturnType<typeof requireA
 	const modelIds = Array.from(new Set(args.models ?? [])).filter(Boolean);
 	const providerIds = Array.from(new Set(args.providers ?? [])).filter(Boolean);
 	const appIds = Array.from(new Set(args.apps ?? [])).filter(Boolean);
-	const [modelsResult, mappingsResult, providersResult, appsResult] = await Promise.all([
-		modelIds.length ? context.client.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
-		modelIds.length ? context.client.from("v2_model_provider_routes").select("api_model_id:model_slug,model_id:model_slug").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
-		providerIds.length ? context.client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,prompt_training_policy,metadata").in("provider_slug", providerIds) : Promise.resolve({ data: [], error: null }),
+	const routeSelect = "api_model_id:model_slug,model_id:model_slug,provider_model_id,provider_model_slug,provider_slug";
+	const [modelsResult, routesByModelResult, routesByProviderSlugResult, routesByProviderIdResult, providersResult, appsResult] = await Promise.all([
+		modelIds.length ? context.userClient.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("provider_model_slug", modelIds) : Promise.resolve({ data: [], error: null }),
+		modelIds.length ? context.userClient.from("v2_model_provider_routes").select(routeSelect).in("provider_model_id", modelIds) : Promise.resolve({ data: [], error: null }),
+		providerIds.length ? context.userClient.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,prompt_training_policy,metadata").in("provider_slug", providerIds) : Promise.resolve({ data: [], error: null }),
 		appIds.length ? context.client.from("api_apps").select("id,title,app_key,image_url").in("id", appIds) : Promise.resolve({ data: [], error: null }),
 	]);
-	const canonicalIds = Array.from(new Set((mappingsResult.data ?? []).map((row) => row.model_id).filter(Boolean)));
-	const mappedModelsResult = canonicalIds.length ? await context.client.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", canonicalIds) : { data: [], error: null };
+	const routeRows = [
+		...(routesByModelResult.data ?? []),
+		...(routesByProviderSlugResult.data ?? []),
+		...(routesByProviderIdResult.data ?? []),
+	] as Array<Record<string, any>>;
+	const requestedProviders = new Set(providerIds.map((provider) => provider.toLowerCase()));
+	const mappingCandidates = new Map<string, Set<string>>();
+	for (const route of routeRows) {
+		const canonicalId = route.model_id ?? route.api_model_id;
+		if (typeof canonicalId !== "string" || !canonicalId) continue;
+		const routeProvider = typeof route.provider_slug === "string" ? route.provider_slug.trim().toLowerCase() : null;
+		if (requestedProviders.size > 0 && routeProvider && !requestedProviders.has(routeProvider)) continue;
+		for (const alias of [route.api_model_id, route.model_id, route.provider_model_slug, route.provider_model_id]) {
+			if (typeof alias !== "string" || !modelIds.includes(alias)) continue;
+			const candidates = mappingCandidates.get(alias) ?? new Set<string>();
+			candidates.add(canonicalId);
+			mappingCandidates.set(alias, candidates);
+		}
+	}
+	const mappings = new Map<string, { model_id: string }>();
+	for (const [alias, candidates] of mappingCandidates) {
+		if (candidates.size !== 1) continue;
+		mappings.set(alias, { model_id: Array.from(candidates)[0] });
+	}
+	const canonicalIds = Array.from(new Set(Array.from(mappings.values()).map((row) => row.model_id).filter(Boolean)));
+	const mappedModelsResult = canonicalIds.length ? await context.userClient.from("v2_models").select("model_id:model_slug,name,organisation_id:lab_slug,organisation:v2_labs(name,metadata)").in("model_slug", canonicalIds) : { data: [], error: null };
 	const canonical = new Map<string, Record<string, unknown>>();
-	for (const row of [...(modelsResult.data ?? []), ...(mappedModelsResult.data ?? [])]) canonical.set(row.model_id, row);
+	for (const row of [...(modelsResult.data ?? []), ...(mappedModelsResult.data ?? [])]) {
+		if (row.model_id) canonical.set(row.model_id, row);
+	}
 	const modelMetadata = new Map<string, Record<string, unknown>>();
-	const addModel = (key: string, row: Record<string, any>) => {
+	const addModel = (key: string, row: Record<string, any>, canonicalModelId = row.model_id ?? key) => {
 		const organisation = Array.isArray(row.organisation) ? row.organisation[0] : row.organisation;
-		modelMetadata.set(key, { organisationId: row.organisation_id ?? "", organisationName: organisation?.name ?? row.organisation_id ?? "", organisationColour: organisation?.metadata?.colour ?? null, modelName: row.name ?? key });
+		modelMetadata.set(key, { canonicalModelId, organisationId: row.organisation_id ?? "", organisationName: organisation?.name ?? row.organisation_id ?? "", organisationColour: organisation?.metadata?.colour ?? null, modelName: row.name ?? key });
 	};
 	for (const [id, row] of canonical) addModel(id, row);
-	for (const mapping of mappingsResult.data ?? []) {
+	for (const [alias, mapping] of mappings) {
 		const row = canonical.get(mapping.model_id);
-		if (row && mapping.api_model_id) addModel(mapping.api_model_id, row);
+		if (row) addModel(alias, row, mapping.model_id);
 	}
 	const providerNames = new Map<string, string>();
 	const providerMetadata = new Map<string, Record<string, unknown>>();
@@ -373,7 +402,9 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		const provider = stringParam(url, "job_provider"); if (provider) query = query.eq("provider", provider);
 		const result = await query.order("updated_at", { ascending: false }).limit(50);
 		if (result.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const recentJobsBase = (result.data ?? []).map((row) => ({ ...row, ...(row.meta && typeof row.meta === "object" && !Array.isArray(row.meta) ? row.meta : {}), webhook: row.meta && typeof row.meta === "object" && !Array.isArray(row.meta) ? (row.meta as Record<string, unknown>).webhook ?? null : null }));
+		// Reuse the refresh serializer; never return raw provider/webhook metadata.
+		const { toAsyncJobRow } = await import("@/usage/actions");
+		const recentJobsBase = (result.data ?? []).map((row) => toAsyncJobRow(row as Record<string, unknown>, { includeWithoutWebhook: true })).filter((row): row is NonNullable<typeof row> => row !== null);
 		const requestIds = Array.from(new Set(recentJobsBase.map((row) => row.request_id).filter(Boolean)));
 		const requestSourcesResult = requestIds.length
 			? await context.client.from("gateway_requests")
@@ -467,7 +498,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		? context.client.from("v2_request_facts").select("cost_nanos", { count: "exact" }).eq("workspace_id", workspaceId).gte("occurred_at", timeRange.from).lte("occurred_at", timeRange.to).contains("safe_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] }).limit(5000)
 		: null;
 	const [rollupResult, keysResult, facetsResult, labelFacetFactsResult, labelSummaryFactsResult] = await Promise.all([
-		context.client.from("v2_web_private_usage_daily").select("canonical_model_id,provider,app_id").eq("workspace_id", workspaceId).gte("bucket_15m", timeRange.from).lte("bucket_15m", timeRange.to),
+		context.client.rpc("get_private_usage_facets", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to }),
 		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
 		context.client.rpc("get_gateway_request_facets", {
 			p_workspace_id: workspaceId,
@@ -478,6 +509,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		labelFacetFactsQuery,
 		labelSummaryFactsQuery,
 	]);
+	if (rollupResult.error || !Array.isArray(rollupResult.data)) return c.json({ error: "usage_facets_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const requestRows = requestsResult.data ?? [];
 	const hasMoreRequests = requestRows.length > pageSize;
 	const visibleRequestRows = requestRows.slice(0, pageSize);
@@ -527,7 +559,7 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 	const windowStart = new Date(now - 7 * 86_400_000).toISOString().slice(0, 10);
 	const windowEnd = new Date(now + 90 * 86_400_000).toISOString().slice(0, 10);
 	const lifecycleResult = await context.client.from("v2_models")
-		.select("model_id:model_slug,name,organisation_id:lab_slug,deprecation_date:deprecated_at,retirement_date:retired_at,previous_model_id:previous_model_slug,replacement_model_id:replacement_model_slug")
+		.select("model_id:model_slug,name,organisation_id:lab_slug,deprecation_date:deprecated_at,retirement_date:retired_at,previous_model_id:previous_model_slug,replacement_model_id:replacement_model_slug,metadata")
 		.eq("hidden", false)
 		.or(`and(retired_at.gte.${windowStart},retired_at.lte.${windowEnd}),and(deprecated_at.gte.${windowStart},deprecated_at.lte.${windowEnd})`);
 	if (lifecycleResult.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -581,7 +613,8 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 		const usedRecently = Boolean(lastUsedAt && Date.parse(lastUsedAt) >= now - 90 * 86_400_000);
 		let severity: Warning["severity"] = "fyi";
 		if (primary != null && primary >= 0 && primary <= 90 && usedRecently) severity = primary <= 7 ? "critical" : primary <= 28 ? "warning" : "notice";
-		return { modelId: model.model_id, modelName: model.name ?? null, organisationId: model.organisation_id ?? null, lastUsedAt, deprecationDate, retirementDate, deprecationDaysUntil, retirementDaysUntil, replacementModelId: model.replacement_model_id ?? replacementByPrevious.get(model.model_id) ?? null, previousModelId: model.previous_model_id ?? null, countAsAlert: usedRecently && primary != null && primary >= 0 && primary <= 90, severity };
+		const legacyReplacement = typeof model.metadata === "object" && model.metadata !== null && !Array.isArray(model.metadata) && typeof model.metadata.replacement_model_id === "string" ? model.metadata.replacement_model_id : null;
+		return { modelId: model.model_id, modelName: model.name ?? null, organisationId: model.organisation_id ?? null, lastUsedAt, deprecationDate, retirementDate, deprecationDaysUntil, retirementDaysUntil, replacementModelId: model.replacement_model_id ?? legacyReplacement ?? replacementByPrevious.get(model.model_id) ?? null, previousModelId: model.previous_model_id ?? null, countAsAlert: usedRecently && primary != null && primary >= 0 && primary <= 90, severity };
 	}).filter((warning) => [warning.deprecationDaysUntil, warning.retirementDaysUntil].some((days) => days != null && days >= -7 && days <= 90))
 		.sort((left, right) => Math.min(left.retirementDaysUntil ?? Infinity, left.deprecationDaysUntil ?? Infinity) - Math.min(right.retirementDaysUntil ?? Infinity, right.deprecationDaysUntil ?? Infinity));
 	return c.json({ signedIn: true, warnings, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);

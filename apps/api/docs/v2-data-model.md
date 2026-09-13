@@ -20,7 +20,7 @@ backfill and consumer cutover are verified.
   JSON points to the exact variant through `canonical_model_id`. A
   provider-specific free API ID that differs from the canonical spelling is
   stored as an alias to the canonical `:free` model. Validation rejects free
-  routes without an authored free model; the importer never manufactures one.
+  routes without an authored free model; database automation never manufactures one.
 - `v2_model_aliases` resolves client input to a canonical model slug.
 - `v2_labs` owns model metadata. `v2_providers` represents a provider endpoint
   (including `external` catalogue-only providers) and has global status and
@@ -109,10 +109,9 @@ backfill and consumer cutover are verified.
   benchmark, subscription, availability, and performance requests together;
   streamed sections retain separate API routes, cache policies, and failure
   boundaries.
-- The importer remains JSON-first: it writes the legacy compatibility tables,
-  then mirrors labs, models, providers, routes, aliases, regions, capabilities,
-  service tiers, variants, SKUs, and meters into v2. No website editing path is
-  introduced for catalogue data.
+- The admin editor and approved database automations write the v2 catalogue
+  directly. Public JSON snapshots are exported from v2 for compatibility,
+  documentation, and SDK generation; they are not an authoring or import feed.
 
 Release timelines and pricing history still retain compatibility fallbacks.
 Benchmarks, subscriptions, and provider health now have v2 RPC paths and
@@ -138,12 +137,10 @@ entities without a V2 equivalent:
 - gateway audit, realtime, and async-finalization lifecycle code owns the
   authoritative `gateway_requests` record while also writing its V2
   observability extension;
-- the catalogue administration mutation adapter remains legacy, while the JSON
-  catalogue is the intended authoring surface;
+- the catalogue administration mutation adapter remains legacy, while the
+  internal database editor is the intended authoring surface;
 - model links/details/families, organisation links, and page notices do not yet
   have V2 replacements;
-- importer staging still writes the JSON catalogue to V1 before synchronising
-  the V2 canonical tables.
 
 Those dependencies must be migrated or deliberately removed before physical V1
 table deletion. They are not used by current website or gateway read paths.

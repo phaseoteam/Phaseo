@@ -38,6 +38,7 @@ import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerf
 import {
 	fetchFrontendModelApps,
 	fetchFrontendModelBenchmarkHighlights,
+	fetchFrontendModelBenchmarkResults,
 	fetchFrontendModelGatewayMetadata,
 	fetchFrontendModelHeader,
 	fetchFrontendModelOverview,
@@ -45,9 +46,14 @@ import {
 	fetchFrontendModelPerformance,
 	fetchFrontendModelTimeline,
 	fetchFrontendModelUsageDailyBreakdown,
+	fetchFrontendOrganisations,
 	fetchFrontendOrganisationModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { applyArtificialAnalysisOrganisationColours } from "@/lib/benchmarks/artificialAnalysis";
+import { fetchFrontendRankingBenchmarks } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
 	Carousel,
 	CarouselContent,
@@ -80,9 +86,12 @@ type ModelOverviewSectionsProps = {
 	includeHidden: boolean;
 	showBenchmarks?: boolean;
 	showSubscriptions?: boolean;
+	showProviders?: boolean;
 	status?: string | null;
 	isGatewayActive?: boolean;
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
+	isPrivateModel?: boolean;
+	privateProviders?: ProviderPricing[];
 };
 
 export type ModelSectionSharedProps = {
@@ -140,6 +149,9 @@ function Section({
 		</section>
 	);
 }
+
+const MODEL_SECTION_STACK_CLASSNAME =
+	"space-y-10 [&>section:first-of-type]:border-t-0 [&>section:first-of-type]:pt-0";
 
 function parseTypes(types: unknown): string[] {
 	const normalizeType = (value: string): string => {
@@ -211,8 +223,10 @@ export async function ModelProvidersSection({
 	modelStatus,
 	modelName,
 	creatorOrganisationId,
+	creatorOrganisationName,
 	description = "API providers, route pricing, availability, and recent reliability signals.",
-}: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null; description?: string | null }) {
+	providersOverride,
+}: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null; creatorOrganisationName?: string | null; description?: string | null; providersOverride?: ProviderPricing[] }) {
 	await connection();
 	return (
 		<ModelPricing
@@ -223,6 +237,8 @@ export async function ModelProvidersSection({
 			modelStatus={modelStatus}
 			modelName={modelName}
 			creatorOrganisationId={creatorOrganisationId}
+			creatorOrganisationName={creatorOrganisationName}
+			providersOverride={providersOverride}
 		/>
 	);
 }
@@ -488,16 +504,13 @@ export async function ModelActivitySection({
 		[],
 		"model activity"
 	);
-	if (usageRows.length === 0) return null;
-
 	return (
-		<Section id="activity">
-				<ModelActivityChart
-					rows={usageRows}
-					showHeading={showHeading}
-					description="Token volume and request traffic for this model over time."
-				/>
-		</Section>
+		<ModelActivityChart
+			modelId={modelId}
+			rows={usageRows}
+			showHeading={showHeading}
+			description="Token volume and request traffic for this model over time."
+		/>
 	);
 }
 
@@ -600,11 +613,26 @@ export async function ModelBenchmarksSection({
 	includeHidden,
 	hideWhenEmpty = false,
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
-	const [benchmarkHighlights, pendingApiRelease] = await Promise.all([
+	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, organisations, pendingApiRelease] = await Promise.all([
 		withOptionalSectionTimeout(
 			fetchFrontendModelBenchmarkHighlights(modelId),
 			[],
 			"benchmark highlights"
+		),
+		withOptionalSectionTimeout(
+			fetchFrontendModelBenchmarkResults(modelId),
+			[],
+			"benchmark results"
+		),
+		withOptionalSectionTimeout(
+			fetchFrontendRankingBenchmarks().then((payload) => payload.benchmarks),
+			[],
+			"benchmark rankings"
+		),
+		withOptionalSectionTimeout(
+			fetchFrontendOrganisations(),
+			[],
+			"organisation colours"
 		),
 		withOptionalSectionTimeout(
 			fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
@@ -612,6 +640,8 @@ export async function ModelBenchmarksSection({
 			"benchmark pending API release state"
 		),
 	]);
+	const organisationColours = new Map(organisations.map((organisation) => [organisation.organisation_id, organisation.colour]));
+	const enrichedBenchmarkRankings = applyArtificialAnalysisOrganisationColours(benchmarkRankings, organisationColours);
 	const shouldShowPendingApiBanner =
 		benchmarkHighlights.length === 0 && pendingApiRelease?.isPendingApiRelease;
 	if (hideWhenEmpty && benchmarkHighlights.length === 0 && !shouldShowPendingApiBanner) {
@@ -623,6 +653,9 @@ export async function ModelBenchmarksSection({
 			{benchmarkHighlights.length > 0 ? (
 				<ModelBenchmarks
 					highlightCards={benchmarkHighlights}
+					benchmarkResults={benchmarkResults}
+					benchmarkRankings={enrichedBenchmarkRankings}
+					modelId={modelId}
 					mode="summary"
 				/>
 			) : (
@@ -1195,8 +1228,8 @@ export function ModelCreatorModelsSkeleton() {
 
 export function ModelOverviewSectionsSkeleton() {
 	return (
-		<div className="space-y-10">
-			<Section id="providers" showDivider={false}>
+		<div className={MODEL_SECTION_STACK_CLASSNAME}>
+			<Section id="providers">
 				<SectionHeader
 					title="Providers"
 					description="API providers, route pricing, availability, and recent reliability signals."
@@ -1266,19 +1299,23 @@ export default function ModelOverviewSections({
 	includeHidden,
 	showBenchmarks = true,
 	showSubscriptions = true,
+	showProviders = true,
 	status,
 	isGatewayActive = true,
 	performancePromise,
+	isPrivateModel = false,
+	privateProviders,
 }: ModelOverviewSectionsProps) {
 	const hasInternalModelData = Boolean(model);
 	const isRetired = status === "Retired";
 	const showVerification = supportsProvenanceVerification(model?.output_types);
 
+
 	if (isRetired) {
 		return (
-			<div className="space-y-10">
+			<div className={MODEL_SECTION_STACK_CLASSNAME}>
 				{showBenchmarks ? (
-					<Section id="benchmarks" showDivider={false}>
+					<Section id="benchmarks">
 						<SectionHeader title="Benchmarks" />
 						<Suspense fallback={<BenchmarksSectionSkeleton />}>
 							<ModelBenchmarksSection
@@ -1292,11 +1329,11 @@ export default function ModelOverviewSections({
 				{hasInternalModelData ? (
 					<>
 						{showVerification ? (
-							<Section id="verification" showDivider={showBenchmarks}>
+							<Section id="verification">
 								<ModelVerificationSection outputTypes={model?.output_types} />
 							</Section>
 						) : null}
-						<Section id="about" showDivider={showBenchmarks || showVerification}>
+						<Section id="about">
 							<SectionHeader
 								title="About"
 								description="Archived dates, capabilities, links, and model metadata."
@@ -1328,19 +1365,22 @@ export default function ModelOverviewSections({
 
 	if (!isGatewayActive) {
 		return (
-			<div className="space-y-10">
-				<Section id="providers" showDivider={false}>
-					<Suspense fallback={<ProvidersSectionSkeleton />}>
-						<ModelProvidersSection
-							modelId={modelId}
-							includeHidden={includeHidden}
-							modelStatus={status}
-							modelName={model?.name}
-							creatorOrganisationId={model?.organisation_id}
-							description="Provider listings and known route availability for this model."
-						/>
-					</Suspense>
-				</Section>
+			<div className={MODEL_SECTION_STACK_CLASSNAME}>
+				{showProviders ? (
+					<Section id="providers">
+						<Suspense fallback={<ProvidersSectionSkeleton />}>
+							<ModelProvidersSection
+								modelId={modelId}
+								includeHidden={includeHidden}
+								modelStatus={status}
+								modelName={model?.name}
+								creatorOrganisationId={model?.organisation_id}
+								creatorOrganisationName={model?.organisation?.name}
+								description="Provider listings and known route availability for this model."
+							/>
+						</Suspense>
+					</Section>
+				) : null}
 				{showBenchmarks ? (
 					<Section id="benchmarks">
 						<SectionHeader title="Benchmarks" />
@@ -1391,19 +1431,23 @@ export default function ModelOverviewSections({
 	}
 
 	return (
-		<div className="space-y-10">
-			<Section id="providers" showDivider={false}>
-				<Suspense fallback={<ProvidersSectionSkeleton />}>
-					<ModelProvidersSection
-						modelId={modelId}
-						includeHidden={includeHidden}
-						modelStatus={status}
-						modelName={model?.name}
-						creatorOrganisationId={model?.organisation_id}
-						description="API providers, route pricing, availability, and recent reliability signals."
-					/>
-				</Suspense>
-			</Section>
+		<div className={MODEL_SECTION_STACK_CLASSNAME}>
+			{showProviders ? (
+				<Section id="providers">
+					<Suspense fallback={<ProvidersSectionSkeleton />}>
+						<ModelProvidersSection
+							modelId={modelId}
+							includeHidden={includeHidden}
+							modelStatus={status}
+							modelName={model?.name}
+							creatorOrganisationId={model?.organisation_id}
+							creatorOrganisationName={model?.organisation?.name}
+							providersOverride={privateProviders}
+							description="API providers, route pricing, availability, and recent reliability signals."
+						/>
+					</Suspense>
+				</Section>
+			) : null}
 			<Suspense
 				fallback={
 					<Section id="performance">
@@ -1417,7 +1461,7 @@ export default function ModelOverviewSections({
 						performancePromise={performancePromise}
 					/>
 				</Suspense>
-			<Section id="pricing">
+			{!isPrivateModel ? <Section id="pricing">
 				<SectionHeader
 					title="Pricing"
 					description="Weighted provider pricing over the last 30 days, with recent route pricing history below."
@@ -1428,7 +1472,7 @@ export default function ModelOverviewSections({
 						includeHidden={includeHidden}
 					/>
 				</Suspense>
-			</Section>
+			</Section> : null}
 			{showBenchmarks ? (
 				<Section id="benchmarks">
 					<SectionHeader title="Benchmarks" />

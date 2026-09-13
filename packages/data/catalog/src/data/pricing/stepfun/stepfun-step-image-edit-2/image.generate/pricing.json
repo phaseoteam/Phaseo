@@ -9,9 +9,9 @@
       "meter": "output_image",
       "unit": "image",
       "unit_size": 1,
-      "price_per_unit": 0.02,
-      "note": null,
-      "currency": "CNY",
+      "price_per_unit": 0.002980229248,
+      "note": "Converted from 0.02 CNY using ECB 2026-09-04 cross rate: 1.1622 USD / 7.7994 CNY.",
+      "currency": "USD",
       "pricing_plan": "standard",
       "match": [],
       "priority": 100,
@@ -34,6 +34,11 @@
       "url": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
       "accessed_at": "2026-08-24T00:00:00Z",
       "notes": "Current official StepFun mainland-China API pricing."
+    },
+    {
+      "kind": "exchange_rate",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX%3AC%2F2026%2F04600",
+      "accessed_at": "2026-09-07T21:50:00Z"
     }
   ],
   "verification": {

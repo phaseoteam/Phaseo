@@ -12,6 +12,7 @@ describe("buildUptimeChartData", () => {
 			time: "11:00",
 			overall: 100,
 			worst: null,
+			worstRequests: 0,
 			bucket: "2026-08-29T11:00:00.000Z",
 			requests: 0,
 		});
@@ -19,6 +20,7 @@ describe("buildUptimeChartData", () => {
 			time: "10:00",
 			overall: 100,
 			worst: null,
+			worstRequests: 0,
 			bucket: "2026-08-30T10:00:00.000Z",
 			requests: 0,
 		});

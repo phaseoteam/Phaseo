@@ -186,8 +186,8 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 																	destination.id,
 																);
 															setStatus(destination.id, result.status);
-															if (result.ok) toast.success(result.status);
-															else toast.error(result.status);
+															if (result.ok) toast.success("Connection status refreshed");
+															else toast.error("Could not refresh connection status");
 														}, { refreshAfter: false })
 													}
 												>

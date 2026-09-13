@@ -1,4 +1,5 @@
 "use client";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
@@ -291,7 +292,7 @@ export default function PresetForm({
 			.filter((provider) => provider.active_models > 0)
 			.map((p) => ({
 				id: p.api_provider_id,
-				name: p.api_provider_name,
+				name: resolveProviderDisplayName({ providerId: p.api_provider_id, providerName: p.api_provider_name }),
 				logoId: getProviderLogoId(p.api_provider_name),
 			}))
 			.filter((p) => p.id.length > 0);

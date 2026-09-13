@@ -520,6 +520,7 @@ describe("runBatchReconciliationJob", () => {
 			providerId: "openai",
 			batchId: "batch_public_unknown",
 			requestId: "req_unknown",
+			credentialContext: { workspaceId: "ws_1", keySource: undefined, byokKeyId: undefined },
 		});
 		expect(saveBatchJobMetaMock).toHaveBeenCalledWith("ws_1", "batch_public_unknown", expect.objectContaining({
 			nativeBatchId: "batch_native_recovered",

@@ -479,7 +479,7 @@
     "provider_api_model_id": "canopy-wave:moonshotai/kimi-k2.7-code-highspeed",
     "provider_model_slug": "moonshotai/kimi-k2.7-code-highspeed",
     "internal_model_id": "moonshotai/kimi-k2.7-code",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "INT4",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -502,8 +502,8 @@
         "modes": []
       }
     ],
-    "routing_status": null,
-    "routable": false,
+    "routing_status": "active",
+    "routable": true,
     "regions": {
       "execution": null,
       "data": null
@@ -532,8 +532,8 @@
     ],
     "verification": {
       "status": "verified",
-      "checked_at": "2026-08-23",
-      "notes": "Verified against Canopy Wave's first-party model and pricing pages."
+      "checked_at": "2026-09-07T21:35:00Z",
+      "notes": "Ready state, native chat endpoint and public pricing verified; gateway route enabled."
     },
     "rate_limits": []
   },

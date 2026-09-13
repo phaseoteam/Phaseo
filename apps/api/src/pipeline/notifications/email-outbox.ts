@@ -326,6 +326,8 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 		)
 		.is("sent_at", null)
 		.lt("attempts", 5)
+		.not("kind", "in", '("notification_test","model_deprecation")')
+		.neq("template", "model_deprecation")
 		.order("created_at", { ascending: true })
 		.limit(limit);
 
@@ -336,7 +338,7 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 	// Routed notifications have their own destination snapshot and delivery job.
 	// Keep them out of the legacy owner-email drain so a model deprecation cannot
 	// be sent twice (or bypass the per-alert route entirely).
-	const rows = ((data ?? []) as unknown as OutboxRow[]).filter((row) => row.kind !== "notification_test" && row.kind !== "model_deprecation" && row.template !== "model_deprecation");
+	const rows = (data ?? []) as unknown as OutboxRow[];
 	let sent = 0;
 	let failed = 0;
 

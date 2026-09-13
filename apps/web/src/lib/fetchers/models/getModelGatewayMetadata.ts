@@ -7,6 +7,7 @@ import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSo
 export interface GatewayProviderDetails {
     api_provider_id: string;
     api_provider_name: string;
+	credential_mode?: "managed_and_byok" | "byok_only";
     provider_family_id?: string | null;
     offer_label?: string | null;
     offer_scope?: "global" | "regional" | "specialized" | null;
@@ -102,6 +103,7 @@ export interface GatewayProviderModel {
 	output_modalities: string;
 	max_input_tokens?: number | null;
 	max_output_tokens?: number | null;
+	credential_mode?: "managed_and_byok" | "byok_only";
 	effective_from?: string | null;
 	effective_to?: string | null;
 	created_at?: string | null;
@@ -621,6 +623,10 @@ export default async function getModelGatewayMetadata(
 				: pm.output_modalities ?? "",
 			max_input_tokens: cap.max_input_tokens ?? null,
 			max_output_tokens: cap.max_output_tokens ?? null,
+			credential_mode:
+				pm.credential_mode === "byok_only"
+					? "byok_only"
+					: "managed_and_byok",
 			effective_from: pm.effective_from,
 			effective_to: pm.effective_to,
 			created_at: pm.created_at,

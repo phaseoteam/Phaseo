@@ -58,6 +58,7 @@ function createCtx(overrides?: Partial<any>): any {
 		capability: "image.generate",
 		requestId: "req_test_1",
 		workspaceId: "team_test_1",
+		keyId: "key_test_1",
 		model: "openai/gpt-image-1-mini",
 		body: {},
 		meta: {
@@ -101,6 +102,73 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		reportProbeResultMock.mockResolvedValue(undefined);
 	});
 
+	it.each([
+		{ currency: "EUR", rules: [] },
+		{ currency: "USD", rules: [{ currency: "EUR" }] },
+	])("rejects unconverted cached pricing before provider execution: %j", async (pricingCard) => {
+		const candidate = { providerId: "scaleway", pricingCard, byokMeta: [],
+			providerModelSlug: "model", capabilityParams: {} };
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+		const executor = vi.fn();
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		await doRequestWithIR(createCtx(), { model: "model", prompt: "test" } as any, createTiming());
+		expect(executor).not.toHaveBeenCalled();
+		expect(onCallStartMock).not.toHaveBeenCalled();
+		expect(guardAllFailedMock).toHaveBeenCalled();
+	});
+
+	it.each([429, 402, 401])("returns local video admission denial %s without fallback or provider failure", async (status) => {
+		const candidates = ["google", "minimax"].map((providerId) => ({
+			providerId, pricingCard: { rules: [], currency: "USD" }, byokMeta: [],
+			providerModelSlug: "video-model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+		const executor = vi.fn(async (args: any) => {
+			args.onReservationDenied({ status, code: "key_limit_exceeded", reason: "daily_cost_limit_reached" });
+			return { kind: "completed", upstream: new Response("{}", { status: 503 }),
+				bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		});
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		const result = await doRequestWithIR(createCtx({ capability: "video.generate", endpoint: "video.generation" }),
+			{ model: "video-model", prompt: "test" } as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(status);
+		expect(await (result as Response).json()).toMatchObject({ error: "key_limit_exceeded", reason: "daily_cost_limit_reached", error_type: "user", error_origin: "user" });
+		expect(executor).toHaveBeenCalledTimes(1);
+		expect(onCallEndMock).toHaveBeenCalledWith("video.generation", expect.objectContaining({ healthImpact: "neutral" }));
+		expect(maybeOpenOnRecentErrorsMock).not.toHaveBeenCalled();
+		expect(reportProbeResultMock).not.toHaveBeenCalled();
+		expect(guardAllFailedMock).not.toHaveBeenCalled();
+	});
+
+	it.each([400, 502, 408, "transport"])("does not repeat a dispatched video submission (%s)", async (failure) => {
+		const candidates = ["openai", "atlascloud"].map((providerId) => ({
+			providerId, pricingCard: { rules: [], currency: "USD" }, byokMeta: [],
+			providerModelSlug: "video-model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+		const executor = vi.fn(async (args: any) => {
+			if (failure === 400) {
+				const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 400 }));
+				await args.upstreamTiming.fetch("https://provider.test/videos", { method: "POST" });
+				fetchSpy.mockRestore();
+			}
+			if (failure === "transport") throw Object.assign(new Error("lost response"), { retryable: true });
+			return {
+				kind: "completed", upstream: new Response("{}", { status: failure }),
+				bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway",
+			};
+		});
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		await doRequestWithIR(createCtx({ capability: "video.generate", endpoint: "video.generation" }),
+			{ model: "video-model", prompt: "test" } as any, createTiming());
+		expect(executor).toHaveBeenCalledTimes(1);
+		expect(executor.mock.calls[0][0]).toMatchObject({ apiKeyId: "key_test_1" });
+	});
+
 	it("loads pricing lazily for testing-mode candidates and executes", async () => {
 		const candidate = {
 			providerId: "openai",
@@ -139,7 +207,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		);
 
 		expect((result as any).ok).toBe(true);
-		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate");
+		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate", "gpt-image-1-mini");
 		expect(executor).toHaveBeenCalledTimes(1);
 		expect(guardPricingFoundMock).not.toHaveBeenCalled();
 		expect(onCallEndMock).toHaveBeenCalledWith(

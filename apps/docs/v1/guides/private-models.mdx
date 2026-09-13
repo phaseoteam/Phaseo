@@ -1,0 +1,118 @@
+---
+title: "Connect Dedicated Model Deployments"
+description: "Add a private OpenAI-compatible endpoint to your workspace model catalogue."
+icon: "lock-keyhole"
+---
+
+Private Models let your team call a dedicated or self-hosted deployment through the normal Phaseo API. The model appears only to authenticated members of the workspace and can be used anywhere you would use a public model ID.
+
+Typical sources include dedicated deployments on Baseten, Modal, RunPod, Fireworks, or Together, plus services running vLLM or another OpenAI-compatible server.
+
+## Before you start
+
+Your deployment must provide:
+
+- a public HTTPS base URL;
+- an OpenAI-compatible `/chat/completions` endpoint;
+- Bearer-token authentication; and
+- an upstream model or deployment ID accepted by that endpoint.
+
+Support for `/responses` is optional. Leave it disabled unless the deployment explicitly implements that endpoint.
+
+<Warning>
+Private Models do not adapt native-only provider protocols or custom authentication schemes. Put an OpenAI-compatible layer in front of those deployments or use a supported Phaseo provider integration.
+</Warning>
+
+## Connect a deployment
+
+<Steps>
+<Step title="Open Private Models">
+
+Open **Dashboard → Settings → Workspace → Private Models**, then select **Add model**. You must be a workspace owner or admin.
+
+</Step>
+
+<Step title="Name the model">
+
+Choose an existing catalogue model to add this deployment to its provider list, or enter a short model slug such as `legal-assistant`. If no catalogue model has that unique slug, Phaseo combines the trusted workspace namespace with it:
+
+```text
+acme/legal-assistant
+```
+
+You cannot choose or replace the workspace namespace. Exact catalogue IDs attach to that model without changing its public identity.
+
+</Step>
+
+<Step title="Configure the endpoint">
+
+Enter the base URL before the inference path. For example, use:
+
+```text
+https://model.example.com/v1
+```
+
+Do not include `/chat/completions` or `/responses`. Enter the exact upstream model or deployment ID separately; Phaseo substitutes it when forwarding requests.
+
+</Step>
+
+<Step title="Store the credential">
+
+Enter the deployment's API key. Phaseo encrypts the credential and never returns it after saving. You can replace it later from the model's settings page.
+
+</Step>
+
+<Step title="Call the model">
+
+Use the generated model ID with the regular Chat Completions endpoint:
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "acme/legal-assistant",
+    "messages": [{"role": "user", "content": "Summarize this contract."}]
+  }'
+```
+
+The calling API key must belong to the same workspace as the private model.
+
+</Step>
+</Steps>
+
+## How routing works
+
+Private models use the same Phaseo request surface as catalogue models. A standalone workspace model routes only to its configured endpoint. An endpoint attached to a catalogue model joins that model's provider list according to its **Preferred**, **Normal pool**, or **Fallback only** routing policy. Phaseo sends the stored credential as a Bearer token and substitutes the configured upstream model ID.
+
+A private model does not become a public provider route and is not visible to other workspaces. Enabled private models are included in the authenticated model catalogue and appear under the **Private** filter.
+
+<Note>
+After adding or enabling a private deployment on an existing catalogue model, allow 5–10 seconds for the change to propagate through the API layer before testing its routing. During this window, requests may continue to use the model's existing public providers. Requests already in flight are not rerouted.
+</Note>
+
+## Provider examples
+
+| Deployment | What to enter |
+| --- | --- |
+| Baseten dedicated endpoint | Its OpenAI-compatible base URL, deployment model ID, and API key |
+| Modal web endpoint | A public HTTPS endpoint that implements the OpenAI Chat Completions contract |
+| RunPod serverless endpoint | An OpenAI-compatible proxy URL and Bearer credential |
+| Fireworks or Together dedicated deployment | The dedicated OpenAI-compatible URL and provider model ID |
+| vLLM | The public URL ending at `/v1` and the model name served by vLLM |
+
+Provider products and URL formats can change. Confirm the base URL, model ID, authentication method, and supported endpoints in the provider's current deployment documentation.
+
+## Manage private models through the API
+
+Server-side administration can use the [Private Models API](../api-reference/endpoint/private-models-list) with a management key carrying `private_models:read`, `private_models:write`, or `private_models:delete` as needed.
+
+Create and update requests accept `model_reference`, either an exact catalogue model ID or a short slug. Phaseo derives `model_id`; clients cannot submit it directly. Use `host_provider_id` for an existing Phaseo provider, or `custom_provider_name` and optional `custom_provider_url` for another operator.
+
+## Troubleshooting
+
+- **404 from the provider:** Check that the base URL stops before the inference path.
+- **Unknown model:** Copy the provider's upstream deployment ID into **Upstream model ID**. Do not use the Phaseo workspace model ID there.
+- **Unauthorized upstream request:** Replace the stored credential and confirm the provider accepts Bearer authentication.
+- **Chat works but Responses fails:** Disable **Responses API** unless the provider implements `/responses` natively.
+- **Model missing from the catalogue:** Confirm the model is enabled and the caller is authenticated to the same workspace.

@@ -151,6 +151,18 @@ const PARAMETER_REFERENCE: Record<string, ParameterReference> = {
 		description:
 			"Represents a reasoning-specific token budget or accounting field where supported.",
 	},
+	prompt_cache_key: {
+		type: "string",
+		defaultValue: "Unset",
+		description:
+			"Keeps requests with shared prompt prefixes on a cache-aware route.",
+	},
+	prompt_cache_options: {
+		type: "object",
+		defaultValue: "Provider specific",
+		description:
+			"Passes OpenAI prompt-cache mode and TTL controls on supported routes.",
+	},
 	service_tier: {
 		type: "string",
 		defaultValue: "standard",

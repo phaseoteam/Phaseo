@@ -2,7 +2,7 @@
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
 import { asyncVideoJobPersistenceFailureResult } from "@executors/_shared/async-job-persistence";
-import { fetchUpstream } from "@executors/_shared/timing/upstream";
+import { fetchVideoSubmission as fetchUpstream, configureVideoSubmission, canReleaseVideoSubmission } from "@executors/_shared/video-submission";
 import { saveVideoJobMeta } from "@core/video-jobs";
 import { buildVideoPricingRequestOptions, resolveVideoSize } from "@core/video-request-options";
 import { isInsufficientVideoReservationStatus, reserveVideoGenerationCredits } from "@core/video-reservations";
@@ -149,6 +149,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let reservedNanos: number | null = null;
 	try {
 		const reserved = await reserveVideoGenerationCredits({
+			keyId: args.apiKeyId,
+			authMethod: args.meta.authMethod,
+			onReservationDenied: args.onReservationDenied,
 			workspaceId: args.workspaceId, videoId: args.requestId, providerId: args.providerId, model,
 			seconds: mapped.seconds, pricingCard: args.pricingCard,
 			requestOptions: buildVideoPricingRequestOptions({ resolution: mapped.resolution, frame_rate: mapped.fps, input_image_count: mapped.inputImageCount, input_audio_seconds: mapped.inputAudioSeconds, mode: mapped.endpoint }),
@@ -165,7 +168,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	} catch {
 		return { ...invalidResult("Unable to reserve credits for video generation."), upstream: new Response(JSON.stringify({ error: { type: "reservation_unavailable", message: "Unable to reserve credits for video generation." } }), { status: 503, headers: { "Content-Type": "application/json" } }) };
 	}
+	configureVideoSubmission(args, { model, seconds: mapped.seconds, resolution: mapped.resolution, ltxEndpoint: mapped.endpoint, reservationId, reservedNanos, reservationStatus, keySource: keyInfo.source, byokKeyId: keyInfo.byokId });
 	const releaseReservation = async () => {
+		if (!canReleaseVideoSubmission(args)) return;
 		if (reservationId) await releaseWalletReservation({ workspaceId: args.workspaceId, reservationId, releaseRefId: args.requestId }).catch(() => undefined);
 	};
 	const bindings = getBindings() as any;

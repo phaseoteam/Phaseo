@@ -45,7 +45,7 @@ publicLandingRouter.get("/landing/stats", async (c) => {
 			client.from("v2_models").select("*", { count: "exact", head: true }).eq("hidden", false),
 			client.from("v2_labs").select("*", { count: "exact", head: true }),
 			client.from("v2_benchmarks").select("*", { count: "exact", head: true }),
-			client.from("v2_benchmark_results").select("*", { count: "exact", head: true }),
+			client.from("v2_benchmark_results").select("*", { count: "exact", head: true }).or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`),
 			client.from("v2_providers").select("*", { count: "exact", head: true }),
 			client.rpc("get_public_usage_timeseries", { p_time_range: "month", p_bucket_size: "day", p_top_n: 10 }),
 		]);

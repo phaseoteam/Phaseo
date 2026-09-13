@@ -30,12 +30,22 @@ function buildSupabaseMock() {
 				select: () => ({
 					is: () => ({
 						lt: () => ({
-							order: () => ({
-								limit: async () => ({
-									data: state.rows,
-									error: null,
-								}),
-							}),
+							not: (column: string, operator: string, value: string) => {
+								expect([column, operator, value]).toEqual(["kind", "in", '("notification_test","model_deprecation")']);
+								return {
+									neq: (templateColumn: string, templateValue: string) => {
+										expect([templateColumn, templateValue]).toEqual(["template", "model_deprecation"]);
+										return {
+											order: () => ({
+												limit: async (limit: number) => ({
+													data: state.rows.filter((row) => row.kind !== "notification_test" && row.kind !== "model_deprecation" && row.template !== "model_deprecation").slice(0, limit),
+													error: null,
+												}),
+											}),
+										};
+									},
+								};
+							},
 						}),
 					}),
 				}),
@@ -70,6 +80,21 @@ describe("email outbox", () => {
 		state.suppressionReason = null;
 		state.sendEmail.mockClear();
 		vi.resetModules();
+	});
+
+	it("does not let routed rows starve later legacy emails", async () => {
+		for (let index = 0; index < 3; index += 1) {
+			state.rows.push({ id: `routed_${index}`, kind: "model_deprecation", template: "model_deprecation", created_at: `2026-08-07T12:00:0${index}Z` });
+		}
+		state.rows.push({
+			id: "legacy_email", created_at: "2026-08-07T12:01:00Z", kind: "auto_top_up_failed", template: "auto_top_up_failed",
+			to_email: "owner@example.com", subject: "Auto Top-Up failed", workspace_id: "ws_1", user_id: "user_1",
+			payload: { workspace_name: "Research", failure_reason: "Card declined" }, attempts: 0, last_error: null, sent_at: null,
+		});
+		const { drainEmailOutbox } = await import("./email-outbox");
+		expect(await drainEmailOutbox(1)).toEqual({ processed: 1, sent: 1, failed: 0 });
+		expect(state.sendEmail).toHaveBeenCalledTimes(1);
+		expect(state.updateCalls[0]?.id).toBe("legacy_email");
 	});
 
 	it("terminates suppressed recipients without calling Resend", async () => {

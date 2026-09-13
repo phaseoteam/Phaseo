@@ -4,7 +4,7 @@
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
-import { fetchUpstream } from "@executors/_shared/timing/upstream";
+import { fetchVideoSubmission as fetchUpstream, configureVideoSubmission, canReleaseVideoSubmission, rejectVideoSubmission } from "@executors/_shared/video-submission";
 import type { ProviderExecutor } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
@@ -203,7 +203,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			toNonEmptyString(passthroughRequest.size) ??
 			toNonEmptyString(passthroughRequest.resolution) ??
 			size;
-		if (resolution) passthroughRequest.resolution = resolution;
+		if (resolution) passthroughRequest.resolution = normalizeMiniMaxResolutionForPricing(resolution);
 	}
 	if ("size" in passthroughRequest) delete passthroughRequest.size;
 	if (typeof ir.enhancePrompt === "boolean") passthroughRequest.prompt_optimizer = ir.enhancePrompt;
@@ -306,17 +306,38 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 	const normalizedModel = model.trim().toLowerCase();
-	if (isV2) {
-		const upstream = new Response(JSON.stringify({
-			error: { type: "minimax_v2_video_not_enabled", message: "MiniMax-H3 requires the V2 multimodal video lifecycle, which is not enabled for routing." },
-		}), { status: 400, headers: { "Content-Type": "application/json" } });
+	const hasFrames = Boolean(passthroughRequest.first_frame_image || passthroughRequest.last_frame_image);
+	const videoRefs = referenceMedia.filter((entry) => entry.type === "video_url");
+	const audioRefs = referenceMedia.filter((entry) => entry.type === "audio_url");
+	const hasReferences = subjectImages.length > 0 || referenceMedia.length > 0;
+	const ratio = toNonEmptyString(minimaxExtensions.ratio) ?? ir.aspectRatio ?? ir.ratio;
+	const validationError = isV2 ? (
+		!Number.isInteger(seconds) || seconds < (v2Model === "MiniMax-H3-Max" ? 5 : 4) || seconds > 15 ? "Unsupported MiniMax H3 duration." :
+		!(v2Model === "MiniMax-H3-Max" ? ["480P", "768P"] : ["768P", "2K"]).includes(String(size).toUpperCase()) ? "Unsupported MiniMax H3 resolution." :
+		hasFrames && hasReferences ? "Frame images and reference media cannot be combined." :
+		v2Model === "MiniMax-H3-Max" && hasReferences ? "MiniMax H3 Max does not support reference media." :
+		subjectImages.length > 9 || videoRefs.length > 3 || audioRefs.length > 3 ? "MiniMax H3 reference media count exceeded." :
+		videoRefs.length > 0 && (!(Number(ir.inputVideoDurationSeconds) >= videoRefs.length * 2) || Number(ir.inputVideoDurationSeconds) > 15) ? "Reference video duration must be provided and total at most 15 seconds." :
+		audioRefs.length > 0 && (!(Number(ir.inputAudioDurationSeconds) >= audioRefs.length * 2) || Number(ir.inputAudioDurationSeconds) > 15) ? "Reference audio duration must be provided and total at most 15 seconds." :
+		ratio && !["adaptive", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16"].includes(ratio) ? "Unsupported MiniMax H3 aspect ratio." :
+		!hasFrames && !hasReferences && ratio === "adaptive" ? "Text-to-video requires a concrete aspect ratio." :
+		(ir.sampleCount ?? ir.numberOfVideos ?? 1) !== 1 ? "MiniMax produces one video per request." : null
+	) : referenceMedia.length > 0 ? "MiniMax V1 does not support reference video or audio." : null;
+	if (validationError) return {
+		kind: "completed", ir: undefined,
+		bill: { cost_cents: 0, currency: "USD", usage: undefined as any, upstream_id: undefined, finish_reason: null },
+		upstream: new Response(JSON.stringify({ error: { type: "invalid_video_options", message: validationError } }), { status: 400, headers: { "Content-Type": "application/json" } }),
+		keySource: keyInfo.source, byokKeyId: keyInfo.byokId,
+	};
+	const normalizedResolution = String(passthroughRequest.resolution ?? "").toUpperCase();
+	if (isMiniMaxHailuoV1(model) && !passthroughRequest.first_frame_image && !["768P", "1080P"].includes(normalizedResolution)) {
 		return {
 			kind: "completed", ir: undefined,
 			bill: { cost_cents: 0, currency: "USD", usage: undefined as any, upstream_id: undefined, finish_reason: null },
-			upstream, keySource: keyInfo.source, byokKeyId: keyInfo.byokId, mappedRequest,
+			upstream: new Response(JSON.stringify({ error: { type: "resolution_unsupported", message: "MiniMax Hailuo text-to-video supports 768P or 1080P; 512P requires an input image." } }), { status: 400, headers: { "Content-Type": "application/json" } }),
+			keySource: keyInfo.source, byokKeyId: keyInfo.byokId,
 		};
 	}
-	const normalizedResolution = String(passthroughRequest.resolution ?? "").toUpperCase();
 	if (isMiniMaxHailuoV1(model) && ![6, 10].includes(seconds)) {
 		const upstream = new Response(JSON.stringify({
 			error: { type: "duration_unsupported", message: "MiniMax Hailuo V1 video duration must be 6 or 10 seconds." },
@@ -410,6 +431,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let reservationGateError: { status: number; type: string; message: string } | null = null;
 	try {
 		const reserved = await reserveVideoGenerationCredits({
+			keyId: args.apiKeyId,
+			authMethod: args.meta.authMethod,
+			onReservationDenied: args.onReservationDenied,
 			workspaceId: args.workspaceId,
 			videoId: args.requestId,
 			providerId: args.providerId,
@@ -422,7 +446,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				quality: qualityForBilling,
 				seconds: secondsForBilling,
 				input_image_count: inputImageCount,
-				input_video_seconds: inputVideoSeconds,
+				// Hold the documented input ceiling; settle actual provider usage later.
+				input_video_seconds: isV2 && videoRefs.length > 0 ? 15 : inputVideoSeconds,
 				input_audio_seconds: inputAudioSeconds,
 			}),
 			isByok: keyInfo.source === "byok",
@@ -457,7 +482,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
+	configureVideoSubmission(args, { model, seconds: secondsForBilling, resolution: resolutionForBilling, reservationId, reservedNanos, reservationStatus, keySource: keyInfo.source, byokKeyId: keyInfo.byokId });
 	const releaseReservationOnFailure = async () => {
+		if (!canReleaseVideoSubmission(args)) return;
 		if (!reservationId) return;
 		try {
 			await releaseWalletReservation({
@@ -544,7 +571,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			content: v2Content,
 			resolution: String(size).toUpperCase(),
 			duration: seconds,
-			ratio: v2Content.length > 1 && subjectImages.length === 0 ? "adaptive" : v2Ratio ?? "16:9",
+			ratio: hasFrames ? "adaptive" : v2Ratio ?? (hasReferences ? "adaptive" : "16:9"),
 			...(toNonEmptyString(ir.callbackUrl) ? { callback_url: ir.callbackUrl } : {}),
 		}
 		: passthroughRequest;
@@ -589,6 +616,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const json = await res.json().catch(() => ({}));
 	const applicationCode = Number(json?.base_resp?.status_code ?? 0);
 	if (Number.isFinite(applicationCode) && applicationCode !== 0) {
+		if (miniMaxApplicationErrorStatus(applicationCode) < 500) await rejectVideoSubmission(args);
 		await releaseReservationOnFailure();
 		const upstream = new Response(JSON.stringify({
 			error: {

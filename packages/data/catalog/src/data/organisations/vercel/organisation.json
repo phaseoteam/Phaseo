@@ -2,6 +2,7 @@
   "organisation_id": "vercel",
   "name": "Vercel",
   "country_code": "US",
+  "subdivision_code": "US-CA",
   "description": "Vercel is a developer cloud platform headquartered in San Francisco, California, for building and deploying web experiences (including AI apps), providing tooling and infrastructure for shipping and scaling modern frontends.",
   "colour": "#000000",
   "organisation_links": [

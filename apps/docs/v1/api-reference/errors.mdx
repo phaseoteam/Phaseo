@@ -217,18 +217,11 @@ Use debug mode in development or tightly controlled environments only.
 
 ## Retry strategy
 
-- **400-series errors:** Fix your request before retrying.
+- **400-series errors other than 429:** Fix the request, credentials, or access policy before retrying.
 - **429:** Implement exponential backoff and honor the `Retry-After` header.
-- **500-series errors:** Retry safely after a short delay.
+- **500-series errors:** Use bounded retries only when repeating the operation is safe. An ambiguous submission may already have created a job or incurred a charge; retrieve an accepted job instead of submitting it again.
 
-Example:
-
-```js
-if (error.error === "rate_limit_error") {
-  await sleep(retryAfterMs);
-  return retryRequest();
-}
-```
+Set an attempt limit and an overall deadline, and add jitter to backoff delays. See [rate limits](./limits.mdx) for response headers and retry handling.
 
 ## Streaming-specific notes
 
@@ -248,7 +241,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Authentication"
 		icon="key"
-		href="./authentication"
+		href="../developers/authentication.mdx"
 	>
 		Authenticate with bearer API keys.
 	</Card>
@@ -262,7 +255,7 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Streaming"
 		icon="radio"
-		href="./streaming.mdx"
+		href="../guides/streaming.mdx"
 	>
 		Use SSE safely in production flows.
 	</Card>

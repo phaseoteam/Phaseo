@@ -8,6 +8,7 @@ import type { ExecutorUpstreamTiming } from "@executors/types";
 import type { ProviderExecutor } from "../../types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
+import { trustedBflPollingUrl } from "@providers/black-forest-labs/video";
 
 const DEFAULT_BASE_URL = "https://api.bfl.ai";
 const DEFAULT_POLL_INTERVAL_MS = 1200;
@@ -109,7 +110,7 @@ function extractCreditsCost(value: any): number | undefined {
 	return undefined;
 }
 
-function buildBflPayload(ir: IRImageGenerationRequest): Record<string, unknown> {
+function buildBflPayload(ir: IRImageGenerationRequest, modelSlug: string): Record<string, unknown> {
 	const raw = (ir.rawRequest ?? {}) as Record<string, unknown>;
 	const payload: Record<string, unknown> = {
 		prompt: ir.prompt,
@@ -117,8 +118,12 @@ function buildBflPayload(ir: IRImageGenerationRequest): Record<string, unknown> 
 
 	const fromSize = parseSizeToWidthHeight(ir.size);
 	if (fromSize) {
-		payload.width = fromSize.width;
-		payload.height = fromSize.height;
+		if (modelSlug.includes("kontext") || modelSlug.includes("ultra")) {
+			payload.aspect_ratio = `${fromSize.width}:${fromSize.height}`;
+		} else {
+			payload.width = fromSize.width;
+			payload.height = fromSize.height;
+		}
 	}
 
 	// Keep room for BFL-native parameters when callers include them.
@@ -130,10 +135,14 @@ function buildBflPayload(ir: IRImageGenerationRequest): Record<string, unknown> 
 		"prompt_upsampling",
 		"output_format",
 		"aspect_ratio",
+		"steps",
+		"guidance",
+		"raw",
 	];
 	for (const key of passthroughKeys) {
 		if (raw[key] !== undefined && raw[key] !== null) payload[key] = raw[key];
 	}
+	if (ir.outputFormat) payload.output_format = ir.outputFormat;
 
 	const inputImages = Array.isArray(ir.image)
 		? ir.image.filter((entry) => typeof entry === "string" && entry.trim().length > 0)
@@ -171,13 +180,18 @@ async function pollBflJob(args: {
 	timeoutMs: number;
 	intervalMs: number;
 	upstreamTiming?: ExecutorUpstreamTiming;
-}): Promise<{ response: Response; json: any | null } | { errorResponse: Response }> {
+}): Promise<
+	| { response: Response; json: any | null }
+	| { pending: true; status: string; response?: Response; json?: any | null }
+	| { terminal: true; status: string; json: any | null }
+> {
 	const deadline = Date.now() + args.timeoutMs;
 	let lastStatus = "unknown";
 
 	while (Date.now() <= deadline) {
 		const pollInit: RequestInit = {
 			method: "GET",
+			redirect: "error",
 			headers: {
 				accept: "application/json",
 				"x-key": args.key,
@@ -188,7 +202,7 @@ async function pollBflJob(args: {
 			: fetch(args.pollingUrl, pollInit));
 		const json = await response.clone().json().catch(() => null);
 		if (!response.ok) {
-			return { errorResponse: response };
+			return { pending: true, status: normalizeStatus(json?.status) || lastStatus, response, json };
 		}
 
 		const status = normalizeStatus(json?.status);
@@ -197,26 +211,12 @@ async function pollBflJob(args: {
 			return { response, json };
 		}
 		if (TERMINAL_FAILURE_STATUSES.has(status)) {
-			return {
-				errorResponse: createGatewayErrorResponse(
-					422,
-					"bfl_generation_failed",
-					`Black Forest Labs image request ended in terminal status: ${json?.status ?? "unknown"}`,
-					{ status: json?.status ?? null, result: json?.result ?? null },
-				),
-			};
+			return { terminal: true, status, json };
 		}
 		await sleep(args.intervalMs);
 	}
 
-	return {
-		errorResponse: createGatewayErrorResponse(
-			504,
-			"bfl_generation_timeout",
-			"Black Forest Labs image request did not complete before timeout.",
-			{ status: lastStatus },
-		),
-	};
+	return { pending: true, status: lastStatus };
 }
 
 async function imageUrlToBase64(url: string, upstreamTiming?: ExecutorUpstreamTiming): Promise<{ base64: string; mimeType: string | null } | null> {
@@ -242,11 +242,21 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	);
 
 	const requestedCount = Number.isFinite(ir.n) && (ir.n ?? 0) > 0 ? Math.min(Number(ir.n), 10) : 1;
+	const modelSlug = normalizeModelSlug(args.providerModelSlug || ir.model);
+	const inputLimit = modelSlug.includes("klein") ? 4 : modelSlug.includes("kontext") ? 1 : 8;
+	const invalid = (message: string): ExecutorResult => ({ kind: "completed", ir: undefined,
+		upstream: createGatewayErrorResponse(400, "invalid_request", message), bill: { cost_cents: 0, currency: "USD" }, keySource: keyInfo.source, byokKeyId: keyInfo.byokId });
+	if (ir.n != null && ir.n !== 1) return invalid("Black Forest Labs supports one image per gateway request.");
+	if (ir.stream || ir.partialImages != null || ir.quality != null || ir.style != null || ir.background != null || ir.moderation != null || ir.inputFidelity != null || ir.outputCompression != null) return invalid("Unsupported Black Forest Labs image control.");
+	if (ir.size && !parseSizeToWidthHeight(ir.size)) return invalid("Black Forest Labs size must use WIDTHxHEIGHT.");
+	if (ir.responseFormat && !["url", "b64_json"].includes(ir.responseFormat)) return invalid("Unsupported image response format.");
+	if (ir.image instanceof Blob || (Array.isArray(ir.image) && ir.image.some((image) => typeof image !== "string"))) return invalid("Black Forest Labs requires image URLs or base64 strings.");
 	const isImageEdit = args.capability === "image.edit" || args.endpoint === "images.edits";
 	const hasInputImage = Array.isArray(ir.image)
 		? ir.image.some((entry) => typeof entry === "string" && entry.trim().length > 0)
 		: (typeof ir.image === "string" && ir.image.trim().length > 0);
 	const inputImageCount = Array.isArray(ir.image) ? ir.image.length : (hasInputImage ? 1 : 0);
+	if (hasInputImage && modelSlug.startsWith("flux-pro-1.1")) return invalid("FLUX1.1 image prompting is not enabled; use a Kontext or FLUX.2 model for image input.");
 
 	if (isImageEdit && !hasInputImage) {
 		return {
@@ -276,17 +286,16 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			byokKeyId: keyInfo.byokId,
 		};
 	}
-	if (isImageEdit && inputImageCount > 8) {
+	if (inputImageCount > inputLimit) {
 		return {
 			kind: "completed",
 			ir: undefined,
-			upstream: createGatewayErrorResponse(400, "bfl_too_many_input_images", "Black Forest Labs FLUX.2 API accepts at most eight input images."),
+			upstream: createGatewayErrorResponse(400, "bfl_too_many_input_images", `This Black Forest Labs model accepts at most ${inputLimit} input images.`),
 			bill: { cost_cents: 0, currency: "USD" },
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 		};
 	}
-	const modelSlug = normalizeModelSlug(args.providerModelSlug || ir.model);
 	if (!modelSlug) {
 		return {
 			kind: "completed",
@@ -309,7 +318,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		Number(bindings.BLACK_FOREST_LABS_POLL_TIMEOUT_MS || bindings.BFL_POLL_TIMEOUT_MS || DEFAULT_POLL_TIMEOUT_MS),
 	);
 
-	const payload = buildBflPayload(ir);
+	const payload = buildBflPayload(ir, modelSlug);
 	const wantsB64 = String(ir.responseFormat ?? "url").toLowerCase() === "b64_json";
 	const data: IRImageGenerationResponse["data"] = [];
 	const taskIds: string[] = [];
@@ -344,21 +353,54 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 		const taskId = String(submitted.json?.id ?? "").trim();
 		if (taskId) taskIds.push(taskId);
-		const pollingUrl = String(submitted.json?.polling_url ?? "").trim();
-		if (!pollingUrl) {
+		if (submitCredits === undefined) {
 			return {
 				kind: "completed",
 				ir: undefined,
-				upstream: createGatewayErrorResponse(
-					502,
-					"bfl_invalid_response",
-					"Black Forest Labs did not return a polling URL.",
-					{ response: submitted.json ?? null },
-				),
+				upstream: createGatewayErrorResponse(502, "bfl_missing_cost", "Black Forest Labs omitted the submit-time credit usage required for settlement."),
 				bill: { cost_cents: 0, currency: "USD" },
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 			};
+		}
+		const acceptedResult = (status: string, poll?: unknown, currentCredits = submitCredits): ExecutorResult => {
+			const billedCredits = totalCredits + currentCredits;
+			const usage = {
+				inputTokens: 0,
+				outputTokens: 0,
+				totalTokens: 0,
+				requests: index + 1,
+				output_image: index + 1,
+				bfl_credits: Number(billedCredits.toFixed(6)),
+			};
+			const rawResponse = [...rawResponses];
+			rawResponse[rawResponse.length - 1] = { submit: submitted.json, poll: poll ?? { status } };
+			const pendingResponse: IRImageGenerationResponse = {
+				id: args.requestId,
+				nativeId: taskIds.length > 0 ? taskIds.join(",") : undefined,
+				created: Math.floor(Date.now() / 1000),
+				model: args.providerModelSlug || ir.model,
+				provider: args.providerId,
+				data,
+				usage,
+				rawResponse,
+			};
+			return {
+				kind: "completed",
+				ir: pendingResponse,
+				upstream: new Response(JSON.stringify({ id: taskId || null, status }), {
+					status: 202,
+					headers: { "Content-Type": "application/json" },
+				}),
+				bill: { cost_cents: billedCredits, currency: "USD", usage, finish_reason: "pending" },
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				rawResponse,
+			};
+		};
+		const pollingUrl = trustedBflPollingUrl(submitted.json?.polling_url);
+		if (!pollingUrl) {
+			return acceptedResult("polling_url_unavailable");
 		}
 
 		const polled = await pollBflJob({
@@ -368,39 +410,20 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			intervalMs: pollIntervalMs,
 			upstreamTiming: args.upstreamTiming,
 		});
-		if ("errorResponse" in polled) {
-			return {
-				kind: "completed",
-				ir: undefined,
-				upstream: polled.errorResponse,
-				bill: { cost_cents: 0, currency: "USD" },
-				keySource: keyInfo.source,
-				byokKeyId: keyInfo.byokId,
-			};
+		if ("pending" in polled) {
+			return acceptedResult(polled.status, polled.json);
 		}
-
+		if ("terminal" in polled) {
+			return acceptedResult(`terminal:${polled.status}`, polled.json);
+		}
 		lastUpstream = polled.response;
 		rawResponses[rawResponses.length - 1].poll = polled.json;
 		const credits = extractCreditsCost(polled.json) ?? submitCredits;
-		if (typeof credits === "number") {
-			totalCredits += credits;
-		}
 		const sampleUrl = String(polled.json?.result?.sample ?? "").trim();
 		if (!sampleUrl) {
-			return {
-				kind: "completed",
-				ir: undefined,
-				upstream: createGatewayErrorResponse(
-					502,
-					"bfl_missing_sample",
-					"Black Forest Labs did not return an output image URL.",
-					{ response: polled.json ?? null },
-				),
-				bill: { cost_cents: 0, currency: "USD" },
-				keySource: keyInfo.source,
-				byokKeyId: keyInfo.byokId,
-			};
+			return acceptedResult("result_unavailable", polled.json, credits);
 		}
+		totalCredits += credits;
 
 		if (wantsB64) {
 			const asBase64 = await imageUrlToBase64(sampleUrl, args.upstreamTiming);

@@ -225,6 +225,35 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 }
 
 describe("account settings routes", () => {
+	it("excludes usage debits before limiting billing transaction history", async () => {
+		let ledgerQuery: URL | undefined;
+		const billingKinds = ["top_up", "auto_top_up", "refund", "promo_credit", "adjustment", null];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.endsWith("/workspaces") && url.searchParams.get("select") === "tier,billing_mode") {
+				return new Response(JSON.stringify({ tier: "basic", billing_mode: "wallet" }), { status: 200 });
+			}
+			if (url.pathname.endsWith("/credit_ledger")) {
+				ledgerQuery = url;
+				return new Response(JSON.stringify(billingKinds.map((kind, index) => ({
+					id: `billing-${index}`, kind, amount_nanos: kind === "refund" ? -1000000000 : 1000000000,
+					status: "paid", event_time: "2026-09-07T12:00:00Z",
+				}))), { status: 200 });
+			}
+			return authenticatedFetch(input);
+		}));
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/credits/transactions?workspaceId=workspace-1",
+			{ headers: { authorization: "Bearer session-token" } }, env,
+		);
+		expect(response.status).toBe(200);
+		expect(ledgerQuery?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
+		expect(ledgerQuery?.searchParams.get("or")).toBe("(kind.is.null,kind.not.in.(charge,usage))");
+		expect(ledgerQuery?.searchParams.get("limit")).toBe("250");
+		const body = await response.json() as { transactions: Array<{ kind: string | null }> };
+		expect(body.transactions.map(row => row.kind)).toEqual(billingKinds);
+	});
+
 	it.each(["phaseo_cli", "aistats_cli"])("identifies the first-party CLI client %s without metadata", async (clientId) => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);

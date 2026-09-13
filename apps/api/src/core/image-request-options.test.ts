@@ -58,6 +58,17 @@ describe("image-request-options", () => {
 			quality: "medium",
 			image_params: { resolution: "2k", quality: "medium" },
 		});
+		expect(
+			buildImagePricingRequestOptions({
+				model: "spacex-ai/grok-imagine-image-2.0",
+				capability_id: "image.edit",
+				quality: "auto",
+			}),
+		).toMatchObject({
+			size: "1k",
+			quality: "medium",
+			image_params: { resolution: "1k", quality: "medium" },
+		});
 	});
 
 	it("infers pricing quality and resolution from image output tokens when request used auto defaults", () => {

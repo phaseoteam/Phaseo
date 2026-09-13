@@ -10,6 +10,7 @@ import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
 import { Button } from "@/components/ui/button";
 import OrganisationEditButton from "./edit/OrganisationEditButton";
+import { formatLocation } from "@/lib/locations";
 
 interface OrganisationDetailShellProps {
 	organisationId: string;
@@ -40,16 +41,16 @@ export default async function OrganisationDetailShell({
 						</p>
 						<p className="mt-1 text-sm text-muted-foreground">
 							If we&apos;re missing a lab, please
-							contribute on Github!
+							open a data request.
 						</p>
 						<div className="mt-3">
 							<a
-								href="https://github.com/phaseoteam/Phaseo"
+								href="https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
 							>
-								Contribute on GitHub
+								Request missing data
 								<Image
 									src="/social/github_light.svg"
 									alt="GitHub Logo"
@@ -73,9 +74,7 @@ export default async function OrganisationDetailShell({
 	}
 
 	const countryCode = header.country_code;
-	const countryName = countryCode
-		? new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode.toUpperCase()) ?? countryCode
-		: null;
+	const location = formatLocation(countryCode, header.subdivision_code);
 
 	return (
 		<main className="flex flex-col">
@@ -97,11 +96,16 @@ export default async function OrganisationDetailShell({
 							<h1 className="truncate text-3xl font-bold tracking-tight">
 								{header.name}
 							</h1>
-							{countryCode && countryName ? (
+							{location ? countryCode ? (
 								<Link href={`/countries/${countryCode.toLowerCase()}`} className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground hover:underline hover:underline-offset-4">
 									<MapPin className="size-3.5" />
-									{countryName}
+									{location}
 								</Link>
+							) : (
+								<span className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+									<MapPin className="size-3.5" />
+									{location}
+								</span>
 							) : null}
 						</div>
 					</div>

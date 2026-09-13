@@ -189,8 +189,8 @@ creditsRouter.get("/tier-summary", async (c) => {
 	if (!context) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	try {
 		const [prevResult, mtdResult, workspaceResult] = await Promise.all([
-			context.client.rpc("monthly_spend_prev_cents", { p_team: context.workspaceId }),
-			context.client.rpc("mtd_spend_cents", { p_team: context.workspaceId }),
+			context.userClient.rpc("monthly_spend_prev_cents", { p_workspace_id: context.workspaceId }),
+			context.userClient.rpc("mtd_spend_cents", { p_workspace_id: context.workspaceId }),
 			context.client.from("workspaces").select("tier").eq("id", context.workspaceId).maybeSingle(),
 		]);
 		return c.json({
@@ -309,7 +309,8 @@ creditsRouter.post("/notification-destinations/test", async (c) => {
 	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const type = String(body.type ?? "") as NotificationDestinationType;
 	if (!NOTIFICATION_DESTINATION_TYPES.includes(type)) return c.json({ error: "invalid_destination" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const kind = body.kind === "model_deprecation" ? "model_deprecation" : "notification_test";
+	if (body.kind !== undefined && body.kind !== "notification_test" && body.kind !== "model_deprecation") return c.json({ error: "invalid_notification_test_kind" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const kind = body.kind ?? "notification_test";
 	try {
 		const target = validateNotificationTarget(type, body.target);
 		const response = await fetch(`${String(c.env.GATEWAY_API_ORIGIN ?? "https://api.phaseo.app").replace(/\/$/, "")}/internal/notification-tests`, { method: "POST", headers: { authorization: `Bearer ${c.env.GATEWAY_INTERNAL_TEST_TOKEN ?? ""}`, "content-type": "application/json" }, body: JSON.stringify({ workspaceId, type, target, kind }), signal: AbortSignal.timeout(10_000) });
@@ -332,7 +333,8 @@ creditsRouter.post("/notification-destinations/:destinationId/test", async (c) =
 	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const destination = await context.client.from("notification_destinations").select("id").eq("id", c.req.param("destinationId")).eq("workspace_id", workspaceId).eq("status", "active").maybeSingle();
 	if (destination.error || !destination.data) return c.json({ error: "notification_destination_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	const kind = body.kind === "model_deprecation" ? "model_deprecation" : "notification_test";
+	if (body.kind !== undefined && body.kind !== "notification_test" && body.kind !== "model_deprecation") return c.json({ error: "invalid_notification_test_kind" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const kind = body.kind ?? "notification_test";
 	console.log("notification_saved_destination_test_kind", { kind });
 	try {
 		const response = await fetch(`${String(c.env.GATEWAY_API_ORIGIN ?? "https://api.phaseo.app").replace(/\/$/, "")}/internal/notification-tests`, { method: "POST", headers: { authorization: `Bearer ${c.env.GATEWAY_INTERNAL_TEST_TOKEN ?? ""}`, "content-type": "application/json" }, body: JSON.stringify({ workspaceId, destinationId: destination.data.id, kind }), signal: AbortSignal.timeout(10_000) });

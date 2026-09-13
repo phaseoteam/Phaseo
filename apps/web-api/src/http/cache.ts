@@ -1,7 +1,9 @@
 export type PublicCachePolicy = {
   edgeTtlSeconds: number;
   staleWhileRevalidateSeconds?: number;
+	staleIfErrorSeconds?: number;
 	browserTtlSeconds?: number;
+	browserStaleWhileRevalidateSeconds?: number;
 	cacheTags?: readonly string[];
 };
 
@@ -13,11 +15,15 @@ export const PRIVATE_NO_STORE_HEADERS = {
 export function publicCacheHeaders(policy: PublicCachePolicy): Record<string, string> {
 	const staleWhileRevalidateSeconds = policy.staleWhileRevalidateSeconds ?? 0;
 	const browserTtlSeconds = policy.browserTtlSeconds ?? 60;
+	const browserStaleSeconds = policy.browserStaleWhileRevalidateSeconds ?? staleWhileRevalidateSeconds;
 	const edgeDirectives = [
 		"public",
 		`max-age=${policy.edgeTtlSeconds}`,
 		staleWhileRevalidateSeconds > 0
 			? `stale-while-revalidate=${staleWhileRevalidateSeconds}`
+			: null,
+		policy.staleIfErrorSeconds
+			? `stale-if-error=${policy.staleIfErrorSeconds}`
 			: null,
 	].filter(Boolean);
 
@@ -27,9 +33,12 @@ export function publicCacheHeaders(policy: PublicCachePolicy): Record<string, st
 		"Cache-Control": [
 			"public",
 			`max-age=${browserTtlSeconds}`,
-			`s-maxage=${policy.edgeTtlSeconds}`,
-			staleWhileRevalidateSeconds > 0
-				? `stale-while-revalidate=${staleWhileRevalidateSeconds}`
+			// The Cloudflare-specific header owns the shared cache policy. Avoid
+			// s-maxage on zero-browser-TTL responses because it can disable stale
+			// serving even when stale-while-revalidate is configured at the edge.
+			browserTtlSeconds > 0 ? `s-maxage=${policy.edgeTtlSeconds}` : null,
+			browserStaleSeconds > 0
+				? `stale-while-revalidate=${browserStaleSeconds}`
 				: null,
 		]
 			.filter(Boolean)

@@ -1,5 +1,10 @@
 import type { ModelProviderDailyPoint } from "@/lib/fetchers/models/getModelPerformance";
-import { selectMetricData } from "./ModelPerformanceCards";
+import type { ModelPerformanceQualityPoint } from "@/lib/fetchers/models/getModelPerformance";
+import {
+	hasQualityMetricData,
+	selectMetricData,
+	selectProviderTrendData,
+} from "./ModelPerformanceCards";
 
 function point(
 	provider: string,
@@ -55,5 +60,115 @@ describe("selectMetricData", () => {
 				true,
 			),
 		).toBe(cardData);
+	});
+
+	it("uses compact percentile bands for cache rate", () => {
+		const detailData = [
+			{ ...point("percentile-10", null), cachedInputPct: 20 },
+			{ ...point("percentile-50", null), cachedInputPct: 60 },
+		];
+		const cardData = [detailData[1]!];
+
+		expect(
+			selectMetricData("cachedInput", false, detailData, cardData, true),
+		).toBe(cardData);
+	});
+
+	it("falls back to provider data when percentile rows lack the metric", () => {
+		const percentileData = [
+			{ ...point("percentile-50", null), cachedInputPct: 60 },
+		];
+		const providerData = [point("poolside", 420)];
+
+		expect(
+			selectMetricData(
+				"endToEnd",
+				true,
+				percentileData,
+				percentileData,
+				true,
+				providerData,
+			),
+		).toBe(providerData);
+	});
+});
+
+describe("selectProviderTrendData", () => {
+	const hourlyPoint = (bucket: string) => ({
+		...point("poolside", 420),
+		bucket,
+	});
+
+	it("uses hourly observations for spans up to three days", () => {
+		const hourly = [
+			hourlyPoint("2026-09-08T12:00:00Z"),
+			hourlyPoint("2026-09-11T12:00:00Z"),
+		];
+
+		expect(selectProviderTrendData(hourly, [point("poolside", 420)])).toEqual({
+			data: hourly,
+			resolution: "hour",
+		});
+	});
+
+	it("uses daily observations when the observed span exceeds three days", () => {
+		const hourly = [
+			hourlyPoint("2026-09-07T11:00:00Z"),
+			hourlyPoint("2026-09-11T12:00:00Z"),
+		];
+		const daily = [point("poolside", 420)];
+
+		expect(selectProviderTrendData(hourly, daily)).toEqual({
+			data: daily,
+			resolution: "day",
+		});
+	});
+});
+
+describe("hasQualityMetricData", () => {
+	const qualityPoint: ModelPerformanceQualityPoint = {
+		bucket: "2026-08-08T00:00:00.000Z",
+		toolCallSuccessPct: null,
+		toolCallErrorPct: null,
+		structuredOutputSuccessPct: null,
+		structuredOutputErrorPct: null,
+		cacheHitRatePct: null,
+		requests: 1,
+	};
+
+	it("hides metrics without telemetry", () => {
+		expect(hasQualityMetricData("toolCallErrorPct", [qualityPoint])).toBe(false);
+		expect(hasQualityMetricData("structuredOutputErrorPct", [qualityPoint])).toBe(false);
+		expect(hasQualityMetricData("cacheHitRatePct", [qualityPoint])).toBe(false);
+	});
+
+	it("does not treat historical zero defaults as validated error data", () => {
+		expect(
+			hasQualityMetricData("toolCallErrorPct", [
+				{ ...qualityPoint, toolCallErrorPct: 0, toolCallHistoricalDefault: true },
+			]),
+		).toBe(false);
+		expect(
+			hasQualityMetricData("structuredOutputErrorPct", [
+				{
+					...qualityPoint,
+					structuredOutputErrorPct: 0,
+					structuredOutputHistoricalDefault: true,
+				},
+			]),
+		).toBe(false);
+	});
+
+	it("shows metrics with real telemetry, including a measured zero", () => {
+		expect(
+			hasQualityMetricData("toolCallErrorPct", [
+				{ ...qualityPoint, toolCallErrorPct: 0 },
+			]),
+		).toBe(true);
+		expect(
+			hasQualityMetricData("cacheHitRatePct", [
+				{ ...qualityPoint, cacheHitRatePct: 0 },
+			]),
+		).toBe(true);
 	});
 });

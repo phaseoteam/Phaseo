@@ -2,6 +2,7 @@ import { fetchPublicWebApi } from "@/lib/web-api/client";
 
 export type ProviderRuntimeStats = {
 	providerId: string;
+	serviceTier: string;
 	providerName?: string;
 	latencyMs30m: number | null;
 	throughput30m: number | null;
@@ -23,6 +24,14 @@ export type ProviderRuntimeStats = {
 		requests: number;
 		successful: number;
 	}>;
+	uptimeHourly3d: Array<{
+		start: string;
+		uptimePct: number | null;
+		errorPct: number | null;
+		requests: number;
+		failed: number;
+		rateLimited: number;
+	}>;
 	requests30m: number;
 	requests3d: number;
 	successful3d: number;
@@ -37,10 +46,24 @@ export type ProviderRuntimeStats = {
 	totalTokens3d?: number;
 	finishReasonCounts3d?: Record<string, number>;
 	errorCodeCounts3d?: Record<string, number>;
+	errorCategoryCounts3d?: Record<string, number>;
 	lastRequestAt?: string | null;
 };
 
 export type ProviderRuntimeStatsMap = Record<string, ProviderRuntimeStats>;
+
+export function providerRuntimeStatsKey(providerId: string, serviceTier = "standard"): string {
+	const normalizedTier = serviceTier === "fast" ? "priority" : serviceTier;
+	return `${providerId}\u0000${normalizedTier}`;
+}
+
+export function getProviderRuntimeStats(
+	stats: ProviderRuntimeStatsMap,
+	providerId: string,
+	serviceTier = "standard",
+): ProviderRuntimeStats | undefined {
+	return stats[providerRuntimeStatsKey(providerId, serviceTier)];
+}
 
 export type ProviderHealthBucket = {
 	start: string;
@@ -97,6 +120,7 @@ type GatewayRequestStatsRow = {
 
 type RpcProviderHealthMetricsRow = {
 	provider_id: string | null;
+	service_tier?: string | null;
 	provider_name: string | null;
 	requests: number | string | null;
 	requests_30m: number | string | null;
@@ -131,6 +155,7 @@ type RpcProviderHealthMetricsRow = {
 	output_tokens: number | string | null;
 	finish_reason_counts: Record<string, unknown> | null;
 	error_code_counts: Record<string, unknown> | null;
+	error_category_counts?: Record<string, unknown> | null;
 	buckets: unknown;
 	last_request_at: string | null;
 };
@@ -394,7 +419,7 @@ function hourOffsetFromUtcHour(nowUtcHourMs: number, bucketDate: Date): 0 | 1 | 
 	return offset as 0 | 1 | 2;
 }
 
-function mapRpcRuntimeStatsRows(args: {
+export function mapRpcRuntimeStatsRows(args: {
 	rows: RpcProviderHealthMetricsRow[];
 	providerIds: string[];
 	now?: Date;
@@ -411,16 +436,24 @@ function mapRpcRuntimeStatsRows(args: {
 		now.getUTCMonth(),
 		now.getUTCDate(),
 	);
-	const byProvider = new Map<string, RpcProviderHealthMetricsRow>();
+	const byProviderTier = new Map<string, RpcProviderHealthMetricsRow>();
 	for (const row of args.rows) {
 		const providerId = String(row.provider_id ?? "").trim();
+		const serviceTier = String(row.service_tier ?? "standard").trim() || "standard";
 		if (!providerId) continue;
-		byProvider.set(providerId, row);
+		byProviderTier.set(providerRuntimeStatsKey(providerId, serviceTier), row);
+	}
+	for (const providerId of args.providerIds) {
+		const standardKey = providerRuntimeStatsKey(providerId);
+		if (!byProviderTier.has(standardKey) && !args.rows.some((row) => row.provider_id === providerId)) {
+			byProviderTier.set(standardKey, { provider_id: providerId } as RpcProviderHealthMetricsRow);
+		}
 	}
 
 	const out: ProviderRuntimeStatsMap = {};
-	for (const providerId of args.providerIds) {
-		const row = byProvider.get(providerId);
+	for (const [statsKey, row] of byProviderTier) {
+		const providerId = String(row.provider_id ?? "").trim();
+		const serviceTier = String(row.service_tier ?? "standard").trim() || "standard";
 		const uptimeDaily3dTotals = [
 			{ requests: 0, successful: 0, healthRequests: 0, healthSuccessful: 0 },
 			{ requests: 0, successful: 0, healthRequests: 0, healthSuccessful: 0 },
@@ -436,6 +469,7 @@ function mapRpcRuntimeStatsRows(args: {
 			{ hourOffset: 1, uptimePct: null, requests: 0, successful: 0 },
 			{ hourOffset: 2, uptimePct: null, requests: 0, successful: 0 },
 		];
+		const uptimeHourly3d: ProviderRuntimeStats["uptimeHourly3d"] = [];
 
 		if (row && Array.isArray(row.buckets)) {
 			for (const bucket of row.buckets) {
@@ -446,6 +480,19 @@ function mapRpcRuntimeStatsRows(args: {
 				const successful = toInt(bucketRecord?.success_requests);
 				const healthRequests = toInt(bucketRecord?.health_requests);
 				const healthSuccessful = toInt(bucketRecord?.health_success_requests);
+				const failed = toInt(bucketRecord?.failed_requests) || Math.max(0, healthRequests - healthSuccessful);
+				const rateLimited = toInt(bucketRecord?.rate_limited_requests);
+				const uptimePct = healthRequests > 0
+					? (healthSuccessful / healthRequests) * 100
+					: toFiniteNumber(bucketRecord?.uptime_pct);
+				uptimeHourly3d.push({
+					start: start.toISOString(),
+					uptimePct,
+					errorPct: uptimePct == null ? null : Math.max(0, 100 - uptimePct),
+					requests: healthRequests,
+					failed,
+					rateLimited,
+				});
 				const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, start);
 				if (dayOffset != null) {
 					uptimeDaily3dTotals[dayOffset]!.requests += requests;
@@ -457,10 +504,7 @@ function mapRpcRuntimeStatsRows(args: {
 				if (hourOffset != null) {
 					uptimeHourly3h[hourOffset] = {
 						hourOffset,
-						uptimePct:
-							healthRequests > 0
-								? (healthSuccessful / healthRequests) * 100
-								: toFiniteNumber(bucketRecord?.uptime_pct),
+						uptimePct,
 						requests,
 						successful,
 					};
@@ -481,8 +525,9 @@ function mapRpcRuntimeStatsRows(args: {
 			}
 		}
 
-		out[providerId] = {
+		out[statsKey] = {
 			providerId,
+			serviceTier,
 			...(row?.provider_name ? { providerName: row.provider_name } : {}),
 			latencyMs30m:
 				toFiniteNumber(row?.percentile_latency_ms_30m) ??
@@ -509,6 +554,7 @@ function mapRpcRuntimeStatsRows(args: {
 			),
 			uptimeDaily3d,
 			uptimeHourly3h,
+			uptimeHourly3d: uptimeHourly3d.sort((a, b) => Date.parse(a.start) - Date.parse(b.start)),
 			requests30m: toInt(row?.requests_30m),
 			requests3d: toInt(row?.requests),
 			successful3d: toInt(row?.success_requests),
@@ -523,6 +569,7 @@ function mapRpcRuntimeStatsRows(args: {
 			totalTokens3d: toInt(row?.total_tokens),
 			finishReasonCounts3d: toCountRecord(row?.finish_reason_counts),
 			errorCodeCounts3d: toCountRecord(row?.error_code_counts),
+			errorCategoryCounts3d: toCountRecord(row?.error_category_counts),
 			lastRequestAt: row?.last_request_at ?? null,
 		};
 	}

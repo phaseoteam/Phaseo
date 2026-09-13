@@ -93,8 +93,6 @@ export function resolveGatewayStatus({
 	}
 
 	if (
-		normalizedProviderRoutingStatus === "disabled" ||
-		normalizedModelRoutingStatus === "disabled" ||
 		normalizedCapabilityStatus === "disabled" ||
 		normalizedPhaseoStatus === "disabled" ||
 		normalizedPhaseoStatus === "blocked"
@@ -139,6 +137,13 @@ export function resolveGatewayStatus({
 		normalizedCapabilityStatus === "coming_soon"
 	) {
 		return "coming_soon";
+	}
+
+	if (
+		normalizedProviderRoutingStatus === "disabled" ||
+		normalizedModelRoutingStatus === "disabled"
+	) {
+		return "disabled";
 	}
 
 	if (normalizedProviderStatus && normalizedProviderStatus !== "active") {

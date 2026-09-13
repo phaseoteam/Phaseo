@@ -1,17 +1,13 @@
 "use client"
 
 import { type ReactNode, useEffect, useState } from "react"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus } from "lucide-react"
+import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { Button } from "@/components/ui/button"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+
 import { Checkbox } from "@/components/ui/checkbox"
 import { createAdminBenchmark, fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient"
 
@@ -23,12 +19,14 @@ interface BenchmarkResult {
   is_self_reported: boolean
   other_info: string | null
   source_link: string | null
+  effective_to?: string | null
   variant: string | null
 }
 
 interface BenchmarksTabProps {
   modelId: string
   onBenchmarksChange?: (benchmarks: BenchmarkResult[]) => void
+  onPendingChange?: (state: { dirty: boolean; saving: boolean }) => void
 }
 
 function FieldRow({
@@ -46,12 +44,17 @@ function FieldRow({
   )
 }
 
-export default function BenchmarksTab({ modelId, onBenchmarksChange }: BenchmarksTabProps) {
+export default function BenchmarksTab({ modelId, onBenchmarksChange, onPendingChange }: BenchmarksTabProps) {
   const [benchmarks, setBenchmarks] = useState<BenchmarkResult[]>([])
   const [availableBenchmarks, setAvailableBenchmarks] = useState<Array<{ id: string; name: string }>>([])
   const [newBenchmarkId, setNewBenchmarkId] = useState("")
   const [newBenchmarkName, setNewBenchmarkName] = useState("")
   const [creatingBenchmark, setCreatingBenchmark] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    onPendingChange?.({ dirty: Boolean(newBenchmarkId || newBenchmarkName), saving: creatingBenchmark })
+  }, [newBenchmarkId, newBenchmarkName, creatingBenchmark, onPendingChange])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,23 +79,25 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
             other_info: b.other_info,
             source_link: b.source_link,
             variant: b.variant,
+            effective_to: b.effective_to,
           }))
         )
       }
+      setLoaded(true)
     }
     fetchData()
   }, [modelId])
 
   useEffect(() => {
-    onBenchmarksChange?.(benchmarks)
-  }, [benchmarks, onBenchmarksChange])
+    if (loaded) onBenchmarksChange?.(benchmarks)
+  }, [benchmarks, onBenchmarksChange, loaded])
 
   const updateBenchmark = (id: string, field: string, value: any) => {
     setBenchmarks(benchmarks.map((b) => (b.id === id ? { ...b, [field]: value } : b)))
   }
 
   const removeBenchmark = (id: string) => {
-    setBenchmarks(benchmarks.filter((b) => b.id !== id))
+    setBenchmarks(id.startsWith("new-") ? benchmarks.filter((b) => b.id !== id) : benchmarks.map((b) => b.id === id ? { ...b, effective_to: new Date().toISOString() } : b))
   }
 
   const handleCreateBenchmark = async () => {
@@ -111,7 +116,7 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
       setBenchmarks((prev) => [
         ...prev,
         {
-          id: `new-${Date.now()}`,
+          id: `new-${crypto.randomUUID()}`,
           benchmark_id: id,
           score: "",
           is_self_reported: true,
@@ -141,7 +146,7 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
           onClick={() =>
             setBenchmarks([
               ...benchmarks,
-              { id: `new-${Date.now()}`, benchmark_id: "", score: "", is_self_reported: true, other_info: null, source_link: null, variant: null },
+              { id: `new-${crypto.randomUUID()}`, benchmark_id: "", score: "", is_self_reported: true, other_info: null, source_link: null, variant: null },
             ])
           }
         >
@@ -187,27 +192,14 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
           <div key={benchmark.id} className="border rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-sm font-medium">Entry {index + 1}</div>
-              <Button variant="ghost" size="icon" onClick={() => removeBenchmark(benchmark.id)}>
-                <Trash2 className="h-4 w-4" />
+              <Button variant="ghost" disabled={Boolean(benchmark.effective_to)} onClick={() => removeBenchmark(benchmark.id)}>
+                {benchmark.effective_to ? "End-dated" : benchmark.id.startsWith("new-") ? "Discard draft" : "End now"}
               </Button>
             </div>
 
+            <FieldRow label="Ends"><DatePickerInput value={benchmark.effective_to?.slice(0, 10) ?? ""} onChange={(value) => updateBenchmark(benchmark.id, "effective_to", value ? `${value}T00:00:00Z` : null)} placeholder="No end date" /></FieldRow>
             <FieldRow label="Benchmark">
-              <Select
-                value={benchmark.benchmark_id}
-                onValueChange={(value) => updateBenchmark(benchmark.id, "benchmark_id", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select benchmark" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableBenchmarks.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect label="Benchmark" value={benchmark.benchmark_id} options={availableBenchmarks.map((benchmark) => ({ value: benchmark.id, label: benchmark.name }))} onValueChange={(value) => updateBenchmark(benchmark.id, "benchmark_id", value)} />
             </FieldRow>
 
             <FieldRow label="Score">

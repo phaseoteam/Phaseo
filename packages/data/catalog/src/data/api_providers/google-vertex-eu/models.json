@@ -4,10 +4,10 @@
     "provider_api_model_id": "google-vertex-eu:anthropic/claude-fable-5",
     "provider_model_slug": "claude-fable-5",
     "internal_model_id": "anthropic/claude-fable-5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -28,7 +28,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "eu"
@@ -38,8 +38,7 @@
       ]
     },
     "service_tiers": [
-      "standard",
-      "batch"
+      "standard"
     ],
     "api": {
       "formats": [
@@ -59,7 +58,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Google documents Claude versions 4.7 and later on the EU multi-region endpoint; this model uses the Anthropic rawPredict route."
+      "notes": "Google documents Claude versions 4.7 and later on the EU multi-region endpoint; this model uses the Anthropic rawPredict route. Native IR adapter enforces the EU multi-region endpoint; deterministic routing tests pass. Account enablement and quota required."
     },
     "rate_limits": []
   },
@@ -68,10 +67,10 @@
     "provider_api_model_id": "google-vertex-eu:anthropic/claude-opus-5",
     "provider_model_slug": "claude-opus-5",
     "internal_model_id": "anthropic/claude-opus-5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -92,7 +91,7 @@
       }
     ],
     "routing_status": "active",
-    "routable": false,
+    "routable": true,
     "regions": {
       "execution": [
         "eu"
@@ -102,8 +101,7 @@
       ]
     },
     "service_tiers": [
-      "standard",
-      "batch"
+      "standard"
     ],
     "api": {
       "formats": [
@@ -123,7 +121,7 @@
     "verification": {
       "status": "verified",
       "checked_at": "2026-08-24T00:00:00Z",
-      "notes": "Google documents Claude versions 4.7 and later on the EU multi-region endpoint; this model uses the Anthropic rawPredict route."
+      "notes": "Google documents Claude versions 4.7 and later on the EU multi-region endpoint; this model uses the Anthropic rawPredict route. Native IR adapter enforces the EU multi-region endpoint; deterministic routing tests pass. Account enablement and quota required."
     },
     "rate_limits": []
   },

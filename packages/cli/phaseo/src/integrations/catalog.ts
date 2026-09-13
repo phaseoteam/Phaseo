@@ -45,6 +45,10 @@ export function supportsModelCatalog(integration: IntegrationId): boolean {
 
 export async function fetchIntegrationModels(integration: IntegrationId): Promise<IntegrationModel[]> {
 	if (!supportsModelCatalog(integration)) return [];
+	return fetchCompatibleModels();
+}
+
+export async function fetchCompatibleModels(): Promise<IntegrationModel[]> {
 	const session = await getSessionAccessToken();
 	const models: IntegrationModel[] = [];
 	let offset = 0;

@@ -1,0 +1,37 @@
+/* Mintlify page icons accept one path, so swap monochrome brand marks by theme. */
+:is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/cline.svg"] {
+	content: url("/icons/brands/cline-dark.svg");
+}
+
+:is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/cursor.svg"] {
+	content: url("/icons/brands/cursor-dark.svg");
+}
+
+:is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/kilo.svg"] {
+	content: url("/icons/brands/kilo-dark.svg");
+}
+
+:is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/opencode.svg"] {
+	content: url("/icons/brands/opencode-dark.svg");
+}
+
+:is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/prime-agent.svg"] {
+	content: url("/icons/brands/prime-agent-dark.svg");
+}
+
+:is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/continue.svg"] {
+	content: url("/icons/brands/continue-dark.svg");
+}
+
+:is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/oh-my-pi.svg"] {
+	content: url("/icons/brands/oh-my-pi-dark.svg");
+}
+
+:is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/pi.svg"] {
+	content: url("/icons/brands/pi-dark.svg");
+}
+
+:is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/roo-code.svg"],
+:is(html.dark, html[data-theme="dark"]) img[src$="/icons/brands/zed.svg"] {
+	filter: invert(1);
+}

@@ -68,7 +68,12 @@ import {
 } from "@/lib/gateway/usage/timeFormatting";
 import { formatAsyncJobFailureSummary } from "@/lib/gateway/usage/asyncJobFailureSummary";
 import { formatRoomError } from "@/lib/chat/formatRoomError";
-import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
+import {
+	getModelDetailsHref,
+	getModelDisplayName,
+	getModelMetadataEntry,
+	type ModelMetadataMap,
+} from "./model-display";
 import Link from "next/link";
 import {
         DetailKeyValueGrid,
@@ -87,7 +92,7 @@ function AsyncJobHeader({
 	modelMetadata: ModelMetadataMap;
 	providerNames: Map<string, string>;
 }) {
-	const modelHref = getModelDetailsHref(job.model ?? null);
+	const modelHref = getModelDetailsHref(job.model ?? null, modelMetadata, job.provider);
 	const modelLabel = getModelDisplayName(job.model ?? null, modelMetadata);
 	const modelLogoId = getModelLogoId(job.model ?? null, modelMetadata);
 	const providerLabel = job.provider
@@ -141,20 +146,12 @@ function stopRowClick(event: React.MouseEvent<HTMLElement>) {
 	event.stopPropagation();
 }
 
-function getModelDetailsHref(modelId: string | null): string | null {
-	if (!modelId) return null;
-	const [organisationId, ...modelParts] = modelId.split("/");
-	if (!organisationId || modelParts.length === 0) return null;
-	const routeModelId = modelParts.join("/");
-	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(routeModelId)}`;
-}
-
 function getModelLogoId(
 	modelId: string | null,
 	modelMetadata: ModelMetadataMap,
 ): string | null {
 	if (!modelId) return null;
-	const metadata = modelMetadata.get(modelId);
+	const metadata = getModelMetadataEntry(modelId, modelMetadata);
 	if (metadata?.organisationId) return metadata.organisationId;
 	if (modelId.includes("/")) {
 		const [organisationId] = modelId.split("/");
@@ -216,12 +213,12 @@ function buildUsageLogsFilterHref(args: {
 
 function formatMoneyFromNanos(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return `$${(value / 1e9).toFixed(5)}`;
+	return formatMoneyFromUsd(value / 1e9);
 }
 
 function formatMoneyFromUsd(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return `$${value.toFixed(5)}`;
+	return `$${value.toFixed(value !== 0 && Math.abs(value) < 0.00001 ? 9 : 5)}`;
 }
 
 function formatMilliseconds(value: number | null | undefined): string {
@@ -945,6 +942,12 @@ function AsyncJobDetailSheet({
 											value: job.billing_reason ?? "-",
 										},
 										{
+											label: "Provider submission",
+											value: job.submission_state === "submitting" || job.submission_state === "unknown"
+												? "Awaiting confirmation"
+												: job.submission_state ?? "-",
+										},
+										{
 											label: "Charged",
 											value:
 												job.charged == null ? "-" : job.charged ? "Yes" : "No",
@@ -1541,8 +1544,8 @@ function AsyncJobDetailSheet({
 										columns={1}
 										items={[
 											{
-												label: "Webhook URL",
-												value: job.webhook.url ?? "No webhook configured",
+												label: "Webhook destination",
+												value: job.webhook.url ?? (job.webhook.configured ? "Workspace endpoint" : "No webhook configured"),
 											},
 											{
 												label: "Subscribed events",
@@ -1554,7 +1557,7 @@ function AsyncJobDetailSheet({
 											{
 												label: "Signing",
 												value: job.webhook.configured
-													? job.webhook.has_secret
+													? !job.webhook.url ? "Managed by endpoint" : job.webhook.has_secret
 														? "Enabled"
 														: "Disabled"
 													: "-",
@@ -1932,7 +1935,7 @@ export default function AsyncJobsPanel({
 						job.model,
 						resolvedModelMetadata,
 					);
-					const modelHref = getModelDetailsHref(job.model);
+					const modelHref = getModelDetailsHref(job.model, resolvedModelMetadata, job.provider);
 					const modelLogoId = getModelLogoId(
 						job.model,
 						resolvedModelMetadata,
@@ -1977,7 +1980,7 @@ export default function AsyncJobsPanel({
 								</div>
 									<div className="shrink-0 text-right">
 										<div className="font-mono text-sm text-foreground">
-											{job.kind === "batch" && (job.settled_cost_nanos != null || job.settled_cost_usd != null)
+											{(job.settled_cost_nanos != null || job.settled_cost_usd != null)
 												? formatSettledCost(job)
 												: formatMoneyFromNanos(job.request_cost_nanos)}
 										</div>
@@ -2066,7 +2069,7 @@ export default function AsyncJobsPanel({
 							job.model,
 							resolvedModelMetadata,
 						);
-						const modelHref = getModelDetailsHref(job.model);
+						const modelHref = getModelDetailsHref(job.model, resolvedModelMetadata, job.provider);
 						const modelLogoId = getModelLogoId(
 							job.model,
 							resolvedModelMetadata,
@@ -2240,7 +2243,7 @@ export default function AsyncJobsPanel({
 								) : null}
 								{variant === "logs" ? (
 									<TableCell className="py-2 text-right font-mono text-xs">
-										{job.kind === "batch" && (job.settled_cost_nanos != null || job.settled_cost_usd != null)
+										{(job.settled_cost_nanos != null || job.settled_cost_usd != null)
 											? formatSettledCost(job)
 											: formatMoneyFromNanos(job.request_cost_nanos)}
 									</TableCell>

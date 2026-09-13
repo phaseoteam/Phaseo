@@ -1,6 +1,13 @@
 import { getBindings } from "@/runtime/env";
 import { readResponsePreview, readStreamTextWithLimit } from "@core/bounded-stream";
 import { resolveProviderKey } from "@providers/keys";
+import { reloadBatchCredential, type BatchProviderCredential } from "@core/batch-credentials";
+
+export type BatchCredentialContext = {
+	workspaceId: string;
+	keySource?: "gateway" | "byok" | null;
+	byokKeyId?: string | null;
+};
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import { saveBatchFileMeta, type BatchJobMeta } from "@core/batch-jobs";
 
@@ -150,10 +157,13 @@ export function buildProviderFileDeletePath(providerId: string, fileIdRaw: strin
 	return buildProviderFileMetadataPath(providerId, fileIdRaw);
 }
 
-export async function fetchProviderFileContent(providerId: string, fileIdRaw: string): Promise<Response> {
+export async function fetchProviderFileContent(providerId: string, fileIdRaw: string, optionsOrCredential: Pick<RequestInit, "redirect" | "signal"> | BatchCredentialContext = {}, explicitCredentialContext?: BatchCredentialContext): Promise<Response> {
+	const credentialContext = "workspaceId" in optionsOrCredential ? optionsOrCredential : explicitCredentialContext;
+	const options = "workspaceId" in optionsOrCredential ? {} : optionsOrCredential;
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
 		const bindings = getBindings() as unknown as Record<string, string | undefined>;
-		const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
+		const credential = credentialContext ? await reloadBatchCredential({ providerId, ...credentialContext }) : null;
+		const key = credential?.key || bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
 		if (!key) return providerKeyMissingResponse(providerId);
 		const fileName = normalizeGoogleFileName(fileIdRaw)
 			.split("/")
@@ -161,12 +171,14 @@ export async function fetchProviderFileContent(providerId: string, fileIdRaw: st
 			.join("/");
 		return fetch(
 			`https://generativelanguage.googleapis.com/download/v1beta/${fileName}:download?alt=media`,
-			{ headers: { "x-goog-api-key": key } },
+			{ headers: { "x-goog-api-key": key }, ...options },
 		);
 	}
 	return fetchProviderBatchApi(providerId, {
 		endpointPath: `/files/${encodeURIComponent(fileIdRaw)}/content`,
 		method: "GET",
+		...options,
+		credentialContext,
 	});
 }
 
@@ -195,12 +207,19 @@ export async function fetchProviderBatchApi(providerId: string, args: {
 	method: string;
 	body?: BodyInit | null;
 	contentType?: string | null;
+	redirect?: RequestRedirect;
+	signal?: AbortSignal | null;
+	credential?: BatchProviderCredential;
+	credentialContext?: BatchCredentialContext;
 }): Promise<Response> {
+	const suppliedCredential = args.credential ?? (args.credentialContext
+		? await reloadBatchCredential({ providerId, ...args.credentialContext })
+		: undefined);
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	if (providerId === ANTHROPIC_BATCH_PROVIDER_ID) {
 		let keyInfo: { key: string };
 		try {
-			keyInfo = resolveProviderKey(
+			keyInfo = suppliedCredential ?? resolveProviderKey(
 				{ providerId, byokMeta: [] },
 				() => bindings.ANTHROPIC_API_KEY,
 			);
@@ -215,10 +234,12 @@ export async function fetchProviderBatchApi(providerId: string, args: {
 				"Content-Type": args.contentType ?? JSON_BATCH_CONTENT_TYPE,
 			},
 			body: args.body ?? undefined,
+			...(args.redirect ? { redirect: args.redirect } : {}),
+			...(args.signal ? { signal: args.signal } : {}),
 		});
 	}
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
-		const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
+		const key = suppliedCredential?.key || bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
 		if (!key) return providerKeyMissingResponse(providerId);
 		return fetch(`${buildProviderBaseUrl(providerId, bindings)}${args.endpointPath}`, {
 			method: args.method,
@@ -227,12 +248,14 @@ export async function fetchProviderBatchApi(providerId: string, args: {
 				"Content-Type": args.contentType ?? JSON_BATCH_CONTENT_TYPE,
 			},
 			body: args.body ?? undefined,
+			...(args.redirect ? { redirect: args.redirect } : {}),
+			...(args.signal ? { signal: args.signal } : {}),
 		});
 	}
 
 	let keyInfo: { key: string };
 	try {
-		keyInfo = resolveOpenAICompatKey({ providerId, byokMeta: [] } as any);
+		keyInfo = suppliedCredential ?? resolveOpenAICompatKey({ providerId, byokMeta: [] } as any);
 	} catch {
 		return providerKeyMissingResponse(providerId);
 	}
@@ -244,6 +267,8 @@ export async function fetchProviderBatchApi(providerId: string, args: {
 		method: args.method,
 		headers,
 		body: args.body ?? undefined,
+		...(args.redirect ? { redirect: args.redirect } : {}),
+		...(args.signal ? { signal: args.signal } : {}),
 	});
 }
 
@@ -485,10 +510,11 @@ export class ProviderBatchFetchError extends Error {
 	}
 }
 
-export async function fetchProviderBatchStatus(providerId: string, nativeBatchId: string): Promise<any | null> {
+export async function fetchProviderBatchStatus(providerId: string, nativeBatchId: string, credentialContext?: BatchCredentialContext): Promise<any | null> {
 	const response = await fetchProviderBatchApi(providerId, {
 		endpointPath: buildProviderRetrievePath(providerId, nativeBatchId),
 		method: "GET",
+		credentialContext,
 	});
 	if (!response.ok) {
 		const preview = await readResponsePreview(response, 200).catch(() => "");
@@ -538,6 +564,7 @@ export async function findProviderBatchByGatewayMetadata(args: {
 	providerId: string;
 	batchId: string;
 	requestId?: string | null;
+	credentialContext?: BatchCredentialContext;
 }): Promise<any | null> {
 	if (
 		args.providerId !== OPENAI_BATCH_PROVIDER_ID &&
@@ -559,6 +586,7 @@ export async function findProviderBatchByGatewayMetadata(args: {
 		const response = await fetchProviderBatchApi(args.providerId, {
 			endpointPath,
 			method: "GET",
+			credentialContext: args.credentialContext,
 		});
 		if (!response.ok) {
 			throw new Error(`${args.providerId}_batch_recovery_list_failed_${response.status}`);
@@ -589,10 +617,10 @@ export async function findProviderBatchByGatewayMetadata(args: {
 	return null;
 }
 
-export async function fetchProviderFileText(providerId: string, fileIdRaw: string, maxBytes = 20 * 1024 * 1024): Promise<string> {
+export async function fetchProviderFileText(providerId: string, fileIdRaw: string, maxBytes = 20 * 1024 * 1024, credentialContext?: BatchCredentialContext): Promise<string> {
 	const fileId = batchText(fileIdRaw);
 	if (!fileId) throw new Error("missing_output_file_id");
-	const response = await fetchProviderFileContent(providerId, fileId);
+	const response = await fetchProviderFileContent(providerId, fileId, credentialContext);
 	if (!response.ok) {
 		const preview = await readResponsePreview(response, 200).catch(() => "");
 		throw new Error(`${providerId}_batch_output_fetch_failed_${response.status}:${preview.slice(0, 200)}`);
@@ -771,6 +799,7 @@ function compactOutputEntry(entry: any, index: number): any {
 						? { response: { videoMetadata: body.response.videoMetadata } }
 						: {}),
 					...(body.seconds != null ? { seconds: body.seconds } : {}),
+					...(typeof body.status === "string" ? { status: body.status } : {}),
 					...(body.duration != null ? { duration: body.duration } : {}),
 					...(body.duration_seconds != null ? { duration_seconds: body.duration_seconds } : {}),
 					...(body.size != null ? { size: body.size } : {}),
@@ -787,10 +816,10 @@ function compactOutputEntry(entry: any, index: number): any {
 	};
 }
 
-async function fetchProviderFileJsonLines(providerId: string, fileIdRaw: string): Promise<any[]> {
+async function fetchProviderFileJsonLines(providerId: string, fileIdRaw: string, credentialContext?: BatchCredentialContext): Promise<any[]> {
 	const fileId = batchText(fileIdRaw);
 	if (!fileId) throw new Error("missing_output_file_id");
-	const response = await fetchProviderFileContent(providerId, fileId);
+	const response = await fetchProviderFileContent(providerId, fileId, credentialContext);
 	if (!response.ok) {
 		const preview = await readResponsePreview(response, 200).catch(() => "");
 		throw new Error(`${providerId}_batch_output_fetch_failed_${response.status}:${preview}`);
@@ -839,29 +868,31 @@ async function fetchProviderFileJsonLines(providerId: string, fileIdRaw: string)
 	}
 }
 
-export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta): Promise<any[]> {
+export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta, workspaceId?: string): Promise<any[]> {
 	const providerId = meta.provider || OPENAI_BATCH_PROVIDER_ID;
+	const credentialContext = workspaceId ? { workspaceId, keySource: meta.keySource, byokKeyId: meta.byokKeyId } : undefined;
 	const outputFileId = batchText(meta.outputFileId);
 	if (outputFileId) {
-		return fetchProviderFileJsonLines(providerId, outputFileId);
+		return fetchProviderFileJsonLines(providerId, outputFileId, credentialContext);
 	}
 
 	const nativeBatchId = batchText(meta.nativeBatchId);
 	if (!nativeBatchId) throw new Error("missing_output_file_id");
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
-		const payload = await fetchProviderBatchStatus(providerId, nativeBatchId);
+		const payload = await fetchProviderBatchStatus(providerId, nativeBatchId, credentialContext);
 		const inlineResponses = extractGoogleInlineResponses(payload);
 		if (Array.isArray(inlineResponses)) {
 			return normalizeOutputEntries(providerId, inlineResponses);
 		}
 		const responseFileName = extractGoogleResponseFileName(payload);
 		if (!responseFileName) throw new Error("missing_output_file_id");
-		return fetchProviderFileJsonLines(providerId, responseFileName);
+		return fetchProviderFileJsonLines(providerId, responseFileName, credentialContext);
 	}
 	if (providerId === MISTRAL_BATCH_PROVIDER_ID) {
 		const response = await fetchProviderBatchApi(providerId, {
 			endpointPath: `/batch/jobs/${encodeURIComponent(nativeBatchId)}?inline=true`,
 			method: "GET",
+			credentialContext,
 		});
 		if (!response.ok) {
 			const preview = await readResponsePreview(response, 200).catch(() => "");
@@ -871,7 +902,7 @@ export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta): Promi
 		const inlineOutputs = extractMistralInlineOutputs(payload);
 		if (inlineOutputs) return normalizeOutputEntries(providerId, inlineOutputs);
 		const responseFileId = batchText(payload?.output_file);
-		if (responseFileId) return fetchProviderFileJsonLines(providerId, responseFileId);
+		if (responseFileId) return fetchProviderFileJsonLines(providerId, responseFileId, credentialContext);
 		throw new Error("missing_output_file_id");
 	}
 
@@ -887,6 +918,7 @@ export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta): Promi
 			const response = await fetchProviderBatchApi(providerId, {
 				endpointPath: `${resultsPath}?${query.toString()}`,
 				method: "GET",
+				credentialContext,
 			});
 			if (!response.ok) {
 				const preview = await readResponsePreview(response, 200).catch(() => "");
@@ -907,6 +939,7 @@ export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta): Promi
 	const response = await fetchProviderBatchApi(providerId, {
 		endpointPath: resultsPath,
 		method: "GET",
+		credentialContext,
 	});
 	if (!response.ok) {
 		const preview = await readResponsePreview(response, 200).catch(() => "");

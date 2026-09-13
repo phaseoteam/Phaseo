@@ -108,6 +108,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 					"gemini-3.5-flash-lite",
 					"gemini-3.6-flash",
 					"gemini-3.7-flash",
+					"gemini-3.8-flash",
 					"gemini-robotics-er-2-preview",
 					"gemma-4-26b-a4b-it",
 					"gemma-4-31b-it",
@@ -120,7 +121,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			"image.generate": true,
 			"image.edit": false,
 			"audio.speech": true,
-			"audio.transcription": false,
+			"audio.transcription": true,
 			"audio.translations": false,
 			"video.generate": true,
 		},
@@ -131,7 +132,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			"image.generate": false,
 			"image.edit": false,
 			"audio.speech": false,
-			"audio.transcription": false,
+			"audio.transcription": true,
 			"audio.translations": false,
 			"video.generate": true,
 		},
@@ -413,12 +414,12 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "novita",
 		aliases: ["novitaai", "novita-ai"],
 		adapterBackedOverrides: {
+			"video.generate": true,
 			"image.generate": false,
 			"image.edit": false,
 			"audio.speech": false,
 			"audio.transcription": false,
 			"audio.translations": false,
-			"video.generate": false,
 		},
 		text: {
 			paramPolicy: {
@@ -1058,7 +1059,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "upstage",
-		textOnly: true,
+		adapterBackedOverrides: { ocr: true },
 		text: {
 			paramPolicy: {
 				supportedParams: [

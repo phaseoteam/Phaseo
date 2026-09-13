@@ -3,6 +3,7 @@
 export type GatewayBindings = {
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
+	GATEWAY_ROUTING_REGION?: "eu" | "us";
     GATEWAY_CACHE: KVNamespace;
 	GATEWAY_IO_LOGS_BUCKET?: R2Bucket;
 	GATEWAY_IO_LOGS_BUCKET_NAME?: string;
@@ -32,6 +33,7 @@ export type GatewayBindings = {
     OAUTH_TOKEN_RATE_LIMITER?: RateLimit;
 	REALTIME_RELAY_RATE_LIMITER?: RateLimit;
     REALTIME_RELAY?: DurableObjectNamespace;
+	PROVIDER_RATE_LIMITS?: DurableObjectNamespace;
     KV?: KVNamespace;
     DB?: D1Database;
     PHASEO_CONTROL_SECRET?: string;
@@ -79,6 +81,8 @@ export type GatewayBindings = {
     AKASHML_API_KEY?: string;
     AKASHML_BASE_URL?: string;
     ALIBABA_CLOUD_API_KEY?: string;
+    MODELSCOPE_API_KEY?: string;
+    MODELSCOPE_BASE_URL?: string;
     DASHSCOPE_API_KEY?: string;
     ALIBABA_BASE_URL?: string;
     ALIBABA_VIDEO_WEBHOOK_SECRET?: string;
@@ -253,6 +257,8 @@ export type GatewayBindings = {
     FAL_QUEUE_BASE_URL?: string;
     PERPLEXITY_API_KEY?: string;
     PERPLEXITY_BASE_URL?: string;
+    TINYFISH_API_KEY?: string;
+    TINYFISH_SEARCH_BASE_URL?: string;
     POOLSIDE_API_KEY?: string;
     POOLSIDE_BASE_URL?: string;
     PHALA_API_KEY?: string;
@@ -294,6 +300,7 @@ export type GatewayBindings = {
 	AZURE_OPENAI_AUTH_TOKEN?: string;
     AZURE_OPENAI_BASE_URL?: string;
     AZURE_OPENAI_API_VERSION?: string;
+    AZURE_OPENAI_DEPLOYMENTS?: string;
     RESEND_API_KEY?: string;
     RESEND_FROM_EMAIL?: string;
     RESEND_ONBOARDING_AUTOMATIONS_ENABLED?: string;

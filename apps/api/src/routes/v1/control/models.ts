@@ -20,6 +20,8 @@ import {
 } from "./models.catalogue";
 import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 import { getEndpointMetadata } from "./endpoint-metadata";
+import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
+import { normalizeGatewayRoutingRegion } from "@pipeline/before/deployment-region";
 
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 type AvailabilityMode = "active" | "all";
@@ -202,7 +204,7 @@ function detailNumber(model: CatalogueModel, names: string[]): number | null {
     return null;
 }
 
-function buildDescription(model: CatalogueModel): string {
+function buildDescription(model: CatalogueModel, regional = false): string {
     if (model.model_id === FREE_ROUTER_MODEL_ID) {
         return "Routes each request to an eligible free model pool with provider-aware balancing.";
     }
@@ -211,8 +213,8 @@ function buildDescription(model: CatalogueModel): string {
     const displayName = model.name?.trim() || model.model_id;
     const organization = model.organisation_name?.trim();
     const owner = organization ? ` by ${organization}` : "";
-    const input = model.input_types.length ? model.input_types.join(", ") : "unspecified";
-    const output = model.output_types.length ? model.output_types.join(", ") : "unspecified";
+    const input = regional ? "text" : model.input_types.length ? model.input_types.join(", ") : "unspecified";
+    const output = regional ? "text" : model.output_types.length ? model.output_types.join(", ") : "unspecified";
     const availability = model.availability.active_provider_count > 0
         ? `${model.availability.active_provider_count} active provider${model.availability.active_provider_count === 1 ? "" : "s"}`
         : model.availability.status.replace(/_/g, " ");
@@ -256,7 +258,7 @@ function cloneJsonObject<T>(value: T): T {
     return JSON.parse(JSON.stringify(value ?? {}));
 }
 
-function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers"][number]) {
+function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers"][number], regional = false) {
     return {
         provider: {
             id: provider.api_provider_id,
@@ -268,8 +270,12 @@ function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers
         routable: provider.is_active_gateway,
         endpoints: [...(provider.endpoints ?? [])],
         modalities: {
-            input: provider.input_modalities?.length ? [...provider.input_modalities] : [...model.input_types],
-            output: provider.output_modalities?.length ? [...provider.output_modalities] : [...model.output_types],
+            input: regional ? ["text"] : provider.input_modalities?.length ? [...provider.input_modalities] : [...model.input_types],
+            output: regional ? ["text"] : provider.output_modalities?.length ? [...provider.output_modalities] : [...model.output_types],
+        },
+        residency: {
+            execution_regions: [...(provider.execution_regions ?? [])],
+            data_regions: [...(provider.data_regions ?? [])],
         },
         capabilities: {
             parameters: [...(provider.params ?? [])],
@@ -476,6 +482,7 @@ function toPhaseoModel(
     model: CatalogueModel,
     replacementModelId: string | null,
     variants: ModelVariantLinks,
+	regional = false,
 ) {
     const lifecycleStatus = normalizeLifecycleStatus(model.status, model.deprecation_date, model.retirement_date);
     return {
@@ -484,7 +491,7 @@ function toPhaseoModel(
         variant: model.variant_kind || "standard",
         variants,
         name: model.name?.trim() || model.model_id,
-        description: buildDescription(model),
+        description: buildDescription(model, regional),
         organization: model.organisation_id ? {
             id: model.organisation_id,
             name: model.organisation_name,
@@ -505,8 +512,8 @@ function toPhaseoModel(
             ),
         },
         modalities: {
-            input: [...model.input_types],
-            output: [...model.output_types],
+            input: regional ? ["text"] : [...model.input_types],
+            output: regional ? ["text"] : [...model.output_types],
         },
         limits: {
             input_tokens: detailNumber(model, ["input_context_length", "context_length"]),
@@ -525,12 +532,93 @@ function toPhaseoModel(
             inactive_provider_count: model.availability.inactive_provider_count,
         },
         pricing: cloneJsonObject(model.pricing),
-        offers: model.providers.map((provider) => toModelOffer(model, provider)),
+        offers: model.providers.map((provider) => toModelOffer(model, provider, regional)),
     };
+}
+
+async function fetchWorkspacePrivateCatalogue(args: {
+    workspaceId: string;
+    endpoints: string[];
+    modelIds: string[];
+    providerIds: string[];
+    organisationIds: string[];
+    inputTypes: string[];
+    outputTypes: string[];
+}) {
+    if (args.providerIds.length && !args.providerIds.some((id) => id === "private" || id === "private-model")) return [];
+    if (args.organisationIds.length && !args.organisationIds.includes("private")) return [];
+    if (args.inputTypes.length && !args.inputTypes.includes("text")) return [];
+    if (args.outputTypes.length && !args.outputTypes.includes("text")) return [];
+    const { data, error } = await getSupabaseAdmin().from("workspace_private_models")
+        .select("model_id,name,description,supports_responses,input_modalities,output_modalities,context_length,max_output_tokens,created_at")
+        .eq("workspace_id", args.workspaceId)
+        .eq("enabled", true)
+        .order("model_id");
+    if (error) throw new Error(`private_model_catalogue_failed:${error.message ?? "unknown"}`);
+    return (data ?? []).flatMap((row: any) => {
+        if (args.modelIds.length && !args.modelIds.includes(String(row.model_id))) return [];
+        const availableEndpoints = ["chat/completions", "messages", ...(row.supports_responses ? ["responses"] : [])];
+        if (args.endpoints.length && !args.endpoints.some((endpoint) => availableEndpoints.includes(endpoint))) return [];
+        return [{
+            id: String(row.model_id),
+            base_model_id: String(row.model_id),
+            variant: "standard",
+            variants: {},
+            name: String(row.name),
+            description: String(row.description ?? "Workspace-owned private model."),
+            organization: { id: "private", name: "Private", color: null },
+            aliases: [],
+            lifecycle: {
+                status: "active",
+                released_at: row.created_at ?? null,
+                deprecated_at: null,
+                retires_at: null,
+                replacement_id: null,
+                message: null,
+            },
+            modalities: {
+                input: Array.isArray(row.input_modalities) ? row.input_modalities : ["text"],
+                output: Array.isArray(row.output_modalities) ? row.output_modalities : ["text"],
+            },
+            limits: {
+                input_tokens: row.context_length ?? null,
+                output_tokens: row.max_output_tokens ?? null,
+            },
+            capabilities: { endpoints: availableEndpoints, parameters: [], parameter_details: {} },
+            availability: {
+                status: "active",
+                provider_count: 1,
+                active_provider_count: 1,
+                coming_soon_provider_count: 0,
+                inactive_provider_count: 0,
+            },
+            pricing: { pricing_plan: "byok", meters: {} },
+            offers: [{
+                provider: { id: "private-model", name: "Private" },
+                model: String(row.model_id),
+                status: "active",
+                status_reason: null,
+                routable: true,
+                endpoints: availableEndpoints,
+                modalities: {
+                    input: Array.isArray(row.input_modalities) ? row.input_modalities : ["text"],
+                    output: Array.isArray(row.output_modalities) ? row.output_modalities : ["text"],
+                },
+                residency: { execution_regions: [], data_regions: [] },
+                capabilities: { parameters: [], parameter_details: {} },
+                routing: { provider: "active", model: "active", capability: "active" },
+                effective: { from: null, to: null },
+                pricing: { pricing_plan: "byok", meters: {} },
+            }],
+        }];
+    });
 }
 
 export async function handleModels(req: Request) {
     const url = new URL(req.url);
+    const gatewayRegion = normalizeGatewayRoutingRegion(
+		getBindingsIfConfigured()?.GATEWAY_ROUTING_REGION,
+	);
     if (hasDeprecatedPrivacyScopeQuery(url)) {
         return json(
             {
@@ -582,8 +670,8 @@ export async function handleModels(req: Request) {
 
     const cacheOptions = {
         scope: cacheScope,
-        ttlSeconds: 1800,
-        staleSeconds: 1800,
+        ttlSeconds: 0,
+        staleSeconds: 0,
         varyHeaders: [],
     };
 
@@ -645,6 +733,7 @@ export async function handleModels(req: Request) {
             outputTypes,
             params,
             availability: availabilityMode,
+			...(gatewayRegion ? { region: gatewayRegion, textOnly: true } : {}),
         });
         const freeRouterModel = await buildFreeRouterCatalogueModel({
             workspaceId: auth.value.workspaceId,
@@ -658,17 +747,43 @@ export async function handleModels(req: Request) {
                 : catalogue;
         const replacementByPreviousModel = buildReplacementByPreviousModel(enrichedCatalogue);
         const variantsByBaseModel = buildModelVariants(enrichedCatalogue);
-        const models = enrichedCatalogue
+        const publicModels = enrichedCatalogue
             .filter((model) => !modelIds.length || modelIds.includes(model.model_id))
             .map((model) =>
                 toPhaseoModel(
                     model,
                     model.replacement_model_id ?? replacementByPreviousModel.get(model.model_id) ?? null,
                     variantsByBaseModel.get(model.base_model_id || model.model_id) ?? {},
+					gatewayRegion !== null,
                 )
             );
+        const privateModels = await fetchWorkspacePrivateCatalogue({
+            workspaceId: auth.value.workspaceId,
+            endpoints,
+            modelIds,
+            providerIds,
+            organisationIds,
+            inputTypes,
+            outputTypes,
+        });
+        const privateByModelId = new Map(privateModels.map((model) => [model.id, model]));
+        const mergedPublicModels = publicModels.map((model) => {
+            const privateModel = privateByModelId.get(model.id);
+            if (!privateModel) return model;
+            privateByModelId.delete(model.id);
+            return {
+                ...model,
+                offers: [...model.offers, ...privateModel.offers],
+                availability: {
+                    ...model.availability,
+                    provider_count: model.availability.provider_count + privateModel.availability.provider_count,
+                    active_provider_count: model.availability.active_provider_count + privateModel.availability.active_provider_count,
+                },
+            };
+        });
+        const models = [...privateByModelId.values(), ...mergedPublicModels];
         const paged = models.slice(offset, offset + limit);
-        const headers = cacheHeaders(cacheOptions);
+        const headers = cacheHeaders({ ...cacheOptions, varyHeaders: ["Authorization"] });
         if (requestedFormat.format !== "json") {
             const items: FeedItem[] = paged.map((model) => ({
                 id: model.id,
@@ -689,6 +804,7 @@ export async function handleModels(req: Request) {
             {
                 ok: true,
                 availability_mode: availabilityMode,
+                gateway_region: gatewayRegion,
                 limit,
                 offset,
                 total: models.length,
@@ -862,8 +978,8 @@ export async function handleModelEndpoints(req: Request) {
             200,
             cacheHeaders({
                 scope: "models:endpoints:shared:v1",
-                ttlSeconds: 1800,
-                staleSeconds: 1800,
+                ttlSeconds: 0,
+                staleSeconds: 0,
                 varyHeaders: [],
             }),
         );

@@ -57,7 +57,12 @@ import {
 	formatWordyRange,
 	shortenIdentifier,
 } from "@/lib/gateway/usage/timeFormatting";
-import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
+import {
+	getModelDetailsHref,
+	getModelDisplayName,
+	getModelMetadataEntry,
+	type ModelMetadataMap,
+} from "./model-display";
 import {
 	buildUsageFromNormalizedRequestFields,
 	extractUsageMeters,
@@ -84,20 +89,12 @@ function formatDuration(milliseconds: number): string {
 	return `${(minutes / 60).toFixed(1)} hr`;
 }
 
-function getModelDetailsHref(modelId: string | null): string | null {
-	if (!modelId) return null;
-	const [organisationId, ...modelParts] = modelId.split("/");
-	if (!organisationId || modelParts.length === 0) return null;
-	const routeModelId = modelParts.join("/");
-	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(routeModelId)}`;
-}
-
 function getModelLogoId(
 	modelId: string | null,
 	modelMetadata: ModelMetadataMap,
 ): string | null {
 	if (!modelId) return null;
-	const metadata = modelMetadata.get(modelId);
+	const metadata = getModelMetadataEntry(modelId, modelMetadata);
 	if (metadata?.organisationId) return metadata.organisationId;
 	if (modelId.includes("/")) {
 		const [organisationId] = modelId.split("/");
@@ -355,7 +352,7 @@ function SessionModelsCell({
 		<div className="flex flex-wrap gap-1.5">
 			{visibleModels.map(({ model_id: modelId }) => {
 				const modelLabel = getModelDisplayName(modelId, modelMetadata);
-				const modelHref = getModelDetailsHref(modelId);
+				const modelHref = getModelDetailsHref(modelId, modelMetadata);
 				const modelLogoId = getModelLogoId(modelId, modelMetadata);
 
 				return (
@@ -407,7 +404,7 @@ function SessionModelsCell({
 							<div className="flex flex-wrap gap-1.5">
 								{hiddenModels.map(({ model_id: modelId }) => {
 									const modelLabel = getModelDisplayName(modelId, modelMetadata);
-									const modelHref = getModelDetailsHref(modelId);
+									const modelHref = getModelDetailsHref(modelId, modelMetadata);
 									const modelLogoId = getModelLogoId(modelId, modelMetadata);
 
 									return (
@@ -696,7 +693,7 @@ function SessionDetailSheet({
 												request.model_id,
 												modelMetadata,
 											);
-											const modelHref = getModelDetailsHref(request.model_id);
+											const modelHref = getModelDetailsHref(request.model_id, modelMetadata, request.provider);
 											const modelLogoId = getModelLogoId(
 												request.model_id,
 												modelMetadata,

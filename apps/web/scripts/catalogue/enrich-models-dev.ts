@@ -1,6 +1,6 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { DATA_ROOT } from "../importer/paths";
+import { DATA_ROOT } from "./dataPaths";
 
 type JsonObject = Record<string, any>;
 

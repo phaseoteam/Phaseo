@@ -859,6 +859,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			const maxServerToolCalls = Math.min(100, Math.max(1, irForExecution.maxToolCalls ?? 30));
 			let serverToolRounds = 0;
 			let serverToolCalls = 0;
+			let billableWebSearchRequests: number | undefined;
 			const serverToolUsage = {
 				datetimeRequests: 0,
 				webSearchRequests: 0,
@@ -963,7 +964,14 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				}
 				serverToolRounds += 1;
 				serverToolUsage.datetimeRequests += continuation.usage.datetimeRequests ?? 0;
+				const webSearchRequestsBefore = serverToolUsage.webSearchRequests;
 				serverToolUsage.webSearchRequests += continuation.usage.webSearchRequests ?? 0;
+				if (typeof continuation.usage.billableWebSearchRequests === "number") {
+					billableWebSearchRequests =
+						(billableWebSearchRequests ?? webSearchRequestsBefore) + continuation.usage.billableWebSearchRequests;
+				} else if (billableWebSearchRequests !== undefined) {
+					billableWebSearchRequests += continuation.usage.webSearchRequests ?? 0;
+				}
 				serverToolUsage.webSearchResults += continuation.usage.webSearchResults ?? 0;
 				serverToolUsage.webSearchExtraResults += continuation.usage.webSearchExtraResults ?? 0;
 				serverToolUsage.webFetchRequests += continuation.usage.webFetchRequests ?? 0;
@@ -1156,21 +1164,22 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				serverToolUsage.fusionRequests > 0 ||
 				serverToolUsage.searchModelsRequests > 0
 			) {
-				const mergedUsage = attachServerToolUsage(aggregateUsage, {
-					...serverToolUsage,
-				});
+				const usageMetrics = billableWebSearchRequests === undefined
+					? { ...serverToolUsage }
+					: { ...serverToolUsage, billableWebSearchRequests };
+				const mergedUsage = attachServerToolUsage(aggregateUsage, usageMetrics);
 				if (exec.result.ir) {
 					(exec.result.ir as IRChatResponse).usage = mergedUsage;
 				}
 				exec.result.bill.usage = attachServerToolUsageToRawUsage(
 					(exec.result.bill.usage as Record<string, any> | undefined) ?? undefined,
-					{ ...serverToolUsage },
+					usageMetrics,
 				);
 				if (exec.result.rawResponse && typeof exec.result.rawResponse === "object") {
 					const rawResponse = { ...(exec.result.rawResponse as Record<string, any>) };
 					rawResponse.usage = attachServerToolUsageToRawUsage(
 						rawResponse.usage as Record<string, any> | undefined,
-						{ ...serverToolUsage },
+						usageMetrics,
 					);
 					exec.result.rawResponse = rawResponse;
 				}

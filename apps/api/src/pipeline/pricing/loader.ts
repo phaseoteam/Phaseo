@@ -57,53 +57,36 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
     const loader = (async (): Promise<PriceCard | null> => {
         const nowIso = new Date().toISOString();
         const supabase = getSupabaseAdmin();
-        const routeQueries = normalizedProviderModelSlug
-            ? await Promise.all([supabase.from("v2_model_provider_routes")
-                .select("provider_model_id,model_slug,provider_model_slug")
-                .eq("provider_slug", provider).eq("provider_model_slug", normalizedProviderModelSlug)
-                .in("status", ["active", "degraded"]).eq("routing_enabled", true)])
-            : await Promise.all([
-                supabase.from("v2_model_provider_routes")
-                .select("provider_model_id,model_slug,provider_model_slug")
-                .eq("provider_slug", provider).eq("model_slug", model)
-                .in("status", ["active", "degraded"]).eq("routing_enabled", true),
-                supabase.from("v2_model_provider_routes")
-                .select("provider_model_id,model_slug,provider_model_slug")
-                .eq("provider_slug", provider).eq("provider_model_slug", model)
-                .in("status", ["active", "degraded"]).eq("routing_enabled", true),
-            ]);
-        if (routeQueries.some((result) => result.error)) return null;
-        const routes = new Map<string, Record<string, any>>();
-        for (const row of routeQueries.flatMap((result) => result.data ?? [])) {
-            if (row.provider_model_id) routes.set(String(row.provider_model_id), row);
-        }
-        const routeIds = [...routes.keys()];
-        if (!routeIds.length) {
-            writePricingL1(cacheKey, null, PRICING_L1_NEGATIVE_TTL_MS);
-            return null;
-        }
-
-        const { data: skuRows, error: skuError } = await supabase
+        // Existing foreign keys let PostgREST fetch the complete pricing graph
+        // in one round trip. Keep SKUs without meters for window/version parity.
+        let query = supabase
             .from("v2_pricing_skus")
-            .select("sku_id,provider_model_id,service_tier_slug,operation,status,currency,effective_from,effective_to,metadata,updated_at")
-            .in("provider_model_id", routeIds)
+            .select("sku_id,provider_model_id,service_tier_slug,operation,status,currency,effective_from,effective_to,metadata,updated_at,route:v2_model_provider_routes!inner(provider_model_id),meters:v2_pricing_sku_meters(sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,meter_order,metadata,updated_at)")
+            .eq("route.provider_slug", provider)
+            .in("route.status", ["active", "degraded"])
+            .eq("route.routing_enabled", true)
             .eq("operation", endpoint)
             .eq("status", "active")
+            // Wallet debits are USD. Foreign-currency catalog quotes must be
+            // converted by an explicit pricing policy before they are executable.
+            .eq("currency", "USD")
             .lte("effective_from", nowIso)
             .or(`effective_to.is.null,effective_to.gt.${nowIso}`)
-            .order("effective_from", { ascending: false });
-        if (skuError || !skuRows?.length) {
+            .eq("meters.billable", true)
+            .order("effective_from", { ascending: false })
+            .order("meter_order", { referencedTable: "meters", ascending: true });
+        query = normalizedProviderModelSlug
+            ? query.eq("route.provider_model_slug", normalizedProviderModelSlug)
+            : query.or(`model_slug.eq.${JSON.stringify(model)},provider_model_slug.eq.${JSON.stringify(model)}`, { referencedTable: "route" });
+        const { data: skuRows, error: skuError } = await query;
+        if (skuError) return null;
+        if (!skuRows?.length) {
             writePricingL1(cacheKey, null, PRICING_L1_NEGATIVE_TTL_MS);
             return null;
         }
-        const skuIds = skuRows.map((row) => String(row.sku_id));
-        const { data: meterRows, error: meterError } = await supabase
-            .from("v2_pricing_sku_meters")
-            .select("sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,meter_order,metadata,updated_at")
-            .in("sku_id", skuIds)
-            .eq("billable", true)
-            .order("meter_order", { ascending: true });
-        if (meterError || !meterRows?.length) {
+        const meterRows = skuRows.flatMap((row) => row.meters)
+            .sort((left, right) => Number(left.meter_order) - Number(right.meter_order));
+        if (!meterRows.length) {
             writePricingL1(cacheKey, null, PRICING_L1_NEGATIVE_TTL_MS);
             return null;
         }

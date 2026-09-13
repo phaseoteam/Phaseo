@@ -13,6 +13,7 @@ import type { Endpoint } from "@core/types";
 import type { IRChatRequest, IREmbeddingsRequest } from "@core/ir";
 import type { GatewayBindings } from "@/runtime/env";
 import { installLoopbackOnlyFetchGuard } from "../helpers/network-guard";
+import { mountNativeMediaFixtures } from "./native-media-fixtures";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_ROOT = path.join(__dirname, "fixtures");
@@ -221,6 +222,28 @@ function createOpenAIChatMount(): Mountable {
     };
 }
 
+function createMetaAsrMount(): Mountable {
+    let journal: Journal | null = null;
+    return {
+        setJournal(nextJournal) { journal = nextJournal; },
+        async handleRequest(req: IncomingMessage, res: ServerResponse, pathname: string) {
+            if (pathname !== "/transcribe" || req.method !== "POST") return false;
+            await readIncomingBody(req);
+            const headers = flattenHeaders(req.headers as Record<string, string | string[] | undefined>);
+            const transcript = "Deterministic transcription from AIMock.";
+            journal?.add({ method: req.method, path: req.url ?? pathname, headers, body: null, service: "transcription", response: { status: 200, fixture: null } });
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({
+                sessionId: "meta_asr_aimock_123",
+                transcript,
+                audioDurationMs: 1250,
+                turns: [{ turnId: 0, text: transcript, start: 0, end: 1.25 }],
+            }));
+            return true;
+        },
+    };
+}
+
 function createGmiRequestQueueMount(): Mountable {
     let journal: Journal | null = null;
     return {
@@ -316,7 +339,7 @@ function createAnthropicMessagesMount(): Mountable {
     return {
         setJournal(nextJournal) { journal = nextJournal; },
         async handleRequest(req: IncomingMessage, res: ServerResponse, pathname: string) {
-            if (!pathname.endsWith(":rawPredict") || req.method !== "POST") return false;
+            if (!pathname.endsWith(":streamRawPredict") || req.method !== "POST") return false;
             const body = JSON.parse(await readIncomingBody(req)) as Record<string, any>;
             const headers = flattenHeaders(req.headers as Record<string, string | string[] | undefined>);
             const serialized = JSON.stringify(body);
@@ -523,7 +546,9 @@ function buildAimockBindings(): Partial<GatewayBindings> {
         GOOGLE_AI_STUDIO_BASE_URL: AIMOCK_BASE_URL,
         GOOGLE_BASE_URL: AIMOCK_BASE_URL,
         GOOGLE_VERTEX_PROJECT: "aimock-project",
-        GOOGLE_VERTEX_LOCATION: "us-east5",
+        GOOGLE_VERTEX_LOCATION: "europe-west1",
+        AZURE_OPENAI_BASE_URL: AIMOCK_BASE_URL,
+        AZURE_OPENAI_API_KEY: "test-azure-key",
 		AMAZON_BEDROCK_API_KEY: "test-bedrock-key",
 		AMAZON_BEDROCK_MANTLE_BASE_URL: `${AIMOCK_BASE_URL}/anthropic/v1`,
 		ANTHROPIC_AWS_API_KEY: "test-anthropic-aws-key",
@@ -544,6 +569,11 @@ function buildAimockBindings(): Partial<GatewayBindings> {
                 : AIMOCK_BASE_URL;
         }
     }
+
+    // Preserve native regional URL validation; the fetch wrapper below sends only
+    // these exact native test hosts to loopback after the executor builds its URL.
+    delete bindings.GOOGLE_VERTEX_BASE_URL;
+    bindings.MODELSCOPE_BASE_URL = `${AIMOCK_BASE_URL}/native-media/modelscope`;
 
 	for (const name of [
 		"AMBIENT_BASE_URL",
@@ -695,18 +725,40 @@ export async function startAimock(): Promise<LLMock> {
     ]);
     aimock.mount("/v1/rerank", createOpenAIRerankMount());
     aimock.mount("/v1/tts", createXAiTtsMount());
+    aimock.mount("/v1/asr", createMetaAsrMount());
     aimock.mount("/v1beta/interactions", createGoogleInteractionsMount());
     aimock.mount("/v1/openai", createOpenAIChatMount());
     aimock.mount("/v1/solar", createOpenAIChatMount());
     aimock.mount("/deepseek", createOpenAIChatMount());
     aimock.mount("/api/v1", createOpenAIChatMount());
     aimock.mount("/api/v1", createGmiRequestQueueMount());
+    aimock.mount("/v2", createOpenAIChatMount());
+    aimock.mount("/openai/v1", createOpenAIChatMount());
+    aimock.mount("/native-media/modelscope/v1", createOpenAIChatMount());
     aimock.mount("/anthropic/v1", createBedrockMantleMessagesMount());
-    aimock.mount("/v1/projects/aimock-project/locations/us-east5/publishers/anthropic/models", createAnthropicMessagesMount());
+    for (const location of ["global", "eu", "europe-west1", "us-central1"]) {
+        const vertex = `/v1/projects/aimock-project/locations/${location}`;
+        aimock.mount(`${vertex}/publishers/anthropic/models`, createAnthropicMessagesMount());
+        aimock.mount(`${vertex}/endpoints/openapi`, createOpenAIChatMount());
+    }
+    mountNativeMediaFixtures(aimock);
 
     await aimock.start();
     if (!record) {
-        restoreAimockFetch = installLoopbackOnlyFetchGuard();
+        const restoreGuard = installLoopbackOnlyFetchGuard();
+        const guardedFetch = globalThis.fetch;
+        const vertexHosts = new Set(["aiplatform.googleapis.com", "aiplatform.eu.rep.googleapis.com", "europe-west1-aiplatform.googleapis.com", "us-central1-aiplatform.googleapis.com"]);
+        const ovhHosts = new Set(["stable-diffusion-xl.endpoints.kepler.ai.cloud.ovh.net", "nvr-tts-en-us.endpoints.kepler.ai.cloud.ovh.net"]);
+        globalThis.fetch = ((input, init) => {
+            const url = new URL(input instanceof Request ? input.url : String(input));
+            if (url.protocol === "https:" && !url.username && !url.password && (vertexHosts.has(url.hostname) || ovhHosts.has(url.hostname))) {
+                const prefix = ovhHosts.has(url.hostname) ? "/native-media/ovhcloud" : "";
+                const mapped = `${AIMOCK_BASE_URL}${prefix}${url.pathname}${url.search}`;
+                return guardedFetch(input instanceof Request ? new Request(mapped, input) : mapped, init);
+            }
+            return guardedFetch(input, init);
+        }) as typeof fetch;
+        restoreAimockFetch = restoreGuard;
     }
     return aimock;
 }

@@ -2,13 +2,13 @@
   "model_id": "spacex-ai/grok-imagine-image-quality",
   "organisation_id": "spacex-ai",
   "name": "Grok Imagine Image Quality",
-  "status": "Available",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Grok Imagine Image Quality is an image generation model from SpaceXAI for visual creation workflows. It supports text and image inputs for generation, restyling, or edit-style workflows.",
   "announced_date": "2026-05-06T00:00:00",
   "release_date": "2026-05-06T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-09-02T00:00:00Z",
+  "retirement_date": "2026-09-03T00:00:00Z",
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "image",
@@ -23,6 +23,11 @@
       "title": "API Reference",
       "kind": "api_reference",
       "url": "https://docs.x.ai/developers/models/grok-imagine-image-quality"
+    },
+    {
+      "title": "Retirement notice",
+      "kind": "deprecation",
+      "url": "https://docs.x.ai/developers/migration/imagine-image-quality-nov-2"
     }
   ],
   "details": [],
@@ -70,14 +75,20 @@
       "url": "https://docs.x.ai/developers/models/grok-imagine-image-quality",
       "accessed_at": null,
       "notes": null
+    },
+    {
+      "kind": "deprecation",
+      "url": "https://docs.x.ai/developers/migration/imagine-image-quality-nov-2",
+      "accessed_at": "2026-09-03T00:00:00Z",
+      "notes": "xAI's notice schedules provider-side retirement of this slug for November 2, 2026. Phaseo retires the legacy catalog route without automatic fallback or redirect."
     }
   ],
   "verification": {
-    "status": "unverified",
-    "checked_at": null,
-    "notes": null
+    "status": "verified",
+    "checked_at": "2026-09-03T00:00:00Z",
+    "notes": "Lifecycle verified against xAI's official retirement notice; this catalog entry is retired without automatic fallback or redirect."
   },
-  "last_updated": null,
+  "last_updated": "2026-09-03T00:00:00Z",
   "removal_date": null,
   "replacement_model_id": null,
   "license_url": null

@@ -36,6 +36,7 @@ const CORE_PRICING_METER_VALUES = [
   "output_video_seconds",
   "output_video_frames",
   "bfl_credits",
+  "deepinfra_cost_usd",
   "total_tokens",
   "requests",
   "server_tool_web_search_requests",

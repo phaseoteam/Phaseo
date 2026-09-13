@@ -4,6 +4,7 @@ import type {
 	MonitorModelTableRow,
 } from "@/lib/fetchers/models/table-view/types";
 import { publicSWRFetcher } from "@/lib/swr/publicFetcher";
+import { fetchAuthenticatedPrivateModels } from "@/lib/swr/privateModels";
 
 type ModelsCatalogueVersion = "v1" | "v2";
 
@@ -77,8 +78,14 @@ async function fetchModelsTableDataForVersion(
 	);
 	for (const page of laterPages) assertTablePage(page, expectedVersion);
 
+	let models = [firstPage, ...laterPages].flatMap((page) => page.models);
+	const privateModels = await fetchAuthenticatedPrivateModels<MonitorModelTableRow>("table");
+	if (privateModels.length > 0) {
+		const privateIds = new Set(privateModels.map((model) => model.modelId));
+		models = [...privateModels, ...models.filter((model) => !privateIds.has(model.modelId))];
+	}
 	return {
-		models: [firstPage, ...laterPages].flatMap((page) => page.models),
+		models,
 		allEndpoints: firstPage.facets?.endpoints ?? [],
 		allModalities: firstPage.facets?.modalities ?? [],
 		allFeatures: sortFeatures(firstPage.facets?.features ?? []),

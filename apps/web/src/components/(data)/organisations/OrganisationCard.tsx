@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { OrganisationCard as OrganisationTypeCard } from "@/lib/fetchers/organisations/getAllOrganisations";
 import Image from "next/image";
 import { Logo } from "@/components/Logo";
+import { formatLocation } from "@/lib/locations";
 
 export default function OrganisationCard({
 	organisation,
@@ -62,6 +63,7 @@ export default function OrganisationCard({
 									className="inline-block rounded-sm border"
 								/>
 							</Link>
+							{formatLocation(organisation.country_code, organisation.subdivision_code)}
 						</span>
 					)}
 				</div>

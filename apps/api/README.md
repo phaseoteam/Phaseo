@@ -22,6 +22,47 @@ The gateway lets developers access models from OpenAI, Anthropic, Google, Mistra
 - Logging: Axiom
 - Monitoring: server timing, structured events, and dashboards
 
+## Regional provider routing
+
+The gateway has optional EU and US deployments:
+
+- `https://eu.api.phaseo.app`
+- `https://us.api.phaseo.app`
+
+Their deployment-owned `GATEWAY_ROUTING_REGION` value is applied as both an
+execution-region and data-region requirement after request, preset, and dynamic
+route configuration has been merged. A conflicting request is rejected, and an
+empty compliant provider pool fails closed instead of falling back globally.
+
+These deployments use Cloudflare Workers placement hints and regional provider
+metadata. They are **not end-to-end data residency guarantees**: Supabase, KV,
+Workers logs, provider subrequests, and other dependencies are not yet proven to
+remain in-region. Do not describe this feature as guaranteed residency until the
+complete data path has been audited and Cloudflare Regional Services is enabled.
+
+The regional configs intentionally have no cron triggers, R2 logging buckets,
+data-contribution buckets, or realtime Durable Object binding. Async and
+background surfaces need a separate residency review before being enabled.
+`/v1/models` is filtered by the deployment region and only advertises the three
+text endpoints supported by the regional deployments. The initial regional
+surface accepts text-only Chat Completions, Responses, and Messages requests;
+non-text content, non-text output, hosted tools, and other endpoints fail before
+provider execution.
+
+Validate both deployments without publishing them:
+
+```bash
+pnpm --filter @phaseo/gateway-api build:regional
+```
+
+Before deployment, provision the same required gateway secrets separately for
+`phaseo-gateway-eu` and `phaseo-gateway-us`. Provider credentials must point to
+the regional offers represented by the provider catalog.
+
+See [docs/internal/regional-deployment.md](docs/internal/regional-deployment.md) for the complete
+Cloudflare setup, secret preparation, deployment, and non-inference verification
+runbook.
+
 ## Workspace invite secrets
 
 Workspace invite management requires `INVITE_ENCRYPTION_KEY` and
