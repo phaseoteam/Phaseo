@@ -594,7 +594,7 @@ function ProviderHourlyPerformance({
 						</p>
 					) : null}
 					<div
-						className="grid h-8 grid-flow-col auto-cols-fr items-end"
+						className="grid h-8 grid-flow-col auto-cols-fr items-end gap-0.5"
 						role="img"
 						aria-label={`${metricLabel} over the last ${hours} hours`}
 						onPointerLeave={onPointLeave}
