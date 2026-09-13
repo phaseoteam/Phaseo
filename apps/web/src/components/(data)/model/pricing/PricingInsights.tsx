@@ -1724,6 +1724,7 @@ export default function PricingInsights({
 								</TableRow>
 								{isExpanded ? additionalTierRows.map((tierRow) => {
 									const isTierVisible = isSeriesVisible(tierRow);
+									const canToggleTierSeries = displayedPricingView === "listed" || tierRow.effectiveUsageEligible;
 
 									return (
 										<TableRow
@@ -1742,7 +1743,7 @@ export default function PricingInsights({
 										>
 						<TableCell className="px-3 py-1.5">
 						<div className="flex items-center gap-2">
-							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={isTierVisible} aria-label={`${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isTierVisible && "opacity-45")}>
+											<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? `${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line` : `${row.providerName} ${tierRow.pricingPlan} price line unavailable in Effective view without observed usage`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
 									<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
 								</button>
 								<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
@@ -1844,6 +1845,7 @@ export default function PricingInsights({
 										</TableRow>
 										{isExpanded ? additionalTierRows.map((tierRow) => {
 											const isTierVisible = isSeriesVisible(tierRow);
+											const canToggleTierSeries = displayedPricingView === "listed" || tierRow.effectiveUsageEligible;
 
 											return (
 												<TableRow
@@ -1862,7 +1864,7 @@ export default function PricingInsights({
 												>
 							<TableCell>
 								<div className="flex items-center gap-2">
-									<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={isTierVisible} aria-label={`${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isTierVisible && "opacity-45")}>
+															<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? `${isTierVisible ? "Hide" : "Show"} ${row.providerName} ${tierRow.pricingPlan} price line` : `${row.providerName} ${tierRow.pricingPlan} price line unavailable in Effective view without observed usage`} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
 										<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
 									</button>
 									<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
