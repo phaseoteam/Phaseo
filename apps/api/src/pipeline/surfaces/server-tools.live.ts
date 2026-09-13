@@ -128,13 +128,18 @@ export async function createManagedToolLiveResponse(args: {
 					emit({ type: "error", message: `Managed tool request failed with status ${response.status}.` });
 					return;
 				}
-				const body = await response.text();
-				const frames = body.split(/\r?\n\r?\n/).map(parseFrame).filter((frame): frame is NonNullable<typeof frame> => Boolean(frame));
-				if (finalTurnBuffered || rounds.at(-1)?.text.length === 0) {
-					for (const frame of frames) {
+				let terminal: ReturnType<typeof parseFrame> = null;
+				const chatFinal: Array<NonNullable<ReturnType<typeof parseFrame>>> = [];
+				const anthropicFinal: Array<NonNullable<ReturnType<typeof parseFrame>>> = [];
+				let sawMessageStop = false;
+				const handleFrame = (frame: NonNullable<ReturnType<typeof parseFrame>>) => {
+					if (finalTurnBuffered || rounds.at(-1)?.text.length === 0) {
 						if (args.protocol === "openai.responses" && frame.eventName === "response.output_text.delta") {
 							const delta = frame.payload?.delta;
-							if (typeof delta === "string") { outputText += delta; enqueue(frame.eventName, { ...frame.payload, output_index: nextOutputIndex }); }
+							if (typeof delta === "string") {
+								outputText += delta;
+								enqueue(frame.eventName, { ...frame.payload, output_index: nextOutputIndex });
+							}
 						} else if (args.protocol === "openai.chat.completions") {
 							const choices = frame.payload?.choices;
 							if (Array.isArray(choices) && choices.some((choice: any) => choice.delta?.content || choice.delta?.reasoning_content)) {
@@ -144,9 +149,32 @@ export async function createManagedToolLiveResponse(args: {
 							enqueue(frame.eventName, { ...frame.payload, index: nextOutputIndex });
 						}
 					}
+					if (args.protocol === "openai.responses" && ["response.completed", "response.failed", "response.incomplete"].includes(frame.eventName)) {
+						terminal = frame;
+					} else if (args.protocol === "openai.chat.completions" && (frame.payload?.choices?.some((choice: any) => choice.finish_reason) || frame.payload?.usage)) {
+						chatFinal.push(frame);
+					} else if (args.protocol === "anthropic.messages" && (frame.eventName === "message_delta" || frame.eventName === "message_stop")) {
+						anthropicFinal.push(frame);
+						if (frame.eventName === "message_stop") sawMessageStop = true;
+					}
+				};
+				const reader = response.body.getReader();
+				const decoder = new TextDecoder();
+				let pending = "";
+				while (true) {
+					const chunk = await reader.read();
+					if (chunk.done) break;
+					pending += decoder.decode(chunk.value, { stream: true });
+					const rawFrames = pending.split(/\r?\n\r?\n/);
+					pending = rawFrames.pop() ?? "";
+					for (const raw of rawFrames) {
+						const frame = parseFrame(raw);
+						if (frame) handleFrame(frame);
+					}
 				}
+				const trailing = parseFrame(pending + decoder.decode());
+				if (trailing) handleFrame(trailing);
 				if (args.protocol === "openai.responses") {
-					const terminal = [...frames].reverse().find((frame) => ["response.completed", "response.failed", "response.incomplete"].includes(frame.eventName));
 					if (terminal) {
 						if (terminal.payload?.response) {
 							const preceding = rounds.slice(0, finalTurnBuffered ? undefined : -1).flatMap((round) => [
@@ -165,10 +193,10 @@ export async function createManagedToolLiveResponse(args: {
 						enqueue(terminal.eventName, terminal.payload);
 					} else emit({ type: "error", message: "Managed tool stream ended without a terminal response." });
 				} else if (args.protocol === "openai.chat.completions") {
-					for (const frame of frames.filter((frame) => frame.payload?.choices?.some((choice: any) => choice.finish_reason) || frame.payload?.usage)) enqueue(frame.eventName, frame.payload);
+					for (const frame of chatFinal) enqueue(frame.eventName, frame.payload);
 				} else {
-					for (const frame of frames.filter((frame) => frame.eventName === "message_delta" || frame.eventName === "message_stop")) enqueue(frame.eventName, frame.payload);
-					if (!frames.some((frame) => frame.eventName === "message_stop")) enqueue("message_stop", { type: "message_stop" });
+					for (const frame of anthropicFinal) enqueue(frame.eventName, frame.payload);
+					if (!sawMessageStop) enqueue("message_stop", { type: "message_stop" });
 				}
 				if (args.protocol !== "anthropic.messages" && !closed) controller.enqueue(encoder.encode("data: [DONE]\n\n"));
 			}).catch((error) => {
