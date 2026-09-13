@@ -960,7 +960,6 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 						signal: liveSink?.signal,
 					},
 				);
-				if (liveSink?.signal.aborted) break;
 				if (!continuation) break;
 				if ("limitExceeded" in continuation) {
 					const header = timing.timer.header();
@@ -972,7 +971,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					});
 				}
 				serverToolCalls += continuation.serverToolCallCount ?? continuation.toolResults.length;
-				if (serverToolRounds >= maxServerToolRounds) {
+				if (!liveSink?.signal.aborted && serverToolRounds >= maxServerToolRounds) {
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
 					return await handleError({
@@ -1042,6 +1041,9 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 				);
 				pre.ctx.searchObservability = searchObservability;
 				pre.ctx.webFetchObservability = webFetchObservability;
+				// A tool may finish after the client disconnects. Settle its usage
+				// above, then stop before starting another model request.
+				if (liveSink?.signal.aborted) break;
 
 				nextIrRequest = {
 					...nextIrRequest,

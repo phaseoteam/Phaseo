@@ -459,6 +459,58 @@ describe("runTextGeneratePipeline server tools", () => {
 		);
 	});
 
+	it("settles a managed tool that finishes after the client disconnects", async () => {
+		let finishTool!: (value: any) => void;
+		consumeTextProtocolStreamToIRMock.mockResolvedValue({
+			ir: {
+				id: "initial",
+				choices: [{ message: { role: "assistant", content: [], toolCalls: [
+					{ id: "advisor", name: "phaseo_advisor_reviewer", arguments: "{}" },
+				] }, finishReason: "tool_calls" }],
+				usage: { inputTokens: 5, outputTokens: 2, totalTokens: 7 },
+			},
+			rawResponse: { id: "initial" },
+		});
+		buildServerToolContinuationMock.mockImplementationOnce(() => new Promise((resolve) => {
+			finishTool = resolve;
+		}));
+		mergeIRUsageTotalsMock.mockReturnValue({ inputTokens: 35, outputTokens: 14, totalTokens: 49 });
+		attachServerToolUsageMock.mockImplementation((usage: any) => usage);
+		attachServerToolUsageToRawUsageMock.mockImplementation((usage: any, metrics: any) => ({ ...usage, metrics }));
+		encodeProtocolMock.mockReturnValue({ id: "initial", choices: [] });
+		buildSyntheticServerToolStreamMock.mockReturnValue(createEmptyStream());
+		finalizeRequestMock.mockImplementation(async ({ exec }: any) => new Response(exec.result.stream, { status: 200 }));
+		doRequestWithIRMock.mockResolvedValueOnce({
+			result: {
+				kind: "stream",
+				stream: createEmptyStream(),
+				upstream: new Response(null, { status: 200 }),
+				provider: "openai",
+				generationTimeMs: 1,
+				bill: { cost_cents: 0, currency: "USD", usage: {} },
+				rawResponse: null,
+			},
+		});
+
+		const response = await runTextGeneratePipeline(createArgs({ stream: true }));
+		await vi.waitFor(() => expect(buildServerToolContinuationMock).toHaveBeenCalledOnce());
+		await response.body!.cancel();
+		finishTool({
+			assistantMessage: { role: "assistant", content: [], toolCalls: [
+				{ id: "advisor", name: "phaseo_advisor_reviewer", arguments: "{}" },
+			] },
+			toolResults: [{ toolCallId: "advisor", content: "Completed advice" }],
+			serverToolCallCount: 1,
+			usage: { advisorRequests: 1 },
+			advisorUsage: { inputTokens: 30, outputTokens: 12, totalTokens: 42 },
+		});
+		await vi.waitFor(() => expect(finalizeRequestMock).toHaveBeenCalledOnce());
+		expect(doRequestWithIRMock).toHaveBeenCalledOnce();
+		const settled = finalizeRequestMock.mock.calls[0]?.[0].exec.result;
+		expect(settled.ir.usage).toMatchObject({ totalTokens: 49 });
+		expect(settled.bill.usage.metrics.advisorRequests).toBe(1);
+	});
+
 	it("re-emits a synthetic stream after datetime execution for streaming requests", async () => {
 		const syntheticStream = createEmptyStream();
 

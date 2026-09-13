@@ -3203,7 +3203,9 @@ export async function buildServerToolContinuation(
 	const usageCounts = config.usageCounts ?? (config.usageCounts = {});
 	let remainingSearchResults = config.webSearchMaxTotalResults ?? DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS;
 	for (const call of toolCalls) {
-		if (options?.signal?.aborted) return null;
+		// Keep usage from tools that finished before cancellation. The caller still
+		// needs to settle those costs, but must not start another tool.
+		if (options?.signal?.aborted) break;
 		if (!isServerToolCall(call)) {
 			toolResults.push({
 				toolCallId: call.id,
