@@ -54,6 +54,10 @@ import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGateway
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
+import { isAdminViewer } from "@/lib/auth/getViewerRole";
+import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
+import { toAdminModelPreview } from "@/lib/models/adminModelPreview";
+import AdminHiddenModelPreview from "@/components/(data)/model/AdminHiddenModelPreview";
 
 const MODEL_PROVIDER_VISIBILITY_TIMEOUT_MS = 1_000;
 
@@ -505,7 +509,13 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 	const modelOverview = await fetchFrontendModelOverview(modelId)
 		.then(async (model) => model ?? await fetchPrivateModelOverview(modelId))
 		.catch(() => fetchPrivateModelOverview(modelId));
-	if (!modelOverview) notFound();
+	if (!modelOverview) {
+		if (!(await isAdminViewer().catch(() => false))) notFound();
+		const source = await fetchAdminModelSource(requestedModelId).catch(() => null);
+		const preview = source ? toAdminModelPreview(source) : null;
+		if (!preview) notFound();
+		return <AdminHiddenModelPreview initial={preview} />;
+	}
 	const modelHeader = {
 		model_id: modelOverview.model_id,
 		name: modelOverview.name,
