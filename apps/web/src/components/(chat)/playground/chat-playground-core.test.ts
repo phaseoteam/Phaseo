@@ -45,6 +45,27 @@ describe("chat streaming defaults", () => {
 		expect(migrated.settings.serverToolsStreamingMigrated).toBe(true);
 		expect(migrateLegacyDefaultServerTools(migrated)).toBe(migrated);
 	});
+
+	it("keeps a model override enabled when it inherits configured datetime", () => {
+		const thread = {
+			id: "thread",
+			title: "Test",
+			modelId: "test/model",
+			createdAt: "2026-09-13T00:00:00.000Z",
+			updatedAt: "2026-09-13T00:00:00.000Z",
+			messages: [],
+			settings: {
+				...DEFAULT_SETTINGS,
+				serverToolsStreamingMigrated: undefined,
+				apiServerToolsEnabled: true,
+				serverToolConfigs: { datetime: { timezones: ["UTC"] } },
+				modelOverridesById: { custom: { apiServerToolsEnabled: true } },
+			},
+		} as Parameters<typeof migrateLegacyDefaultServerTools>[0];
+		const migrated = migrateLegacyDefaultServerTools(thread);
+		expect(migrated.settings.apiServerToolsEnabled).toBe(true);
+		expect(migrated.settings.modelOverridesById?.custom.apiServerToolsEnabled).toBe(true);
+	});
 });
 
 describe("Phaseo Chat attribution", () => {
