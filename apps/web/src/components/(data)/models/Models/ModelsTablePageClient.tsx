@@ -31,10 +31,10 @@ export default function ModelsTablePageClient({
 			? fetchModelsTableDataV2
 			: fetchModelsTableData;
 	const { data, error, mutate } = useSWR(swrKey, fetcher, {
+		// The resume listener covers focus, restored tabs, and reconnects.
 		revalidateOnFocus: false,
 		revalidateOnReconnect: false,
-		refreshInterval: 2 * 60 * 1_000,
-		refreshWhenHidden: false,
+		refreshInterval: 15 * 60_000,
 	});
 	useRevalidateOnResume(mutate, error);
 	useEffect(() => {

@@ -10,8 +10,12 @@ export function PublicSWRProvider({ children }: { children: ReactNode }) {
 		<SWRConfig
 			value={{
 				fetcher: publicSWRFetcher,
-				revalidateOnFocus: false,
+				revalidateOnFocus: true,
 				revalidateOnReconnect: true,
+				refreshInterval: 15 * 60_000,
+				refreshWhenHidden: false,
+				refreshWhenOffline: false,
+				focusThrottleInterval: 60_000,
 				errorRetryCount: 2,
 				onErrorRetry: (error, key, config, revalidate, context) => {
 					if (

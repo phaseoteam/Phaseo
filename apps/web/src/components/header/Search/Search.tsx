@@ -666,8 +666,6 @@ export default function Search({
 		{
 			dedupingInterval: 5 * 60 * 1_000,
 			revalidateIfStale: false,
-			revalidateOnFocus: false,
-			revalidateOnReconnect: false,
 			shouldRetryOnError: false,
 		},
 	);
