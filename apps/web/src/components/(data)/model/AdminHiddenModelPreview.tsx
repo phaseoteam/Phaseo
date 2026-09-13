@@ -17,7 +17,7 @@ export default function AdminHiddenModelPreview({ initial }: { initial: AdminMod
 	);
 	const model = data ?? initial;
 	return (
-		<main className="container mx-auto space-y-8 px-4 py-8">
+		<div className="container mx-auto space-y-8 px-4 py-8">
 			<div>
 				<p className="text-sm text-muted-foreground">Admin preview · Hidden model</p>
 				<h1 className="mt-2 text-3xl font-bold">{model.name}</h1>
@@ -35,6 +35,6 @@ export default function AdminHiddenModelPreview({ initial }: { initial: AdminMod
 					)) : <p className="px-4 py-3 text-sm text-muted-foreground">No providers yet.</p>}
 				</div>
 			</section>
-		</main>
+		</div>
 	);
 }
