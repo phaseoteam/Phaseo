@@ -584,7 +584,7 @@ function ProviderHourlyPerformance({
 								<span
 									key={point.start}
 									className={cn(
-										"min-w-0 self-end transition-[height,background-color] duration-150",
+										"min-w-0 self-end transition-[height,background-color] duration-150 motion-reduce:transition-none",
 										edgeRadiusClassName,
 										barClassName,
 									)}
@@ -3726,6 +3726,7 @@ export default function ProviderCard({
 														<HoverCardTrigger asChild>
 															<span
 																aria-label="About uptime"
+																tabIndex={0}
 																className="inline-flex size-3.5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground"
 															>
 																<Info className="size-3" />
