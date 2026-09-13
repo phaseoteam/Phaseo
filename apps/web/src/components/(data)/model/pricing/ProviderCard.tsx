@@ -448,6 +448,12 @@ function formatPerformancePeriod(points: ProviderPerformancePoint[]): string | n
 	const end = new Date(Date.parse(lastPoint.start) + 60 * 60 * 1000);
 	if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return null;
 
+	return formatPerformancePeriodRange(start, end);
+}
+
+function formatPerformancePeriodRange(start: Date, end: Date): string | null {
+	if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return null;
+
 	const formatter = new Intl.DateTimeFormat("en-GB", {
 		day: "numeric",
 		month: "short",
@@ -457,6 +463,12 @@ function formatPerformancePeriod(points: ProviderPerformancePoint[]): string | n
 		timeZone: "UTC",
 	});
 	return `${formatter.format(start)} – ${formatter.format(end)} UTC`;
+}
+
+function formatPerformancePointPeriod(point: ProviderPerformancePoint): string | null {
+	const start = new Date(point.start);
+	const end = new Date(Date.parse(point.start) + 60 * 60 * 1000);
+	return formatPerformancePeriodRange(start, end);
 }
 
 function getPerformanceMetricTooltipLabel(metric: ProviderPerformanceMetricKey): string {
@@ -526,10 +538,11 @@ function ProviderPerformanceMetricValue({
 	metric: ProviderPerformanceMetricKey;
 	value: number | null;
 }) {
-	if (!hasPerformanceMetricValue(metric, value)) return <span>--</span>;
+	const valueClassName = "inline-flex min-w-[4rem] items-baseline";
+	if (!hasPerformanceMetricValue(metric, value)) return <span className={valueClassName}>--</span>;
 	const numberFlowProps = getPerformanceMetricNumberFlowProps(metric, value);
 	return (
-		<span className="inline-flex items-baseline">
+		<span className={valueClassName}>
 			<NumberFlow value={numberFlowProps.value} format={numberFlowProps.format} />
 			<span>{numberFlowProps.suffix}</span>
 		</span>
@@ -540,12 +553,14 @@ function ProviderHourlyPerformance({
 	runtimeStats,
 	hours = PROVIDER_HOURLY_UPTIME_HOURS,
 	activeMetric,
+	hoveredPoint,
 	onPointHover,
 	onPointLeave,
 }: {
 	runtimeStats: ProviderRuntimeStats | null | undefined;
 	hours?: ProviderUptimeHours;
 	activeMetric: ProviderPerformanceMetricKey;
+	hoveredPoint: ProviderPerformancePoint | null;
 	onPointHover: (point: ProviderPerformancePoint, hasData: boolean) => void;
 	onPointLeave: () => void;
 }) {
@@ -557,7 +572,9 @@ function ProviderHourlyPerformance({
 	const rateLimited = runtimeStats?.rateLimited3d ?? 0;
 	const metricLabel = getPerformanceMetricLabel(activeMetric);
 	const metricTooltipLabel = getPerformanceMetricTooltipLabel(activeMetric);
-	const performancePeriod = formatPerformancePeriod(points);
+	const performancePeriod = hoveredPoint
+		? formatPerformancePointPeriod(hoveredPoint)
+		: formatPerformancePeriod(points);
 	const metricValues = points
 		.map((point) => getPerformanceMetricValue(activeMetric, point))
 		.filter((value): value is number => hasPerformanceMetricValue(activeMetric, value));
@@ -577,9 +594,10 @@ function ProviderHourlyPerformance({
 						</p>
 					) : null}
 					<div
-						className="grid h-8 grid-flow-col auto-cols-fr items-end gap-0.5"
+						className="grid h-8 grid-flow-col auto-cols-fr items-end"
 						role="img"
 						aria-label={`${metricLabel} over the last ${hours} hours`}
+						onPointerLeave={onPointLeave}
 					>
 						{points.map((point, index) => {
 							const metricValue = getPerformanceMetricValue(activeMetric, point);
@@ -619,7 +637,6 @@ function ProviderHourlyPerformance({
 									aria-label={`${new Date(point.start).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${metricTooltipLabel}: ${pointLabel}`}
 									onPointerEnter={() => onPointHover(point, hasData)}
 									onFocus={() => onPointHover(point, hasData)}
-									onPointerLeave={onPointLeave}
 									onBlur={onPointLeave}
 								/>
 							);
@@ -3813,6 +3830,7 @@ export default function ProviderCard({
 							<ProviderHourlyPerformance
 								runtimeStats={selectedRuntimeStats}
 								activeMetric={activePerformanceMetric}
+								hoveredPoint={hoveredPerformancePoint}
 								onPointHover={handlePerformancePointHover}
 								onPointLeave={handlePerformancePointLeave}
 							/>
