@@ -26,6 +26,11 @@ import { MOONSHOT_API_KEY_ENVS } from "../moonshotai/config";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { deepInfraMediaUrl } from "../deepinfra/config";
 
+function normalizeCompatProviderId(providerId: string): string {
+	const normalized = normalizeProviderId(providerId);
+	return normalized === "wafer-zdr" ? "wafer" : normalized;
+}
+
 function configError(code: string): Error & { code: string } {
 	const error = new Error(code) as Error & { code: string };
 	error.code = code;
@@ -124,7 +129,7 @@ function isNebiusTokenFactoryProvider(providerId: string): boolean {
 }
 
 export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfig {
-	const canonicalProviderId = normalizeProviderId(providerId);
+	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const fallback: OpenAICompatConfig = { providerId: canonicalProviderId };
 	const config = OPENAI_COMPAT_CONFIG[canonicalProviderId] ?? fallback;
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
@@ -151,11 +156,11 @@ export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfi
 }
 
 export function isOpenAICompatProvider(providerId: string): boolean {
-	return Object.prototype.hasOwnProperty.call(OPENAI_COMPAT_CONFIG, normalizeProviderId(providerId));
+	return Object.prototype.hasOwnProperty.call(OPENAI_COMPAT_CONFIG, normalizeCompatProviderId(providerId));
 }
 
 export function openAICompatUrl(providerId: string, path: string): string {
-	const canonicalProviderId = normalizeProviderId(providerId);
+	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	const requestedSuffix = normalizePathSegment(path);
 	if (canonicalProviderId === "deepinfra") {
@@ -219,7 +224,7 @@ export function openAICompatHeaders(
 	key: string,
 	extraHeaders?: Record<string, string | undefined>,
 ): Record<string, string> {
-	const canonicalProviderId = normalizeProviderId(providerId);
+	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	const headerName = config.apiKeyHeader ?? "Authorization";
 	const prefix = config.apiKeyPrefix ?? "Bearer ";
@@ -243,7 +248,7 @@ export function openAICompatHeaders(
 }
 
 export function resolveOpenAICompatKey(args: Pick<ProviderExecuteArgs, "providerId" | "byokMeta"> & { forceGatewayKey?: boolean }): ResolvedKey {
-	const providerId = normalizeProviderId(args.providerId);
+	const providerId = normalizeCompatProviderId(args.providerId);
 	const normalizedArgs = providerId === args.providerId ? args : { ...args, providerId };
 	if (providerId === "weights-and-biases") {
 		return resolveProviderKey(normalizedArgs, () => readFirstBinding(WEIGHTSANDBIASES_API_KEY_ENVS));
@@ -309,7 +314,7 @@ export type OpenAICompatRoute = "responses" | "chat";
 
 export function resolveOpenAICompatModel(providerId: string, model?: string | null): string {
 	const value = model?.trim() ?? "";
-	if (normalizeProviderId(providerId) !== "poolside" || !value) return value;
+	if (normalizeCompatProviderId(providerId) !== "poolside" || !value) return value;
 
 	const upstreamModel = value.replace(/:free$/i, "");
 	return upstreamModel.startsWith("poolside/") ? upstreamModel : `poolside/${upstreamModel}`;
@@ -324,7 +329,7 @@ function normalizeOpenAIModelName(model?: string | null): string {
 }
 
 export function resolveOpenAICompatRoute(providerId: string, model?: string | null): OpenAICompatRoute {
-	const canonicalProviderId = normalizeProviderId(providerId);
+	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	const normalized = normalizeOpenAIModelName(model);
 	// StepFun currently exposes Responses only for step-3.7-flash; its other
@@ -367,7 +372,7 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
 }
 
 export function supportsOpenAICompatResponses(providerId: string, model?: string | null): boolean {
-	const canonicalProviderId = normalizeProviderId(providerId);
+	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	if (canonicalProviderId === "deepseek") return resolveOpenAICompatRoute(canonicalProviderId, model) === "responses";
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	if (typeof config.supportsResponses === "boolean") return config.supportsResponses;
