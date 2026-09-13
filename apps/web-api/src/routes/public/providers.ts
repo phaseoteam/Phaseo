@@ -4,8 +4,8 @@ import type { Env } from "@/env";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 const TELEMETRY_CACHE: PublicCachePolicy = {
-	edgeTtlSeconds: 15 * 60,
-	staleWhileRevalidateSeconds: 15 * 60,
+	edgeTtlSeconds: 5 * 60,
+	staleWhileRevalidateSeconds: 5 * 60,
 	cacheTags: ["web-api-providers", "web-api-provider-telemetry"],
 };
 const UPDATES_CACHE: PublicCachePolicy = {

@@ -50,71 +50,71 @@ function suppressSmallPublicPerformanceCohorts(value: Record<string, any>): Reco
 
 const CACHE_PROFILES = {
 	catalogue: {
-		edgeTtlSeconds: 2 * 60,
+		edgeTtlSeconds: 5 * 60,
 		staleWhileRevalidateSeconds: 5 * 60,
-		staleIfErrorSeconds: 7 * 24 * 60 * 60,
+		staleIfErrorSeconds: 60 * 60,
 		browserTtlSeconds: 0,
 		browserStaleWhileRevalidateSeconds: 0,
 		cacheTags: ["web-api-models"],
 	},
 	overview: {
-		edgeTtlSeconds: 2 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
-		staleIfErrorSeconds: 7 * 24 * 60 * 60,
+		edgeTtlSeconds: 60 * 60,
+		staleWhileRevalidateSeconds: 60 * 60,
+		staleIfErrorSeconds: 24 * 60 * 60,
 		cacheTags: ["web-api-model-details"],
 	},
 	benchmarks: {
-		edgeTtlSeconds: 2 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
-		staleIfErrorSeconds: 7 * 24 * 60 * 60,
+		edgeTtlSeconds: 60 * 60,
+		staleWhileRevalidateSeconds: 60 * 60,
+		staleIfErrorSeconds: 24 * 60 * 60,
 		cacheTags: ["web-api-model-benchmarks"],
 	},
 	timeline: {
-		edgeTtlSeconds: 2 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
-		staleIfErrorSeconds: 7 * 24 * 60 * 60,
+		edgeTtlSeconds: 60 * 60,
+		staleWhileRevalidateSeconds: 60 * 60,
+		staleIfErrorSeconds: 24 * 60 * 60,
 		cacheTags: ["web-api-model-timelines"],
 	},
 	subscriptions: {
-		edgeTtlSeconds: 2 * 60,
+		edgeTtlSeconds: 15 * 60,
 		staleWhileRevalidateSeconds: 5 * 60,
 		staleIfErrorSeconds: 7 * 24 * 60 * 60,
 		cacheTags: ["web-api-model-subscriptions"],
 	},
 	pricing: {
-		edgeTtlSeconds: 2 * 60,
+		edgeTtlSeconds: 5 * 60,
 		staleWhileRevalidateSeconds: 5 * 60,
-		staleIfErrorSeconds: 7 * 24 * 60 * 60,
+		staleIfErrorSeconds: 60 * 60,
 		cacheTags: ["web-api-model-pricing"],
 	},
 	performance: {
-		edgeTtlSeconds: 15 * 60,
-		staleWhileRevalidateSeconds: 15 * 60,
+		edgeTtlSeconds: 5 * 60,
+		staleWhileRevalidateSeconds: 5 * 60,
 		cacheTags: ["web-api-model-performance"],
 	},
 	pricingHistory: {
-		edgeTtlSeconds: 60 * 60,
-		staleWhileRevalidateSeconds: 24 * 60 * 60,
+		edgeTtlSeconds: 15 * 60,
+		staleWhileRevalidateSeconds: 15 * 60,
 		cacheTags: ["web-api-model-pricing-history"],
 	},
 	usageDaily: {
-		edgeTtlSeconds: 15 * 60,
-		staleWhileRevalidateSeconds: 15 * 60,
+		edgeTtlSeconds: 5 * 60,
+		staleWhileRevalidateSeconds: 5 * 60,
 		cacheTags: ["web-api-model-usage-daily"],
 	},
 	effectivePricing: {
-		edgeTtlSeconds: 15 * 60,
-		staleWhileRevalidateSeconds: 15 * 60,
+		edgeTtlSeconds: 5 * 60,
+		staleWhileRevalidateSeconds: 5 * 60,
 		cacheTags: ["web-api-model-effective-pricing"],
 	},
 	catalogPricing: {
-		edgeTtlSeconds: 60 * 60,
-		staleWhileRevalidateSeconds: 24 * 60 * 60,
+		edgeTtlSeconds: 5 * 60,
+		staleWhileRevalidateSeconds: 5 * 60,
 		cacheTags: ["web-api-catalog-pricing"],
 	},
 	freeRouter: {
-		edgeTtlSeconds: 60 * 60,
-		staleWhileRevalidateSeconds: 6 * 60 * 60,
+		edgeTtlSeconds: 5 * 60,
+		staleWhileRevalidateSeconds: 5 * 60,
 		cacheTags: ["web-api-free-router-overview"],
 	},
 	realtime: {
@@ -138,12 +138,12 @@ const CACHE_PROFILES = {
 		cacheTags: ["web-api-model-provider-health"],
 	},
 	notice: {
-		edgeTtlSeconds: 2 * 60,
+		edgeTtlSeconds: 5 * 60,
 		staleWhileRevalidateSeconds: 5 * 60,
-		staleIfErrorSeconds: 7 * 24 * 60 * 60,
+		staleIfErrorSeconds: 60 * 60,
 		cacheTags: ["web-api-model-notices"],
 	},
-	apps: { edgeTtlSeconds: 15 * 60, staleWhileRevalidateSeconds: 60 * 60, cacheTags: ["web-api-model-apps"] },
+	apps: { edgeTtlSeconds: 5 * 60, staleWhileRevalidateSeconds: 5 * 60, cacheTags: ["web-api-model-apps"] },
 } as const satisfies Record<string, PublicCachePolicy>;
 
 function parseBoundedInt(value: string | null, fallback: number, maximum: number) {
@@ -160,6 +160,17 @@ function parsePercentile(value: string | null, fallback = 50) {
 
 function modelTag(modelId: string) {
 	return `web-api-model-${encodeURIComponent(modelId).replace(/%/g, "")}`.slice(0, 128);
+}
+
+const MODEL_CACHE_FAMILY: Partial<Record<keyof typeof CACHE_PROFILES, "info" | "providers" | "telemetry">> = {
+	overview: "info", benchmarks: "info", timeline: "info", notice: "info", subscriptions: "info",
+	catalogue: "providers", pricing: "providers", pricingHistory: "providers",
+	performance: "telemetry", usageDaily: "telemetry", effectivePricing: "telemetry",
+	realtime: "telemetry", trajectory: "telemetry", providerHealth: "telemetry", apps: "telemetry",
+};
+
+function modelFamilyTag(family: "info" | "providers" | "telemetry", modelId: string) {
+	return `web-api-model-${family}-${encodeURIComponent(modelId).replace(/%/g, "")}`.slice(0, 128);
 }
 
 function toStringList(value: unknown): string[] {
@@ -688,12 +699,15 @@ function buildModelsTablePayload(
 
 function sectionPolicy(section: keyof typeof CACHE_PROFILES, modelId?: string): PublicCachePolicy {
 	const profile = CACHE_PROFILES[section];
+	const family = MODEL_CACHE_FAMILY[section];
 	return {
 		...profile,
 		// Model purges can evict the shared cache, but cannot evict a visitor's
 		// HTTP cache. Recheck the edge whenever a model section is requested.
 		...(modelId ? { browserTtlSeconds: 0, browserStaleWhileRevalidateSeconds: 0 } : {}),
-		cacheTags: modelId ? [...profile.cacheTags, modelTag(modelId)] : profile.cacheTags,
+		cacheTags: modelId
+			? [...profile.cacheTags, modelTag(modelId), ...(family ? [modelFamilyTag(family, modelId)] : [])]
+			: profile.cacheTags,
 	};
 }
 
@@ -1384,7 +1398,7 @@ publicModelsRouter.get("/:modelId/provider-health", async (c) => {
 		throw healthError ?? new Error("V2 provider health query returned an invalid payload");
 	} catch (error) {
 		console.error("[web-api/models] provider health failed", { modelId, error });
-		return withPublicCache(c.json({ rows: [], source: "unavailable" }), sectionPolicy("providerHealth", modelId));
+		return c.json({ error: "provider_health_unavailable" }, 503);
 	}
 });
 

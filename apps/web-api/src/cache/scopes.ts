@@ -2,6 +2,9 @@ export const CACHE_SCOPE_IDS = [
 	"search",
 	"catalogue",
 	"model",
+	"model-info",
+	"model-providers",
+	"model-telemetry",
 	"provider",
 	"organisation",
 	"benchmark",
@@ -120,6 +123,36 @@ const DEFINITIONS: Record<CacheScopeId, CacheScopeDefinition> = {
 		danger: "normal",
 		tags: CATALOGUE_TAGS,
 	},
+	"model-info": {
+		id: "model-info",
+		label: "Model details",
+		description: "Refresh one model's identity, About, benchmarks, timeline, notice, and subscriptions.",
+		targetLabel: "Model ID",
+		targetRequired: true,
+		affectsSearch: false,
+		danger: "normal",
+		tags: ["web-api-models", "web-api-models-v2"],
+	},
+	"model-providers": {
+		id: "model-providers",
+		label: "Model providers",
+		description: "Refresh one model's provider routes, pricing, and availability.",
+		targetLabel: "Model ID",
+		targetRequired: true,
+		affectsSearch: false,
+		danger: "normal",
+		tags: ["web-api-models", "web-api-models-v2", "web-api-provider-routing-health"],
+	},
+	"model-telemetry": {
+		id: "model-telemetry",
+		label: "Model activity and performance",
+		description: "Refresh one model's usage, uptime, performance, and provider health.",
+		targetLabel: "Model ID",
+		targetRequired: true,
+		affectsSearch: false,
+		danger: "normal",
+		tags: ["web-api-models", "web-api-models-v2"],
+	},
 	provider: {
 		id: "provider",
 		label: "One API provider",
@@ -234,6 +267,9 @@ export function resolveCacheScope(scope: CacheScopeId, rawTargetId?: string | nu
 	const tags = [...definition.tags];
 	if (targetId) {
 		if (scope === "model") tags.push(dynamicTag("web-api-model-", targetId));
+		if (scope === "model-info") tags.push(dynamicTag("web-api-model-info-", targetId));
+		if (scope === "model-providers") tags.push(dynamicTag("web-api-model-providers-", targetId));
+		if (scope === "model-telemetry") tags.push(dynamicTag("web-api-model-telemetry-", targetId));
 		if (scope === "provider") tags.push(dynamicTag("web-api-provider-", targetId));
 		if (scope === "organisation") tags.push(dynamicTag("web-api-organisation-", targetId));
 		if (scope === "benchmark") tags.push(dynamicTag("web-api-benchmark-", targetId));

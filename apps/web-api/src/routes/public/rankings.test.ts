@@ -9,7 +9,7 @@ describe("public rankings routes", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const response = await app.request("https://phaseo.app/api/_web/rankings/timeseries?time_range=month&bucket_size=day&top_n=4", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain("get_public_usage_timeseries");
 		expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain('"p_time_range":"month"');
 		await expect(response.json()).resolves.toEqual({ data: [{ model_id: "openai/gpt-test", tokens: 10 }] });
@@ -79,7 +79,7 @@ describe("public rankings routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=900, stale-while-revalidate=900",
+			"public, max-age=300, stale-while-revalidate=300",
 		);
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
 			"get_public_context_length_distribution",
@@ -107,7 +107,7 @@ describe("public rankings routes", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const response = await app.request("https://phaseo.app/api/_web/rankings/model-retention?weeks=8&limit=10&min_workspace_weeks=40&min_workspaces=8&min_weeks=3", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
 		const rpcCall = fetchMock.mock.calls.find(([input]) => String(input).includes("get_public_model_retention_rankings"));
 		expect(String(rpcCall?.[1]?.body)).toContain('"p_weeks":8');
 		expect(String(rpcCall?.[1]?.body)).toContain('"p_min_workspace_weeks":40');
@@ -150,7 +150,7 @@ describe("public rankings routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=900, stale-while-revalidate=900",
+			"public, max-age=300, stale-while-revalidate=300",
 		);
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain("get_public_fastest_models");
 		expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain('"p_days":30');

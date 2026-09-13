@@ -837,7 +837,7 @@ export default function ModelPricingClient({
 			revalidateOnFocus: true,
 			revalidateOnReconnect: true,
 			focusThrottleInterval: 60_000,
-			refreshInterval: 15 * 60_000,
+			refreshInterval: 5 * 60_000,
 			refreshWhenHidden: false,
 			refreshWhenOffline: false,
 			keepPreviousData: true,
@@ -921,6 +921,7 @@ export default function ModelPricingClient({
 			}),
 		{
 			dedupingInterval: 30_000,
+			refreshInterval: 5 * 60_000,
 			errorRetryCount: RUNTIME_STATS_ERROR_RETRY_COUNT,
 			fallbackData:
 				selectedPercentile === DEFAULT_MODEL_PERCENTILE

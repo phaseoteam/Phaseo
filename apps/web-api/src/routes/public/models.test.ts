@@ -701,15 +701,17 @@ describe("public model routes", () => {
 		]);
 
 		expect(catalogue.status).toBe(200);
-		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=120, stale-while-revalidate=300, stale-if-error=604800");
+		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300, stale-if-error=3600");
 		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(benchmarks.status).toBe(200);
-		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=120, stale-while-revalidate=300, stale-if-error=604800");
+		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400");
 		expect(benchmarks.headers.get("cache-control")).toBe("public, max-age=0");
+		expect(benchmarks.headers.get("cache-tag")).toContain("web-api-model-info-openai2Fgpt-test");
 		await expect(benchmarks.json()).resolves.toMatchObject({ highlights: [{ benchmarkId: "mmlu", score: 85, scoreDisplay: "85%", rank: 2 }] });
 		expect(performance.status).toBe(200);
-		expect(performance.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
+		expect(performance.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
 		expect(performance.headers.get("cache-control")).toBe("public, max-age=0");
+		expect(performance.headers.get("cache-tag")).toContain("web-api-model-telemetry-openai2Fgpt-test");
 	});
 
 	it("keeps the model page healthy when the optional performance rollup fails", async () => {
@@ -1294,7 +1296,7 @@ describe("public model routes", () => {
 		}));
 		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/apps", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=3600");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
 		await expect(response.json()).resolves.toEqual({ apps: [{ appId: "app-2", title: "Example", imageUrl: "https://example.com/app.png", url: "https://example.com", lastSeen: "2026-07-17T00:00:00Z", totalRequests: 10, successfulRequests: 9, totalTokens: 100 }], source: "v2" });
 	});
 
@@ -1407,7 +1409,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=120, stale-while-revalidate=300, stale-if-error=604800",
+			"public, max-age=300, stale-while-revalidate=300, stale-if-error=3600",
 		);
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-notices");
 		await expect(response.json()).resolves.toEqual({

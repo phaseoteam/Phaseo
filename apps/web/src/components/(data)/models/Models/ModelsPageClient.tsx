@@ -30,7 +30,7 @@ export default function ModelsPageClient({
 		// The resume listener covers focus, restored tabs, and reconnects.
 		revalidateOnFocus: false,
 		revalidateOnReconnect: false,
-		refreshInterval: 15 * 60_000,
+		refreshInterval: 5 * 60_000,
 	});
 	useRevalidateOnResume(mutate, error);
 	useEffect(() => {

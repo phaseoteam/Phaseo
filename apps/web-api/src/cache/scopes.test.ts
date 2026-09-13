@@ -11,6 +11,7 @@ describe("cache scopes", () => {
 
 	it("requires targets for singular scopes", () => {
 		expect(() => resolveCacheScope("model", "")).toThrow("Model ID is required");
+		expect(() => resolveCacheScope("model-providers", "")).toThrow("Model ID is required");
 		expect(() => resolveCacheScope("provider", null)).toThrow("Provider ID is required");
 	});
 
@@ -19,6 +20,11 @@ describe("cache scopes", () => {
 		expect(result.tags).toContain("web-api-model-openai2Fgpt-5");
 		expect(result.tags).toContain("web-api-search");
 		expect(result.tags).toContain("web-api-model-effective-pricing");
+		for (const family of ["info", "providers", "telemetry"] as const) {
+			const section = resolveCacheScope(`model-${family}`, "openai/gpt-5");
+			expect(section.tags).toContain(`web-api-model-${family}-openai2Fgpt-5`);
+			expect(section.tags).toContain("web-api-models");
+		}
 	});
 
 	it("keeps the incident scope within Cloudflare's per-request operation limit", () => {
