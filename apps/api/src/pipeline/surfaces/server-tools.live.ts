@@ -1,5 +1,6 @@
 import type { Protocol } from "@protocols/detect";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
+import { dispatchBackground } from "@/runtime/env";
 import type { UnifiedStreamEvent } from "../after/stream-events";
 import type { ServerToolTraceItem } from "./server-tools.stream";
 
@@ -100,7 +101,7 @@ export function createManagedToolLiveResponse(args: {
 					emit({ type: "delta_tool", toolCallId: item.id, toolName: item.name, arguments: item.arguments, choiceIndex: call?.index ?? nextOutputIndex, payload: { server_tool_result: { output: item.output, is_error: item.isError } } });
 				},
 			};
-			void args.run(sink).then(async (response) => {
+			const completion = args.run(sink).then(async (response) => {
 				if (!response.ok || !response.body) {
 					emit({ type: "error", message: `Managed tool request failed with status ${response.status}.` });
 					return;
@@ -155,6 +156,7 @@ export function createManagedToolLiveResponse(args: {
 				closed = true;
 				controller.close();
 			});
+			dispatchBackground(completion);
 		},
 		cancel() {
 			closed = true;
