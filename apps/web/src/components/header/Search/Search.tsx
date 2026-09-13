@@ -656,6 +656,8 @@ export default function Search({
 		dedupingInterval: 60 * 1_000,
 		revalidateIfStale: true,
 		// The resume handler also refreshes the cached index while the palette is closed.
+		revalidateOnFocus: false,
+		revalidateOnReconnect: false,
 	});
 	if (searchData) hasLoadedSearchRef.current = true;
 	const { data: workspaceItems = [] } = useSWR(
