@@ -1152,6 +1152,52 @@ describe("buildServerToolContinuation", () => {
 		});
 	});
 
+	it("returns completed tool usage when cancellation prevents the next tool", async () => {
+		const controller = new AbortController();
+		const executeAdvisor = vi.fn(async () => {
+			controller.abort();
+			return {
+				ok: true as const,
+				content: "Completed advice",
+				usage: { inputTokens: 30, outputTokens: 12, totalTokens: 42 },
+			};
+		});
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [{
+					message: {
+						role: "assistant",
+						content: [],
+						toolCalls: ["first", "second"].map((id) => ({
+							id,
+							name: "phaseo_advisor_reviewer",
+							arguments: JSON.stringify({ prompt: "Review this." }),
+						})),
+					},
+					finishReason: "tool_calls",
+				}],
+			} as any,
+			{
+				enabled: true,
+				advisorEnabled: true,
+				defaultAdvisorModel: "openai/gpt-5-nano",
+				advisors: {
+					phaseo_advisor_reviewer: {
+						functionName: "phaseo_advisor_reviewer",
+						forwardTranscript: false,
+						maxUses: 2,
+						maxTokens: 100,
+					},
+				},
+			} as any,
+			{ executeAdvisor, signal: controller.signal },
+		);
+		expect(executeAdvisor).toHaveBeenCalledTimes(1);
+		expect(continuation?.toolResults).toHaveLength(1);
+		expect(continuation?.usage.advisorRequests).toBe(1);
+		expect(continuation?.advisorUsage).toMatchObject({ totalTokens: 42 });
+	});
+
 	it("executes Phaseo image generation calls through the provided image executor", async () => {
 		const executeImageGeneration = vi.fn(async () => ({
 			ok: true as const,
