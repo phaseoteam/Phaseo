@@ -869,6 +869,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 				req,
 			});
 		}
+		liveSink?.ready();
 
 		const serverToolTrace: Array<{
 			id: string;
@@ -904,6 +905,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 			let webFetchObservability = pre.ctx.webFetchObservability ?? null;
 
 			while (true) {
+				if (liveSink?.signal.aborted) break;
 				const continuation = await buildServerToolContinuation(
 					latestIrResponse,
 					preparedServerTools.config,
@@ -955,8 +957,10 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 							return { models: matched.map((model) => ({ id: model.model_id, name: model.name, description: model.description, input_modalities: model.input_types, output_modalities: model.output_types, providers: model.providers.map((item) => item.api_provider_id), supported_params: model.supported_params, pricing: model.pricing })), total_results: filtered.length, showing: matched.length };
 						},
 						remainingToolCalls: maxServerToolCalls - serverToolCalls,
+						signal: liveSink?.signal,
 					},
 				);
+				if (liveSink?.signal.aborted) break;
 				if (!continuation) break;
 				if ("limitExceeded" in continuation) {
 					const header = timing.timer.header();

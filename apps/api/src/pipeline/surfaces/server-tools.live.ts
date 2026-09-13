@@ -7,6 +7,8 @@ import type { ServerToolTraceItem } from "./server-tools.stream";
 type LiveProtocol = Extract<Protocol, StreamProtocol>;
 
 export type ManagedToolLiveSink = {
+	signal: AbortSignal;
+	ready(): void;
 	beginRound(): (event: UnifiedStreamEvent) => void;
 	toolResult(item: ServerToolTraceItem): void;
 	markFinalTurnBuffered(): void;
@@ -28,21 +30,27 @@ function parseFrame(raw: string): { eventName: string; payload: any } | null {
 }
 
 /** Keep one public SSE response open across every internal model and server-tool turn. */
-export function createManagedToolLiveResponse(args: {
+export async function createManagedToolLiveResponse(args: {
 	protocol: LiveProtocol;
 	requestId: string;
 	model: string;
 	run: (sink: ManagedToolLiveSink) => Promise<Response>;
-}): Response {
+}): Promise<Response> {
 	const encoder = new TextEncoder();
+	const abortController = new AbortController();
 	let closed = false;
+	let readyCalled = false;
+	let resolveReady!: () => void;
+	let resolveEarlyResponse!: (response: Response) => void;
+	const ready = new Promise<void>((resolve) => { resolveReady = resolve; });
+	const earlyResponse = new Promise<Response>((resolve) => { resolveEarlyResponse = resolve; });
 	const stream = new ReadableStream<Uint8Array>({
 		start(controller) {
 			let sequenceNumber = 0;
 			let nextOutputIndex = 0;
 			let outputText = "";
 			let finalTurnBuffered = false;
-			const rounds: Array<{ text: string; tools: Map<string, { id: string; name: string; arguments: string; index: number }> }> = [];
+			const rounds: Array<{ text: string; tools: Map<string, { id: string; callId: string; name: string; arguments: string; index: number }> }> = [];
 			const enqueue = (eventName: string | null | undefined, payload: any) => {
 				if (closed) return;
 				const frame = args.protocol === "openai.responses" && eventName
@@ -56,12 +64,19 @@ export function createManagedToolLiveResponse(args: {
 			};
 			emit({ type: "start", protocol: args.protocol });
 			const sink: ManagedToolLiveSink = {
+				signal: abortController.signal,
+				ready() {
+					if (readyCalled) return;
+					readyCalled = true;
+					resolveReady();
+				},
 				markFinalTurnBuffered() {
 					finalTurnBuffered = true;
 				},
 				beginRound() {
+					sink.ready();
 					finalTurnBuffered = false;
-					const round = { text: "", tools: new Map<string, { id: string; name: string; arguments: string; index: number }>() };
+					const round = { text: "", tools: new Map<string, { id: string; callId: string; name: string; arguments: string; index: number }>() };
 					rounds.push(round);
 					const offset = nextOutputIndex;
 					let maxIndex = 0;
@@ -70,38 +85,45 @@ export function createManagedToolLiveResponse(args: {
 						if (event.type !== "delta_text" && event.type !== "delta_tool" && event.type !== "delta_content_part" && event.type !== "error") {
 							return;
 						}
+						if (event.type === "error") {
+							emit(event);
+							return;
+						}
 						if (event.type === "delta_text" && event.channel === "output_text") {
 							outputText += event.text;
 							round.text += event.text;
 						}
-						if (event.type === "delta_tool" && event.toolCallId && event.toolName && event.arguments !== undefined) {
-							round.tools.set(event.toolCallId, {
-								id: event.toolCallId,
-								name: event.toolName,
-								arguments: event.arguments,
-								index: offset + (event.choiceIndex ?? 0),
+						const normalizedEvent = event.type === "delta_tool"
+							? { ...event, toolCallId: event.toolCallId ?? event.toolCallKey }
+							: event;
+						const index = args.protocol === "openai.responses" && Number.isInteger(event.payload?.output_index) && event.payload.output_index >= 0
+							? event.payload.output_index
+							: (event.choiceIndex ?? 0);
+						if (normalizedEvent.type === "delta_tool" && normalizedEvent.toolCallId && normalizedEvent.toolName && normalizedEvent.arguments !== undefined) {
+							round.tools.set(normalizedEvent.toolCallId, {
+								id: normalizedEvent.toolCallKey ?? normalizedEvent.toolCallId,
+								callId: normalizedEvent.toolCallId,
+								name: normalizedEvent.toolName,
+								arguments: normalizedEvent.arguments,
+								index: offset + index,
 							});
 						}
 						if (event.type === "delta_tool" && args.protocol === "openai.chat.completions" && event.arguments !== undefined && event.argumentsDelta === undefined) {
 							return;
 						}
-						if (event.type === "error") {
-							emit(event);
-							return;
-						}
-						const index = event.choiceIndex ?? 0;
 						maxIndex = Math.max(maxIndex, index);
 						nextOutputIndex = Math.max(nextOutputIndex, offset + maxIndex + 1);
-						emit(args.protocol === "openai.chat.completions" ? event : { ...event, choiceIndex: offset + index });
+						emit(args.protocol === "openai.chat.completions" ? normalizedEvent : { ...normalizedEvent, choiceIndex: offset + index });
 					};
 				},
 				toolResult(item) {
 					if (args.protocol !== "openai.responses") return;
-					const call = rounds.flatMap((round) => [...round.tools.values()]).find((tool) => tool.id === item.id);
+					const call = rounds.flatMap((round) => [...round.tools.values()]).find((tool) => tool.callId === item.id);
 					emit({ type: "delta_tool", toolCallId: item.id, toolName: item.name, arguments: item.arguments, choiceIndex: call?.index ?? nextOutputIndex, payload: { server_tool_result: { output: item.output, is_error: item.isError } } });
 				},
 			};
 			const completion = args.run(sink).then(async (response) => {
+				if (!readyCalled) resolveEarlyResponse(response.clone());
 				if (!response.ok || !response.body) {
 					emit({ type: "error", message: `Managed tool request failed with status ${response.status}.` });
 					return;
@@ -130,7 +152,7 @@ export function createManagedToolLiveResponse(args: {
 							const preceding = rounds.slice(0, finalTurnBuffered ? undefined : -1).flatMap((round) => [
 								...(round.text ? [{ type: "message", role: "assistant", content: [{ type: "output_text", text: round.text }] }] : []),
 								...[...round.tools.values()].sort((a, b) => a.index - b.index).map((tool) => ({
-									type: "function_call", id: tool.id, call_id: tool.id, name: tool.name, arguments: tool.arguments, status: "completed",
+									type: "function_call", id: tool.id, call_id: tool.callId, name: tool.name, arguments: tool.arguments, status: "completed",
 								})),
 							]);
 							const finalOutput = Array.isArray(terminal.payload.response.output) ? terminal.payload.response.output : [];
@@ -150,6 +172,12 @@ export function createManagedToolLiveResponse(args: {
 				}
 				if (args.protocol !== "anthropic.messages" && !closed) controller.enqueue(encoder.encode("data: [DONE]\n\n"));
 			}).catch((error) => {
+				if (!readyCalled) {
+					resolveEarlyResponse(new Response(JSON.stringify({ error: { message: error instanceof Error ? error.message : "managed_tool_stream_error" } }), {
+						status: 500,
+						headers: { "Content-Type": "application/json" },
+					}));
+				}
 				emit({ type: "error", message: error instanceof Error ? error.message : "managed_tool_stream_error" });
 			}).finally(() => {
 				if (closed) return;
@@ -160,7 +188,9 @@ export function createManagedToolLiveResponse(args: {
 		},
 		cancel() {
 			closed = true;
+			abortController.abort();
 		},
 	});
-	return new Response(stream, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store" } });
+	const liveResponse = new Response(stream, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store" } });
+	return Promise.race([ready.then(() => liveResponse), earlyResponse]);
 }

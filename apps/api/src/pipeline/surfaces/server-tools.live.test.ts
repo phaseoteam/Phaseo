@@ -3,7 +3,7 @@ import { createManagedToolLiveResponse } from "./server-tools.live";
 
 describe("managed tool live stream", () => {
 	it("keeps one Responses lifecycle and includes earlier output in the final snapshot", async () => {
-		const response = createManagedToolLiveResponse({
+		const response = await createManagedToolLiveResponse({
 			protocol: "openai.responses",
 			requestId: "req_1",
 			model: "test-model",
@@ -28,7 +28,7 @@ describe("managed tool live stream", () => {
 	});
 
 	it("emits final text when the last provider turn was completed rather than streamed", async () => {
-		const response = createManagedToolLiveResponse({
+		const response = await createManagedToolLiveResponse({
 			protocol: "openai.responses",
 			requestId: "req_2",
 			model: "test-model",
@@ -48,11 +48,12 @@ describe("managed tool live stream", () => {
 	});
 
 	it("emits buffered Chat Completions text before the final chunk", async () => {
-		const response = createManagedToolLiveResponse({
+		const response = await createManagedToolLiveResponse({
 			protocol: "openai.chat.completions",
 			requestId: "req_3",
 			model: "test-model",
 			async run(sink) {
+				sink.ready();
 				sink.markFinalTurnBuffered();
 				return new Response('data: {"choices":[{"index":0,"delta":{"content":"Done."},"finish_reason":null}]}\n\ndata: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n', { headers: { "content-type": "text/event-stream" } });
 			},
@@ -63,7 +64,7 @@ describe("managed tool live stream", () => {
 	});
 
 	it("closes an Anthropic message after the final usage event", async () => {
-		const response = createManagedToolLiveResponse({
+		const response = await createManagedToolLiveResponse({
 			protocol: "anthropic.messages",
 			requestId: "req_4",
 			model: "test-model",
@@ -82,11 +83,12 @@ describe("managed tool live stream", () => {
 		let release!: () => void;
 		const gate = new Promise<void>((resolve) => { release = resolve; });
 		let finalized = false;
-		const response = createManagedToolLiveResponse({
+		const response = await createManagedToolLiveResponse({
 			protocol: "openai.responses",
 			requestId: "req_5",
 			model: "test-model",
 			async run(sink) {
+				sink.ready();
 				await gate;
 				sink.beginRound()({ type: "delta_text", channel: "output_text", text: "Late text.", choiceIndex: 0 });
 				finalized = true;

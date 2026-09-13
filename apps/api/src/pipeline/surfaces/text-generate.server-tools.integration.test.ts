@@ -15,7 +15,8 @@ vi.mock("../after", () => ({
 
 vi.mock("@/runtime/env", () => ({
 	getResponseCache: (...args: any[]) => getResponseCacheMock(...args),
-	ensureRuntimeForBackground: vi.fn(),
+	ensureRuntimeForBackground: vi.fn(() => () => {}),
+	getBindings: vi.fn(() => ({})),
 	dispatchBackground: vi.fn(),
 }));
 
@@ -124,6 +125,49 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 				headers: { "Content-Type": "text/event-stream" },
 			});
 		});
+	});
+
+	it("returns an HTTP validation error before starting SSE", async () => {
+		const args = createArgs();
+		args.pre.ctx.body.response_format = { type: "json_schema", json_schema: null };
+		const response = await runTextGeneratePipeline(args);
+		expect(response.status).toBe(400);
+		expect(response.headers.get("content-type")).toContain("application/json");
+		expect(await response.text()).not.toContain("response.created");
+		expect(doRequestWithIRMock).not.toHaveBeenCalled();
+	});
+
+	it("preserves an immediate upstream error status", async () => {
+		doRequestWithIRMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: "upstream unavailable" } }), {
+			status: 502,
+			headers: { "content-type": "application/json" },
+		}));
+		const response = await runTextGeneratePipeline(createArgs());
+		expect(response.status).toBe(502);
+		expect(response.headers.get("content-type")).toContain("application/json");
+		expect(await response.text()).toContain("upstream unavailable");
+	});
+
+	it("does not start a tool follow-up after the client cancels", async () => {
+		let release!: () => void;
+		const gate = new Promise<void>((resolve) => { release = resolve; });
+		const encoder = new TextEncoder();
+		const initial = new ReadableStream<Uint8Array>({
+			async start(controller) {
+				controller.enqueue(encoder.encode('event: response.function_call_arguments.done\ndata: {"item_id":"call_datetime","output_index":0,"name":"gateway_datetime","arguments":"{\\"timezones\\":[]}"}\n\n'));
+				await gate;
+				controller.enqueue(encoder.encode('event: response.completed\ndata: {"response":{"id":"first","status":"completed","usage":{"input_tokens":10,"output_tokens":5}}}\n\n'));
+				controller.close();
+			},
+		});
+		doRequestWithIRMock.mockResolvedValueOnce(createStreamResult(initial));
+		const response = await runTextGeneratePipeline(createArgs());
+		const reader = response.body!.getReader();
+		await reader.read();
+		await reader.cancel();
+		release();
+		await vi.waitFor(() => expect(finalizeRequestMock).toHaveBeenCalledTimes(1));
+		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
 	});
 
 	it("delivers text before the first model turn finishes and then streams the tool follow-up", async () => {
@@ -269,8 +313,16 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 		expect(streamText).toContain("Right now, the time in UTC is 10:35:03.");
 		expect(streamText).not.toContain("\"name\":\"tool_call\"");
 		expect(streamText).toContain("\"name\":\"gateway_datetime\"");
+		expect(streamText).toContain("\"output_index\":1");
 		expect(streamText).toContain("\"output\":");
 		expect(streamText).toContain("timezones");
+		const completedFrame = streamText.split("\n\n").find((frame) => frame.includes("event: response.completed"))!;
+		const completedPayload = JSON.parse(completedFrame.split("data: ")[1]);
+		expect(completedPayload.response.output).toContainEqual(expect.objectContaining({
+			type: "function_call",
+			id: "call_datetime",
+			call_id: "call_datetime",
+		}));
 		const normalized = finalizeRequestMock.mock.calls[0]?.[0]?.exec?.result?.normalized;
 		expect(normalized.output).toEqual([{
 			type: "message",

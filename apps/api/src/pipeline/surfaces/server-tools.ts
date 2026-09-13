@@ -3135,8 +3135,10 @@ export async function buildServerToolContinuation(
 		executeImageGeneration?: ImageGenerationExecutor;
 		searchModels?: ModelSearchExecutor;
 		remainingToolCalls?: number;
+		signal?: AbortSignal;
 	},
 ) : Promise<ServerToolContinuation | null> {
+	if (options?.signal?.aborted) return null;
 	if (!config.enabled) return null;
 	const firstChoice = Array.isArray(irResponse.choices) ? irResponse.choices[0] : null;
 	if (!firstChoice) return null;
@@ -3201,6 +3203,7 @@ export async function buildServerToolContinuation(
 	const usageCounts = config.usageCounts ?? (config.usageCounts = {});
 	let remainingSearchResults = config.webSearchMaxTotalResults ?? DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS;
 	for (const call of toolCalls) {
+		if (options?.signal?.aborted) return null;
 		if (!isServerToolCall(call)) {
 			toolResults.push({
 				toolCallId: call.id,
