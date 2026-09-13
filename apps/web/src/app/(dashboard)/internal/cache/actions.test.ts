@@ -53,6 +53,18 @@ describe("complete model page revalidation", () => {
 		expect(revalidatePath).not.toHaveBeenCalled();
 	});
 
+	it.each([
+		["model-info", "frontend:model-overview"],
+		["model-providers", "frontend:model-pricing"],
+		["model-telemetry", "frontend:model-runtime-stats"],
+	] as const)("refreshes the %s section after its Worker purge", async (scope, tag) => {
+		jest.mocked(fetchInternalWebApi).mockResolvedValue({ success: true, scope, targetId: modelId } as never);
+		await purgeCacheScopeAction({ scope, targetId: modelId });
+		expect(updateTag).toHaveBeenCalledWith(tag);
+		expect(revalidatePath).toHaveBeenCalledWith(`/models/${modelId}`);
+		expect(updateTag).not.toHaveBeenCalledWith("public-model-catalogue");
+	});
+
 	it("requires an authenticated admin session before requesting a purge", async () => {
 		jest.mocked(getServerAccountContext).mockResolvedValue({ accessToken: null } as Awaited<ReturnType<typeof getServerAccountContext>>);
 		await expect(purgeCacheScopeAction(input)).rejects.toThrow("Sign in again");

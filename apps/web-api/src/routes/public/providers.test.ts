@@ -25,7 +25,7 @@ describe("public provider routes", () => {
 		}));
 		const response = await app.request("https://phaseo.app/api/_web/api-providers", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
 		await expect(response.json()).resolves.toMatchObject({ providers: [{ api_provider_id: "openai", api_provider_name: "OpenAI", provider_status: "active", byok_available: true, country_code: "US", subdivision_code: "US-CA", default_execution_regions: ["US", "EU"], default_data_regions: ["US", "EU"], prompt_training_policy: "no_train", zero_data_retention: true, data_retention_days: 0, privacy_policy_url: "https://openai.com/policies/privacy-policy/", terms_of_service_url: "https://openai.com/policies/services-agreement/", total_models: 1, active_models: 1, free_models: 1, total_daily_tokens: 100, total_monthly_tokens: 100, modality_support: { text: { input: 1, output: 1 }, image: { input: 1, output: 0 } } }] });
 	});
 
@@ -136,7 +136,7 @@ describe("public provider routes", () => {
 		]);
 		for (const response of [models, apps]) {
 			expect(response.status).toBe(200);
-			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
+			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
 			expect(response.headers.get("cache-tag")).toContain("web-api-provider-openai");
 		}
 		await expect(models.json()).resolves.toEqual({ models: [{ model_id: "openai/gpt-test", model_name: "GPT Test", request_count: 4, total_tokens: 120, median_latency_ms: 13, median_throughput: 3.46 }] });
@@ -171,7 +171,7 @@ describe("public provider routes", () => {
 		}));
 		const response = await app.request("https://phaseo.app/api/_web/api-providers/openai/metrics?hours=24", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
 		await expect(response.json()).resolves.toMatchObject({
 			summary: { uptimePct: 90, avgLatencyMs: 50, avgThroughput: 20, requests24h: 10, successful24h: 9 },
 			timeseries: { latency: expect.any(Array), throughput: expect.any(Array) },
@@ -198,7 +198,7 @@ describe("public provider routes", () => {
 		]);
 		for (const response of [modelResponse, appResponse]) {
 			expect(response.status).toBe(200);
-			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
+			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
 		}
 		const modelPayload = await modelResponse.json() as { models: unknown[]; points: unknown[] };
 		const appPayload = await appResponse.json() as { apps: unknown[]; points: unknown[] };

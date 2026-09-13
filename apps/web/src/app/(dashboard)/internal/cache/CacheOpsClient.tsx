@@ -140,7 +140,7 @@ export default function CacheOpsClient() {
 			{lastResult ? (
 				<Alert>
 					<CheckCircle2 className="size-4 text-emerald-600" />
-					<AlertTitle>Full cache purge completed</AlertTitle>
+					<AlertTitle>Cache refresh completed</AlertTitle>
 					<AlertDescription>
 						Purged {lastResult.tags.length} Worker tags and invalidated the matching website cache at {formatTimestamp(lastResult.purgedAt)}.
 					</AlertDescription>

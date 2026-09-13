@@ -7,7 +7,7 @@ import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerf
 import { fetchOptionalPublicWebApi } from "@/lib/web-api/client";
 import type { ModelPercentile } from "./ModelPercentileSelect";
 
-export const MODEL_PERFORMANCE_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+export const MODEL_PERFORMANCE_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 function getModelPerformanceKey({
 	modelId,
@@ -63,7 +63,7 @@ export function useModelPerformanceMetrics({
 		fallbackData,
 		focusThrottleInterval: 60_000,
 		keepPreviousData: true,
-		refreshInterval,
+		refreshInterval: refreshInterval ?? 5 * 60_000,
 		refreshWhenHidden: false,
 		refreshWhenOffline: false,
 		revalidateOnFocus: true,

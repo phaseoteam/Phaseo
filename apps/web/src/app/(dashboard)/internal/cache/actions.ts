@@ -119,6 +119,9 @@ type CacheScopeId =
 	| "search"
 	| "catalogue"
 	| "model"
+	| "model-info"
+	| "model-providers"
+	| "model-telemetry"
 	| "provider"
 	| "organisation"
 	| "benchmark"
@@ -239,6 +242,21 @@ function expireNextCacheScope(scope: CacheScopeId, targetId: string | null) {
 			break;
 		case "model":
 			expirePublicModelCatalogueCache({ modelId: targetId });
+			break;
+		case "model-info":
+			for (const tag of ["frontend:model-overview", "frontend:model-header", "frontend:model-notice", "frontend:model-timeline", "frontend:model-benchmarks", "frontend:model-subscription-plans"]) updateTag(tag);
+			revalidatePath("/models");
+			if (targetId) revalidatePath(`/models/${targetId}`);
+			break;
+		case "model-providers":
+			for (const tag of ["frontend:model-pricing", "frontend:model-pricing-history", "frontend:model-gateway-metadata", "frontend:model-availability", "frontend:model-routing-health"]) updateTag(tag);
+			revalidatePath("/models");
+			if (targetId) revalidatePath(`/models/${targetId}`);
+			break;
+		case "model-telemetry":
+			for (const tag of ["frontend:model-performance", "frontend:model-activity", "frontend:model-runtime-stats", "frontend:model-usage-daily", "frontend:model-realtime-window", "frontend:model-token-trajectory", "frontend:model-apps"]) updateTag(tag);
+			revalidatePath("/models");
+			if (targetId) revalidatePath(`/models/${targetId}`);
 			break;
 		case "provider":
 			revalidateProviderDataTags(
