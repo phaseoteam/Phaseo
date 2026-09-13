@@ -36,12 +36,15 @@ vi.mock("./upstream-requests", () => ({
 import { auditFailure, auditSuccess, resolveAuditServiceTiers } from "./index";
 
 describe("audit service tier attribution", () => {
-	it("keeps requests without requested or observed tier evidence unclassified", () => {
+	it("defaults requests without a tier to standard", () => {
 		expect(resolveAuditServiceTiers({ endpoint: "chat.completions" })).toEqual({
 			requested: null,
 			observed: null,
-			effective: null,
+			effective: "standard",
 		});
+	});
+	it("preserves the batch tier", () => {
+		expect(resolveAuditServiceTiers({ endpoint: "batch" }).effective).toBe("batch");
 	});
 });
 

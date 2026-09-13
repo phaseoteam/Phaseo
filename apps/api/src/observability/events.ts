@@ -787,7 +787,7 @@ function resolveServiceTier(args: EventArgs): {
     return {
         requested,
         observed,
-        effective: observed ?? requested,
+        effective: observed ?? requested ?? ((args.endpoint ?? args.ctx?.endpoint) === "batch" ? "batch" : "standard"),
     };
 }
 
