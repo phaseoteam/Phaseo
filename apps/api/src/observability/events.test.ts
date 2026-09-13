@@ -512,6 +512,19 @@ describe("emitGatewayRequestEvent", () => {
 		expect(event.service_tier).toBe("standard");
 	});
 
+	it("records batch for a batch request with no reported service tier", async () => {
+		const ctx = {
+			endpoint: "batch",
+			requestId: "req_batch_default_tier",
+			model: "deepseek/deepseek-v4.1-flash",
+			workspaceId: "ws_batch_default_tier",
+			providers: [],
+		} as unknown as PipelineContext;
+		await emitGatewayRequestEvent({ ctx, provider: "crofai", statusCode: 200, success: true });
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event.service_tier).toBe("batch");
+	});
+
 	it("omits null values and duplicate diagnostic fields from compact success events", async () => {
 		clearRuntime();
 		configureRuntime({
