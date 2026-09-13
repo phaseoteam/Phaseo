@@ -34,9 +34,9 @@ export function createManagedToolLiveResponse(args: {
 	run: (sink: ManagedToolLiveSink) => Promise<Response>;
 }): Response {
 	const encoder = new TextEncoder();
+	let closed = false;
 	const stream = new ReadableStream<Uint8Array>({
 		start(controller) {
-			let closed = false;
 			let sequenceNumber = 0;
 			let nextOutputIndex = 0;
 			let outputText = "";
@@ -147,13 +147,17 @@ export function createManagedToolLiveResponse(args: {
 					for (const frame of frames.filter((frame) => frame.eventName === "message_delta" || frame.eventName === "message_stop")) enqueue(frame.eventName, frame.payload);
 					if (!frames.some((frame) => frame.eventName === "message_stop")) enqueue("message_stop", { type: "message_stop" });
 				}
-				if (args.protocol !== "anthropic.messages") controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+				if (args.protocol !== "anthropic.messages" && !closed) controller.enqueue(encoder.encode("data: [DONE]\n\n"));
 			}).catch((error) => {
 				emit({ type: "error", message: error instanceof Error ? error.message : "managed_tool_stream_error" });
 			}).finally(() => {
+				if (closed) return;
 				closed = true;
 				controller.close();
 			});
+		},
+		cancel() {
+			closed = true;
 		},
 	});
 	return new Response(stream, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store" } });

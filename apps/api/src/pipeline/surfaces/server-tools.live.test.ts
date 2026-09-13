@@ -77,4 +77,28 @@ describe("managed tool live stream", () => {
 		expect(body).toContain("Done.");
 		expect(body).toContain("event: message_stop");
 	});
+
+	it("allows the client to cancel while internal finalization continues", async () => {
+		let release!: () => void;
+		const gate = new Promise<void>((resolve) => { release = resolve; });
+		let finalized = false;
+		const response = createManagedToolLiveResponse({
+			protocol: "openai.responses",
+			requestId: "req_5",
+			model: "test-model",
+			async run(sink) {
+				await gate;
+				sink.beginRound()({ type: "delta_text", channel: "output_text", text: "Late text.", choiceIndex: 0 });
+				finalized = true;
+				return new Response('event: response.completed\ndata: {"response":{"status":"completed"}}\n\n', { headers: { "content-type": "text/event-stream" } });
+			},
+		});
+		const reader = response.body!.getReader();
+		await reader.read();
+		await reader.cancel();
+		release();
+		await gate;
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(finalized).toBe(true);
+	});
 });
