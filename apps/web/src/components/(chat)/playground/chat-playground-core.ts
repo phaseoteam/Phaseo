@@ -33,6 +33,14 @@ const SUPPORTED_CHAT_SERVER_TOOLS = new Set<ChatServerToolType>([
 export type ChatResponseLayout = "sequential" | "side-by-side";
 export type NewChatModelPreference = "blank" | "selected";
 
+export function getRequestedChatServiceTier(
+	settings: Pick<ChatModelSettings, "serviceTier">,
+): "priority" | "flex" | null {
+	return settings.serviceTier === "priority" || settings.serviceTier === "flex"
+		? settings.serviceTier
+		: null;
+}
+
 export function normalizeServerTools(
 	serverTools?: ChatServerToolType[],
 ): ChatServerToolType[] {
@@ -60,6 +68,7 @@ export const DEFAULT_SETTINGS: ChatSettings = {
 	systemPrompt: "",
 	stream: true,
 	providerId: "auto",
+	serviceTier: "standard",
 	reasoningEnabled: false,
 	reasoningEffort: "medium",
 	endpoint: "responses",
@@ -87,6 +96,7 @@ const MODEL_SETTING_KEYS: Array<keyof ChatModelSettings> = [
 	"systemPrompt",
 	"stream",
 	"providerId",
+	"serviceTier",
 	"reasoningEnabled",
 	"reasoningEffort",
 	"endpoint",
@@ -183,6 +193,9 @@ export const getChangedSettings = (
 							.join(" ")
 				: "Auto (Gateway)",
 		);
+	}
+	if (settings.serviceTier && settings.serviceTier !== defaults.serviceTier) {
+		addChange("Service tier", settings.serviceTier === "priority" ? "Priority" : "Flex");
 	}
 	if (settings.reasoningEnabled !== defaults.reasoningEnabled) {
 		addChange(
@@ -513,6 +526,7 @@ export function getEffectiveModelSettings(
 		systemPrompt: buildDefaultSystemPrompt(modelId, modelDisplayName),
 		stream: DEFAULT_SETTINGS.stream,
 		providerId: DEFAULT_SETTINGS.providerId,
+		serviceTier: DEFAULT_SETTINGS.serviceTier,
 		reasoningEnabled: DEFAULT_SETTINGS.reasoningEnabled,
 		reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
 		endpoint: DEFAULT_SETTINGS.endpoint,

@@ -81,6 +81,7 @@ import {
 	generateId,
 	getChangedSettings,
 	getEffectiveModelSettings,
+	getRequestedChatServiceTier,
 	getOrgId,
 	isGeneratedDefaultSystemPrompt,
 	normalizeServerTools,
@@ -853,6 +854,9 @@ function ChatPlaygroundContent({
 		};
 		if (activeThread) {
 			const comparisonModelId = activeThread.modelId || selectedModel;
+			const comparisonSettings = comparisonModelId
+				? { ...activeThread.settings, ...getEffectiveModelSettings(activeThread, comparisonModelId) }
+				: activeThread.settings;
 			const comparisonModelDisplayName =
 				comparisonModelId
 					? activeThread.settings.modelOverridesById?.[
@@ -860,11 +864,11 @@ function ChatPlaygroundContent({
 						]?.displayName?.trim() ||
 						modelDisplayNameById[comparisonModelId]
 					: undefined;
-			const comparisonProviderLabel = activeThread.settings.providerId
-				? providerNameById.get(activeThread.settings.providerId)
+			const comparisonProviderLabel = comparisonSettings.providerId
+				? providerNameById.get(comparisonSettings.providerId)
 				: undefined;
 			const changes = getChangedSettings(
-				activeThread.settings,
+				comparisonSettings,
 				comparisonModelId,
 				comparisonModelDisplayName,
 				comparisonProviderLabel,
@@ -1274,6 +1278,10 @@ function ChatPlaygroundContent({
 				effectiveModelSettings.repetitionPenalty,
 			);
 			setOptionalRequestNumber("seed", effectiveModelSettings.seed);
+			const requestedServiceTier = getRequestedChatServiceTier(effectiveModelSettings);
+			if (requestedServiceTier) {
+				requestBody.service_tier = requestedServiceTier;
+			}
 			if (endpoint === "responses") {
 				requestBody.input = input;
 				requestBody.meta = true;
@@ -4171,6 +4179,7 @@ function ChatPlaygroundContent({
 			),
 			stream: DEFAULT_SETTINGS.stream,
 			providerId: DEFAULT_SETTINGS.providerId,
+			serviceTier: DEFAULT_SETTINGS.serviceTier,
 			reasoningEnabled: DEFAULT_SETTINGS.reasoningEnabled,
 			reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
 			endpoint: DEFAULT_SETTINGS.endpoint,
