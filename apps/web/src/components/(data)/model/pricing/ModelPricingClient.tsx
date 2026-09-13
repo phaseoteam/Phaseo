@@ -726,7 +726,7 @@ function ProviderServiceTierRow({
 						<span>
 							{providerName}{" "}
 							<span className={cn("font-medium", tierMeta.iconClassName)}>
-								({formatServiceTierLabel(plan)})
+								({formatServiceTierLabel(plan)}{plan === "flex" ? " · opt-in" : ""})
 							</span>
 						</span>
 						<ProviderServiceTierInfoIcons provider={provider} plan={plan} />

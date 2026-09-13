@@ -84,7 +84,7 @@ export default function PricingPlanSelect({
 			case "batch":
 				return "Queued or batch-oriented capacity.";
 			case "flex":
-				return "Flexible routing for best-effort capacity.";
+				return "Used only when service_tier is flex.";
 			case "priority":
 				return "Fast routing when available.";
 			case "standard":
