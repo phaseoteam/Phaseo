@@ -1602,8 +1602,7 @@ export default function PricingInsights({
 						<TableBody>
 							{sortedRows.map((row) => {
 								const additionalTierRows = (providerTierRowsById.get(row.providerId) ?? [])
-									.filter((tierRow) => tierRow.pricingPlan !== row.pricingPlan
-										&& (tierRow.effectiveUsageEligible || displayedPricingView === "listed"));
+									.filter((tierRow) => tierRow.pricingPlan !== row.pricingPlan);
 								const isExpanded = expandedProviders.has(row.providerId);
 								const isMainSeriesVisible = isSeriesVisible(row);
 
@@ -1797,8 +1796,7 @@ export default function PricingInsights({
 								<TableBody>
 									{sortedRows.map((row) => {
 										const additionalTierRows = (providerTierRowsById.get(row.providerId) ?? [])
-											.filter((tierRow) => tierRow.pricingPlan !== row.pricingPlan
-												&& (tierRow.effectiveUsageEligible || displayedPricingView === "listed"));
+											.filter((tierRow) => tierRow.pricingPlan !== row.pricingPlan);
 										const isExpanded = expandedProviders.has(row.providerId);
 										const isMainSeriesVisible = isSeriesVisible(row);
 
