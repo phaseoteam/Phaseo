@@ -5,6 +5,7 @@
 const PROVIDER_ID_ALIASES = new Map<string, string>([
 	["meta-contributor", "meta"],
 	["nebius-token-factory-fast", "nebius-token-factory"],
+	["wafer-zdr", "wafer"],
 	["novitaai", "novita"],
 	["novita-ai", "novita"],
 	["x-ai", "spacex-ai"],

@@ -7,6 +7,7 @@ describe("providerProfiles", () => {
 		const azure = getProviderProfile("azure");
 		expect(openai?.id).toBe("openai");
 		expect(azure?.id).toBe("openai");
+		expect(getProviderProfile("wafer-zdr")?.id).toBe("wafer");
 	});
 
 	it("contains text-only policy for known providers", () => {
