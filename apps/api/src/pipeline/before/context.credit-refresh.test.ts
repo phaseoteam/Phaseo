@@ -160,7 +160,7 @@ function seedContextCache(options: { legacyCredit?: boolean; credit?: unknown } 
 		}),
 	);
 	runtime.store.set(
-		`gateway:static:v3:default:${workspaceId}:v1:${endpoint}:${model}`,
+		`gateway:static:v4:default:${workspaceId}:v1:${endpoint}:${model}`,
 		JSON.stringify({
 			workspaceId,
 			resolvedModel: model,
@@ -328,7 +328,7 @@ describe("fetchGatewayContext credit-only cache refresh", () => {
 		expect(runtime.background).toHaveLength(1);
 		expect(runtime.pendingWrites.map(({ key }) => key).sort()).toEqual([
 			`gateway:dynamic:default:${workspaceId}:${apiKeyId}:v1`,
-			`gateway:static:v3:default:${workspaceId}:v1:${endpoint}:${model}`,
+			`gateway:static:v4:default:${workspaceId}:v1:${endpoint}:${model}`,
 		]);
 
 		await fetchPromise;
