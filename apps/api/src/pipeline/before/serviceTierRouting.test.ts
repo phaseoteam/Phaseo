@@ -108,7 +108,9 @@ describe("applyServiceTierRouting", () => {
         const card = makeCard({ provider: "provider", model: "model", plans: ["standard"] });
         card.rules = card.rules.map((rule) => ({ ...rule, pricing_plan: plan }));
         const provider = makeCandidate({ providerId: "provider", pricingCard: card });
-        expect((await applyServiceTierRouting({ candidates: [provider], body: {}, capability: "text.generate" })).candidates).toEqual([provider]);
+        for (const body of [{}, { service_tier: "default" }, { service_tier: "standard" }]) {
+            expect((await applyServiceTierRouting({ candidates: [provider], body, capability: "text.generate" })).candidates).toEqual([provider]);
+        }
     });
     it("preserves default routing for explicitly free cards", async () => {
         const card = makeCard({ provider: "free", model: "model", plans: ["standard"] });
@@ -116,7 +118,7 @@ describe("applyServiceTierRouting", () => {
         const free = makeCandidate({ providerId: "free", pricingCard: card });
         expect((await applyServiceTierRouting({ candidates: [free], body: {}, capability: "text.generate" })).candidates).toEqual([free]);
     });
-    it.each([{}, { service_tier: "standard" }, { serviceTier: "standard" }])(
+    it.each([{}, { service_tier: "default" }, { service_tier: "standard" }, { serviceTier: "standard" }])(
         "rejects a global priority-only route for a default request %j", async (body) => {
             const fast = makeCandidate({ providerId: "fireworks", apiModelId: "z-ai/glm-5.3",
                 providerModelSlug: "accounts/fireworks/routers/glm-5p3-fast", offerScope: "global",
@@ -124,6 +126,35 @@ describe("applyServiceTierRouting", () => {
             const standard = makeCandidate({ providerId: "other", pricingCard: makeCard({ provider: "other", model: "z-ai/glm-5.3", plans: ["standard"] }) });
             const result = await applyServiceTierRouting({ candidates: [fast, standard], body, capability: "text.generate" });
             expect(result.candidates).toEqual([standard]);
+        },
+    );
+
+    it.each([{}, { service_tier: "default" }, { service_tier: "standard" }, { serviceTier: "standard" }])(
+        "rejects a dedicated flex route for a standard request %j", async (body) => {
+            const flex = makeCandidate({ providerId: "deepinfra", apiModelId: "deepseek/deepseek-v4.1-flash",
+                providerModelSlug: "deepseek-ai/DeepSeek-V4.1-Flash", offerScope: "specialized", offerLabel: "flex",
+                pricingCard: makeCard({ provider: "deepinfra", model: "deepseek/deepseek-v4.1-flash", plans: ["standard", "flex"] }) });
+            const standard = makeCandidate({ providerId: "other", pricingCard: makeCard({ provider: "other", model: "deepseek/deepseek-v4.1-flash", plans: ["standard"] }) });
+            const result = await applyServiceTierRouting({ candidates: [flex, standard], body, capability: "text.generate" });
+            expect(result.candidates).toEqual([standard]);
+            expect(result.diagnostics.droppedProviders[0]?.reason).toBe("service_tier_flex_required");
+        },
+    );
+
+    it("keeps a shared standard and flex route on the standard tier", async () => {
+        const provider = makeCandidate({ providerId: "deepinfra", apiModelId: "deepseek/deepseek-v4.1-flash",
+            pricingCard: makeCard({ provider: "deepinfra", model: "deepseek/deepseek-v4.1-flash", plans: ["standard", "flex"] }) });
+        const result = await applyServiceTierRouting({ candidates: [provider], body: {}, capability: "text.generate" });
+        expect(result.candidates).toEqual([provider]);
+    });
+
+    it.each([{}, { service_tier: "standard" }])(
+        "preserves a canonical model whose name ends in flex for a standard request %j", async (body) => {
+            const provider = makeCandidate({ providerId: "provider", apiModelId: "black-forest-labs/flux-2-flex",
+                providerModelSlug: "flux-2-flex",
+                pricingCard: makeCard({ provider: "provider", model: "black-forest-labs/flux-2-flex", plans: ["standard"] }) });
+            const result = await applyServiceTierRouting({ candidates: [provider], body, capability: "image.generate" });
+            expect(result.candidates).toEqual([provider]);
         },
     );
 

@@ -2147,7 +2147,8 @@ export type CreateChatCompletionParams = {
         };
     safety_identifier?: string | null;
     seed?: number;
-    service_tier?: "standard" | "fast" | "priority" | "flex" | "batch";
+    service_tier?:
+      "standard" | "default" | "fast" | "priority" | "flex" | "batch";
     session_id?: string;
     stop?: string | string[];
     store?: boolean;
@@ -5001,7 +5002,8 @@ export type CreateResponseParams = {
       summary?: "auto" | "concise" | "detailed";
     };
     safety_identifier?: string | null;
-    service_tier?: "standard" | "fast" | "priority" | "flex" | "batch";
+    service_tier?:
+      "standard" | "default" | "fast" | "priority" | "flex" | "batch";
     session_id?: string;
     store?: boolean;
     stream?: boolean;

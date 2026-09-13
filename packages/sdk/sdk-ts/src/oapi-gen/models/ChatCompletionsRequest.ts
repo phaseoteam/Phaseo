@@ -193,7 +193,8 @@ export interface ChatCompletionsRequest {
       };
   safety_identifier?: string | null;
   seed?: number;
-  service_tier?: "standard" | "fast" | "priority" | "flex" | "batch";
+  service_tier?:
+    "standard" | "default" | "fast" | "priority" | "flex" | "batch";
   session_id?: string;
   stop?: string | string[];
   store?: boolean;

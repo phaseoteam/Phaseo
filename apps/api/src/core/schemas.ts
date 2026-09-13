@@ -82,7 +82,7 @@ const BetaOptionsSchema = z.object({
     }).optional(),
 }).passthrough().optional();
 
-const ServiceTierSchema = z.enum(["standard", "fast", "priority", "flex", "batch"]);
+const ServiceTierSchema = z.enum(["standard", "default", "fast", "priority", "flex", "batch"]);
 
 const ImageConfigSchema = z.object({
     aspect_ratio: z.string().optional(),

@@ -390,10 +390,11 @@ export async function applyServiceTierRouting(args: {
     diagnostics: ServiceTierRoutingDiagnostics;
 }> {
     const requestedTier = normalizeRequestedServiceTier(args.body);
-    const requestedPlan = normalizeRequestedPlan(requestedTier);
-    if (!requestedPlan) {
+    const requestedPlan = normalizeRequestedPlan(requestedTier) ?? "standard";
+    if (requestedPlan === "standard") {
 		const candidates = args.candidates.filter((candidate) =>
 			!isTierDedicatedOffer(candidate, "priority") && !isTierSiblingModel(candidate, "priority") &&
+			!isTierDedicatedOffer(candidate, "flex") &&
 			!requiresExplicitServiceTier(candidate.pricingCard)
 		);
         return {
@@ -408,7 +409,9 @@ export async function applyServiceTierRouting(args: {
 					apiModelId: candidate.apiModelId ?? null,
 					providerModelSlug: candidate.providerModelSlug ?? null,
 					reason: isTierDedicatedOffer(candidate, "priority") || isTierSiblingModel(candidate, "priority")
-						? "service_tier_priority_required" : "service_tier_standard_unsupported",
+						? "service_tier_priority_required"
+						: isTierDedicatedOffer(candidate, "flex")
+							? "service_tier_flex_required" : "service_tier_standard_unsupported",
 				})),
                 remappedProviders: [],
             },
@@ -420,12 +423,21 @@ export async function applyServiceTierRouting(args: {
     const remappedProviders: ServiceTierRoutingDiagnostics["remappedProviders"] = [];
 
     for (const candidate of args.candidates) {
-		if (requestedPlan !== "priority" && (isTierDedicatedOffer(candidate, "priority") || isTierSiblingModel(candidate, "priority"))) {
+        if (requestedPlan !== "priority" && (isTierDedicatedOffer(candidate, "priority") || isTierSiblingModel(candidate, "priority"))) {
 			droppedProviders.push({
 				providerId: candidate.providerId,
 				apiModelId: candidate.apiModelId ?? null,
 				providerModelSlug: candidate.providerModelSlug ?? null,
 				reason: "service_tier_priority_required",
+			});
+			continue;
+		}
+		if (requestedPlan !== "flex" && isTierDedicatedOffer(candidate, "flex")) {
+			droppedProviders.push({
+				providerId: candidate.providerId,
+				apiModelId: candidate.apiModelId ?? null,
+				providerModelSlug: candidate.providerModelSlug ?? null,
+				reason: "service_tier_flex_required",
 			});
 			continue;
 		}

@@ -695,7 +695,7 @@ function ProviderServiceTierRow({
 			role="button"
 			tabIndex={0}
 			aria-pressed={isActive}
-			aria-label={`Open ${providerName} ${formatServiceTierLabel(plan)} service tier`}
+			aria-label={`Open ${providerName} ${formatServiceTierLabel(plan)} service tier${plan === "flex" ? ", opt-in" : ""}`}
 			onClick={openTier}
 			onKeyDown={(event) => {
 				if (event.key !== "Enter" && event.key !== " ") return;
@@ -726,7 +726,7 @@ function ProviderServiceTierRow({
 						<span>
 							{providerName}{" "}
 							<span className={cn("font-medium", tierMeta.iconClassName)}>
-								({formatServiceTierLabel(plan)})
+								({formatServiceTierLabel(plan)}{plan === "flex" ? " · opt-in" : ""})
 							</span>
 						</span>
 						<ProviderServiceTierInfoIcons provider={provider} plan={plan} />
