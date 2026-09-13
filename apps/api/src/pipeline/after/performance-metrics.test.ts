@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
 
 describe("calculateOutputPerformanceMetrics", () => {
-	it("separates full-duration throughput from post-TTFT output speed", () => {
+	it("calculates throughput over full provider duration and separates output speed", () => {
 		expect(calculateOutputPerformanceMetrics({
 			outputTokens: 101,
 			providerDurationMs: 2_000,

@@ -179,9 +179,13 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 		maybeWriteStickyRoutingFromUsageMock.mockReset().mockResolvedValue(undefined);
 		classifyProviderHealthImpactMock.mockReset().mockReturnValue("success");
 
+		const ctx = baseCtx();
+		ctx.meta.returnMeta = true;
+		ctx.meta.startedAtMs = Date.now() - 100;
+		ctx.meta.upstreamStartMs = Date.now() - 80;
 		const upstream = makeOpenAIStream();
 		const response = await handleStreamResponse(
-			baseCtx(),
+			ctx,
 			{
 				kind: "stream",
 				stream: upstream.body,
@@ -207,6 +211,16 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 
 		expect(downstream).toContain('"finish_reason":"stop"');
 		expect(downstream).toContain('"total_tokens":15');
+		const usageFrame = JSON.parse(
+			downstream
+				.split("\n")
+				.find((line) => line.startsWith("data: ") && line.includes('"completion_tokens":4'))
+				?.slice(6) ?? "{}",
+		);
+		expect(usageFrame.meta.throughput_tps).toBeCloseTo(
+			4 / ((ctx.meta.generation_ms as number) / 1000),
+			5,
+		);
 		expect(recordUsageAndChargeOnceMock).toHaveBeenCalledTimes(1);
 		expect(auditSuccessMock).toHaveBeenCalledTimes(1);
 		expect(auditSuccessMock.mock.calls[0]?.[0]?.usagePriced).toMatchObject({

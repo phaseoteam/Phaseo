@@ -133,6 +133,40 @@ const isChatShortcutOverlayOpen = () => {
 	return Boolean(document.querySelector(CHAT_SHORTCUT_OVERLAY_SELECTOR));
 };
 
+const normalizeChatServiceTier = (value: unknown): string | null => {
+	if (typeof value !== "string") return null;
+	const normalized = value.trim().toLowerCase();
+	if (!normalized) return null;
+	if (normalized === "default") return "standard";
+	if (normalized === "fast") return "priority";
+	return normalized;
+};
+
+const resolvePayloadServiceTier = (payload: any): string | null => {
+	for (const candidate of [
+		payload?.service_tier,
+		payload?.serviceTier,
+		payload?.meta?.service_tier,
+		payload?.meta?.serviceTier,
+		payload?.response?.service_tier,
+		payload?.response?.serviceTier,
+		payload?.response?.meta?.service_tier,
+		payload?.response?.meta?.serviceTier,
+		payload?.response?.metadata?.service_tier,
+		payload?.response?.metadata?.serviceTier,
+		payload?.usage?.service_tier,
+		payload?.usage?.serviceTier,
+		payload?.response?.usage?.service_tier,
+		payload?.response?.usage?.serviceTier,
+		payload?.response?.output?.usage?.service_tier,
+		payload?.response?.output?.usage?.serviceTier,
+	]) {
+		const normalized = normalizeChatServiceTier(candidate);
+		if (normalized) return normalized;
+	}
+	return null;
+};
+
 const focusChatModelPickerSearch = () => {
 	if (typeof window === "undefined") return;
 	const focusSearch = () => {
@@ -1338,6 +1372,8 @@ function ChatPlaygroundContent({
 			let firstTokenAt: number | null = null;
 			let finalUsage: Record<string, unknown> | null = null;
 			let finalMeta: Record<string, unknown> | null = null;
+			let finalServiceTier: string | null =
+				normalizeChatServiceTier(requestedServiceTier) ?? "standard";
 			let finalProviderId: string | null =
 				effectiveProviderId && effectiveProviderId !== "auto"
 					? effectiveProviderId
@@ -1454,40 +1490,15 @@ function ChatPlaygroundContent({
 				void updateThreadState(latestThread, false);
 			}
 
-			const getUsageNumber = (...keys: string[]) => {
-				if (!finalUsage) return null;
-				for (const key of keys) {
-					const value = finalUsage[key];
-					if (typeof value === "number" && Number.isFinite(value)) {
-						return value;
-					}
-				}
-				return null;
-			};
 			const buildClientMeta = (endAt: number) => {
 				const firstResponseAt = firstTokenAt ?? responseHeadersAt ?? endAt;
 				const latencyMs = Math.max(0, firstResponseAt - requestStartedAt);
 				const generationMs = Math.max(0, endAt - firstResponseAt);
 				const endToEndMs = Math.max(0, endAt - requestStartedAt);
-				const totalTokens =
-					getUsageNumber("total_tokens", "totalTokens") ??
-					getUsageNumber(
-						"output_text_tokens",
-						"output_tokens",
-						"outputTokens",
-						"completion_tokens",
-						"completionTokens",
-					) ??
-					null;
-				const throughputTokensPerSecond =
-					totalTokens && generationMs > 0
-						? totalTokens / (generationMs / 1000)
-						: null;
 				return {
 					latencyMs,
 					generationMs,
 					endToEndMs,
-					throughputTokensPerSecond,
 				};
 			};
 
@@ -1504,6 +1515,9 @@ function ChatPlaygroundContent({
 					...(compareMeta ?? {}),
 					...(finalMeta ?? {}),
 					...(providerId ? { provider: providerId } : {}),
+					...(finalServiceTier
+						? { service_tier: finalServiceTier }
+						: {}),
 					client: clientMeta,
 				};
 			};
@@ -1559,6 +1573,8 @@ function ChatPlaygroundContent({
 							data?.response?.output?.usage ??
 							null;
 						finalMeta = extractPayloadMeta(data);
+						finalServiceTier =
+							resolvePayloadServiceTier(data) ?? finalServiceTier;
 						finalProviderId =
 							resolvePayloadProviderId(data) ?? finalProviderId;
 						const clientMeta = buildClientMeta(performance.now());
@@ -1958,6 +1974,9 @@ function ChatPlaygroundContent({
 					return {
 						...(compareMeta ?? {}),
 						...(finalMeta ?? {}),
+						...(finalServiceTier
+							? { service_tier: finalServiceTier }
+							: {}),
 						...(reasoningContent
 							? { reasoning_text: reasoningContent }
 							: {}),
@@ -2034,6 +2053,8 @@ function ChatPlaygroundContent({
 								if (parsedMeta) {
 									finalMeta = parsedMeta;
 								}
+								finalServiceTier =
+									resolvePayloadServiceTier(parsed) ?? finalServiceTier;
 								finalProviderId =
 									resolvePayloadProviderId(parsed) ??
 									finalProviderId;
@@ -2504,6 +2525,9 @@ function ChatPlaygroundContent({
 								finalUsage;
 							finalMeta =
 								extractPayloadMeta(continuationData) ?? finalMeta;
+							finalServiceTier =
+								resolvePayloadServiceTier(continuationData) ??
+								finalServiceTier;
 							finalProviderId =
 								resolvePayloadProviderId(continuationData) ??
 								finalProviderId;

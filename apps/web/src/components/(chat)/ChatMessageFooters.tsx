@@ -34,6 +34,32 @@ function formatMetric(
 	return suffix ? `${value}${suffix}` : `${value}`;
 }
 
+function formatServiceTierLabel(value: string | null | undefined) {
+	const normalized = value?.trim().toLowerCase();
+	if (!normalized) return "-";
+	const knownLabels: Record<string, string> = {
+		standard: "Standard",
+		priority: "Priority",
+		flex: "Flex",
+		batch: "Batch",
+	};
+	if (knownLabels[normalized]) return knownLabels[normalized];
+	return normalized
+		.replace(/[-_]+/g, " ")
+		.replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatThroughputLabel(value: number | null) {
+	if (typeof value !== "number" || !Number.isFinite(value)) return "-";
+	const normalized = Math.max(0, value);
+	if (normalized === 0) return "0 tps";
+	if (normalized < 1) return `${normalized.toFixed(2)} tps`;
+	if (normalized < 10) {
+		return `${normalized.toFixed(1).replace(/\.0$/, "")} tps`;
+	}
+	return `${Math.round(normalized)} tps`;
+}
+
 function formatTimingLabel(value: number) {
 	if (!Number.isFinite(value)) return "-";
 	if (value < 1000) return `${Math.max(0, Math.round(value))} ms`;
@@ -188,14 +214,16 @@ type AssistantMessageFooterProps = {
 	metadataOpen: boolean;
 	metadataProviderId: string | null;
 	metadataProviderLabel: string | null;
+	metadataServiceTier: string | null;
+	outputSpeedTps: number | null;
 	sentAtLabel: string | null;
 	onBranch: () => void;
 	onCopy: () => void;
 	onMetadataOpenChange: (open: boolean) => void;
 	onRetry: () => void;
 	onSelectVariant: (variantIndex: number) => void;
-	throughputDisplay: number | null;
-	totalTokens: number | string | null;
+	throughputTps: number | null;
+	outputTokens: number | string | null;
 	variantCount: number;
 };
 
@@ -211,14 +239,16 @@ export function AssistantMessageFooter({
 	metadataOpen,
 	metadataProviderId,
 	metadataProviderLabel,
+	metadataServiceTier,
+	outputSpeedTps,
 	sentAtLabel,
 	onBranch,
 	onCopy,
 	onMetadataOpenChange,
 	onRetry,
 	onSelectVariant,
-	throughputDisplay,
-	totalTokens,
+	throughputTps,
+	outputTokens,
 	variantCount,
 }: AssistantMessageFooterProps) {
 	const providerHref = metadataProviderId && metadataProviderId !== "auto"
@@ -315,34 +345,41 @@ export function AssistantMessageFooter({
 							className="w-72 max-w-[calc(100vw-2rem)]"
 						>
 							<div className="grid gap-3 text-sm">
-								<MetadataRow label="Provider">
-									{providerHref && metadataProviderId ? (
-										<Link
-											href={providerHref}
-											className="inline-flex min-w-0 items-center justify-end gap-1.5 text-right"
-										>
-											<Logo
-												id={metadataProviderId}
-												alt={providerLabel}
-												width={16}
-												height={16}
-												className="shrink-0 rounded-none"
-											/>
-											<span className="truncate">
+								<div className="grid gap-0">
+									<MetadataRow label="Provider">
+										{providerHref && metadataProviderId ? (
+											<Link
+												href={providerHref}
+												className="inline-flex min-w-0 items-center justify-end gap-1.5 text-right text-sm"
+											>
+												<Logo
+													id={metadataProviderId}
+													alt={providerLabel}
+													width={16}
+													height={16}
+													className="shrink-0 rounded-none"
+												/>
+												<span className="truncate">
+													{providerLabel}
+												</span>
+											</Link>
+										) : (
+											<span className="block truncate text-sm">
 												{providerLabel}
 											</span>
-										</Link>
-									) : (
-										<span className="block truncate">
-											{providerLabel}
-										</span>
-									)}
-								</MetadataRow>
+										)}
+									</MetadataRow>
+									<MetadataRow label="Service tier">
+										<NumericValue>
+											{formatServiceTierLabel(metadataServiceTier)}
+										</NumericValue>
+									</MetadataRow>
+								</div>
 								<div className="h-px bg-border" />
 								<MetadataSection title="Usage">
-									<MetadataRow label="Total tokens">
+									<MetadataRow label="Output tokens">
 										<NumericValue>
-											{formatMetric(totalTokens)}
+											{formatMetric(outputTokens)}
 										</NumericValue>
 									</MetadataRow>
 									<MetadataRow label="Total cost">
@@ -366,9 +403,17 @@ export function AssistantMessageFooter({
 									</MetadataRow>
 									<MetadataRow label="Throughput">
 										<NumericValue>
-											{formatMetric(throughputDisplay, " tps")}
+											{formatThroughputLabel(throughputTps)}
 										</NumericValue>
 									</MetadataRow>
+									{typeof outputSpeedTps === "number" &&
+									Number.isFinite(outputSpeedTps) ? (
+										<MetadataRow label="Output speed">
+											<NumericValue>
+												{formatThroughputLabel(outputSpeedTps)}
+											</NumericValue>
+										</MetadataRow>
+									) : null}
 								</MetadataSection>
 							</div>
 						</PopoverContent>

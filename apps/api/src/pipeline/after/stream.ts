@@ -92,9 +92,8 @@ function attachStreamTimingMeta(args: {
         providerTtftMs: ctx.meta.provider_ttft_ms ?? null,
         gatewayE2eMs: ctx.meta.end_to_end_ms ?? null,
     });
-    const throughputTps =
-        ctx.meta.throughput_tps ?? calculated.effectiveThroughputTps;
-    ctx.meta.throughput_tps ??= calculated.effectiveThroughputTps ?? undefined;
+    const throughputTps = calculated.effectiveThroughputTps;
+    ctx.meta.throughput_tps = throughputTps ?? undefined;
     ctx.meta.output_speed_tps ??= calculated.outputSpeedTps ?? undefined;
     ctx.meta.tpot_ms ??= calculated.tpotMs ?? undefined;
     ctx.meta.itl_ms ??= calculated.itlMs ?? undefined;
@@ -362,19 +361,20 @@ export async function handleStreamResponse(
             // Add API timing meta to terminal stream frames when requested.
             // Responses streams previously only received routing meta here, so chat
             // clients could not display API latency/generation/throughput values.
-            const matchedTimingFrame =
-                next?.object === "chat.completion" ||
-                next?.object === "response" ||
-                next?.response?.object === "response" ||
-                next?.response?.object === "chat.completion" ||
-                next?.type === "message_delta" ||
-                next?.type === "message_stop";
             const timingUsage =
                 next.usage ??
                 next.response?.usage ??
                 next.message?.usage ??
                 (next?.type === "message_stop" ? latestStreamUsageRaw : null) ??
                 null;
+            const matchedTimingFrame =
+                next?.object === "chat.completion" ||
+                next?.object === "response" ||
+                next?.response?.object === "response" ||
+                next?.response?.object === "chat.completion" ||
+                next?.type === "message_delta" ||
+                next?.type === "message_stop" ||
+                (next?.object === "chat.completion.chunk" && timingUsage != null);
             if ((includeMeta || ctx.meta?.debug?.enabled) && matchedTimingFrame) {
                 attachStreamTimingMeta({
                     ctx,
@@ -829,7 +829,6 @@ export async function handleStreamResponse(
 export function handlePassthroughFallback(upstream: Response): Response {
     return passthrough(upstream);
 }
-
 
 
 

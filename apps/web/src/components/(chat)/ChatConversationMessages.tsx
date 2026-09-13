@@ -457,12 +457,12 @@ export function ChatConversationMessages({
 
 	const usage = metadataVariant?.usage ?? metadataMessage?.usage ?? null;
 	const meta = metadataVariant?.meta ?? metadataMessage?.meta ?? null;
-	const totalTokens =
-		(usage as any)?.total_tokens ??
-		(usage as any)?.totalTokens ??
-		(usage as any)?.output_text_tokens ??
+	const outputTokens =
 		(usage as any)?.output_tokens ??
+		(usage as any)?.output_text_tokens ??
 		(usage as any)?.outputTokens ??
+		(usage as any)?.completion_tokens ??
+		(usage as any)?.completionTokens ??
 		null;
 	const pricing = (usage as any)?.pricing_breakdown ?? null;
 	const costUsdStr =
@@ -485,31 +485,43 @@ export function ChatConversationMessages({
 	const latencyMs =
 		(meta as any)?.latency_ms ??
 		(meta as any)?.latencyMs ??
-		(meta as any)?.client?.latencyMs ??
 		null;
 	const generationMs =
 		(meta as any)?.generation_ms ??
 		(meta as any)?.generationMs ??
-		(meta as any)?.client?.generationMs ??
 		null;
 	const endToEndMs =
 		(meta as any)?.end_to_end_ms ??
 		(meta as any)?.endToEndMs ??
 		(meta as any)?.total_ms ??
 		(meta as any)?.totalMs ??
-		(meta as any)?.client?.endToEndMs ??
-		(typeof latencyMs === "number" && typeof generationMs === "number"
-			? latencyMs + generationMs
-			: null);
+		null;
 	const throughput =
 		(meta as any)?.throughput_tps ??
 		(meta as any)?.throughput_tokens_per_second ??
 		(meta as any)?.throughputTokensPerSecond ??
-		(meta as any)?.client?.throughputTokensPerSecond ??
 		null;
+	const outputSpeed =
+		(meta as any)?.output_speed_tps ??
+		(meta as any)?.outputSpeedTps ??
+		null;
+	const metadataServiceTier =
+		(typeof (meta as any)?.service_tier === "string"
+			? (meta as any).service_tier.trim()
+			: null) ??
+		(typeof (meta as any)?.serviceTier === "string"
+			? (meta as any).serviceTier.trim()
+			: null) ??
+		(typeof (usage as any)?.service_tier === "string"
+			? (usage as any).service_tier.trim()
+			: null) ??
+		(typeof (usage as any)?.serviceTier === "string"
+			? (usage as any).serviceTier.trim()
+			: null);
 	const endToEndDisplay = formatGenerationDuration(endToEndMs);
-	const throughputDisplay =
-		typeof throughput === "number" ? Math.round(throughput) : null;
+	const throughputTps = typeof throughput === "number" ? throughput : null;
+	const outputSpeedTps =
+		typeof outputSpeed === "number" ? outputSpeed : null;
 	const metadataProviderId =
 		typeof (meta as any)?.provider === "string" &&
 		(meta as any).provider.trim().length > 0
@@ -1318,6 +1330,7 @@ export function ChatConversationMessages({
 										metadataOpen={metadataOpenId === message.id}
 										metadataProviderId={metadataProviderId}
 										metadataProviderLabel={metadataProviderLabel}
+										metadataServiceTier={metadataServiceTier}
 										sentAtLabel={sentAtLabel}
 										onBranch={() => onBranchAssistant(message.id)}
 										onCopy={() => {
@@ -1335,8 +1348,9 @@ export function ChatConversationMessages({
 										onSelectVariant={(variantIndex) =>
 											onSelectVariant(message.id, variantIndex)
 										}
-										throughputDisplay={throughputDisplay}
-										totalTokens={totalTokens}
+										outputSpeedTps={outputSpeedTps}
+										throughputTps={throughputTps}
+										outputTokens={outputTokens}
 										variantCount={variants.length}
 									/>
 								)}
@@ -1684,10 +1698,12 @@ export function ChatConversationMessages({
 		onBranchAssistant,
 		onSelectVariant,
 		endToEndDisplay,
-		throughputDisplay,
+		outputSpeedTps,
+		throughputTps,
 		costLabel,
-		totalTokens,
+		outputTokens,
 		metadataProviderLabel,
+		metadataServiceTier,
 		onMetadataOpenIdChange,
 		responseLayout,
 		modelOrderIds,
