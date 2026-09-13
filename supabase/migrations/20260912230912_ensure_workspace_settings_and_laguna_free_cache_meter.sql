@@ -1,14 +1,5 @@
--- Every workspace must have a settings row before gateway context enrichment.
-insert into public.workspace_settings (workspace_id)
-select w.id
-from public.workspaces w
-where not exists (
-  select 1
-  from public.workspace_settings ws
-  where ws.workspace_id = w.id
-)
-on conflict (workspace_id) do nothing;
-
+-- Install the invariant before backfilling, so a concurrent workspace insert
+-- cannot land in the gap between those operations.
 create or replace function public.ensure_workspace_settings_row()
 returns trigger
 language plpgsql
@@ -29,6 +20,17 @@ drop trigger if exists workspaces_ensure_settings on public.workspaces;
 create trigger workspaces_ensure_settings
 after insert on public.workspaces
 for each row execute function public.ensure_workspace_settings_row();
+
+-- Every workspace must have a settings row before gateway context enrichment.
+insert into public.workspace_settings (workspace_id)
+select w.id
+from public.workspaces w
+where not exists (
+  select 1
+  from public.workspace_settings ws
+  where ws.workspace_id = w.id
+)
+on conflict (workspace_id) do nothing;
 
 -- Free Laguna requests can still report a cache-read meter. Keep that meter
 -- explicitly zero-priced so billing remains total when providers send it.
