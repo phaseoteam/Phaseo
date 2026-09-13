@@ -561,7 +561,7 @@ function ProviderHourlyPerformance({
 	hours?: ProviderUptimeHours;
 	activeMetric: ProviderPerformanceMetricKey;
 	hoveredPoint: ProviderPerformancePoint | null;
-	onPointHover: (point: ProviderPerformancePoint, hasData: boolean) => void;
+	onPointHover: (point: ProviderPerformancePoint) => void;
 	onPointLeave: () => void;
 }) {
 	const points = (runtimeStats?.performanceHourly3d ?? []).slice(-hours);
@@ -635,8 +635,8 @@ function ProviderHourlyPerformance({
 									style={{ height: barHeight }}
 									tabIndex={0}
 									aria-label={`${new Date(point.start).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${metricTooltipLabel}: ${pointLabel}`}
-									onPointerEnter={() => onPointHover(point, hasData)}
-									onFocus={() => onPointHover(point, hasData)}
+									onPointerEnter={() => onPointHover(point)}
+									onFocus={() => onPointHover(point)}
 									onBlur={onPointLeave}
 								/>
 							);
@@ -1893,18 +1893,11 @@ export default function ProviderCard({
 		useState<ProviderPerformanceMetricKey>("uptime");
 	const [hoveredPerformancePoint, setHoveredPerformancePoint] =
 		useState<ProviderPerformancePoint | null>(null);
-	const [isHoveredPerformancePointMissing, setIsHoveredPerformancePointMissing] =
-		useState(false);
-	const handlePerformancePointHover = (
-		point: ProviderPerformancePoint,
-		hasData: boolean,
-	) => {
+	const handlePerformancePointHover = (point: ProviderPerformancePoint) => {
 		setHoveredPerformancePoint(point);
-		setIsHoveredPerformancePointMissing(!hasData);
 	};
 	const handlePerformancePointLeave = () => {
 		setHoveredPerformancePoint(null);
-		setIsHoveredPerformancePointMissing(false);
 	};
 	const handlePerformanceMetricChange = (metric: ProviderPerformanceMetricKey) => {
 		setActivePerformanceMetric(metric);
@@ -1981,7 +1974,6 @@ export default function ProviderCard({
 			}
 			if (isTargetProvider) {
 				setHoveredPerformancePoint(null);
-				setIsHoveredPerformancePointMissing(false);
 				setSelectedPlan(
 					detail.serviceTier && availablePlans.includes(detail.serviceTier)
 						? detail.serviceTier
@@ -2440,9 +2432,7 @@ export default function ProviderCard({
 		fallback: number | null | undefined,
 	) =>
 		hoveredPerformancePoint
-			? isHoveredPerformancePointMissing
-				? null
-				: getPerformanceMetricValue(metric, hoveredPerformancePoint)
+			? getPerformanceMetricValue(metric, hoveredPerformancePoint)
 			: fallback ?? null;
 	const tableUptimePct = getDisplayedUptimePct(runtimeStats);
 	const tableUptimeTrendPoints = getUptimeTrendPoints(runtimeStats);
@@ -2654,7 +2644,6 @@ export default function ProviderCard({
 	};
 	const selectServiceTier = (serviceTier: string) => {
 		setHoveredPerformancePoint(null);
-		setIsHoveredPerformancePointMissing(false);
 		setSelectedPlan(serviceTier);
 		openInspectorForProvider(inspectorProviderId, { serviceTier });
 	};
