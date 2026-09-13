@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } fro
 import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
+import NumberFlow from "@number-flow/react";
 import {
 	AlertTriangle,
 	ArrowUpRight,
@@ -396,40 +397,207 @@ const ERROR_CATEGORY_LABELS: Record<string, string> = {
 	other_provider: "Other provider",
 };
 
-function ProviderHourlyUptime({
+type ProviderUptimeHours = 24 | 48 | 60 | 72;
+type ProviderPerformanceMetricKey = "latency" | "throughput" | "uptime";
+type ProviderPerformancePoint = ProviderRuntimeStats["performanceHourly3d"][number];
+
+const PROVIDER_HOURLY_UPTIME_HOURS: ProviderUptimeHours = 60;
+
+function getPerformanceMetricValue(
+	metric: ProviderPerformanceMetricKey,
+	point: ProviderPerformancePoint,
+): number | null {
+	switch (metric) {
+		case "latency":
+			return point.latencyMs;
+		case "throughput":
+			return point.throughput;
+		case "uptime":
+			return point.uptimePct;
+	}
+}
+
+function hasPerformanceMetricValue(
+	metric: ProviderPerformanceMetricKey,
+	value: number | null | undefined,
+): value is number {
+	return (
+		typeof value === "number" &&
+		Number.isFinite(value) &&
+		(metric === "uptime" || value > 0)
+	);
+}
+
+function getPerformanceMetricLabel(metric: ProviderPerformanceMetricKey): string {
+	switch (metric) {
+		case "latency":
+			return "Hourly latency";
+		case "throughput":
+			return "Hourly throughput";
+		case "uptime":
+			return "Hourly uptime";
+	}
+}
+
+function getPerformanceMetricTooltipLabel(metric: ProviderPerformanceMetricKey): string {
+	switch (metric) {
+		case "latency":
+			return "latency";
+		case "throughput":
+			return "throughput";
+		case "uptime":
+			return "uptime";
+	}
+}
+
+function formatPerformanceMetricValue(
+	metric: ProviderPerformanceMetricKey,
+	value: number | null,
+): string {
+	if (!hasPerformanceMetricValue(metric, value)) return "No data";
+	switch (metric) {
+		case "latency":
+			return formatLatencySeconds(value);
+		case "throughput":
+			return `${formatThroughputValue(value) ?? "--"} tps`;
+		case "uptime":
+			return formatPercent(value);
+	}
+}
+
+function getPerformanceMetricNumberFlowProps(
+	metric: ProviderPerformanceMetricKey,
+	value: number,
+): { value: number; suffix: string; format?: React.ComponentProps<typeof NumberFlow>["format"] } {
+	switch (metric) {
+		case "latency": {
+			const seconds = value / 1000;
+			return {
+				value: seconds,
+				suffix: "s",
+				format: {
+					minimumFractionDigits: seconds >= 10 ? 1 : 2,
+					maximumFractionDigits: seconds >= 10 ? 1 : 2,
+				},
+			};
+		}
+		case "throughput":
+			return {
+				value,
+				suffix: " tps",
+				format: {
+					minimumFractionDigits: value >= 100 ? 0 : 1,
+					maximumFractionDigits: value >= 100 ? 0 : 1,
+				},
+			};
+		case "uptime":
+			return {
+				value,
+				suffix: "%",
+				format: { minimumFractionDigits: 1, maximumFractionDigits: 1 },
+			};
+	}
+}
+
+function ProviderPerformanceMetricValue({
+	metric,
+	value,
+}: {
+	metric: ProviderPerformanceMetricKey;
+	value: number | null;
+}) {
+	if (!hasPerformanceMetricValue(metric, value)) return <span>--</span>;
+	const numberFlowProps = getPerformanceMetricNumberFlowProps(metric, value);
+	return (
+		<span className="inline-flex items-baseline">
+			<NumberFlow value={numberFlowProps.value} format={numberFlowProps.format} />
+			<span>{numberFlowProps.suffix}</span>
+		</span>
+	);
+}
+
+function ProviderHourlyPerformance({
 	runtimeStats,
+	hours = PROVIDER_HOURLY_UPTIME_HOURS,
+	activeMetric,
+	onPointHover,
+	onPointLeave,
 }: {
 	runtimeStats: ProviderRuntimeStats | null | undefined;
+	hours?: ProviderUptimeHours;
+	activeMetric: ProviderPerformanceMetricKey;
+	onPointHover: (point: ProviderPerformancePoint) => void;
+	onPointLeave: () => void;
 }) {
-	const points = (runtimeStats?.uptimeHourly3d ?? []).slice(-24);
+	const points = (runtimeStats?.performanceHourly3d ?? []).slice(-hours);
 	const categories = Object.entries(runtimeStats?.errorCategoryCounts3d ?? {})
 		.filter(([, count]) => count > 0)
 		.sort((a, b) => b[1] - a[1]);
 	const totalFailures = categories.reduce((sum, [, count]) => sum + count, 0);
 	const rateLimited = runtimeStats?.rateLimited3d ?? 0;
-	if (points.length === 0 && categories.length === 0 && rateLimited === 0) return null;
+	const metricLabel = getPerformanceMetricLabel(activeMetric);
+	const metricTooltipLabel = getPerformanceMetricTooltipLabel(activeMetric);
+	const metricValues = points
+		.map((point) => getPerformanceMetricValue(activeMetric, point))
+		.filter((value): value is number => hasPerformanceMetricValue(activeMetric, value));
+	const maxMetricValue = Math.max(...metricValues, 0);
+	const hasHourlyPerformance = points.length > 0 && (
+		metricValues.length > 0 || hasUptimeObservation(runtimeStats)
+	);
+	if (!hasHourlyPerformance && categories.length === 0 && rateLimited === 0) return null;
 
 	return (
-		<div className="space-y-3 border-t border-zinc-200/80 py-3 dark:border-zinc-800">
-			{points.length > 0 ? (
+		<div className="space-y-3 py-3">
+			{hasHourlyPerformance ? (
 				<div>
-					<div className="mb-2 flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
-						<span>Hourly uptime</span>
-						<span>Last 24 hours</span>
-					</div>
-					<div className="grid h-8 grid-flow-col auto-cols-fr items-stretch gap-0.5" role="img" aria-label="Provider uptime by hour over the last 24 hours">
-						{points.map((point) => (
-							<Tooltip key={point.start}>
-								<TooltipTrigger asChild>
-									<span
-										className={cn("min-w-0 rounded-[2px]", point.uptimePct == null ? "bg-muted" : point.uptimePct > 99 ? "bg-emerald-500" : point.uptimePct > 95 ? "bg-amber-500" : "bg-red-500")}
-										tabIndex={0}
-										aria-label={`${new Date(point.start).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${formatPercent(point.uptimePct)}`}
-									/>
-								</TooltipTrigger>
-								<TooltipContent>{new Date(point.start).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC · {formatPercent(point.uptimePct)} uptime{point.failed > 0 ? ` · ${point.failed} failed` : ""}</TooltipContent>
-							</Tooltip>
-						))}
+					<div
+						className="grid h-8 grid-flow-col auto-cols-fr items-end gap-0.5"
+						role="img"
+						aria-label={`${metricLabel} over the last ${hours} hours`}
+					>
+						{points.map((point, index) => {
+							const metricValue = getPerformanceMetricValue(activeMetric, point);
+							const hasData = hasPerformanceMetricValue(activeMetric, metricValue);
+							const numericMetricValue = metricValue ?? 0;
+							const pointLabel = hasData
+								? formatPerformanceMetricValue(activeMetric, metricValue)
+								: "No data";
+							const barClassName = !hasData
+								? "bg-muted-foreground/30"
+								: activeMetric === "uptime" && numericMetricValue > 99
+								? "bg-emerald-500"
+								: activeMetric === "uptime" && numericMetricValue > 95
+									? "bg-amber-500"
+										: activeMetric === "uptime" ? "bg-red-500" : "bg-primary";
+							const barHeight = activeMetric === "uptime"
+								? "100%"
+								: hasData && maxMetricValue > 0
+									? `${Math.max(16, (numericMetricValue / maxMetricValue) * 100)}%`
+									: "16%";
+							const edgeRadiusClassName = index === 0
+								? "rounded-l-xs"
+								: index === points.length - 1
+									? "rounded-r-xs"
+									: "";
+
+							return (
+								<span
+									key={point.start}
+									className={cn(
+										"min-w-0 self-end transition-[height,background-color] duration-150",
+										edgeRadiusClassName,
+										barClassName,
+									)}
+									style={{ height: barHeight }}
+									tabIndex={0}
+									aria-label={`${new Date(point.start).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${metricTooltipLabel}: ${pointLabel}`}
+									onPointerEnter={() => (hasData ? onPointHover(point) : onPointLeave())}
+									onFocus={() => (hasData ? onPointHover(point) : onPointLeave())}
+									onPointerLeave={onPointLeave}
+									onBlur={onPointLeave}
+								/>
+							);
+						})}
 					</div>
 				</div>
 			) : null}
@@ -1678,6 +1846,14 @@ export default function ProviderCard({
 	const [disableInspectorAnimation, setDisableInspectorAnimation] = useState(false);
 	const [inspectorNavigationProviderIds, setInspectorNavigationProviderIds] = useState<string[] | null>(null);
 	const [copiedInspectorValue, setCopiedInspectorValue] = useState<string | null>(null);
+	const [activePerformanceMetric, setActivePerformanceMetric] =
+		useState<ProviderPerformanceMetricKey>("uptime");
+	const [hoveredPerformancePoint, setHoveredPerformancePoint] =
+		useState<ProviderPerformancePoint | null>(null);
+	const handlePerformanceMetricChange = (metric: ProviderPerformanceMetricKey) => {
+		setActivePerformanceMetric(metric);
+		setHoveredPerformancePoint(null);
+	};
 	const pricingTimezoneMode = useSyncExternalStore(
 		subscribeToPricingTimezoneMode,
 		getPricingTimezoneModeSnapshot,
@@ -2201,7 +2377,13 @@ export default function ProviderCard({
 			(selectedPlan === tablePlan ? runtimeStats : null);
 	const uptimePct = getDisplayedUptimePct(selectedRuntimeStats);
 	const uptimeTrendPoints = getUptimeTrendPoints(selectedRuntimeStats);
-	const throughputValue = formatThroughputValue(selectedRuntimeStats?.throughput30m);
+	const displayedPerformanceValue = (
+		metric: ProviderPerformanceMetricKey,
+		fallback: number | null | undefined,
+	) =>
+		hoveredPerformancePoint
+			? getPerformanceMetricValue(metric, hoveredPerformancePoint)
+			: fallback ?? null;
 	const tableUptimePct = getDisplayedUptimePct(runtimeStats);
 	const tableUptimeTrendPoints = getUptimeTrendPoints(runtimeStats);
 	const tableThroughputValue = formatThroughputValue(runtimeStats?.throughput30m);
@@ -2224,14 +2406,16 @@ export default function ProviderCard({
 	const tablePlanLabel = getPricingPlanLabel(tablePlan);
 	const selectedPlanTheme = getPlanTheme(selectedPlan);
 	const tablePlanTheme = getPlanTheme(tablePlan);
-	const performanceMetrics = [
+	const performanceMetrics: Array<{
+		key: ProviderPerformanceMetricKey;
+		label: string;
+		value: number | null;
+		valueClassName: string;
+	}> = [
 		{
 			key: "latency",
 			label: "Latency",
-			value:
-				selectedRuntimeStats?.latencyMs30m != null
-					? formatLatencySeconds(selectedRuntimeStats.latencyMs30m)
-					: "--",
+			value: displayedPerformanceValue("latency", selectedRuntimeStats?.latencyMs30m),
 			valueClassName:
 				hasSelectedAlternativeServiceTier(selectedPlan, planComparisonBase)
 					? selectedPlanTheme.accent
@@ -2240,13 +2424,13 @@ export default function ProviderCard({
 		{
 			key: "throughput",
 			label: "Throughput",
-			value: throughputValue ? `${throughputValue} tps` : "--",
+			value: displayedPerformanceValue("throughput", selectedRuntimeStats?.throughput30m),
 			valueClassName: selectedPlanTheme.accent,
 		},
 		{
 			key: "uptime",
 			label: "Uptime",
-			value: formatPercent(uptimePct),
+			value: displayedPerformanceValue("uptime", uptimePct),
 			valueClassName: selectedPlanTheme.accent,
 		},
 	] as const;
@@ -3523,24 +3707,29 @@ export default function ProviderCard({
 										</ProviderSheetSectionLink>
 									</h3>
 								</div>
-								<div className="grid sm:grid-cols-3 sm:divide-x sm:divide-zinc-200/80 sm:dark:divide-zinc-800">
-									{performanceMetrics.map((metric) => (
-										<div
-											key={metric.key}
-											className="py-3 sm:px-4 sm:first:pl-0 sm:last:pr-0"
-										>
-											<div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+							<div className="grid sm:grid-cols-3 sm:divide-x sm:divide-zinc-200/80 sm:dark:divide-zinc-800">
+								{performanceMetrics.map((metric) => (
+									<button
+										type="button"
+										key={metric.key}
+										aria-pressed={activePerformanceMetric === metric.key}
+										onClick={() => handlePerformanceMetricChange(metric.key)}
+										className={cn(
+											"group w-full py-3 text-left transition-colors hover:text-foreground focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:px-4 sm:first:pl-0 sm:last:pr-0",
+										)}
+									>
+										<div className="flex items-center justify-between gap-1 text-[11px] text-muted-foreground">
+											<span className="flex min-w-0 items-center gap-1">
 												<span>{metric.label}</span>
 												{metric.key === "uptime" ? (
 													<HoverCard openDelay={120} closeDelay={80}>
 														<HoverCardTrigger asChild>
-															<button
-																type="button"
+															<span
 																aria-label="About uptime"
-																className="inline-flex size-3.5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+																className="inline-flex size-3.5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground"
 															>
 																<Info className="size-3" />
-															</button>
+															</span>
 														</HoverCardTrigger>
 														<HoverCardContent
 															align="start"
@@ -3554,22 +3743,37 @@ export default function ProviderCard({
 														</HoverCardContent>
 													</HoverCard>
 												) : null}
-											</div>
-											<div
+											</span>
+											<ChevronDown
 												className={cn(
-											"mt-1 flex items-center gap-2 text-xs font-semibold tabular-nums",
-													metric.valueClassName,
+													"size-3 transition-transform",
+													activePerformanceMetric === metric.key
+														? "rotate-180 text-foreground"
+														: "text-muted-foreground/60",
 												)}
-											>
-												<span>{metric.value}</span>
-												{metric.key === "uptime" ? (
-													<UptimeSparkline points={uptimeTrendPoints} className="h-4 w-10" />
-												) : null}
-											</div>
+												aria-hidden="true"
+											/>
 										</div>
-									))}
-								</div>
-								<ProviderHourlyUptime runtimeStats={selectedRuntimeStats} />
+										<div
+											className={cn(
+												"mt-1 flex items-center gap-2 text-xs font-semibold tabular-nums",
+												metric.valueClassName,
+											)}
+										>
+											<ProviderPerformanceMetricValue metric={metric.key} value={metric.value} />
+											{metric.key === "uptime" ? (
+												<UptimeSparkline points={uptimeTrendPoints} className="h-4 w-10" />
+											) : null}
+										</div>
+									</button>
+								))}
+							</div>
+							<ProviderHourlyPerformance
+								runtimeStats={selectedRuntimeStats}
+								activeMetric={activePerformanceMetric}
+								onPointHover={setHoveredPerformancePoint}
+								onPointLeave={() => setHoveredPerformancePoint(null)}
+							/>
 								{routingHealthSummary ? (
 									<div className="border-l-2 border-amber-400 pl-3 text-xs text-amber-900 dark:text-amber-100">
 										<div className="font-semibold">{routingHealthSummary.label}</div>

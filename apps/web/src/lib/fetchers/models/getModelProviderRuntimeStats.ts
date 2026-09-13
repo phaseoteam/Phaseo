@@ -32,6 +32,13 @@ export type ProviderRuntimeStats = {
 		failed: number;
 		rateLimited: number;
 	}>;
+	performanceHourly3d: Array<{
+		start: string;
+		uptimePct: number | null;
+		latencyMs: number | null;
+		throughput: number | null;
+		requests: number;
+	}>;
 	requests30m: number;
 	requests3d: number;
 	successful3d: number;
@@ -196,6 +203,7 @@ const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const UPTIME_HOURLY_BUCKET_COUNT = 72;
 
 function toInt(value: unknown): number {
 	const num = Number(value);
@@ -419,6 +427,76 @@ function hourOffsetFromUtcHour(nowUtcHourMs: number, bucketDate: Date): 0 | 1 | 
 	return offset as 0 | 1 | 2;
 }
 
+function toUtcHourBucket(value: string | Date): string | null {
+	const date = new Date(value);
+	if (!Number.isFinite(date.getTime())) return null;
+	date.setUTCMinutes(0, 0, 0);
+	return date.toISOString();
+}
+
+export function fillHourlyUptimeBuckets(
+	points: ProviderRuntimeStats["uptimeHourly3d"],
+	now = new Date(),
+): ProviderRuntimeStats["uptimeHourly3d"] {
+	const currentHour = new Date(now);
+	currentHour.setUTCMinutes(0, 0, 0);
+	const pointsByBucket = new Map(
+		points.flatMap((point) => {
+			const bucket = toUtcHourBucket(point.start);
+			return bucket ? [[bucket, { ...point, start: bucket }] as const] : [];
+		}),
+	);
+
+	return Array.from({ length: UPTIME_HOURLY_BUCKET_COUNT }, (_, index) => {
+		const bucketDate = new Date(currentHour);
+		bucketDate.setUTCHours(
+			currentHour.getUTCHours() - (UPTIME_HOURLY_BUCKET_COUNT - 1 - index),
+		);
+		const bucket = bucketDate.toISOString();
+		return (
+			pointsByBucket.get(bucket) ?? {
+				start: bucket,
+				uptimePct: null,
+				errorPct: null,
+				requests: 0,
+				failed: 0,
+				rateLimited: 0,
+			}
+		);
+	});
+}
+
+export function fillHourlyPerformanceBuckets(
+	points: ProviderRuntimeStats["performanceHourly3d"],
+	now = new Date(),
+): ProviderRuntimeStats["performanceHourly3d"] {
+	const currentHour = new Date(now);
+	currentHour.setUTCMinutes(0, 0, 0);
+	const pointsByBucket = new Map(
+		points.flatMap((point) => {
+			const bucket = toUtcHourBucket(point.start);
+			return bucket ? [[bucket, { ...point, start: bucket }] as const] : [];
+		}),
+	);
+
+	return Array.from({ length: UPTIME_HOURLY_BUCKET_COUNT }, (_, index) => {
+		const bucketDate = new Date(currentHour);
+		bucketDate.setUTCHours(
+			currentHour.getUTCHours() - (UPTIME_HOURLY_BUCKET_COUNT - 1 - index),
+		);
+		const bucket = bucketDate.toISOString();
+		return (
+			pointsByBucket.get(bucket) ?? {
+				start: bucket,
+				uptimePct: null,
+				latencyMs: null,
+				throughput: null,
+				requests: 0,
+			}
+		);
+	});
+}
+
 export function mapRpcRuntimeStatsRows(args: {
 	rows: RpcProviderHealthMetricsRow[];
 	providerIds: string[];
@@ -470,6 +548,7 @@ export function mapRpcRuntimeStatsRows(args: {
 			{ hourOffset: 2, uptimePct: null, requests: 0, successful: 0 },
 		];
 		const uptimeHourly3d: ProviderRuntimeStats["uptimeHourly3d"] = [];
+		const performanceHourly3d: ProviderRuntimeStats["performanceHourly3d"] = [];
 
 		if (row && Array.isArray(row.buckets)) {
 			for (const bucket of row.buckets) {
@@ -492,6 +571,17 @@ export function mapRpcRuntimeStatsRows(args: {
 					requests: healthRequests,
 					failed,
 					rateLimited,
+				});
+				performanceHourly3d.push({
+					start: start.toISOString(),
+					uptimePct,
+					latencyMs:
+						toFiniteNumber(bucketRecord?.p50_latency_ms) ??
+						toFiniteNumber(bucketRecord?.avg_latency_ms),
+					throughput:
+						toFiniteNumber(bucketRecord?.p50_throughput) ??
+						toFiniteNumber(bucketRecord?.avg_throughput),
+					requests,
 				});
 				const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, start);
 				if (dayOffset != null) {
@@ -554,7 +644,14 @@ export function mapRpcRuntimeStatsRows(args: {
 			),
 			uptimeDaily3d,
 			uptimeHourly3h,
-			uptimeHourly3d: uptimeHourly3d.sort((a, b) => Date.parse(a.start) - Date.parse(b.start)),
+			uptimeHourly3d: fillHourlyUptimeBuckets(
+				uptimeHourly3d.sort((a, b) => Date.parse(a.start) - Date.parse(b.start)),
+				now,
+			),
+			performanceHourly3d: fillHourlyPerformanceBuckets(
+				performanceHourly3d.sort((a, b) => Date.parse(a.start) - Date.parse(b.start)),
+				now,
+			),
 			requests30m: toInt(row?.requests_30m),
 			requests3d: toInt(row?.requests),
 			successful3d: toInt(row?.success_requests),
