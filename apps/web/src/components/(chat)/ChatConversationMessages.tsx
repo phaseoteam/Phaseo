@@ -1060,6 +1060,8 @@ export function ChatConversationMessages({
 							)
 						) : isSending &&
 							(!content || content === "Generating...") &&
+							!traceHasReasoning &&
+							!reasoningText &&
 							toolCalls.length === 0 ? (
 							<GeneratingResponseIndicator />
 						) : (
