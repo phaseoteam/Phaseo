@@ -82,6 +82,7 @@ import {
 	getChangedSettings,
 	getEffectiveModelSettings,
 	getRequestedChatServiceTier,
+	migrateLegacyDefaultServerTools,
 	getOrgId,
 	isGeneratedDefaultSystemPrompt,
 	normalizeServerTools,
@@ -711,7 +712,18 @@ function ChatPlaygroundContent({
 				getAllChats("text"),
 				getAllChatTags(),
 			]);
-			const normalized = await ensureInitialThread(chats);
+			let normalized = await ensureInitialThread(chats);
+			const migrationKey = "phaseo:chat:streaming-server-tools-migrated:v1";
+			if (window.localStorage.getItem(migrationKey) !== "1") {
+				const migrated = normalized.map(migrateLegacyDefaultServerTools);
+				await Promise.all(
+					migrated
+						.filter((thread, index) => thread !== normalized[index])
+						.map((thread) => upsertChat(thread, "text")),
+				);
+				normalized = migrated;
+				window.localStorage.setItem(migrationKey, "1");
+			}
 			if (!mounted) return;
 			setThreads((current) => {
 				const currentIds = new Set(current.map((thread) => thread.id));

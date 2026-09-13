@@ -9,9 +9,40 @@ import {
 	pickModelSettings,
 	inferChatApiTarget,
 	isGeneratedDefaultSystemPrompt,
+	migrateLegacyDefaultServerTools,
 	normalizeServerTools,
 	resolveChatApiBaseUrl,
 } from "./chat-playground-core";
+
+describe("chat streaming defaults", () => {
+	it("does not enable server tools for a new chat", () => {
+		expect(DEFAULT_SETTINGS.apiServerToolsEnabled).toBe(false);
+	});
+
+	it("migrates only the old implicit datetime selection", () => {
+		const thread = {
+			id: "thread",
+			title: "Test",
+			modelId: "test/model",
+			createdAt: "2026-09-13T00:00:00.000Z",
+			updatedAt: "2026-09-13T00:00:00.000Z",
+			messages: [],
+			settings: {
+				...DEFAULT_SETTINGS,
+				apiServerToolsEnabled: true,
+				serverTools: ["gateway:datetime"],
+				modelOverridesById: {
+					custom: { apiServerToolsEnabled: true, serverTools: ["gateway:datetime"] },
+					explicit: { apiServerToolsEnabled: true, serverTools: ["phaseo:web_search"] },
+				},
+			},
+		} as Parameters<typeof migrateLegacyDefaultServerTools>[0];
+		const migrated = migrateLegacyDefaultServerTools(thread);
+		expect(migrated.settings.apiServerToolsEnabled).toBe(false);
+		expect(migrated.settings.modelOverridesById?.custom.apiServerToolsEnabled).toBe(false);
+		expect(migrated.settings.modelOverridesById?.explicit.apiServerToolsEnabled).toBe(true);
+	});
+});
 
 describe("Phaseo Chat attribution", () => {
 	it("sends App attribution without declaring a client source", () => {

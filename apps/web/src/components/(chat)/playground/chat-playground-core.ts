@@ -16,6 +16,29 @@ import type {
 } from "@/lib/indexeddb/chats";
 
 export const DEFAULT_SERVER_TOOLS: ChatServerToolType[] = ["gateway:datetime"];
+
+/** Old chats enabled the datetime tool by default, which forces the gateway to buffer streams. */
+export function migrateLegacyDefaultServerTools(thread: ChatThread): ChatThread {
+	const migrate = <T extends Partial<ChatModelSettings>>(settings: T): T =>
+		settings.apiServerToolsEnabled === true &&
+		(settings.serverTools == null ||
+			(settings.serverTools.length === 1 && settings.serverTools[0] === "gateway:datetime")) &&
+		Object.keys(settings.serverToolConfigs ?? {}).length === 0
+			? { ...settings, apiServerToolsEnabled: false }
+			: settings;
+	const settings = migrate(thread.settings);
+	const overrides = thread.settings.modelOverridesById;
+	let overrideChanged = false;
+	const nextOverrides = overrides
+		? Object.fromEntries(Object.entries(overrides).map(([id, value]) => {
+			const migrated = migrate(value);
+			overrideChanged ||= migrated !== value;
+			return [id, migrated];
+		}))
+		: overrides;
+	if (settings === thread.settings && !overrideChanged) return thread;
+	return { ...thread, settings: { ...settings, modelOverridesById: nextOverrides } };
+}
 const CHARS_PER_APPROXIMATE_TOKEN = 4;
 const MAX_DATETIME_TIMEZONES = 5;
 const MAX_ADVISOR_TOOLS = 5;
@@ -73,7 +96,7 @@ export const DEFAULT_SETTINGS: ChatSettings = {
 	reasoningEffort: "medium",
 	endpoint: "responses",
 	webSearchEnabled: false,
-	apiServerToolsEnabled: true,
+	apiServerToolsEnabled: false,
 	serverTools: DEFAULT_SERVER_TOOLS,
 	serverToolConfigs: {},
 	imageOutputEnabled: false,
