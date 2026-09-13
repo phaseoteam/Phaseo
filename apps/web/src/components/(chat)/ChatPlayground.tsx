@@ -712,18 +712,13 @@ function ChatPlaygroundContent({
 				getAllChats("text"),
 				getAllChatTags(),
 			]);
-			let normalized = await ensureInitialThread(chats);
-			const migrationKey = "phaseo:chat:streaming-server-tools-migrated:v1";
-			if (window.localStorage.getItem(migrationKey) !== "1") {
-				const migrated = normalized.map(migrateLegacyDefaultServerTools);
-				await Promise.all(
-					migrated
-						.filter((thread, index) => thread !== normalized[index])
-						.map((thread) => upsertChat(thread, "text")),
-				);
-				normalized = migrated;
-				window.localStorage.setItem(migrationKey, "1");
-			}
+			const initialThreads = await ensureInitialThread(chats);
+			const normalized = initialThreads.map(migrateLegacyDefaultServerTools);
+			await Promise.all(
+				normalized
+					.filter((thread, index) => thread !== initialThreads[index])
+					.map((thread) => upsertChat(thread, "text")),
+			);
 			if (!mounted) return;
 			setThreads((current) => {
 				const currentIds = new Set(current.map((thread) => thread.id));
@@ -4442,12 +4437,14 @@ function ChatPlaygroundContent({
 						DEFAULT_SETTINGS.apiServerToolsEnabled
 					}
 					serverTools={
-						normalizeServerTools(activeThread?.settings.serverTools)
+						activeThread?.settings.apiServerToolsEnabled
+							? normalizeServerTools(activeThread.settings.serverTools)
+							: []
 					}
 					onServerToolsChange={(serverTools: ChatServerToolType[]) =>
 						updateActiveSettings({
 							serverTools: normalizeServerTools(serverTools),
-							apiServerToolsEnabled: true,
+							apiServerToolsEnabled: serverTools.length > 0,
 						})
 					}
 					serverToolConfigs={

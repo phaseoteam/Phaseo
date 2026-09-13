@@ -29,6 +29,7 @@ describe("chat streaming defaults", () => {
 			messages: [],
 			settings: {
 				...DEFAULT_SETTINGS,
+				serverToolsStreamingMigrated: undefined,
 				apiServerToolsEnabled: true,
 				serverTools: ["gateway:datetime"],
 				modelOverridesById: {
@@ -41,6 +42,8 @@ describe("chat streaming defaults", () => {
 		expect(migrated.settings.apiServerToolsEnabled).toBe(false);
 		expect(migrated.settings.modelOverridesById?.custom.apiServerToolsEnabled).toBe(false);
 		expect(migrated.settings.modelOverridesById?.explicit.apiServerToolsEnabled).toBe(true);
+		expect(migrated.settings.serverToolsStreamingMigrated).toBe(true);
+		expect(migrateLegacyDefaultServerTools(migrated)).toBe(migrated);
 	});
 });
 
