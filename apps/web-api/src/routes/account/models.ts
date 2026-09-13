@@ -457,6 +457,7 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 			output_types: Array.isArray(rawModel.output_modalities) ? rawModel.output_modalities.join(",") : null,
 			license: rawModel.metadata?.license ?? null,
 			previous_model_id: rawModel.metadata?.previous_model_id ?? null,
+			replacement_model_id: rawModel.replacement_model_slug ?? rawModel.metadata?.replacement_model_id ?? null,
 		} : null;
 		return c.json({ source: { requestedModelId, canonicalApiId: modelId, internalModelId: modelId, model: editorModel, links: links.data ?? [], details: details.data ?? [], notice: notice.data ?? null, aliases: aliases.data ?? [], successors: successors.data ?? [], history: [...(history.data ?? []), ...(rowHistory.data ?? []).map((entry) => ({ ...entry, change_id: `row-${entry.change_id}` }))].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 100), providerRows: pricingSource.providerRows, pricingRules: pricingSource.pricingRows, subscriptionPlans: (plans.data ?? []).map((relation) => ({ ...relation.plan, effective_to: relation.effective_to, model_info: { model_info: relation.model_info, rate_limit: relation.rate_limit, other_info: relation.other_info } })) } }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
@@ -479,16 +480,10 @@ async function runCatalogMutation(c: any, resource: keyof typeof catalogMutation
 	if (action === "delete") return c.json({ error: "catalogue_history_preserved", message: "Saved records cannot be deleted. Set an end date instead." }, 405, PRIVATE_NO_STORE_HEADERS);
 	const result = resource === "providers"
     ? await admin.context.client.rpc("mutate_v2_admin_provider_offer", { p_actor_user_id: admin.context.user.id, p_action: action, p_provider_slug: resourceId, p_payload: payload })
-    : await admin.context.client.rpc("mutate_v2_admin_catalogue", { p_actor_user_id: admin.context.user.id, p_resource_type: resource, p_action: action, p_resource_id: resourceId, p_payload: payload });
+    : resource === "models"
+      ? await admin.context.client.rpc("mutate_v2_admin_model_with_successor", { p_actor_user_id: admin.context.user.id, p_action: action, p_model_slug: resourceId, p_payload: payload })
+      : await admin.context.client.rpc("mutate_v2_admin_catalogue", { p_actor_user_id: admin.context.user.id, p_resource_type: resource, p_action: action, p_resource_id: resourceId, p_payload: payload });
 	if (result.error) return c.json({ error: "admin_catalogue_mutation_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	if (resource === "models" && Object.prototype.hasOwnProperty.call(payload, "replacementModelId")) {
-		const successor = await admin.context.client.rpc("set_v2_model_recommended_successor", {
-			p_actor_user_id: admin.context.user.id,
-			p_model_slug: resourceId,
-			p_replacement_model_slug: payload.replacementModelId,
-		});
-		if (successor.error) return c.json({ error: "admin_model_successor_mutation_failed", message: successor.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	}
 	return c.json({ success: true, record: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 }
 
@@ -506,16 +501,8 @@ accountModelsRouter.put("/:modelId/graph", async (c) => {
 	if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
 	const parsed = modelGraphSchema.safeParse(await c.req.json().catch(() => null));
 	if (!parsed.success || parsed.data.modelId !== c.req.param("modelId")) return c.json({ error: "invalid_model_graph", issues: parsed.success ? [] : parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
-	const result = await admin.context.client.rpc("mutate_v2_admin_model_graph", { p_actor_user_id: admin.context.user.id, p_model_slug: parsed.data.modelId, p_payload: parsed.data });
+	const result = await admin.context.client.rpc("mutate_v2_admin_model_graph_with_successor", { p_actor_user_id: admin.context.user.id, p_model_slug: parsed.data.modelId, p_payload: parsed.data });
 	if (result.error) return c.json({ ok: false, error: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	if (Object.prototype.hasOwnProperty.call(parsed.data, "replacement_model_id")) {
-		const successor = await admin.context.client.rpc("set_v2_model_recommended_successor", {
-			p_actor_user_id: admin.context.user.id,
-			p_model_slug: parsed.data.modelId,
-			p_replacement_model_slug: parsed.data.replacement_model_id,
-		});
-		if (successor.error) return c.json({ ok: false, error: successor.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	}
 	return c.json({ ok: true, graph: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

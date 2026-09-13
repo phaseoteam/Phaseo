@@ -153,7 +153,7 @@ describe("account usage settings routes", () => {
 			if (url.includes("/rpc/get_workspace_model_last_used")) return new Response(JSON.stringify([{ model_id: "gpt-old-api", last_used_at: new Date().toISOString() }]), { status: 200 });
 			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([{ api_model_id: "gpt-old-api", provider_api_model_id: "provider-model-1", internal_model_id: "openai/gpt-old" }]), { status: 200 });
 			if (url.includes("v2_models") && url.includes("previous_model_slug=in")) return new Response(JSON.stringify([{ model_id: "openai/gpt-new", previous_model_id: "openai/gpt-old" }]), { status: 200 });
-			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-old", name: "GPT Old", organisation_id: "openai", deprecation_date: null, retirement_date: retirementDate, previous_model_id: null }]), { status: 200 });
+			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-old", name: "GPT Old", organisation_id: "openai", deprecation_date: null, retirement_date: retirementDate, previous_model_id: null, replacement_model_id: null, metadata: { replacement_model_id: "openai/gpt-legacy-successor" } }]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 		const response = await app.request(
@@ -167,7 +167,7 @@ describe("account usage settings routes", () => {
 		await expect(response.json()).resolves.toMatchObject({
 			signedIn: true,
 			workspaceId: "workspace-1",
-			warnings: [{ modelId: "openai/gpt-old", lastUsedAt: expect.any(String), retirementDaysUntil: 5, replacementModelId: "openai/gpt-new", countAsAlert: true, severity: "critical" }],
+			warnings: [{ modelId: "openai/gpt-old", lastUsedAt: expect.any(String), retirementDaysUntil: 5, replacementModelId: "openai/gpt-legacy-successor", countAsAlert: true, severity: "critical" }],
 		});
 	});
 

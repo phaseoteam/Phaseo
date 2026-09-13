@@ -68,16 +68,18 @@ function parseTypeList(value: string | null): string[] {
 function FieldRow({
   label,
   description,
+  htmlFor,
   children,
 }: {
   label: string
   description?: string
+  htmlFor?: string
   children: ReactNode
 }) {
   return (
     <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
       <div className="space-y-0.5">
-        <Label className="text-sm font-medium">{label}</Label>
+        <Label htmlFor={htmlFor} className="text-sm font-medium">{label}</Label>
         {description ? (
           <p className="text-xs text-muted-foreground">{description}</p>
         ) : null}
@@ -172,6 +174,33 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
         <div className="text-sm font-semibold">Relationships</div>
         <FieldRow label="Previous model">
           <SearchableSelect label="Previous model" value={model.previous_model_id || "__none__"} options={[{ value: "__none__", label: "None" }, ...existingModels.map((item) => ({ value: item.model_id, label: item.name || item.model_id, icon: <Logo id={item.model_id.split("/")[0]} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))]} onValueChange={(value) => onModelChange({ ...model, previous_model_id: value === "__none__" ? null : value })} />
+        </FieldRow>
+        <FieldRow
+          label="Recommended successor"
+          description="Shown in deprecation notices; independent of model lineage."
+          htmlFor="recommended-successor"
+        >
+          <Select
+            value={model.replacement_model_id || "__none__"}
+            onValueChange={(value) =>
+              onModelChange({
+                ...model,
+                replacement_model_id: value === "__none__" ? null : value,
+              })
+            }
+          >
+            <SelectTrigger id="recommended-successor">
+              <SelectValue placeholder="Select recommended successor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">None</SelectItem>
+              {existingModels.map((existingModel) => (
+                <SelectItem key={existingModel.model_id} value={existingModel.model_id}>
+                  {existingModel.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FieldRow>
         <FieldRow label="Model family">
           <SearchableSelect label="Model family" value={model.family_id || "__none__"} options={[{ value: "__none__", label: "None" }, ...families.map((item) => ({ value: item.family_id, label: item.family_name || item.family_id }))]} onValueChange={(value) => onModelChange({ ...model, family_id: value === "__none__" ? null : value })} />

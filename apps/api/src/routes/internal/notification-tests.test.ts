@@ -41,4 +41,15 @@ describe("internal notification tests", () => {
 		expect(configureRuntimeMock).toHaveBeenCalledWith(env);
 		expect(clearRuntimeMock).toHaveBeenCalledOnce();
 	});
+
+	it("rejects unsupported notification kinds before delivery", async () => {
+		const token = "notification-test-token-at-least-32-bytes";
+		const response = await internalNotificationTestRoutes.request("/", {
+			method: "POST",
+			headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", kind: "other" }),
+		}, { GATEWAY_INTERNAL_TEST_TOKEN: token } as never);
+		expect(response.status).toBe(400);
+		expect(deliverNotificationTestMock).not.toHaveBeenCalled();
+	});
 });

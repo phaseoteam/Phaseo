@@ -220,6 +220,8 @@ describe("fetchCatalogue", () => {
                 data: [{
                     model_id: "stealth/preview",
                     name: "Preview",
+                    replacement_model_id: null,
+                    metadata: { replacement_model_id: "stealth/successor" },
                     release_date: null,
                     deprecation_date: null,
                     retirement_date: null,
@@ -273,6 +275,7 @@ describe("fetchCatalogue", () => {
         getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
         const { fetchCatalogue } = await import("./models.catalogue");
         const models = await fetchCatalogue({});
+		expect(models[0]?.replacement_model_id).toBe("stealth/successor");
 
         expect(models[0]?.providers[0]).toMatchObject({
             api_provider_id: "stealth",

@@ -190,8 +190,26 @@ describe("account model source routes", () => {
 		expect(graph.status).toBe(200);
 		expect(route.status).toBe(200);
 		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_catalogue"))).toBe(true);
-		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_model_graph"))).toBe(true);
+		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_model_graph_with_successor"))).toBe(true);
 		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_provider_route"))).toBe(true);
+	});
+	it("submits a model and successor as one RPC and reports validation failure", async () => {
+		const requests: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			requests.push(url);
+			if (url.includes("/auth/v1/user")) return Response.json({ id: "00000000-0000-4000-8000-000000000001" });
+			if (url.includes("/rest/v1/users")) return Response.json({ role: "admin" });
+			if (url.includes("/rpc/mutate_v2_admin_model_graph_with_successor")) return Response.json({ message: "recommended successor cannot be the same model" }, { status: 400 });
+			return Response.json({ ok: true });
+		}));
+		const response = await app.request("https://phaseo.app/api/account/models/openai%2Fgpt-test/graph", {
+			method: "PUT",
+			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ modelId: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", replacement_model_id: "openai/gpt-test" }),
+		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
+		expect(response.status).toBe(409);
+		expect(requests.filter((url) => url.includes("/rpc/"))).toEqual([expect.stringContaining("/rpc/mutate_v2_admin_model_graph_with_successor")]);
 	});
     it("end-dates a saved price and rejects deletion without a delete RPC", async () => {
         const requests: Array<{ url: string; body: string | null }> = [];

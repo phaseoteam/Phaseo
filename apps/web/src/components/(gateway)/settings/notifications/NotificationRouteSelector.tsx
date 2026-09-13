@@ -53,7 +53,7 @@ function NotificationRouteSelectorState({ destinations, eventKind, initialDestin
 				<DropdownMenuGroup>
 					<DropdownMenuLabel>Deliver this alert to</DropdownMenuLabel>
 					{destinations.map((destination) => (
-						<DropdownMenuCheckboxItem key={destination.id} disabled={saving} checked={effectiveSelectedIds.includes(destination.id)} onCheckedChange={(checked) => update(destination.id, Boolean(checked))}>
+						<DropdownMenuCheckboxItem key={destination.id} disabled={saving} checked={effectiveSelectedIds.includes(destination.id)} onCheckedChange={(checked) => update(destination.id, Boolean(checked))} onSelect={(event) => event.preventDefault()}>
 							<NotificationDestinationIcon type={destination.type} className="size-4 shrink-0" /><span className="min-w-0"><span className="block truncate text-sm">{destination.name}</span><span className="block truncate text-xs text-muted-foreground">{destination.targetPreview}</span></span>
 						</DropdownMenuCheckboxItem>
 					))}

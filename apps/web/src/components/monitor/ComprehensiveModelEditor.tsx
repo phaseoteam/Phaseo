@@ -129,6 +129,7 @@ export function ComprehensiveModelEditor({
 	const [license, setLicense] = useState("");
 	const [familyId, setFamilyId] = useState("");
 	const [previousModelId, setPreviousModelId] = useState("");
+	const [replacementModelId, setReplacementModelId] = useState("");
 	const [announcementDate, setAnnouncementDate] = useState("");
 	const [releaseDate, setReleaseDate] = useState(
 		model?.releaseDate?.split("T")[0] || ""
@@ -227,6 +228,7 @@ export function ComprehensiveModelEditor({
 					setLicense(data.license || "");
 					setFamilyId(data.family_id || "");
 					setPreviousModelId(data.previous_model_id || "");
+					setReplacementModelId(data.replacement_model_id || "");
 					setReleaseDate(data.release_date?.split("T")[0] || "");
 					setRetirementDate(data.retirement_date?.split("T")[0] || "");
 					setAnnouncementDate(data.announcement_date?.split("T")[0] || "");
@@ -295,6 +297,7 @@ export function ComprehensiveModelEditor({
 				license: license || null,
 				familyId: familyId || null,
 				previousModelId: previousModelId || null,
+				replacementModelId: replacementModelId || null,
 				inputTypes,
 				outputTypes,
 			});
@@ -734,15 +737,28 @@ export function ComprehensiveModelEditor({
 								</div>
 
 								{/* Previous Model ID */}
-								<div className="space-y-2">
-									<Label htmlFor="previous-model">Previous Model ID</Label>
+				<div className="space-y-2">
+					<Label htmlFor="previous-model">Previous Model ID</Label>
 									<Input
 										id="previous-model"
 										value={previousModelId}
 										onChange={(e) => setPreviousModelId(e.target.value)}
 										placeholder="Model this supersedes"
 									/>
-								</div>
+				</div>
+
+				<div className="space-y-2">
+					<Label htmlFor="recommended-successor">Recommended Successor Model ID</Label>
+					<Input
+						id="recommended-successor"
+						value={replacementModelId}
+						onChange={(e) => setReplacementModelId(e.target.value)}
+						placeholder="Shown in model deprecation notices"
+					/>
+					<p className="text-xs text-muted-foreground">
+						Independent of lineage; used as the recommended migration target in notifications.
+					</p>
+				</div>
 
 								{/* Hidden */}
 								<div className="flex items-center space-x-2 sm:col-span-2">
