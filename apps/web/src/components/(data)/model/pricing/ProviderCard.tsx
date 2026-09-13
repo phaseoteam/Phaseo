@@ -1980,6 +1980,8 @@ export default function ProviderCard({
 				}, 250);
 			}
 			if (isTargetProvider) {
+				setHoveredPerformancePoint(null);
+				setIsHoveredPerformancePointMissing(false);
 				setSelectedPlan(
 					detail.serviceTier && availablePlans.includes(detail.serviceTier)
 						? detail.serviceTier
@@ -2651,6 +2653,8 @@ export default function ProviderCard({
 		);
 	};
 	const selectServiceTier = (serviceTier: string) => {
+		setHoveredPerformancePoint(null);
+		setIsHoveredPerformancePointMissing(false);
 		setSelectedPlan(serviceTier);
 		openInspectorForProvider(inspectorProviderId, { serviceTier });
 	};

@@ -59,8 +59,15 @@ export type ProviderRuntimeStats = {
 
 export type ProviderRuntimeStatsMap = Record<string, ProviderRuntimeStats>;
 
+function normalizeProviderRuntimeServiceTier(serviceTier: string | null | undefined): string {
+	const normalizedTier = String(serviceTier ?? "").trim().toLowerCase();
+	if (!normalizedTier || normalizedTier === "default") return "standard";
+	if (normalizedTier === "fast") return "priority";
+	return normalizedTier;
+}
+
 export function providerRuntimeStatsKey(providerId: string, serviceTier = "standard"): string {
-	const normalizedTier = serviceTier === "fast" ? "priority" : serviceTier;
+	const normalizedTier = normalizeProviderRuntimeServiceTier(serviceTier);
 	return `${providerId}\u0000${normalizedTier}`;
 }
 
@@ -517,7 +524,7 @@ export function mapRpcRuntimeStatsRows(args: {
 	const byProviderTier = new Map<string, RpcProviderHealthMetricsRow>();
 	for (const row of args.rows) {
 		const providerId = String(row.provider_id ?? "").trim();
-		const serviceTier = String(row.service_tier ?? "standard").trim() || "standard";
+		const serviceTier = normalizeProviderRuntimeServiceTier(row.service_tier);
 		if (!providerId) continue;
 		byProviderTier.set(providerRuntimeStatsKey(providerId, serviceTier), row);
 	}
@@ -531,7 +538,7 @@ export function mapRpcRuntimeStatsRows(args: {
 	const out: ProviderRuntimeStatsMap = {};
 	for (const [statsKey, row] of byProviderTier) {
 		const providerId = String(row.provider_id ?? "").trim();
-		const serviceTier = String(row.service_tier ?? "standard").trim() || "standard";
+		const serviceTier = normalizeProviderRuntimeServiceTier(row.service_tier);
 		const uptimeDaily3dTotals = [
 			{ requests: 0, successful: 0, healthRequests: 0, healthSuccessful: 0 },
 			{ requests: 0, successful: 0, healthRequests: 0, healthSuccessful: 0 },

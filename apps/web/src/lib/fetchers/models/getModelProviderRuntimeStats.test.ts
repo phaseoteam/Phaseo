@@ -49,6 +49,41 @@ describe("provider runtime stats by service tier", () => {
 			throughput30m: 120,
 		});
 	});
+
+	it("normalizes service-tier aliases before indexing runtime stats", () => {
+		const stats = mapRpcRuntimeStatsRows({
+			providerIds: ["openai"],
+			rows: [
+				{
+					provider_id: "openai",
+					service_tier: "default",
+					requests: 20,
+					requests_30m: 4,
+					percentile_latency_ms_30m: 800,
+					percentile_throughput_30m: 50,
+					buckets: [],
+				},
+				{
+					provider_id: "openai",
+					service_tier: "fast",
+					requests: 10,
+					requests_30m: 3,
+					percentile_latency_ms_30m: 250,
+					percentile_throughput_30m: 120,
+					buckets: [],
+				},
+			] as Parameters<typeof mapRpcRuntimeStatsRows>[0]["rows"],
+		});
+
+		expect(getProviderRuntimeStats(stats, "openai", "standard")).toMatchObject({
+			serviceTier: "standard",
+			latencyMs30m: 800,
+		});
+		expect(getProviderRuntimeStats(stats, "openai", "priority")).toMatchObject({
+			serviceTier: "priority",
+			latencyMs30m: 250,
+		});
+	});
 });
 
 describe("fillHourlyUptimeBuckets", () => {
