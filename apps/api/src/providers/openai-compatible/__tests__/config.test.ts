@@ -328,6 +328,14 @@ describe("openAICompatUrl", () => {
 		expect(openAICompatHeaders("wafer", "test-wafer-key")).toEqual(
 			expect.objectContaining({ Authorization: "Bearer test-wafer-key" }),
 		);
+		expect(openAICompatUrl("wafer-zdr", "/chat/completions")).toBe(
+			"https://pass.wafer.ai/v1/chat/completions",
+		);
+		expect(openAICompatHeaders("wafer-zdr", "test-wafer-key")).toMatchObject({
+			Authorization: "Bearer test-wafer-key",
+			"Wafer-ZDR": "required",
+		});
+		expect(openAICompatHeaders("wafer", "test-wafer-key")).not.toHaveProperty("Wafer-ZDR");
 		expect(openAICompatHeaders("ambient", "test-ambient-key")).toEqual(
 			expect.objectContaining({ Authorization: "Bearer test-ambient-key" }),
 		);

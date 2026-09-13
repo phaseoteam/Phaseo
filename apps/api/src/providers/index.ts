@@ -135,6 +135,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     meta: createOpenAICompatibleAdapter("meta"),
     upstage: createOpenAICompatibleAdapter("upstage"),
     wafer: createOpenAICompatibleAdapter("wafer"),
+    "wafer-zdr": createOpenAICompatibleAdapter("wafer-zdr"),
     "tencent-cloud": createOpenAICompatibleAdapter("tencent-cloud"),
 };
 

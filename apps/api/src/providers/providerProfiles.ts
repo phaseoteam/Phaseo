@@ -1154,6 +1154,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "wafer",
+		aliases: ["wafer-zdr"],
 		textOnly: true,
 		text: {
 			paramPolicy: {

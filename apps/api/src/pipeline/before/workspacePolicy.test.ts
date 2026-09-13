@@ -462,6 +462,19 @@ describe("applyWorkspacePolicy", () => {
 		expect(result.diagnostics.requestProviderOnly).toEqual(["novita"]);
 	});
 
+	it("keeps Wafer ZDR distinct from ordinary Wafer in provider hints", () => {
+		const providers = [
+			candidate({ providerId: "wafer", apiModelId: "test/model" }),
+			candidate({ providerId: "wafer-zdr", apiModelId: "test/model" }),
+		];
+		const onlyZdr = applyWorkspacePolicy({ providers, resolvedModel: "test/model", body: { provider: { only: ["wafer-zdr"] } }, workspacePolicy: null });
+		expect(onlyZdr.ok).toBe(true);
+		if (onlyZdr.ok) expect(onlyZdr.providers.map((provider) => provider.providerId)).toEqual(["wafer-zdr"]);
+		const ignoreZdr = applyWorkspacePolicy({ providers, resolvedModel: "test/model", body: { provider: { ignore: ["wafer-zdr"] } }, workspacePolicy: null });
+		expect(ignoreZdr.ok).toBe(true);
+		if (ignoreZdr.ok) expect(ignoreZdr.providers.map((provider) => provider.providerId)).toEqual(["wafer"]);
+	});
+
     it("merges model blocklists across enabled guardrails", () => {
         const policy = buildWorkspacePolicy({
             guardrails: [
