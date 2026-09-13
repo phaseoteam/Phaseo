@@ -18,6 +18,7 @@ const TEXT_ENDPOINTS = new Set<Endpoint>([
 
 export const TEXT_SERVICE_TIER_VALUES = [
 	"standard",
+	"default",
 	"fast",
 	"priority",
 	"flex",
@@ -45,7 +46,7 @@ export function normalizeTextServiceTier(value: unknown): NormalizedTextServiceT
 	if (typeof value !== "string") return undefined;
 	const tier = value.trim().toLowerCase();
 	if (!tier) return undefined;
-	if (tier === "standard") return "standard";
+	if (tier === "standard" || tier === "default") return "standard";
 	if (tier === "fast") return "fast";
 	if (tier === "priority") return "priority";
 	if (tier === "flex") return "flex";

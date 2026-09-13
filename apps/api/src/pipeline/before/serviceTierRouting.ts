@@ -390,8 +390,8 @@ export async function applyServiceTierRouting(args: {
     diagnostics: ServiceTierRoutingDiagnostics;
 }> {
     const requestedTier = normalizeRequestedServiceTier(args.body);
-    const requestedPlan = normalizeRequestedPlan(requestedTier);
-    if (!requestedPlan) {
+    const requestedPlan = normalizeRequestedPlan(requestedTier) ?? "standard";
+    if (requestedPlan === "standard") {
 		const candidates = args.candidates.filter((candidate) =>
 			!isTierDedicatedOffer(candidate, "priority") && !isTierSiblingModel(candidate, "priority") &&
 			!isTierDedicatedOffer(candidate, "flex") &&

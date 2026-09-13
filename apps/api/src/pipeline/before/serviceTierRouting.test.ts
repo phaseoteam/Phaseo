@@ -108,7 +108,9 @@ describe("applyServiceTierRouting", () => {
         const card = makeCard({ provider: "provider", model: "model", plans: ["standard"] });
         card.rules = card.rules.map((rule) => ({ ...rule, pricing_plan: plan }));
         const provider = makeCandidate({ providerId: "provider", pricingCard: card });
-        expect((await applyServiceTierRouting({ candidates: [provider], body: {}, capability: "text.generate" })).candidates).toEqual([provider]);
+        for (const body of [{}, { service_tier: "default" }, { service_tier: "standard" }]) {
+            expect((await applyServiceTierRouting({ candidates: [provider], body, capability: "text.generate" })).candidates).toEqual([provider]);
+        }
     });
     it("preserves default routing for explicitly free cards", async () => {
         const card = makeCard({ provider: "free", model: "model", plans: ["standard"] });
@@ -116,7 +118,7 @@ describe("applyServiceTierRouting", () => {
         const free = makeCandidate({ providerId: "free", pricingCard: card });
         expect((await applyServiceTierRouting({ candidates: [free], body: {}, capability: "text.generate" })).candidates).toEqual([free]);
     });
-    it.each([{}, { service_tier: "standard" }, { serviceTier: "standard" }])(
+    it.each([{}, { service_tier: "default" }, { service_tier: "standard" }, { serviceTier: "standard" }])(
         "rejects a global priority-only route for a default request %j", async (body) => {
             const fast = makeCandidate({ providerId: "fireworks", apiModelId: "z-ai/glm-5.3",
                 providerModelSlug: "accounts/fireworks/routers/glm-5p3-fast", offerScope: "global",
@@ -127,7 +129,7 @@ describe("applyServiceTierRouting", () => {
         },
     );
 
-    it.each([{}, { service_tier: "standard" }, { serviceTier: "standard" }])(
+    it.each([{}, { service_tier: "default" }, { service_tier: "standard" }, { serviceTier: "standard" }])(
         "rejects a dedicated flex route for a standard request %j", async (body) => {
             const flex = makeCandidate({ providerId: "deepinfra", apiModelId: "deepseek/deepseek-v4.1-flash",
                 providerModelSlug: "deepseek-ai/DeepSeek-V4.1-Flash", offerScope: "specialized", offerLabel: "flex",

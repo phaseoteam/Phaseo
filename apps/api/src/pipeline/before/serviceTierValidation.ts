@@ -22,13 +22,13 @@ export function validateSynchronousTextServiceTierRequest(args: {
 				{
 					message: isBatch
 						? 'service_tier "batch" is not supported for synchronous requests. Please use the Batch API instead.'
-						: `Unsupported service_tier "${result.raw}". Use standard, fast, priority, flex, or batch.`,
+						: `Unsupported service_tier "${result.raw}". Use standard, default, fast, priority, flex, or batch.`,
 					path: [result.field],
 					keyword: isBatch
 						? "batch_service_tier_not_supported"
 						: "unsupported_service_tier",
 					params: {
-						allowed_values: ["standard", "fast", "priority", "flex", "batch"],
+						allowed_values: ["standard", "default", "fast", "priority", "flex", "batch"],
 						...(isBatch ? { use_endpoint: "/v1/batches" } : {}),
 					},
 				},
