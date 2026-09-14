@@ -303,6 +303,26 @@ pub mod model_ids {
     /// Model ID: `cohere/rerank-v4.0-pro`.
     /// Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro
     pub const COHERE_RERANK_V4_0_PRO: &str = "cohere/rerank-v4.0-pro";
+    /// Deprecated: CrofAI is retired; retained for compatibility only.
+    #[deprecated(note = "CrofAI is retired; retained for compatibility only.")]
+    /// Model ID: `crofai/greg-1-mini`.
+    /// Model page: https://phaseo.app/models/crofai/greg-1-mini
+    pub const CROFAI_GREG_1_MINI: &str = "crofai/greg-1-mini";
+    /// Deprecated: CrofAI is retired; retained for compatibility only.
+    #[deprecated(note = "CrofAI is retired; retained for compatibility only.")]
+    /// Model ID: `crofai/greg-2-super`.
+    /// Model page: https://phaseo.app/models/crofai/greg-2-super
+    pub const CROFAI_GREG_2_SUPER: &str = "crofai/greg-2-super";
+    /// Deprecated: CrofAI is retired; retained for compatibility only.
+    #[deprecated(note = "CrofAI is retired; retained for compatibility only.")]
+    /// Model ID: `crofai/greg-2-ultra`.
+    /// Model page: https://phaseo.app/models/crofai/greg-2-ultra
+    pub const CROFAI_GREG_2_ULTRA: &str = "crofai/greg-2-ultra";
+    /// Deprecated: CrofAI is retired; retained for compatibility only.
+    #[deprecated(note = "CrofAI is retired; retained for compatibility only.")]
+    /// Model ID: `crofai/greg-rp`.
+    /// Model page: https://phaseo.app/models/crofai/greg-rp
+    pub const CROFAI_GREG_RP: &str = "crofai/greg-rp";
     /// Model ID: `deepseek/deepseek-ocr`.
     /// Model page: https://phaseo.app/models/deepseek/deepseek-ocr
     pub const DEEPSEEK_DEEPSEEK_OCR: &str = "deepseek/deepseek-ocr";
@@ -2130,6 +2150,10 @@ pub mod model_ids {
         COHERE_RERANK_V3_5,
         COHERE_RERANK_V4_0_FAST,
         COHERE_RERANK_V4_0_PRO,
+        CROFAI_GREG_1_MINI,
+        CROFAI_GREG_2_SUPER,
+        CROFAI_GREG_2_ULTRA,
+        CROFAI_GREG_RP,
         DEEPSEEK_DEEPSEEK_OCR,
         DEEPSEEK_DEEPSEEK_OCR_2,
         DEEPSEEK_DEEPSEEK_R1,

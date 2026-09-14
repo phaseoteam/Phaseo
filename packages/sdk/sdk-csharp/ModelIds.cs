@@ -206,6 +206,22 @@ namespace PhaseoSdk
         public const string CohereRerankV40Fast = "cohere/rerank-v4.0-fast";
         /// <summary>Model ID: <c>cohere/rerank-v4.0-pro</c>. Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro</summary>
         public const string CohereRerankV40Pro = "cohere/rerank-v4.0-pro";
+        /// <summary>Deprecated: CrofAI is retired; retained for compatibility only.</summary>
+        [System.Obsolete("CrofAI is retired; retained for compatibility only.")]
+        /// <summary>Model ID: <c>crofai/greg-1-mini</c>. Model page: https://phaseo.app/models/crofai/greg-1-mini</summary>
+        public const string CrofaiGreg1Mini = "crofai/greg-1-mini";
+        /// <summary>Deprecated: CrofAI is retired; retained for compatibility only.</summary>
+        [System.Obsolete("CrofAI is retired; retained for compatibility only.")]
+        /// <summary>Model ID: <c>crofai/greg-2-super</c>. Model page: https://phaseo.app/models/crofai/greg-2-super</summary>
+        public const string CrofaiGreg2Super = "crofai/greg-2-super";
+        /// <summary>Deprecated: CrofAI is retired; retained for compatibility only.</summary>
+        [System.Obsolete("CrofAI is retired; retained for compatibility only.")]
+        /// <summary>Model ID: <c>crofai/greg-2-ultra</c>. Model page: https://phaseo.app/models/crofai/greg-2-ultra</summary>
+        public const string CrofaiGreg2Ultra = "crofai/greg-2-ultra";
+        /// <summary>Deprecated: CrofAI is retired; retained for compatibility only.</summary>
+        [System.Obsolete("CrofAI is retired; retained for compatibility only.")]
+        /// <summary>Model ID: <c>crofai/greg-rp</c>. Model page: https://phaseo.app/models/crofai/greg-rp</summary>
+        public const string CrofaiGregRp = "crofai/greg-rp";
         /// <summary>Model ID: <c>deepseek/deepseek-ocr</c>. Model page: https://phaseo.app/models/deepseek/deepseek-ocr</summary>
         public const string DeepseekDeepseekOcr = "deepseek/deepseek-ocr";
         /// <summary>Model ID: <c>deepseek/deepseek-ocr-2</c>. Model page: https://phaseo.app/models/deepseek/deepseek-ocr-2</summary>

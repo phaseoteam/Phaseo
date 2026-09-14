@@ -307,6 +307,26 @@ public final class ModelIds {
     /** Model ID: <code>cohere/rerank-v4.0-pro</code>. Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro */
     public static final String COHERE_RERANK_V4_0_PRO = "cohere/rerank-v4.0-pro";
 
+    /** @deprecated CrofAI is retired; retained for compatibility only. */
+    @Deprecated
+    /** Model ID: <code>crofai/greg-1-mini</code>. Model page: https://phaseo.app/models/crofai/greg-1-mini */
+    public static final String CROFAI_GREG_1_MINI = "crofai/greg-1-mini";
+
+    /** @deprecated CrofAI is retired; retained for compatibility only. */
+    @Deprecated
+    /** Model ID: <code>crofai/greg-2-super</code>. Model page: https://phaseo.app/models/crofai/greg-2-super */
+    public static final String CROFAI_GREG_2_SUPER = "crofai/greg-2-super";
+
+    /** @deprecated CrofAI is retired; retained for compatibility only. */
+    @Deprecated
+    /** Model ID: <code>crofai/greg-2-ultra</code>. Model page: https://phaseo.app/models/crofai/greg-2-ultra */
+    public static final String CROFAI_GREG_2_ULTRA = "crofai/greg-2-ultra";
+
+    /** @deprecated CrofAI is retired; retained for compatibility only. */
+    @Deprecated
+    /** Model ID: <code>crofai/greg-rp</code>. Model page: https://phaseo.app/models/crofai/greg-rp */
+    public static final String CROFAI_GREG_RP = "crofai/greg-rp";
+
     /** Model ID: <code>deepseek/deepseek-ocr</code>. Model page: https://phaseo.app/models/deepseek/deepseek-ocr */
     public static final String DEEPSEEK_DEEPSEEK_OCR = "deepseek/deepseek-ocr";
 
