@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+	useEffect,
+	useMemo,
+	useState,
+	type MouseEvent,
+	type ReactNode,
+} from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -53,7 +59,7 @@ type VirtualizedModelCatalogProps<T> = {
 	activeItemKey: string | null;
 	isItemDisabled: (item: T) => boolean;
 	onActiveItemChange: (itemKey: string) => void;
-	onSelectItem: (item: T) => void;
+	onSelectItem: (item: T, event: MouseEvent<HTMLDivElement>) => void;
 	renderItem: (item: T) => ReactNode;
 	estimateItemSize?: number;
 	emptyContent?: ReactNode;
@@ -159,12 +165,16 @@ export function VirtualizedModelCatalog<T>({
 										isItemDisabled(row.item) &&
 											"pointer-events-none opacity-50",
 									)}
-									onMouseMove={() =>
-										onActiveItemChange(getItemKey(row.item))
-									}
+									onMouseMove={() => {
+										if (!isItemDisabled(row.item)) {
+											onActiveItemChange(getItemKey(row.item));
+										}
+									}}
 									onMouseDown={(event) => event.preventDefault()}
-									onClick={() => {
-										if (!isItemDisabled(row.item)) onSelectItem(row.item);
+									onClick={(event) => {
+										if (!isItemDisabled(row.item)) {
+											onSelectItem(row.item, event);
+										}
 									}}
 								>
 									{renderItem(row.item)}

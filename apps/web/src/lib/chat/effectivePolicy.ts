@@ -23,6 +23,9 @@ export function applyChatEffectivePolicy(models: GatewaySupportedModel[], policy
 		if (blocked(policy.workspace?.provider, [model.providerId]) || blocked(policy.workspace?.model, modelIds)) {
 			reasons.push({ source: "workspace", label: "Blocked by workspace Data Controls", settingsHref: "/settings/privacy" });
 		}
+		if (blocked(policy.account?.provider, [model.providerId]) || blocked(policy.account?.model, modelIds)) {
+			reasons.push({ source: "account", label: "Blocked by your Personal Data Controls", settingsHref: "/settings/account/privacy" });
+		}
 		for (const guardrail of policy.guardrails) {
 			if (blocked(guardrail.provider, [model.providerId]) || blocked(guardrail.model, modelIds)) {
 				reasons.push({ source: "guardrail", label: `Blocked by ${guardrail.name}`, settingsHref: `/settings/guardrails/${guardrail.id}` });

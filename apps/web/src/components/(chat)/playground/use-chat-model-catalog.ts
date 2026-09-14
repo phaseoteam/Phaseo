@@ -446,9 +446,17 @@ export function useChatModelCatalog(args: {
 			requiredCapability: UnifiedChatEndpoint,
 			requiresAudioInput: boolean,
 		) =>
+			selectableModelIdSet.has(
+				selectorModelIdByRawModelId.get(modelId) ?? modelId,
+			) &&
 			isModelCapabilityCompatible(modelId, requiredCapability) &&
 			(!requiresAudioInput || supportsModelAudioInput(modelId)),
-		[isModelCapabilityCompatible, supportsModelAudioInput],
+		[
+			isModelCapabilityCompatible,
+			selectableModelIdSet,
+			selectorModelIdByRawModelId,
+			supportsModelAudioInput,
+		],
 	);
 	const getPrimaryCapabilityForModel = useCallback(
 		(modelId: string): UnifiedChatEndpoint =>

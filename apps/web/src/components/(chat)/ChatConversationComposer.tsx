@@ -139,6 +139,7 @@ type ComposerModelOption = Pick<
 	| "capabilityEndpoints"
 	| "releaseDate"
 	| "gatewayStatus"
+	| "chatBlockedReasons"
 >;
 
 type ModelSlashGroup = {
@@ -636,6 +637,13 @@ function ComposerModelSelectField({
 	}, [options, search]);
 
 	const handleSelect = (nextValue: string | undefined) => {
+		if (
+			nextValue &&
+			options.find((option) => option.modelId === nextValue)?.chatBlockedReasons
+				.length
+		) {
+			return;
+		}
 		onChange(nextValue);
 		setOpen(false);
 		setSearch("");
@@ -706,8 +714,9 @@ function ComposerModelSelectField({
 									<button
 										type="button"
 										key={option.modelId}
+										disabled={option.chatBlockedReasons.length > 0}
 										className={cn(
-											"flex min-h-7 items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-foreground hover:bg-muted focus-visible:bg-muted focus-visible:outline-none",
+											"flex min-h-7 items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-foreground hover:bg-muted focus-visible:bg-muted focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45",
 											selected && "bg-muted",
 										)}
 										onClick={() => handleSelect(option.modelId)}
@@ -1684,24 +1693,29 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					!favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId)),
 			),
 		);
-		const toCommand = (option: ComposerModelOption): SlashCommand => ({
-			id: `model-${option.modelId}`,
-			label: option.label,
-			keywords: [
-				"model",
-				"models",
-				option.modelId,
-				option.label,
-				option.orgId,
-				option.orgName,
-				...option.providerIds,
-				...option.providerNames,
-			],
-			icon: Cpu,
-			logoId: option.orgId,
-			modelId: option.modelId,
-			selected: selectedIdSet.has(option.modelId),
-		});
+		const toCommand = (option: ComposerModelOption): SlashCommand => {
+			const isBlocked = option.chatBlockedReasons.length > 0;
+			return {
+				id: `model-${option.modelId}`,
+				label: option.label,
+				description: isBlocked ? "Blocked by Chat policy" : undefined,
+				keywords: [
+					"model",
+					"models",
+					option.modelId,
+					option.label,
+					option.orgId,
+					option.orgName,
+					...option.providerIds,
+					...option.providerNames,
+				],
+				icon: Cpu,
+				logoId: option.orgId,
+				modelId: option.modelId,
+				selected: selectedIdSet.has(option.modelId),
+				disabled: isBlocked,
+			};
+		};
 		const groups: ModelSlashGroup[] = [];
 		if (selectedOptions.length > 0) {
 			groups.push({

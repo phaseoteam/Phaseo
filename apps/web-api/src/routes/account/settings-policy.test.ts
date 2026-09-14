@@ -20,6 +20,7 @@ describe("account policy settings routes", () => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("workspace_member_guardrails")) return new Response(JSON.stringify([{ guardrail_id: "guardrail-1" }]), { status: 200 });
+			if (url.includes("account_guardrail_settings")) return new Response(JSON.stringify([{ provider_restriction_mode: "none", provider_restriction_provider_ids: [], model_restriction_mode: "blocklist", model_restriction_model_ids: ["inclusionai/ling-3.0-flash-sante:free"] }]), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
 			if (url.includes("workspace_settings")) return new Response(JSON.stringify([{ provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["novita"], model_restriction_mode: "none", model_restriction_model_ids: [] }]), { status: 200 });
@@ -32,7 +33,7 @@ describe("account policy settings routes", () => {
 		expect(response.headers.get("cache-control")).toBe("private, no-store");
 		await expect(response.json()).resolves.toMatchObject({
 			workspace: { provider: { mode: "blocklist", ids: ["novita"] } },
-			account: null,
+			account: { model: { mode: "blocklist", ids: ["inclusionai/ling-3.0-flash-sante:free"] } },
 			guardrails: [{ id: "guardrail-1", name: "Team Safety", provider: { mode: "blocklist", ids: ["openai"] } }],
 		});
 	});
