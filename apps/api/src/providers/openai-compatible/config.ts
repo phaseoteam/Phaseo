@@ -159,7 +159,7 @@ export function isOpenAICompatProvider(providerId: string): boolean {
 	return Object.prototype.hasOwnProperty.call(OPENAI_COMPAT_CONFIG, normalizeCompatProviderId(providerId));
 }
 
-export function openAICompatUrl(providerId: string, path: string): string {
+export function openAICompatUrl(providerId: string, path: string, model?: string | null): string {
 	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	const requestedSuffix = normalizePathSegment(path);
@@ -175,11 +175,14 @@ export function openAICompatUrl(providerId: string, path: string): string {
 	const isAlibabaCompatProvider = ALIBABA_COMPAT_PROVIDER_IDS.has(canonicalProviderId);
 	const isAlibabaResponsesRoute = isAlibabaCompatProvider && suffix === "/responses";
 	const isAlibabaChatRoute = isAlibabaCompatProvider && suffix === "/chat/completions";
+	const isRelaceHostedModel = canonicalProviderId === "relace"
+		&& Boolean(model?.trim())
+		&& normalizeOpenAIModelName(model) !== "relace-search";
 	let base = config.baseUrl?.replace(/\/+$/, "") ?? "";
 	const configuredPrefix = normalizePathSegment(
 		isAlibabaResponsesRoute
 				? ALIBABA_RESPONSES_PATH_PREFIX
-				: (config.pathPrefix ?? "/v1"),
+				: (isRelaceHostedModel ? "/v1" : config.pathPrefix ?? "/v1"),
 	);
 	let prefix = configuredPrefix;
 
@@ -190,7 +193,13 @@ export function openAICompatUrl(providerId: string, path: string): string {
 			if (canonicalProviderId === "friendli") {
 				prefix = resolveFriendliPathPrefix(basePath, configuredPrefix);
 			}
-			if (isAlibabaResponsesRoute) {
+			if (isRelaceHostedModel) {
+				const searchPrefix = normalizePathSegment(config.pathPrefix ?? "");
+				if (searchPrefix && basePath === searchPrefix) {
+					const trimmedBasePath = basePath.slice(0, basePath.length - searchPrefix.length).replace(/\/+$/, "");
+					base = `${parsed.origin}${trimmedBasePath}`;
+				}
+			} else if (isAlibabaResponsesRoute) {
 				const chatPrefix = normalizePathSegment(config.pathPrefix ?? "");
 				if (chatPrefix && basePath === chatPrefix) {
 					const trimmedBasePath = basePath.slice(0, basePath.length - chatPrefix.length).replace(/\/+$/, "");
