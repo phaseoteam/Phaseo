@@ -21,6 +21,7 @@ import {
 	deleteAccount,
 	deletePasskeyAction,
 	startPasskeyRegistrationAction,
+	updateAccount,
 	verifyPasskeyRegistrationAction,
 } from "./actions";
 import { createClient } from "@/utils/supabase/server";
@@ -84,6 +85,35 @@ describe("passkey server actions", () => {
 		jest.useRealTimers();
 		process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
 		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "public-anon-key";
+	});
+
+	it("updates the declared country without writing the protected user id", async () => {
+		const userId = "11111111-1111-4111-8111-111111111111";
+		const selectEq = jest.fn().mockReturnValue({
+			maybeSingle: jest.fn().mockResolvedValue({
+				data: { declared_country_code: "US" },
+				error: null,
+			}),
+		});
+		const updateEq = jest.fn().mockResolvedValue({ error: null });
+		const update = jest.fn().mockReturnValue({ eq: updateEq });
+		const upsert = jest.fn();
+		const from = jest.fn().mockReturnValue({
+			select: jest.fn().mockReturnValue({ eq: selectEq }),
+			update,
+			upsert,
+		});
+		const supabase = { ...createSupabaseMock({}), from };
+		mockCreateClient.mockResolvedValue(supabase as never);
+
+		await expect(updateAccount({ declared_country_code: "GB" })).resolves.toEqual({ ok: true });
+
+		expect(update).toHaveBeenCalledWith({
+			declared_country_code: "GB",
+			country_declared_at: expect.any(String),
+		});
+		expect(updateEq).toHaveBeenCalledWith("user_id", userId);
+		expect(upsert).not.toHaveBeenCalled();
 	});
 
 	it("verifies the current password before starting registration", async () => {
