@@ -195,7 +195,7 @@ export default function Footer() {
 						</div>
 					</div>
 					<p className="hidden shrink-0 items-center gap-x-1.5 text-xs sm:max-md:inline-flex">
-						<span>Report:</span>
+						<span>Help:</span>
 						<Link
 							href="https://github.com/phaseoteam/Phaseo/issues"
 							target="_blank"
@@ -213,7 +213,7 @@ export default function Footer() {
 						</Link>
 					</p>
 					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:max-md:hidden">
-						<span>Spotted a data issue or broken page?</span>
+						<span>Need help with Phaseo?</span>
 						<Link
 							href="https://github.com/phaseoteam/Phaseo/issues"
 							target="_blank"
