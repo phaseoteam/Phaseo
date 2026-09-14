@@ -37,6 +37,7 @@ import { getLondonInfo, getSupportAvailability } from "@/lib/support/schedule";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
+import { isPublicDataPathname } from "@/lib/publicDataRoutes";
 
 interface TeamSwitcherProps {
 	user?: any;
@@ -55,6 +56,7 @@ export default function TeamSwitcher({
 }: TeamSwitcherProps) {
 	const router = useRouter();
 	const pathname = usePathname();
+	const isPublicDataPage = isPublicDataPathname(pathname);
 	const { theme, setTheme } = useTheme();
 
 	const getInitialTeamId = (initial?: string) => {
@@ -431,16 +433,18 @@ export default function TeamSwitcher({
 							</span>
 						</Link>
 					</DropdownMenuItem>
-					<DropdownMenuItem
-						className="cursor-pointer rounded-lg"
-						onClick={() => {
-							setIsProfileMenuOpen(false);
-							setIsFeedbackOpen(true);
-						}}
-					>
-						<MessageSquareMore className="h-4 w-4" />
-						<span>Send Feedback</span>
-					</DropdownMenuItem>
+					{!isPublicDataPage ? (
+						<DropdownMenuItem
+							className="cursor-pointer rounded-lg"
+							onClick={() => {
+								setIsProfileMenuOpen(false);
+								setIsFeedbackOpen(true);
+							}}
+						>
+							<MessageSquareMore className="h-4 w-4" />
+							<span>Send Feedback</span>
+						</DropdownMenuItem>
+					) : null}
 
 					<DropdownMenuSeparator />
 

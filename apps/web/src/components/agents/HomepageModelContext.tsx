@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { API_DOCS_URL, API_QUICKSTART_URL } from "@/lib/agent-discovery";
+import {
+	API_DOCS_URL,
+	API_QUICKSTART_URL,
+} from "@/lib/agent-discovery-client";
 
 type ModelContextTool = {
 	annotations?: {

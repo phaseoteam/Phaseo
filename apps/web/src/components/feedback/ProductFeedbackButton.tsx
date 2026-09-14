@@ -43,6 +43,11 @@ type ProductFeedbackProps = {
 	surface: string;
 	label?: string;
 	prompt?: string;
+	title?: string;
+	submitLabel?: string;
+	successMessage?: string;
+	defaultCategory?: ProductFeedbackCategory;
+	defaultReason?: ProductFeedbackReason;
 	context?: Record<string, string | number | boolean | null>;
 };
 
@@ -50,21 +55,26 @@ export function ProductFeedbackDialog(props: ProductFeedbackProps & {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
-	const [category, setCategory] = useState<ProductFeedbackCategory>("idea");
-	const [reason, setReason] = useState<ProductFeedbackReason>("missing_capability");
+	const defaultCategory = props.defaultCategory ?? "idea";
+	const defaultReason = props.defaultReason ?? "missing_capability";
+	const [category, setCategory] = useState<ProductFeedbackCategory>(defaultCategory);
+	const [reason, setReason] = useState<ProductFeedbackReason>(defaultReason);
 	const [message, setMessage] = useState("");
 	const [submitted, setSubmitted] = useState(false);
 	const wasOpen = useRef(false);
 
 	useEffect(() => {
 		if (props.open && !wasOpen.current) {
+			setCategory(defaultCategory);
+			setReason(defaultReason);
+			setMessage("");
 			setSubmitted(false);
 			captureProductFeedbackShown({ surface: props.surface, context: props.context });
 		} else if (!props.open && wasOpen.current && !submitted) {
 			captureProductFeedbackDismissed({ surface: props.surface, context: props.context });
 		}
 		wasOpen.current = props.open;
-	}, [props.open, props.surface, props.context, submitted]);
+	}, [defaultCategory, defaultReason, props.open, props.surface, props.context, submitted]);
 
 	function changeOpen(next: boolean) {
 		props.onOpenChange(next);
@@ -83,11 +93,11 @@ export function ProductFeedbackDialog(props: ProductFeedbackProps & {
 			return;
 		}
 
-		toast.success("Feedback sent — thank you.");
+		toast.success(props.successMessage ?? "Feedback sent — thank you.");
 		setSubmitted(true);
 		setMessage("");
-		setCategory("idea");
-		setReason("missing_capability");
+		setCategory(defaultCategory);
+		setReason(defaultReason);
 		props.onOpenChange(false);
 	}
 
@@ -95,7 +105,7 @@ export function ProductFeedbackDialog(props: ProductFeedbackProps & {
 		<Dialog open={props.open} onOpenChange={changeOpen}>
 			<DialogContent className="gap-5 rounded-md sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Share Feedback</DialogTitle>
+					<DialogTitle>{props.title ?? "Share Feedback"}</DialogTitle>
 					<DialogDescription>
 						{props.prompt ?? "Tell us what would make this part of Phaseo work better for you."}
 					</DialogDescription>
@@ -149,7 +159,7 @@ export function ProductFeedbackDialog(props: ProductFeedbackProps & {
 					</Button>
 					<Button type="button" className="rounded-md" disabled={!message.trim()} onClick={submit}>
 						<SendHorizontal className="size-4" />
-						Send Feedback
+						{props.submitLabel ?? "Send Feedback"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

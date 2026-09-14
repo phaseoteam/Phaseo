@@ -48,6 +48,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CurrentUserAvatar } from "@/components/ui/current-user-avatar";
 import { getSupportAvailability } from "@/lib/support/schedule";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
+import { isPublicDataPathname } from "@/lib/publicDataRoutes";
 
 interface HeaderProps {
 	isLoggedIn: boolean;
@@ -68,6 +69,7 @@ export default function HeaderClient({
 }: HeaderProps) {
 	const router = useRouter();
 	const pathname = usePathname() ?? "/";
+	const isPublicDataPage = isPublicDataPathname(pathname);
 	const { theme, setTheme } = useTheme();
 	const currentTheme =
 		theme === "light" || theme === "dark" || theme === "system"
@@ -465,16 +467,18 @@ export default function HeaderClient({
 										</span>
 									</Link>
 								</DropdownMenuItem>
-								<DropdownMenuItem
-									className="cursor-pointer rounded-lg text-sm"
-									onClick={() => {
-										setIsMobileNavOpen(false);
-										setIsFeedbackOpen(true);
-									}}
-								>
-									<MessageSquareMore className="h-4 w-4" />
-									<span>Send Feedback</span>
-								</DropdownMenuItem>
+								{!isPublicDataPage ? (
+									<DropdownMenuItem
+										className="cursor-pointer rounded-lg text-sm"
+										onClick={() => {
+											setIsMobileNavOpen(false);
+											setIsFeedbackOpen(true);
+										}}
+									>
+										<MessageSquareMore className="h-4 w-4" />
+										<span>Send Feedback</span>
+									</DropdownMenuItem>
+								) : null}
 								<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
 									<Link href={docsHref} target="_blank" rel="noreferrer">
 										<BookOpenText className="h-4 w-4" />

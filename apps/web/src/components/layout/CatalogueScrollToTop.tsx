@@ -4,24 +4,14 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const CATALOGUE_ROOTS = [
-	"/models",
-	"/api-providers",
-	"/countries",
-	"/organisations",
-	"/benchmarks",
-	"/families",
-	"/subscription-plans",
-	"/apps",
-];
+import { CATALOGUE_ROUTE_ROOTS } from "@/lib/publicDataRoutes";
 
 const VISIBILITY_THRESHOLD = 320;
 
 export default function CatalogueScrollToTop() {
 	const pathname = usePathname() ?? "";
 	const [visible, setVisible] = useState(false);
-	const enabled = CATALOGUE_ROOTS.some(
+	const enabled = CATALOGUE_ROUTE_ROOTS.some(
 		(root) => pathname === root || pathname.startsWith(`${root}/`),
 	);
 
