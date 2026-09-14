@@ -2049,6 +2049,7 @@ pub mod model_ids {
     #[deprecated(note = "Use DEEPSEEK_DEEPSEEK_V4_PRO instead. Scheduled for removal in the next major SDK release.")]
     pub const DEEPSEEK_DEEPSEEK_V4: &str = DEEPSEEK_DEEPSEEK_V4_PRO;
 
+    #[allow(deprecated)]
     pub const ALL: &[&str] = &[
         AI21_JAMBA_1_5_LARGE,
         AI21_JAMBA_1_5_MINI,

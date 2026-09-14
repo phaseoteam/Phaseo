@@ -404,7 +404,7 @@ function renderRust(items, aliases) {
 			`    pub const ${alias.from.upper}: &str = ${alias.to.upper};`,
 		);
 	}
-	lines.push("", "    pub const ALL: &[&str] = &[");
+	lines.push("", "    #[allow(deprecated)]", "    pub const ALL: &[&str] = &[");
 	for (const item of items) {
 		lines.push(`        ${item.upper},`);
 	}
