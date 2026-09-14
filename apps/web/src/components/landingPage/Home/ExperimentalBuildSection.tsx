@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 const CODE_SNIPPET = `POST /v1/responses
 {
-  "model": "openai/gpt-5.4",
+  "model": "openai/gpt-6-astra",
   "input": "Summarise the latest model release."
 }`;
 

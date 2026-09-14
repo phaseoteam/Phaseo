@@ -40,7 +40,7 @@ The closure runs locally. Its `RuntimeContext` includes the run ID, agent ID, st
 use phaseo_agent::{create_agent, AgentDefinition};
 
 let agent = create_agent(
-    AgentDefinition::new("docs-agent", "openai/gpt-5.6-sol")
+    AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
         .instructions("Use lookup_docs when it helps. Finish with a concise answer.")
         .max_steps(6)
         .tool(lookup),
@@ -52,7 +52,7 @@ let agent = create_agent(
 ```rust
 use phaseo_agent::{create_gateway_agent_client, RunOptions};
 
-let mut client = create_gateway_agent_client("openai/gpt-5.6-sol")?;
+let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
 let mut options = RunOptions::new("Explain when to use routing presets.");
 options.context = serde_json::json!({
     "workspace": "docs"
@@ -92,13 +92,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ));
 
     let agent = create_agent(
-        AgentDefinition::new("docs-agent", "openai/gpt-5.6-sol")
+        AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
             .instructions("Use lookup_docs when helpful. Answer concisely.")
             .max_steps(6)
             .tool(lookup),
     );
 
-    let mut client = create_gateway_agent_client("openai/gpt-5.6-sol")?;
+    let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
     let result = agent.run(
         &mut client,
         RunOptions::new("Explain when to use routing presets."),
