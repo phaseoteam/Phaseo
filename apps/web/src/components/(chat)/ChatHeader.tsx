@@ -1222,6 +1222,7 @@ export function ChatHeader({
 			return { total: 0, results: [] as Array<{ option: ModelOption; score: number }> };
 		}
 		const scored = uniqueModelOptions
+			.filter(optionMatchesQuickFilters)
 			.map((option) => ({
 				option,
 				score: computeModelSearchScore(option, normalizedModelSearchValue),
@@ -1235,7 +1236,12 @@ export function ChatHeader({
 				return compareByReleaseDateDesc(a.option, b.option);
 			});
 		return { total: scored.length, results: scored.slice(0, 25) };
-	}, [hasModelSearchValue, normalizedModelSearchValue, uniqueModelOptions]);
+	}, [
+		hasModelSearchValue,
+		normalizedModelSearchValue,
+		optionMatchesQuickFilters,
+		uniqueModelOptions,
+	]);
 	const searchResultTotalCount = searchRanking.total;
 	const rankedSearchResults = searchRanking.results;
 	const toggleFavoriteModel = (modelId: string) => {
