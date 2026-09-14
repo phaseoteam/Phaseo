@@ -101,7 +101,7 @@ async function providerIndex(env: Env) {
 	const client = getDataClient(env);
 	const result = await client.rpc("get_public_provider_index");
 	if (result.error) throw result.error;
-	const rows = (result.data ?? []) as ProviderIndexRpcRow[];
+	const rows = ((result.data ?? []) as ProviderIndexRpcRow[]).filter((row) => String(row.provider_status ?? "").trim().toLowerCase() !== "disabled");
 	const variants: Variant[] = rows.map((row) => ({
 		id: row.provider_slug,
 		name: row.provider_name,

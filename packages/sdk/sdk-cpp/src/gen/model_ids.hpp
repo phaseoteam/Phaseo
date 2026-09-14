@@ -306,15 +306,19 @@ inline constexpr std::string_view COHERE_RERANK_V4_0_FAST = "cohere/rerank-v4.0-
 // Model ID: cohere/rerank-v4.0-pro
 // Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro
 inline constexpr std::string_view COHERE_RERANK_V4_0_PRO = "cohere/rerank-v4.0-pro";
+// Deprecated: CrofAI is retired; retained for compatibility only.
 // Model ID: crofai/greg-1-mini
 // Model page: https://phaseo.app/models/crofai/greg-1-mini
 inline constexpr std::string_view CROFAI_GREG_1_MINI = "crofai/greg-1-mini";
+// Deprecated: CrofAI is retired; retained for compatibility only.
 // Model ID: crofai/greg-2-super
 // Model page: https://phaseo.app/models/crofai/greg-2-super
 inline constexpr std::string_view CROFAI_GREG_2_SUPER = "crofai/greg-2-super";
+// Deprecated: CrofAI is retired; retained for compatibility only.
 // Model ID: crofai/greg-2-ultra
 // Model page: https://phaseo.app/models/crofai/greg-2-ultra
 inline constexpr std::string_view CROFAI_GREG_2_ULTRA = "crofai/greg-2-ultra";
+// Deprecated: CrofAI is retired; retained for compatibility only.
 // Model ID: crofai/greg-rp
 // Model page: https://phaseo.app/models/crofai/greg-rp
 inline constexpr std::string_view CROFAI_GREG_RP = "crofai/greg-rp";

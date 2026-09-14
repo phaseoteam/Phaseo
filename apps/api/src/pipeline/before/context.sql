@@ -578,7 +578,7 @@ begin
               where sku.status = 'active' and meter.billable
             ) r
             -- TODO: Redesign pricing selection to key on provider_api_model_id or
-            -- explicit variant metadata so provider-only SKUs (for example CrofAI
+            -- explicit variant metadata so provider-only SKUs (for example
             -- precision tiers) can share a parent internal model without forcing
             -- distinct api_model_id values just to preserve pricing separation.
             where r.model_key =

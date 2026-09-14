@@ -307,15 +307,19 @@ const (
 	// Model ID: cohere/rerank-v4.0-pro
 	// Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro
 	ModelIDCohereRerankV40Pro gen.ModelId = "cohere/rerank-v4.0-pro"
+	// Deprecated: CrofAI is retired; retained for compatibility only.
 	// Model ID: crofai/greg-1-mini
 	// Model page: https://phaseo.app/models/crofai/greg-1-mini
 	ModelIDCrofaiGreg1Mini gen.ModelId = "crofai/greg-1-mini"
+	// Deprecated: CrofAI is retired; retained for compatibility only.
 	// Model ID: crofai/greg-2-super
 	// Model page: https://phaseo.app/models/crofai/greg-2-super
 	ModelIDCrofaiGreg2Super gen.ModelId = "crofai/greg-2-super"
+	// Deprecated: CrofAI is retired; retained for compatibility only.
 	// Model ID: crofai/greg-2-ultra
 	// Model page: https://phaseo.app/models/crofai/greg-2-ultra
 	ModelIDCrofaiGreg2Ultra gen.ModelId = "crofai/greg-2-ultra"
+	// Deprecated: CrofAI is retired; retained for compatibility only.
 	// Model ID: crofai/greg-rp
 	// Model page: https://phaseo.app/models/crofai/greg-rp
 	ModelIDCrofaiGregRp gen.ModelId = "crofai/greg-rp"

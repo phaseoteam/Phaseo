@@ -11,7 +11,6 @@ import { XiaomiAdapter } from "./xiaomi/index";
 import { AzureAdapter } from "./azure/index";
 import { AI21Adapter } from "./ai21/index";
 import { MistralAdapter } from "./mistral/index";
-import { CrofAIAdapter } from "./crofai/index";
 import { TensorixAdapter } from "./tensorix/index";
 import { ElevenLabsAdapter } from "./elevenlabs/index";
 import { SunoAdapter } from "./suno/index";
@@ -64,7 +63,6 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     cerebras: createOpenAICompatibleAdapter("cerebras"),
     chutes: createOpenAICompatibleAdapter("chutes"),
     cohere: createOpenAICompatibleAdapter("cohere"),
-    crofai: CrofAIAdapter,
     "canopy-wave": createOpenAICompatibleAdapter("canopy-wave"),
     tensorix: TensorixAdapter,
 	tensorx: createOpenAICompatibleAdapter("tensorx"),

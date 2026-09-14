@@ -739,7 +739,7 @@ describe("public model routes", () => {
 			if (url.includes("/rpc/get_v2_model_effective_pricing_daily")) {
 				return new Response(JSON.stringify([{
 					day_bucket: "2026-09-11",
-					provider_id: "crofai",
+					provider_id: "deepinfra",
 					pricing_plan: "standard",
 					input_tokens: 1_195,
 					output_tokens: 104,
@@ -762,7 +762,7 @@ describe("public model routes", () => {
 		expect(response.status).toBe(200);
 		await expect(response.json()).resolves.toEqual({ rows: [{
 			dayBucket: "2026-09-11",
-			providerId: "crofai",
+			providerId: "deepinfra",
 			pricingPlan: "standard",
 			inputTokens: 1_195,
 			outputTokens: 104,

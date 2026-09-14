@@ -58,7 +58,6 @@ export function irToOpenAIChat(
 				providerId === "deepseek" ||
 				providerId === "z-ai" ||
 				providerId === "zai" ||
-				providerId === "crofai" ||
 				providerId === "xiaomi" ||
 				providerId === "minimax" ||
 				providerId === "minimax-lightning" ||

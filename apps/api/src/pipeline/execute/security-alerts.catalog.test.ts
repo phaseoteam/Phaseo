@@ -10,9 +10,9 @@ const catalog = (provider: string) => JSON.parse(readFileSync(new URL(
 ), "utf8"));
 
 describe("September 5 routing alerts", () => {
-    it("rejects CrofAI vision input while preserving text requests", () => {
-        const route = catalog("crofai").find((row: any) => row.provider_api_model_id === "crofai:deepseek-v4-flash-vision-exp");
-        const candidate = { providerId: "crofai", inputModalities: route.input_modalities.split(","),
+    it("rejects unsupported vision input while preserving text requests", () => {
+        const route = catalog("deepinfra").find((row: any) => row.provider_api_model_id === "deepinfra:deepseek/deepseek-r1-0528");
+        const candidate = { providerId: "deepinfra", inputModalities: route.input_modalities.split(","),
             outputModalities: route.output_modalities.split(",") } as ProviderCandidate;
         const text: IRChatRequest = { model: route.api_model_id, stream: false,
             messages: [{ role: "user", content: [{ type: "text", text: "Hello" }] }] };

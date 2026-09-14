@@ -86,7 +86,6 @@ describe("resolveProviderExecutor", () => {
 			"zai",
 			// Additional configured compat providers
 			"cohere",
-			"crofai",
 			"crusoe",
 			"nvidia",
 			"qwen",
@@ -244,7 +243,6 @@ describe("resolveProviderExecutor", () => {
 			"clarifai",
 			"cloudflare",
 			"cohere",
-			"crofai",
 			"crusoe",
 			"featherless",
 			"friendli",

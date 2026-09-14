@@ -1421,12 +1421,6 @@
       "z-ai/glm-4.7-flash-heretic",
       "z-ai/glm-5.3-flash"
     ],
-    "crofai": [
-      "crofai/greg-1-mini",
-      "crofai/greg-2-super",
-      "crofai/greg-2-ultra",
-      "crofai/greg-rp"
-    ],
     "inflection": [
       "inflection/inflection-3-pi",
       "inflection/inflection-3-productivity"
@@ -3158,7 +3152,6 @@
     "z-ai:text.generate:z-ai-glm-5-turbo",
     "z-ai:text.generate:z-ai-glm-5.2",
     "z-ai:text.generate:z-ai-glm-5v-turbo",
-    "crofai:text.generate:moonshotai-kimi-k3",
     "wafer:text.generate:moonshotai-kimi-k3",
     "morph:text.generate:deepseek-deepseek-v4-flash",
     "morph:text.generate:google-gemma-4-31b",

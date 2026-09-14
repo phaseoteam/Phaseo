@@ -53,8 +53,6 @@ const PRIORITY_SIBLING_API_MODEL_IDS = new Map<string, string>([
 ]);
 
 const PRIORITY_HIDDEN_SAME_MODEL_KEYS = new Set([
-    "crofai:deepseek/deepseek-v4-pro",
-    "crofai:moonshotai/kimi-k2.5",
     "deepinfra:minimax/minimax-m2.7",
 ]);
 

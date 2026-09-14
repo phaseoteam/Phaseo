@@ -26,7 +26,6 @@ import { basetenQuirks } from "../providers/baseten/quirks";
 import { cohereQuirks } from "../providers/cohere/quirks";
 import { togetherQuirks } from "../providers/together/quirks";
 import { inceptionQuirks } from "../providers/inception/quirks";
-import { crofAIQuirks } from "../providers/crofai/quirks";
 import { veniceQuirks } from "../providers/venice/quirks";
 import { sakanaQuirks } from "../providers/sakana/quirks";
 import { waferQuirks } from "../providers/wafer/quirks";
@@ -92,7 +91,6 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	openai: openAIQuirks,
 	baseten: basetenQuirks,
 	cohere: cohereQuirks,
-	crofai: crofAIQuirks,
 	together: togetherQuirks,
 	inception: inceptionQuirks,
 	venice: veniceQuirks,

@@ -303,15 +303,23 @@ pub mod model_ids {
     /// Model ID: `cohere/rerank-v4.0-pro`.
     /// Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro
     pub const COHERE_RERANK_V4_0_PRO: &str = "cohere/rerank-v4.0-pro";
+    /// Deprecated: CrofAI is retired; retained for compatibility only.
+    #[deprecated(note = "CrofAI is retired; retained for compatibility only.")]
     /// Model ID: `crofai/greg-1-mini`.
     /// Model page: https://phaseo.app/models/crofai/greg-1-mini
     pub const CROFAI_GREG_1_MINI: &str = "crofai/greg-1-mini";
+    /// Deprecated: CrofAI is retired; retained for compatibility only.
+    #[deprecated(note = "CrofAI is retired; retained for compatibility only.")]
     /// Model ID: `crofai/greg-2-super`.
     /// Model page: https://phaseo.app/models/crofai/greg-2-super
     pub const CROFAI_GREG_2_SUPER: &str = "crofai/greg-2-super";
+    /// Deprecated: CrofAI is retired; retained for compatibility only.
+    #[deprecated(note = "CrofAI is retired; retained for compatibility only.")]
     /// Model ID: `crofai/greg-2-ultra`.
     /// Model page: https://phaseo.app/models/crofai/greg-2-ultra
     pub const CROFAI_GREG_2_ULTRA: &str = "crofai/greg-2-ultra";
+    /// Deprecated: CrofAI is retired; retained for compatibility only.
+    #[deprecated(note = "CrofAI is retired; retained for compatibility only.")]
     /// Model ID: `crofai/greg-rp`.
     /// Model page: https://phaseo.app/models/crofai/greg-rp
     pub const CROFAI_GREG_RP: &str = "crofai/greg-rp";
@@ -2041,6 +2049,7 @@ pub mod model_ids {
     #[deprecated(note = "Use DEEPSEEK_DEEPSEEK_V4_PRO instead. Scheduled for removal in the next major SDK release.")]
     pub const DEEPSEEK_DEEPSEEK_V4: &str = DEEPSEEK_DEEPSEEK_V4_PRO;
 
+    #[allow(deprecated)]
     pub const ALL: &[&str] = &[
         AI21_JAMBA_1_5_LARGE,
         AI21_JAMBA_1_5_MINI,

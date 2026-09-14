@@ -303,15 +303,19 @@ module PhaseoSdk
     # Model ID: cohere/rerank-v4.0-pro
     # Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro
     COHERE_RERANK_V4_0_PRO = "cohere/rerank-v4.0-pro"
+    # Deprecated: CrofAI is retired; retained for compatibility only.
     # Model ID: crofai/greg-1-mini
     # Model page: https://phaseo.app/models/crofai/greg-1-mini
     CROFAI_GREG_1_MINI = "crofai/greg-1-mini"
+    # Deprecated: CrofAI is retired; retained for compatibility only.
     # Model ID: crofai/greg-2-super
     # Model page: https://phaseo.app/models/crofai/greg-2-super
     CROFAI_GREG_2_SUPER = "crofai/greg-2-super"
+    # Deprecated: CrofAI is retired; retained for compatibility only.
     # Model ID: crofai/greg-2-ultra
     # Model page: https://phaseo.app/models/crofai/greg-2-ultra
     CROFAI_GREG_2_ULTRA = "crofai/greg-2-ultra"
+    # Deprecated: CrofAI is retired; retained for compatibility only.
     # Model ID: crofai/greg-rp
     # Model page: https://phaseo.app/models/crofai/greg-rp
     CROFAI_GREG_RP = "crofai/greg-rp"

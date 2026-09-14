@@ -255,7 +255,6 @@ const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>([
 	"chutes",
 	"cloudflare",
 	"crossmodel",
-	"crofai",
 	"deepinfra",
 	"digitalocean",
 	"empiriolabs",
@@ -1221,4 +1220,3 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		throw error;
 	}
 }
-

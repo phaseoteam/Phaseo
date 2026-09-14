@@ -5,7 +5,7 @@ import { loadBundledProviderContract } from "./load.js";
 import { getCanonicalBundleHash } from "./contract-hash.js";
 import { ProviderContractRegistry } from "./registry.js";
 
-const providers = ["ai21", "aion-labs", "akashml", "alibaba-cloud", "arcee-ai", "atlascloud", "avian", "byteplus", "cerebras", "chutes", "clarifai", "cloudflare", "cohere", "crofai", "crusoe", "darkbloom", "deepseek", "featherless", "gmicloud", "groq", "hyperbolic", "inception", "inference-net", "infermatic", "inflection", "ionrouter", "liquid-ai", "longcat", "mancer", "mara", "meta", "minimax", "moonshot-ai", "morph", "morpheus", "nebius-token-factory", "nvidia", "ovhcloud", "parasail", "perplexity", "phala", "poolside", "reka", "relace", "sakana", "sambanova", "scaleway", "sourceful", "stepfun", "tensorix", "thinking-machines", "upstage", "weights-and-biases", "xiaomi"];
+const providers = ["ai21", "aion-labs", "akashml", "alibaba-cloud", "arcee-ai", "atlascloud", "avian", "byteplus", "cerebras", "chutes", "clarifai", "cloudflare", "cohere", "crusoe", "darkbloom", "deepseek", "featherless", "gmicloud", "groq", "hyperbolic", "inception", "inference-net", "infermatic", "inflection", "ionrouter", "liquid-ai", "longcat", "mancer", "mara", "meta", "minimax", "moonshot-ai", "morph", "morpheus", "nebius-token-factory", "nvidia", "ovhcloud", "parasail", "perplexity", "phala", "poolside", "reka", "relace", "sakana", "sambanova", "scaleway", "sourceful", "stepfun", "tensorix", "thinking-machines", "upstage", "weights-and-biases", "xiaomi"];
 
 describe("enabled provider reference overlays", () => {
   for (const providerId of providers) {

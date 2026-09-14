@@ -20,6 +20,12 @@ describe("public provider routes", () => {
 				image_input_model_ids: ["openai/gpt-test:free"], image_output_model_ids: [],
 				video_input_model_ids: [], video_output_model_ids: [], audio_input_model_ids: [], audio_output_model_ids: [],
 				moderation_input_model_ids: [], moderation_output_model_ids: [], embedding_input_model_ids: [], embedding_output_model_ids: [],
+			}, {
+				provider_slug: "crofai", provider_name: "CrofAI", colour: "#7C3AED", country_code: "US", subdivision_code: null,
+				provider_family_id: null, offer_label: null, offer_scope: "global", is_gateway_provider: false, provider_status: "disabled", byok_available: false,
+				default_execution_regions: [], default_data_regions: [], prompt_training_policy: null, data_policy_tier: null, zero_data_retention: false, data_retention_days: null,
+				privacy_policy_url: null, terms_of_service_url: null, total_model_ids: [], active_model_ids: [], free_model_ids: [], requests_24h: 0, tokens_24h: 0, tokens_30d: 0, last_updated_at: "2026-09-14T00:00:00Z",
+				text_input_model_ids: [], text_output_model_ids: [], image_input_model_ids: [], image_output_model_ids: [], video_input_model_ids: [], video_output_model_ids: [], audio_input_model_ids: [], audio_output_model_ids: [], moderation_input_model_ids: [], moderation_output_model_ids: [], embedding_input_model_ids: [], embedding_output_model_ids: [],
 			}]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));

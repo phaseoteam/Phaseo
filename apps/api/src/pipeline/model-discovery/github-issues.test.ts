@@ -5,17 +5,17 @@ describe("pricing issue entries", () => {
 	it("turns provider API price diffs into a deduplicable pricing signal", () => {
 		expect(
 			buildProviderPricingIssueEntries({
-				changes: [{ providerId: "crofai", providerName: "CrofAI", samples: ["glm-5.2 | price: old -> new"] }],
+				changes: [{ providerId: "groq", providerName: "Groq", samples: ["llama-3.3 | price: old -> new"] }],
 				detectedAt: "2026-07-11T00:00:00Z",
 				detectionSource: "scheduled",
 			}),
 		).toEqual([
 			{
 				source: "provider-pricing-api",
-				providerId: "crofai",
-				providerName: "CrofAI",
+				providerId: "groq",
+				providerName: "Groq",
 				action: "change",
-				modelId: "glm-5.2",
+				modelId: "llama-3.3",
 				detectedAt: "2026-07-11T00:00:00Z",
 				detectionSource: "scheduled",
 				reason: "price: old -> new",
@@ -40,16 +40,16 @@ describe("pricing issue entries", () => {
 
 	it("turns catalogue pricing-rule samples into detailed GitHub signals", () => {
 		expect(buildCatalogPricingIssueEntries({
-			changes: [{ providerId: "crofai", providerName: "CrofAI", samples: ["glm-5.2 | text.generate | input: 0.5 -> 0.3 USD / 1M tokens"] }],
+			changes: [{ providerId: "groq", providerName: "Groq", samples: ["llama-3.3 | text.generate | input: 0.5 -> 0.3 USD / 1M tokens"] }],
 			detectedAt: "2026-07-12T00:00:00Z",
 			detectionSource: "scheduled",
 		})).toEqual([
 			{
 				source: "catalog-pricing",
-				providerId: "crofai",
-				providerName: "CrofAI",
+				providerId: "groq",
+				providerName: "Groq",
 				action: "change",
-				modelId: "glm-5.2",
+				modelId: "llama-3.3",
 				detectedAt: "2026-07-12T00:00:00Z",
 				detectionSource: "scheduled",
 				reason: "text.generate | input: 0.5 -> 0.3 USD / 1M tokens",
