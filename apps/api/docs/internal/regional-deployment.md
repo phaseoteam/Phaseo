@@ -1,7 +1,8 @@
-# Regional gateway deployment
+# Gateway deployment
 
-This runbook deploys the EU and US provider-routing Workers. These Workers use
-Cloudflare placement hints; they do not provide guaranteed data residency.
+This runbook deploys the global, EU, and US provider-routing Workers. Regional
+Workers use Cloudflare placement hints; they do not provide guaranteed data
+residency.
 
 ## Deployments
 
@@ -9,6 +10,9 @@ Cloudflare placement hints; they do not provide guaranteed data residency.
 | --- | --- | --- | --- |
 | EU | `phaseo-gateway-eu` | `eu.api.phaseo.app` | `gcp:europe-west1` |
 | US | `phaseo-gateway-us` | `us.api.phaseo.app` | `aws:us-east-1` |
+
+The global Worker is `phaseo-gateway` at `api.phaseo.app` and uses the root
+`wrangler.toml` configuration without a placement hint.
 
 Wrangler manages both custom domains. Cloudflare creates the DNS records and
 certificates during the first deployment. Remove any existing CNAME at either
@@ -62,6 +66,7 @@ From `apps/api`:
 ```powershell
 ./scripts/deploy-regional.ps1 -Region eu
 ./scripts/deploy-regional.ps1 -Region us
+./scripts/deploy-global.ps1
 ```
 
 The script performs a Wrangler dry-run unless `-Deploy` is explicitly supplied.
@@ -77,6 +82,13 @@ infisical run --env=prod -- ./scripts/deploy-regional.ps1 -Region eu -SecretsFro
 infisical run --env=prod -- ./scripts/deploy-regional.ps1 -Region us -SecretsFromEnvironment -Deploy
 ```
 
+The global deployment uses the same Infisical root through the GitHub OIDC
+action and forwards the global allowlist:
+
+```powershell
+infisical run --env=prod -- ./scripts/deploy-global.ps1 -SecretsFromEnvironment -Deploy
+```
+
 The GitHub deployment uses Infisical's OIDC action and the same script. Configure
 `INFISICAL_IDENTITY_ID` and `INFISICAL_PROJECT_SLUG` as GitHub repository
 variables. The machine identity must have read-only access to the production
@@ -84,9 +96,9 @@ gateway secrets. The action reads the production root (`/`), where the current
 gateway and provider credentials are stored. No Infisical credential needs to
 be stored in GitHub.
 
-The script deliberately ignores unrelated Infisical values. Extend
-`$regionalSecretNames` when a new region-qualified provider is enabled. A manual
-external secrets file remains available through `-SecretsFile` for recovery.
+The scripts deliberately ignore unrelated Infisical values. Extend the relevant
+allowlist when a provider is enabled for a new Worker. A manual external secrets
+file remains available through `-SecretsFile` for regional recovery.
 
 ## Verify the control plane
 
