@@ -30,7 +30,7 @@ function renderComparisonToneClass(
 		return "text-xs font-semibold text-sky-700 tabular-nums dark:text-sky-300";
 	}
 	if (accent === "free") {
-		return "text-xs font-semibold text-emerald-700 tabular-nums dark:text-emerald-300";
+		return "text-xs font-semibold text-foreground tabular-nums";
 	}
 	if (accent === "priority") {
 		return "text-xs font-semibold text-violet-700 tabular-nums dark:text-violet-300";

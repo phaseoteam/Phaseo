@@ -2456,6 +2456,8 @@ export default function ProviderCard({
 	const tablePlanLabel = getPricingPlanLabel(tablePlan);
 	const selectedPlanTheme = getPlanTheme(selectedPlan);
 	const tablePlanTheme = getPlanTheme(tablePlan);
+	const selectedPlanPriceClass = selectedPlan === "free" ? "text-foreground" : selectedPlanTheme.accent;
+	const tablePlanPriceClass = tablePlan === "free" ? "text-foreground" : tablePlanTheme.accent;
 	const performanceMetrics: Array<{
 		key: ProviderPerformanceMetricKey;
 		label: string;
@@ -2888,7 +2890,7 @@ export default function ProviderCard({
 				<div
 					className={cn(
 						"mt-0.5 text-lg font-semibold tabular-nums",
-						selectedPlanTheme.accent,
+						selectedPlanPriceClass,
 					)}
 				>
 					{fmtUSD(0)}
@@ -2925,7 +2927,7 @@ export default function ProviderCard({
 								</div>
 								{tile.tiers ? (
 									<>
-										{renderCompactTierSummary(tile.tiers, selectedPlanTheme.accent)}
+										{renderCompactTierSummary(tile.tiers, selectedPlanPriceClass)}
 										<div className="mt-0.5 text-[10px] text-muted-foreground">
 											{tile.unitLabel}
 										</div>
@@ -3028,7 +3030,7 @@ export default function ProviderCard({
 										: tile.title,
 									tile.tiers,
 									tile.unitLabel,
-									selectedPlanTheme.accent,
+									selectedPlanPriceClass,
 								)}
 							</React.Fragment>
 						))}
@@ -3076,7 +3078,7 @@ export default function ProviderCard({
 											<span
 												className={cn(
 													"text-sm font-medium tabular-nums",
-													selectedPlanTheme.accent,
+													selectedPlanPriceClass,
 												)}
 											>
 												{fmtUSD(tier.price)}
@@ -3399,12 +3401,12 @@ export default function ProviderCard({
 					</div>
 				</TableCell>
 				{isCustomerManagedPricing ? <TableCell colSpan={2} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">Customer managed</TableCell> : <>
-					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableInputPriceSummary, tablePlanTheme.accent)}</TableCell>
-					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableOutputPriceSummary, tablePlanTheme.accent)}</TableCell>
+					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableInputPriceSummary, tablePlanPriceClass)}</TableCell>
+					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableOutputPriceSummary, tablePlanPriceClass)}</TableCell>
 				</>}
 				{showCacheReadColumn && tableCacheReadPriceSummary ? (
 					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-						{renderTablePriceSummary(tableCacheReadPriceSummary, tablePlanTheme.accent)}
+						{renderTablePriceSummary(tableCacheReadPriceSummary, tablePlanPriceClass)}
 					</TableCell>
 				) : null}
 				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
@@ -3727,13 +3729,13 @@ export default function ProviderCard({
 												<div className="mt-1.5 grid grid-cols-2 gap-2">
 													<div>
 														<div className="text-[10px] font-medium text-muted-foreground">Off Peak</div>
-														<div className={cn("mt-0.5 text-xs font-semibold tabular-nums", !peakPricingActiveNow ? selectedPlanTheme.accent : "text-foreground")}>
+														<div className={cn("mt-0.5 text-xs font-semibold tabular-nums", !peakPricingActiveNow ? selectedPlanPriceClass : "text-foreground")}>
 															{fmtUSD(Number(rule.price_per_unit))}
 														</div>
 													</div>
 													<div>
 														<div className="text-[10px] font-medium text-muted-foreground">Peak</div>
-														<div className={cn("mt-0.5 text-xs font-semibold tabular-nums", peakPricingActiveNow ? selectedPlanTheme.accent : "text-foreground")}>
+														<div className={cn("mt-0.5 text-xs font-semibold tabular-nums", peakPricingActiveNow ? selectedPlanPriceClass : "text-foreground")}>
 															{fmtUSD(Number(windows[0]?.price_per_unit))}
 														</div>
 													</div>
