@@ -27,6 +27,7 @@ import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import {
 	BETA_OPEN_MODEL_INTEL,
+	LANDING_ILLUSTRATIVE_METRICS,
 	type HomeModelPrices,
 } from "./homeModelIntel";
 
@@ -856,10 +857,10 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 				>
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
-							Latency
+							Illustrative latency
 						</span>
 						<p className="mt-1 text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-							<HydratedNumberFlow value={currentModel.latencyMs} />
+							<HydratedNumberFlow value={LANDING_ILLUSTRATIVE_METRICS.latencyMs} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
 								ms
 							</span>
@@ -867,10 +868,10 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 					</div>
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
-							Throughput
+							Illustrative throughput
 						</span>
 						<p className="mt-1 text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-							<HydratedNumberFlow value={currentModel.throughputTps} />
+							<HydratedNumberFlow value={LANDING_ILLUSTRATIVE_METRICS.throughputTps} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
 								tok/s
 							</span>
