@@ -23,4 +23,13 @@ describe("isChatModelRowDisabled", () => {
 			isChatModelRowDisabled(activeModel, { capabilityCompatible: true }),
 		).toBe(false);
 	});
+
+	it("disables an inactive gateway model", () => {
+		expect(
+			isChatModelRowDisabled(
+				{ ...activeModel, gatewayStatus: "inactive" },
+				{ capabilityCompatible: true },
+			),
+		).toBe(true);
+	});
 });

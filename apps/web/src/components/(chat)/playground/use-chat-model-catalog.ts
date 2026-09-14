@@ -103,18 +103,29 @@ export function useChatModelCatalog(args: {
 	}, [selectableModels]);
 	const defaultModelId =
 		CHAT_DEFAULT_MODEL_IDS.find((modelId) =>
-			selectableModels.some((model) => model.selectorModelId === modelId && !model.chatBlockedReasons?.length),
+			selectableModels.some(
+				(model) =>
+					model.selectorModelId === modelId &&
+					model.isAvailable &&
+					!model.chatBlockedReasons?.length,
+			),
 		) ??
-		selectableModels.find((model) => !model.chatBlockedReasons?.length)?.selectorModelId ??
+		selectableModels.find(
+			(model) => model.isAvailable && !model.chatBlockedReasons?.length,
+		)?.selectorModelId ??
 		"";
 	const queryModelId = (modelParam ?? "").trim();
 	const selectableModelIdSet = useMemo(
 		() =>
 			new Set(
-				selectableModels.filter((model) => !model.chatBlockedReasons?.length).map(
-					(model) =>
-						selectorModelIdByRawModelId.get(model.modelId) ?? model.modelId,
-				),
+				selectableModels
+					.filter(
+						(model) => model.isAvailable && !model.chatBlockedReasons?.length,
+					)
+					.map(
+						(model) =>
+							selectorModelIdByRawModelId.get(model.modelId) ?? model.modelId,
+					),
 			),
 		[selectableModels, selectorModelIdByRawModelId],
 	);
@@ -276,7 +287,13 @@ export function useChatModelCatalog(args: {
 	);
 	const availableModelIdSet = useMemo(
 		() =>
-			new Set(selectableModels.filter((model) => !model.chatBlockedReasons?.length).map((model) => model.selectorModelId)),
+			new Set(
+				selectableModels
+					.filter(
+						(model) => model.isAvailable && !model.chatBlockedReasons?.length,
+					)
+					.map((model) => model.selectorModelId),
+			),
 		[selectableModels],
 	);
 	const successorModelIdByPreviousModelId = useMemo(() => {

@@ -4147,7 +4147,9 @@ function ChatPlaygroundContent({
 					orgId: model.orgId,
 					orgName: model.orgName,
 					releaseDate: model.releaseDate,
-					disabled: model.chatBlockedReasons.length > 0,
+					disabled:
+						model.gatewayStatus === "inactive" ||
+						model.chatBlockedReasons.length > 0,
 				});
 			}
 			return Array.from(byId.values());
