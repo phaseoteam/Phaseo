@@ -20,6 +20,7 @@ $regionalSecretNames = @(
     "KEY_PEPPER_ACTIVE",
     "KEY_PEPPER_PREVIOUS",
     "OPENAI_API_KEY",
+    "DOUBLEWORD_API_KEY",
     "MISTRAL_API_KEY",
     "MISTRAL_AI_API_KEY",
     "ANTHROPIC_API_KEY",

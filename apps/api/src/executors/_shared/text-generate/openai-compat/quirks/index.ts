@@ -44,6 +44,7 @@ import { gmiCloudQuirks } from "../providers/gmicloud/quirks";
 import { darkbloomQuirks } from "../providers/darkbloom/quirks";
 import { featherlessQuirks } from "../providers/featherless/quirks";
 import { inferenceNetQuirks } from "../providers/inference-net/quirks";
+import { doublewordQuirks } from "../providers/doubleword/quirks";
 import { mancerQuirks } from "../providers/mancer/quirks";
 import { maraQuirks } from "../providers/mara/quirks";
 import { poolsideQuirks } from "../providers/poolside/quirks";
@@ -112,6 +113,7 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	darkbloom: darkbloomQuirks,
 	featherless: featherlessQuirks,
 	"inference-net": inferenceNetQuirks,
+	doubleword: doublewordQuirks,
 	mancer: mancerQuirks,
 	mara: maraQuirks,
 	poolside: poolsideQuirks,

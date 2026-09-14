@@ -11,6 +11,7 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providerIds.has("ambient")).toBe(true);
 		expect(providerIds.has("featherless")).toBe(true);
 		expect(providerIds.has("inference-net")).toBe(true);
+		expect(providerIds.has("doubleword")).toBe(true);
 		expect(providerIds.has("mancer")).toBe(true);
 		expect(providerIds.has("mara")).toBe(true);
 		expect(providerIds.has("minimax")).toBe(true);

@@ -143,6 +143,8 @@ export type GatewayBindings = {
     IOINTELLIGENCE_BASE_URL?: string;
     DEEPSEEK_API_KEY?: string;
     DEEPSEEK_BASE_URL?: string;
+    DOUBLEWORD_API_KEY?: string;
+    DOUBLEWORD_BASE_URL?: string;
     DARKBLOOM_API_KEY?: string;
     DARKBLOOM_BASE_URL?: string;
     DIGITALOCEAN_TOKEN?: string;

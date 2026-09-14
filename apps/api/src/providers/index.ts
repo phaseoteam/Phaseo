@@ -84,6 +84,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     infermatic: createOpenAICompatibleAdapter("infermatic"),
     inflection: createOpenAICompatibleAdapter("inflection"),
     "inference-net": createOpenAICompatibleAdapter("inference-net"),
+    doubleword: createOpenAICompatibleAdapter("doubleword"),
     ionrouter: createOpenAICompatibleAdapter("ionrouter"),
     longcat: createOpenAICompatibleAdapter("longcat"),
     mancer: createOpenAICompatibleAdapter("mancer"),

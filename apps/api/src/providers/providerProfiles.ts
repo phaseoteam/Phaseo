@@ -782,6 +782,29 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		},
 	},
 	{
+		id: "doubleword",
+		adapterBackedOverrides: {
+			"image.generate": false,
+			"image.edit": false,
+			"audio.speech": false,
+			"audio.transcription": false,
+			"audio.translations": false,
+			"video.generate": false,
+		},
+		text: {
+			paramPolicy: {
+				supportedParams: [
+					"max_tokens", "temperature", "top_p", "frequency_penalty",
+					"presence_penalty", "response_format", "tools", "reasoning.effort", "service_tier",
+				],
+			},
+			normalize: {
+				maxTemperature: 2,
+				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh", "max"],
+			},
+		},
+	},
+	{
 		id: "io-net",
 		adapterBackedOverrides: {
 			"image.generate": false,
