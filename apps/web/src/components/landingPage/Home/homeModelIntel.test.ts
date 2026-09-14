@@ -1,5 +1,8 @@
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
-import { buildHomeModelPrices } from "./homeModelIntel";
+import {
+	BETA_OPEN_MODEL_INTEL,
+	buildHomeModelPrices,
+} from "./homeModelIntel";
 
 function route(
 	values: Partial<GatewaySupportedModel> & Pick<GatewaySupportedModel, "modelId">,
@@ -76,5 +79,15 @@ describe("buildHomeModelPrices", () => {
 		]);
 
 		expect(prices).toEqual({});
+	});
+});
+
+describe("BETA_OPEN_MODEL_INTEL", () => {
+	it("keeps distinct illustrative metrics for each animated model card", () => {
+		const metricPairs = BETA_OPEN_MODEL_INTEL.map(
+			({ latencyMs, throughputTps }) => `${latencyMs}:${throughputTps}`,
+		);
+
+		expect(new Set(metricPairs).size).toBe(BETA_OPEN_MODEL_INTEL.length);
 	});
 });
