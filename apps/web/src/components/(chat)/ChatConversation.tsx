@@ -6,6 +6,11 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { MessageScroller } from "@shadcn/react/message-scroller";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
+import {
+	ChatMessageNavigationRail,
+	type ChatMessageNavigationHandler,
+} from "@/components/(chat)/ChatMessageNavigationRail";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { appendChatSelectionPrompt } from "@/components/(chat)/chatSelectionActions";
 import type { ChatRequestErrorDetails } from "@/components/(chat)/ChatRequestErrorNotice";
 import {
@@ -186,6 +191,19 @@ export function ChatConversation({
 	const [metadataOpenId, setMetadataOpenId] = useState<string | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 	const scrollViewportRef = useRef<HTMLDivElement | null>(null);
+	const messageNavigationHandlerRef =
+		useRef<ChatMessageNavigationHandler | null>(null);
+	const handleNavigationHandlerChange = useCallback(
+		(handler: ChatMessageNavigationHandler | null) => {
+			messageNavigationHandlerRef.current = handler;
+		},
+		[],
+	);
+	const handleNavigateToMessage = useCallback<ChatMessageNavigationHandler>(
+		(messageId, options) =>
+			messageNavigationHandlerRef.current?.(messageId, options) ?? false,
+		[],
+	);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const audioInputRef = useRef<HTMLInputElement | null>(null);
 	const [attachments, setAttachments] = useState<File[]>([]);
@@ -920,9 +938,17 @@ export function ChatConversation({
 				scrollMargin={24}
 			>
 				<MessageScroller.Root className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden overscroll-contain">
-					<MessageScroller.Viewport
-						ref={scrollViewportRef}
-						className="h-full min-w-0 w-full overflow-y-auto overscroll-contain"
+					<ScrollArea
+						className="h-full min-w-0 w-full"
+						viewportClassName="overscroll-contain"
+						viewportRef={scrollViewportRef}
+						viewportRender={
+							<MessageScroller.Viewport
+								aria-label="Messages"
+								role="region"
+							/>
+						}
+						scrollBarClassName="bg-background/50"
 					>
 						<MessageScroller.Content
 							className={`mx-auto flex min-w-0 w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8 ${hasNoMessages ? "min-h-full" : ""}`}
@@ -948,7 +974,8 @@ export function ChatConversation({
 								onSelectVariant={onSelectVariant}
 								onCopy={handleCopy}
 								requestError={requestError}
-								scrollViewportRef={scrollViewportRef}
+							scrollViewportRef={scrollViewportRef}
+								onNavigationHandlerChange={handleNavigationHandlerChange}
 								responseLayout={responseLayout}
 								modelOrderIds={selectedModelIds}
 								onSelectPrompt={handleSelectEvaluationPrompt}
@@ -957,7 +984,12 @@ export function ChatConversation({
 								onOpenModelPicker={onOpenModelPicker}
 							/>
 						</MessageScroller.Content>
-					</MessageScroller.Viewport>
+					</ScrollArea>
+					<ChatMessageNavigationRail
+						messages={activeThread?.messages ?? []}
+						onNavigate={handleNavigateToMessage}
+						scrollViewportRef={scrollViewportRef}
+					/>
 					<MessageScroller.Button
 						aria-label="Scroll to latest message"
 						className="absolute bottom-4 left-1/2 z-20 inline-flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active=false]:pointer-events-none data-[active=false]:opacity-0"

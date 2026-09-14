@@ -10,7 +10,10 @@ import {
 	type RefObject,
 } from "react";
 import Link from "next/link";
-import { MessageScroller } from "@shadcn/react/message-scroller";
+import {
+	MessageScroller,
+	useMessageScroller,
+} from "@shadcn/react/message-scroller";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Streamdown } from "streamdown";
 import { Logo } from "@/components/Logo";
@@ -77,6 +80,7 @@ import {
 	getRequestContextMarker,
 	type ChatMessageMarker,
 } from "@/components/(chat)/ChatMessageMarkers";
+import type { ChatMessageNavigationHandler } from "@/components/(chat)/ChatMessageNavigationRail";
 import {
 	formatChatTimeSeparator,
 	formatModelChangeMarker,
@@ -370,6 +374,9 @@ type ChatConversationMessagesProps = {
 	onCopy: (text: string) => boolean | Promise<boolean>;
 	requestError?: ChatRequestErrorDetails | null;
 	scrollViewportRef: RefObject<HTMLDivElement | null>;
+	onNavigationHandlerChange?: (
+		handler: ChatMessageNavigationHandler | null,
+	) => void;
 	responseLayout?: ChatResponseLayout;
 	modelOrderIds?: string[];
 	onSelectPrompt: (prompt: string) => void;
@@ -400,6 +407,7 @@ export function ChatConversationMessages({
 	onCopy,
 	requestError = null,
 	scrollViewportRef,
+	onNavigationHandlerChange,
 	responseLayout = "sequential",
 	modelOrderIds = [],
 	onSelectPrompt,
@@ -407,6 +415,7 @@ export function ChatConversationMessages({
 	onSelectionAction,
 	onOpenModelPicker,
 }: ChatConversationMessagesProps) {
+	const { scrollToMessage } = useMessageScroller();
 	const [copiedMessageKey, setCopiedMessageKey] = useState<string | null>(null);
 	const copiedResetTimeoutRef = useRef<number | null>(null);
 
@@ -563,6 +572,41 @@ export function ChatConversationMessages({
 		overscan: VIRTUAL_MESSAGE_OVERSCAN,
 	});
 	const virtualItems = messageVirtualizer.getVirtualItems();
+	const navigateToMessage = useCallback<ChatMessageNavigationHandler>(
+		(messageId, options) => {
+			const messageIndex = messages.findIndex(
+				(message) => message.id === messageId,
+			);
+			if (messageIndex < 0) return false;
+
+			if (shouldVirtualizeMessages) {
+				const targetOffset = messageVirtualizer.getOffsetForIndex(
+					messageIndex,
+					"start",
+				)?.[0];
+				if (targetOffset !== undefined) {
+					messageVirtualizer.scrollToOffset(
+						Math.max(0, targetOffset - (options?.scrollMargin ?? 0)),
+						{ behavior: options?.behavior },
+					);
+					return true;
+				}
+
+				messageVirtualizer.scrollToIndex(messageIndex, {
+					align: "start",
+					behavior: options?.behavior,
+				});
+				return true;
+			}
+
+			return scrollToMessage(messageId, options);
+		},
+		[messages, messageVirtualizer, scrollToMessage, shouldVirtualizeMessages],
+	);
+	useEffect(() => {
+		onNavigationHandlerChange?.(navigateToMessage);
+		return () => onNavigationHandlerChange?.(null);
+	}, [navigateToMessage, onNavigationHandlerChange]);
 	const measureVirtualMessage = useCallback(
 		(node: HTMLDivElement | null) => {
 			if (!node) return;
@@ -1553,14 +1597,19 @@ export function ChatConversationMessages({
 											)}
 										>
 											{turn.user ? (
-												renderMessage(
-													turn.user.message,
-													turn.user.messageIndex,
-													{
-														hideMarkers: true,
-														wrapInScroller: false,
-													},
-												)
+												<MessageScroller.Item
+													messageId={turn.user.message.id}
+													scrollAnchor
+												>
+													{renderMessage(
+														turn.user.message,
+														turn.user.messageIndex,
+														{
+															hideMarkers: true,
+															wrapInScroller: false,
+														},
+													)}
+												</MessageScroller.Item>
 											) : null}
 											{assistantItems.length > 0 ? (
 												assistantItems.map((item) => (
