@@ -10,6 +10,7 @@ import {
 } from "react";
 import { FileText } from "lucide-react";
 import {
+	type MessageScrollerScrollOptions,
 	useMessageScroller,
 	useMessageScrollerScrollable,
 	useMessageScrollerVisibility,
@@ -22,6 +23,11 @@ type ConversationTurn = {
 	assistant: ChatMessage | null;
 	messageIds: string[];
 };
+
+export type ChatMessageNavigationHandler = (
+	messageId: string,
+	options?: MessageScrollerScrollOptions,
+) => boolean;
 
 const HOVER_MARKER_WIDTHS = [28, 18, 12, 8] as const;
 const DEFAULT_MARKER_WIDTH = 6;
@@ -113,9 +119,11 @@ function getMarkerClass(
 
 export function ChatMessageNavigationRail({
 	messages,
+	onNavigate,
 	scrollViewportRef,
 }: {
 	messages: ChatMessage[];
+	onNavigate?: ChatMessageNavigationHandler;
 	scrollViewportRef?: RefObject<HTMLDivElement | null>;
 }) {
 	const { scrollToMessage } = useMessageScroller();
@@ -212,7 +220,7 @@ export function ChatMessageNavigationRail({
 	const handleNavigate = (messageId: string) => {
 		clearHidePreview();
 		setHoveredTurnId(messageId);
-		const didNavigate = scrollToMessage(messageId, {
+		const didNavigate = (onNavigate ?? scrollToMessage)(messageId, {
 			align: "start",
 			behavior: "smooth",
 			scrollMargin: -12,

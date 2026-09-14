@@ -6,7 +6,10 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { MessageScroller } from "@shadcn/react/message-scroller";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
-import { ChatMessageNavigationRail } from "@/components/(chat)/ChatMessageNavigationRail";
+import {
+	ChatMessageNavigationRail,
+	type ChatMessageNavigationHandler,
+} from "@/components/(chat)/ChatMessageNavigationRail";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { appendChatSelectionPrompt } from "@/components/(chat)/chatSelectionActions";
 import type { ChatRequestErrorDetails } from "@/components/(chat)/ChatRequestErrorNotice";
@@ -188,6 +191,19 @@ export function ChatConversation({
 	const [metadataOpenId, setMetadataOpenId] = useState<string | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 	const scrollViewportRef = useRef<HTMLDivElement | null>(null);
+	const messageNavigationHandlerRef =
+		useRef<ChatMessageNavigationHandler | null>(null);
+	const handleNavigationHandlerChange = useCallback(
+		(handler: ChatMessageNavigationHandler | null) => {
+			messageNavigationHandlerRef.current = handler;
+		},
+		[],
+	);
+	const handleNavigateToMessage = useCallback<ChatMessageNavigationHandler>(
+		(messageId, options) =>
+			messageNavigationHandlerRef.current?.(messageId, options) ?? false,
+		[],
+	);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const audioInputRef = useRef<HTMLInputElement | null>(null);
 	const [attachments, setAttachments] = useState<File[]>([]);
@@ -958,7 +974,8 @@ export function ChatConversation({
 								onSelectVariant={onSelectVariant}
 								onCopy={handleCopy}
 								requestError={requestError}
-								scrollViewportRef={scrollViewportRef}
+							scrollViewportRef={scrollViewportRef}
+								onNavigationHandlerChange={handleNavigationHandlerChange}
 								responseLayout={responseLayout}
 								modelOrderIds={selectedModelIds}
 								onSelectPrompt={handleSelectEvaluationPrompt}
@@ -970,6 +987,7 @@ export function ChatConversation({
 					</ScrollArea>
 					<ChatMessageNavigationRail
 						messages={activeThread?.messages ?? []}
+						onNavigate={handleNavigateToMessage}
 						scrollViewportRef={scrollViewportRef}
 					/>
 					<MessageScroller.Button
