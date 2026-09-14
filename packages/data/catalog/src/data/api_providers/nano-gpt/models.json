@@ -1674,7 +1674,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -1686,7 +1686,7 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
       "execution": [
@@ -1733,7 +1733,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": [],
         "reasoning": null,
         "tool_call": null,
@@ -1745,7 +1745,7 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
       "execution": [

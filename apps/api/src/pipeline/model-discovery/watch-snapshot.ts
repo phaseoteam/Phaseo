@@ -121,9 +121,7 @@ function normalizeProviderApiPricingDetails(
 		};
 	}
 
-	if (providerId !== "crofai") return pricingDetails ?? null;
-	const record = asRecord(pricingDetails);
-	return record?.pricing ? normalizeJson(record.pricing) : pricingDetails ?? null;
+	return pricingDetails ?? null;
 }
 
 export function toProviderApiPricingFingerprint(pricingDetails: unknown): string | null {
@@ -155,15 +153,6 @@ export function extractProviderApiModelSnapshot(
 	pricingDetails: unknown | null
 ): ProviderApiModelSnapshot {
 	const normalizedPricingDetails = normalizeProviderApiPricingDetails(providerId, modelDetails, pricingDetails);
-	if (providerId === "crofai") {
-		return {
-			contextLength: null,
-			maxCompletionTokens: null,
-			pricingDetails: normalizedPricingDetails,
-			pricingFingerprint: toProviderApiPricingFingerprint(normalizedPricingDetails),
-		};
-	}
-
 	const contextLength = modelDetails
 		? toNullableInteger(modelDetails.contextLength ?? modelDetails.context_length)
 		: null;

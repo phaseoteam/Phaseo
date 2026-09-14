@@ -1167,15 +1167,6 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		},
 	},
 	{
-		id: "crofai",
-		textOnly: true,
-		text: {
-			paramPolicy: {
-				supportedParams: ["service_tier"],
-			},
-		},
-	},
-	{
 		id: "wafer",
 		aliases: ["wafer-zdr"],
 		textOnly: true,

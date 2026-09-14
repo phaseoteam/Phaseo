@@ -308,18 +308,6 @@ final class ModelIds
     /** Model ID: cohere/rerank-v4.0-pro. Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro */
     public const COHERE_RERANK_V4_0_PRO = 'cohere/rerank-v4.0-pro';
 
-    /** Model ID: crofai/greg-1-mini. Model page: https://phaseo.app/models/crofai/greg-1-mini */
-    public const CROFAI_GREG_1_MINI = 'crofai/greg-1-mini';
-
-    /** Model ID: crofai/greg-2-super. Model page: https://phaseo.app/models/crofai/greg-2-super */
-    public const CROFAI_GREG_2_SUPER = 'crofai/greg-2-super';
-
-    /** Model ID: crofai/greg-2-ultra. Model page: https://phaseo.app/models/crofai/greg-2-ultra */
-    public const CROFAI_GREG_2_ULTRA = 'crofai/greg-2-ultra';
-
-    /** Model ID: crofai/greg-rp. Model page: https://phaseo.app/models/crofai/greg-rp */
-    public const CROFAI_GREG_RP = 'crofai/greg-rp';
-
     /** Model ID: deepseek/deepseek-ocr. Model page: https://phaseo.app/models/deepseek/deepseek-ocr */
     public const DEEPSEEK_DEEPSEEK_OCR = 'deepseek/deepseek-ocr';
 

@@ -35,7 +35,7 @@ const operationalProviders = [
 ] as const;
 
 const managedProcessorTerms = ["Amazon Web Services (Bedrock)", "Anthropic", "Google Cloud (Vertex AI)", "Groq", "Mistral AI", "OpenAI"] as const;
-const managedPendingContract = ["AionLabs", "AkashML", "Alibaba Cloud", "AtlasCloud", "Baseten", "BytePlus", "Cerebras", "CrofAI", "DeepInfra", "GMICloud", "Meta Model API", "Morph", "Nebius Token Factory", "NovitaAI", "SiliconFlow", "Venice", "Wafer", "Xiaomi", "z.AI"] as const;
+const managedPendingContract = ["AionLabs", "AkashML", "Alibaba Cloud", "AtlasCloud", "Baseten", "BytePlus", "Cerebras", "DeepInfra", "GMICloud", "Meta Model API", "Morph", "Nebius Token Factory", "NovitaAI", "SiliconFlow", "Venice", "Wafer", "Xiaomi", "z.AI"] as const;
 const managedRestricted = ["Arcee AI", "Cohere", "DeepSeek", "ElevenLabs", "Fireworks AI", "Google AI Studio", "MiniMax", "Moonshot AI", "Poolside", "Sakana AI", "Together AI", "Voyage AI", "Weights & Biases"] as const;
 
 export default function SubprocessorsPage() {

@@ -12,7 +12,6 @@ import { CEREBRAS_OPENAI_COMPAT_CONFIGS } from "../cerebras/config";
 import { CLARIFAI_OPENAI_COMPAT_CONFIGS } from "../clarifai/config";
 import { CHUTES_OPENAI_COMPAT_CONFIGS } from "../chutes/config";
 import { COHERE_OPENAI_COMPAT_CONFIGS } from "../cohere/config";
-import { CROFAI_OPENAI_COMPAT_CONFIGS } from "../crofai/config";
 import { CANOPY_WAVE_OPENAI_COMPAT_CONFIGS } from "../canopy-wave/config";
 import { VOYAGE_OPENAI_COMPAT_CONFIGS } from "../voyage/config";
 import { DEEPINFRA_OPENAI_COMPAT_CONFIGS } from "../deepinfra/config";
@@ -94,7 +93,6 @@ export const OPENAI_COMPAT_CONFIG = {
 	...CLARIFAI_OPENAI_COMPAT_CONFIGS,
 	...CHUTES_OPENAI_COMPAT_CONFIGS,
 	...COHERE_OPENAI_COMPAT_CONFIGS,
-	...CROFAI_OPENAI_COMPAT_CONFIGS,
 	...CANOPY_WAVE_OPENAI_COMPAT_CONFIGS,
 	...VOYAGE_OPENAI_COMPAT_CONFIGS,
 	...DEEPINFRA_OPENAI_COMPAT_CONFIGS,

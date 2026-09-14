@@ -425,7 +425,7 @@ describe("buildDiscordMessage", () => {
 		setupRuntimeFromEnv({} as any);
 		expect(buildDiscordMessage({
 			modelChanges: [],
-			pricing: { updatesDetected: 1, providerChanges: [{ providerId: "crofai", updates: 1, samples: ["glm-5.2 | price changed"] }] },
+			pricing: { updatesDetected: 1, providerChanges: [{ providerId: "groq", updates: 1, samples: ["llama-3.3 | price changed"] }] },
 			providerApiPricing: { updatesDetected: 1, providerChanges: [{ providerId: "deepinfra", updates: 1, samples: ["model | price changed"] }] },
 			pricingTable: { updatesDetected: 0, providerChanges: [], errors: [] },
 			configuredModelCoverage: { updatesDetected: 0, providerChanges: [] },

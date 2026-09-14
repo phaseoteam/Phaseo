@@ -507,7 +507,7 @@ describe("emitGatewayRequestEvent", () => {
 			workspaceId: "ws_default_tier",
 			providers: [],
 		} as unknown as PipelineContext;
-		await emitGatewayRequestEvent({ ctx, provider: "crofai", statusCode: 200, success: true });
+		await emitGatewayRequestEvent({ ctx, provider: "deepinfra", statusCode: 200, success: true });
 		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
 		expect(event.service_tier).toBe("standard");
 	});
@@ -520,7 +520,7 @@ describe("emitGatewayRequestEvent", () => {
 			workspaceId: "ws_batch_default_tier",
 			providers: [],
 		} as unknown as PipelineContext;
-		await emitGatewayRequestEvent({ ctx, provider: "crofai", statusCode: 200, success: true });
+		await emitGatewayRequestEvent({ ctx, provider: "deepinfra", statusCode: 200, success: true });
 		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
 		expect(event.service_tier).toBe("batch");
 	});

@@ -40,8 +40,7 @@ describe("text provider profiles", () => {
 		).toEqual(["none", "low", "medium", "high", "xhigh", "max"]);
 	});
 
-	it("allows gateway service tiers for CrofAI and Wafer", () => {
-		expect(resolveTextProviderParamPolicyOverride({ providerId: "crofai", paramPathCandidates: ["service_tier"] })).toBe(true);
+	it("allows gateway service tiers for Wafer", () => {
 		expect(resolveTextProviderParamPolicyOverride({ providerId: "wafer", paramPathCandidates: ["service_tier"] })).toBe(true);
 	});
 

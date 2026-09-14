@@ -127,12 +127,8 @@ export type GatewayBindings = {
     CLOUDFLARE_AI_GATEWAY_ID?: string;
     COHERE_API_KEY?: string;
     COHERE_BASE_URL?: string;
-    CROFAI_API_KEY?: string;
     CANOPYWAVE_API_KEY?: string;
     CANOPYWAVE_BASE_URL?: string;
-    CROFAI_BASE_URL?: string;
-    CROF_AI_API_KEY?: string;
-    CROF_AI_BASE_URL?: string;
     VOYAGE_API_KEY?: string;
     VOYAGE_BASE_URL?: string;
     CRUSOE_API_KEY?: string;

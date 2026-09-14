@@ -307,18 +307,6 @@ const (
 	// Model ID: cohere/rerank-v4.0-pro
 	// Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro
 	ModelIDCohereRerankV40Pro gen.ModelId = "cohere/rerank-v4.0-pro"
-	// Model ID: crofai/greg-1-mini
-	// Model page: https://phaseo.app/models/crofai/greg-1-mini
-	ModelIDCrofaiGreg1Mini gen.ModelId = "crofai/greg-1-mini"
-	// Model ID: crofai/greg-2-super
-	// Model page: https://phaseo.app/models/crofai/greg-2-super
-	ModelIDCrofaiGreg2Super gen.ModelId = "crofai/greg-2-super"
-	// Model ID: crofai/greg-2-ultra
-	// Model page: https://phaseo.app/models/crofai/greg-2-ultra
-	ModelIDCrofaiGreg2Ultra gen.ModelId = "crofai/greg-2-ultra"
-	// Model ID: crofai/greg-rp
-	// Model page: https://phaseo.app/models/crofai/greg-rp
-	ModelIDCrofaiGregRp gen.ModelId = "crofai/greg-rp"
 	// Model ID: deepseek/deepseek-ocr
 	// Model page: https://phaseo.app/models/deepseek/deepseek-ocr
 	ModelIDDeepseekDeepseekOcr gen.ModelId = "deepseek/deepseek-ocr"
@@ -2146,10 +2134,6 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDCohereRerankV35,
 	ModelIDCohereRerankV40Fast,
 	ModelIDCohereRerankV40Pro,
-	ModelIDCrofaiGreg1Mini,
-	ModelIDCrofaiGreg2Super,
-	ModelIDCrofaiGreg2Ultra,
-	ModelIDCrofaiGregRp,
 	ModelIDDeepseekDeepseekOcr,
 	ModelIDDeepseekDeepseekOcr2,
 	ModelIDDeepseekDeepseekR1,

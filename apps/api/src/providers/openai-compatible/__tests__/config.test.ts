@@ -986,37 +986,6 @@ describe("resolveOpenAICompatKey", () => {
 		);
 	});
 
-	it("accepts CROF_AI_API_KEY fallback for crofai", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			CROF_AI_API_KEY: "test-crof-key-fallback",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "crofai",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-crof-key-fallback");
-		expect(resolved.source).toBe("gateway");
-	});
-
-	it("prefers CROFAI_API_KEY over CROF_AI_API_KEY for crofai", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			CROFAI_API_KEY: "test-crof-key-primary",
-			CROF_AI_API_KEY: "test-crof-key-fallback",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "crofai",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-crof-key-primary");
-		expect(resolved.source).toBe("gateway");
-	});
-
 	it("accepts NEBIUS_TOKEN_FACTORY_API_KEY fallback for Nebius providers", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({

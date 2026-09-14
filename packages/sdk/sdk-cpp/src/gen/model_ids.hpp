@@ -306,18 +306,6 @@ inline constexpr std::string_view COHERE_RERANK_V4_0_FAST = "cohere/rerank-v4.0-
 // Model ID: cohere/rerank-v4.0-pro
 // Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro
 inline constexpr std::string_view COHERE_RERANK_V4_0_PRO = "cohere/rerank-v4.0-pro";
-// Model ID: crofai/greg-1-mini
-// Model page: https://phaseo.app/models/crofai/greg-1-mini
-inline constexpr std::string_view CROFAI_GREG_1_MINI = "crofai/greg-1-mini";
-// Model ID: crofai/greg-2-super
-// Model page: https://phaseo.app/models/crofai/greg-2-super
-inline constexpr std::string_view CROFAI_GREG_2_SUPER = "crofai/greg-2-super";
-// Model ID: crofai/greg-2-ultra
-// Model page: https://phaseo.app/models/crofai/greg-2-ultra
-inline constexpr std::string_view CROFAI_GREG_2_ULTRA = "crofai/greg-2-ultra";
-// Model ID: crofai/greg-rp
-// Model page: https://phaseo.app/models/crofai/greg-rp
-inline constexpr std::string_view CROFAI_GREG_RP = "crofai/greg-rp";
 // Model ID: deepseek/deepseek-ocr
 // Model page: https://phaseo.app/models/deepseek/deepseek-ocr
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_OCR = "deepseek/deepseek-ocr";
@@ -2043,7 +2031,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 678> ALL = {
+inline constexpr std::array<std::string_view, 674> ALL = {
 	AI21_JAMBA_1_5_LARGE,
 	AI21_JAMBA_1_5_MINI,
 	AI21_JAMBA_LARGE_1_5,
@@ -2144,10 +2132,6 @@ inline constexpr std::array<std::string_view, 678> ALL = {
 	COHERE_RERANK_V3_5,
 	COHERE_RERANK_V4_0_FAST,
 	COHERE_RERANK_V4_0_PRO,
-	CROFAI_GREG_1_MINI,
-	CROFAI_GREG_2_SUPER,
-	CROFAI_GREG_2_ULTRA,
-	CROFAI_GREG_RP,
 	DEEPSEEK_DEEPSEEK_OCR,
 	DEEPSEEK_DEEPSEEK_OCR_2,
 	DEEPSEEK_DEEPSEEK_R1,

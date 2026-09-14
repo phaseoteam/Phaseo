@@ -203,14 +203,6 @@ export const ModelIds = {
   COHERE_RERANK_V4_0_FAST: "cohere/rerank-v4.0-fast",
   /** Model ID: `cohere/rerank-v4.0-pro`. Model page: https://phaseo.app/models/cohere/rerank-v4.0-pro */
   COHERE_RERANK_V4_0_PRO: "cohere/rerank-v4.0-pro",
-  /** Model ID: `crofai/greg-1-mini`. Model page: https://phaseo.app/models/crofai/greg-1-mini */
-  CROFAI_GREG_1_MINI: "crofai/greg-1-mini",
-  /** Model ID: `crofai/greg-2-super`. Model page: https://phaseo.app/models/crofai/greg-2-super */
-  CROFAI_GREG_2_SUPER: "crofai/greg-2-super",
-  /** Model ID: `crofai/greg-2-ultra`. Model page: https://phaseo.app/models/crofai/greg-2-ultra */
-  CROFAI_GREG_2_ULTRA: "crofai/greg-2-ultra",
-  /** Model ID: `crofai/greg-rp`. Model page: https://phaseo.app/models/crofai/greg-rp */
-  CROFAI_GREG_RP: "crofai/greg-rp",
   /** Model ID: `deepseek/deepseek-ocr`. Model page: https://phaseo.app/models/deepseek/deepseek-ocr */
   DEEPSEEK_DEEPSEEK_OCR: "deepseek/deepseek-ocr",
   /** Model ID: `deepseek/deepseek-ocr-2`. Model page: https://phaseo.app/models/deepseek/deepseek-ocr-2 */

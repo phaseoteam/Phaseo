@@ -88,7 +88,6 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 		apiKeyEnv: ["CLOUDFLARE_WORKERS_AI_SYNC_API_TOKEN", "CLOUDFLARE_API_TOKEN"],
 	},
 	cohere: { providerName: "Cohere" },
-	crofai: { providerName: "CrofAI", authStyle: "none" },
 	"canopy-wave": { providerName: "Canopy Wave", authStyle: "bearer" },
 	deepinfra: { providerName: "DeepInfra", authStyle: "optional_bearer" },
 	deepseek: { providerName: "DeepSeek" },

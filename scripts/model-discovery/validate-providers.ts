@@ -27,7 +27,6 @@ const EXPECTED_PLATFORM_NAMES = [
     "Clarifai",
     "Cloudflare",
     "Cohere",
-    "CrofAI",
     "Crusoe",
     "DeepInfra",
     "DeepSeek",

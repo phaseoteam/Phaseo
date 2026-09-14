@@ -41,7 +41,6 @@ import { executor as googleAiStudioVideo } from "./google/video-generate";
 import { executor as deepinfraText } from "./deepinfra/text-generate";
 import { executor as ioNetText } from "./io-net/text-generate";
 import { executor as togetherText } from "./together/text-generate";
-import { executor as crofaiText } from "./crofai/text-generate";
 import { executor as canopyWaveText } from "./canopy-wave/text-generate";
 import { executor as tensorixText } from "./tensorix/text-generate";
 import { executor as basetenText } from "./baseten/text-generate";
@@ -342,9 +341,6 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		rerank: openaiRerank,
 		"audio.transcription": nonTextAdapterExecutor,
 		parse: nonTextAdapterExecutor,
-	},
-	crofai: {
-		"text.generate": crofaiText,
 	},
 	"canopy-wave": {
 		"text.generate": canopyWaveText,

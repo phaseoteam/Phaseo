@@ -7,7 +7,6 @@ import type { ProviderExecuteArgs } from "../types";
 import { resolveProviderKey, type ResolvedKey } from "../keys";
 import type { OpenAICompatConfig } from "./types";
 import { OPENAI_COMPAT_CONFIG } from "./registry";
-import { CROFAI_API_KEY_ENVS, CROFAI_BASE_URL_ENVS } from "../crofai/config";
 import { WEIGHTSANDBIASES_API_KEY_ENVS } from "../weights-and-biases/config";
 import { ARCEE_API_KEY_ENVS } from "../arcee/config";
 import { ALIBABA_CLOUD_API_KEY_ENVS } from "../alibaba/config";
@@ -138,9 +137,7 @@ export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfi
 	const baseUrl =
 		((providerId === "byteplus" || providerId === "bytedance-seed")
 			? readFirstBinding(BYTEPLUS_BASE_URL_ENVS)
-			: (providerId === "crofai")
-				? readFirstBinding(CROFAI_BASE_URL_ENVS)
-				: undefined) ||
+			: undefined) ||
 		resolveNebiusBaseUrl(canonicalProviderId) ||
 		(config.baseUrlEnv && bindings[config.baseUrlEnv]) ||
 		resolveCloudflareWorkersAIBaseUrl(canonicalProviderId) ||
@@ -277,9 +274,6 @@ export function resolveOpenAICompatKey(args: Pick<ProviderExecuteArgs, "provider
 	}
 	if (args.providerId === "byteplus" || args.providerId === "bytedance-seed") {
 		return resolveProviderKey(args, () => readFirstBinding(BYTEPLUS_API_KEY_ENVS));
-	}
-	if (args.providerId === "crofai") {
-		return resolveProviderKey(args, () => readFirstBinding(CROFAI_API_KEY_ENVS));
 	}
 	if (args.providerId === "inference-net") {
 		return resolveProviderKey(args, () => readFirstBinding(INFERENCE_NET_API_KEY_ENVS));

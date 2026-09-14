@@ -4,7 +4,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-pro",
     "provider_model_slug": "deepseek-v4-pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q6_K",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -15,7 +15,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -37,8 +37,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -62,7 +62,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-pro",
     "provider_model_slug": "deepseek-v4-pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -73,7 +73,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -104,8 +104,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -280,7 +280,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-pro-lightning",
     "provider_model_slug": "deepseek-v4-pro-lightning",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -291,7 +291,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -313,8 +313,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -407,7 +407,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-flash",
     "provider_model_slug": "deepseek-v4-flash",
     "internal_model_id": "deepseek/deepseek-v4-flash",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -418,7 +418,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -449,8 +449,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -474,7 +474,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-flash-0731",
     "provider_model_slug": "deepseek-v4-flash-0731",
     "internal_model_id": "deepseek/deepseek-v4-flash-0731",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -485,7 +485,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -516,8 +516,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -548,7 +548,7 @@
     "provider_api_model_id": "crofai:deepseek-v3.2",
     "provider_model_slug": "deepseek-v3.2",
     "internal_model_id": "deepseek/deepseek-v3.2",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q6_K",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -559,7 +559,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -581,8 +581,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -606,7 +606,7 @@
     "provider_api_model_id": "crofai:mimo-v2.5-pro",
     "provider_model_slug": "mimo-v2.5-pro",
     "internal_model_id": "xiaomi/mimo-v2.5-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q6_K",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -617,7 +617,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -639,8 +639,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -664,7 +664,7 @@
     "provider_api_model_id": "crofai:mimo-v2.5-pro",
     "provider_model_slug": "mimo-v2.5-pro",
     "internal_model_id": "xiaomi/mimo-v2.5-pro",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -675,7 +675,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -706,8 +706,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -796,7 +796,7 @@
     "provider_api_model_id": "crofai:glm-5.1",
     "provider_model_slug": "glm-5.1",
     "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q6_K",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -807,7 +807,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -829,8 +829,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -854,7 +854,7 @@
     "provider_api_model_id": "crofai:glm-5.1",
     "provider_model_slug": "glm-5.1",
     "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -865,7 +865,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -896,8 +896,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -986,7 +986,7 @@
     "provider_api_model_id": "crofai:glm-5.2",
     "provider_model_slug": "glm-5.2",
     "internal_model_id": "z-ai/glm-5.2",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -997,7 +997,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1028,8 +1028,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1053,7 +1053,7 @@
     "provider_api_model_id": "crofai:glm-5.3",
     "provider_model_slug": "glm-5.3",
     "internal_model_id": "z-ai/glm-5.3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1064,7 +1064,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1095,8 +1095,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1127,7 +1127,7 @@
     "provider_api_model_id": "crofai:glm-5.3-flash",
     "provider_model_slug": "glm-5.3-flash",
     "internal_model_id": "z-ai/glm-5.3-flash",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1138,7 +1138,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1169,8 +1169,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1212,7 +1212,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1259,7 +1259,7 @@
     "provider_api_model_id": "crofai:greg-1-mini",
     "provider_model_slug": "greg-1-mini",
     "internal_model_id": "crofai/greg-1-mini",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1270,7 +1270,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1292,8 +1292,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1328,7 +1328,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1386,7 +1386,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1433,7 +1433,7 @@
     "provider_api_model_id": "crofai:greg-rp",
     "provider_model_slug": "greg-rp",
     "internal_model_id": "crofai/greg-rp",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1444,7 +1444,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1466,8 +1466,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1491,7 +1491,7 @@
     "provider_api_model_id": "crofai:greg-2-super",
     "provider_model_slug": "greg-2-super",
     "internal_model_id": "crofai/greg-2-super",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "int4",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1502,7 +1502,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1524,8 +1524,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1549,7 +1549,7 @@
     "provider_api_model_id": "crofai:greg-2-ultra",
     "provider_model_slug": "greg-2-ultra",
     "internal_model_id": "crofai/greg-2-ultra",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "int4",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1560,7 +1560,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1582,8 +1582,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1607,7 +1607,7 @@
     "provider_api_model_id": "crofai:kimi-k2.6",
     "provider_model_slug": "kimi-k2.6",
     "internal_model_id": "moonshotai/kimi-k2.6",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q3_K_L",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -1618,7 +1618,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1640,8 +1640,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1665,7 +1665,7 @@
     "provider_api_model_id": "crofai:kimi-k2.6",
     "provider_model_slug": "kimi-k2.6",
     "internal_model_id": "moonshotai/kimi-k2.6",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "int4",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1676,7 +1676,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1707,8 +1707,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -1797,7 +1797,7 @@
     "provider_api_model_id": "crofai:kimi-k2.7-code",
     "provider_model_slug": "kimi-k2.7-code",
     "internal_model_id": "moonshotai/kimi-k2.7-code",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "int4",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -1808,7 +1808,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -1839,8 +1839,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2191,7 +2191,7 @@
     "provider_api_model_id": "crofai:gemma-4-31b-it",
     "provider_model_slug": "gemma-4-31b-it",
     "internal_model_id": "google/gemma-4-31b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -2202,7 +2202,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -2233,8 +2233,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2323,7 +2323,7 @@
     "provider_api_model_id": "crofai:qwen3.6-27b",
     "provider_model_slug": "qwen3.6-27b",
     "internal_model_id": "qwen/qwen3.6-27b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -2334,7 +2334,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -2365,8 +2365,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2390,7 +2390,7 @@
     "provider_api_model_id": "crofai:qwen3.5-397b-a17b",
     "provider_model_slug": "qwen3.5-397b-a17b",
     "internal_model_id": "qwen/qwen3.5-397b-a17b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -2401,7 +2401,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -2432,8 +2432,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2457,7 +2457,7 @@
     "provider_api_model_id": "crofai:qwen3.5-9b",
     "provider_model_slug": "qwen3.5-9b",
     "internal_model_id": "qwen/qwen3.5-9b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "fp8",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -2468,7 +2468,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -2499,8 +2499,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2589,7 +2589,7 @@
     "provider_api_model_id": "crofai:kimi-k3",
     "provider_model_slug": "kimi-k3",
     "internal_model_id": "moonshotai/kimi-k3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "mxfp4",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -2600,7 +2600,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -2631,8 +2631,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2676,7 +2676,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -2752,7 +2752,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -2808,7 +2808,7 @@
     "provider_api_model_id": "crofai:kimi-k2.5",
     "provider_model_slug": "kimi-k2.5",
     "internal_model_id": "moonshotai/kimi-k2.5",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_K_M",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -2819,7 +2819,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -2841,8 +2841,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -2884,7 +2884,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -2951,7 +2951,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -2973,8 +2973,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -3016,7 +3016,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -3038,8 +3038,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -3081,7 +3081,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -3103,8 +3103,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -3146,7 +3146,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -3168,8 +3168,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -3200,7 +3200,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-pro-0813",
     "provider_model_slug": "deepseek-v4-pro-0813",
     "internal_model_id": "deepseek/deepseek-v4-pro-0813",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -3211,7 +3211,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -3242,8 +3242,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -3280,7 +3280,7 @@
     "provider_api_model_id": "crofai:qwen3.8-27b",
     "provider_model_slug": "qwen3.8-27b",
     "internal_model_id": "qwen/qwen3.8-27b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -3291,7 +3291,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -3322,8 +3322,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
@@ -3360,7 +3360,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-flash-vision-exp",
     "provider_model_slug": "deepseek-v4-flash-vision-exp",
     "internal_model_id": "deepseek/deepseek-v4-flash-vision-exp",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -3371,7 +3371,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "disabled",
         "params": {
           "max_tokens": true,
           "max_completion_tokens": true,
@@ -3406,8 +3406,8 @@
         "modes": []
       }
     ],
-    "routing_status": "active",
-    "routable": true,
+    "routing_status": "disabled",
+    "routable": false,
     "regions": {
       "execution": null,
       "data": null
