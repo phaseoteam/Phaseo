@@ -55,14 +55,15 @@ set status = 'disabled',
     provider_availability_status = 'removed',
     phaseo_status = 'disabled',
     updated_at = now()
-where provider_slug = 'crofai';
+where provider_slug = 'crofai'
+   or model_slug like 'crofai/%';
 
 update public.v2_route_capabilities as capability
 set status = 'disabled',
     updated_at = now()
 from public.v2_model_provider_routes as route
 where route.provider_model_id = capability.provider_model_id
-  and route.provider_slug = 'crofai';
+  and (route.provider_slug = 'crofai' or route.model_slug like 'crofai/%');
 
 update public.v2_route_variants as variant
 set status = 'disabled',
@@ -70,7 +71,7 @@ set status = 'disabled',
     updated_at = now()
 from public.v2_model_provider_routes as route
 where route.provider_model_id = variant.provider_model_id
-  and route.provider_slug = 'crofai';
+  and (route.provider_slug = 'crofai' or route.model_slug like 'crofai/%');
 
 update public.v2_provider_regions
 set status = 'disabled',
@@ -83,7 +84,7 @@ set status = 'disabled',
     updated_at = now()
 from public.v2_model_provider_routes as route
 where route.provider_model_id = sku.provider_model_id
-  and route.provider_slug = 'crofai';
+  and (route.provider_slug = 'crofai' or route.model_slug like 'crofai/%');
 
 update public.v2_capability_constraints
 set status = 'disabled',
@@ -93,6 +94,7 @@ where provider_slug = 'crofai'
      select provider_model_id
      from public.v2_model_provider_routes
      where provider_slug = 'crofai'
+        or model_slug like 'crofai/%'
    );
 
 -- Remove active adapter wiring and provider credentials. Historical execution
@@ -180,7 +182,8 @@ begin
   if exists (
     select 1
     from public.v2_model_provider_routes
-    where provider_slug = 'crofai'
+    where (provider_slug = 'crofai'
+       or model_slug like 'crofai/%')
       and (status in ('active', 'degraded') or routing_enabled)
   ) then
     raise exception 'CrofAI route remains active after retirement';
