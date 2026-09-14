@@ -20,4 +20,12 @@ describe("Relace OpenAI-compatible configuration", () => {
 			"https://relace.example/v1/search/chat/completions",
 		);
 	});
+
+	it("uses Relace's direct model endpoint for hosted open models", () => {
+		setupRuntimeFromEnv({} as any);
+
+		expect(openAICompatUrl("relace", "/chat/completions", "deepseek/deepseek-v4.1-flash-20260910")).toBe(
+			"https://models.relace.ai/v1/chat/completions",
+		);
+	});
 });

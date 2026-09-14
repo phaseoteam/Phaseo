@@ -151,7 +151,11 @@ export async function executeOpenAIWire(
 			&& sanitized.request.tools.some((tool: any) => tool?.type === "mcp");
 		const upstreamUrl = args.privateEndpoint
 			? `${args.privateEndpoint.baseUrl.replace(/\/+$/, "")}${endpointForRoute(targetRoute)}`
-			: openAICompatUrl(policy.urlProviderId ?? args.providerId, endpointForRoute(targetRoute));
+			: openAICompatUrl(
+				policy.urlProviderId ?? args.providerId,
+				endpointForRoute(targetRoute),
+				modelForRouting,
+			);
 		const upstreamHeaders = args.privateEndpoint
 			? {
 				Authorization: `Bearer ${keyInfo.key}`,
