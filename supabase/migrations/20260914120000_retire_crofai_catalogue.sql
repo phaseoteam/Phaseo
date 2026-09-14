@@ -3,6 +3,7 @@
 --
 -- This is intentionally a soft retirement for catalogue rows. The catalogue
 -- history triggers reject destructive removal from the v2 identity tables.
+-- phaseo:allow-destructive-migration reason: Remove active CrofAI adapter credentials and routing wiring while preserving historical request, usage, audit, billing, observability, sync, and execution records.
 
 begin;
 
