@@ -28,4 +28,12 @@ describe("Relace OpenAI-compatible configuration", () => {
 			"https://models.relace.ai/v1/chat/completions",
 		);
 	});
+
+	it("strips a search prefix from Relace base URL overrides for hosted models", () => {
+		setupRuntimeFromEnv({ RELACE_BASE_URL: "https://relace.example/v1/search" } as any);
+
+		expect(openAICompatUrl("relace", "/chat/completions", "deepseek/deepseek-v4.1-flash-20260910")).toBe(
+			"https://relace.example/v1/chat/completions",
+		);
+	});
 });

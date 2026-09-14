@@ -193,7 +193,13 @@ export function openAICompatUrl(providerId: string, path: string, model?: string
 			if (canonicalProviderId === "friendli") {
 				prefix = resolveFriendliPathPrefix(basePath, configuredPrefix);
 			}
-			if (isAlibabaResponsesRoute) {
+			if (isRelaceHostedModel) {
+				const searchPrefix = normalizePathSegment(config.pathPrefix ?? "");
+				if (searchPrefix && basePath === searchPrefix) {
+					const trimmedBasePath = basePath.slice(0, basePath.length - searchPrefix.length).replace(/\/+$/, "");
+					base = `${parsed.origin}${trimmedBasePath}`;
+				}
+			} else if (isAlibabaResponsesRoute) {
 				const chatPrefix = normalizePathSegment(config.pathPrefix ?? "");
 				if (chatPrefix && basePath === chatPrefix) {
 					const trimmedBasePath = basePath.slice(0, basePath.length - chatPrefix.length).replace(/\/+$/, "");
