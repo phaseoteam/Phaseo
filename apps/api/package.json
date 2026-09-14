@@ -51,7 +51,7 @@
 	"dependencies": {
 		"@streamparser/json": "0.0.26",
 		"@supabase/supabase-js": "^2.106.2",
-		"@upstash/redis": "^1.38.0",
+		"@upstash/redis": "^1.38.4",
 		"@visulima/tabular": "^4.1.0",
 		"hono": "^4.12.27",
 		"ink": "^7.1.0",
