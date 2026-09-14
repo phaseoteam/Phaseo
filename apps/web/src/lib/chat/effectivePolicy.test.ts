@@ -15,12 +15,12 @@ describe("applyChatEffectivePolicy", () => {
 		const policy: ChatEffectivePolicy = {
 			workspaceId: "workspace-1",
 			workspace: { ...none, provider: { mode: "blocklist", ids: ["novita"] } },
-			account: null,
+			account: { ...none, model: { mode: "blocklist", ids: ["qwen/qwen3.8-max"] } },
 			guardrails: [{ id: "g-1", name: "Team Safety", ...none, provider: { mode: "blocklist", ids: ["novita"] } }],
 		};
 		const [annotated] = applyChatEffectivePolicy([route("novita")], policy);
 		expect(annotated.isAvailable).toBe(true);
-		expect(annotated.chatBlockedReasons?.map((reason) => reason.source)).toEqual(["workspace", "guardrail"]);
+		expect(annotated.chatBlockedReasons?.map((reason) => reason.source)).toEqual(["workspace", "account", "guardrail"]);
 	});
 
 	it("does not annotate an allowed route", () => {

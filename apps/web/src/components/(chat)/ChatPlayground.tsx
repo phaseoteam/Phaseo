@@ -3342,6 +3342,16 @@ function ChatPlaygroundContent({
 
 	const updateActiveModel = useCallback(
 		(modelId: string) => {
+			const requiredCapability = getPrimaryCapabilityForModel(modelId);
+			if (
+				!isModelSelectableForContext(
+					modelId,
+					requiredCapability,
+					composerRequiresAudioInput,
+				)
+			) {
+				return;
+			}
 			if (!activeThread) {
 				const defaults: ChatSettings = {
 					...DEFAULT_SETTINGS,
@@ -3361,7 +3371,6 @@ function ChatPlaygroundContent({
 					});
 				return;
 			}
-			const requiredCapability = getPrimaryCapabilityForModel(modelId);
 			const currentModelDisplayName =
 				activeThread.settings.modelOverridesById?.[
 					activeThread.modelId
@@ -3637,6 +3646,15 @@ function ChatPlaygroundContent({
 			if (!nextPrimaryModelId) return;
 			const requiredCapability =
 				getPrimaryCapabilityForModel(nextPrimaryModelId);
+			if (
+				!isModelSelectableForContext(
+					nextPrimaryModelId,
+					requiredCapability,
+					composerRequiresAudioInput,
+				)
+			) {
+				return;
+			}
 			const nextCompareModelIds = candidateCompareIds.filter((id) =>
 				isModelSelectableForContext(
 					id,
@@ -4095,6 +4113,7 @@ function ChatPlaygroundContent({
 					orgId: string;
 					orgName: string;
 					releaseDate: string | null;
+					disabled: boolean;
 				}
 			>();
 			const orderedOptions = [
@@ -4128,6 +4147,9 @@ function ChatPlaygroundContent({
 					orgId: model.orgId,
 					orgName: model.orgName,
 					releaseDate: model.releaseDate,
+					disabled:
+						model.gatewayStatus === "inactive" ||
+						model.chatBlockedReasons.length > 0,
 				});
 			}
 			return Array.from(byId.values());

@@ -8,7 +8,6 @@ import {
 	useMemo,
 	useRef,
 	useState,
-	startTransition,
 	type KeyboardEvent,
 } from "react";
 import {
@@ -71,6 +70,7 @@ import {
 	VirtualizedModelCatalog,
 	type VirtualizedModelCatalogSection,
 } from "@/components/(chat)/VirtualizedModelCatalog";
+import { isChatModelRowDisabled } from "@/components/(chat)/chat-model-selection";
 import {
 	compareByReleaseDateDesc,
 	groupModelsByReleaseMonth,
@@ -381,9 +381,14 @@ export function ChatHeader({
 		null,
 	);
 	const modelSearchInputRef = useRef<HTMLInputElement | null>(null);
+	const modelPickerModifierClickRef = useRef<{
+		modelId: string;
+		keepPickerOpen: boolean;
+	} | null>(null);
 	const [quickFilters, setQuickFilters] = useState({
 		free: false,
 		new: false,
+		hideUnavailable: false,
 	});
 	const [favoriteModelIdSet, setFavoriteModelIdSet] = useState<Set<string>>(
 		() => new Set(getDefaultFavoriteModelIds()),
@@ -488,11 +493,28 @@ export function ChatHeader({
 
 		handleAccentColorChange(normalizedValue);
 	};
-	const toggleQuickFilter = (key: "free" | "new") => {
+	const toggleQuickFilter = (key: keyof typeof quickFilters) => {
 		setQuickFilters((prev) => ({ ...prev, [key]: !prev[key] }));
 	};
 	const optionMatchesQuickFilters = useCallback(
 		(option: ModelOption) => {
+			if (quickFilters.hideUnavailable) {
+				const capabilityEndpoints =
+					modelCapabilitiesById?.[option.modelId] ?? ["responses"];
+				const capabilityCompatible =
+					(!requiredCapability ||
+						capabilityEndpoints.includes(requiredCapability)) &&
+					(!requireAudioInput ||
+						modelSupportsAudioInputById?.[option.modelId] === true);
+				if (
+					isChatModelRowDisabled(option, {
+						capabilityCompatible,
+						withComingSoonBadge: option.gatewayStatus === "inactive",
+					})
+				) {
+					return false;
+				}
+			}
 			if (quickFilters.free && !option.modelId.endsWith(":free")) {
 				return false;
 			}
@@ -501,7 +523,15 @@ export function ChatHeader({
 			}
 			return true;
 		},
-		[quickFilters.free, quickFilters.new]
+		[
+			quickFilters.free,
+			quickFilters.new,
+			quickFilters.hideUnavailable,
+			modelCapabilitiesById,
+			modelSupportsAudioInputById,
+			requiredCapability,
+			requireAudioInput,
+		]
 	);
 	const filteredActive = useMemo(
 		() => modelOptions.active.filter(optionMatchesQuickFilters),
@@ -624,6 +654,10 @@ export function ChatHeader({
 		}
 		return Array.from(byId.values());
 	}, [allModelOptions]);
+	const modelOptionById = useMemo(
+		() => new Map(uniqueModelOptions.map((option) => [option.modelId, option])),
+		[uniqueModelOptions],
+	);
 	useEffect(() => {
 		if (typeof window === "undefined") return;
 		const availableFavoriteIds = new Set(
@@ -722,8 +756,7 @@ export function ChatHeader({
 					modelSupportsAudioInputById?.[option.modelId] === true);
 			if (
 				seenModelIds.has(option.modelId) ||
-				option.gatewayStatus === "inactive" ||
-				!capabilityCompatible
+				isChatModelRowDisabled(option, { capabilityCompatible })
 			) {
 				return false;
 			}
@@ -765,29 +798,50 @@ export function ChatHeader({
 		return labels.slice(0, 2).join("/");
 	};
 	const closeModelPicker = () => {
+		modelPickerModifierClickRef.current = null;
 		setModelSearchValue("");
 		setActiveBrowseModelId(null);
 		onModelPickerOpenChange(false);
 	};
-	const commitModelPickerSelection = (commit: () => void) => {
-		closeModelPicker();
-		startTransition(commit);
+	const commitModelPickerSelection = (
+		commit: () => void,
+		keepPickerOpen = false,
+	) => {
+		if (!keepPickerOpen) closeModelPicker();
+		commit();
 	};
-	const handleModelSelect = (modelId: string) => {
-		if (!isModelCapabilityCompatible(modelId)) {
+	const handleModelSelect = (modelId: string, keepPickerOpen = false) => {
+		const option = modelOptionById.get(modelId);
+		if (
+			!option ||
+			isChatModelRowDisabled(option, {
+				capabilityCompatible: isModelCapabilityCompatible(modelId),
+				withComingSoonBadge: option.gatewayStatus === "inactive",
+			})
+		) {
 			return;
 		}
+		const canKeepPickerOpen =
+			keepPickerOpen &&
+			allowModelCompare &&
+			(!activeThread?.modelId || Boolean(onCompareModelIdsChange));
 		if (!allowModelCompare) {
 			commitModelPickerSelection(() => onUpdateModel(modelId));
 			return;
 		}
 		if (!activeThread?.modelId) {
-			commitModelPickerSelection(() => onUpdateModel(modelId));
+			commitModelPickerSelection(
+				() => onUpdateModel(modelId),
+				canKeepPickerOpen,
+			);
 			return;
 		}
 		if (activeThread.modelId === modelId) {
 			if (selectedModelIds.length > 0) {
-				commitModelPickerSelection(() => onRemoveModel?.(modelId));
+				commitModelPickerSelection(
+					() => onRemoveModel?.(modelId),
+					canKeepPickerOpen,
+				);
 				return;
 			}
 			closeModelPicker();
@@ -804,8 +858,9 @@ export function ChatHeader({
 			nextSet.add(modelId);
 		}
 		const nextModelIds = Array.from(nextSet);
-		commitModelPickerSelection(() =>
-			onCompareModelIdsChange(nextModelIds),
+		commitModelPickerSelection(
+			() => onCompareModelIdsChange(nextModelIds),
+			canKeepPickerOpen,
 		);
 	};
 	const handleModelPickerDialogOpenChange = (open: boolean) => {
@@ -1167,6 +1222,7 @@ export function ChatHeader({
 			return { total: 0, results: [] as Array<{ option: ModelOption; score: number }> };
 		}
 		const scored = uniqueModelOptions
+			.filter(optionMatchesQuickFilters)
 			.map((option) => ({
 				option,
 				score: computeModelSearchScore(option, normalizedModelSearchValue),
@@ -1180,7 +1236,12 @@ export function ChatHeader({
 				return compareByReleaseDateDesc(a.option, b.option);
 			});
 		return { total: scored.length, results: scored.slice(0, 25) };
-	}, [hasModelSearchValue, normalizedModelSearchValue, uniqueModelOptions]);
+	}, [
+		hasModelSearchValue,
+		normalizedModelSearchValue,
+		optionMatchesQuickFilters,
+		uniqueModelOptions,
+	]);
 	const searchResultTotalCount = searchRanking.total;
 	const rankedSearchResults = searchRanking.results;
 	const toggleFavoriteModel = (modelId: string) => {
@@ -1207,10 +1268,10 @@ export function ChatHeader({
 		option: ModelOption,
 		withComingSoonBadge = false,
 	) =>
-		withComingSoonBadge ||
-		option.gatewayStatus === "inactive" ||
-		option.chatBlockedReasons.length > 0 ||
-		!isModelCapabilityCompatible(option.modelId);
+		isChatModelRowDisabled(option, {
+			capabilityCompatible: isModelCapabilityCompatible(option.modelId),
+			withComingSoonBadge,
+		});
 	const renderModelOptionContent = (
 		option: ModelOption,
 		withComingSoonBadge = false,
@@ -1297,8 +1358,18 @@ export function ChatHeader({
 			<ModelSelectorItem
 				key={option.modelId}
 				value={option.modelId}
+				onMouseDown={(event) => {
+					modelPickerModifierClickRef.current = {
+						modelId: option.modelId,
+						keepPickerOpen: event.ctrlKey || event.metaKey,
+					};
+				}}
 				onSelect={() => {
-					handleModelSelect(option.modelId);
+					const keepPickerOpen =
+						modelPickerModifierClickRef.current?.modelId === option.modelId &&
+						modelPickerModifierClickRef.current.keepPickerOpen;
+					modelPickerModifierClickRef.current = null;
+					handleModelSelect(option.modelId, keepPickerOpen);
 				}}
 				keywords={buildSearchKeywords(option)}
 				className={cn(
@@ -1501,6 +1572,27 @@ export function ChatHeader({
 							>
 								New
 							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								aria-pressed={quickFilters.hideUnavailable}
+								onClick={() => toggleQuickFilter("hideUnavailable")}
+								className={cn(
+									"h-7 rounded-md px-2.5 text-xs font-medium transition-colors",
+									quickFilters.hideUnavailable
+										? "border-sky-600 bg-sky-600 text-white hover:border-sky-700 hover:bg-sky-700 hover:text-white dark:border-sky-300 dark:bg-sky-300 dark:text-slate-950 dark:hover:border-sky-200 dark:hover:bg-sky-200 dark:hover:text-slate-950"
+										: "border-border bg-transparent text-slate-900 hover:bg-slate-100 hover:text-slate-950 dark:border-white/25 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
+								)}
+								title="Hide models that are unavailable in this chat"
+							>
+								Hide Unavailable
+							</Button>
+							{allowModelCompare ? (
+								<span className="ml-auto hidden text-[11px] text-muted-foreground sm:inline">
+									Ctrl/⌘-click to add multiple
+								</span>
+							) : null}
 						</div>
 						{hasModelSearchValue ? (
 							<ModelSelectorList
@@ -1533,7 +1625,12 @@ export function ChatHeader({
 									)
 								}
 								onActiveItemChange={setActiveBrowseModelId}
-								onSelectItem={(option) => handleModelSelect(option.modelId)}
+								onSelectItem={(option, event) =>
+									handleModelSelect(
+										option.modelId,
+										event.ctrlKey || event.metaKey,
+									)
+								}
 								renderItem={renderVirtualizedModelOption}
 							/>
 						)}

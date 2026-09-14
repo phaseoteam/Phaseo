@@ -63,6 +63,7 @@ type ModelSettingsDialogProps = {
         orgId: string;
         orgName: string;
         releaseDate?: string | null;
+        disabled?: boolean;
     }>;
     modelLabel?: string;
     providerOptions: Array<{ id: string; name: string; logoId?: string }>;
@@ -525,12 +526,13 @@ export function ModelSettingsDialog({
                                                 <button
                                                     key={choice.id}
                                                     type="button"
+                                                    disabled={choice.disabled}
                                                     onClick={() => {
                                                         onModelChange?.(choice.id);
                                                         setModelPickerSearch("");
                                                         setModelPickerOpen(false);
                                                     }}
-															className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                                                    className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45"
                                                 >
                                                     <Logo
                                                         id={choice.orgId}
@@ -562,12 +564,13 @@ export function ModelSettingsDialog({
                                                 <button
                                                     key={choice.id}
                                                     type="button"
+                                                    disabled={choice.disabled}
                                                     onClick={() => {
                                                         onModelChange?.(choice.id);
                                                         setModelPickerSearch("");
                                                         setModelPickerOpen(false);
                                                     }}
-															className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                                                    className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45"
                                                 >
                                                     <Logo
                                                         id={choice.orgId}
