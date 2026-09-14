@@ -10,29 +10,29 @@ export type HomeGatewayModelOption = {
 
 export const FALLBACK_HOME_GATEWAY_MODEL_OPTIONS: HomeGatewayModelOption[] = [
 	{
-		id: "openai/gpt-5-2-2025-12-11",
-		label: "GPT-5.2",
+		id: "openai/gpt-6-astra",
+		label: "GPT-6 Astra",
 		provider: "OpenAI",
 		logoId: "openai",
 		description: "Flagship reasoning and production chat workloads.",
 	},
 	{
-		id: "anthropic/claude-opus-4-6-2026-02-05",
-		label: "Claude Opus 4.6",
+		id: "anthropic/claude-fable-5.1",
+		label: "Claude Fable 5.1",
 		provider: "Anthropic",
 		logoId: "anthropic",
 		description: "Long-form analysis, writing, and high-context work.",
 	},
 	{
-		id: "google/gemini-3-pro-preview-2025-11-18",
-		label: "Gemini 3 Pro",
+		id: "google/gemini-3.8-flash",
+		label: "Gemini 3.8 Flash",
 		provider: "Google",
 		logoId: "google",
 		description: "Multimodal workflows with broad tool compatibility.",
 	},
 	{
-		id: "deepseek/deepseek-r1-2025-05-28",
-		label: "DeepSeek R1",
+		id: "deepseek/deepseek-v4.1-flash",
+		label: "DeepSeek V4.1 Flash",
 		provider: "DeepSeek",
 		logoId: "deepseek",
 		description: "High-efficiency reasoning for cost-sensitive tasks.",

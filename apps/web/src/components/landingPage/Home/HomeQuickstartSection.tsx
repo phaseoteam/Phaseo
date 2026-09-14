@@ -27,6 +27,7 @@ import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import {
 	BETA_OPEN_MODEL_INTEL,
+	LANDING_ILLUSTRATIVE_METRICS,
 	type HomeModelPrices,
 } from "./homeModelIntel";
 
@@ -389,7 +390,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 									/>
 								</span>
 								<span className="whitespace-nowrap text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-									Claude Fable 5
+									Claude Fable 5.1
 								</span>
 							</div>
 						</div>
@@ -461,7 +462,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 							className="object-contain object-center"
 						/>
 					</span>
-					<span>anthropic/claude-fable-5</span>
+					<span>anthropic/claude-fable-5.1</span>
 				</div>
 				<div className="relative mt-1 h-[98px] w-full max-w-[220px]">
 					<svg viewBox="0 0 220 98" className="absolute inset-0 h-full w-full" aria-hidden="true">
@@ -582,7 +583,7 @@ function ObservabilityVisual() {
 	const requests = [
 		{
 			providerId: "openai",
-			model: "GPT-5.6 Sol",
+			model: "GPT-6 Astra",
 			path: "/v1/responses",
 			latency: "612 ms",
 			throughput: "91 tok/s",
@@ -593,7 +594,7 @@ function ObservabilityVisual() {
 		},
 		{
 			providerId: "anthropic",
-			model: "Claude Fable 5",
+			model: "Claude Fable 5.1",
 			path: "/v1/messages",
 			latency: "958 ms",
 			throughput: "61 tok/s",
@@ -604,7 +605,7 @@ function ObservabilityVisual() {
 		},
 		{
 			providerId: "google",
-			model: "Gemini 3.1 Pro",
+			model: "Gemini 3.8 Flash",
 			path: "/v1/generate",
 			latency: "684 ms",
 			throughput: "88 tok/s",
@@ -615,7 +616,7 @@ function ObservabilityVisual() {
 		},
 		{
 			providerId: "x-ai",
-			model: "Grok 4.5",
+			model: "Grok 4.6",
 			path: "/v1/chat",
 			latency: "488 ms",
 			throughput: "112 tok/s",
@@ -856,10 +857,10 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 				>
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
-							Latency
+							Illustrative latency
 						</span>
 						<p className="mt-1 text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-							<HydratedNumberFlow value={currentModel.latencyMs} />
+							<HydratedNumberFlow value={LANDING_ILLUSTRATIVE_METRICS.latencyMs} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
 								ms
 							</span>
@@ -867,10 +868,10 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 					</div>
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
-							Throughput
+							Illustrative throughput
 						</span>
 						<p className="mt-1 text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-							<HydratedNumberFlow value={currentModel.throughputTps} />
+							<HydratedNumberFlow value={LANDING_ILLUSTRATIVE_METRICS.throughputTps} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
 								tok/s
 							</span>

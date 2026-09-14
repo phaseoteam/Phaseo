@@ -13,7 +13,7 @@ use serde_json::json;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Phaseo::from_env()?;
     let response = client.responses(&json!({
-        "model": "openai/gpt-5.6-sol",
+        "model": "openai/gpt-6-astra",
         "input": "Give three concise benefits of model routing.",
         "max_output_tokens": 200
     }))?;
@@ -57,7 +57,7 @@ Keep the full `body` when your request can return multiple messages, reasoning i
 
 ```rust
 let response = client.responses(&json!({
-    "model": "openai/gpt-5.6-sol",
+    "model": "openai/gpt-6-astra",
     "input": "Check the weather in London.",
     "tools": [{
         "type": "function",

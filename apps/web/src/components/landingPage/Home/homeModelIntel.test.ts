@@ -16,19 +16,19 @@ describe("buildHomeModelPrices", () => {
 	it("selects the lowest complete price from available gateway routes", () => {
 		const prices = buildHomeModelPrices([
 			route({
-				modelId: "openai/gpt-5.6-sol",
+				modelId: "openai/gpt-6-astra",
 				providerId: "atlascloud",
 				inputPricePerMillion: 5,
 				outputPricePerMillion: 30,
 			}),
 			route({
-				modelId: "openai/gpt-5.6-sol",
+				modelId: "openai/gpt-6-astra",
 				providerId: "openai",
 				inputPricePerMillion: 4,
 				outputPricePerMillion: 20,
 			}),
 			route({
-				modelId: "openai/gpt-5.6-sol",
+				modelId: "openai/gpt-6-astra",
 				providerId: "discovery-only",
 				isAvailable: false,
 				inputPricePerMillion: 3.6,
@@ -36,7 +36,7 @@ describe("buildHomeModelPrices", () => {
 			}),
 		]);
 
-		expect(prices["openai/gpt-5.6-sol"]).toEqual({
+		expect(prices["openai/gpt-6-astra"]).toEqual({
 			inputPrice: 4,
 			outputPrice: 20,
 		});
@@ -45,18 +45,18 @@ describe("buildHomeModelPrices", () => {
 	it("prefers the lower output price when input prices tie", () => {
 		const prices = buildHomeModelPrices([
 			route({
-				modelId: "google/gemini-3.1-pro-preview",
+				modelId: "google/gemini-3.8-flash",
 				inputPricePerMillion: 2,
 				outputPricePerMillion: 18,
 			}),
 			route({
-				modelId: "google/gemini-3.1-pro-preview",
+				modelId: "google/gemini-3.8-flash",
 				inputPricePerMillion: 2,
 				outputPricePerMillion: 12,
 			}),
 		]);
 
-		expect(prices["google/gemini-3.1-pro-preview"]).toEqual({
+		expect(prices["google/gemini-3.8-flash"]).toEqual({
 			inputPrice: 2,
 			outputPrice: 12,
 		});

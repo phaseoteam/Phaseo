@@ -13,7 +13,7 @@ use serde_json::json;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Phaseo::from_env()?;
     let response = client.chat_completions(&json!({
-        "model": "openai/gpt-5.6-sol",
+        "model": "openai/gpt-6-astra",
         "messages": [
             {
                 "role": "system",

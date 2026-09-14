@@ -4,8 +4,6 @@ export type LandingOpenModelIntelEntry = {
 	providerId: string;
 	name: string;
 	model: string;
-	latencyMs: number;
-	throughputTps: number;
 };
 
 export type HomeModelPrice = {
@@ -15,48 +13,45 @@ export type HomeModelPrice = {
 
 export type HomeModelPrices = Record<string, HomeModelPrice>;
 
+/**
+ * These values keep the homepage card layout informative without attributing
+ * stale measurements to whichever model is currently featured.
+ */
+export const LANDING_ILLUSTRATIVE_METRICS = {
+	latencyMs: 420,
+	throughputTps: 100,
+} as const;
+
 export const BETA_OPEN_MODEL_INTEL: LandingOpenModelIntelEntry[] = [
 	{
 		providerId: "openai",
-		name: "GPT-5.6 Sol",
-		model: "openai/gpt-5.6-sol",
-		latencyMs: 472,
-		throughputTps: 92,
+		name: "GPT-6 Astra",
+		model: "openai/gpt-6-astra",
 	},
 	{
 		providerId: "anthropic",
-		name: "Claude Fable 5",
-		model: "anthropic/claude-fable-5",
-		latencyMs: 548,
-		throughputTps: 79,
+		name: "Claude Fable 5.1",
+		model: "anthropic/claude-fable-5.1",
 	},
 	{
 		providerId: "google",
-		name: "Gemini 3.1 Pro",
-		model: "google/gemini-3.1-pro-preview",
-		latencyMs: 441,
-		throughputTps: 101,
+		name: "Gemini 3.8 Flash",
+		model: "google/gemini-3.8-flash",
 	},
 	{
 		providerId: "minimax",
 		name: "MiniMax M3",
 		model: "minimax/minimax-m3",
-		latencyMs: 388,
-		throughputTps: 108,
 	},
 	{
 		providerId: "deepseek",
-		name: "DeepSeek V4 Pro",
-		model: "deepseek/deepseek-v4-pro",
-		latencyMs: 405,
-		throughputTps: 94,
+		name: "DeepSeek V4.1 Flash",
+		model: "deepseek/deepseek-v4.1-flash",
 	},
 	{
 		providerId: "moonshotai",
-		name: "Kimi K2.7 Code",
-		model: "moonshotai/kimi-k2.7-code",
-		latencyMs: 423,
-		throughputTps: 89,
+		name: "Kimi K3",
+		model: "moonshotai/kimi-k3",
 	},
 ];
 

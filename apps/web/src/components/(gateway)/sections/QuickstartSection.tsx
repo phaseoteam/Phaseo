@@ -189,12 +189,12 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 
 const FALLBACK_MODELS: Record<EndpointId, string[]> = {
 	completions: [
-		"openai/gpt-5.6-sol",
-		"anthropic/claude-fable-5",
-		"google/gemini-3.1-pro-preview",
-		"spacex-ai/grok-4.5",
-		"moonshotai/kimi-k2.7-code",
-		"deepseek/deepseek-v4-pro",
+		"openai/gpt-6-astra",
+		"anthropic/claude-fable-5.1",
+		"google/gemini-3.8-flash",
+		"spacex-ai/grok-4.6",
+		"moonshotai/kimi-k3",
+		"deepseek/deepseek-v4.1-flash",
 		"minimax/minimax-m3",
 	],
 	images: [
@@ -222,12 +222,12 @@ const FALLBACK_MODELS: Record<EndpointId, string[]> = {
 
 const PROMOTED_MODELS: Record<EndpointId, string[]> = {
 	completions: [
-		"openai/gpt-5.6-sol",
-		"anthropic/claude-fable-5",
-		"google/gemini-3.1-pro-preview",
-		"spacex-ai/grok-4.5",
-		"moonshotai/kimi-k2.7-code",
-		"deepseek/deepseek-v4-pro",
+		"openai/gpt-6-astra",
+		"anthropic/claude-fable-5.1",
+		"google/gemini-3.8-flash",
+		"spacex-ai/grok-4.6",
+		"moonshotai/kimi-k3",
+		"deepseek/deepseek-v4.1-flash",
 		"minimax/minimax-m3",
 	],
 	images: [
@@ -795,7 +795,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								selectedModels[currentConfig.id] ??
 								availableModels[0] ??
 								baseModels[0] ??
-								"openai/gpt-5.6-sol";
+								"openai/gpt-6-astra";
 
 							return (
 								<div className="space-y-3">
