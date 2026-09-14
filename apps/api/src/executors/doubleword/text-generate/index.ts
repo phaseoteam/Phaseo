@@ -13,7 +13,9 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	return executeOpenAIWire(args, { transientRetries: 1 });
+	// Doubleword does not document an idempotency key for realtime POSTs.
+	// Do not retry an ambiguous transport failure after the upstream may have accepted it.
+	return executeOpenAIWire(args);
 }
 
 export function postprocess(ir: IRChatRequest): IRChatRequest {
