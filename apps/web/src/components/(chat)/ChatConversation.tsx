@@ -6,6 +6,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { MessageScroller } from "@shadcn/react/message-scroller";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
+import { ChatMessageNavigationRail } from "@/components/(chat)/ChatMessageNavigationRail";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { appendChatSelectionPrompt } from "@/components/(chat)/chatSelectionActions";
 import type { ChatRequestErrorDetails } from "@/components/(chat)/ChatRequestErrorNotice";
 import {
@@ -920,9 +922,17 @@ export function ChatConversation({
 				scrollMargin={24}
 			>
 				<MessageScroller.Root className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden overscroll-contain">
-					<MessageScroller.Viewport
-						ref={scrollViewportRef}
-						className="h-full min-w-0 w-full overflow-y-auto overscroll-contain"
+					<ScrollArea
+						className="h-full min-w-0 w-full"
+						viewportClassName="overscroll-contain"
+						viewportRef={scrollViewportRef}
+						viewportRender={
+							<MessageScroller.Viewport
+								aria-label="Messages"
+								role="region"
+							/>
+						}
+						scrollBarClassName="bg-background/50"
 					>
 						<MessageScroller.Content
 							className={`mx-auto flex min-w-0 w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8 ${hasNoMessages ? "min-h-full" : ""}`}
@@ -957,7 +967,11 @@ export function ChatConversation({
 								onOpenModelPicker={onOpenModelPicker}
 							/>
 						</MessageScroller.Content>
-					</MessageScroller.Viewport>
+					</ScrollArea>
+					<ChatMessageNavigationRail
+						messages={activeThread?.messages ?? []}
+						scrollViewportRef={scrollViewportRef}
+					/>
 					<MessageScroller.Button
 						aria-label="Scroll to latest message"
 						className="absolute bottom-4 left-1/2 z-20 inline-flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active=false]:pointer-events-none data-[active=false]:opacity-0"
