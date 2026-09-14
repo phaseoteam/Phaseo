@@ -49,6 +49,7 @@ Common regional provider credentials currently include:
   EU Google Vertex offers
 - US: `ANTHROPIC_API_KEY`, the existing AWS Bedrock credentials, and the
   credentials used by verified US Google Vertex offers
+- Any region with Doubleword offers: `DOUBLEWORD_API_KEY`
 
 Include BYOK encryption keys only if BYOK is intentionally enabled and tested on
 the regional Worker. Do not copy unrelated media, webhook, email, or background

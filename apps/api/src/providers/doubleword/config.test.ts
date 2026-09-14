@@ -19,8 +19,6 @@ describe("Doubleword OpenAI-compatible configuration", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ DOUBLEWORD_API_KEY: "doubleword-test-key" } as any);
 
-		setupRuntimeFromEnv({ DOUBLEWORD_API_KEY: "doubleword-test-key" } as any);
-
 		expect(resolveOpenAICompatRoute("doubleword", "deepseek-ai/DeepSeek-V4.1-Flash")).toBe("responses");
 		expect(openAICompatUrl("doubleword", "/responses")).toBe(
 			"https://api.doubleword.ai/v1/responses",

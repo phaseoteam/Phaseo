@@ -19,6 +19,15 @@ describe("logos", () => {
 		expect(getLogoLabel("Digital Ocean")).toBe("DigitalOcean");
 	});
 
+	test("resolves the Doubleword logo by provider id", () => {
+		expect(resolveLogo("doubleword")).toMatchObject({
+			id: "doubleword",
+			label: "Doubleword",
+			src: "/logos/doubleword.svg",
+			variant: "color",
+		});
+	});
+
 	test("resolves Nex AGI themed variants", () => {
 		expect(
 			resolveLogo("nex-agi", { variant: "light", theme: "light" })
