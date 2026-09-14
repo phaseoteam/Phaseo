@@ -70,6 +70,7 @@ import { AVIAN_OPENAI_COMPAT_CONFIGS } from "../avian/config";
 import { BAIDU_OPENAI_COMPAT_CONFIGS } from "../baidu/config";
 import { DARKBLOOM_OPENAI_COMPAT_CONFIGS } from "../darkbloom/config";
 import { INFERENCE_NET_OPENAI_COMPAT_CONFIGS } from "../inference-net/config";
+import { DOUBLEWORD_OPENAI_COMPAT_CONFIGS } from "../doubleword/config";
 import { MARA_OPENAI_COMPAT_CONFIGS } from "../mara/config";
 import { REKA_OPENAI_COMPAT_CONFIGS } from "../reka/config";
 import { UPSTAGE_OPENAI_COMPAT_CONFIGS } from "../upstage/config";
@@ -151,6 +152,7 @@ export const OPENAI_COMPAT_CONFIG = {
 	...BAIDU_OPENAI_COMPAT_CONFIGS,
 	...DARKBLOOM_OPENAI_COMPAT_CONFIGS,
 	...INFERENCE_NET_OPENAI_COMPAT_CONFIGS,
+	...DOUBLEWORD_OPENAI_COMPAT_CONFIGS,
 	...MARA_OPENAI_COMPAT_CONFIGS,
 	...REKA_OPENAI_COMPAT_CONFIGS,
 	...UPSTAGE_OPENAI_COMPAT_CONFIGS,

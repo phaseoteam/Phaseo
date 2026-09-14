@@ -47,6 +47,10 @@ describe("providerProfiles", () => {
 		expect(ioNet?.text?.normalize?.maxTemperature).toBe(2);
 		expect(ioNet?.adapterBackedOverrides?.["image.generate"]).toBe(false);
 		expect(ioNet?.adapterBackedOverrides?.["audio.speech"]).toBe(false);
+		const doubleword = getProviderProfile("doubleword");
+		expect(doubleword?.text?.paramPolicy?.supportedParams).toEqual(expect.arrayContaining([
+			"reasoning.effort", "service_tier", "tools", "response_format",
+		]));
 		const inception = getProviderProfile("inception");
 		expect(inception?.textOnly).toBe(true);
 		expect(inception?.text?.normalize?.maxTemperature).toBe(1);

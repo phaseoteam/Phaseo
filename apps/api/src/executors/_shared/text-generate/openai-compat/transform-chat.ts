@@ -69,7 +69,8 @@ export function irToOpenAIChat(
 				providerId === "poolside" ||
 				providerId === "siliconflow" ||
 				providerId === "stepfun" ||
-				providerId === "wafer";
+				providerId === "wafer" ||
+				providerId === "doubleword";
 			if (providerSupportsAssistantReasoningContent && assistantReasoning.length > 0) {
 				message.reasoning_content = assistantReasoning;
 			}

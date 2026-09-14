@@ -106,6 +106,10 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 		providerName: "Inference.net",
 		apiKeyEnv: ["INFERENCE_API_KEY", "INFERENCE_NET_API_KEY"],
 	},
+	doubleword: {
+		providerName: "Doubleword",
+		apiKeyEnv: ["DOUBLEWORD_API_KEY"],
+	},
 	ionrouter: { providerName: "IonRouter" },
 	"liquid-ai": { providerName: "Liquid AI", disabled: true },
 	moonshotai: { providerName: "Moonshot AI", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },

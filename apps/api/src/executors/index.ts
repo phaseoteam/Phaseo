@@ -114,6 +114,7 @@ import { executor as scalewayText } from "./scaleway/text-generate";
 import { executor as thinkingMachinesText } from "./thinking-machines/text-generate";
 import { executor as darkbloomText } from "./darkbloom/text-generate";
 import { executor as inferenceNetText } from "./inference-net/text-generate";
+import { executor as doublewordText } from "./doubleword/text-generate";
 import { executor as maraText } from "./mara/text-generate";
 import { executor as rekaText } from "./reka/text-generate";
 import { executor as streamlakeText } from "./streamlake/text-generate";
@@ -262,6 +263,9 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	"inference-net": {
 		"text.generate": inferenceNetText,
+	},
+	doubleword: {
+		"text.generate": doublewordText,
 	},
 	mara: {
 		"text.generate": maraText,

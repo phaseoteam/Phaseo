@@ -104,6 +104,20 @@ export function applyReasoningParams(args: {
 		if (effort !== undefined) args.request.reasoning_effort = effort;
 		return;
 	}
+	if (args.providerId === "doubleword") {
+		const effort = typeof reasoning.effort === "string"
+			? reasoning.effort
+			: reasoning.enabled === false
+				? "none"
+				: reasoning.enabled === true
+					? "medium"
+					: undefined;
+		if (effort !== undefined) {
+			if ("input" in args.request) args.request.reasoning = { effort };
+			else args.request.reasoning_effort = effort;
+		}
+		return;
+	}
 	if (args.providerId === "thinking-machines") {
 		const effort = typeof reasoning.effort === "string"
 			? reasoning.effort

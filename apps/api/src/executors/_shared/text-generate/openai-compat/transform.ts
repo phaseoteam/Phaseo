@@ -87,6 +87,7 @@ function usesOpenAIResponsesShape(providerId?: string): boolean {
 		canonicalProviderId === "byteplus" ||
 		canonicalProviderId === "clarifai" ||
 		canonicalProviderId === "darkbloom" ||
+		canonicalProviderId === "doubleword" ||
 		canonicalProviderId === "stepfun" ||
 		canonicalProviderId === "sakana" ||
 		canonicalProviderId === "sail-research" ||

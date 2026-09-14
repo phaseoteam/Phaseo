@@ -20,6 +20,7 @@ import {
 } from "../nebius-token-factory/config";
 import { BYTEPLUS_API_KEY_ENVS, BYTEPLUS_BASE_URL_ENVS } from "../byteplus/config";
 import { INFERENCE_NET_API_KEY_ENVS } from "../inference-net/config";
+import { DOUBLEWORD_API_KEY_ENVS } from "../doubleword/config";
 import { LIQUID_AI_API_KEY_ENVS } from "../liquid-ai/config";
 import { MISTRAL_API_KEY_ENVS } from "../mistral/config";
 import { MOONSHOT_API_KEY_ENVS } from "../moonshotai/config";
@@ -273,6 +274,9 @@ export function resolveOpenAICompatKey(args: Pick<ProviderExecuteArgs, "provider
 	}
 	if (args.providerId === "inference-net") {
 		return resolveProviderKey(args, () => readFirstBinding(INFERENCE_NET_API_KEY_ENVS));
+	}
+	if (args.providerId === "doubleword") {
+		return resolveProviderKey(args, () => readFirstBinding(DOUBLEWORD_API_KEY_ENVS));
 	}
 	if (args.providerId === "liquid" || args.providerId === "liquid-ai") {
 		return resolveProviderKey(args, () => readFirstBinding(LIQUID_AI_API_KEY_ENVS));
