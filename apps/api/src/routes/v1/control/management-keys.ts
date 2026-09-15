@@ -204,7 +204,7 @@ async function issueManagementKey(args: {
 	const pepper = resolveActiveKeyPepper(getBindings());
 	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
 
-	await enforceWorkspaceKeyLimit(args.workspaceId);
+	await enforceWorkspaceKeyLimit(args.workspaceId, "management");
 	const generated = generateManagementKey();
 	const hash = await hmacSecret(generated.secret, pepper);
 	const { data, error } = await getSupabaseAdmin()

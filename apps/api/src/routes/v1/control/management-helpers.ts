@@ -5,6 +5,7 @@ const SUCCESS_PAYMENT_STATUSES = ["Succeeded", "succeeded", "paid", "Paid"] as c
 const DEFAULT_KEY_LIMIT = 100;
 
 export const CHAT_MANAGED_KEY_NAME = "__chat_route_managed_key__";
+export type WorkspaceKeyType = "api" | "management";
 
 export function getWorkspaceKeyLimit(): number {
 	const bindings = getBindings();
@@ -56,7 +57,11 @@ export async function userHasPaidWorkspaceAccess(userId: string): Promise<boolea
 	return (count ?? 0) > 0;
 }
 
-export async function enforceWorkspaceKeyLimit(workspaceId: string, excludeApiKeyId?: string): Promise<void> {
+export async function enforceWorkspaceKeyLimit(
+	workspaceId: string,
+	keyType: WorkspaceKeyType,
+	excludeApiKeyId?: string,
+): Promise<void> {
 	const admin = getSupabaseAdmin();
 	const keyLimit = getWorkspaceKeyLimit();
 	const nowIso = new Date().toISOString();
@@ -64,41 +69,43 @@ export async function enforceWorkspaceKeyLimit(workspaceId: string, excludeApiKe
 	// Retained inactive and expired rows are useful for audit history but should
 	// not consume the number of credentials that a workspace can use.
 
-	const [
-		{ count: apiKeyCount, error: apiKeyCountError },
-		{ count: managementKeyCount, error: managementKeyCountError },
-	] = await Promise.all([
-		(() => {
-			let query = admin
-				.from("keys")
-				.select("id", { count: "exact", head: true })
-				.eq("workspace_id", workspaceId)
-				.eq("status", "active")
-				.eq("soft_blocked", false)
-				.or(notExpiredFilter)
-				.neq("name", CHAT_MANAGED_KEY_NAME);
-			if (excludeApiKeyId) query = query.neq("id", excludeApiKeyId);
-			return query;
-		})(),
-		admin
+	let count: number | null = null;
+	let countError: { message?: string } | null = null;
+
+	if (keyType === "api") {
+		let query = admin
+			.from("keys")
+			.select("id", { count: "exact", head: true })
+			.eq("workspace_id", workspaceId)
+			.eq("status", "active")
+			.eq("soft_blocked", false)
+			.or(notExpiredFilter)
+			.neq("name", CHAT_MANAGED_KEY_NAME);
+		if (excludeApiKeyId) query = query.neq("id", excludeApiKeyId);
+		const result = await query;
+		count = result.count;
+		countError = result.error;
+	} else {
+		const result = await admin
 			.from("management_keys")
 			.select("id", { count: "exact", head: true })
 			.eq("workspace_id", workspaceId)
 			.eq("status", "active")
 			.eq("soft_blocked", false)
-			.or(notExpiredFilter),
-	]);
-
-	if (apiKeyCountError) {
-		throw new Error(apiKeyCountError.message || "Failed to count workspace API keys");
-	}
-	if (managementKeyCountError) {
-		throw new Error(managementKeyCountError.message || "Failed to count workspace management keys");
+			.or(notExpiredFilter);
+		count = result.count;
+		countError = result.error;
 	}
 
-	const totalKeys = (apiKeyCount ?? 0) + (managementKeyCount ?? 0);
-	if (totalKeys >= keyLimit) {
-		throw new Error(`Key limit reached (${keyLimit}) for this workspace. Delete an existing key to create a new one.`);
+	if (countError) {
+		throw new Error(countError.message || `Failed to count workspace ${keyType} keys`);
+	}
+
+	if ((count ?? 0) >= keyLimit) {
+		const keyLabel = keyType === "api" ? "API" : "management";
+		throw new Error(
+			`Key limit reached (${keyLimit}) for this workspace. Delete an existing ${keyLabel} key to create a new one.`,
+		);
 	}
 }
 

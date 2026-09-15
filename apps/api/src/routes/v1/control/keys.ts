@@ -587,7 +587,7 @@ async function handleCreateKey(req: Request) {
 	}
 
 	try {
-		await enforceWorkspaceKeyLimit(workspaceScope.workspaceId);
+		await enforceWorkspaceKeyLimit(workspaceScope.workspaceId, "api");
 		const creatorUserId =
 			auth.value.authMethod === "oauth" && auth.value.userId
 				? auth.value.userId
@@ -910,7 +910,7 @@ async function handleRotateKey(req: Request) {
 			.eq("workspace_id", auth.value.workspaceId).neq("name", CHAT_MANAGED_KEY_NAME).eq(lookupColumn, keyId).maybeSingle();
 		if (fetchError) throw new Error(fetchError.message || "Failed to fetch API key");
 		if (!existing || String(existing.status ?? "").toLowerCase() === "deleted") return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
-		await enforceWorkspaceKeyLimit(auth.value.workspaceId, existing.id);
+		await enforceWorkspaceKeyLimit(auth.value.workspaceId, "api", existing.id);
 		const pepper = resolveActiveKeyPepper(getBindings());
 		if (!pepper) return json({ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE is not configured" }, 503, { "Cache-Control": "no-store" });
 		const generated = generateGatewayKey();

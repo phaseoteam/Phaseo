@@ -97,14 +97,14 @@ describe("management helpers", () => {
 		vi.resetModules();
 	});
 
-	it("enforces the combined workspace key cap across API and management keys", async () => {
-		state.keysCount = 3;
-		state.managementKeysCount = 2;
+	it("enforces the API key cap independently from management keys", async () => {
+		state.keysCount = 5;
+		state.managementKeysCount = 5;
 
 		const { enforceWorkspaceKeyLimit } = await import("./management-helpers");
 
-		await expect(enforceWorkspaceKeyLimit("ws_1")).rejects.toThrow(
-			"Key limit reached (5) for this workspace. Delete an existing key to create a new one.",
+		await expect(enforceWorkspaceKeyLimit("ws_1", "api")).rejects.toThrow(
+			"Key limit reached (5) for this workspace. Delete an existing API key to create a new one.",
 		);
 
 		expect(state.keyQueryCalls).toEqual(
@@ -115,6 +115,23 @@ describe("management helpers", () => {
 				{ method: "neq", args: ["name", "__chat_route_managed_key__"] },
 			]),
 		);
+		expect(state.managementKeyQueryCalls).toHaveLength(0);
+		expect(state.keyQueryCalls.find((call) => call.method === "or")?.args[0]).toMatch(
+			/^expires_at\.is\.null,expires_at\.gt\.\d{4}-\d{2}-\d{2}T/,
+		);
+	});
+
+	it("enforces the management key cap independently from API keys", async () => {
+		state.keysCount = 5;
+		state.managementKeysCount = 5;
+
+		const { enforceWorkspaceKeyLimit } = await import("./management-helpers");
+
+		await expect(enforceWorkspaceKeyLimit("ws_1", "management")).rejects.toThrow(
+			"Key limit reached (5) for this workspace. Delete an existing management key to create a new one.",
+		);
+
+		expect(state.keyQueryCalls).toHaveLength(0);
 		expect(state.managementKeyQueryCalls).toEqual(
 			expect.arrayContaining([
 				{ method: "eq", args: ["workspace_id", "ws_1"] },
@@ -122,11 +139,8 @@ describe("management helpers", () => {
 				{ method: "eq", args: ["soft_blocked", false] },
 			]),
 		);
-		expect(state.keyQueryCalls.find((call) => call.method === "or")?.args[0]).toMatch(
+		expect(state.managementKeyQueryCalls.find((call) => call.method === "or")?.args[0]).toMatch(
 			/^expires_at\.is\.null,expires_at\.gt\.\d{4}-\d{2}-\d{2}T/,
-		);
-		expect(state.managementKeyQueryCalls.find((call) => call.method === "or")?.args[0]).toBe(
-			state.keyQueryCalls.find((call) => call.method === "or")?.args[0],
 		);
 	});
 

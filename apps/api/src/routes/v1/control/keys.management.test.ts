@@ -24,7 +24,7 @@ const state = vi.hoisted(() => ({
 	membershipRows: [] as Array<Record<string, unknown> | null>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	deleteFilters: [] as Array<{ table: string; column: string; value: unknown }>,
-	enforceWorkspaceKeyLimit: vi.fn(async (_workspaceId: string) => undefined),
+	enforceWorkspaceKeyLimit: vi.fn(async (_workspaceId: string, _keyType: string, _excludeApiKeyId?: string) => undefined),
 	setKeyVersion: vi.fn(async () => undefined),
 	bindings: { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" } as Record<string, unknown>,
 }));
@@ -283,7 +283,7 @@ describe("management key routes", () => {
 		const body = await response.json();
 
 		expect(response.status).toBe(201);
-		expect(state.enforceWorkspaceKeyLimit).toHaveBeenCalledWith("ws_1");
+		expect(state.enforceWorkspaceKeyLimit).toHaveBeenCalledWith("ws_1", "api");
 		expect(state.insertPayloads[0]).toMatchObject({
 			workspace_id: "ws_1",
 			name: "Analytics Key",

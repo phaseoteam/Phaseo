@@ -76,7 +76,8 @@ export async function userHasPaidTeamAccess(
 
 export async function enforceTeamKeyLimit(
 	supabase: DbClient,
-	workspaceId: string
+	workspaceId: string,
+	keyType: "api" | "management",
 ): Promise<void> {
 	const { data: teamRow, error: teamError } = await supabase
 		.from("workspaces")
@@ -90,30 +91,30 @@ export async function enforceTeamKeyLimit(
 	if (tier === "enterprise") return;
 
 	const keyLimit = getNonEnterpriseKeyLimit();
-
-	const [
-		{ count: apiKeyCount, error: apiKeyCountError },
-		{ count: managementKeyCount, error: managementKeyCountError },
-	] = await Promise.all([
-		supabase
+	const notExpiredFilter = `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`;
+	const countResult = keyType === "api"
+		? await supabase
 			.from("keys")
 			.select("id", { count: "exact", head: true })
 			.eq("workspace_id", workspaceId)
-			.neq("status", "deleted")
-			.neq("name", CHAT_MANAGED_KEY_NAME),
-		supabase
+			.eq("status", "active")
+			.eq("soft_blocked", false)
+			.or(notExpiredFilter)
+			.neq("name", CHAT_MANAGED_KEY_NAME)
+		: await supabase
 			.from("management_keys")
 			.select("id", { count: "exact", head: true })
-			.eq("workspace_id", workspaceId),
-	]);
+			.eq("workspace_id", workspaceId)
+			.eq("status", "active")
+			.eq("soft_blocked", false)
+			.or(notExpiredFilter);
 
-	if (apiKeyCountError) throw apiKeyCountError;
-	if (managementKeyCountError) throw managementKeyCountError;
+	if (countResult.error) throw countResult.error;
 
-	const totalKeys = (apiKeyCount ?? 0) + (managementKeyCount ?? 0);
-	if (totalKeys >= keyLimit) {
+	if ((countResult.count ?? 0) >= keyLimit) {
+		const keyLabel = keyType === "api" ? "API" : "management";
 		throw new Error(
-			`Key limit reached (${keyLimit}) for this team. Delete an existing key or upgrade to Enterprise for unlimited keys.`
+			`Key limit reached (${keyLimit}) for this team. Delete an existing ${keyLabel} key or upgrade to Enterprise for unlimited keys.`,
 		);
 	}
 }

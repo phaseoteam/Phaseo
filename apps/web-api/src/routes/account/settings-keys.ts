@@ -65,16 +65,16 @@ function limitMetadata(values: Record<string, unknown>) {
 	};
 }
 
-async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof requireAccountWorkspace>>>, env: Env) {
+async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof requireAccountWorkspace>>>, env: Env, keyType: "api" | "management") {
 	const workspace = await context.client.from("workspaces").select("tier").eq("id", context.workspaceId).maybeSingle(); if (workspace.error) throw workspace.error;
 	if (String(workspace.data?.tier ?? "basic").toLowerCase() === "enterprise") return;
 	const limit = Math.max(1, Number.parseInt(env.NON_ENTERPRISE_KEY_LIMIT ?? "100", 10) || 100);
-	const [api, management] = await Promise.all([
-		context.client.from("keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__"),
-		context.client.from("management_keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId),
-	]);
-	if (api.error || management.error) throw api.error ?? management.error;
-	if ((api.count ?? 0) + (management.count ?? 0) >= limit) throw new Error("key_limit_reached");
+	const notExpiredFilter = `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`;
+	const countResult = keyType === "api"
+		? await context.client.from("keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter).neq("name", "__chat_route_managed_key__")
+		: await context.client.from("management_keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter);
+	if (countResult.error) throw countResult.error;
+	if ((countResult.count ?? 0) >= limit) throw new Error("key_limit_reached");
 }
 
 async function invalidateGatewayKey(env: Env, keyId: string) {
@@ -116,7 +116,7 @@ accountSettingsKeysRouter.post("/keys", async (c) => {
 	const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const workspaceId = String(body.workspaceId ?? "").trim(); const name = String(body.name ?? "").trim();
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId }); if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); if (!name) return c.json({ error: "invalid_name" }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
-		await enforceKeyLimit(context, c.env); const key = generateKey("sk"); const limits = limitMetadata(body.limits ?? {});
+		await enforceKeyLimit(context, c.env, "api"); const key = generateKey("sk"); const limits = limitMetadata(body.limits ?? {});
 		const result = await context.client.from("keys").insert({ workspace_id: workspaceId, name, kid: key.kid, hash: await hmac(c.env, key.secret), prefix: key.prefix, status: "active", scopes: typeof body.scopes === "string" ? body.scopes : "[]", created_by: user.id, daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos }).select("id").maybeSingle();
 		if (result.error || !result.data?.id) throw result.error ?? new Error("key_write_failed");
 		await recordWorkspaceAuditEvent(context.client, { workspaceId, actorUserId: user.id, action: "api_key.created", targetType: "api_key", targetId: result.data.id, targetName: name, metadata: { prefix: key.prefix, status: "active", limits }, requestId: requestId(c) });
@@ -178,7 +178,7 @@ accountSettingsKeysRouter.post("/management-keys", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS); const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: String(body.workspaceId ?? "") }); if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const scopes = body.template ? templateScopes(String(body.template)) : Array.isArray(body.scopes) ? body.scopes.filter((scope: unknown) => CONTROL_SCOPES.includes(scope as any)) : null; if (!scopes?.length) return c.json({ error: "invalid_scopes" }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
-		await enforceKeyLimit(context, c.env); const key = generateKey("mk"); const name = String(body.name ?? "").trim(); const expiresAt = optionalExpiry(body.expiresAt) ?? null;
+		await enforceKeyLimit(context, c.env, "management"); const key = generateKey("mk"); const name = String(body.name ?? "").trim(); const expiresAt = optionalExpiry(body.expiresAt) ?? null;
 		const result = await context.client.from("management_keys").insert({ workspace_id: context.workspaceId, name, kid: key.kid, hash: await hmac(c.env, key.secret), prefix: key.prefix, status: "active", scopes: JSON.stringify(scopes), expires_at: expiresAt, created_by: user.id, created_at: new Date().toISOString() }).select("id,created_at").maybeSingle(); if (result.error || !result.data?.id) throw result.error ?? new Error("key_write_failed");
 		await recordWorkspaceAuditEvent(context.client, { workspaceId: context.workspaceId, actorUserId: user.id, action: "management_key.created", targetType: "management_key", targetId: result.data.id, targetName: name, metadata: { prefix: key.prefix, status: "active", accessTemplate: body.template ?? "custom", expiresAt }, requestId: requestId(c) });
 		return c.json({ id: result.data.id, plaintext: key.plaintext, prefix: key.prefix, createdAt: result.data.created_at }, 200, PRIVATE_NO_STORE_HEADERS);
