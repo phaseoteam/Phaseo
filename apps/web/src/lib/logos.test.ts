@@ -19,12 +19,18 @@ describe("logos", () => {
 		expect(getLogoLabel("Digital Ocean")).toBe("DigitalOcean");
 	});
 
-	test("resolves the Doubleword logo by provider id", () => {
-		expect(resolveLogo("doubleword")).toMatchObject({
+	test("resolves the Doubleword themed variants", () => {
+		expect(resolveLogo("doubleword", { theme: "light" })).toMatchObject({
 			id: "doubleword",
 			label: "Doubleword",
-			src: "/logos/doubleword.svg",
-			variant: "color",
+			src: "/logos/doubleword_light.svg",
+			variant: "light",
+		});
+		expect(resolveLogo("doubleword", { theme: "dark" })).toMatchObject({
+			id: "doubleword",
+			label: "Doubleword",
+			src: "/logos/doubleword_dark.svg",
+			variant: "dark",
 		});
 	});
 

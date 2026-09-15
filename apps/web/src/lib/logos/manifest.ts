@@ -183,7 +183,8 @@ export const logoManifest = {
 		color: "/logos/deepinfra.svg",
 	},
 	doubleword: {
-		color: "/logos/doubleword.svg",
+		light: "/logos/doubleword_light.svg",
+		dark: "/logos/doubleword_dark.svg",
 	},
 	deepseek: {
 		color: "/logos/deepseek.svg",
