@@ -1014,10 +1014,10 @@ export default async function PricingPage() {
 			<div className="container mx-auto max-w-7xl px-4 py-12 sm:py-16">
 				<section className="space-y-7">
 					<h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-						Pay as you go by default. Add Enterprise when your team needs it.
+						Pay as you go by default. Self-serve Enterprise when your team needs it.
 					</h1>
 					<p className="max-w-3xl text-base leading-7 text-muted-foreground">
-						Buy credits when you need them and pay for what you use. Enterprise identity and payment benefits are optional, priced openly, and activated without a sales call. For model-level cost estimates, use the{" "}
+						Buy credits when you need them and pay for what you use. Self-serve Enterprise is a separate monthly workspace subscription for teams that need identity, governance, and priority support; it does not change model-usage pricing and can be activated without a sales call. For model-level cost estimates, use the{" "}
 						<Link className="underline underline-offset-4" href="/tools/pricing-calculator">
 							Pricing Calculator
 						</Link>
@@ -1059,13 +1059,13 @@ export default async function PricingPage() {
 							},
 							{
 								icon: ShieldCheck,
-								title: "Enterprise is optional",
-								body: "Add SSO, SCIM and governance without changing usage pricing.",
+								title: "Self-serve Enterprise",
+								body: "Add SSO, SCIM, governance and priority support without changing usage pricing.",
 							},
 							{
 								icon: ReceiptText,
 								title: "Prices stay public",
-								body: "Answer a short questionnaire and subscribe immediately.",
+								body: "See the Enterprise subscription price before you subscribe.",
 							},
 						].map((item) => {
 							const Icon = item.icon;
@@ -1095,7 +1095,7 @@ export default async function PricingPage() {
 							Model usage and Phaseo fees are shown separately so you can see what is charged, by whom, and when.
 						</p>
 					</div>
-					<dl className="grid border-y border-zinc-200/80 dark:border-zinc-800/80 lg:grid-cols-3 lg:divide-x lg:divide-zinc-200/80 lg:dark:divide-zinc-800/80">
+					<dl className="grid border-y border-zinc-200/80 dark:border-zinc-800/80 lg:grid-cols-4 lg:divide-x lg:divide-zinc-200/80 lg:dark:divide-zinc-800/80">
 						{[
 							{
 								icon: Coins,
@@ -1114,6 +1114,12 @@ export default async function PricingPage() {
 								term: "Bring Your Own Key",
 								value: `${BYOK_MONTHLY_FREE_REQUESTS.toLocaleString("en-US")} requests included, then ${BYOK_SERVICE_FEE_PERCENT}% of provider-equivalent cost`,
 								detail: "Your provider bills model usage directly. The allowance resets at the start of each UTC month.",
+							},
+							{
+								icon: ShieldCheck,
+								term: "Self-serve Enterprise",
+								value: "Separate monthly subscription",
+								detail: "Workspace identity, governance, and priority support. Model usage and credit fees remain separate.",
 							},
 						].map((item) => {
 							const Icon = item.icon;
