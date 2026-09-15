@@ -59,6 +59,10 @@ export async function userHasPaidWorkspaceAccess(userId: string): Promise<boolea
 export async function enforceWorkspaceKeyLimit(workspaceId: string, excludeApiKeyId?: string): Promise<void> {
 	const admin = getSupabaseAdmin();
 	const keyLimit = getWorkspaceKeyLimit();
+	const nowIso = new Date().toISOString();
+	const notExpiredFilter = `expires_at.is.null,expires_at.gt.${nowIso}`;
+	// Retained inactive and expired rows are useful for audit history but should
+	// not consume the number of credentials that a workspace can use.
 
 	const [
 		{ count: apiKeyCount, error: apiKeyCountError },
@@ -69,7 +73,9 @@ export async function enforceWorkspaceKeyLimit(workspaceId: string, excludeApiKe
 				.from("keys")
 				.select("id", { count: "exact", head: true })
 				.eq("workspace_id", workspaceId)
-				.neq("status", "deleted")
+				.eq("status", "active")
+				.eq("soft_blocked", false)
+				.or(notExpiredFilter)
 				.neq("name", CHAT_MANAGED_KEY_NAME);
 			if (excludeApiKeyId) query = query.neq("id", excludeApiKeyId);
 			return query;
@@ -77,7 +83,10 @@ export async function enforceWorkspaceKeyLimit(workspaceId: string, excludeApiKe
 		admin
 			.from("management_keys")
 			.select("id", { count: "exact", head: true })
-			.eq("workspace_id", workspaceId),
+			.eq("workspace_id", workspaceId)
+			.eq("status", "active")
+			.eq("soft_blocked", false)
+			.or(notExpiredFilter),
 	]);
 
 	if (apiKeyCountError) {
