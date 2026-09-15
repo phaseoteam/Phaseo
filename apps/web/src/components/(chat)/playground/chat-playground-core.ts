@@ -877,7 +877,7 @@ export type ModelOption = {
 	providerAvailability: Record<string, boolean>;
 	releaseDate: string | null;
 	gatewayStatus: "active" | "inactive";
-	chatBlockedReasons: Array<{ source: "workspace" | "account" | "guardrail"; label: string; settingsHref: string }>;
+	chatBlockedReasons: Array<{ source: "workspace" | "guardrail"; label: string; settingsHref: string }>;
 };
 
 export const PENDING_STATUSES = new Set([
