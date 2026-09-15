@@ -1,0 +1,106 @@
+{
+  "key": "kilo:x-ai/grok-4.20-multi-agent:text.generate",
+  "api_provider_id": "kilo",
+  "provider_slug": "kilo",
+  "api_model_id": "x-ai/grok-4.20-multi-agent",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.19999999999999998,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "official_models",
+        "url": "https://api.kilo.ai/api/gateway/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Kilo Gateway live public model catalogue."
+      }
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "official_models",
+        "url": "https://api.kilo.ai/api/gateway/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Kilo Gateway live public model catalogue."
+      }
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "official_models",
+        "url": "https://api.kilo.ai/api/gateway/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Kilo Gateway live public model catalogue."
+      }
+    },
+    {
+      "meter": "native_web_search_requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.005,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": {
+        "kind": "official_models",
+        "url": "https://api.kilo.ai/api/gateway/models",
+        "accessed_at": "2026-08-24T00:00:00Z",
+        "notes": "Kilo Gateway live public model catalogue."
+      }
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [
+    {
+      "kind": "official_models",
+      "url": "https://api.kilo.ai/api/gateway/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Live model availability, exact ID, modalities, limits, supported parameters, and pricing."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Synchronized from Kilo Gateway's unauthenticated live models endpoint."
+  }
+}
