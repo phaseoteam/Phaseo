@@ -1014,10 +1014,14 @@ export default async function PricingPage() {
 			<div className="container mx-auto max-w-7xl px-4 py-12 sm:py-16">
 				<section className="space-y-7">
 					<h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-						Pay as you go by default. Self-serve Enterprise when your team needs it.
+						{showEnterprisePreview
+							? "Pay as you go by default. Self-serve Enterprise when your team needs it."
+							: "Pay as you go by default."}
 					</h1>
 					<p className="max-w-3xl text-base leading-7 text-muted-foreground">
-						Buy credits when you need them and pay for what you use. Self-serve Enterprise is a separate monthly workspace subscription for teams that need identity, governance, and priority support; it does not change model-usage pricing and can be activated without a sales call. For model-level cost estimates, use the{" "}
+						{showEnterprisePreview
+							? "Buy credits when you need them and pay for what you use. Self-serve Enterprise is a separate monthly workspace subscription for teams that need identity, governance, and priority support; it does not change model-usage pricing and can be activated without a sales call. For model-level cost estimates, use the "
+							: "Buy credits when you need them and pay for what you use. Enterprise identity, governance, and priority support are currently in preview for eligible workspaces. For model-level cost estimates, use the "}
 						<Link className="underline underline-offset-4" href="/tools/pricing-calculator">
 							Pricing Calculator
 						</Link>
@@ -1059,13 +1063,17 @@ export default async function PricingPage() {
 							},
 							{
 								icon: ShieldCheck,
-								title: "Self-serve Enterprise",
-								body: "Add SSO, SCIM, governance and priority support without changing usage pricing.",
+								title: showEnterprisePreview ? "Self-serve Enterprise" : "Enterprise preview",
+								body: showEnterprisePreview
+									? "Add SSO, SCIM, governance and priority support without changing usage pricing."
+									: "Identity, governance, and priority support are being prepared for eligible workspaces.",
 							},
 							{
 								icon: ReceiptText,
-								title: "Prices stay public",
-								body: "See the Enterprise subscription price before you subscribe.",
+								title: showEnterprisePreview ? "Prices stay public" : "Public pricing",
+								body: showEnterprisePreview
+									? "See the Enterprise subscription price before you subscribe."
+									: "Compare model usage prices openly in the catalog and calculator.",
 							},
 						].map((item) => {
 							const Icon = item.icon;
@@ -1117,9 +1125,11 @@ export default async function PricingPage() {
 							},
 							{
 								icon: ShieldCheck,
-								term: "Self-serve Enterprise",
-								value: "Separate monthly subscription",
-								detail: "Workspace identity, governance, and priority support. Model usage and credit fees remain separate.",
+								term: showEnterprisePreview ? "Self-serve Enterprise" : "Enterprise preview",
+								value: showEnterprisePreview ? "Separate monthly subscription" : "Availability is expanding",
+								detail: showEnterprisePreview
+									? "Workspace identity, governance, and priority support. Model usage and credit fees remain separate."
+									: "Workspace identity, governance, and priority support are being prepared for eligible workspaces.",
 							},
 						].map((item) => {
 							const Icon = item.icon;
@@ -1167,7 +1177,7 @@ export default async function PricingPage() {
 											</span>
 										</span>
 									</th>
-									<th className="enterprise-column px-4 py-3 text-center font-bold text-foreground">Enterprise</th>
+								<th className="enterprise-column px-4 py-3 text-center font-bold text-foreground">{showEnterprisePreview ? "Enterprise" : "Enterprise preview"}</th>
 									{COMPETITORS.map((competitor) => (
 										<th key={competitor.key} className="competitor-cell hidden px-4 py-3 text-center font-semibold text-foreground">
 											<a href={competitor.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 underline decoration-transparent underline-offset-4 hover:decoration-current">
@@ -1211,7 +1221,7 @@ export default async function PricingPage() {
 											<PlanCell cell={row.payg} label={`${row.feature}, Pay As You Go`} />
 										</td>
 										<td className="enterprise-column px-4 py-3 align-middle text-center">
-											<PlanCell cell={row.enterprise ?? row.payg} label={`${row.feature}, Enterprise`} />
+											<PlanCell cell={row.enterprise ?? row.payg} label={`${row.feature}, ${showEnterprisePreview ? "Enterprise" : "Enterprise preview"}`} />
 										</td>
 										{COMPETITORS.map((competitor) => (
 											<td key={competitor.key} className={`${isBestChoice(row.feature, competitor.key, getCompetitorCell(row.feature, competitor.key)) ? "best-cell " : ""}competitor-cell hidden px-4 py-3 align-middle text-center`}>
@@ -1240,7 +1250,7 @@ export default async function PricingPage() {
 						</h2>
 					</div>
 					<div className="space-y-8">
-						{FAQ_SECTIONS.map((section) => (
+						{FAQ_SECTIONS.filter((section) => showEnterprisePreview || section.id !== "enterprise").map((section) => (
 							<div key={section.id} className="space-y-2">
 								<h3 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">
 									{section.title}

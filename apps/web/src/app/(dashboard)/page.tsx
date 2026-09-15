@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
+import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
 import { getGatewayHeroVariant } from "@/lib/flags/gatewayHero";
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import DatabaseStats from "@/components/landingPage/DatabaseStatistics";
@@ -131,7 +132,13 @@ function DatabaseStatsFallback() {
 	);
 }
 
-function LandingSecondarySections({ isBeta }: { isBeta: boolean }) {
+function LandingSecondarySections({
+	isBeta,
+	showEnterprisePreview,
+}: {
+	isBeta: boolean;
+	showEnterprisePreview: boolean;
+}) {
 	return (
 		<>
 			<section className="space-y-6 border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">
@@ -162,7 +169,9 @@ function LandingSecondarySections({ isBeta }: { isBeta: boolean }) {
 					</p>
 				</div>
 				<div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
-					{PRICING_POINTS.map((point) => {
+					{PRICING_POINTS.filter(
+						(point) => showEnterprisePreview || point.title !== "Self-serve Enterprise",
+					).map((point) => {
 						const Icon = point.icon;
 						return (
 							<div
@@ -228,9 +237,11 @@ function LandingSecondarySections({ isBeta }: { isBeta: boolean }) {
 function LandingPage({
 	isBeta,
 	modelPrices,
+	showEnterprisePreview,
 }: {
 	isBeta: boolean;
 	modelPrices: HomeModelPrices;
+	showEnterprisePreview: boolean;
 }) {
 	return (
 		<div className="container mx-auto mt-16 mb-20 px-4 sm:mt-20 sm:px-6 lg:px-8">
@@ -326,14 +337,14 @@ function LandingPage({
 						modelPrices={modelPrices}
 					/>
 				</section>
-				<LandingSecondarySections isBeta={isBeta} />
+				<LandingSecondarySections isBeta={isBeta} showEnterprisePreview={showEnterprisePreview} />
 			</div>
 		</div>
 	);
 }
 
 export default async function Page() {
-	const [heroVariant, modelPrices] = await Promise.all([
+	const [heroVariant, modelPrices, showEnterprisePreview] = await Promise.all([
 		getGatewayHeroVariant(),
 		fetchFrontendGatewayModels()
 			.then(buildHomeModelPrices)
@@ -341,6 +352,7 @@ export default async function Page() {
 				console.warn("[Homepage] failed to load gateway model prices", error);
 				return {};
 			}),
+		enterpriseSelfServePreviewEnabled(),
 	]);
 	const softwareApplicationSchema = {
 		"@context": "https://schema.org",
@@ -407,6 +419,7 @@ export default async function Page() {
 			<LandingPage
 				isBeta={heroVariant === "experimental"}
 				modelPrices={modelPrices}
+				showEnterprisePreview={showEnterprisePreview}
 			/>
 		</>
 	);

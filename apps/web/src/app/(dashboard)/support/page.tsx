@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import ContactPage from "../contact/page";
+import ContactPage from "@/app/(dashboard)/contact/page";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Support",
