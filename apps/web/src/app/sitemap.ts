@@ -65,7 +65,6 @@ const staticRoutes: Array<{
 		{ path: "/migrate", changeFrequency: "weekly", priority: 0.7 },
 		{ path: "/gateway/marketplace", changeFrequency: "weekly", priority: 0.6 },
         { path: "/contribute", changeFrequency: "monthly", priority: 0.6 },
-        { path: "/roadmap", changeFrequency: "monthly", priority: 0.6 },
         { path: "/about", changeFrequency: "monthly", priority: 0.55 },
 		{ path: "/trust", changeFrequency: "monthly", priority: 0.55 },
         { path: "/contact", changeFrequency: "monthly", priority: 0.55 },

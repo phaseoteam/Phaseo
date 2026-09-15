@@ -24,7 +24,7 @@ const DIFFERENTIATORS = [
 	{
 		title: "Community-driven development",
 		description:
-			"Active community contributions and transparent roadmap accelerate the development of new adapters, features and open access to AI.",
+			"Active community contributions and a transparent release process accelerate new adapters, features, and open access to AI.",
 		icon: GitCommit,
 	},
 ];

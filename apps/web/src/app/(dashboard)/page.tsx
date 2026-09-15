@@ -4,11 +4,15 @@ import {
 	ArrowRight,
 	CalendarOff,
 	Coins,
+	GitBranch,
+	Handshake,
 	KeyRound,
+	ShieldCheck,
 	type LucideIcon,
 } from "lucide-react";
 import type { Metadata } from "next";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
+import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
 import { getGatewayHeroVariant } from "@/lib/flags/gatewayHero";
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import DatabaseStats from "@/components/landingPage/DatabaseStatistics";
@@ -40,19 +44,22 @@ import {
 
 export const metadata: Metadata = {
 	...buildMetadata({
-		title: "Phaseo: AI Gateway and Open Model Catalog",
-	description:
-			"Discover trusted model data, route requests through one open-source AI gateway, and observe cost, reliability, usage, and performance across providers.",
+		title: "Phaseo: The Open Gateway for Affordable AI",
+		description:
+			"Discover models, route across providers, and use an open-source AI gateway designed to keep inference accessible, portable, and transparent.",
 		path: "/",
 		keywords: [
 			"AI models",
 			"AI benchmarks",
 			"AI gateway",
+			"open-source AI gateway",
+			"affordable AI inference",
+			"provider-neutral AI",
 			"model pricing",
 			"AI providers",
 		],
 	}),
-	title: { absolute: "Phaseo: AI Gateway and Open Model Catalog" },
+	title: { absolute: "Phaseo: The Open Gateway for Affordable AI" },
 };
 
 const standardTier =
@@ -63,15 +70,42 @@ const standardFeeText = Number.isInteger(standardFeePct)
 	: String(standardFeePct);
 const GITHUB_HREF = "https://github.com/phaseoteam/Phaseo";
 
+const MISSION_PROOFS: Array<{
+	title: string;
+	body: string;
+	icon: LucideIcon;
+}> = [
+	{
+		title: "Open source",
+		body: "Inspect, extend, and improve the gateway.",
+		icon: GitBranch,
+	},
+	{
+		title: "Provider neutral",
+		body: "Choose the provider that fits your work.",
+		icon: Handshake,
+	},
+	{
+		title: "Lower overhead",
+		body: "Use efficiency and partnerships to reduce avoidable cost.",
+		icon: Coins,
+	},
+];
+
 const PRICING_POINTS: Array<{
 	title: string;
 	body: string;
 	icon: LucideIcon;
 }> = [
 	{
-		title: "Pay as you go, full stop",
-		body: "No enterprise plan, contract, subscription, minimum spend, or monthly or annual commitment.",
+		title: "Pay as you go for usage",
+		body: "No contract, subscription, or minimum spend for model usage.",
 		icon: CalendarOff,
+	},
+	{
+		title: "Self-serve Enterprise",
+		body: "An optional monthly workspace plan for SSO, SCIM, governance, and priority support.",
+		icon: ShieldCheck,
 	},
 	{
 		title: `${standardFeeText}% credit purchase fee`,
@@ -98,7 +132,13 @@ function DatabaseStatsFallback() {
 	);
 }
 
-function LandingSecondarySections({ isBeta }: { isBeta: boolean }) {
+function LandingSecondarySections({
+	isBeta,
+	showEnterprisePreview,
+}: {
+	isBeta: boolean;
+	showEnterprisePreview: boolean;
+}) {
 	return (
 		<>
 			<section className="space-y-6 border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">
@@ -120,11 +160,18 @@ function LandingSecondarySections({ isBeta }: { isBeta: boolean }) {
 			<section className="space-y-6 border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">
 				<div className="mx-auto max-w-3xl space-y-3 text-center">
 					<h2 className="text-3xl font-semibold tracking-[-0.05em] text-zinc-950 dark:text-zinc-50 sm:text-4xl">
-						Transparent pricing
+						Clear prices today. Lower overhead tomorrow.
 					</h2>
+					<p className="mx-auto max-w-2xl text-base leading-7 text-zinc-600 dark:text-zinc-300 md:text-lg">
+						Usage follows the model prices shown in the catalog. Today&apos;s credit purchase fee is
+						shown openly; our mission is to reduce avoidable platform cost as provider partnerships
+						and operating efficiency make that sustainable.
+					</p>
 				</div>
-				<div className="grid gap-6 lg:grid-cols-3">
-					{PRICING_POINTS.map((point) => {
+				<div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
+					{PRICING_POINTS.filter(
+						(point) => showEnterprisePreview || point.title !== "Self-serve Enterprise",
+					).map((point) => {
 						const Icon = point.icon;
 						return (
 							<div
@@ -190,9 +237,11 @@ function LandingSecondarySections({ isBeta }: { isBeta: boolean }) {
 function LandingPage({
 	isBeta,
 	modelPrices,
+	showEnterprisePreview,
 }: {
 	isBeta: boolean;
 	modelPrices: HomeModelPrices;
+	showEnterprisePreview: boolean;
 }) {
 	return (
 		<div className="container mx-auto mt-16 mb-20 px-4 sm:mt-20 sm:px-6 lg:px-8">
@@ -200,15 +249,13 @@ function LandingPage({
 				<section className="space-y-12 border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">
 					<div className="mx-auto max-w-5xl space-y-8 text-center">
 						<div className="space-y-6">
-							<h1 className="text-balance mx-auto max-w-5xl text-5xl font-semibold leading-[0.96] tracking-[-0.065em] text-zinc-950 dark:text-zinc-50 md:text-7xl md:leading-[0.94] 2xl:max-w-7xl 2xl:whitespace-nowrap">
-								One Platform for Every AI Model
+							<h1 className="text-balance mx-auto max-w-5xl text-5xl font-semibold leading-[0.96] tracking-[-0.065em] text-zinc-950 dark:text-zinc-50 md:text-7xl md:leading-[0.94] 2xl:max-w-7xl">
+								AI Inference Should Be Open, Affordable, and Yours to Choose.
 							</h1>
 							<p className="text-balance mx-auto max-w-[44rem] text-lg leading-8 text-zinc-600 dark:text-zinc-300 2xl:max-w-5xl 2xl:text-pretty">
-								Discover trusted model data, route requests
-								through one{" "}
-								<span className="whitespace-nowrap">OpenAI-compatible</span>{" "}
-								gateway, and observe cost, reliability, usage, and performance
-								across supported providers.
+								Phaseo is building the open-source, provider-neutral gateway for AI. Discover models,
+								route across providers, and keep your integration portable while better partnerships
+								help move the cost of inference down.
 							</p>
 						</div>
 						<div
@@ -261,6 +308,28 @@ function LandingPage({
 								</Button>
 							) : null}
 						</div>
+						<Link
+							className="mt-4 inline-flex items-center text-sm font-medium text-zinc-600 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-zinc-950 dark:text-zinc-300 dark:decoration-zinc-700 dark:hover:text-white"
+							href="/mission"
+						>
+							See what we are building toward
+							<ArrowRight aria-hidden="true" className="ml-2 size-4" />
+						</Link>
+
+						<div className="mx-auto mt-10 grid max-w-3xl gap-3 border-y border-zinc-200/80 py-4 text-left dark:border-zinc-800/80 sm:grid-cols-3">
+							{MISSION_PROOFS.map(({ body, icon: Icon, title }) => (
+								<div className="flex gap-3 sm:block" key={title}>
+									<Icon
+										aria-hidden="true"
+										className="mt-0.5 size-4 shrink-0 text-primary sm:mb-2"
+									/>
+									<div>
+										<p className="text-sm font-semibold text-zinc-950 dark:text-white">{title}</p>
+										<p className="mt-1 text-sm leading-5 text-zinc-500 dark:text-zinc-400">{body}</p>
+									</div>
+								</div>
+							))}
+						</div>
 					</div>
 
 					<HomeQuickstartSection
@@ -268,14 +337,14 @@ function LandingPage({
 						modelPrices={modelPrices}
 					/>
 				</section>
-				<LandingSecondarySections isBeta={isBeta} />
+				<LandingSecondarySections isBeta={isBeta} showEnterprisePreview={showEnterprisePreview} />
 			</div>
 		</div>
 	);
 }
 
 export default async function Page() {
-	const [heroVariant, modelPrices] = await Promise.all([
+	const [heroVariant, modelPrices, showEnterprisePreview] = await Promise.all([
 		getGatewayHeroVariant(),
 		fetchFrontendGatewayModels()
 			.then(buildHomeModelPrices)
@@ -283,6 +352,7 @@ export default async function Page() {
 				console.warn("[Homepage] failed to load gateway model prices", error);
 				return {};
 			}),
+		enterpriseSelfServePreviewEnabled(),
 	]);
 	const softwareApplicationSchema = {
 		"@context": "https://schema.org",
@@ -293,7 +363,7 @@ export default async function Page() {
 		operatingSystem: "Web",
 		url: absoluteUrl("/"),
 		description:
-			"Open-source AI gateway and model intelligence database for comparing AI models, providers, pricing, benchmarks, and reliability.",
+			"Open-source, provider-neutral AI gateway and model intelligence database for accessible, portable model access.",
 	};
 	const websiteSchema = {
 		"@context": "https://schema.org",
@@ -302,7 +372,7 @@ export default async function Page() {
 		alternateName: SITE_ALTERNATE_NAME,
 		url: absoluteUrl("/"),
 		description:
-			"Compare AI models, providers, pricing, benchmarks, and gateway reliability data.",
+			"Discover models and compare providers, pricing, benchmarks, and gateway reliability data through an open AI layer.",
 		potentialAction: {
 			"@type": "SearchAction",
 			target: `${absoluteUrl("/models")}?q={search_term_string}`,
@@ -349,6 +419,7 @@ export default async function Page() {
 			<LandingPage
 				isBeta={heroVariant === "experimental"}
 				modelPrices={modelPrices}
+				showEnterprisePreview={showEnterprisePreview}
 			/>
 		</>
 	);
