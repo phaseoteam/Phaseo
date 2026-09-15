@@ -74,6 +74,8 @@ interface SetUpAutoTopUpProps {
     balanceThreshold: number;
     topUpAmount: number;
     paymentMethodId?: string | null;
+    mfaBypassAcknowledged?: boolean;
+    mfaBypassPhrase?: string;
 }
 
 export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
@@ -85,13 +87,15 @@ export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
         balanceThreshold,
         topUpAmount,
         paymentMethodId = null,
+        mfaBypassAcknowledged = false,
+        mfaBypassPhrase = "",
     } = props;
     const minTopUpNanos = 1 * 1_000_000_000;
     if (topUpAmount < minTopUpNanos) {
         throw new Error("Minimum auto top-up amount is $1");
     }
 
-	const { data } = await fetchAccountWebApi<{ data: unknown[] }>("/api/account/credits/auto-top-up", context.accessToken, { method: "PUT", body: JSON.stringify({ workspaceId, enabled: true, balanceThreshold, topUpAmount, paymentMethodId }) });
+	const { data } = await fetchAccountWebApi<{ data: unknown[] }>("/api/account/credits/auto-top-up", context.accessToken, { method: "PUT", body: JSON.stringify({ workspaceId, enabled: true, balanceThreshold, topUpAmount, paymentMethodId, mfaBypassAcknowledged, mfaBypassPhrase }) });
 
     revalidatePath("/settings/credits");
     return data;

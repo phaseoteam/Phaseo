@@ -203,6 +203,15 @@ export default async function TermsPage() {
 					We still do not store full card details on our servers, even
 					when Auto Top-Up is enabled.
 				</p>
+				<p className="mt-1 text-foreground/80">
+					For security, we may require two-factor authentication before
+					enabling Auto Top-Up. If we make an option available to continue
+					without two-factor authentication, you must complete a separate
+					acknowledgment and confirmation step. By doing so, you acknowledge
+					the increased risk of unauthorized charges and that any refund or
+					charge dispute will be assessed under these Terms and applicable
+					law. Nothing in this section limits any mandatory consumer rights.
+				</p>
 
 				<h3 className="mt-3 text-base font-semibold text-foreground">
 					3.4 Refunds and expiry

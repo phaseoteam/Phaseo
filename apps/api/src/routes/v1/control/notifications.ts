@@ -24,6 +24,21 @@ function lastPath(req: Request) { return decodeURIComponent(new URL(req.url).pat
 function nanosToUsd(value: unknown) { const nanos = Number(value ?? 0); return Number.isFinite(nanos) ? nanos / 1_000_000_000 : 0; }
 function parseNotificationTestKind(value: unknown): NotificationTestKind | null { const kind = String(value ?? "notification_test"); return (NOTIFICATION_TEST_KINDS as readonly string[]).includes(kind) ? kind as NotificationTestKind : null; }
 export function usdToNanos(value: unknown): number | null { const usd = Number(value); const nanos = Math.round(usd * 1_000_000_000); const cents = Math.abs(usd * 100 - Math.round(usd * 100)) < 1e-8; return Number.isFinite(usd) && usd >= 0 && cents && Number.isSafeInteger(nanos) ? nanos : null; }
+export function hasVerifiedTotpFactor(factors: unknown): boolean {
+	return Array.isArray(factors) && factors.some((factor) =>
+		factor && typeof factor === "object" &&
+			(factor as Record<string, unknown>).factor_type === "totp" &&
+			(factor as Record<string, unknown>).status === "verified",
+	);
+}
+
+async function getMfaStatusForAutoTopUp(auth: { userId?: string | null }): Promise<boolean | Response> {
+	const userId = auth.userId?.trim();
+	if (!userId) return false;
+	const result = await getSupabaseAdmin().auth.admin.getUserById(userId);
+	if (result.error) return json({ error: "mfa_status_unavailable" }, 503, NO_STORE);
+	return hasVerifiedTotpFactor(result.data.user?.factors);
+}
 
 async function getSettings(req: Request) {
 	const access = await authorize(req, false); if ("response" in access) return access.response; const client = getSupabaseAdmin();
@@ -36,19 +51,37 @@ async function getSettings(req: Request) {
 }
 
 async function updateSettings(req: Request) {
-	const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const client = getSupabaseAdmin(); const changed: string[] = []; let walletUpdate: Record<string, unknown> | null = null;
+	const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const client = getSupabaseAdmin(); const changed: string[] = []; let autoTopUpUpdate: Record<string, unknown> | null = null; let mfaEnabled = false;
 	if (body.auto_top_up && typeof body.auto_top_up === "object" && !Array.isArray(body.auto_top_up)) {
 		const value = body.auto_top_up as Record<string, unknown>; if (typeof value.enabled !== "boolean") return json({ error: "bad_request", message: "auto_top_up.enabled is required" }, 400, NO_STORE);
+		if (value.enabled) { const mfa = await getMfaStatusForAutoTopUp(access.auth); if (isResponse(mfa)) return mfa; mfaEnabled = mfa; }
 		const amount = Number(value.amount_nanos ?? 0); const threshold = Number(value.balance_threshold_nanos ?? 0);
 		if (value.enabled && (!Number.isSafeInteger(amount) || amount < 1_000_000_000 || !Number.isSafeInteger(threshold) || threshold < 0 || !String(value.payment_method_id ?? "").trim())) return json({ error: "bad_request", message: "Enabled auto top-up requires a payment method, non-negative threshold, and amount of at least one credit" }, 400, NO_STORE);
-		walletUpdate = value.enabled ? { auto_top_up_enabled: true, low_balance_threshold: threshold, auto_top_up_amount: amount, auto_top_up_account_id: String(value.payment_method_id), updated_at: new Date().toISOString() } : { auto_top_up_enabled: false, low_balance_threshold: 0, auto_top_up_amount: 0, auto_top_up_account_id: null, updated_at: new Date().toISOString() };
+		autoTopUpUpdate = { enabled: value.enabled, balanceThreshold: value.enabled ? threshold : 0, amount: value.enabled ? amount : 0, paymentMethodId: value.enabled ? String(value.payment_method_id).trim() : null, bypassAcknowledged: value.mfa_bypass_acknowledged === true, bypassPhrase: typeof value.mfa_bypass_phrase === "string" ? value.mfa_bypass_phrase : null };
 		changed.push("auto_top_up");
 	}
 	const settingsUpdate: Record<string, unknown> = { workspace_id: access.auth.workspaceId, updated_at: new Date().toISOString() };
 	if (body.low_balance_email && typeof body.low_balance_email === "object" && !Array.isArray(body.low_balance_email)) { const value = body.low_balance_email as Record<string, unknown>; if (typeof value.enabled !== "boolean") return json({ error: "bad_request", message: "low_balance_email.enabled is required" }, 400, NO_STORE); const nanos = usdToNanos(value.threshold_usd); if (value.enabled && nanos === null) return json({ error: "bad_request", message: "threshold_usd must be non-negative with at most two decimal places" }, 400, NO_STORE); settingsUpdate.low_balance_email_enabled = value.enabled; settingsUpdate.low_balance_email_threshold_nanos = value.enabled ? nanos : 0; changed.push("low_balance_email"); }
 	if (body.email_preferences && typeof body.email_preferences === "object" && !Array.isArray(body.email_preferences)) { const value = body.email_preferences as Record<string, unknown>; const before = Object.keys(settingsUpdate).length; if (typeof value.auto_top_up_failure === "boolean") settingsUpdate.auto_top_up_failure_email_enabled = value.auto_top_up_failure; if (typeof value.payment_method_expiring === "boolean") settingsUpdate.payment_method_expiring_email_enabled = value.payment_method_expiring; if (typeof value.model_deprecation === "boolean") settingsUpdate.model_deprecation_alerts_enabled = value.model_deprecation; if (Object.keys(settingsUpdate).length > before) changed.push("email_preferences"); }
 	if (!changed.length) return json({ error: "bad_request", message: "No notification settings supplied" }, 400, NO_STORE);
-	if (walletUpdate) { const result = await client.from("wallets").update(walletUpdate).eq("workspace_id", access.auth.workspaceId); if (result.error) return json({ error: "notification_settings_update_failed" }, 503, NO_STORE); }
+	if (autoTopUpUpdate) {
+		const result = await client.rpc("update_workspace_auto_top_up", {
+			p_workspace_id: access.auth.workspaceId,
+			p_enabled: autoTopUpUpdate.enabled,
+			p_balance_threshold_nanos: autoTopUpUpdate.balanceThreshold,
+			p_amount_nanos: autoTopUpUpdate.amount,
+			p_payment_method_id: autoTopUpUpdate.paymentMethodId,
+			p_mfa_enabled: mfaEnabled,
+			p_mfa_bypass_acknowledged: autoTopUpUpdate.bypassAcknowledged,
+			p_mfa_bypass_phrase: autoTopUpUpdate.bypassPhrase,
+			p_actor_user_id: access.auth.userId ?? null,
+			p_request_id: access.auth.requestId ?? null,
+		});
+		if (result.error) {
+			if (result.error.message.includes("mfa_required")) return json({ error: "mfa_required", message: "Enable two-factor authentication before enabling Auto Top-Up" }, 400, NO_STORE);
+			return json({ error: "notification_settings_update_failed" }, 503, NO_STORE);
+		}
+	}
 	if (Object.keys(settingsUpdate).length > 2) { const result = await client.from("workspace_settings").upsert(settingsUpdate, { onConflict: "workspace_id" }); if (result.error) return json({ error: "notification_settings_update_failed" }, 503, NO_STORE); }
 	await audit(access.auth, "notifications.settings.updated", "workspace_notification_settings", access.auth.workspaceId, { sections: changed }); return getSettings(req);
 }

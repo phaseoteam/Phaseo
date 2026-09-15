@@ -212,11 +212,27 @@ creditsRouter.put("/auto-top-up", async (c) => {
 	const membership = await context.client.from("workspace_members").select("role").eq("workspace_id", workspaceId).eq("user_id", context.user.id).maybeSingle();
 	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const enabled = body.enabled !== false;
+	const mfaEnabled = context.user.factors.some((factor) => factor.factor_type === "totp" && factor.status === "verified");
 	const topUpAmount = Number(body.topUpAmount ?? 0);
-	if (enabled && (!Number.isFinite(topUpAmount) || topUpAmount < 1_000_000_000)) return c.json({ error: "minimum_top_up" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const payload = enabled ? { auto_top_up_enabled: true, low_balance_threshold: Number(body.balanceThreshold ?? 0), auto_top_up_amount: topUpAmount, auto_top_up_account_id: body.paymentMethodId ?? null, updated_at: new Date().toISOString() } : { auto_top_up_enabled: false, low_balance_threshold: 0, auto_top_up_amount: 0, auto_top_up_account_id: null, updated_at: new Date().toISOString() };
-	const result = await context.client.from("wallets").update(payload).eq("workspace_id", workspaceId).select();
-	if (result.error) return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const balanceThreshold = Number(body.balanceThreshold ?? 0);
+	if (enabled && (!Number.isSafeInteger(topUpAmount) || topUpAmount < 1_000_000_000)) return c.json({ error: "minimum_top_up" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (enabled && (!Number.isSafeInteger(balanceThreshold) || balanceThreshold < 0)) return c.json({ error: "invalid_threshold" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await context.client.rpc("update_workspace_auto_top_up", {
+		p_workspace_id: workspaceId,
+		p_enabled: enabled,
+		p_balance_threshold_nanos: enabled ? balanceThreshold : 0,
+		p_amount_nanos: enabled ? topUpAmount : 0,
+		p_payment_method_id: enabled ? (typeof body.paymentMethodId === "string" ? body.paymentMethodId.trim() || null : null) : null,
+		p_mfa_enabled: mfaEnabled,
+		p_mfa_bypass_acknowledged: body.mfaBypassAcknowledged === true,
+		p_mfa_bypass_phrase: typeof body.mfaBypassPhrase === "string" ? body.mfaBypassPhrase : null,
+		p_actor_user_id: context.user.id,
+		p_request_id: c.req.header("x-request-id") ?? null,
+	});
+	if (result.error) {
+		if (result.error.message.includes("mfa_required")) return c.json({ error: "mfa_required", message: "Enable two-factor authentication before enabling Auto Top-Up" }, 400, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
 	return c.json({ data: result.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

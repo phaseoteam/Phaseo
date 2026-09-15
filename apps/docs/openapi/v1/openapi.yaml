@@ -3439,8 +3439,12 @@ paths:
       summary: Update workspace notification settings
       description: >-
         Updates one or more durable notification-policy sections. Enabling auto
-        top-up requires an existing saved payment method identifier; payment
-        collection remains an interactive account flow.
+        top-up requires an existing saved payment method identifier and verified
+        two-factor authentication. An existing auto top-up configuration may be
+        updated without repeating the MFA acknowledgement. To enable auto top-up
+        without MFA, clients must explicitly set `mfa_bypass_acknowledged` to
+        true and provide the exact `mfa_bypass_phrase` value `I ACCEPT THE
+        RISK`; payment collection remains an interactive account flow.
       requestBody:
         required: true
         content:
@@ -18698,6 +18702,10 @@ components:
         payment_method_id:
           type: string
           nullable: true
+        mfa_bypass_acknowledged:
+          type: boolean
+        mfa_bypass_phrase:
+          type: string
       additionalProperties: false
     WorkspaceLowBalanceEmailUpdate:
       type: object

@@ -554,6 +554,7 @@ describe("account settings routes", () => {
 		await expect(credits.json()).resolves.toMatchObject({
 			initialBalance: 12.5,
 			latestPaymentSuccessAt: "2026-07-13T00:00:00Z",
+			mfaEnabled: true,
 			lowBalanceEmailEnabled: true,
 			lowBalanceEmailThresholdUsd: 5,
 			notificationRoutes: { low_balance: ["destination-1"] },

@@ -83,6 +83,7 @@ async function CreditsSettingsContent(props: {
 								<AutoTopUpClient
 									wallet={initialData.wallet}
 									stripeInfo={initialData.stripeInfo}
+									mfaEnabled={initialData.mfaEnabled}
 									embedded
 								/>
 							</div>

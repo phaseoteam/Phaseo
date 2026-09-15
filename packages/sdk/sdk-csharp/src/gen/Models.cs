@@ -7233,6 +7233,12 @@ public sealed class WorkspaceAutoTopUpUpdate
 	[JsonPropertyName("enabled")]
 	public bool Enabled { get; set; }
 
+	[JsonPropertyName("mfa_bypass_acknowledged")]
+	public bool? MfaBypassAcknowledged { get; set; }
+
+	[JsonPropertyName("mfa_bypass_phrase")]
+	public string? MfaBypassPhrase { get; set; }
+
 	[JsonPropertyName("payment_method_id")]
 	public string? PaymentMethodId { get; set; }
 

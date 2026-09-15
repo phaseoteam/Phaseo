@@ -2969,6 +2969,8 @@ struct WorkspaceAutoTopUpUpdate {
 	std::optional<int> amount_nanos;
 	std::optional<int> balance_threshold_nanos;
 	bool enabled;
+	std::optional<bool> mfa_bypass_acknowledged;
+	std::string mfa_bypass_phrase;
 	std::optional<std::string> payment_method_id;
 };
 

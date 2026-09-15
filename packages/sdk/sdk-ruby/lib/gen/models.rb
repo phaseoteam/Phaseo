@@ -4291,9 +4291,13 @@ module Phaseo
     #   @return [Integer, nil]
     # @!attribute [rw] enabled
     #   @return [Boolean]
+    # @!attribute [rw] mfa_bypass_acknowledged
+    #   @return [Boolean, nil]
+    # @!attribute [rw] mfa_bypass_phrase
+    #   @return [String, nil]
     # @!attribute [rw] payment_method_id
     #   @return [String, nil]
-    WorkspaceAutoTopUpUpdate = Struct.new(:amount_nanos, :balance_threshold_nanos, :enabled, :payment_method_id, keyword_init: true)
+    WorkspaceAutoTopUpUpdate = Struct.new(:amount_nanos, :balance_threshold_nanos, :enabled, :mfa_bypass_acknowledged, :mfa_bypass_phrase, :payment_method_id, keyword_init: true)
     # @!attribute [rw] created_at
     #   @return [String]
     # @!attribute [rw] created_by

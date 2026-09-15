@@ -5255,6 +5255,10 @@ class WorkspaceAutoTopUpUpdate
 	public $balance_threshold_nanos;
 	/** @var bool */
 	public $enabled;
+	/** @var bool|null */
+	public $mfa_bypass_acknowledged;
+	/** @var string|null */
+	public $mfa_bypass_phrase;
 	/** @var string|null */
 	public $payment_method_id;
 }
