@@ -140,7 +140,17 @@ for (const path of ["/realtime/session", "/live/session"]) {
 		const model = String(body.model ?? "").trim();
 		const voice = typeof body.voice === "string" ? body.voice.trim() : "";
 		const instructions = typeof body.instructions === "string" ? body.instructions.trim() : "";
-		if (!provider || !model || model.length > 160 || voice.length > 80 || instructions.length > 4000) {
+		const thinkingLevel = ["low", "medium", "high"].includes(body.thinkingLevel)
+			? (body.thinkingLevel as "low" | "medium" | "high")
+			: null;
+		if (
+			!provider ||
+			!model ||
+			model.length > 160 ||
+			voice.length > 80 ||
+			instructions.length > 4000 ||
+			(body.thinkingLevel != null && !thinkingLevel)
+		) {
 			return realtimeError(400, "invalid_realtime_session_request", "Invalid realtime session request.");
 		}
 		if (live && (provider !== "openai" || !["gpt-live-1", "openai/gpt-live-1"].includes(model))) {
@@ -175,6 +185,7 @@ for (const path of ["/realtime/session", "/live/session"]) {
 					...(live && body.backend_settings !== undefined ? { backend_settings: body.backend_settings } : {}),
 					...(voice ? { voice } : {}),
 					...(instructions ? { instructions } : {}),
+					...(thinkingLevel ? { thinking_level: thinkingLevel } : {}),
 					source: "chat",
 					metadata: { feature: "chat_realtime_voice", userId: auth.userId, workspaceId: auth.workspaceId },
 				}),

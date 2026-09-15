@@ -90,6 +90,18 @@ describe("Live billing", () => {
 		}
 		expect(createRealtimeSessionSchema.safeParse({ ...request, backend_model: config.backendModel }).success).toBe(false);
 	});
+	it("keeps Live schema parsing compatible with Gemini thinking validation", () => {
+		expect(createLiveSessionSchema.safeParse({
+			model: "openai/gpt-live-1",
+			provider: "openai",
+			source: "chat",
+		}).success).toBe(true);
+		expect(createRealtimeSessionSchema.safeParse({
+			model: "google/gemini-3.8-live-extended-thinking",
+			provider: "google-ai-studio",
+			thinking_level: "high",
+		}).success).toBe(true);
+	});
 });
 
 describe("Live relay finalization", () => {

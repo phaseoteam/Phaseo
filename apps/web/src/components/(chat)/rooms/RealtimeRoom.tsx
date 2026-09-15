@@ -221,20 +221,27 @@ type TranscriptLine = {
 };
 
 type RealtimeOrbMode = "simple" | "persona" | "off";
+type GoogleThinkingLevel = "low" | "medium" | "high";
 
 type RealtimeDisplaySettings = {
 	orbMode: RealtimeOrbMode;
 	systemPrompt?: string;
+	thinkingLevel?: GoogleThinkingLevel;
 };
 
 const REALTIME_DISPLAY_SETTINGS_STORAGE_KEY = "ai-stats:chat:realtime:display";
 const DEFAULT_REALTIME_DISPLAY_SETTINGS: RealtimeDisplaySettings = {
 	orbMode: "simple",
 	systemPrompt: "",
+	thinkingLevel: "low",
 };
 
 function isRealtimeOrbMode(value: unknown): value is RealtimeOrbMode {
 	return value === "simple" || value === "persona" || value === "off";
+}
+
+function isGoogleThinkingLevel(value: unknown): value is GoogleThinkingLevel {
+	return value === "low" || value === "medium" || value === "high";
 }
 
 function readRealtimeDisplaySettings(): RealtimeDisplaySettings {
@@ -247,15 +254,19 @@ function readRealtimeDisplaySettings(): RealtimeDisplaySettings {
 		};
 		const systemPrompt =
 			typeof parsed.systemPrompt === "string" ? parsed.systemPrompt : "";
+		const thinkingLevel = isGoogleThinkingLevel(parsed.thinkingLevel)
+			? parsed.thinkingLevel
+			: DEFAULT_REALTIME_DISPLAY_SETTINGS.thinkingLevel;
 		if (isRealtimeOrbMode(parsed.orbMode)) {
-			return { orbMode: parsed.orbMode, systemPrompt };
+			return { orbMode: parsed.orbMode, systemPrompt, thinkingLevel };
 		}
 		if (parsed.showPersonaOrb === false) {
-			return { orbMode: "off", systemPrompt };
+			return { orbMode: "off", systemPrompt, thinkingLevel };
 		}
 		return {
 			orbMode: DEFAULT_REALTIME_DISPLAY_SETTINGS.orbMode,
 			systemPrompt,
+			thinkingLevel,
 		};
 	} catch {
 		return DEFAULT_REALTIME_DISPLAY_SETTINGS;
@@ -853,6 +864,10 @@ function summarizeGoogleLiveEvent(event: Record<string, unknown>) {
 		),
 		generationComplete: Boolean(serverContent?.generationComplete),
 		turnComplete: Boolean(serverContent?.turnComplete),
+		interactionStatus:
+			(serverContent && getStringField(serverContent, "interactionStatus")) ||
+			getStringField(event, "interactionStatus") ||
+			null,
 		waitingForInput: Boolean(serverContent?.waitingForInput),
 		turnCompleteReason: serverContent?.turnCompleteReason,
 		interrupted: Boolean(serverContent?.interrupted),
@@ -1565,6 +1580,10 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	);
 	const realtimeSystemPrompt =
 		displaySettings.systemPrompt?.trim() || defaultSystemPrompt;
+	const googleThinkingLevel = displaySettings.thinkingLevel ?? "low";
+	const usesGoogleExtendedThinking =
+		selectedModel?.provider === "google" &&
+		selectedModel.model.replace(/^google\//, "") === "gemini-3.8-live-extended-thinking";
 
 	useEffect(() => {
 		setPersonaMountReady(false);
@@ -2290,6 +2309,9 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 			const serverContent = getRecordField(event, "serverContent");
 			if (!serverContent) return;
+			const interactionStatus =
+				getStringField(serverContent, "interactionStatus") ||
+				getStringField(event, "interactionStatus");
 
 			const modelTurn = getRecordField(serverContent, "modelTurn");
 			const parts = modelTurn
@@ -2389,12 +2411,18 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				completePendingStop();
 			}
 
-			if (serverContent.turnComplete || serverContent.generationComplete) {
+			if (serverContent.turnComplete) {
 				setLastEventType("turnComplete");
-				googleResponseCompleteRef.current = true;
 				googleUserTranscriptIdRef.current = null;
 				googleAssistantTranscriptIdRef.current = null;
-				if (googleUsageMetadataSeenRef.current) {
+				if (interactionStatus === "IN_PROGRESS") {
+					googleResponseCompleteRef.current = false;
+					assistantResponseInFlightRef.current = true;
+					setPersonaState("thinking");
+				} else {
+					googleResponseCompleteRef.current = true;
+				}
+				if (interactionStatus !== "IN_PROGRESS" && googleUsageMetadataSeenRef.current) {
 					assistantResponseInFlightRef.current = false;
 					setPersonaState("listening");
 					completePendingStop();
@@ -2429,6 +2457,9 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				voice: selectedVoice?.id ?? selectedModel.defaultVoice,
 				instructions: realtimeSystemPrompt,
 				...(live ? { backend_model: liveBackendModel, backend_settings: liveSettings } : {}),
+				...(usesGoogleExtendedThinking
+					? { thinkingLevel: googleThinkingLevel }
+					: {}),
 			}),
 		});
 		const payload = await response.json().catch(() => null);
@@ -2436,7 +2467,15 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			throw new Error(getSessionErrorMessage(payload, response.status));
 		}
 		return payload as RealtimeSessionResponse;
-	}, [liveBackendModel, liveSettings, realtimeSystemPrompt, selectedModel, selectedVoice]);
+	}, [
+		googleThinkingLevel,
+		liveBackendModel,
+		liveSettings,
+		realtimeSystemPrompt,
+		selectedModel,
+		selectedVoice,
+		usesGoogleExtendedThinking,
+	]);
 
 	const startOpenAI = useCallback(
 		async (session: RealtimeSessionResponse) => {
@@ -2688,6 +2727,9 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 						generationConfig: {
 							responseModalities: ["AUDIO"],
 							temperature: 0.7,
+							...(session.model === "gemini-3.8-live-extended-thinking"
+								? { thinkingConfig: { thinkingLevel: googleThinkingLevel.toUpperCase() } }
+								: {}),
 							speechConfig: {
 								voiceConfig: {
 									prebuiltVoiceConfig: {
@@ -2793,6 +2835,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			handleRealtimeEvent,
 			markSessionConnected,
 			realtimeSystemPrompt,
+			googleThinkingLevel,
 			scheduleGoogleResponseTimeout,
 			startPcmInputStream,
 		],
@@ -3439,6 +3482,11 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 						systemPrompt,
 					}))
 				}
+				showThinkingLevel={usesGoogleExtendedThinking}
+				thinkingLevel={googleThinkingLevel}
+				onThinkingLevelChange={(thinkingLevel) =>
+					setDisplaySettings((current) => ({ ...current, thinkingLevel }))
+				}
 			/>
 			<audio ref={remoteAudioRef} autoPlay className="hidden" />
 		</main>
@@ -3455,6 +3503,9 @@ function RealtimeSettingsDialog({
 	systemPrompt,
 	defaultSystemPrompt,
 	onSystemPromptChange,
+	showThinkingLevel,
+	thinkingLevel,
+	onThinkingLevelChange,
 }: {
 	liveSettings?: LiveSettingsValue;
 	onLiveSettingsChange: (settings: LiveSettingsValue) => void;
@@ -3465,6 +3516,9 @@ function RealtimeSettingsDialog({
 	systemPrompt: string;
 	defaultSystemPrompt: string;
 	onSystemPromptChange: (prompt: string) => void;
+	showThinkingLevel: boolean;
+	thinkingLevel: GoogleThinkingLevel;
+	onThinkingLevelChange: (level: GoogleThinkingLevel) => void;
 }) {
 	const orbOptions: Array<{
 		value: RealtimeOrbMode;
@@ -3486,6 +3540,11 @@ function RealtimeSettingsDialog({
 			label: "Off",
 			description: "No central visual.",
 		},
+	];
+	const thinkingOptions: Array<{ value: GoogleThinkingLevel; label: string }> = [
+		{ value: "low", label: "Low" },
+		{ value: "medium", label: "Medium" },
+		{ value: "high", label: "High" },
 	];
 
 	return (
@@ -3552,6 +3611,23 @@ function RealtimeSettingsDialog({
 									</p>
 								</div>
 								{liveSettings ? <LiveSettings value={liveSettings} onChange={onLiveSettingsChange} /> : null}
+								{showThinkingLevel ? (
+									<div className="grid gap-2 rounded-lg border border-border bg-background p-3">
+										<Label>Reasoning level</Label>
+										<div className="grid grid-cols-3 gap-2">
+											{thinkingOptions.map((option) => (
+												<Button
+													key={option.value}
+													type="button"
+													variant={thinkingLevel === option.value ? "secondary" : "outline"}
+													onClick={() => onThinkingLevelChange(option.value)}
+												>
+													{option.label}
+												</Button>
+											))}
+										</div>
+									</div>
+								) : null}
 								<div className="grid gap-1">
 									<p className="text-sm font-semibold text-foreground">Display</p>
 									<p className="text-xs text-muted-foreground">

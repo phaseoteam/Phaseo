@@ -53,15 +53,28 @@ async function deterministicBase62(seed: string, length: number): Promise<string
 	return output.slice(0, length);
 }
 
-export const createRealtimeSessionSchema = z.object({
-	type: z.literal("realtime").optional(),
+const realtimeSessionBaseSchema = z.object({
 	model: z.string().trim().min(1).max(160),
 	provider: z.string().trim().min(1).max(80).optional(),
 	voice: z.string().trim().min(1).max(80).optional(),
 	instructions: z.string().trim().max(4000).optional(),
+	thinking_level: z.enum(["low", "medium", "high"]).optional(),
 	source: z.enum(["api", "chat"]).optional(),
 	metadata: z.record(z.string(), z.unknown()).optional(),
 }).strict();
+
+export const createRealtimeSessionSchema = realtimeSessionBaseSchema.extend({
+	type: z.literal("realtime").optional(),
+}).superRefine((value, context) => {
+	if (!value.thinking_level) return;
+	if (value.model.replace(/^google\//, "") !== "gemini-3.8-live-extended-thinking") {
+		context.addIssue({
+			code: "custom",
+			message: "thinking_level is only supported by gemini-3.8-live-extended-thinking",
+			path: ["thinking_level"],
+		});
+	}
+});
 
 const MAX_METADATA_BYTES = 16_384;
 const MAX_METADATA_KEYS = 32;
@@ -110,7 +123,7 @@ const finalizeSessionSchema = z.object({
 
 export const realtimeSessionsRoutes = new Hono<Env>();
 export const liveSessionsRoutes = new Hono<Env>();
-export const createLiveSessionSchema = createRealtimeSessionSchema.extend({
+export const createLiveSessionSchema = realtimeSessionBaseSchema.omit({ thinking_level: true }).extend({
 	type: z.literal("live").optional(), model: z.literal(LIVE_MODEL), provider: z.literal("openai"),
 	voice: z.enum(LIVE_VOICES).default("marin"), source: z.literal("chat"),
 	backend_model: z.enum(LIVE_BACKENDS).default(LIVE_BACKENDS[0]),
@@ -442,6 +455,7 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			provider: selectedProvider,
 			voice: parsed.data.voice,
 			instructions: parsed.data.instructions,
+			thinkingLevel: "thinking_level" in parsed.data ? parsed.data.thinking_level : undefined,
 			source,
 			metadata: parsed.data.metadata,
 			otelTraceContext: parseW3cTraceContext(
