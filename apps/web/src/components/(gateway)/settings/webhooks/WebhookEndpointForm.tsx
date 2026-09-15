@@ -2,13 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState, useTransition } from "react";
-import { ArrowLeft, Check, ChevronRight, Globe2, ListChecks, Save } from "lucide-react";
+import { FormEvent, useState, useTransition } from "react";
+import { ArrowLeft, Globe2, Save } from "lucide-react";
 import { toast } from "sonner";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,10 +42,6 @@ export default function WebhookEndpointForm({
 	const [revealedSecret, setRevealedSecret] = useState<{ id: string; secret: string } | null>(null);
 	const [isPending, startTransition] = useTransition();
 	const allSelected = selectedEvents.length === WEBHOOK_EVENT_OPTIONS.length;
-	const selectedLabels = useMemo(
-		() => WEBHOOK_EVENT_OPTIONS.filter((option) => selectedEvents.includes(option.value)).map((option) => option.label),
-		[selectedEvents],
-	);
 
 	function toggleEvent(value: string, checked: boolean) {
 		setEventsChanged(true);
@@ -87,25 +80,18 @@ export default function WebhookEndpointForm({
 	}
 
 	return (
-		<form onSubmit={submit} className="space-y-5">
-			<div className="flex items-center gap-3">
-				<Button asChild variant="ghost" size="icon" className="rounded-md">
-					<Link href="/settings/webhooks" aria-label="Back to Webhooks">
-						<ArrowLeft className="size-4" />
-					</Link>
-				</Button>
-				<div>
-					<p className="text-sm font-medium">{mode === "create" ? "New endpoint" : "Edit endpoint"}</p>
-					<p className="text-xs text-muted-foreground">Three quick steps to control what your app receives.</p>
-				</div>
-			</div>
+		<form onSubmit={submit} className="max-w-4xl">
+			<Link href="/settings/webhooks" className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+				<ArrowLeft className="size-4" />
+				Back to Webhooks
+			</Link>
 
-			<Card>
-				<CardHeader className="border-b">
-					<CardTitle className="flex items-center gap-2"><span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">1</span>Destination</CardTitle>
-					<CardDescription>Give this endpoint a name and the public HTTPS URL that should receive deliveries.</CardDescription>
-				</CardHeader>
-				<CardContent className="grid gap-4 pt-5 md:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
+			<section className="grid gap-5 border-b border-border/60 pb-8 md:grid-cols-[180px_minmax(0,1fr)] md:gap-10">
+				<div>
+					<h2 className="text-sm font-medium">Destination</h2>
+					<p className="mt-1 text-sm leading-5 text-muted-foreground">Where webhook deliveries should be sent.</p>
+				</div>
+				<div className="space-y-5">
 					<div className="space-y-2">
 						<Label htmlFor="webhook-name">Endpoint name</Label>
 						<Input id="webhook-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Production worker" maxLength={120} required />
@@ -119,62 +105,51 @@ export default function WebhookEndpointForm({
 						</div>
 						<p className="text-xs text-muted-foreground">Use a public HTTPS endpoint. Local and private network addresses are blocked.</p>
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</section>
 
-			<Card>
-				<CardHeader className="border-b">
-					<CardTitle className="flex items-center gap-2"><span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">2</span>Events</CardTitle>
-					<CardDescription>Choose the updates you want to receive. These defaults apply when a job does not specify its own event list.</CardDescription>
-				</CardHeader>
-				<CardContent className="pt-5">
-					<div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/45 px-3 py-2.5 text-sm">
-						<div className="flex items-center gap-2"><ListChecks className="size-4 text-muted-foreground" /><span><span className="font-medium">{selectedEvents.length}</span> of {WEBHOOK_EVENT_OPTIONS.length} selected</span></div>
-						<Button type="button" variant="ghost" size="sm" onClick={() => { setEventsChanged(true); setSelectedEvents(allSelected ? [] : WEBHOOK_EVENT_OPTIONS.map((option) => option.value)); }}>{allSelected ? "Clear all" : "Select all"}</Button>
+			<section className="grid gap-5 border-b border-border/60 py-8 md:grid-cols-[180px_minmax(0,1fr)] md:gap-10">
+				<div>
+					<h2 className="text-sm font-medium">Events</h2>
+					<p className="mt-1 text-sm leading-5 text-muted-foreground">Choose which updates this endpoint receives.</p>
+				</div>
+				<div>
+					<div className="mb-5 flex items-center justify-between gap-3 text-sm">
+						<span className="text-muted-foreground"><span className="font-medium text-foreground">{selectedEvents.length}</span> of {WEBHOOK_EVENT_OPTIONS.length} selected</span>
+						<Button type="button" variant="outline" size="sm" onClick={() => { setEventsChanged(true); setSelectedEvents(allSelected ? [] : WEBHOOK_EVENT_OPTIONS.map((option) => option.value)); }}>{allSelected ? "Clear all" : "Select all"}</Button>
 					</div>
-					<div className="grid gap-5 lg:grid-cols-2">
+					<div className="grid gap-6 lg:grid-cols-2">
 						{WEBHOOK_EVENT_GROUPS.map((group) => (
-							<section key={group.kind} aria-labelledby={`${group.kind}-events-heading`} className="space-y-2">
-								<div className="flex items-center justify-between gap-3">
+							<fieldset key={group.kind} aria-labelledby={`${group.kind}-events-heading`} className="min-w-0">
+								<div className="mb-2 flex min-h-10 items-end justify-between gap-3">
 									<div><h3 id={`${group.kind}-events-heading`} className="text-sm font-medium">{group.label}</h3><p className="text-xs text-muted-foreground">{group.description}</p></div>
-									<Button type="button" variant="ghost" size="sm" onClick={() => {
+									<Button type="button" variant="ghost" size="xs" onClick={() => {
 										setEventsChanged(true);
 										const groupValues: string[] = group.options.map((option) => option.value);
 										const groupSelected = groupValues.every((value) => selectedEvents.includes(value));
 										setSelectedEvents((current) => groupSelected ? current.filter((value) => !groupValues.includes(value)) : [...new Set([...current, ...groupValues])]);
 									}}>{group.options.every((option) => selectedEvents.includes(option.value)) ? "Clear" : "Select all"}</Button>
 								</div>
+								<div className="divide-y divide-border/60 rounded-md border border-border/60">
 								{group.options.map((option) => {
 									const checked = selectedEvents.includes(option.value);
-									return <label key={option.value} htmlFor={`event-${option.value}`} className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 p-3 transition-colors hover:bg-muted/35 has-aria-checked:border-primary/50 has-aria-checked:bg-primary/5"><Checkbox id={`event-${option.value}`} checked={checked} onCheckedChange={(value) => toggleEvent(option.value, value === true)} className="mt-0.5" /><span className="min-w-0"><span className="flex items-center gap-2 text-sm font-medium">{option.label}{checked ? <Check className="size-3.5 text-primary" /> : null}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{option.description}</span></span></label>;
+									return <label key={option.value} htmlFor={`event-${option.value}`} className="flex cursor-pointer items-start gap-3 px-3 py-3 transition-colors hover:bg-muted/35"><Checkbox id={`event-${option.value}`} checked={checked} onCheckedChange={(value) => toggleEvent(option.value, value === true)} className="mt-0.5" /><span className="min-w-0"><span className="block text-sm font-medium">{option.label}</span><span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{option.description}</span></span></label>;
 								})}
-							</section>
+								</div>
+							</fieldset>
 						))}
 					</div>
-				</CardContent>
-			</Card>
+					<p className="mt-4 text-xs leading-5 text-muted-foreground">These defaults apply when a job does not specify its own event list.</p>
+				</div>
+			</section>
 
-			<Card>
-				<CardHeader className="border-b">
-					<CardTitle className="flex items-center gap-2"><span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">3</span>Review and save</CardTitle>
-					<CardDescription>We sign every delivery so your server can verify that it came from Phaseo.</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4 pt-5">
-					<div className="grid gap-4 text-sm sm:grid-cols-2">
-						<div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Destination</p><p className="mt-1 break-all font-medium">{url || "Add a destination URL above"}</p></div>
-						<div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Events</p><div className="mt-1 flex flex-wrap gap-1.5">{selectedLabels.length ? selectedLabels.map((label) => <Badge key={label} variant="secondary" className="font-normal">{label}</Badge>) : <span className="text-muted-foreground">Choose at least one event</span>}</div></div>
-					</div>
-					<Alert className="border-border/70 bg-muted/25">
-						<ChevronRight className="size-4" />
-						<AlertTitle>Delivery details</AlertTitle>
-						<AlertDescription>Deliveries include an event ID for deduplication and retry automatically after temporary failures. See the <a className="underline underline-offset-4" href="https://phaseo.app/docs/v1/guides/async-video-and-batch" target="_blank" rel="noreferrer">async jobs guide</a> for verification and retry details.</AlertDescription>
-					</Alert>
-					<div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-						<Button asChild type="button" variant="outline"><Link href="/settings/webhooks">Cancel</Link></Button>
-						<Button type="submit" disabled={isPending || !url || !name.trim() || selectedEvents.length === 0}><Save className="mr-2 size-4" />{isPending ? "Saving…" : mode === "create" ? "Create endpoint" : "Save changes"}</Button>
-					</div>
-				</CardContent>
-			</Card>
+			<div className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+				<p className="max-w-xl text-xs leading-5 text-muted-foreground">Deliveries are signed and include an event ID for deduplication. Temporary failures are retried automatically. <a className="underline underline-offset-4 hover:text-foreground" href="https://phaseo.app/docs/v1/guides/async-video-and-batch" target="_blank" rel="noreferrer">View the async jobs guide</a>.</p>
+				<div className="flex shrink-0 items-center justify-end gap-2">
+					<Link href="/settings/webhooks" className="inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium hover:bg-muted">Cancel</Link>
+					<Button type="submit" disabled={isPending || !url || !name.trim() || selectedEvents.length === 0}><Save className="size-4" />{isPending ? "Saving…" : mode === "create" ? "Create endpoint" : "Save changes"}</Button>
+				</div>
+			</div>
 
 			{revealedSecret ? <WebhookSecretNotice endpointId={revealedSecret.id} secret={revealedSecret.secret} /> : null}
 		</form>
