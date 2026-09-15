@@ -74,10 +74,19 @@ jobs:
         working-directory: phaseo
         run: git subtree split --prefix=packages/integrations/terraform-provider-phaseo --branch=terraform-provider-export
 
+      - name: Validate provider sync token
+        env:
+          PROVIDER_SYNC_TOKEN: ${{ secrets.PROVIDER_SYNC_TOKEN }}
+        run: |
+          if [[ -z "${PROVIDER_SYNC_TOKEN:-}" ]]; then
+            echo "::error::Set PROVIDER_SYNC_TOKEN in the generated repository before running synchronization. It needs Contents and Workflows write access."
+            exit 1
+          fi
+
       - name: Push provider repository
         working-directory: phaseo
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PROVIDER_SYNC_TOKEN }}
         run: |
           remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git fetch "$remote" main
