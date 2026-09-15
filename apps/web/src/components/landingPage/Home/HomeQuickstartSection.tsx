@@ -856,7 +856,7 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 				>
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
-							Illustrative latency
+							Latency
 						</span>
 						<p className="mt-1 text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
 							<HydratedNumberFlow value={currentModel.latencyMs} />
@@ -867,7 +867,7 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 					</div>
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
-							Illustrative throughput
+							Throughput
 						</span>
 						<p className="mt-1 text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
 							<HydratedNumberFlow value={currentModel.throughputTps} />
