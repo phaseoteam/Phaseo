@@ -302,6 +302,7 @@ export type SettingsCreditsInitialData = {
 	declaredCountryCode: string | null;
 	initialBalance: number;
 	latestPaymentSuccessAt: string | null;
+	mfaEnabled: boolean;
 	autoTopUpFailureEmailEnabled: boolean;
 	lowBalanceEmailEnabled: boolean;
 	lowBalanceEmailThresholdUsd: number | null;

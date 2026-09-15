@@ -24,6 +24,22 @@ function lastPath(req: Request) { return decodeURIComponent(new URL(req.url).pat
 function nanosToUsd(value: unknown) { const nanos = Number(value ?? 0); return Number.isFinite(nanos) ? nanos / 1_000_000_000 : 0; }
 function parseNotificationTestKind(value: unknown): NotificationTestKind | null { const kind = String(value ?? "notification_test"); return (NOTIFICATION_TEST_KINDS as readonly string[]).includes(kind) ? kind as NotificationTestKind : null; }
 export function usdToNanos(value: unknown): number | null { const usd = Number(value); const nanos = Math.round(usd * 1_000_000_000); const cents = Math.abs(usd * 100 - Math.round(usd * 100)) < 1e-8; return Number.isFinite(usd) && usd >= 0 && cents && Number.isSafeInteger(nanos) ? nanos : null; }
+export function hasVerifiedTotpFactor(factors: unknown): boolean {
+	return Array.isArray(factors) && factors.some((factor) =>
+		factor && typeof factor === "object" &&
+			(factor as Record<string, unknown>).factor_type === "totp" &&
+			(factor as Record<string, unknown>).status === "verified",
+	);
+}
+
+async function requireVerifiedMfaForAutoTopUp(auth: { userId?: string | null }): Promise<Response | null> {
+	const userId = auth.userId?.trim();
+	if (!userId) return json({ error: "mfa_required", message: "Enable two-factor authentication before enabling Auto Top-Up" }, 400, NO_STORE);
+	const result = await getSupabaseAdmin().auth.admin.getUserById(userId);
+	if (result.error) return json({ error: "mfa_status_unavailable" }, 503, NO_STORE);
+	if (!hasVerifiedTotpFactor(result.data.user?.factors)) return json({ error: "mfa_required", message: "Enable two-factor authentication before enabling Auto Top-Up" }, 400, NO_STORE);
+	return null;
+}
 
 async function getSettings(req: Request) {
 	const access = await authorize(req, false); if ("response" in access) return access.response; const client = getSupabaseAdmin();
@@ -39,6 +55,7 @@ async function updateSettings(req: Request) {
 	const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const client = getSupabaseAdmin(); const changed: string[] = []; let walletUpdate: Record<string, unknown> | null = null;
 	if (body.auto_top_up && typeof body.auto_top_up === "object" && !Array.isArray(body.auto_top_up)) {
 		const value = body.auto_top_up as Record<string, unknown>; if (typeof value.enabled !== "boolean") return json({ error: "bad_request", message: "auto_top_up.enabled is required" }, 400, NO_STORE);
+		if (value.enabled) { const mfa = await requireVerifiedMfaForAutoTopUp(access.auth); if (mfa) return mfa; }
 		const amount = Number(value.amount_nanos ?? 0); const threshold = Number(value.balance_threshold_nanos ?? 0);
 		if (value.enabled && (!Number.isSafeInteger(amount) || amount < 1_000_000_000 || !Number.isSafeInteger(threshold) || threshold < 0 || !String(value.payment_method_id ?? "").trim())) return json({ error: "bad_request", message: "Enabled auto top-up requires a payment method, non-negative threshold, and amount of at least one credit" }, 400, NO_STORE);
 		walletUpdate = value.enabled ? { auto_top_up_enabled: true, low_balance_threshold: threshold, auto_top_up_amount: amount, auto_top_up_account_id: String(value.payment_method_id), updated_at: new Date().toISOString() } : { auto_top_up_enabled: false, low_balance_threshold: 0, auto_top_up_amount: 0, auto_top_up_account_id: null, updated_at: new Date().toISOString() };

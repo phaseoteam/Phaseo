@@ -3,10 +3,12 @@ import { requireUser } from "@/auth/requireUser";
 import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { encryptNotificationTarget, NOTIFICATION_DESTINATION_TYPES, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
 
 const EMPTY_TIER_SUMMARY = { lastMonthCents: 0, mtdCents: 0, teamTier: "basic" as const };
 const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation"] as const;
+const MFA_BYPASS_CONFIRMATION = "I ACCEPT THE RISK";
 
 export function parseLowBalanceThresholdNanos(value: unknown): number | null {
 	const thresholdUsd = Number(value);
@@ -212,11 +214,32 @@ creditsRouter.put("/auto-top-up", async (c) => {
 	const membership = await context.client.from("workspace_members").select("role").eq("workspace_id", workspaceId).eq("user_id", context.user.id).maybeSingle();
 	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const enabled = body.enabled !== false;
+	const mfaEnabled = context.user.factors.some((factor) => factor.factor_type === "totp" && factor.status === "verified");
+	const bypassAcknowledged = body.mfaBypassAcknowledged === true && body.mfaBypassPhrase === MFA_BYPASS_CONFIRMATION;
+	let currentlyEnabled = false;
+	if (enabled && !mfaEnabled) {
+		const walletState = await context.client.from("wallets").select("auto_top_up_enabled").eq("workspace_id", workspaceId).maybeSingle();
+		if (walletState.error) return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+		currentlyEnabled = walletState.data?.auto_top_up_enabled === true;
+	}
+	if (enabled && !mfaEnabled && !currentlyEnabled && !bypassAcknowledged) {
+		return c.json({ error: "mfa_required", message: "Enable two-factor authentication before enabling Auto Top-Up" }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
 	const topUpAmount = Number(body.topUpAmount ?? 0);
 	if (enabled && (!Number.isFinite(topUpAmount) || topUpAmount < 1_000_000_000)) return c.json({ error: "minimum_top_up" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const payload = enabled ? { auto_top_up_enabled: true, low_balance_threshold: Number(body.balanceThreshold ?? 0), auto_top_up_amount: topUpAmount, auto_top_up_account_id: body.paymentMethodId ?? null, updated_at: new Date().toISOString() } : { auto_top_up_enabled: false, low_balance_threshold: 0, auto_top_up_amount: 0, auto_top_up_account_id: null, updated_at: new Date().toISOString() };
 	const result = await context.client.from("wallets").update(payload).eq("workspace_id", workspaceId).select();
 	if (result.error) return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (enabled && !mfaEnabled && !currentlyEnabled && bypassAcknowledged) {
+		await recordWorkspaceAuditEvent(context.client, {
+			workspaceId,
+			actorUserId: context.user.id,
+			action: "auto_top_up.enabled_without_mfa",
+			targetType: "wallet",
+			targetId: workspaceId,
+			metadata: { consentVersion: "mfa-bypass-v1", mfaEnabled: false },
+		});
+	}
 	return c.json({ data: result.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
