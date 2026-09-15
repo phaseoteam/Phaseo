@@ -1,35 +1,98 @@
 [
   {
+    "api_model_id": "bsc-lt/alia-40b-instruct-2601", "provider_api_model_id": "nextbit:bsc-lt/alia-40b-instruct-2601", "provider_model_slug": "alia-salamandra:40b", "internal_model_id": "bsc-lt/alia-40b-instruct-2601",
+    "is_active_gateway": false, "quantization_scheme": "BF16", "input_modalities": "text", "output_modalities": "text", "context_length": 32768, "max_output_tokens": 32768,
+    "effective_from": "2026-05-05T15:54:31Z", "effective_to": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "repetition_penalty", "stop", "seed", "max_tokens", "logprobs", "top_logprobs"], "reasoning": true, "tool_call": true, "structured_output": true, "temperature": true, "attachment": false, "input_modalities": ["text"], "output_modalities": ["text"], "modes": ["streaming"] }],
+    "routing_status": "disabled", "routable": false, "regions": { "execution": ["ES"], "data": ["ES"] }, "service_tiers": ["standard"], "api": { "formats": ["openai.chat.completions"], "endpoint": "https://api.nextbit256.com/v1/chat/completions", "deployment": null },
+    "sources": [{ "kind": "model_catalog", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Live exact ID, availability, modalities, limits, features, sampling parameters, quantization, ES datacenter, and pricing." }],
+    "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Verified against Nextbit's first-party live catalog; Phaseo gateway routing remains disabled." }, "rate_limits": []
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4-flash-0731", "provider_api_model_id": "nextbit:deepseek/deepseek-v4-flash-0731", "provider_model_slug": "deepseek:v4-flash-0731", "internal_model_id": "deepseek/deepseek-v4-flash-0731",
+    "is_active_gateway": false, "quantization_scheme": "FP8", "input_modalities": "text", "output_modalities": "text", "context_length": 1048576, "max_output_tokens": null,
+    "effective_from": "2026-08-18T07:47:46Z", "effective_to": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "repetition_penalty", "stop", "seed", "max_tokens"], "reasoning": true, "tool_call": true, "structured_output": true, "temperature": true, "attachment": false, "input_modalities": ["text"], "output_modalities": ["text"], "modes": ["streaming"] }],
+    "routing_status": "disabled", "routable": false, "regions": { "execution": ["ES"], "data": ["ES"] }, "service_tiers": ["standard"], "api": { "formats": ["openai.chat.completions"], "endpoint": "https://api.nextbit256.com/v1/chat/completions", "deployment": null },
+    "sources": [{ "kind": "model_catalog", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Live exact ID, availability, modalities, limits, features, sampling parameters, quantization, ES datacenter, and pricing; no max completion limit published." }],
+    "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Verified against Nextbit's first-party live catalog; Phaseo gateway routing remains disabled." }, "rate_limits": []
+  },
+  {
+    "api_model_id": "sao10k/l33-70b-euryale-v2.3", "provider_api_model_id": "nextbit:sao10k/l33-70b-euryale-v2.3", "provider_model_slug": "euryale:33-70b", "internal_model_id": "sao10k/l33-70b-euryale-v2.3",
+    "is_active_gateway": false, "quantization_scheme": "BF16", "input_modalities": "text", "output_modalities": "text", "context_length": 131072, "max_output_tokens": 16384,
+    "effective_from": "2025-06-23T14:27:50Z", "effective_to": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "repetition_penalty", "stop", "seed", "max_tokens", "logprobs", "top_logprobs"], "reasoning": true, "tool_call": true, "structured_output": true, "temperature": true, "attachment": false, "input_modalities": ["text"], "output_modalities": ["text"], "modes": ["streaming"] }],
+    "routing_status": "disabled", "routable": false, "regions": { "execution": ["ES"], "data": ["ES"] }, "service_tiers": ["standard"], "api": { "formats": ["openai.chat.completions"], "endpoint": "https://api.nextbit256.com/v1/chat/completions", "deployment": null },
+    "sources": [{ "kind": "model_catalog", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Live exact ID, availability, modalities, limits, features, sampling parameters, quantization, ES datacenter, and pricing." }],
+    "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Verified against Nextbit's first-party live catalog; Phaseo gateway routing remains disabled." }, "rate_limits": []
+  },
+  {
+    "api_model_id": "google/gemma-4-26b-a4b", "provider_api_model_id": "nextbit:google/gemma-4-26b-a4b", "provider_model_slug": "gemma4:26b-a4b", "internal_model_id": "google/gemma-4-26b-a4b",
+    "is_active_gateway": false, "quantization_scheme": "BF16", "input_modalities": "text", "output_modalities": "text", "context_length": 262144, "max_output_tokens": 262144,
+    "effective_from": "2026-04-13T12:38:33Z", "effective_to": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "repetition_penalty", "stop", "seed", "max_tokens", "logprobs", "top_logprobs"], "reasoning": true, "tool_call": true, "structured_output": true, "temperature": true, "attachment": false, "input_modalities": ["text"], "output_modalities": ["text"], "modes": ["streaming"] }],
+    "routing_status": "disabled", "routable": false, "regions": { "execution": ["ES"], "data": ["ES"] }, "service_tiers": ["standard"], "api": { "formats": ["openai.chat.completions"], "endpoint": "https://api.nextbit256.com/v1/chat/completions", "deployment": null },
+    "sources": [{ "kind": "model_catalog", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Live exact ID, availability, modalities, limits, features, sampling parameters, quantization, ES datacenter, and pricing." }],
+    "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Verified against Nextbit's first-party live catalog; Phaseo gateway routing remains disabled." }, "rate_limits": []
+  },
+  {
+    "api_model_id": "gryphe/mythomax-l2-13b", "provider_api_model_id": "nextbit:gryphe/mythomax-l2-13b", "provider_model_slug": "mythomax:13b", "internal_model_id": "gryphe/mythomax-l2-13b",
+    "is_active_gateway": false, "quantization_scheme": "INT4", "input_modalities": "text", "output_modalities": "text", "context_length": 4096, "max_output_tokens": 4096,
+    "effective_from": "2025-07-14T14:10:14Z", "effective_to": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "repetition_penalty", "stop", "seed", "max_tokens", "logprobs", "top_logprobs"], "reasoning": true, "tool_call": true, "structured_output": true, "temperature": true, "attachment": false, "input_modalities": ["text"], "output_modalities": ["text"], "modes": ["streaming"] }],
+    "routing_status": "disabled", "routable": false, "regions": { "execution": ["ES"], "data": ["ES"] }, "service_tiers": ["standard"], "api": { "formats": ["openai.chat.completions"], "endpoint": "https://api.nextbit256.com/v1/chat/completions", "deployment": null },
+    "sources": [{ "kind": "model_catalog", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Live exact ID, availability, modalities, limits, features, sampling parameters, quantization, ES datacenter, and pricing." }],
+    "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Verified against Nextbit's first-party live catalog; Phaseo gateway routing remains disabled." }, "rate_limits": []
+  },
+  {
+    "api_model_id": "undi95/remm-slerp-l2-13b", "provider_api_model_id": "nextbit:undi95/remm-slerp-l2-13b", "provider_model_slug": "remm-slerp:l2-13b", "internal_model_id": "undi95/remm-slerp-l2-13b",
+    "is_active_gateway": false, "quantization_scheme": "BF16", "input_modalities": "text", "output_modalities": "text", "context_length": 6144, "max_output_tokens": 4096,
+    "effective_from": "2025-07-14T14:14:23Z", "effective_to": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "repetition_penalty", "stop", "seed", "max_tokens", "logprobs", "top_logprobs"], "reasoning": true, "tool_call": true, "structured_output": true, "temperature": true, "attachment": false, "input_modalities": ["text"], "output_modalities": ["text"], "modes": ["streaming"] }],
+    "routing_status": "disabled", "routable": false, "regions": { "execution": ["ES"], "data": ["ES"] }, "service_tiers": ["standard"], "api": { "formats": ["openai.chat.completions"], "endpoint": "https://api.nextbit256.com/v1/chat/completions", "deployment": null },
+    "sources": [{ "kind": "model_catalog", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Live exact ID, availability, modalities, limits, features, sampling parameters, quantization, ES datacenter, and pricing." }],
+    "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Verified against Nextbit's first-party live catalog; Phaseo gateway routing remains disabled." }, "rate_limits": []
+  },
+  {
+    "api_model_id": "the-drummer/unslopnemo-12b-v4.1", "provider_api_model_id": "nextbit:the-drummer/unslopnemo-12b-v4.1", "provider_model_slug": "unslopnemo:12b", "internal_model_id": "the-drummer/unslopnemo-12b-v4.1",
+    "is_active_gateway": false, "quantization_scheme": "FP8", "input_modalities": "text", "output_modalities": "text", "context_length": 32768, "max_output_tokens": 32768,
+    "effective_from": "2025-06-23T14:27:50Z", "effective_to": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "repetition_penalty", "stop", "seed", "max_tokens", "logprobs", "top_logprobs"], "reasoning": true, "tool_call": true, "structured_output": true, "temperature": true, "attachment": false, "input_modalities": ["text"], "output_modalities": ["text"], "modes": ["streaming"] }],
+    "routing_status": "disabled", "routable": false, "regions": { "execution": ["ES"], "data": ["ES"] }, "service_tiers": ["standard"], "api": { "formats": ["openai.chat.completions"], "endpoint": "https://api.nextbit256.com/v1/chat/completions", "deployment": null },
+    "sources": [{ "kind": "model_catalog", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Live exact ID, availability, modalities, limits, features, sampling parameters, quantization, ES datacenter, and pricing." }],
+    "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Verified against Nextbit's first-party live catalog; Phaseo gateway routing remains disabled." }, "rate_limits": []
+  },
+  {
     "api_model_id": "google/gemma-2-27b",
     "provider_api_model_id": "nextbit:google/gemma-2-27b",
     "provider_model_slug": "gemma-2:27b-it",
     "internal_model_id": "google/gemma-2-27b",
     "is_active_gateway": false,
     "quantization_scheme": "INT4",
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 8192,
     "max_output_tokens": 2048,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "repetition_penalty", "stop", "seed", "max_tokens", "logprobs", "top_logprobs"], "reasoning": true, "tool_call": true, "structured_output": true, "temperature": true, "attachment": false, "input_modalities": ["text"], "output_modalities": ["text"], "modes": ["streaming"] }],
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": ["ES"],
+      "data": ["ES"]
     },
-    "service_tiers": [],
+    "service_tiers": ["standard"],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": ["openai.chat.completions"],
+      "endpoint": "https://api.nextbit256.com/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [{ "kind": "model_catalog", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Live exact ID, availability, modalities, limits, features, sampling parameters, quantization, ES datacenter, and pricing." }],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Nextbit's first-party live catalog; Phaseo gateway routing remains disabled."
     },
     "rate_limits": []
   },
@@ -244,30 +307,30 @@
     "internal_model_id": "qwen/qwen3-14b",
     "is_active_gateway": false,
     "quantization_scheme": "INT4",
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "context_length": 40960,
     "max_output_tokens": 40960,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": [],
-    "routing_status": null,
+    "capabilities": [{ "capability_id": "text.generate", "status": "active", "params": ["temperature", "top_p", "frequency_penalty", "presence_penalty", "repetition_penalty", "stop", "seed", "max_tokens", "logprobs", "top_logprobs"], "reasoning": true, "tool_call": true, "structured_output": true, "temperature": true, "attachment": false, "input_modalities": ["text"], "output_modalities": ["text"], "modes": ["streaming"] }],
+    "routing_status": "disabled",
     "routable": false,
     "regions": {
-      "execution": null,
-      "data": null
+      "execution": ["ES"],
+      "data": ["ES"]
     },
-    "service_tiers": [],
+    "service_tiers": ["standard"],
     "api": {
-      "formats": [],
-      "endpoint": null,
+      "formats": ["openai.chat.completions"],
+      "endpoint": "https://api.nextbit256.com/v1/chat/completions",
       "deployment": null
     },
-    "sources": [],
+    "sources": [{ "kind": "model_catalog", "url": "https://www.nextbit256.com/api/models", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Live exact ID, availability, modalities, limits, features, sampling parameters, quantization, ES datacenter, and pricing." }],
     "verification": {
-      "status": "unverified",
-      "checked_at": null,
-      "notes": null
+      "status": "verified",
+      "checked_at": "2026-08-24T00:00:00Z",
+      "notes": "Verified against Nextbit's first-party live catalog; Phaseo gateway routing remains disabled."
     },
     "rate_limits": []
   },
