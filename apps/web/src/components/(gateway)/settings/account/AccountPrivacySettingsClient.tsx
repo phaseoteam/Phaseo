@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
+import { updateGlobalGuardrailsSettings } from "@/app/(dashboard)/settings/guardrails/actions";
 import type { AccountPrivacyPolicy, SettingsAccountPrivacyInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { formatProviderOfferDisplayName, formatProviderOfferVariantLabel, resolveProviderLogoId } from "@/lib/providers/providerOffers";
 
@@ -76,59 +77,48 @@ export default function AccountPrivacySettingsClient({
 	const lastSavedPolicy = useRef(JSON.stringify(policy));
 	const lastSavedLogStorage = useRef(JSON.stringify(workspaceLogStorage));
 	useEffect(() => {
+		if (!workspaceId) return;
 		const serialized = JSON.stringify(policy);
 		if (serialized === lastSavedPolicy.current) return;
 		setAutosaveStatus("saving");
-		const controller = new AbortController();
+		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				const response = await fetch("/api/account/settings/guardrails/global", {
-					method: "PUT",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({ ...policy, workspaceId }),
-					signal: controller.signal,
-				});
-				if (!response.ok) throw new Error();
-				const result = await response.json() as { cacheInvalidationPending?: boolean };
+				await updateGlobalGuardrailsSettings(policy);
+				if (cancelled) return;
 				lastSavedPolicy.current = serialized;
-				setAutosaveStatus(result.cacheInvalidationPending ? "pending" : "saved");
+				setAutosaveStatus("saved");
 			} catch {
-				if (controller.signal.aborted) return;
+				if (cancelled) return;
 				setAutosaveStatus("error");
 				toast.error("Could not save the workspace data policy");
 			}
 		}, 650);
-		return () => { window.clearTimeout(timer); controller.abort(); };
+		return () => { cancelled = true; window.clearTimeout(timer); };
 	}, [policy, workspaceId]);
 	useEffect(() => {
 		if (!logStorage || !workspaceId) return;
 		const serialized = JSON.stringify(logStorage);
 		if (serialized === lastSavedLogStorage.current) return;
 		setAutosaveStatus("saving");
-		const controller = new AbortController();
+		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				const response = await fetch("/api/account/settings/guardrails/global", {
-					method: "PUT",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({
-						workspaceId,
-						ioLoggingEnabled: logStorage.enabled,
-						ioLoggingRetentionDays: logStorage.retentionDays,
-						ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
-					}),
-					signal: controller.signal,
+				await updateGlobalGuardrailsSettings({
+					ioLoggingEnabled: logStorage.enabled,
+					ioLoggingRetentionDays: logStorage.retentionDays,
+					ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
 				});
-				if (!response.ok) throw new Error();
+				if (cancelled) return;
 				lastSavedLogStorage.current = serialized;
 				setAutosaveStatus("saved");
 			} catch {
-				if (controller.signal.aborted) return;
+				if (cancelled) return;
 				setAutosaveStatus("error");
 				toast.error("Could not save workspace log storage settings");
 			}
 		}, 650);
-		return () => { window.clearTimeout(timer); controller.abort(); };
+		return () => { cancelled = true; window.clearTimeout(timer); };
 	}, [logStorage, workspaceId]);
 	const normalized = query.trim().toLowerCase();
 	const visibleProviders = useMemo(() => providers

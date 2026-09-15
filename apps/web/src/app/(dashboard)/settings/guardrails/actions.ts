@@ -24,6 +24,9 @@ export type GlobalGuardrailsSettingsPayload = {
 	providerRestrictionEnforceAllowed?: boolean;
 	modelRestrictionMode?: ProviderRestrictionMode;
 	modelRestrictionModelIds?: string[];
+	ioLoggingEnabled?: boolean;
+	ioLoggingRetentionDays?: number;
+	ioLoggingIncludeProviderPayloads?: boolean;
 };
 
 export type GuardrailBudgetPayload = {
