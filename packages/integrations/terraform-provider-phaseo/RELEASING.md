@@ -4,11 +4,11 @@
 
 1. Create `phaseoteam/terraform-provider-phaseo` as an empty public GitHub repository. Do not initialize it with a README or license; the first subtree push must establish its history.
 2. Seed the repository once with a subtree split from the Phaseo monorepo.
-3. Run the generated repository's `Sync from Phaseo monorepo` workflow and confirm it can update its provider-only history using its repository-scoped `GITHUB_TOKEN`.
+3. Create a dedicated fine-grained personal access token for the generated repository with Contents read/write and Workflows write access. Store it as the repository secret `PROVIDER_SYNC_TOKEN`, then run `Sync from Phaseo monorepo` and confirm it can update the provider-only history.
 4. Generate an RSA GPG signing key. Add its armored private key as `GPG_PRIVATE_KEY` and its passphrase as `PASSPHRASE` in the generated repository's protected `publish` environment secrets.
 5. Add the armored public key to the Phaseo namespace in Terraform Registry.
 
-The generated repository checks the monorepo hourly and also supports manual synchronization. No cross-repository secret or long-lived personal token is required.
+The generated repository checks the monorepo hourly and also supports manual synchronization. Keep `PROVIDER_SYNC_TOKEN` dedicated to this repository rather than using a maintainer's personal token.
 
 ## Release
 
