@@ -4549,6 +4549,8 @@ type WorkspaceAutoTopUpUpdate struct {
 	AmountNanos *int `json:"amount_nanos,omitempty"`
 	BalanceThresholdNanos *int `json:"balance_threshold_nanos,omitempty"`
 	Enabled bool `json:"enabled"`
+	MfaBypassAcknowledged *bool `json:"mfa_bypass_acknowledged,omitempty"`
+	MfaBypassPhrase *string `json:"mfa_bypass_phrase,omitempty"`
 	PaymentMethodId *string `json:"payment_method_id,omitempty"`
 }
 

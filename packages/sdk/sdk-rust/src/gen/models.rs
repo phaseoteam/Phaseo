@@ -2970,6 +2970,8 @@ pub struct WorkspaceAutoTopUpUpdate {
 	pub amount_nanos: Option<i64>,
 	pub balance_threshold_nanos: Option<i64>,
 	pub enabled: bool,
+	pub mfa_bypass_acknowledged: Option<bool>,
+	pub mfa_bypass_phrase: Option<String>,
 	pub payment_method_id: Option<Option<String>>,
 }
 

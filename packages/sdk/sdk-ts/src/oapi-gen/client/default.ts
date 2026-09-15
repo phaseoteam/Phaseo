@@ -20774,6 +20774,8 @@ export type UpdateWorkspaceNotificationSettingsParams = {
       amount_nanos?: number;
       balance_threshold_nanos?: number;
       enabled: boolean;
+      mfa_bypass_acknowledged?: boolean;
+      mfa_bypass_phrase?: string;
       payment_method_id?: string | null;
     };
     email_preferences?: {
@@ -20789,7 +20791,7 @@ export type UpdateWorkspaceNotificationSettingsParams = {
 };
 
 /**
- * Updates one or more durable notification-policy sections. Enabling auto top-up requires an existing saved payment method identifier; payment collection remains an interactive account flow.
+ * Updates one or more durable notification-policy sections. Enabling auto top-up requires an existing saved payment method identifier and verified two-factor authentication. An existing auto top-up configuration may be updated without repeating the MFA acknowledgement. To enable auto top-up without MFA, clients must explicitly set `mfa_bypass_acknowledged` to true and provide the exact `mfa_bypass_phrase` value `I ACCEPT THE RISK`; payment collection remains an interactive account flow.
  */
 export async function updateWorkspaceNotificationSettings(
   client: Client,

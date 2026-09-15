@@ -2985,6 +2985,8 @@ public final class Models {
 		public Integer amount_nanos;
 		public Integer balance_threshold_nanos;
 		public Boolean enabled;
+		public Boolean mfa_bypass_acknowledged;
+		public String mfa_bypass_phrase;
 		public String payment_method_id;
 	}
 

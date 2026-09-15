@@ -2663,6 +2663,8 @@ class WorkspaceAutoTopUpUpdate(TypedDict):
 	amount_nanos: NotRequired[int]
 	balance_threshold_nanos: NotRequired[int]
 	enabled: bool
+	mfa_bypass_acknowledged: NotRequired[bool]
+	mfa_bypass_phrase: NotRequired[str]
 	payment_method_id: NotRequired[Optional[str]]
 
 class WorkspaceBudget(TypedDict):

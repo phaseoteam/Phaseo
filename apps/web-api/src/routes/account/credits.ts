@@ -3,12 +3,10 @@ import { requireUser } from "@/auth/requireUser";
 import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
-import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { encryptNotificationTarget, NOTIFICATION_DESTINATION_TYPES, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
 
 const EMPTY_TIER_SUMMARY = { lastMonthCents: 0, mtdCents: 0, teamTier: "basic" as const };
 const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation"] as const;
-const MFA_BYPASS_CONFIRMATION = "I ACCEPT THE RISK";
 
 export function parseLowBalanceThresholdNanos(value: unknown): number | null {
 	const thresholdUsd = Number(value);
@@ -215,30 +213,25 @@ creditsRouter.put("/auto-top-up", async (c) => {
 	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const enabled = body.enabled !== false;
 	const mfaEnabled = context.user.factors.some((factor) => factor.factor_type === "totp" && factor.status === "verified");
-	const bypassAcknowledged = body.mfaBypassAcknowledged === true && body.mfaBypassPhrase === MFA_BYPASS_CONFIRMATION;
-	let currentlyEnabled = false;
-	if (enabled && !mfaEnabled) {
-		const walletState = await context.client.from("wallets").select("auto_top_up_enabled").eq("workspace_id", workspaceId).maybeSingle();
-		if (walletState.error) return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		currentlyEnabled = walletState.data?.auto_top_up_enabled === true;
-	}
-	if (enabled && !mfaEnabled && !currentlyEnabled && !bypassAcknowledged) {
-		return c.json({ error: "mfa_required", message: "Enable two-factor authentication before enabling Auto Top-Up" }, 400, PRIVATE_NO_STORE_HEADERS);
-	}
 	const topUpAmount = Number(body.topUpAmount ?? 0);
-	if (enabled && (!Number.isFinite(topUpAmount) || topUpAmount < 1_000_000_000)) return c.json({ error: "minimum_top_up" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const payload = enabled ? { auto_top_up_enabled: true, low_balance_threshold: Number(body.balanceThreshold ?? 0), auto_top_up_amount: topUpAmount, auto_top_up_account_id: body.paymentMethodId ?? null, updated_at: new Date().toISOString() } : { auto_top_up_enabled: false, low_balance_threshold: 0, auto_top_up_amount: 0, auto_top_up_account_id: null, updated_at: new Date().toISOString() };
-	const result = await context.client.from("wallets").update(payload).eq("workspace_id", workspaceId).select();
-	if (result.error) return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-	if (enabled && !mfaEnabled && !currentlyEnabled && bypassAcknowledged) {
-		await recordWorkspaceAuditEvent(context.client, {
-			workspaceId,
-			actorUserId: context.user.id,
-			action: "auto_top_up.enabled_without_mfa",
-			targetType: "wallet",
-			targetId: workspaceId,
-			metadata: { consentVersion: "mfa-bypass-v1", mfaEnabled: false },
-		});
+	const balanceThreshold = Number(body.balanceThreshold ?? 0);
+	if (enabled && (!Number.isSafeInteger(topUpAmount) || topUpAmount < 1_000_000_000)) return c.json({ error: "minimum_top_up" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (enabled && (!Number.isSafeInteger(balanceThreshold) || balanceThreshold < 0)) return c.json({ error: "invalid_threshold" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await context.client.rpc("update_workspace_auto_top_up", {
+		p_workspace_id: workspaceId,
+		p_enabled: enabled,
+		p_balance_threshold_nanos: enabled ? balanceThreshold : 0,
+		p_amount_nanos: enabled ? topUpAmount : 0,
+		p_payment_method_id: enabled ? (typeof body.paymentMethodId === "string" ? body.paymentMethodId.trim() || null : null) : null,
+		p_mfa_enabled: mfaEnabled,
+		p_mfa_bypass_acknowledged: body.mfaBypassAcknowledged === true,
+		p_mfa_bypass_phrase: typeof body.mfaBypassPhrase === "string" ? body.mfaBypassPhrase : null,
+		p_actor_user_id: context.user.id,
+		p_request_id: c.req.header("x-request-id") ?? null,
+	});
+	if (result.error) {
+		if (result.error.message.includes("mfa_required")) return c.json({ error: "mfa_required", message: "Enable two-factor authentication before enabling Auto Top-Up" }, 400, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	return c.json({ data: result.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
 });
