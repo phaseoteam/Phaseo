@@ -120,7 +120,7 @@ const finalizeSessionSchema = z.object({
 
 export const realtimeSessionsRoutes = new Hono<Env>();
 export const liveSessionsRoutes = new Hono<Env>();
-export const createLiveSessionSchema = createRealtimeSessionSchema.extend({
+export const createLiveSessionSchema = createRealtimeSessionSchema.safeExtend({
 	type: z.literal("live").optional(), model: z.literal(LIVE_MODEL), provider: z.literal("openai"),
 	voice: z.enum(LIVE_VOICES).default("marin"), source: z.literal("chat"),
 	backend_model: z.enum(LIVE_BACKENDS).default(LIVE_BACKENDS[0]),

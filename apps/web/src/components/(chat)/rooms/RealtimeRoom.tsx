@@ -2411,7 +2411,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				completePendingStop();
 			}
 
-			if (serverContent.turnComplete || serverContent.generationComplete) {
+			if (serverContent.turnComplete) {
 				setLastEventType("turnComplete");
 				googleUserTranscriptIdRef.current = null;
 				googleAssistantTranscriptIdRef.current = null;
