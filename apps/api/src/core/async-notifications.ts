@@ -564,7 +564,11 @@ function isWebhookEventSubscribed(args: {
 }): boolean {
 	const generic = `job.${args.phase}` as AsyncNotificationEventType;
 	const specific = resolveSpecificEvent(args.kind, args.phase);
-	return args.configuredEvents.includes(generic) || args.configuredEvents.includes(specific);
+	const legacyBatchExpiry =
+		args.kind === "batch" &&
+		args.phase === "expired" &&
+		args.configuredEvents.includes("batch.failed");
+	return args.configuredEvents.includes(generic) || args.configuredEvents.includes(specific) || legacyBatchExpiry;
 }
 
 function resolveVideoBilling(record: AsyncOperationRecord, meta: AsyncNotificationMeta) {
@@ -1229,7 +1233,7 @@ export async function dispatchAsyncWebhookEvent(args: {
 		}
 		return false;
 	}
-	const specificEvent = args.eventType ?? resolveSpecificEvent(args.kind, args.phase);
+	let specificEvent = args.eventType ?? resolveSpecificEvent(args.kind, args.phase);
 	const deliveryKey = queuedDeliveryKey ?? (progressBucket != null ? `${specificEvent}:${progressBucket}` : specificEvent);
 	const deliveries =
 		meta.webhookDeliveries && typeof meta.webhookDeliveries === "object" && !Array.isArray(meta.webhookDeliveries)
@@ -1265,6 +1269,17 @@ export async function dispatchAsyncWebhookEvent(args: {
 			});
 		}
 		return false;
+	}
+	if (
+		args.kind === "batch" &&
+		args.phase === "expired" &&
+		!webhook.events.includes("job.expired") &&
+		!webhook.events.includes("batch.expired") &&
+		webhook.events.includes("batch.failed")
+	) {
+		// Preserve the pre-granular-events contract for endpoints that persisted
+		// the old managed defaults: expirations were delivered as batch.failed.
+		specificEvent = "batch.failed";
 	}
 	if (!isWebhookEventSubscribed({ kind: args.kind, phase: args.phase, configuredEvents: webhook.events })) {
 		if (queuedDeliveryKey) {

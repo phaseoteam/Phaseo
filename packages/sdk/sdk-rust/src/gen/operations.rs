@@ -955,6 +955,11 @@ pub fn summarizeGatewayFeedback<T: Transport>(client: &Client<T>, path: &HashMap
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn testWebhookEndpoint<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/webhook-endpoints/{}/test", path.get("id").cloned().unwrap_or_default());
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn testWorkspaceNotificationDestination<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/notifications/destinations/{}/test", path.get("id").cloned().unwrap_or_default());
 	client.request("POST", &resolved_path, body)

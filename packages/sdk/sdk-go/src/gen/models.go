@@ -4341,6 +4341,33 @@ type WebhookEndpointDeleteResponse struct {
 	Object string `json:"object"`
 }
 
+type WebhookEndpointEvent string
+
+const (
+	WebhookEndpointEventJobCreated WebhookEndpointEvent = "job.created"
+	WebhookEndpointEventJobStatusChanged WebhookEndpointEvent = "job.status_changed"
+	WebhookEndpointEventJobProgress WebhookEndpointEvent = "job.progress"
+	WebhookEndpointEventJobCompleted WebhookEndpointEvent = "job.completed"
+	WebhookEndpointEventJobFailed WebhookEndpointEvent = "job.failed"
+	WebhookEndpointEventJobCancelled WebhookEndpointEvent = "job.cancelled"
+	WebhookEndpointEventJobExpired WebhookEndpointEvent = "job.expired"
+	WebhookEndpointEventVideoCreated WebhookEndpointEvent = "video.created"
+	WebhookEndpointEventVideoStatusChanged WebhookEndpointEvent = "video.status_changed"
+	WebhookEndpointEventVideoProgress WebhookEndpointEvent = "video.progress"
+	WebhookEndpointEventVideoCompleted WebhookEndpointEvent = "video.completed"
+	WebhookEndpointEventVideoFailed WebhookEndpointEvent = "video.failed"
+	WebhookEndpointEventVideoCancelled WebhookEndpointEvent = "video.cancelled"
+	WebhookEndpointEventVideoExpired WebhookEndpointEvent = "video.expired"
+	WebhookEndpointEventBatchCreated WebhookEndpointEvent = "batch.created"
+	WebhookEndpointEventBatchStatusChanged WebhookEndpointEvent = "batch.status_changed"
+	WebhookEndpointEventBatchProgress WebhookEndpointEvent = "batch.progress"
+	WebhookEndpointEventBatchCompleted WebhookEndpointEvent = "batch.completed"
+	WebhookEndpointEventBatchFailed WebhookEndpointEvent = "batch.failed"
+	WebhookEndpointEventBatchCancelled WebhookEndpointEvent = "batch.cancelled"
+	WebhookEndpointEventBatchExpired WebhookEndpointEvent = "batch.expired"
+)
+
+
 type WebhookEndpointInput struct {
 	Events *[]string `json:"events,omitempty"`
 	Name *string `json:"name,omitempty"`
@@ -4365,6 +4392,14 @@ type WebhookEndpointSecretResponse struct {
 	UpdatedAt *string `json:"updatedAt,omitempty"`
 	Url string `json:"url"`
 	WorkspaceId string `json:"workspaceId"`
+}
+
+type WebhookEndpointTestResponse struct {
+	Error *string `json:"error"`
+	EventId string `json:"event_id"`
+	Ok bool `json:"ok"`
+	ResponseBodyPreview *string `json:"response_body_preview"`
+	StatusCode *int `json:"status_code"`
 }
 
 type WebhookEndpointUpdateRequest struct {

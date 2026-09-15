@@ -954,6 +954,11 @@ inline Response SummarizeGatewayFeedback(Client& client, const std::map<std::str
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response TestWebhookEndpoint(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/webhook-endpoints/" + (path.count("id") ? path.at("id") : std::string{}) + "/test";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response TestWorkspaceNotificationDestination(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/notifications/destinations/" + (path.count("id") ? path.at("id") : std::string{}) + "/test";
 	return client.request("POST", resolved_path, body);

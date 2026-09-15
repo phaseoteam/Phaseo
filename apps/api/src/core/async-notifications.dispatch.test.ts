@@ -177,6 +177,34 @@ describe("async webhook dispatch", () => {
 		expect(payload.data).toMatchObject({ status: "completed", lifecycle_status: "completed", billing: { total_nanos: 20250 } });
 	});
 
+	it("preserves batch.failed delivery for expired jobs using legacy endpoint defaults", async () => {
+		getAsyncOperationMock.mockResolvedValue(batchRecord({
+			status: "expired",
+			meta: {
+				...batchRecord().meta,
+				webhook: {
+					url: "https://receiver.test/webhooks/aistats",
+					secret: "whsec_test_secret",
+					events: ["batch.completed", "batch.failed", "batch.cancelled"],
+				},
+			},
+		}));
+		vi.mocked(fetch).mockResolvedValueOnce(new Response("accepted", { status: 202 }));
+
+		const delivered = await dispatchAsyncWebhookEvent({
+			workspaceId: "ws_1",
+			kind: "batch",
+			internalId: "batch_1",
+			phase: "expired",
+			baseUrl: "https://gateway.test",
+		});
+
+		expect(delivered).toBe(true);
+		const [, init] = vi.mocked(fetch).mock.calls[0]!;
+		expect((init?.headers as Record<string, string>)["x-phaseo-event-type"]).toBe("batch.failed");
+		expect(JSON.parse(String(init?.body))).toMatchObject({ type: "batch.failed" });
+	});
+
 	it("delivers signed batch completion webhooks and stores delivery metadata", async () => {
 		getAsyncOperationMock.mockResolvedValue(batchRecord());
 		vi.mocked(fetch).mockResolvedValueOnce(new Response("accepted", { status: 202 }));

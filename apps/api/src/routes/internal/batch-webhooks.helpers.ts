@@ -391,8 +391,10 @@ export async function processGoogleAiStudioBatchWebhook(args: {
 	const terminal =
 		status === "completed"
 			? { status, phase: "completed" as const }
-			: status === "failed" || status === "expired"
+			: status === "failed"
 				? { status, phase: "failed" as const }
+				: status === "expired"
+					? { status, phase: "expired" as const }
 				: status === "cancelled" || status === "canceled"
 					? { status: "cancelled" as const, phase: "cancelled" as const }
 					: mapGoogleAiStudioBatchTerminal(eventType, payload);

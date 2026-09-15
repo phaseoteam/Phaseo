@@ -6303,7 +6303,29 @@ export type CreateWebhookEndpointParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    events?: string[];
+    events?: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     name?: string;
     url: string;
   };
@@ -10395,7 +10417,29 @@ export async function getWebhookEndpoint(
   createdAt?: string | null;
   createdBy?: string | null;
   deletedAt?: string | null;
-  events: string[];
+  events: (
+    | "job.created"
+    | "job.status_changed"
+    | "job.progress"
+    | "job.completed"
+    | "job.failed"
+    | "job.cancelled"
+    | "job.expired"
+    | "video.created"
+    | "video.status_changed"
+    | "video.progress"
+    | "video.completed"
+    | "video.failed"
+    | "video.cancelled"
+    | "video.expired"
+    | "batch.created"
+    | "batch.status_changed"
+    | "batch.progress"
+    | "batch.completed"
+    | "batch.failed"
+    | "batch.cancelled"
+    | "batch.expired"
+  )[];
   hasSecret: boolean;
   id: string;
   name: string;
@@ -10410,7 +10454,29 @@ export async function getWebhookEndpoint(
     createdAt?: string | null;
     createdBy?: string | null;
     deletedAt?: string | null;
-    events: string[];
+    events: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     hasSecret: boolean;
     id: string;
     name: string;
@@ -16283,7 +16349,29 @@ export async function listWebhookEndpoints(
     createdAt?: string | null;
     createdBy?: string | null;
     deletedAt?: string | null;
-    events: string[];
+    events: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     hasSecret: boolean;
     id: string;
     name: string;
@@ -16301,7 +16389,29 @@ export async function listWebhookEndpoints(
       createdAt?: string | null;
       createdBy?: string | null;
       deletedAt?: string | null;
-      events: string[];
+      events: (
+        | "job.created"
+        | "job.status_changed"
+        | "job.progress"
+        | "job.completed"
+        | "job.failed"
+        | "job.cancelled"
+        | "job.expired"
+        | "video.created"
+        | "video.status_changed"
+        | "video.progress"
+        | "video.completed"
+        | "video.failed"
+        | "video.cancelled"
+        | "video.expired"
+        | "batch.created"
+        | "batch.status_changed"
+        | "batch.progress"
+        | "batch.completed"
+        | "batch.failed"
+        | "batch.cancelled"
+        | "batch.expired"
+      )[];
       hasSecret: boolean;
       id: string;
       name: string;
@@ -18529,6 +18639,45 @@ export async function summarizeGatewayFeedback(
   });
 }
 
+export type TestWebhookEndpointParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Sends one signed `webhook.test` event without retries or delivery-history persistence.
+ */
+export async function testWebhookEndpoint(
+  client: Client,
+  args: TestWebhookEndpointParams,
+): Promise<{
+  error: string | null;
+  event_id: string;
+  ok: boolean;
+  response_body_preview: string | null;
+  status_code: number | null;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/webhook-endpoints/${encodeURIComponent(String(path["id"]))}/test`;
+  return client.request<{
+    error: string | null;
+    event_id: string;
+    ok: boolean;
+    response_body_preview: string | null;
+    status_code: number | null;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type TestWorkspaceNotificationDestinationParams = {
   path: {
     id: string;
@@ -20039,7 +20188,29 @@ export type UpdateWebhookEndpointParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    events?: string[];
+    events?: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     name?: string;
     status?: "active" | "disabled";
     url?: string;
@@ -20056,7 +20227,29 @@ export async function updateWebhookEndpoint(
   createdAt?: string | null;
   createdBy?: string | null;
   deletedAt?: string | null;
-  events: string[];
+  events: (
+    | "job.created"
+    | "job.status_changed"
+    | "job.progress"
+    | "job.completed"
+    | "job.failed"
+    | "job.cancelled"
+    | "job.expired"
+    | "video.created"
+    | "video.status_changed"
+    | "video.progress"
+    | "video.completed"
+    | "video.failed"
+    | "video.cancelled"
+    | "video.expired"
+    | "batch.created"
+    | "batch.status_changed"
+    | "batch.progress"
+    | "batch.completed"
+    | "batch.failed"
+    | "batch.cancelled"
+    | "batch.expired"
+  )[];
   hasSecret: boolean;
   id: string;
   name: string;
@@ -20071,7 +20264,29 @@ export async function updateWebhookEndpoint(
     createdAt?: string | null;
     createdBy?: string | null;
     deletedAt?: string | null;
-    events: string[];
+    events: (
+      | "job.created"
+      | "job.status_changed"
+      | "job.progress"
+      | "job.completed"
+      | "job.failed"
+      | "job.cancelled"
+      | "job.expired"
+      | "video.created"
+      | "video.status_changed"
+      | "video.progress"
+      | "video.completed"
+      | "video.failed"
+      | "video.cancelled"
+      | "video.expired"
+      | "batch.created"
+      | "batch.status_changed"
+      | "batch.progress"
+      | "batch.completed"
+      | "batch.failed"
+      | "batch.cancelled"
+      | "batch.expired"
+    )[];
     hasSecret: boolean;
     id: string;
     name: string;

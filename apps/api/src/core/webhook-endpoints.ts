@@ -50,6 +50,7 @@ const DEFAULT_WEBHOOK_EVENTS = [
 	"batch.completed",
 	"batch.failed",
 	"batch.cancelled",
+	"batch.expired",
 ] as const;
 
 function normalizeText(value: unknown): string | null {

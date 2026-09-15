@@ -65,6 +65,7 @@ describe("webhook endpoint helpers", () => {
 	});
 
 	it("normalizes endpoint events and strips secret material from public records", () => {
+		expect(normalizeWebhookEndpointEvents(undefined)).toContain("batch.expired");
 		expect(normalizeWebhookEndpointEvents([" Batch.Completed ", "batch.completed", "video.failed"])).toEqual([
 			"batch.completed",
 			"video.failed",
