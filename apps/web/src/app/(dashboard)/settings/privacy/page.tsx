@@ -40,7 +40,6 @@ async function PrivacySettingsContent() {
 			policy={initialData.policy}
 			providers={initialData.providers}
 			models={initialData.models}
-			scope="workspace"
 			workspaceId={initialData.workspaceId}
 			workspaceLogStorage={{
 				enabled: initialData.initialGlobal?.io_logging_enabled === true,

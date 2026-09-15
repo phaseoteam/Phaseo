@@ -17,9 +17,7 @@ import type { AccountPrivacyPolicy, SettingsAccountPrivacyInitialData } from "@/
 import { formatProviderOfferDisplayName, formatProviderOfferVariantLabel, resolveProviderLogoId } from "@/lib/providers/providerOffers";
 
 type Props = Omit<SettingsAccountPrivacyInitialData, "signedIn"> & {
-	scope?: "account" | "workspace";
 	workspaceId?: string | null;
-	inheritedAccountPolicy?: AccountPrivacyPolicy | null;
 	workspaceLogStorage?: {
 		enabled: boolean;
 		retentionDays: number;
@@ -54,9 +52,7 @@ export default function AccountPrivacySettingsClient({
 	policy: initialPolicy,
 	providers,
 	models,
-	scope = "account",
 	workspaceId = null,
-	inheritedAccountPolicy = null,
 	workspaceLogStorage = null,
 }: Props) {
 	const [policy, setPolicy] = useState<AccountPrivacyPolicy>(() => {
@@ -75,7 +71,6 @@ export default function AccountPrivacySettingsClient({
 	const [routeKind, setRouteKind] = useState<"providers" | "models">("providers");
 	const [availabilityKind, setAvailabilityKind] = useState<"providers" | "models">("models");
 	const [availabilityState, setAvailabilityState] = useState<"all" | "available" | "unavailable">("all");
-	const [availabilityScope, setAvailabilityScope] = useState<"workspace" | "personal">("workspace");
 	const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved" | "pending" | "error">("idle");
 	const [logStorage, setLogStorage] = useState(workspaceLogStorage);
 	const lastSavedPolicy = useRef(JSON.stringify(policy));
@@ -87,29 +82,26 @@ export default function AccountPrivacySettingsClient({
 		const controller = new AbortController();
 		const timer = window.setTimeout(async () => {
 			try {
-				const endpoint = scope === "workspace"
-					? "/api/account/settings/guardrails/global"
-					: "/api/account/settings/account/privacy";
-				const response = await fetch(endpoint, {
+				const response = await fetch("/api/account/settings/guardrails/global", {
 					method: "PUT",
 					headers: { "content-type": "application/json" },
-					body: JSON.stringify({ ...policy, ...(scope === "workspace" ? { workspaceId } : {}) }),
+					body: JSON.stringify({ ...policy, workspaceId }),
 					signal: controller.signal,
 				});
 				if (!response.ok) throw new Error();
 				const result = await response.json() as { cacheInvalidationPending?: boolean };
 				lastSavedPolicy.current = serialized;
 				setAutosaveStatus(result.cacheInvalidationPending ? "pending" : "saved");
-			} catch (error) {
+			} catch {
 				if (controller.signal.aborted) return;
 				setAutosaveStatus("error");
-				toast.error(`Could not save the ${scope} data policy`);
+				toast.error("Could not save the workspace data policy");
 			}
 		}, 650);
 		return () => { window.clearTimeout(timer); controller.abort(); };
-	}, [policy, scope, workspaceId]);
+	}, [policy, workspaceId]);
 	useEffect(() => {
-		if (scope !== "workspace" || !logStorage || !workspaceId) return;
+		if (!logStorage || !workspaceId) return;
 		const serialized = JSON.stringify(logStorage);
 		if (serialized === lastSavedLogStorage.current) return;
 		setAutosaveStatus("saving");
@@ -137,7 +129,7 @@ export default function AccountPrivacySettingsClient({
 			}
 		}, 650);
 		return () => { window.clearTimeout(timer); controller.abort(); };
-	}, [logStorage, scope, workspaceId]);
+	}, [logStorage, workspaceId]);
 	const normalized = query.trim().toLowerCase();
 	const visibleProviders = useMemo(() => providers
 		.filter((item) => `${item.name} ${item.id} ${item.offer_label ?? ""}`.toLowerCase().includes(normalized))
@@ -162,8 +154,6 @@ export default function AccountPrivacySettingsClient({
 	const selectionLabel = (mode: "none" | "allowlist" | "blocklist", count: number) => mode === "none" ? "Allow all" : mode === "allowlist" ? `${count} allowed` : `${count} blocked`;
 	const modeLabel = (mode: "none" | "allowlist" | "blocklist", subject: "providers" | "models") => mode === "none" ? `Allow all ${subject}` : mode === "allowlist" ? `Only allow selected ${subject}` : `Allow all except selected ${subject}`;
 	const setOrganisation = (ids: string[], selected: boolean) => setPolicy((current) => ({ ...current, modelRestrictionModelIds: selected ? [...new Set([...current.modelRestrictionModelIds, ...ids])] : current.modelRestrictionModelIds.filter((id) => !ids.includes(id)) }));
-	const scopeLabel = scope === "workspace" ? "workspace" : "account";
-	const includePersonalPolicy = scope === "workspace" && availabilityScope === "personal" && inheritedAccountPolicy !== null;
 	const routeAllowed = (candidatePolicy: AccountPrivacyPolicy, kind: "provider" | "model", id: string) => {
 		const mode = kind === "provider" ? candidatePolicy.providerRestrictionMode : candidatePolicy.modelRestrictionMode;
 		const ids = kind === "provider" ? candidatePolicy.providerRestrictionProviderIds : candidatePolicy.modelRestrictionModelIds;
@@ -173,13 +163,12 @@ export default function AccountPrivacySettingsClient({
 	};
 	const providerAvailability = useMemo(() => new Map(providers.map((provider) => {
 		const workspaceAllowed = routeAllowed(policy, "provider", provider.id);
-		const personalAllowed = !includePersonalPolicy || routeAllowed(inheritedAccountPolicy!, "provider", provider.id);
-		const available = workspaceAllowed && personalAllowed;
+		const available = workspaceAllowed;
 		const reason = !workspaceAllowed
-			? policy.providerRestrictionMode === "allowlist" ? `Outside the ${scopeLabel} provider allowlist` : `Blocked by the ${scopeLabel} provider rule`
-			: !personalAllowed ? "Blocked by your Account Data Controls" : null;
+			? policy.providerRestrictionMode === "allowlist" ? "Outside the workspace provider allowlist" : "Blocked by the workspace provider rule"
+			: null;
 		return [provider.id, { ...provider, available, reason }];
-	})), [policy, providers, scopeLabel, includePersonalPolicy, inheritedAccountPolicy]);
+	})), [policy, providers]);
 	const effectiveProviders = [...providerAvailability.values()];
 	const providerCoverageGroups = useMemo(() => {
 		const groups = Object.groupBy(effectiveProviders, (provider) => provider.provider_family_id || provider.id);
@@ -191,18 +180,16 @@ export default function AccountPrivacySettingsClient({
 	}, [effectiveProviders]);
 	const effectiveModels = useMemo(() => models.map((model) => {
 		const workspaceAllowed = routeAllowed(policy, "model", model.id);
-		const personalAllowed = !includePersonalPolicy || routeAllowed(inheritedAccountPolicy!, "model", model.id);
-		const allowedByModel = workspaceAllowed && personalAllowed;
+		const allowedByModel = workspaceAllowed;
 		const providerRouteIds = model.providerIds ?? [];
 		const permittedProviders = providerRouteIds.filter((id) => providerAvailability.get(id)?.available !== false);
 		const hasPermittedRoute = providerRouteIds.length === 0 || permittedProviders.length > 0;
 		const available = allowedByModel && hasPermittedRoute;
 		const reason = !workspaceAllowed
-			? policy.modelRestrictionMode === "allowlist" ? `Outside the ${scopeLabel} model allowlist` : `Blocked by the ${scopeLabel} model rule`
-			: !personalAllowed ? "Blocked by your Account Data Controls"
+			? policy.modelRestrictionMode === "allowlist" ? "Outside the workspace model allowlist" : "Blocked by the workspace model rule"
 			: !hasPermittedRoute ? "No permitted provider routes remain" : null;
 		return { ...model, available, reason };
-	}).sort(compareModelsByOrganisationAndName), [models, policy, providerAvailability, scopeLabel, includePersonalPolicy, inheritedAccountPolicy]);
+	}).sort(compareModelsByOrganisationAndName), [models, policy, providerAvailability]);
 	const availabilityItems = availabilityKind === "providers" ? effectiveProviders : effectiveModels;
 	const availabilityCounts = { available: availabilityItems.filter((item) => item.available).length, unavailable: availabilityItems.filter((item) => !item.available).length };
 	const visibleAvailabilityItems = availabilityItems.filter((item) => availabilityState === "all" || (availabilityState === "available") === item.available);
@@ -210,7 +197,7 @@ export default function AccountPrivacySettingsClient({
 	return <div className="space-y-8">
 		<section>
 			<h2 className="text-base font-semibold">Data Handling</h2>
-			<p className="mt-1 text-sm text-muted-foreground">{scope === "workspace" ? "Set the minimum privacy standard for every request in this workspace." : "Set the minimum privacy standard for interactive requests made as you, including Phaseo Chat."}</p>
+			<p className="mt-1 text-sm text-muted-foreground">Set the minimum privacy standard for every request in this workspace.</p>
 			<div className="mt-3 rounded-lg border px-4">
 				<SettingRow title="Allow paid routes that may train" description="Permit paid routes whose provider may use prompts or completions for training." checked={policy.privacyEnablePaidMayTrain} onCheckedChange={(value) => set("privacyEnablePaidMayTrain", value)} />
 				<SettingRow title="Allow free routes that may train" description="Permit free routes whose provider may use prompts or completions for training." checked={policy.privacyEnableFreeMayTrain} onCheckedChange={(value) => set("privacyEnableFreeMayTrain", value)} />
@@ -218,7 +205,7 @@ export default function AccountPrivacySettingsClient({
 				<SettingRow title="Require zero data retention" description="Only route requests where the selected capability is eligible for ZDR." checked={policy.privacyZdrOnly} onCheckedChange={(value) => set("privacyZdrOnly", value)} />
 			</div>
 		</section>
-		{scope === "workspace" && logStorage ? <section className="border-t pt-8">
+		{logStorage ? <section className="border-t pt-8">
 			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
 				<div>
 					<h2 className="text-base font-semibold">Gateway Log Storage</h2>
@@ -243,7 +230,7 @@ export default function AccountPrivacySettingsClient({
 			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
 				<div>
 					<h2 className="text-base font-semibold">Route Access</h2>
-					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{scope === "workspace" ? "Control which providers and models this workspace may use. Scoped guardrails can restrict individual members and API keys further." : "Control which providers and models Phaseo may use for requests made as you. Workspace policy can restrict them further."}</p>
+					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">Control which providers and models this workspace may use. Scoped guardrails can restrict individual members and API keys further.</p>
 				</div>
 				<div className="min-w-0">
 			<div className="grid gap-4 sm:grid-cols-2">
@@ -267,17 +254,13 @@ export default function AccountPrivacySettingsClient({
 			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
 				<div>
 					<h2 className="text-base font-semibold">Eligibility Preview</h2>
-					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{scope === "workspace" ? "Inspect the shared workspace baseline or combine it with your personal Chat controls." : "See the providers and models available after applying your account settings."}</p>
+					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">See the providers and models available after applying the current workspace settings.</p>
 				</div>
 				<div className="min-w-0 space-y-4">
-				{scope === "workspace" && inheritedAccountPolicy ? <div className="inline-flex items-center rounded-md border bg-background p-1" role="tablist" aria-label="Eligibility policy scope">
-					<Button type="button" variant="ghost" size="sm" role="tab" aria-selected={availabilityScope === "workspace"} className={`h-8 rounded-md px-3 ${availabilityScope === "workspace" ? "bg-muted text-foreground" : "text-muted-foreground"}`} onClick={() => setAvailabilityScope("workspace")}>Workspace Baseline</Button>
-					<Button type="button" variant="ghost" size="sm" role="tab" aria-selected={availabilityScope === "personal"} className={`h-8 rounded-md px-3 ${availabilityScope === "personal" ? "bg-muted text-foreground" : "text-muted-foreground"}`} onClick={() => setAvailabilityScope("personal")}>Effective for Me</Button>
-				</div> : null}
 				<div className="border-b pb-4">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 						<div><div className="text-sm font-medium text-muted-foreground">Effective availability</div><div className="mt-1 text-2xl font-semibold tracking-tight">{availabilityCounts.available} of {availabilityItems.length} {availabilityKind} routable</div></div>
-						<div className="text-xs text-muted-foreground sm:text-right"><div>{availabilityCounts.available} passed {includePersonalPolicy ? "workspace and personal" : scope} access rules</div><div>{availabilityCounts.unavailable} excluded after all checks</div></div>
+						<div className="text-xs text-muted-foreground sm:text-right"><div>{availabilityCounts.available} passed workspace access rules</div><div>{availabilityCounts.unavailable} excluded after all checks</div></div>
 					</div>
 				</div>
 				<div className="space-y-2">

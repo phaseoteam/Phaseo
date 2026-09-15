@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyWorkspacePolicy, buildWorkspacePolicy, isOptionalDynamicRouteSchemaUnavailable, shouldApplyLegacyAccountPolicy } from "./workspacePolicy";
+import { applyWorkspacePolicy, buildWorkspacePolicy, isOptionalDynamicRouteSchemaUnavailable } from "./workspacePolicy";
 
 function candidate(args: {
     providerId: string;
@@ -77,12 +77,6 @@ function candidate(args: {
 }
 
 describe("applyWorkspacePolicy", () => {
-	it("limits the legacy account overlay to the managed Chat key", () => {
-		expect(shouldApplyLegacyAccountPolicy("__chat_route_managed_key__")).toBe(true);
-		expect(shouldApplyLegacyAccountPolicy("Production API")).toBe(false);
-		expect(shouldApplyLegacyAccountPolicy(null)).toBe(false);
-	});
-
 	it("keeps workspace route blocks when scoped guardrails allow other routes", () => {
 		const policy = buildWorkspacePolicy({
 			globalSettings: { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["openai"], model_restriction_mode: "blocklist", model_restriction_model_ids: ["test/model"] },
@@ -90,7 +84,6 @@ describe("applyWorkspacePolicy", () => {
 		});
 		expect(policy.providerBlocklist).toEqual(["openai"]);
 		expect(policy.blockedApiModels).toEqual(["test/model"]);
-		expect(policy.accountPolicyApplied).toBe(false);
 	});
 
 	it("applies workspace-wide model restrictions before scoped guardrails", () => {
@@ -130,27 +123,6 @@ describe("applyWorkspacePolicy", () => {
 			privacyEnableInputOutputLogging: false,
 			privacyZdrOnly: true,
 		});
-	});
-
-	it("preserves saved Chat privacy controls in the stricter direction", () => {
-		const policy = buildWorkspacePolicy({
-			globalSettings: {
-				privacy_enable_input_output_logging: true,
-				provider_restriction_mode: "allowlist",
-				provider_restriction_provider_ids: ["openai", "anthropic"],
-			},
-			legacyAccountSettings: {
-				privacy_enable_input_output_logging: false,
-				privacy_zdr_only: true,
-				provider_restriction_mode: "allowlist",
-				provider_restriction_provider_ids: ["anthropic"],
-			},
-		});
-
-		expect(policy.privacyEnableInputOutputLogging).toBe(false);
-		expect(policy.privacyZdrOnly).toBe(true);
-		expect(policy.providerAllowlist).toEqual(["anthropic"]);
-		expect(policy.accountPolicyApplied).toBe(true);
 	});
 
 	it("intersects workspace allowlists with scoped guardrail allowlists", () => {
