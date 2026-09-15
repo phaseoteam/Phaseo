@@ -96,10 +96,12 @@ export default function WebhookEndpointForm({
 
 	return (
 		<form onSubmit={submit} className="max-w-4xl space-y-6">
-			<Link href="/settings/webhooks" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
-				<ArrowLeft className="size-4" />
-				Back to Webhooks
-			</Link>
+			<Button asChild type="button" variant="ghost" size="sm" className="-ml-3 w-fit text-muted-foreground">
+				<Link href="/settings/webhooks">
+					<ArrowLeft className="size-4" />
+					Back to Webhooks
+				</Link>
+			</Button>
 
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div className="min-w-0 flex-1">
