@@ -4,6 +4,7 @@ import * as React from "react";
 import {
 	ArrowRight,
 	BadgeCheck,
+	Building2,
 	Check,
 	ChevronRight,
 	CircleAlert,
@@ -15,7 +16,6 @@ import {
 	RefreshCw,
 	Send,
 	ShieldCheck,
-	Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { previewProviderCatalogAction, rotateProviderCatalogWebhookAction, startProviderClaimAction, submitProviderOnboardingAction, type ProviderCatalogPreview } from "@/app/(dashboard)/settings/account/providers/actions";
+import { previewProviderCatalogAction, rotateProviderCatalogWebhookAction, startProviderClaimAction, submitProviderOnboardingAction, type ProviderCatalogPreview } from "@/app/(dashboard)/settings/workspaces/provider/actions";
 import type { SettingsProviderOnboardingInitialData } from "@/lib/fetchers/internal/settingsTypes";
 
 type Props = { initialData: SettingsProviderOnboardingInitialData };
@@ -68,7 +68,7 @@ function PreviewModel({ model }: { model: ProviderCatalogPreview["models"][numbe
 	</div>;
 }
 
-export default function ProviderOnboardingClient({ initialData }: Props) {
+export default function ProviderWorkspaceClient({ initialData }: Props) {
 	const [providerName, setProviderName] = React.useState("");
 	const [providerSlug, setProviderSlug] = React.useState("");
 	const [slugTouched, setSlugTouched] = React.useState(false);
@@ -105,7 +105,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 		if (!preview?.valid) return toast.error("Check a valid catalog before submitting.");
 		setSubmitting(true);
 		try {
-			const result = await submitProviderOnboardingAction({ providerName, providerSlug, websiteUrl, logoUrl, catalogUrl, claimChallengeId: claim?.challengeId });
+			const result = await submitProviderOnboardingAction({ workspaceId: initialData.workspace.id, providerName, providerSlug, websiteUrl, logoUrl, catalogUrl, claimChallengeId: claim?.challengeId });
 			setSubmitted({ providerSlug: result.submission.provider_slug, modelCount: result.submission.model_count, webhookUrl: result.catalogSync.webhookUrl, webhookSecret: result.catalogSync.webhookSecret });
 			toast.success("Provider profile submitted");
 		} catch (error) {
@@ -134,21 +134,16 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 
 	const profileReady = Boolean(providerName.trim() && providerSlug.trim() && websiteUrl.trim() && catalogUrl.trim());
 
+	if (!initialData.providerEligible) return <div className="border-y border-border/70 py-10"><div className="flex max-w-2xl gap-4"><div className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted"><Building2 className="size-5 text-muted-foreground" /></div><div><h2 className="font-heading text-lg font-medium">Use an organisation workspace</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Provider identity belongs to an organisation, not your personal workspace. Create or switch to an organisation workspace, then enable provider capabilities there.</p><Button className="mt-5" asChild><a href="/settings/account/workspaces">Manage workspaces</a></Button></div></div></div>;
+
+	if (!initialData.canManageProvider) return <div className="border-y border-border/70 py-10"><h2 className="font-heading text-lg font-medium">Admin access required</h2><p className="mt-2 max-w-2xl text-sm text-muted-foreground">Only workspace owners and admins can configure provider identity and catalog delivery.</p></div>;
+
 	return <div className="space-y-7">
-		<section className="relative overflow-hidden rounded-2xl border border-foreground/10 bg-[#101412] px-5 py-6 text-white shadow-[0_18px_55px_-28px_rgba(16,24,20,0.55)] sm:px-7 sm:py-8">
-			<div className="pointer-events-none absolute -right-24 -top-28 size-72 rounded-full bg-emerald-300/15 blur-3xl" />
-			<div className="pointer-events-none absolute -bottom-40 left-1/3 size-80 rounded-full bg-lime-200/10 blur-3xl" />
-			<div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.6fr)] lg:items-end">
-				<div className="max-w-xl">
-					<div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[11px] text-emerald-100"><Sparkles className="size-3.5" /> Provider program</div>
-					<h2 className="max-w-lg text-2xl font-semibold tracking-tight sm:text-3xl">Bring your models to the route.</h2>
-					<p className="mt-3 max-w-lg text-sm leading-6 text-white/65">Connect a live catalog once. We’ll validate the shape, preview what we found, and keep your account linked to the provider profile.</p>
-					{initialData.isAdmin ? <a href="/settings/internal/provider-review" className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-white underline decoration-white/40 underline-offset-4 hover:decoration-white">Open internal review queue <ArrowRight className="size-3.5" /></a> : null}
-				</div>
-				<div className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4 lg:border-t-0 lg:border-l lg:pl-6">
-					{[["01", "Profile"], ["02", "Catalog"], ["03", "Submit"]].map(([number, label], index) => <div key={number} className="space-y-1"><div className={cn("font-mono text-[10px]", index === 0 ? "text-emerald-200" : "text-white/35")}>{number}</div><div className="text-xs text-white/70">{label}</div></div>)}
-				</div>
-			</div>
+		<section className="flex flex-col gap-4 border-y border-border/70 py-5 sm:flex-row sm:items-center">
+			<div className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted"><Building2 className="size-5 text-muted-foreground" /></div>
+			<div className="min-w-0 flex-1"><p className="text-sm font-medium">{initialData.workspace.name}</p><p className="mt-1 text-xs text-muted-foreground">Provider capability applies to this workspace. Members inherit access through workspace roles.</p></div>
+			<StatusPill>{initialData.linkedProviders.length ? "Provider enabled" : "Not enabled"}</StatusPill>
+			{initialData.isAdmin ? <a href="/settings/internal/provider-review" className="inline-flex items-center gap-1.5 text-xs font-medium underline-offset-4 hover:underline">Review queue <ArrowRight className="size-3.5" /></a> : null}
 		</section>
 
 	{submitted ? <Card className="overflow-hidden border-emerald-200/70 bg-emerald-50/50 dark:border-emerald-900/60 dark:bg-emerald-950/20"><CardContent className="space-y-4 p-5"><div className="flex flex-col gap-4 sm:flex-row sm:items-center"><div className="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-500 text-white"><BadgeCheck className="size-5" /></div><div className="min-w-0 flex-1"><p className="font-medium">{submitted.providerSlug} is in the verification queue.</p><p className="mt-1 text-sm text-muted-foreground">{submitted.modelCount} models were captured. The profile is linked to your account, but routes stay off until adapter and endpoint checks are complete.</p></div><Button variant="outline" onClick={() => setSubmitted(null)}>Submit another version</Button></div><div className="rounded-xl border border-emerald-200/70 bg-white/60 p-4 dark:border-emerald-900/50 dark:bg-black/10"><div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-medium">Webhook delivery</p><StatusPill tone="success">Webhook + polling</StatusPill></div><p className="mt-1 text-xs leading-5 text-muted-foreground">POST a signed event here when your catalog changes. Polling remains enabled as a backstop.</p><code className="mt-3 block overflow-x-auto rounded-lg bg-black/[0.06] px-3 py-2 text-[11px] text-foreground dark:bg-white/[0.06]">{submitted.webhookUrl}</code>{submitted.webhookSecret ? <><p className="mt-3 text-xs font-medium">Signing secret — save this now</p><code className="mt-1 block overflow-x-auto rounded-lg bg-black/[0.06] px-3 py-2 text-[11px] text-foreground dark:bg-white/[0.06]">{submitted.webhookSecret}</code></> : <div className="mt-3 flex flex-wrap items-center gap-3"><p className="text-xs text-muted-foreground">A signing secret already exists for this provider.</p><Button type="button" size="sm" variant="outline" onClick={() => void rotateWebhook()}><RefreshCw className="mr-1.5 size-3.5" /> Rotate secret</Button></div>}<p className="mt-3 text-[11px] leading-5 text-muted-foreground">Sign <code className="rounded bg-black/[0.06] px-1 dark:bg-white/[0.06]">timestamp.body</code> with HMAC-SHA256 and send <code className="rounded bg-black/[0.06] px-1 dark:bg-white/[0.06]">X-Phaseo-Timestamp</code>, <code className="rounded bg-black/[0.06] px-1 dark:bg-white/[0.06]">X-Phaseo-Signature: v1=&lt;hex&gt;</code>, and an event ID.</p></div></CardContent></Card> : null}
@@ -158,7 +153,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 				<CardHeader><div className="flex items-start justify-between gap-4"><div><CardTitle>Provider profile</CardTitle><CardDescription className="mt-1">This is the public identity attached to your submission.</CardDescription></div><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-foreground/[0.06] text-sm font-semibold text-muted-foreground">{initialOf(providerName)}</div></div></CardHeader>
 				<CardContent className="space-y-5">
 					<div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="provider-name">Provider name</Label><Input id="provider-name" value={providerName} onChange={(event) => updateName(event.target.value)} placeholder="e.g. Acme Inference" autoComplete="organization" /></div><div className="space-y-2"><Label htmlFor="provider-slug">Provider slug</Label><Input id="provider-slug" value={providerSlug} onChange={(event) => { setClaim(null); setSlugTouched(true); setProviderSlug(event.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, "-")); }} placeholder="acme-inference" /><p className="text-[11px] text-muted-foreground">Used in provider URLs and routing metadata.</p></div><div className="space-y-2"><Label htmlFor="provider-website">Website</Label><Input id="provider-website" type="url" value={websiteUrl} onChange={(event) => { setClaim(null); setWebsiteUrl(event.target.value); }} placeholder="https://acme.example" autoComplete="url" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="provider-logo">Logo URL <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="provider-logo" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} placeholder="https://acme.example/brand/logo.svg" /><p className="text-[11px] text-muted-foreground">Use a stable HTTPS image URL. We’ll review it with the provider profile.</p></div></div>
-					<div className="rounded-xl border border-border/60 bg-muted/25 p-3.5"><div className="flex gap-3"><LockKeyhole className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><p className="text-xs leading-5 text-muted-foreground">Your account becomes the controlling contact for this provider profile. A provider slug that is already claimed cannot be overwritten.</p></div></div>
+					<div className="rounded-xl border border-border/60 bg-muted/25 p-3.5"><div className="flex gap-3"><LockKeyhole className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><p className="text-xs leading-5 text-muted-foreground">{initialData.workspace.name} becomes the controlling organisation for this provider profile. Your personal account remains separate.</p></div></div>
 					<div className="space-y-3 rounded-xl border border-border/60 p-3.5"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-medium">Claim an existing profile</p><p className="mt-1 text-xs text-muted-foreground">Create a one-hour domain proof only when this provider slug already exists.</p></div><Button type="button" size="sm" variant="outline" disabled={startingClaim || !providerSlug || !websiteUrl} onClick={() => void startClaim()}>{startingClaim ? "Creating…" : "Create proof"}</Button></div>{claim ? <div className="space-y-2 rounded-lg bg-muted/50 p-3 text-xs"><p>Publish this token as plain text at:</p><code className="block overflow-x-auto">{claim.verificationUrl}</code><code className="block overflow-x-auto font-semibold">{claim.token}</code><p className="text-muted-foreground">Leave the file in place, then submit the provider form.</p></div> : null}</div>
 				</CardContent>
 			</Card>
