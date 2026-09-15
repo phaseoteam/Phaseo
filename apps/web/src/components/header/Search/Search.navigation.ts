@@ -106,7 +106,6 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-blog", title: "Blog", subtitle: "Read Phaseo articles", href: "/blog", keywords: ["articles", "news"] },
 	{ id: "nav-announcements", title: "Announcements", subtitle: "Read product announcements", href: "/announcements", keywords: ["news", "releases"] },
 	{ id: "nav-methodology", title: "Methodology", subtitle: "Learn how Phaseo evaluates AI systems", href: "/methodology", keywords: ["methods", "evaluation", "research"] },
-	{ id: "nav-roadmap", title: "Roadmap", subtitle: "See what Phaseo is building", href: "/roadmap", keywords: ["planned", "coming soon"] },
 	{ id: "nav-about", title: "About", subtitle: "Learn about Phaseo", href: "/about", keywords: ["company", "mission"] },
 	{ id: "nav-faq", title: "FAQ", subtitle: "Frequently asked questions", href: "/faq", keywords: ["questions", "help"] },
 	{ id: "nav-contribute", title: "Contribute", subtitle: "Contribute data and improvements", href: "/contribute", keywords: ["github", "community", "submit"] },

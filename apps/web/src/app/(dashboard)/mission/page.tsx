@@ -132,7 +132,7 @@ export default function MissionPage() {
 							</Link>
 						</Button>
 						<Button asChild variant="ghost" className="h-10 sm:px-3">
-							<Link href="/roadmap">Read the roadmap</Link>
+							<Link href="/updates">Read the latest updates</Link>
 						</Button>
 					</div>
 				</section>

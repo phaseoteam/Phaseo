@@ -20,7 +20,7 @@ const ACTIONS = [
 	},
 	{
 		title: "View the repository",
-		body: "Inspect the open-source gateway, SDKs, and roadmap directly.",
+		body: "Inspect the open-source gateway, SDKs, and public changes directly.",
 		href: "https://github.com/phaseoteam/Phaseo",
 		icon: GitHubBrandIcon,
 	},
