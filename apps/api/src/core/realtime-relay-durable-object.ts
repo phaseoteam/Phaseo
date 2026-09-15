@@ -473,6 +473,7 @@ export class RealtimeRelayDurableObject {
 			typeof metadataRecord(this.session).instructions === "string"
 				? String(metadataRecord(this.session).instructions)
 				: undefined;
+		const thinkingLevel = metadataRecord(this.session).thinking_level;
 
 		if (provider === "openai") {
 			const key = resolveOpenAIKey();
@@ -530,7 +531,17 @@ export class RealtimeRelayDurableObject {
 				`${GOOGLE_LIVE_URL}?key=${encodeURIComponent(key)}`,
 			);
 			this.attachUpstream();
-			this.sendUpstream({ setup: buildGoogleBidiGenerateContentSetup({ model, voice, instructions }) });
+			this.sendUpstream({
+				setup: buildGoogleBidiGenerateContentSetup({
+					model,
+					voice,
+					instructions,
+					thinkingLevel:
+						thinkingLevel === "low" || thinkingLevel === "medium" || thinkingLevel === "high"
+							? thinkingLevel
+							: null,
+				}),
+			});
 			return;
 		}
 
@@ -848,6 +859,9 @@ export class RealtimeRelayDurableObject {
 		}
 		const serverContent = getRecordField(event, "serverContent");
 		if (serverContent) {
+			const interactionStatus =
+				getStringField(serverContent, "interactionStatus") ||
+				getStringField(event, "interactionStatus");
 			const modelTurn = getRecordField(serverContent, "modelTurn");
 			const parts = modelTurn ? getArrayField<Record<string, unknown>>(modelTurn, "parts") : [];
 			for (const part of parts) {
@@ -858,7 +872,7 @@ export class RealtimeRelayDurableObject {
 			}
 			// generationComplete precedes turnComplete (and interrupted also has a
 			// following turnComplete). Only the latter closes the usage accumulator.
-			if (serverContent.turnComplete) {
+			if (serverContent.turnComplete && interactionStatus !== "IN_PROGRESS") {
 				this.beginGoogleTurn();
 				this.providerState.googleTurnComplete = true;
 			}

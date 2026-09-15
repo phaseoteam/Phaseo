@@ -36,6 +36,7 @@ const GOOGLE_LIVE_CONSTRAINED_URL =
 export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-studio";
 export type RealtimeSource = "api" | "chat";
 export type RealtimeTerminalStatus = "completed" | "failed" | "cancelled" | "expired";
+export type GoogleRealtimeThinkingLevel = "low" | "medium" | "high";
 
 export function isRealtimeRelaySecret(value: string): boolean {
 	return /^rtsec_[0-9a-hjkmnp-tv-z]{52}$/.test(value);
@@ -324,14 +325,19 @@ export function buildGoogleBidiGenerateContentSetup(args?: {
 	model?: string | null;
 	voice?: string | null;
 	instructions?: string | null;
+	thinkingLevel?: GoogleRealtimeThinkingLevel | null;
 }) {
 	const voice = normalizeText(args?.voice) ?? "Puck";
 	const model = normalizeText(args?.model) ?? "gemini-3.1-flash-live-preview";
+	const extendedThinking = model === "gemini-3.8-live-extended-thinking";
 	return {
 		model: `models/${model}`,
 		generationConfig: {
 			responseModalities: ["AUDIO"],
 			temperature: 0.7,
+			...(extendedThinking
+				? { thinkingConfig: { thinkingLevel: (args?.thinkingLevel ?? "low").toUpperCase() } }
+				: {}),
 			speechConfig: {
 				voiceConfig: {
 					prebuiltVoiceConfig: {
@@ -370,6 +376,7 @@ export function buildGoogleRealtimeAuthTokenRequest(
 		model?: string | null;
 		voice?: string | null;
 		instructions?: string | null;
+		thinkingLevel?: GoogleRealtimeThinkingLevel | null;
 	},
 ) {
 	const model = normalizeText(args?.model);
@@ -540,6 +547,7 @@ async function createGoogleProviderSession(args: {
 	model: string;
 	voice: string;
 	instructions?: string | null;
+	thinkingLevel?: GoogleRealtimeThinkingLevel | null;
 }): Promise<ProviderSession> {
 	const apiKey = resolveGoogleKey();
 	if (!apiKey) throw new Error("google_key_missing");
@@ -773,6 +781,7 @@ export async function createRealtimeSession(args: {
 	provider?: string | null;
 	voice?: string | null;
 	instructions?: string | null;
+	thinkingLevel?: GoogleRealtimeThinkingLevel | null;
 	source?: RealtimeSource;
 	metadata?: Record<string, unknown>;
 	otelTraceContext?: RealtimeOtelContext | null;
@@ -790,6 +799,10 @@ export async function createRealtimeSession(args: {
 	if (!provider) throw new Error("realtime_provider_required");
 	const modelId = canonicalModel(provider, args.model);
 	const providerModelId = providerModel(provider, args.model);
+	const thinkingLevel =
+		providerModelId === "gemini-3.8-live-extended-thinking"
+			? args.thinkingLevel ?? "low"
+			: null;
 	const voice = defaultVoice(provider, args.voice);
 	const live = isLiveModel(modelId);
 	if (live && (!args.liveBackendModel || args.source !== "chat" || !args.auth.userId || args.relay === false)) {
@@ -819,7 +832,13 @@ export async function createRealtimeSession(args: {
 	const sessionMetadata = {
 		...(args.metadata ?? {}),
 		live: liveSettings,
-		...(useRelay ? { relay: true, instructions: args.instructions ?? null } : {}),
+		...(useRelay
+			? {
+					relay: true,
+					instructions: args.instructions ?? null,
+					...(thinkingLevel ? { thinking_level: thinkingLevel } : {}),
+				}
+			: {}),
 		phaseo_otel_parent_context: args.otelTraceContext ?? null,
 		phaseo_otel_submission_context: submissionContext,
 	};
@@ -869,6 +888,7 @@ export async function createRealtimeSession(args: {
 			model: modelId,
 			voice,
 			instructions: args.instructions ?? null,
+			...(thinkingLevel ? { thinking_level: thinkingLevel } : {}),
 		},
 	}).catch((error) => console.error("realtime_otel_submit_failed", {
 		sessionId,
@@ -900,6 +920,7 @@ export async function createRealtimeSession(args: {
 							model: providerModelId,
 							voice,
 							instructions: args.instructions,
+							thinkingLevel,
 						})
 					: await createXAIProviderSession({ model: providerModelId });
 		const secretHash = await sha256Hex(providerSession.clientSecret);

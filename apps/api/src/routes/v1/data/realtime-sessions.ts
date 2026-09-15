@@ -59,9 +59,19 @@ export const createRealtimeSessionSchema = z.object({
 	provider: z.string().trim().min(1).max(80).optional(),
 	voice: z.string().trim().min(1).max(80).optional(),
 	instructions: z.string().trim().max(4000).optional(),
+	thinking_level: z.enum(["low", "medium", "high"]).optional(),
 	source: z.enum(["api", "chat"]).optional(),
 	metadata: z.record(z.string(), z.unknown()).optional(),
-}).strict();
+}).strict().superRefine((value, context) => {
+	if (!value.thinking_level) return;
+	if (value.model.replace(/^google\//, "") !== "gemini-3.8-live-extended-thinking") {
+		context.addIssue({
+			code: "custom",
+			message: "thinking_level is only supported by gemini-3.8-live-extended-thinking",
+			path: ["thinking_level"],
+		});
+	}
+});
 
 const MAX_METADATA_BYTES = 16_384;
 const MAX_METADATA_KEYS = 32;
@@ -442,6 +452,7 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			provider: selectedProvider,
 			voice: parsed.data.voice,
 			instructions: parsed.data.instructions,
+			thinkingLevel: parsed.data.thinking_level,
 			source,
 			metadata: parsed.data.metadata,
 			otelTraceContext: parseW3cTraceContext(

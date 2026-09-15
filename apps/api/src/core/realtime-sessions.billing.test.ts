@@ -176,6 +176,53 @@ describe("realtime voice billing simulation", () => {
 		});
 	});
 
+	it("enables low background reasoning for Gemini 3.8 Live Extended Thinking", () => {
+		const request = buildGoogleRealtimeAuthTokenRequest(
+			Date.parse("2026-09-15T10:00:00.000Z"),
+			{ model: "gemini-3.8-live-extended-thinking" },
+		);
+
+		expect(request.body).toMatchObject({
+			bidiGenerateContentSetup: {
+				model: "models/gemini-3.8-live-extended-thinking",
+				generationConfig: {
+					thinkingConfig: { thinkingLevel: "LOW" },
+				},
+			},
+		});
+	});
+
+	it("does not send a configurable thinking level to standard Gemini 3.8 Live", () => {
+		const request = buildGoogleRealtimeAuthTokenRequest(
+			Date.parse("2026-09-15T10:00:00.000Z"),
+			{ model: "gemini-3.8-live" },
+		);
+
+		expect(request.body).toMatchObject({
+			bidiGenerateContentSetup: {
+				model: "models/gemini-3.8-live",
+			},
+		});
+		expect(request.body.bidiGenerateContentSetup?.generationConfig).not.toHaveProperty(
+			"thinkingConfig",
+		);
+	});
+
+	it("forwards the selected Gemini 3.8 Live Extended Thinking level", () => {
+		const request = buildGoogleRealtimeAuthTokenRequest(
+			Date.parse("2026-09-15T10:00:00.000Z"),
+			{ model: "gemini-3.8-live-extended-thinking", thinkingLevel: "high" },
+		);
+
+		expect(request.body).toMatchObject({
+			bidiGenerateContentSetup: {
+				generationConfig: {
+					thinkingConfig: { thinkingLevel: "HIGH" },
+				},
+			},
+		});
+	});
+
 	it("prices xAI realtime from streamed audio minutes plus optional text messages", () => {
 		const card = makeCard({
 			provider: "x-ai",
