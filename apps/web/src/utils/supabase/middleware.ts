@@ -125,7 +125,7 @@ export async function updateSession(request: NextRequest) {
             aalData?.currentLevel === 'aal1' &&
             aalData?.nextLevel === 'aal2'
 
-        if (mustVerifyMfa) {
+        if (mustVerifyMfa && pathname !== '/auth/verify-mfa') {
             const url = request.nextUrl.clone()
             url.pathname = '/auth/verify-mfa'
             url.searchParams.set('returnUrl', pathname + request.nextUrl.search)

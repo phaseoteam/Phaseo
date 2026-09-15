@@ -65,4 +65,21 @@ describe('workspace cookie session initialization', () => {
             'activeWorkspaceId=workspace-selected',
         )
     })
+
+    it('allows the MFA challenge route when the user must verify MFA', async () => {
+        const supabase = createSupabaseClient()
+        supabase.auth.mfa.listFactors.mockResolvedValue({
+            data: { totp: [{ status: 'verified' }] },
+        })
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel.mockResolvedValue({
+            data: { currentLevel: 'aal1', nextLevel: 'aal2' },
+        })
+        createServerClientMock.mockReturnValue(supabase as never)
+
+        const response = await updateSession(
+            new NextRequest('http://localhost/auth/verify-mfa'),
+        )
+
+        expect(response.headers.get('location')).toBeNull()
+    })
 })
