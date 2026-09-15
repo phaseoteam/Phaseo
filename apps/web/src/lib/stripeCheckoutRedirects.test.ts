@@ -1,9 +1,31 @@
 import {
 	buildStripeCheckoutRedirectUrls,
+	resolveConfiguredStripeCheckoutBaseUrl,
 	resolveStripeCheckoutBaseUrl,
 } from "./stripeCheckoutRedirects";
 
 describe("stripe checkout redirects", () => {
+	it("uses the canonical public website URL for checkout", () => {
+		expect(resolveConfiguredStripeCheckoutBaseUrl({
+			NEXT_PUBLIC_WEBSITE_URL: "https://phaseo.app/",
+			WEBSITE_URL: "https://internal.example.com",
+		})).toBe("https://phaseo.app");
+	});
+
+	it("falls back to the server website URL when the public URL is absent or invalid", () => {
+		expect(resolveConfiguredStripeCheckoutBaseUrl({
+			NEXT_PUBLIC_WEBSITE_URL: "",
+			WEBSITE_URL: "https://phaseo.app/settings",
+		})).toBe("https://phaseo.app");
+	});
+
+	it("rejects missing or non-HTTP website URLs", () => {
+		expect(resolveConfiguredStripeCheckoutBaseUrl({
+			NEXT_PUBLIC_WEBSITE_URL: "javascript:alert(1)",
+			WEBSITE_URL: "not-a-url",
+		})).toBeNull();
+	});
+
 	it("uses the configured base URL when present", () => {
 		const baseUrl = resolveStripeCheckoutBaseUrl({
 			configuredBaseUrl: "https://billing.example.com",
