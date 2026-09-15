@@ -4945,6 +4945,8 @@ class WebhookEndpointDeleteResponse
 	public $object;
 }
 
+class WebhookEndpointEvent { }
+
 class WebhookEndpointInput
 {
 	/** @var array|null */
@@ -4989,6 +4991,20 @@ class WebhookEndpointSecretResponse
 	public $url;
 	/** @var string */
 	public $workspaceId;
+}
+
+class WebhookEndpointTestResponse
+{
+	/** @var string|null */
+	public $error;
+	/** @var string */
+	public $event_id;
+	/** @var bool */
+	public $ok;
+	/** @var string|null */
+	public $response_body_preview;
+	/** @var int|null */
+	public $status_code;
 }
 
 class WebhookEndpointUpdateRequest

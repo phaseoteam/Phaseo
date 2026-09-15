@@ -190,12 +190,21 @@ describe("runBatchReconciliationJob", () => {
 			internalId: "batch_complete_123",
 			phase: "completed",
 		});
-		expect(dispatchAsyncWebhookEventInBackgroundMock).toHaveBeenCalledWith({
-			workspaceId: "ws_1",
-			kind: "batch",
-			internalId: "batch_expired_123",
-			phase: "failed",
-		});
+			expect(dispatchAsyncWebhookEventInBackgroundMock).toHaveBeenCalledWith({
+				workspaceId: "ws_1",
+				kind: "batch",
+				internalId: "batch_expired_123",
+				phase: "expired",
+			});
+			expect(dispatchAsyncWebhookEventInBackgroundMock).toHaveBeenCalledWith({
+				workspaceId: "ws_1",
+				kind: "batch",
+				internalId: "batch_expired_123",
+				phase: "status_changed",
+				previousStatus: "in_progress",
+				currentStatus: "expired",
+				deliveryKey: "batch.status_changed:in_progress:expired",
+			});
 		expect(dispatchAsyncWebhookEventInBackgroundMock).toHaveBeenCalledWith({
 			workspaceId: "ws_1",
 			kind: "batch",

@@ -53,6 +53,7 @@ describe("account mutation boundaries", () => {
 		["POST", "/api/account/settings/webhooks", { name: "Test", url: "https://example.com", workspaceId: "workspace-1" }],
 		["PUT", "/api/account/settings/webhooks/endpoint-1/status", { status: "disabled", workspaceId: "workspace-1" }],
 		["POST", "/api/account/settings/webhooks/endpoint-1/rotate", { workspaceId: "workspace-1" }],
+		["POST", "/api/account/settings/webhooks/endpoint-1/test", { workspaceId: "workspace-1" }],
 		["DELETE", "/api/account/settings/webhooks/endpoint-1", { workspaceId: "workspace-1" }],
 		["POST", "/api/account/auth/oauth-consent/validate", { clientId: "phaseo_cli", workspaceIds: ["workspace-1"] }],
 		["POST", "/api/account/models/catalog/benchmarks", { id: "benchmark-test", name: "Benchmark Test" }],

@@ -74,6 +74,14 @@ export const gatewayIoLoggingFlag = statsigAdapter
 			decide: () => false,
 		});
 
+export async function webhookSettingsEnabled(): Promise<boolean> {
+	const [gateEnabled, isAdmin] = await Promise.all([
+		batchApiFlag().catch(() => false),
+		isAdminViewer().catch(() => false),
+	]);
+	return gateEnabled || isAdmin;
+}
+
 export const autoRoutingFlag = statsigAdapter
 	? flag<boolean, StatsigUser>({
 			key: AUTO_ROUTING_GATE,

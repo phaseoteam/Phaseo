@@ -1,26 +1,26 @@
 import {
+	expandGenericWebhookEvents,
 	getWebhookEventsForUpdate,
-	isKindSpecificWebhookEvent,
-	normalizeWebhookEvents,
+	WEBHOOK_EVENT_OPTIONS,
 } from "@/components/(gateway)/settings/webhooks/webhook-events";
 
 describe("webhook event settings", () => {
-	it("recognizes kind-specific legacy subscriptions", () => {
-		expect(isKindSpecificWebhookEvent("video.completed")).toBe(true);
-		expect(isKindSpecificWebhookEvent("batch.failed")).toBe(true);
-		expect(isKindSpecificWebhookEvent("job.completed")).toBe(false);
-	});
-
-	it("omits untouched kind-specific event changes when editing an endpoint", () => {
+	it("omits untouched event changes when editing an endpoint", () => {
 		expect(getWebhookEventsForUpdate("edit", ["batch.completed"], false)).toBeUndefined();
 	});
 
 	it("persists events for creates and explicit event edits", () => {
-		expect(getWebhookEventsForUpdate("create", ["job.completed"], false)).toEqual(["job.completed"]);
-		expect(getWebhookEventsForUpdate("edit", ["job.completed"], true)).toEqual(["job.completed"]);
+		expect(getWebhookEventsForUpdate("create", ["batch.completed"], false)).toEqual(["batch.completed"]);
+		expect(getWebhookEventsForUpdate("edit", ["video.completed"], true)).toEqual(["video.completed"]);
 	});
 
-	it("maps legacy event names only for the friendly picker", () => {
-		expect(normalizeWebhookEvents(["video.completed", "batch.completed"])).toEqual(["job.completed"]);
+	it("expands generic subscriptions into independent batch and video selections", () => {
+		expect(expandGenericWebhookEvents(["job.completed", "batch.failed"])).toEqual([
+			"batch.completed", "video.completed", "batch.failed",
+		]);
+	});
+
+	it("offers every lifecycle phase separately for batch and video", () => {
+		expect(WEBHOOK_EVENT_OPTIONS).toHaveLength(14);
 	});
 });

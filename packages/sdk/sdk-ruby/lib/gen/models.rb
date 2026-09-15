@@ -4045,6 +4045,7 @@ module Phaseo
     # @!attribute [rw] object
     #   @return [String]
     WebhookEndpointDeleteResponse = Struct.new(:deleted, :id, :object, keyword_init: true)
+    WebhookEndpointEvent = Object
     # @!attribute [rw] events
     #   @return [Array<String>, nil]
     # @!attribute [rw] name
@@ -4082,6 +4083,17 @@ module Phaseo
     # @!attribute [rw] workspaceId
     #   @return [String]
     WebhookEndpointSecretResponse = Struct.new(:createdAt, :createdBy, :deletedAt, :events, :hasSecret, :id, :name, :signing_secret, :status, :updatedAt, :url, :workspaceId, keyword_init: true)
+    # @!attribute [rw] error
+    #   @return [String, nil]
+    # @!attribute [rw] event_id
+    #   @return [String]
+    # @!attribute [rw] ok
+    #   @return [Boolean]
+    # @!attribute [rw] response_body_preview
+    #   @return [String, nil]
+    # @!attribute [rw] status_code
+    #   @return [Integer, nil]
+    WebhookEndpointTestResponse = Struct.new(:error, :event_id, :ok, :response_body_preview, :status_code, keyword_init: true)
     # @!attribute [rw] events
     #   @return [Array<String>, nil]
     # @!attribute [rw] name

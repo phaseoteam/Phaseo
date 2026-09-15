@@ -2837,6 +2837,21 @@ func SummarizeGatewayFeedback(client *Client, path map[string]string, query map[
 	return out, nil
 }
 
+func TestWebhookEndpoint(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/webhook-endpoints/" + url.PathEscape(path["id"]) + "/test"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func TestWorkspaceNotificationDestination(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/notifications/destinations/" + url.PathEscape(path["id"]) + "/test"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)

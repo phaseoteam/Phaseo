@@ -1333,6 +1333,13 @@ function summarizeGatewayFeedback(Client $client, ?array $path = null, ?array $q
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function testWebhookEndpoint(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/webhook-endpoints/" . rawurlencode((string)($path["id"] ?? "")) . "/test";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function testWorkspaceNotificationDestination(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];

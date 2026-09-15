@@ -2791,7 +2791,7 @@ public final class Models {
 		public String createdAt;
 		public String createdBy;
 		public String deletedAt;
-		public java.util.List<String> events;
+		public java.util.List<Object> events;
 		public Boolean hasSecret;
 		public String id;
 		public String name;
@@ -2802,7 +2802,7 @@ public final class Models {
 	}
 
 	public static class WebhookEndpointCreateRequest {
-		public java.util.List<String> events;
+		public java.util.List<Object> events;
 		public String name;
 		public String url;
 	}
@@ -2813,8 +2813,11 @@ public final class Models {
 		public Object object;
 	}
 
+	public static class WebhookEndpointEvent {
+	}
+
 	public static class WebhookEndpointInput {
-		public java.util.List<String> events;
+		public java.util.List<Object> events;
 		public String name;
 		public String url;
 	}
@@ -2839,8 +2842,16 @@ public final class Models {
 		public String workspaceId;
 	}
 
+	public static class WebhookEndpointTestResponse {
+		public String error;
+		public String event_id;
+		public Boolean ok;
+		public String response_body_preview;
+		public Integer status_code;
+	}
+
 	public static class WebhookEndpointUpdateRequest {
-		public java.util.List<String> events;
+		public java.util.List<Object> events;
 		public String name;
 		public Object status;
 		public String url;

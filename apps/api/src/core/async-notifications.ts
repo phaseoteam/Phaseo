@@ -232,6 +232,10 @@ type AsyncWebhookRequestResult = {
 	errorMessage: string | null;
 };
 
+export type WebhookTestDeliveryResult = AsyncWebhookRequestResult & {
+	eventId: string;
+};
+
 function resolveWebhookUrl(value: unknown): string | null {
 	const text = normalizeText(value);
 	if (!text) return null;
@@ -521,12 +525,7 @@ async function resolveAsyncWebhookConfig(args: {
 		return {
 			url: endpoint.url,
 			secret: endpoint.secret,
-			events:
-				parsed.events.length > 0
-					? parsed.events
-					: endpointEvents.length > 0
-						? endpointEvents
-						: DEFAULT_ASYNC_WEBHOOK_EVENTS,
+			events: parsed.events.length > 0 ? parsed.events : endpointEvents,
 		};
 	}
 	if (!parsed.url) return null;
@@ -565,7 +564,11 @@ function isWebhookEventSubscribed(args: {
 }): boolean {
 	const generic = `job.${args.phase}` as AsyncNotificationEventType;
 	const specific = resolveSpecificEvent(args.kind, args.phase);
-	return args.configuredEvents.includes(generic) || args.configuredEvents.includes(specific);
+	const legacyBatchExpiry =
+		args.kind === "batch" &&
+		args.phase === "expired" &&
+		args.configuredEvents.includes("batch.failed");
+	return args.configuredEvents.includes(generic) || args.configuredEvents.includes(specific) || legacyBatchExpiry;
 }
 
 function resolveVideoBilling(record: AsyncOperationRecord, meta: AsyncNotificationMeta) {
@@ -1023,7 +1026,7 @@ async function sendAsyncWebhookRequest(args: {
 	secret?: string | null;
 	body: string;
 	eventId: string;
-	eventType: AsyncNotificationEventType;
+	eventType: AsyncNotificationEventType | "webhook.test";
 	deliveryKey: string;
 	attemptNumber: number;
 	maxAttempts: number;
@@ -1116,6 +1119,37 @@ async function sendAsyncWebhookRequest(args: {
 	}
 }
 
+export async function sendWebhookTestEvent(args: {
+	workspaceId: string;
+	endpointId: string;
+}): Promise<WebhookTestDeliveryResult | null> {
+	const webhook = await getWebhookEndpointSigningConfig(args);
+	if (!webhook) return null;
+	const eventId = `evt_test_${crypto.randomUUID()}`;
+	const body = JSON.stringify({
+		id: eventId,
+		type: "webhook.test",
+		created_at: Math.floor(Date.now() / 1000),
+		delivery: { key: eventId, attempt: 1, max_attempts: 1 },
+		data: {
+			object: "webhook_endpoint",
+			endpoint_id: webhook.id,
+			test: true,
+		},
+	});
+	const result = await sendAsyncWebhookRequest({
+		url: webhook.url,
+		secret: webhook.secret,
+		body,
+		eventId,
+		eventType: "webhook.test",
+		deliveryKey: eventId,
+		attemptNumber: 1,
+		maxAttempts: 1,
+	});
+	return { ...result, eventId };
+}
+
 function buildWebhookEventId(args: {
 	kind: SupportedAsyncNotificationKind;
 	internalId: string;
@@ -1199,7 +1233,7 @@ export async function dispatchAsyncWebhookEvent(args: {
 		}
 		return false;
 	}
-	const specificEvent = args.eventType ?? resolveSpecificEvent(args.kind, args.phase);
+	let specificEvent = args.eventType ?? resolveSpecificEvent(args.kind, args.phase);
 	const deliveryKey = queuedDeliveryKey ?? (progressBucket != null ? `${specificEvent}:${progressBucket}` : specificEvent);
 	const deliveries =
 		meta.webhookDeliveries && typeof meta.webhookDeliveries === "object" && !Array.isArray(meta.webhookDeliveries)
@@ -1235,6 +1269,17 @@ export async function dispatchAsyncWebhookEvent(args: {
 			});
 		}
 		return false;
+	}
+	if (
+		args.kind === "batch" &&
+		args.phase === "expired" &&
+		!webhook.events.includes("job.expired") &&
+		!webhook.events.includes("batch.expired") &&
+		webhook.events.includes("batch.failed")
+	) {
+		// Preserve the pre-granular-events contract for endpoints that persisted
+		// the old managed defaults: expirations were delivered as batch.failed.
+		specificEvent = "batch.failed";
 	}
 	if (!isWebhookEventSubscribed({ kind: args.kind, phase: args.phase, configuredEvents: webhook.events })) {
 		if (queuedDeliveryKey) {

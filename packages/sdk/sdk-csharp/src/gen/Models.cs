@@ -6811,6 +6811,8 @@ public sealed class WebhookEndpointDeleteResponse
 
 }
 
+public sealed class WebhookEndpointEvent { }
+
 public sealed class WebhookEndpointInput
 {
 	[JsonPropertyName("events")]
@@ -6871,6 +6873,25 @@ public sealed class WebhookEndpointSecretResponse
 
 	[JsonPropertyName("workspaceId")]
 	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class WebhookEndpointTestResponse
+{
+	[JsonPropertyName("error")]
+	public string? Error { get; set; }
+
+	[JsonPropertyName("event_id")]
+	public string EventId { get; set; }
+
+	[JsonPropertyName("ok")]
+	public bool Ok { get; set; }
+
+	[JsonPropertyName("response_body_preview")]
+	public string? ResponseBodyPreview { get; set; }
+
+	[JsonPropertyName("status_code")]
+	public long? StatusCode { get; set; }
 
 }
 

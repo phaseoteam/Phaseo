@@ -35,13 +35,14 @@ function nextIsoFromNow(delaySeconds: number): string {
 	return new Date(Date.now() + Math.max(0, Math.trunc(delaySeconds)) * 1_000).toISOString();
 }
 
-function mapTerminalPhase(status: string): "completed" | "failed" | "cancelled" | null {
+function mapTerminalPhase(status: string): "completed" | "failed" | "cancelled" | "expired" | null {
 	switch (status) {
 		case "completed":
 			return "completed";
 		case "failed":
-		case "expired":
 			return "failed";
+		case "expired":
+			return "expired";
 		case "cancelled":
 		case "canceled":
 			return "cancelled";
@@ -68,6 +69,17 @@ function reconcileErrorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
 }
 
+function batchProgressPercent(payload: any): number | null {
+	const counts = payload?.request_counts;
+	if (!counts || typeof counts !== "object" || Array.isArray(counts)) return null;
+	const total = Number(counts.total);
+	const completed = Number(counts.completed);
+	const failed = Number(counts.failed);
+	if (!Number.isFinite(total) || total <= 0) return null;
+	const progress = Math.round(((Math.max(0, completed) + Math.max(0, failed)) / total) * 100);
+	return progress > 0 && progress < 100 ? progress : null;
+}
+
 const STALE_SUBMISSION_SECONDS = 15 * 60;
 const LEGACY_TERMINAL_NOT_FOUND_MIN_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 const TERMINAL_NOT_FOUND_SLOW_RETRY_SECONDS = 24 * 60 * 60;
@@ -79,7 +91,7 @@ function isStaleSubmission(job: BatchJobRecord): boolean {
 
 function shouldFinalizeTerminalWithoutProviderPoll(
 	job: BatchJobRecord,
-	phase: "completed" | "failed" | "cancelled",
+	phase: "completed" | "failed" | "cancelled" | "expired",
 	nativeBatchId: string,
 ): boolean {
 	if (!nativeBatchId) return true;
@@ -253,7 +265,7 @@ export async function runBatchReconciliationJob(args?: {
 						phase: existingTerminalPhase,
 					});
 					if (existingTerminalPhase === "completed") counts.jobsCompleted += 1;
-					if (existingTerminalPhase === "failed") counts.jobsFailed += 1;
+					if (existingTerminalPhase === "failed" || existingTerminalPhase === "expired") counts.jobsFailed += 1;
 					if (existingTerminalPhase === "cancelled") counts.jobsCancelled += 1;
 				}
 				await updateBatchJobReconciliation({
@@ -302,7 +314,7 @@ export async function runBatchReconciliationJob(args?: {
 					status: nextStatus,
 				});
 			}
-			if (finalization && isBillingBlockedFinalization(finalization)) {
+				if (finalization && isBillingBlockedFinalization(finalization)) {
 				counts.jobsErrored += 1;
 				await updateBatchJobReconciliation({
 					workspaceId: job.workspaceId,
@@ -310,9 +322,30 @@ export async function runBatchReconciliationJob(args?: {
 					nextReconcileAt: nextBatchErrorRetryAt(job),
 					lastError: `batch_billing_blocked:${finalization.reason}`,
 				});
-				return counts;
-			}
-			if (phase && nextStatus !== previousStatus) {
+					return counts;
+				}
+				if (nextStatus !== previousStatus) {
+					dispatchAsyncWebhookEventInBackground({
+						workspaceId: job.workspaceId,
+						kind: "batch",
+						internalId: job.batchId,
+						phase: "status_changed",
+						previousStatus: previousStatus || null,
+						currentStatus: nextStatus || null,
+						deliveryKey: `batch.status_changed:${previousStatus || "unknown"}:${nextStatus || "unknown"}`,
+					});
+				}
+				const progress = batchProgressPercent(payload);
+				if (progress != null) {
+					dispatchAsyncWebhookEventInBackground({
+						workspaceId: job.workspaceId,
+						kind: "batch",
+						internalId: job.batchId,
+						phase: "progress",
+						progress,
+					});
+				}
+				if (phase && nextStatus !== previousStatus) {
 				dispatchAsyncWebhookEventInBackground({
 					workspaceId: job.workspaceId,
 					kind: "batch",
@@ -320,7 +353,7 @@ export async function runBatchReconciliationJob(args?: {
 					phase,
 				});
 				if (phase === "completed") counts.jobsCompleted += 1;
-				if (phase === "failed") counts.jobsFailed += 1;
+				if (phase === "failed" || phase === "expired") counts.jobsFailed += 1;
 				if (phase === "cancelled") counts.jobsCancelled += 1;
 			}
 			await updateBatchJobReconciliation({

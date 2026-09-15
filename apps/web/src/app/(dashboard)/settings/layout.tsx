@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Suspense } from "react";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
-import { autoRoutingFlag, batchApiFlag, enterpriseSelfServePreviewEnabled } from "@/lib/flags";
+import { autoRoutingFlag, enterpriseSelfServePreviewEnabled, webhookSettingsEnabled } from "@/lib/flags";
 import { connection } from "next/server";
 
 export const metadata = {
@@ -42,7 +42,7 @@ export default async function SettingsLayout({
 	const showBroadcast = initialData.showBroadcast;
 	let showWebhooks = false;
 	const [webhooksEnabled, showEnterprise, showAutoRouting] = await Promise.all([
-		batchApiFlag(),
+		webhookSettingsEnabled(),
 		enterpriseSelfServePreviewEnabled(),
 		autoRoutingFlag(),
 	]);

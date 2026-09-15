@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CheckCircle2, Copy, MoreHorizontal, RotateCw, Trash2, Webhook } from "lucide-react";
+import { CheckCircle2, Copy, MoreHorizontal, RotateCw, Send, Trash2, Webhook } from "lucide-react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
@@ -28,6 +28,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import {
 	deleteWebhookEndpointAction,
 	rotateWebhookEndpointSecretAction,
+	sendWebhookEndpointTestAction,
 	updateWebhookEndpointStatusAction,
 } from "@/app/(dashboard)/settings/webhooks/actions";
 import { getWebhookEventLabel } from "./webhook-events";
@@ -159,10 +160,14 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 													<Copy className="mr-2 size-4" />
 													Copy endpoint ID
 												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => runEndpointAction(endpoint.id, () => rotateWebhookEndpointSecretAction(endpoint.id), "Signing secret rotated")}>
+								<DropdownMenuItem onClick={() => runEndpointAction(endpoint.id, () => rotateWebhookEndpointSecretAction(endpoint.id), "Signing secret rotated")}>
 													<RotateCw className="mr-2 size-4" />
 													Rotate signing secret
-												</DropdownMenuItem>
+								</DropdownMenuItem>
+								<DropdownMenuItem disabled={endpoint.status !== "active"} onClick={() => runEndpointAction(endpoint.id, () => sendWebhookEndpointTestAction(endpoint.id), "Test event delivered")}>
+									<Send className="mr-2 size-4" />
+									Send test event
+								</DropdownMenuItem>
 												<DropdownMenuItem onClick={() => runEndpointAction(endpoint.id, () => updateWebhookEndpointStatusAction(endpoint.id, endpoint.status === "active" ? "disabled" : "active"), endpoint.status === "active" ? "Endpoint paused" : "Endpoint enabled")}>
 													{endpoint.status === "active" ? "Pause endpoint" : "Enable endpoint"}
 												</DropdownMenuItem>

@@ -5116,6 +5116,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /webhook-endpoints/{id}/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testWebhookEndpoint
+      summary: Send a test webhook event
+      description: >-
+        Sends one signed `webhook.test` event without retries or
+        delivery-history persistence.
+      parameters:
+        - $ref: '#/components/parameters/WebhookEndpointId'
+      responses:
+        '200':
+          description: Test delivery attempted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpointTestResponse'
+        default:
+          description: Request failed or endpoint not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /guardrails:
     get:
       x-beta: true
@@ -19347,6 +19372,30 @@ components:
         message:
           type: string
       additionalProperties: false
+    WebhookEndpointEvent:
+      type: string
+      enum:
+        - job.created
+        - job.status_changed
+        - job.progress
+        - job.completed
+        - job.failed
+        - job.cancelled
+        - job.expired
+        - video.created
+        - video.status_changed
+        - video.progress
+        - video.completed
+        - video.failed
+        - video.cancelled
+        - video.expired
+        - batch.created
+        - batch.status_changed
+        - batch.progress
+        - batch.completed
+        - batch.failed
+        - batch.cancelled
+        - batch.expired
     WebhookEndpointInput:
       type: object
       properties:
@@ -19359,8 +19408,9 @@ components:
           format: uri
         events:
           type: array
+          minItems: 1
           items:
-            type: string
+            $ref: '#/components/schemas/WebhookEndpointEvent'
       additionalProperties: false
     WebhookEndpointCreateRequest:
       type: object
@@ -19376,8 +19426,9 @@ components:
           format: uri
         events:
           type: array
+          minItems: 1
           items:
-            type: string
+            $ref: '#/components/schemas/WebhookEndpointEvent'
       additionalProperties: false
     WebhookEndpointUpdateRequest:
       type: object
@@ -19392,8 +19443,9 @@ components:
           format: uri
         events:
           type: array
+          minItems: 1
           items:
-            type: string
+            $ref: '#/components/schemas/WebhookEndpointEvent'
         status:
           type: string
           enum:
@@ -19428,7 +19480,7 @@ components:
         events:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/WebhookEndpointEvent'
         hasSecret:
           type: boolean
         createdBy:
@@ -19497,6 +19549,29 @@ components:
         signing_secret:
           type: string
           description: Returned only on creation or rotation.
+      additionalProperties: false
+    WebhookEndpointTestResponse:
+      type: object
+      required:
+        - ok
+        - event_id
+        - status_code
+        - error
+        - response_body_preview
+      properties:
+        ok:
+          type: boolean
+        event_id:
+          type: string
+        status_code:
+          type: integer
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        response_body_preview:
+          type: string
+          nullable: true
       additionalProperties: false
     WebhookEndpointListResponse:
       type: object

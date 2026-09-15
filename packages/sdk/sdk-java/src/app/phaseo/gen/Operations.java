@@ -956,6 +956,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object testWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/webhook-endpoints/" + (path != null && path.containsKey("id") ? path.get("id") : "") + "/test";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object testWorkspaceNotificationDestination(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/notifications/destinations/" + (path != null && path.containsKey("id") ? path.get("id") : "") + "/test";
 		return client.request("POST", resolvedPath, query, headers, body);

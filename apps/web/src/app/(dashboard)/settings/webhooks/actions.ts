@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { batchApiFlag } from "@/lib/flags";
+import { webhookSettingsEnabled } from "@/lib/flags";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 async function account(): Promise<{ accessToken: string; workspaceId: string }> {
-	if (!(await batchApiFlag())) throw new Error("Webhook settings are not enabled for this workspace");
+	if (!(await webhookSettingsEnabled())) throw new Error("Webhook settings are not enabled for this workspace");
 	const { accessToken, workspaceId } = await getServerAccountContext();
 	if (!accessToken) throw new Error("Unauthorized");
 	if (!workspaceId) throw new Error("Missing workspace id");
@@ -80,6 +80,24 @@ export async function rotateWebhookEndpointSecretAction(id: string) {
 		},
 	);
 	refresh();
+	return result;
+}
+
+export async function sendWebhookEndpointTestAction(id: string) {
+	if (!id) throw new Error("Missing webhook endpoint id");
+	const context = await account();
+	const result = await fetchAccountWebApi<{
+		ok: boolean;
+		event_id: string;
+		status_code: number | null;
+		error: string | null;
+	}>(`/api/account/settings/webhooks/${encodeURIComponent(id)}/test`, context.accessToken, {
+		method: "POST",
+		body: JSON.stringify({ workspaceId: context.workspaceId }),
+	});
+	if (!result.ok) {
+		throw new Error(result.error ?? (result.status_code ? `Destination returned HTTP ${result.status_code}` : "Test delivery failed"));
+	}
 	return result;
 }
 

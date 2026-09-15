@@ -2770,7 +2770,7 @@ struct WebhookEndpoint {
 	std::optional<std::string> createdAt;
 	std::optional<std::string> createdBy;
 	std::optional<std::string> deletedAt;
-	std::vector<std::string> events;
+	std::vector<std::any> events;
 	bool hasSecret;
 	std::string id;
 	std::string name;
@@ -2781,7 +2781,7 @@ struct WebhookEndpoint {
 };
 
 struct WebhookEndpointCreateRequest {
-	std::vector<std::string> events;
+	std::vector<std::any> events;
 	std::string name;
 	std::string url;
 };
@@ -2792,8 +2792,10 @@ struct WebhookEndpointDeleteResponse {
 	std::any object;
 };
 
+using WebhookEndpointEvent = std::any;
+
 struct WebhookEndpointInput {
-	std::vector<std::string> events;
+	std::vector<std::any> events;
 	std::string name;
 	std::string url;
 };
@@ -2818,8 +2820,16 @@ struct WebhookEndpointSecretResponse {
 	std::string workspaceId;
 };
 
+struct WebhookEndpointTestResponse {
+	std::optional<std::string> error;
+	std::string event_id;
+	bool ok;
+	std::optional<std::string> response_body_preview;
+	std::optional<int> status_code;
+};
+
 struct WebhookEndpointUpdateRequest {
-	std::vector<std::string> events;
+	std::vector<std::any> events;
 	std::string name;
 	std::any status;
 	std::string url;

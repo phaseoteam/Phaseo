@@ -8,9 +8,10 @@ import WebhooksSettingsClient, {
 } from "@/components/(gateway)/settings/webhooks/WebhooksSettingsClient";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { batchApiFlag } from "@/lib/flags";
+import { webhookSettingsEnabled } from "@/lib/flags";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { connection } from "next/server";
 
 export const metadata = { title: "Webhooks - Settings" };
 
@@ -25,7 +26,8 @@ export default function WebhooksSettingsPage() {
 }
 
 async function WebhooksSettingsContent() {
-	const isEnabled = await batchApiFlag();
+	await connection();
+	const isEnabled = await webhookSettingsEnabled();
 	const header = (
 		<SettingsPageHeader
 			title="Webhooks"

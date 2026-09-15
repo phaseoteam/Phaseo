@@ -1143,6 +1143,12 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.testWebhookEndpoint(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/webhook-endpoints/#{URI.encode_uri_component(path["id"].to_s)}/test"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.testWorkspaceNotificationDestination(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/notifications/destinations/#{URI.encode_uri_component(path["id"].to_s)}/test"

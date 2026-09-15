@@ -2793,6 +2793,8 @@ pub struct WebhookEndpointDeleteResponse {
 	pub object: String,
 }
 
+pub type WebhookEndpointEvent = JsonValue;
+
 pub struct WebhookEndpointInput {
 	pub events: Option<Vec<String>>,
 	pub name: Option<String>,
@@ -2817,6 +2819,14 @@ pub struct WebhookEndpointSecretResponse {
 	pub updatedAt: Option<Option<String>>,
 	pub url: String,
 	pub workspaceId: String,
+}
+
+pub struct WebhookEndpointTestResponse {
+	pub error: Option<String>,
+	pub event_id: String,
+	pub ok: bool,
+	pub response_body_preview: Option<String>,
+	pub status_code: Option<i64>,
 }
 
 pub struct WebhookEndpointUpdateRequest {

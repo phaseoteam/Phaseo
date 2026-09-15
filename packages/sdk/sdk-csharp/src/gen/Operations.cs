@@ -2286,6 +2286,18 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Task<Dictionary<string, object>?> TestWebhookEndpointAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/webhook-endpoints/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/test";
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Task<Dictionary<string, object>?> TestWorkspaceNotificationDestinationAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
