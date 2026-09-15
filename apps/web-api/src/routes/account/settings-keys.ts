@@ -65,14 +65,23 @@ function limitMetadata(values: Record<string, unknown>) {
 	};
 }
 
-async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof requireAccountWorkspace>>>, env: Env, keyType: "api" | "management") {
+function isUsableKey(key: Record<string, unknown>, now = new Date()) {
+	if (key.status !== "active" || key.soft_blocked !== false) return false;
+	if (key.expires_at === null || key.expires_at === undefined) return true;
+	const expiresAt = new Date(String(key.expires_at)).getTime();
+	return Number.isFinite(expiresAt) && expiresAt > now.getTime();
+}
+
+async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof requireAccountWorkspace>>>, env: Env, keyType: "api" | "management", excludeKeyId?: string) {
 	const workspace = await context.client.from("workspaces").select("tier").eq("id", context.workspaceId).maybeSingle(); if (workspace.error) throw workspace.error;
 	if (String(workspace.data?.tier ?? "basic").toLowerCase() === "enterprise") return;
 	const limit = Math.max(1, Number.parseInt(env.NON_ENTERPRISE_KEY_LIMIT ?? "100", 10) || 100);
 	const notExpiredFilter = `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`;
-	const countResult = keyType === "api"
-		? await context.client.from("keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter).neq("name", "__chat_route_managed_key__")
-		: await context.client.from("management_keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter);
+	const countQuery = keyType === "api"
+		? context.client.from("keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter).neq("name", "__chat_route_managed_key__")
+		: context.client.from("management_keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter);
+	if (excludeKeyId) countQuery.neq("id", excludeKeyId);
+	const countResult = await countQuery;
 	if (countResult.error) throw countResult.error;
 	if ((countResult.count ?? 0) >= limit) throw new Error("key_limit_reached");
 }
@@ -135,6 +144,11 @@ accountSettingsKeysRouter.put("/keys/:keyId", async (c) => {
 	const loaded = await apiKeyContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); if (String(loaded.key.status).toLowerCase() === "deleted") return c.json({ error: "key_deleted" }, 409, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({})); const update: Record<string, unknown> = {};
 	if (typeof body.name === "string") update.name = body.name; if (typeof body.paused === "boolean") update.status = body.paused ? "paused" : "active";
+	const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in update);
+	if (keyStateChanged && isUsableKey({ ...loaded.key, ...update })) {
+		try { await enforceKeyLimit(loaded.context, c.env, "api", loaded.key.id); }
+		catch (error) { if (error instanceof Error && error.message === "key_limit_reached") return c.json({ error: "key_limit_reached" }, 409, PRIVATE_NO_STORE_HEADERS); return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); }
+	}
 	const result = await loaded.context.client.from("keys").update(update).eq("id", loaded.key.id).eq("workspace_id", loaded.context.workspaceId); if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); if ("status" in update) c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id));
 	const action = typeof body.paused === "boolean" ? (body.paused ? "api_key.paused" : "api_key.resumed") : "api_key.updated";
 	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action, targetType: "api_key", targetId: loaded.key.id, targetName: String(update.name ?? loaded.key.name ?? ""), metadata: { changedFields: Object.keys(update), ...(update.status ? { status: update.status } : {}) }, requestId: requestId(c) });
@@ -144,6 +158,11 @@ accountSettingsKeysRouter.put("/keys/:keyId", async (c) => {
 accountSettingsKeysRouter.put("/keys/:keyId/limits", async (c) => {
 	const loaded = await apiKeyContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const limits = limitMetadata(body);
 	const update: Record<string, unknown> = { daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos }; if (typeof body.softBlocked === "boolean") update.soft_blocked = body.softBlocked;
+	const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in update);
+	if (keyStateChanged && isUsableKey({ ...loaded.key, ...update })) {
+		try { await enforceKeyLimit(loaded.context, c.env, "api", loaded.key.id); }
+		catch (error) { if (error instanceof Error && error.message === "key_limit_reached") return c.json({ error: "key_limit_reached" }, 409, PRIVATE_NO_STORE_HEADERS); return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); }
+	}
 	const result = await loaded.context.client.from("keys").update(update).eq("id", loaded.key.id).eq("workspace_id", loaded.context.workspaceId); if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id));
 	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action: "api_key.limits_updated", targetType: "api_key", targetId: loaded.key.id, targetName: loaded.key.name, metadata: { limits }, requestId: requestId(c) });
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -193,7 +212,12 @@ accountSettingsKeysRouter.put("/management-keys/:keyId", async (c) => {
 	if (typeof body.name === "string" && body.name.trim()) update.name = body.name.trim(); if (typeof body.paused === "boolean") update.status = body.paused ? "paused" : "active";
 	try { const expiry = optionalExpiry(body.expiresAt); if (expiry !== undefined) update.expires_at = expiry; } catch { return c.json({ error: "invalid_expiry" }, 400, PRIVATE_NO_STORE_HEADERS); }
 	if (body.template) { const scopes = templateScopes(String(body.template)); if (!scopes) return c.json({ error: "invalid_scopes" }, 400, PRIVATE_NO_STORE_HEADERS); update.scopes = JSON.stringify(scopes); }
-	if (body.limits) { const limits = limitMetadata(body.limits); Object.assign(update, { daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos, soft_blocked: typeof body.limits.softBlocked === "boolean" ? body.limits.softBlocked : null }); }
+	if (body.limits) { const limits = limitMetadata(body.limits); Object.assign(update, { daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos, ...(typeof body.limits.softBlocked === "boolean" ? { soft_blocked: body.limits.softBlocked } : {}) }); }
+	const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in update);
+	if (keyStateChanged && isUsableKey({ ...loaded.key, ...update })) {
+		try { await enforceKeyLimit(loaded.context, c.env, "management", loaded.key.id); }
+		catch (error) { if (error instanceof Error && error.message === "key_limit_reached") return c.json({ error: "key_limit_reached" }, 409, PRIVATE_NO_STORE_HEADERS); return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); }
+	}
 	const result = await loaded.context.client.from("management_keys").update(update).eq("id", loaded.key.id).eq("workspace_id", loaded.context.workspaceId); if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const action = body.limits ? "management_key.limits_updated" : body.template ? "management_key.access_updated" : typeof body.paused === "boolean" ? (body.paused ? "management_key.paused" : "management_key.resumed") : "management_key.updated";
 	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action, targetType: "management_key", targetId: loaded.key.id, targetName: String(update.name ?? loaded.key.name ?? ""), metadata: { changedFields: Object.keys(update).filter((field) => field !== "scopes"), ...(body.template ? { accessTemplate: body.template } : {}), ...(body.limits ? { limits: limitMetadata(body.limits) } : {}), ...(update.status ? { status: update.status } : {}), ...("expires_at" in update ? { expiresAt: update.expires_at } : {}) }, requestId: requestId(c) });

@@ -29,6 +29,12 @@ function installSupabaseStub(counts: { api: number; management: number }) {
 			const count = url.includes("management_keys") ? counts.management : counts.api;
 			return new Response(null, { status: 200, headers: { "content-range": `*/${count}` } });
 		}
+		if (request.method === "GET" && url.includes("/rest/v1/keys")) {
+			return new Response(JSON.stringify([{ id: "api-key-1", workspace_id: "workspace-1", name: "Production", status: "paused", soft_blocked: false, expires_at: null }]), { status: 200 });
+		}
+		if (request.method === "GET" && url.includes("/rest/v1/management_keys")) {
+			return new Response(JSON.stringify([{ id: "management-key-1", workspace_id: "workspace-1", name: "Automation", status: "paused", soft_blocked: false, expires_at: null }]), { status: 200 });
+		}
 		if (url.includes("/rest/v1/keys") && request.method === "POST") {
 			return new Response(JSON.stringify([{ id: "api-key-1" }]), { status: 201 });
 		}
@@ -67,6 +73,34 @@ describe("account key limits", () => {
 		}, env);
 
 		expect(response.status).toBe(200);
+		expect(headUrls).toHaveLength(1);
+		expect(headUrls[0]).toContain("/rest/v1/management_keys?");
+	});
+
+	it("rechecks the API limit before reactivating a paused API key", async () => {
+		const headUrls = installSupabaseStub({ api: 100, management: 0 });
+		const response = await app.request("https://phaseo.app/api/account/settings/keys/api-key-1", {
+			method: "PUT",
+			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", paused: false }),
+		}, env);
+
+		expect(response.status).toBe(409);
+		expect(await response.json()).toEqual({ error: "key_limit_reached" });
+		expect(headUrls).toHaveLength(1);
+		expect(headUrls[0]).toContain("/rest/v1/keys?");
+	});
+
+	it("rechecks the management limit before reactivating a paused management key", async () => {
+		const headUrls = installSupabaseStub({ api: 0, management: 100 });
+		const response = await app.request("https://phaseo.app/api/account/settings/management-keys/management-key-1", {
+			method: "PUT",
+			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", paused: false }),
+		}, env);
+
+		expect(response.status).toBe(409);
+		expect(await response.json()).toEqual({ error: "key_limit_reached" });
 		expect(headUrls).toHaveLength(1);
 		expect(headUrls[0]).toContain("/rest/v1/management_keys?");
 	});

@@ -7,6 +7,19 @@ const DEFAULT_KEY_LIMIT = 100;
 export const CHAT_MANAGED_KEY_NAME = "__chat_route_managed_key__";
 export type WorkspaceKeyType = "api" | "management";
 
+type WorkspaceKeyState = {
+	status?: string | null;
+	soft_blocked?: boolean | null;
+	expires_at?: string | null;
+};
+
+export function isUsableWorkspaceKey(key: WorkspaceKeyState, now = new Date()): boolean {
+	if (key.status !== "active" || key.soft_blocked !== false) return false;
+	if (key.expires_at === null || key.expires_at === undefined) return true;
+	const expiresAt = new Date(key.expires_at).getTime();
+	return Number.isFinite(expiresAt) && expiresAt > now.getTime();
+}
+
 export function getWorkspaceKeyLimit(): number {
 	const bindings = getBindings();
 	const raw = Number.parseInt(
@@ -60,7 +73,7 @@ export async function userHasPaidWorkspaceAccess(userId: string): Promise<boolea
 export async function enforceWorkspaceKeyLimit(
 	workspaceId: string,
 	keyType: WorkspaceKeyType,
-	excludeApiKeyId?: string,
+	excludeKeyId?: string,
 ): Promise<void> {
 	const admin = getSupabaseAdmin();
 	const keyLimit = getWorkspaceKeyLimit();
@@ -81,18 +94,20 @@ export async function enforceWorkspaceKeyLimit(
 			.eq("soft_blocked", false)
 			.or(notExpiredFilter)
 			.neq("name", CHAT_MANAGED_KEY_NAME);
-		if (excludeApiKeyId) query = query.neq("id", excludeApiKeyId);
+		if (excludeKeyId) query = query.neq("id", excludeKeyId);
 		const result = await query;
 		count = result.count;
 		countError = result.error;
 	} else {
-		const result = await admin
+		let query = admin
 			.from("management_keys")
 			.select("id", { count: "exact", head: true })
 			.eq("workspace_id", workspaceId)
 			.eq("status", "active")
 			.eq("soft_blocked", false)
 			.or(notExpiredFilter);
+		if (excludeKeyId) query = query.neq("id", excludeKeyId);
+		const result = await query;
 		count = result.count;
 		countError = result.error;
 	}

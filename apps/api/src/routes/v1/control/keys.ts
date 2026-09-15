@@ -14,7 +14,7 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { loadOAuthClient } from "@/lib/oauth/service";
 import { internalServerError, requireCapability, type ManagementRouteAuth } from "./route-helpers";
-import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit } from "./management-helpers";
+import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit, isUsableWorkspaceKey } from "./management-helpers";
 
 type KeyRow = {
 	id: string;
@@ -784,6 +784,10 @@ async function handleUpdateKey(req: Request) {
 		if (detailedLimits.ok === false) {
 			return json({ error: "bad_request", message: detailedLimits.message }, 400, { "Cache-Control": "no-store" });
 		}
+		const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in updatePayload);
+		if (keyStateChanged && isUsableWorkspaceKey({ ...existing, ...updatePayload })) {
+			await enforceWorkspaceKeyLimit(auth.value.workspaceId, "api", existing.id);
+		}
 
 		const { error: updateError } = await supabase
 			.from("keys")
@@ -809,6 +813,10 @@ async function handleUpdateKey(req: Request) {
 
 		return json({ data: formatApiKey(updated as KeyRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
+		const message = String(error?.message ?? error);
+		if (message.startsWith("Key limit reached")) {
+			return json({ error: "key_limit_reached", message }, 409, { "Cache-Control": "no-store" });
+		}
 		return internalServerError("keys.update", error);
 	}
 }
