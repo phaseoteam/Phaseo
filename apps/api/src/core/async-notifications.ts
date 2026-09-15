@@ -521,12 +521,7 @@ async function resolveAsyncWebhookConfig(args: {
 		return {
 			url: endpoint.url,
 			secret: endpoint.secret,
-			events:
-				parsed.events.length > 0
-					? parsed.events
-					: endpointEvents.length > 0
-						? endpointEvents
-						: DEFAULT_ASYNC_WEBHOOK_EVENTS,
+			events: parsed.events.length > 0 ? parsed.events : endpointEvents,
 		};
 	}
 	if (!parsed.url) return null;

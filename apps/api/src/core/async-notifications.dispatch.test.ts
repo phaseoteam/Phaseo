@@ -441,4 +441,27 @@ describe("async webhook dispatch", () => {
 		expect(delivered).toBe(false);
 		expect(fetch).not.toHaveBeenCalled();
 	});
+
+	it("does not fall back to generic events when an endpoint only subscribes to the other job type", async () => {
+		getAsyncOperationMock.mockResolvedValueOnce(
+			batchRecord({ meta: { webhook: { endpoint_id: "we_video_only" } } }),
+		);
+		getWebhookEndpointSigningConfigMock.mockResolvedValue({
+			id: "we_video_only",
+			url: "https://managed-receiver.test/webhook",
+			secret: "whsec_managed",
+			events: ["video.completed"],
+		});
+
+		const delivered = await dispatchAsyncWebhookEvent({
+			workspaceId: "ws_1",
+			kind: "batch",
+			internalId: "batch_1",
+			phase: "completed",
+			baseUrl: "https://gateway.test",
+		});
+
+		expect(delivered).toBe(false);
+		expect(fetch).not.toHaveBeenCalled();
+	});
 });

@@ -2620,7 +2620,7 @@ async function handleRetrieve(req: Request, id: string) {
 			});
 		});
 		const nextStatus = String(upstreamJson?.status ?? meta.status ?? "").toLowerCase();
-		if (nextStatus === "completed" || nextStatus === "failed" || nextStatus === "expired" || nextStatus === "cancelled" || nextStatus === "canceled") {
+			if (nextStatus === "completed" || nextStatus === "failed" || nextStatus === "expired" || nextStatus === "cancelled" || nextStatus === "canceled") {
 			finalization = await finalizeBatchJob({
 				workspaceId: auth.workspaceId,
 				batchId,
@@ -2633,14 +2633,41 @@ async function handleRetrieve(req: Request, id: string) {
 					status: nextStatus,
 				});
 				return null;
-			});
-		}
-		if (nextStatus !== previousStatus && finalization?.billed === true) {
+				});
+			}
+			const terminalStatus = nextStatus === "completed" || nextStatus === "failed" || nextStatus === "expired" || nextStatus === "cancelled" || nextStatus === "canceled";
+			if (nextStatus !== previousStatus && (!terminalStatus || finalization?.billed === true)) {
+				dispatchAsyncWebhookEventInBackground({
+					workspaceId: auth.workspaceId,
+					kind: "batch",
+					internalId: batchId,
+					phase: "status_changed",
+					previousStatus: previousStatus || null,
+					currentStatus: nextStatus || null,
+					deliveryKey: `batch.status_changed:${previousStatus || "unknown"}:${nextStatus || "unknown"}`,
+				});
+			}
+			const requestCounts = upstreamJson?.request_counts;
+			if (requestCounts && typeof requestCounts === "object" && !Array.isArray(requestCounts)) {
+				const total = Number(requestCounts.total);
+				const finished = Math.max(0, Number(requestCounts.completed)) + Math.max(0, Number(requestCounts.failed));
+				const progress = Number.isFinite(total) && total > 0 ? Math.round((finished / total) * 100) : null;
+				if (progress != null && progress > 0 && progress < 100) dispatchAsyncWebhookEventInBackground({
+					workspaceId: auth.workspaceId,
+					kind: "batch",
+					internalId: batchId,
+					phase: "progress",
+					progress,
+				});
+			}
+			if (nextStatus !== previousStatus && finalization?.billed === true) {
 			const phase = nextStatus === "completed"
 				? "completed"
-				: nextStatus === "failed" || nextStatus === "expired"
+				: nextStatus === "failed"
 					? "failed"
-					: nextStatus === "cancelled" || nextStatus === "canceled"
+					: nextStatus === "expired"
+						? "expired"
+						: nextStatus === "cancelled" || nextStatus === "canceled"
 						? "cancelled"
 						: null;
 			if (phase) dispatchAsyncWebhookEventInBackground({

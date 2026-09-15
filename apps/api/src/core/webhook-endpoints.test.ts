@@ -69,6 +69,9 @@ describe("webhook endpoint helpers", () => {
 			"batch.completed",
 			"video.failed",
 		]);
+		expect(normalizeWebhookEndpointEvents(["batch.completed", "unknown.completed"])).toEqual([
+			"batch.completed",
+		]);
 		const record = toPublicWebhookEndpoint({
 			id: "we_123",
 			workspace_id: "ws_123",

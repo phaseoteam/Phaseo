@@ -35,6 +35,14 @@ export type WebhookEndpointUrlValidation =
 				| "webhook_url_dns_resolution_failed";
 	  };
 
+export const WEBHOOK_ENDPOINT_EVENT_VALUES = [
+	"job.created", "job.status_changed", "job.progress", "job.completed", "job.failed", "job.cancelled", "job.expired",
+	"video.created", "video.status_changed", "video.progress", "video.completed", "video.failed", "video.cancelled", "video.expired",
+	"batch.created", "batch.status_changed", "batch.progress", "batch.completed", "batch.failed", "batch.cancelled", "batch.expired",
+] as const;
+
+const WEBHOOK_ENDPOINT_EVENT_SET = new Set<string>(WEBHOOK_ENDPOINT_EVENT_VALUES);
+
 const DEFAULT_WEBHOOK_EVENTS = [
 	"video.completed",
 	"video.failed",
@@ -339,7 +347,7 @@ export function normalizeWebhookEndpointEvents(value: unknown): string[] {
 	const source = Array.isArray(value) ? value : DEFAULT_WEBHOOK_EVENTS;
 	const out = source
 		.map((entry) => normalizeText(entry)?.toLowerCase())
-		.filter((entry): entry is string => Boolean(entry));
+		.filter((entry): entry is string => Boolean(entry) && WEBHOOK_ENDPOINT_EVENT_SET.has(entry));
 	return [...new Set(out.length > 0 ? out : [...DEFAULT_WEBHOOK_EVENTS])];
 }
 

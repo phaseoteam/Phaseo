@@ -8,6 +8,7 @@ import {
 	encryptWebhookSecret,
 	generateWebhookSigningSecret,
 	normalizeWebhookEndpointEvents,
+	WEBHOOK_ENDPOINT_EVENT_VALUES,
 	toPublicWebhookEndpoint,
 	validateWebhookEndpointUrlForDelivery,
 } from "@core/webhook-endpoints";
@@ -21,13 +22,13 @@ const PAGE_SIZE = 100;
 const createWebhookEndpointSchema = z.object({
 	name: z.string().trim().min(1).max(120).default("Async webhooks"),
 	url: z.string().trim().url(),
-	events: z.array(z.string().trim().min(1)).optional(),
+	events: z.array(z.enum(WEBHOOK_ENDPOINT_EVENT_VALUES)).min(1).optional(),
 });
 
 const updateWebhookEndpointSchema = z.object({
 	name: z.string().trim().min(1).max(120).optional(),
 	url: z.string().trim().url().optional(),
-	events: z.array(z.string().trim().min(1)).optional(),
+	events: z.array(z.enum(WEBHOOK_ENDPOINT_EVENT_VALUES)).min(1).optional(),
 	status: z.enum(["active", "disabled"]).optional(),
 });
 

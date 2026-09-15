@@ -28,6 +28,8 @@ Attach a webhook endpoint belonging to your workspace when creating either kind 
 
 Phaseo reconciles provider status and sends customer notifications. Providers that require polling, including Anthropic message batches, can still produce customer webhooks. A webhook delivery failure is separate from a generation or batch failure.
 
+Endpoint subscriptions can target Batch and Video events independently. Use namespaced event types such as `batch.completed` or `video.failed`; generic `job.*` event types remain supported and subscribe to the matching phase for both job types.
+
 Verify `x-phaseo-signature` using the endpoint secret: the signature is the hexadecimal HMAC-SHA256 of `x-phaseo-timestamp`, a literal period, and the **unmodified request body**. Check timestamp freshness, deduplicate `x-phaseo-event-id`, and acknowledge accepted deliveries with a successful HTTP response. Deliveries can be retried or arrive out of order; retrieve the job before applying a conflicting state change.
 
 Treat `completed`, `failed`, `cancelled`, and `expired` lifecycle states as terminal. Keep a polling recovery path even when using webhooks.

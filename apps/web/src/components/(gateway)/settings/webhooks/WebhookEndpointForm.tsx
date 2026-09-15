@@ -19,9 +19,9 @@ import {
 import type { WebhookEndpoint } from "./WebhooksSettingsClient";
 import {
 	DEFAULT_WEBHOOK_EVENTS,
+	expandGenericWebhookEvents,
 	getWebhookEventsForUpdate,
-	isKindSpecificWebhookEvent,
-	normalizeWebhookEvents,
+	WEBHOOK_EVENT_GROUPS,
 	WEBHOOK_EVENT_OPTIONS,
 } from "@/components/(gateway)/settings/webhooks/webhook-events";
 import WebhookSecretNotice from "./WebhookSecretNotice";
@@ -37,7 +37,7 @@ export default function WebhookEndpointForm({
 	const [name, setName] = useState(initialEndpoint?.name ?? "Async job updates");
 	const [url, setUrl] = useState(initialEndpoint?.url ?? "");
 	const [selectedEvents, setSelectedEvents] = useState<string[]>(() => {
-		const initial = normalizeWebhookEvents(initialEndpoint?.events ?? []);
+		const initial = expandGenericWebhookEvents(initialEndpoint?.events ?? []);
 		const supported = initial.filter((event) => WEBHOOK_EVENT_OPTIONS.some((option) => option.value === event));
 		return supported.length > 0 ? supported : DEFAULT_WEBHOOK_EVENTS;
 	});
@@ -45,7 +45,6 @@ export default function WebhookEndpointForm({
 	const [revealedSecret, setRevealedSecret] = useState<{ id: string; secret: string } | null>(null);
 	const [isPending, startTransition] = useTransition();
 	const allSelected = selectedEvents.length === WEBHOOK_EVENT_OPTIONS.length;
-	const hasKindSpecificEvents = mode === "edit" && (initialEndpoint?.events ?? []).some(isKindSpecificWebhookEvent);
 	const selectedLabels = useMemo(
 		() => WEBHOOK_EVENT_OPTIONS.filter((option) => selectedEvents.includes(option.value)).map((option) => option.label),
 		[selectedEvents],
@@ -54,7 +53,7 @@ export default function WebhookEndpointForm({
 	function toggleEvent(value: string, checked: boolean) {
 		setEventsChanged(true);
 		setSelectedEvents((current) => {
-			if (checked) return normalizeWebhookEvents([...current, value]);
+			if (checked) return [...new Set([...current, value])];
 			return current.filter((event) => event !== value);
 		});
 	}
@@ -129,29 +128,28 @@ export default function WebhookEndpointForm({
 					<CardDescription>Choose the updates you want to receive. These defaults apply when a job does not specify its own event list.</CardDescription>
 				</CardHeader>
 				<CardContent className="pt-5">
-					{hasKindSpecificEvents ? (
-						<Alert className="mb-4 border-border/70 bg-muted/25">
-							<AlertTitle>Existing kind-specific subscriptions</AlertTitle>
-							<AlertDescription>Video- or batch-only subscriptions are preserved when you save other changes. Changing this selection switches the endpoint to the job-wide events shown below.</AlertDescription>
-						</Alert>
-					) : null}
 					<div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/45 px-3 py-2.5 text-sm">
 						<div className="flex items-center gap-2"><ListChecks className="size-4 text-muted-foreground" /><span><span className="font-medium">{selectedEvents.length}</span> of {WEBHOOK_EVENT_OPTIONS.length} selected</span></div>
 						<Button type="button" variant="ghost" size="sm" onClick={() => { setEventsChanged(true); setSelectedEvents(allSelected ? [] : WEBHOOK_EVENT_OPTIONS.map((option) => option.value)); }}>{allSelected ? "Clear all" : "Select all"}</Button>
 					</div>
-					<div className="grid gap-2 md:grid-cols-2">
-						{WEBHOOK_EVENT_OPTIONS.map((option) => {
-							const checked = selectedEvents.includes(option.value);
-							return (
-								<label key={option.value} htmlFor={`event-${option.value}`} className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 p-3 transition-colors hover:bg-muted/35 has-aria-checked:border-primary/50 has-aria-checked:bg-primary/5">
-									<Checkbox id={`event-${option.value}`} checked={checked} onCheckedChange={(value) => toggleEvent(option.value, value === true)} className="mt-0.5" />
-									<span className="min-w-0">
-										<span className="flex items-center gap-2 text-sm font-medium">{option.label}{checked ? <Check className="size-3.5 text-primary" /> : null}</span>
-										<span className="mt-1 block text-xs leading-5 text-muted-foreground">{option.description}</span>
-									</span>
-								</label>
-							);
-						})}
+					<div className="grid gap-5 lg:grid-cols-2">
+						{WEBHOOK_EVENT_GROUPS.map((group) => (
+							<section key={group.kind} aria-labelledby={`${group.kind}-events-heading`} className="space-y-2">
+								<div className="flex items-center justify-between gap-3">
+									<div><h3 id={`${group.kind}-events-heading`} className="text-sm font-medium">{group.label}</h3><p className="text-xs text-muted-foreground">{group.description}</p></div>
+									<Button type="button" variant="ghost" size="sm" onClick={() => {
+										setEventsChanged(true);
+										const groupValues: string[] = group.options.map((option) => option.value);
+										const groupSelected = groupValues.every((value) => selectedEvents.includes(value));
+										setSelectedEvents((current) => groupSelected ? current.filter((value) => !groupValues.includes(value)) : [...new Set([...current, ...groupValues])]);
+									}}>{group.options.every((option) => selectedEvents.includes(option.value)) ? "Clear" : "Select all"}</Button>
+								</div>
+								{group.options.map((option) => {
+									const checked = selectedEvents.includes(option.value);
+									return <label key={option.value} htmlFor={`event-${option.value}`} className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 p-3 transition-colors hover:bg-muted/35 has-aria-checked:border-primary/50 has-aria-checked:bg-primary/5"><Checkbox id={`event-${option.value}`} checked={checked} onCheckedChange={(value) => toggleEvent(option.value, value === true)} className="mt-0.5" /><span className="min-w-0"><span className="flex items-center gap-2 text-sm font-medium">{option.label}{checked ? <Check className="size-3.5 text-primary" /> : null}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{option.description}</span></span></label>;
+								})}
+							</section>
+						))}
 					</div>
 				</CardContent>
 			</Card>

@@ -28,15 +28,16 @@ import {
 type OpenAiBatchTerminal =
 	| { status: "completed"; phase: "completed" }
 	| { status: "failed"; phase: "failed" }
-	| { status: "expired"; phase: "failed" }
+	| { status: "expired"; phase: "expired" }
 	| { status: "cancelled"; phase: "cancelled" };
 
 type BatchTerminal = OpenAiBatchTerminal;
 
-function customerWebhookPhase(status: string): "completed" | "failed" | "cancelled" {
+function customerWebhookPhase(status: string): "completed" | "failed" | "cancelled" | "expired" {
 	const normalized = status.trim().toLowerCase();
 	if (normalized === "completed") return "completed";
 	if (normalized === "cancelled" || normalized === "canceled") return "cancelled";
+	if (normalized === "expired") return "expired";
 	return "failed";
 }
 
@@ -189,7 +190,7 @@ export function mapOpenAiBatchTerminal(eventType: string, payload: any): OpenAiB
 	const normalizedEvent = normalizeText(eventType)?.toLowerCase() ?? "";
 	if (normalizedEvent === "batch.completed") return { status: "completed", phase: "completed" };
 	if (normalizedEvent === "batch.failed") return { status: "failed", phase: "failed" };
-	if (normalizedEvent === "batch.expired") return { status: "expired", phase: "failed" };
+	if (normalizedEvent === "batch.expired") return { status: "expired", phase: "expired" };
 	if (normalizedEvent === "batch.cancelled" || normalizedEvent === "batch.canceled") {
 		return { status: "cancelled", phase: "cancelled" };
 	}
@@ -197,7 +198,7 @@ export function mapOpenAiBatchTerminal(eventType: string, payload: any): OpenAiB
 	const status = normalizeOpenAiBatchStatus(payload?.data?.status ?? payload?.status);
 	if (status === "completed") return { status, phase: "completed" };
 	if (status === "failed") return { status, phase: "failed" };
-	if (status === "expired") return { status, phase: "failed" };
+	if (status === "expired") return { status, phase: "expired" };
 	if (status === "cancelled") return { status, phase: "cancelled" };
 	return null;
 }
@@ -206,7 +207,7 @@ export function mapGoogleAiStudioBatchTerminal(eventType: string, payload: any):
 	const normalizedEvent = normalizeText(eventType)?.toLowerCase() ?? "";
 	if (normalizedEvent === "batch.succeeded") return { status: "completed", phase: "completed" };
 	if (normalizedEvent === "batch.failed") return { status: "failed", phase: "failed" };
-	if (normalizedEvent === "batch.expired") return { status: "expired", phase: "failed" };
+	if (normalizedEvent === "batch.expired") return { status: "expired", phase: "expired" };
 	if (normalizedEvent === "batch.cancelled" || normalizedEvent === "batch.canceled") {
 		return { status: "cancelled", phase: "cancelled" };
 	}
@@ -214,7 +215,7 @@ export function mapGoogleAiStudioBatchTerminal(eventType: string, payload: any):
 	const status = normalizeOpenAiBatchStatus(payload?.data?.status ?? payload?.status);
 	if (status === "completed" || status === "succeeded") return { status: "completed", phase: "completed" };
 	if (status === "failed") return { status: "failed", phase: "failed" };
-	if (status === "expired") return { status: "expired", phase: "failed" };
+	if (status === "expired") return { status: "expired", phase: "expired" };
 	if (status === "cancelled") return { status: "cancelled", phase: "cancelled" };
 	return null;
 }

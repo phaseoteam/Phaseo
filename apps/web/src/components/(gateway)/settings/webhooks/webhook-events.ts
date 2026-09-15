@@ -1,53 +1,37 @@
-export const WEBHOOK_EVENT_OPTIONS = [
-	{
-		value: "job.created",
-		label: "Job created",
-		description: "The request was accepted and a job was created.",
-	},
-	{
-		value: "job.status_changed",
-		label: "Status changes",
-		description: "The job moved between pending, running, and terminal states.",
-	},
-	{
-		value: "job.progress",
-		label: "Progress updates",
-		description: "The job reached a new progress milestone.",
-	},
-	{
-		value: "job.completed",
-		label: "Completed",
-		description: "The job finished successfully.",
-	},
-	{
-		value: "job.failed",
-		label: "Failed",
-		description: "The job could not be completed.",
-	},
-	{
-		value: "job.cancelled",
-		label: "Cancelled",
-		description: "The job was cancelled before it completed.",
-	},
-	{
-		value: "job.expired",
-		label: "Expired",
-		description: "The job expired before it completed.",
-	},
+const WEBHOOK_PHASE_OPTIONS = [
+	{ phase: "created", label: "Created", description: "The request was accepted and the job was created." },
+	{ phase: "status_changed", label: "Status changes", description: "The job moved between lifecycle states." },
+	{ phase: "progress", label: "Progress updates", description: "The job reached a new progress milestone." },
+	{ phase: "completed", label: "Completed", description: "The job finished successfully." },
+	{ phase: "failed", label: "Failed", description: "The job could not be completed." },
+	{ phase: "cancelled", label: "Cancelled", description: "The job was cancelled before it completed." },
+	{ phase: "expired", label: "Expired", description: "The job expired before it completed." },
 ] as const;
 
-export type WebhookEvent = (typeof WEBHOOK_EVENT_OPTIONS)[number]["value"];
+export type WebhookPhase = (typeof WEBHOOK_PHASE_OPTIONS)[number]["phase"];
+export type WebhookEvent = `${"batch" | "video"}.${WebhookPhase}`;
 
-export const DEFAULT_WEBHOOK_EVENTS: WebhookEvent[] = [
-	"job.status_changed",
-	"job.completed",
-	"job.failed",
-	"job.cancelled",
-	"job.expired",
-];
+export const WEBHOOK_EVENT_GROUPS = ([
+	{ kind: "batch", label: "Batch events", description: "Updates from Batch API jobs." },
+	{ kind: "video", label: "Video events", description: "Updates from Video API jobs." },
+] as const).map((group) => ({
+	...group,
+	options: WEBHOOK_PHASE_OPTIONS.map((option) => ({
+		...option,
+		value: `${group.kind}.${option.phase}` as WebhookEvent,
+	})),
+}));
+
+export const WEBHOOK_EVENT_OPTIONS = WEBHOOK_EVENT_GROUPS.flatMap((group) => group.options);
+
+export const DEFAULT_WEBHOOK_EVENTS: WebhookEvent[] = WEBHOOK_EVENT_OPTIONS
+	.filter((option) => option.phase !== "created" && option.phase !== "progress")
+	.map((option) => option.value);
 
 const EVENT_LABELS = new Map<string, string>(
-	WEBHOOK_EVENT_OPTIONS.map((option) => [option.value, option.label]),
+	WEBHOOK_EVENT_GROUPS.flatMap((group) =>
+		group.options.map((option) => [option.value, `${group.kind === "batch" ? "Batch" : "Video"}: ${option.label}`] as const),
+	),
 );
 
 export function getWebhookEventLabel(value: string): string {
@@ -55,27 +39,19 @@ export function getWebhookEventLabel(value: string): string {
 	const knownLabel = EVENT_LABELS.get(normalized);
 	if (knownLabel) return knownLabel;
 
-	const [, phase] = normalized.split(".");
+	const [kind, phase] = normalized.split(".");
 	if (!phase) return value;
-	return phase
-		.replaceAll("_", " ")
-		.replace(/\b\w/g, (character) => character.toUpperCase());
+	const phaseLabel = phase.replaceAll("_", " ").replace(/\b\w/g, (character) => character.toUpperCase());
+	return kind === "job" ? `All jobs: ${phaseLabel}` : phaseLabel;
 }
 
-export function toCanonicalWebhookEvent(value: string): string {
-	const normalized = value.trim().toLowerCase();
-	if (normalized.startsWith("video.")) return `job.${normalized.slice("video.".length)}`;
-	if (normalized.startsWith("batch.")) return `job.${normalized.slice("batch.".length)}`;
-	return normalized;
-}
-
-export function isKindSpecificWebhookEvent(value: string): boolean {
-	const normalized = value.trim().toLowerCase();
-	return normalized.startsWith("video.") || normalized.startsWith("batch.");
-}
-
-export function normalizeWebhookEvents(values: readonly string[]): string[] {
-	return [...new Set(values.map(toCanonicalWebhookEvent).filter(Boolean))];
+export function expandGenericWebhookEvents(values: readonly string[]): string[] {
+	return [...new Set(values.flatMap((value) => {
+		const normalized = value.trim().toLowerCase();
+		if (!normalized.startsWith("job.")) return normalized ? [normalized] : [];
+		const phase = normalized.slice("job.".length);
+		return [`batch.${phase}`, `video.${phase}`];
+	}))];
 }
 
 export function getWebhookEventsForUpdate(
