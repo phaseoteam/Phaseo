@@ -1,12 +1,12 @@
 ---
 page_title: "Phaseo Provider"
 description: |-
-  Manage Phaseo workspaces and Gateway API keys with Terraform.
+  Manage Phaseo gateway platform resources with Terraform.
 ---
 
 # Phaseo Provider
 
-The Phaseo provider manages resources through the Phaseo management API. Configure it with a management API key in `PHASEO_API_KEY`.
+The Phaseo provider manages Phaseo gateway platform resources through the management API. Configure it with a management API key in `PHASEO_API_KEY`.
 
 ```terraform
 terraform {
