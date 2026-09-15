@@ -48,7 +48,7 @@
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.0.3",
-    "@vitejs/plugin-react": "^6.0.3",
+    "@vitejs/plugin-react": "^6.1.1",
     "autoprefixer": "^10.5.2",
     "concurrently": "^10.0.4",
     "postcss": "^8.5.14",
