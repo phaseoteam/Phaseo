@@ -84,7 +84,7 @@ export default function AccountPrivacySettingsClient({
 		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				await updateGlobalGuardrailsSettings(policy);
+				await updateGlobalGuardrailsSettings(policy, workspaceId);
 				if (cancelled) return;
 				lastSavedPolicy.current = serialized;
 				setAutosaveStatus("saved");
@@ -108,7 +108,7 @@ export default function AccountPrivacySettingsClient({
 					ioLoggingEnabled: logStorage.enabled,
 					ioLoggingRetentionDays: logStorage.retentionDays,
 					ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
-				});
+				}, workspaceId);
 				if (cancelled) return;
 				lastSavedLogStorage.current = serialized;
 				setAutosaveStatus("saved");

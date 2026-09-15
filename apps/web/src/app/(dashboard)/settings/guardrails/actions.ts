@@ -52,10 +52,11 @@ export type GuardrailUpsertPayload = GlobalGuardrailsSettingsPayload & {
 	budgets?: GuardrailBudgetPayload;
 };
 
-async function account(): Promise<{ accessToken: string; workspaceId: string }> {
+async function account(expectedWorkspaceId?: string): Promise<{ accessToken: string; workspaceId: string }> {
 	const { accessToken, workspaceId } = await getServerAccountContext();
 	if (!accessToken) throw new Error("Unauthorized");
 	if (!workspaceId) throw new Error("Missing workspace id");
+	if (expectedWorkspaceId && workspaceId !== expectedWorkspaceId) throw new Error("Active workspace changed");
 	return { accessToken, workspaceId };
 }
 
@@ -64,8 +65,8 @@ function refresh(includePrivacy = false): void {
 	if (includePrivacy) revalidatePath("/settings/privacy");
 }
 
-export async function updateGlobalGuardrailsSettings(payload: GlobalGuardrailsSettingsPayload) {
-	const context = await account();
+export async function updateGlobalGuardrailsSettings(payload: GlobalGuardrailsSettingsPayload, expectedWorkspaceId?: string) {
+	const context = await account(expectedWorkspaceId);
 	const result = await fetchAccountWebApi<{ success: true }>("/api/account/settings/guardrails/global", context.accessToken, { method: "PUT", body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }) });
 	refresh(true);
 	return result;
