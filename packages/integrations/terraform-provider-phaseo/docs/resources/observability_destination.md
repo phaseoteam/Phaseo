@@ -30,8 +30,8 @@ Creates an observability export destination for Phaseo telemetry. The `config` m
 
 - `enabled` (Boolean) Whether exports are enabled.
 - `privacy_mode` (Boolean) Whether privacy mode is enabled.
-- `sampling_rate` (Number) Fraction of events to export.
-- `group_join` (String) Grouping behavior for exported events.
+- `sampling_rate` (Number) Fraction of events to export, from `0.0001` through `1`.
+- `group_join` (String) Grouping behavior for exported events: `and` or `or`.
 - `include_generation_metadata` (Boolean) Include generation metadata.
 - `include_cost_metadata` (Boolean) Include cost metadata.
 - `include_identity_metadata` (Boolean) Include identity metadata.

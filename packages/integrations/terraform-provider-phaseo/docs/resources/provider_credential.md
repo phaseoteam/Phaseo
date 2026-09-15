@@ -37,8 +37,8 @@ Creates and manages an encrypted BYOK provider credential. Phaseo never returns 
 
 - `id` (String) Credential identifier.
 - `workspace_id` (String) Workspace identifier.
-- `prefix` (String) Configured request prefix.
-- `suffix` (String) Configured request suffix.
+- `prefix` (String) First six characters of the credential for masked identification.
+- `suffix` (String) Last four characters of the credential for masked identification.
 - `verification_status` (String) Current verification status.
 - `error_message` (String) Latest verification error, when present.
 - `last_verified_at` (String) Last verification timestamp.
