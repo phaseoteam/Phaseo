@@ -1,301 +1,270 @@
-// app/roadmap/page.tsx
-import { Metadata } from "next";
+import Link from "next/link";
+import type { Metadata } from "next";
 import {
-	GitCompare,
-	Users,
-	BookOpen,
-	BadgeDollarSign,
-	BarChart3,
-	Infinity as InfinityIcon,
+	Activity,
 	ArrowRight,
-	CheckCircle2,
-	Clock,
-	Sparkles,
+	ArrowUpRight,
+	BarChart3,
+	BadgeDollarSign,
+	BookOpen,
 	Bot,
-	Megaphone,
+	Gauge,
+	GitCompare,
+	Infinity as InfinityIcon,
+	KeyRound,
+	Layers3,
+	LockKeyhole,
+	RefreshCw,
+	Route,
+	ShieldCheck,
+	Sparkles,
+	Users,
+	Webhook,
+	type LucideIcon,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import {
-	splitUpcomingAndShipped,
-	monthLabelFromKey,
 	formatShortDate,
+	monthLabelFromKey,
+	splitUpcomingAndShipped,
+	type IconName,
+	type RoadmapMilestone,
+	type RoadmapStatus,
 } from "@/lib/roadmap";
 
 export const metadata: Metadata = {
 	title: "Roadmap",
 	description:
-		"Follow the Phaseo roadmap to see what we're building next. Track upcoming features and shipped milestones for the AI model database, gateway, and analytics tools.",
+		"See what Phaseo has shipped, what is improving continuously, and how the open gateway is moving forward.",
 	keywords: [
 		"Phaseo roadmap",
 		"product roadmap",
 		"AI gateway roadmap",
 		"AI model database",
-		"changelog",
-		"upcoming features",
+		"shipped features",
 	],
 	alternates: {
 		canonical: "/roadmap",
 	},
 	openGraph: {
 		type: "website",
-		title: "Phaseo roadmap - Upcoming Features & Shipped Milestones",
+		title: "Phaseo roadmap - Shipped work and ongoing progress",
 		description:
-			"See what's shipping next at Phaseo. Explore upcoming features and recently shipped milestones across the AI model database, gateway, and analytics.",
+			"Track what Phaseo has shipped, what is improving continuously, and how the open gateway is moving forward.",
 	},
 };
 
-const ICON_MAP = {
-	Infinity: <InfinityIcon className="h-5 w-5" />,
-	Bot: <Bot className="h-5 w-5" />,
-	BarChart3: <BarChart3 className="h-5 w-5" />,
-	BadgeDollarSign: <BadgeDollarSign className="h-5 w-5" />,
-	BookOpen: <BookOpen className="h-5 w-5" />,
-	GitCompare: <GitCompare className="h-5 w-5" />,
-	Users: <Users className="h-5 w-5" />,
-	Sparkles: <Sparkles className="h-5 w-5" />,
-} as const;
+const ICON_MAP: Record<IconName, LucideIcon> = {
+	Activity,
+	BarChart3,
+	BadgeDollarSign,
+	BookOpen,
+	Bot,
+	Gauge,
+	GitCompare,
+	Infinity: InfinityIcon,
+	KeyRound,
+	Layers3,
+	LockKeyhole,
+	RefreshCw,
+	Route,
+	ShieldCheck,
+	Sparkles,
+	Users,
+	Webhook,
+};
 
-type Status = "Planned" | "In Progress" | "Beta" | "Shipped" | "Ongoing";
-function StatusBadge({ status }: { status: Status }) {
-	const styles: Record<Status, string> = {
-		Planned:
-			"bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800",
-		"In Progress":
-			"bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800/60",
-		Beta: "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800/60",
-		Shipped:
-			"bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800/60",
-		Ongoing:
-			"bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-800/60",
-	};
-	const Icon =
-		status === "Shipped" ? (
-			<CheckCircle2 className="h-3.5 w-3.5" />
-		) : status === "In Progress" || status === "Beta" ? (
-			<Sparkles className="h-3.5 w-3.5" />
-		) : status === "Ongoing" ? (
-			<InfinityIcon className="h-3.5 w-3.5" />
-		) : (
-			<Clock className="h-3.5 w-3.5" />
-		);
+function StatusMark({ status }: { status: RoadmapStatus }) {
+	const isShipped = status === "Shipped";
+	const label = status === "Ongoing" ? "Ongoing" : status;
 
 	return (
 		<span
-			className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${styles[status]}`}
+			className={`inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${
+				isShipped ? "text-primary" : "text-muted-foreground"
+			}`}
 		>
-			{Icon}
-			{status}
+			<span
+				aria-hidden="true"
+				className={`size-1.5 rounded-full ${isShipped ? "bg-primary" : "bg-muted-foreground/50"}`}
+			/>
+			{label}
 		</span>
 	);
 }
 
-function FeedbackCTA() {
+function MilestoneRow({
+	milestone,
+	dateLabel,
+}: {
+	milestone: RoadmapMilestone;
+	dateLabel: string;
+}) {
+	const Icon = ICON_MAP[milestone.icon];
+
 	return (
-		<Card className="mx-auto mt-5 max-w-3xl rounded-2xl p-5 text-sm text-zinc-700 dark:bg-transparent dark:text-zinc-300">
-			<div className="flex items-start gap-3">
-				<div className="size-8 shrink-0 grid place-items-center rounded-full border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-					<Megaphone className="size-4" />
-				</div>
-				<p className="flex-1">
-					Got an idea, found an error, or want to prioritise a
-					feature? We read everything and ship fast.
-				</p>
-				<a
-					href="/contribute"
-					className="whitespace-nowrap rounded-xl bg-zinc-900 px-3 py-2 text-xs font-medium text-white transition hover:bg-black dark:bg-white dark:text-black dark:hover:bg-zinc-100"
-				>
-					Give feedback
-				</a>
+		<article
+			id={`milestone-${milestone.key}`}
+			className="grid gap-5 py-6 sm:grid-cols-[11rem_minmax(0,1fr)] lg:grid-cols-[12rem_minmax(0,1fr)_auto] lg:items-start"
+		>
+			<div className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+				<Icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
+				<span>{dateLabel}</span>
 			</div>
-		</Card>
+
+			<div className="max-w-3xl space-y-2">
+				<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+					<h3 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+						{milestone.title}
+					</h3>
+					<StatusMark status={milestone.status} />
+				</div>
+				<p className="text-sm leading-7 text-muted-foreground">
+					{milestone.description}
+				</p>
+			</div>
+
+			{milestone.href ? (
+				<Link
+					href={milestone.href}
+					className="inline-flex items-center gap-2 text-sm font-medium text-foreground underline decoration-zinc-300 underline-offset-4 hover:decoration-foreground dark:decoration-zinc-700 dark:hover:decoration-foreground sm:col-start-2 lg:col-start-auto lg:self-center"
+				>
+					View in Phaseo
+					<ArrowUpRight className="size-4" aria-hidden="true" />
+				</Link>
+			) : null}
+		</article>
 	);
 }
 
-export default async function RoadmapPage() {
+export default function RoadmapPage() {
 	const { upcoming, shippedGroups } = splitUpcomingAndShipped();
-	const latestShippedMonthKey = shippedGroups[0]?.[0] ?? null;
+	const shippedCount = shippedGroups.reduce((total, [, items]) => total + items.length, 0);
+	const latestShippedDate = shippedGroups[0]?.[1][0]?._date;
 
 	return (
 		<main className="min-h-screen">
-			<section className="mx-auto container px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-				<div className="mx-auto max-w-3xl text-center">
-					<h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-						Phaseo Roadmap
+			<div className="mx-4 px-2 py-12 sm:mx-6 sm:px-0 sm:py-16 lg:mx-8 xl:mx-10 2xl:mx-auto 2xl:max-w-[1460px]">
+				<section className="max-w-4xl space-y-7">
+					<h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+						Most of the foundation is now shipped.
 					</h1>
-					<p className="mt-3 text-zinc-600 dark:text-zinc-400">
-						A transparent look at what we're building next.
-						Timelines are indicative and may shift as we ship faster
-						or incorporate feedback.
+					<p className="max-w-3xl text-base leading-7 text-muted-foreground">
+						The old roadmap left too much work in the future. This is the current picture: what is live, what is improving continuously, and how the next layer of the gateway will be shaped.
 					</p>
-					<FeedbackCTA />
-
-					<div className="mt-4 flex flex-wrap justify-center gap-2 text-sm">
-						<a
-							href="#upcoming"
-							className="rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+					<div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1">
+						<Link
+							href="/updates"
+							className="inline-flex items-center text-sm font-medium text-foreground underline decoration-zinc-300 underline-offset-4 hover:decoration-foreground dark:decoration-zinc-700 dark:hover:decoration-foreground"
 						>
-							Upcoming
-						</a>
-						<a
-							href="#shipped"
-							className="rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+							Read the latest updates
+							<ArrowRight className="ml-2 size-4" aria-hidden="true" />
+						</Link>
+						<Link
+							href="/contribute"
+							className="inline-flex items-center text-sm font-medium text-foreground underline decoration-zinc-300 underline-offset-4 hover:decoration-foreground dark:decoration-zinc-700 dark:hover:decoration-foreground"
 						>
-							Shipped
-						</a>
-						{latestShippedMonthKey ? (
-							<a
-								href={`#shipped-${latestShippedMonthKey}`}
-								className="rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
-							>
-								Latest shipped
-							</a>
-						) : null}
+							Suggest a change
+							<ArrowRight className="ml-2 size-4" aria-hidden="true" />
+						</Link>
 					</div>
+				</section>
+
+				<div className="mt-12 flex flex-wrap gap-x-6 gap-y-2 border-y border-border/70 py-4 text-sm text-muted-foreground">
+					<span>
+						<strong className="font-semibold text-foreground">{shippedCount}</strong> shipped milestones
+					</span>
+					<span>
+						<strong className="font-semibold text-foreground">{upcoming.length}</strong> ongoing workstreams
+					</span>
+					{latestShippedDate ? (
+						<span>
+							Latest release: {formatShortDate(latestShippedDate)}
+						</span>
+					) : null}
 				</div>
 
-				{/* Upcoming */}
-				<h2
-					id="upcoming"
-					className="mt-10 text-xl font-semibold tracking-tight"
-				>
-					Upcoming
-				</h2>
-				<div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-					{upcoming.map((m) => (
-						<Card
-							key={m.key}
-							id={`milestone-${m.key}`}
-							className="group relative rounded-2xl p-5 transition hover:shadow-md dark:bg-transparent"
-						>
-							<div className="flex items-center justify-between">
-								<div className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-									{ICON_MAP[m.icon]}
-								</div>
-								<StatusBadge status={m.status as Status} />
-							</div>
+				<section id="current" className="scroll-mt-24 pt-16">
+					<div className="max-w-3xl space-y-2">
+						<h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+							What is moving now.
+						</h2>
+						<p className="text-sm leading-7 text-muted-foreground">
+							Coverage and catalog quality are deliberately ongoing. They change with the provider ecosystem, so we track them as continuous work rather than attach an artificial finish date.
+						</p>
+					</div>
+					<div className="mt-6 divide-y divide-border/70 border-y border-border/70">
+						{upcoming.map((milestone) => (
+							<MilestoneRow
+								key={milestone.key}
+								milestone={milestone}
+								dateLabel={milestone.continuous ? "Continuous" : "Next"}
+							/>
+						))}
+					</div>
+				</section>
 
-							<h3 className="mt-4 text-lg font-medium">
-								{m.title}
-							</h3>
+				<section id="shipped" className="scroll-mt-24 pt-16">
+					<div className="max-w-3xl space-y-2">
+						<h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+							What has shipped.
+						</h2>
+						<p className="text-sm leading-7 text-muted-foreground">
+							The release record is grouped by month, with the newest work first. Links take you to the relevant product surface where one exists.
+						</p>
+					</div>
 
-							<div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-								{!m.continuous && m.due && (
-									<span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
-										<Clock className="h-3.5 w-3.5" />
-										<span>Target: {m.due}</span>
-									</span>
-								)}
-								{m.continuous && (
-									<span className="inline-flex items-center gap-1 rounded-full border border-violet-300/60 bg-violet-50 px-2 py-0.5 text-xs text-violet-700 dark:border-violet-800/60 dark:bg-violet-900/30 dark:text-violet-300">
-										<InfinityIcon className="h-3.5 w-3.5" />
-										<span>Continuous</span>
-									</span>
-								)}
-							</div>
-
-							<p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-								{m.description}
-							</p>
-
-							{m.href && (
-								<a
-									href={m.href}
-									className="mt-4 inline-flex items-center gap-1 text-sm font-medium underline-offset-4 underline decoration-transparent hover:decoration-current transition-colors duration-200"
+					<div className="mt-8 space-y-10">
+						{shippedGroups.map(([monthKey, items]) => (
+							<section key={monthKey} className="scroll-mt-24">
+								<h3
+									id={`shipped-${monthKey}`}
+									className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground"
 								>
-									Learn more{" "}
-									<ArrowRight className="h-4 w-4" />
-								</a>
-							)}
-
-							<div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-transparent transition group-hover:ring-zinc-300/70 dark:group-hover:ring-zinc-700/70" />
-						</Card>
-					))}
-				</div>
-
-				{/* Shipped */}
-				<h2
-					id="shipped"
-					className="mt-12 text-xl font-semibold tracking-tight"
-				>
-					Shipped
-				</h2>
-
-				{shippedGroups.length === 0 ? (
-					<p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-						Nothing shipped yet - check back soon.
-					</p>
-				) : (
-					shippedGroups.map(([monthKey, items]) => (
-						<section key={monthKey} className="mt-6">
-							<h3
-								id={`shipped-${monthKey}`}
-								className="text-lg font-medium"
-							>
-								{monthLabelFromKey(monthKey)}
-							</h3>
-
-							<div className="mt-3 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-								{items
-									.sort((a, b) =>
-										(a as any)._date.getTime() <
-										(b as any)._date.getTime()
-											? 1
-											: -1
-									)
-									.map((m) => (
-										<Card
-											key={m.key}
-											id={`milestone-${m.key}`}
-											className="group relative rounded-2xl p-5 transition hover:shadow-md dark:bg-transparent"
-										>
-											<div className="flex items-center justify-between">
-												<div className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-													{ICON_MAP[m.icon]}
-												</div>
-												<StatusBadge status="Shipped" />
-											</div>
-
-											<h4 className="mt-4 text-lg font-medium">
-												{m.title}
-											</h4>
-
-											<div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-												{m.shippedAt && (
-													<span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/60 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-900/30 dark:text-emerald-300">
-														<CheckCircle2 className="h-3.5 w-3.5" />
-														<span>
-															Shipped:{" "}
-															{formatShortDate(
-																(m as any)._date
-															)}
-														</span>
-													</span>
-												)}
-											</div>
-
-											<p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-												{m.description}
-											</p>
-
-											{m.href && (
-												<a
-													href={m.href}
-													className="mt-4 inline-flex items-center gap-1 text-sm font-medium underline-offset-4 underline decoration-transparent hover:decoration-current transition-colors duration-200"
-												>
-													View{" "}
-													<ArrowRight className="h-4 w-4" />
-												</a>
-											)}
-
-											<div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-transparent transition group-hover:ring-zinc-300/70 dark:group-hover:ring-zinc-700/70" />
-										</Card>
+									{monthLabelFromKey(monthKey)}
+								</h3>
+								<div className="mt-3 divide-y divide-border/70 border-y border-border/70">
+									{items.map((milestone) => (
+										<MilestoneRow
+											key={milestone.key}
+											milestone={milestone}
+											dateLabel={formatShortDate(milestone._date)}
+										/>
 									))}
-							</div>
-						</section>
-					))
-				)}
-			</section>
+								</div>
+							</section>
+						))}
+					</div>
+				</section>
+
+				<section className="mt-16 border-t border-border/70 pt-10">
+					<div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+						<div className="max-w-3xl space-y-2">
+							<h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+								Help shape what ships next.
+							</h2>
+							<p className="text-sm leading-7 text-muted-foreground">
+								Phaseo is built in public. If something is missing, unclear, or more important than the work shown here, tell us what would make the gateway more useful.
+							</p>
+						</div>
+						<div className="flex flex-wrap items-center gap-3 lg:justify-end">
+							<Link
+								href="/contribute"
+								className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+							>
+								Suggest a change
+								<ArrowRight className="size-4" aria-hidden="true" />
+							</Link>
+							<Link
+								href="/updates"
+								className="inline-flex items-center gap-2 text-sm font-medium text-foreground underline decoration-zinc-300 underline-offset-4 hover:decoration-foreground dark:decoration-zinc-700 dark:hover:decoration-foreground"
+							>
+								Read updates
+								<ArrowUpRight className="size-4" aria-hidden="true" />
+							</Link>
+						</div>
+					</div>
+				</section>
+			</div>
 		</main>
 	);
 }
-
