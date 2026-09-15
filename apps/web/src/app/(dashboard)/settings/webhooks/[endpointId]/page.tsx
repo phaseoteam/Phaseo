@@ -1,20 +1,27 @@
 import { notFound } from "next/navigation";
-import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import WebhookEndpointForm from "@/components/(gateway)/settings/webhooks/WebhookEndpointForm";
 import type { WebhookEndpoint } from "@/components/(gateway)/settings/webhooks/WebhooksSettingsClient";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { batchApiFlag } from "@/lib/flags";
+import { webhookSettingsEnabled } from "@/lib/flags";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 export const metadata = { title: "Edit Webhook Endpoint - Settings" };
 
-export default async function WebhookEndpointPage({
+export default function WebhookEndpointPage({
 	params,
 }: {
 	params: Promise<{ endpointId: string }>;
 }) {
-	if (!(await batchApiFlag())) {
+	return <Suspense fallback={<SettingsSectionFallback />}><WebhookEndpointContent params={params} /></Suspense>;
+}
+
+async function WebhookEndpointContent({ params }: { params: Promise<{ endpointId: string }> }) {
+	await connection();
+	if (!(await webhookSettingsEnabled())) {
 		return <Alert><AlertTitle>Webhooks are not enabled</AlertTitle><AlertDescription>Async job webhooks are currently available for enabled workspaces.</AlertDescription></Alert>;
 	}
 
@@ -31,13 +38,5 @@ export default async function WebhookEndpointPage({
 	const endpoint = endpoints.find((candidate) => candidate.id === decodeURIComponent(endpointId));
 	if (!endpoint) notFound();
 
-	return (
-		<div className="space-y-6">
-			<SettingsPageHeader
-				title="Edit webhook endpoint"
-				description={`Update ${endpoint.name}'s destination or event subscriptions.`}
-			/>
-			<WebhookEndpointForm mode="edit" initialEndpoint={endpoint} />
-		</div>
-	);
+	return <WebhookEndpointForm mode="edit" initialEndpoint={endpoint} />;
 }

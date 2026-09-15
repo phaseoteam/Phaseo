@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { batchApiFlag } from "@/lib/flags";
+import { webhookSettingsEnabled } from "@/lib/flags";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 async function account(): Promise<{ accessToken: string; workspaceId: string }> {
-	if (!(await batchApiFlag())) throw new Error("Webhook settings are not enabled for this workspace");
+	if (!(await webhookSettingsEnabled())) throw new Error("Webhook settings are not enabled for this workspace");
 	const { accessToken, workspaceId } = await getServerAccountContext();
 	if (!accessToken) throw new Error("Unauthorized");
 	if (!workspaceId) throw new Error("Missing workspace id");

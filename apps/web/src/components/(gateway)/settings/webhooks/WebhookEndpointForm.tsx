@@ -80,11 +80,31 @@ export default function WebhookEndpointForm({
 	}
 
 	return (
-		<form onSubmit={submit} className="max-w-4xl">
-			<Link href="/settings/webhooks" className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+		<form onSubmit={submit} className="max-w-4xl space-y-6">
+			<Link href="/settings/webhooks" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
 				<ArrowLeft className="size-4" />
 				Back to Webhooks
 			</Link>
+
+			<div className="flex flex-wrap items-start justify-between gap-4">
+				<div className="min-w-0 flex-1">
+					<Label htmlFor="webhook-name" className="sr-only">Endpoint name</Label>
+					<input
+						id="webhook-name"
+						value={name}
+						onChange={(event) => setName(event.target.value)}
+						placeholder="Webhook endpoint"
+						maxLength={120}
+						required
+						className="block w-full min-w-0 bg-transparent py-1 text-3xl font-semibold leading-tight tracking-tight outline-none placeholder:text-muted-foreground/70"
+					/>
+					<p className="mt-1 text-sm text-muted-foreground">Choose where Phaseo sends signed updates for your async jobs.</p>
+				</div>
+				<div className="flex shrink-0 items-center gap-2">
+					<Link href="/settings/webhooks" className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-background px-3 text-sm font-medium hover:bg-muted">Cancel</Link>
+					<Button type="submit" disabled={isPending || !url || !name.trim() || selectedEvents.length === 0}><Save className="size-4" />{isPending ? "Saving…" : mode === "create" ? "Create" : "Save"}</Button>
+				</div>
+			</div>
 
 			<section className="grid gap-5 border-b border-border/60 pb-8 md:grid-cols-[180px_minmax(0,1fr)] md:gap-10">
 				<div>
@@ -92,11 +112,6 @@ export default function WebhookEndpointForm({
 					<p className="mt-1 text-sm leading-5 text-muted-foreground">Where webhook deliveries should be sent.</p>
 				</div>
 				<div className="space-y-5">
-					<div className="space-y-2">
-						<Label htmlFor="webhook-name">Endpoint name</Label>
-						<Input id="webhook-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Production worker" maxLength={120} required />
-						<p className="text-xs text-muted-foreground">Only you see this label.</p>
-					</div>
 					<div className="space-y-2">
 						<Label htmlFor="webhook-url">Destination URL</Label>
 						<div className="relative">
@@ -143,12 +158,8 @@ export default function WebhookEndpointForm({
 				</div>
 			</section>
 
-			<div className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+			<div className="pb-6">
 				<p className="max-w-xl text-xs leading-5 text-muted-foreground">Deliveries are signed and include an event ID for deduplication. Temporary failures are retried automatically. <a className="underline underline-offset-4 hover:text-foreground" href="https://phaseo.app/docs/v1/guides/async-video-and-batch" target="_blank" rel="noreferrer">View the async jobs guide</a>.</p>
-				<div className="flex shrink-0 items-center justify-end gap-2">
-					<Link href="/settings/webhooks" className="inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium hover:bg-muted">Cancel</Link>
-					<Button type="submit" disabled={isPending || !url || !name.trim() || selectedEvents.length === 0}><Save className="size-4" />{isPending ? "Saving…" : mode === "create" ? "Create endpoint" : "Save changes"}</Button>
-				</div>
 			</div>
 
 			{revealedSecret ? <WebhookSecretNotice endpointId={revealedSecret.id} secret={revealedSecret.secret} /> : null}
