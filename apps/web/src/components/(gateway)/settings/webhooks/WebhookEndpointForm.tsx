@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
-import { ArrowLeft, Globe2, Save } from "lucide-react";
+import { ArrowLeft, Globe2, Save, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
 	createWebhookEndpointAction,
+	sendWebhookEndpointTestAction,
 	updateWebhookEndpointAction,
 } from "@/app/(dashboard)/settings/webhooks/actions";
 import type { WebhookEndpoint } from "./WebhooksSettingsClient";
@@ -40,6 +41,7 @@ export default function WebhookEndpointForm({
 	});
 	const [eventsChanged, setEventsChanged] = useState(mode === "create");
 	const [revealedSecret, setRevealedSecret] = useState<{ id: string; secret: string } | null>(null);
+	const [isTesting, setIsTesting] = useState(false);
 	const [isPending, startTransition] = useTransition();
 	const allSelected = selectedEvents.length === WEBHOOK_EVENT_OPTIONS.length;
 
@@ -77,6 +79,19 @@ export default function WebhookEndpointForm({
 				toast.error(error instanceof Error ? error.message : "Unable to save webhook endpoint");
 			}
 		});
+	}
+
+	async function sendTest() {
+		if (!initialEndpoint) return;
+		setIsTesting(true);
+		try {
+			const result = await sendWebhookEndpointTestAction(initialEndpoint.id);
+			toast.success(`Test delivered${result.status_code ? ` (HTTP ${result.status_code})` : ""}`);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : "Test delivery failed");
+		} finally {
+			setIsTesting(false);
+		}
 	}
 
 	return (
@@ -119,6 +134,7 @@ export default function WebhookEndpointForm({
 							<Input id="webhook-url" className="pl-9" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://your-app.example.com/webhooks/phaseo" type="url" required />
 						</div>
 						<p className="text-xs text-muted-foreground">Use a public HTTPS endpoint. Local and private network addresses are blocked.</p>
+						{initialEndpoint ? <div className="flex items-center justify-between gap-3 pt-1"><p className="text-xs text-muted-foreground">Sends a signed <code className="font-mono text-foreground">webhook.test</code> event to the saved URL.</p><Button type="button" variant="outline" size="sm" disabled={isTesting || isPending || url !== initialEndpoint.url || initialEndpoint.status !== "active"} onClick={() => void sendTest()}><Send className="size-3.5" />{isTesting ? "Sending…" : "Send test"}</Button></div> : <p className="text-xs text-muted-foreground">You can send a signed test event after creating the endpoint.</p>}
 					</div>
 				</div>
 			</section>

@@ -32,6 +32,8 @@ Endpoint subscriptions can target Batch and Video events independently. Use name
 
 Verify `x-phaseo-signature` using the endpoint secret: the signature is the hexadecimal HMAC-SHA256 of `x-phaseo-timestamp`, a literal period, and the **unmodified request body**. Check timestamp freshness, deduplicate `x-phaseo-event-id`, and acknowledge accepted deliveries with a successful HTTP response. Deliveries can be retried or arrive out of order; retrieve the job before applying a conflicting state change.
 
+After saving an endpoint, use **Send test event** in Settings to deliver a signed `webhook.test` payload. Test deliveries make one attempt and are not retried or added to job delivery history.
+
 Treat `completed`, `failed`, `cancelled`, and `expired` lifecycle states as terminal. Keep a polling recovery path even when using webhooks.
 
 For each event, Phaseo makes one initial delivery attempt. A successful 2xx response ends delivery; no retries are needed. Failed deliveries receive up to three retries, scheduled after 1, 5, and 15 minutes. Background sweeps process eligible retries, so actual delivery can be later than the scheduled time. Each attempt records its number, time, HTTP status, error and next retry time. After the fourth unsuccessful attempt, delivery is marked permanently failed. Receivers must still deduplicate events: a lost acknowledgement or worker interruption can make delivery uncertain.

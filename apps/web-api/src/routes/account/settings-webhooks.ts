@@ -109,6 +109,10 @@ function base64(value: Uint8Array): string {
 	return btoa(binary);
 }
 
+function fromBase64(value: string): ArrayBuffer {
+	return Uint8Array.from(atob(value), (character) => character.charCodeAt(0)).buffer;
+}
+
 function secretMaterial(env: Env): string {
 	const value =
 		text(env.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY) ??
@@ -146,6 +150,35 @@ async function encrypt(env: Env, secret: string) {
 		secret_iv: base64(iv),
 		secret_hash: [...hash].map((byte) => byte.toString(16).padStart(2, "0")).join(""),
 	};
+}
+
+async function decrypt(env: Env, row: Record<string, unknown>): Promise<string> {
+	const ciphertext = text(row.secret_ciphertext);
+	const iv = text(row.secret_iv);
+	if (!ciphertext || !iv) throw new Error("Webhook signing secret is unavailable");
+	const preferredVersion = text(row.secret_key_version);
+	const candidates = [
+		{ value: env.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY, version: env.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION ?? "v1" },
+		{ value: env.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_PREVIOUS, version: env.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_PREVIOUS_VERSION ?? "previous" },
+		{ value: env.WEBHOOK_SECRET_ENCRYPTION_KEY, version: "v1" },
+		{ value: env.KEY_PEPPER_ACTIVE, version: "legacy-key-pepper" },
+	].filter((candidate): candidate is { value: string; version: string } => Boolean(candidate.value?.trim()));
+	candidates.sort((left, right) => Number(right.version === preferredVersion) - Number(left.version === preferredVersion));
+	for (const candidate of candidates) {
+		try {
+			const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(candidate.value));
+			const key = await crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, ["decrypt"]);
+			const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(iv) }, key, fromBase64(ciphertext));
+			return new TextDecoder().decode(plaintext);
+		} catch {}
+	}
+	throw new Error("Webhook signing secret could not be decrypted");
+}
+
+async function signature(secret: string, timestamp: string, body: string): Promise<string> {
+	const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+	const signed = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`)));
+	return [...signed].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 async function adminContext(c: any, workspaceId: unknown) {
@@ -275,6 +308,71 @@ accountSettingsWebhooksRouter.post("/webhooks/:endpointId/rotate", async (c) => 
 		return c.json({ ok: true, signingSecret: secret }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		return c.json({ error: error instanceof Error ? error.message : "webhook_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS);
+	}
+});
+
+accountSettingsWebhooksRouter.post("/webhooks/:endpointId/test", async (c) => {
+	const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({}));
+	const context = await adminContext(c, body.workspaceId);
+	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const endpointId = c.req.param("endpointId");
+	const result = await context.client
+		.from("gateway_webhook_endpoints")
+		.select("id,url,status,secret_ciphertext,secret_iv,secret_key_version")
+		.eq("id", endpointId)
+		.eq("workspace_id", context.workspaceId)
+		.neq("status", "deleted")
+		.maybeSingle();
+	if (result.error) return c.json({ error: "webhooks_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!result.data) return c.json({ error: "Webhook endpoint not found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	if (String(result.data.status) !== "active") return c.json({ error: "Enable the endpoint before sending a test" }, 409, PRIVATE_NO_STORE_HEADERS);
+	try {
+		const url = await endpoint(result.data.url);
+		const secret = await decrypt(c.env, result.data as Record<string, unknown>);
+		const eventId = `evt_test_${crypto.randomUUID()}`;
+		const payload = JSON.stringify({
+			id: eventId,
+			type: "webhook.test",
+			created_at: Math.floor(Date.now() / 1000),
+			delivery: { key: eventId, attempt: 1, max_attempts: 1 },
+			data: { object: "webhook_endpoint", endpoint_id: endpointId, test: true },
+		});
+		const timestamp = String(Math.floor(Date.now() / 1000));
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 30_000);
+		let response: Response;
+		try {
+			response = await fetch(url, {
+				method: "POST",
+				redirect: "manual",
+				signal: controller.signal,
+				headers: {
+					"Content-Type": "application/json",
+					"User-Agent": "Phaseo-Async-Webhook/1.0",
+					"x-phaseo-event-id": eventId,
+					"x-phaseo-event-type": "webhook.test",
+					"x-phaseo-delivery-key": eventId,
+					"x-phaseo-attempt": "1",
+					"x-phaseo-max-attempts": "1",
+					"x-phaseo-timestamp": timestamp,
+					"x-phaseo-signature": await signature(secret, timestamp, payload),
+				},
+				body: payload,
+			});
+		} finally {
+			clearTimeout(timeout);
+		}
+		const redirected = response.status >= 300 && response.status < 400;
+		const ok = response.ok && !redirected;
+		return c.json({
+			ok,
+			event_id: eventId,
+			status_code: response.status,
+			error: redirected ? "Webhook redirects are not allowed" : ok ? null : `Destination returned HTTP ${response.status}`,
+		}, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch (error) {
+		const message = error instanceof Error && error.name === "AbortError" ? "Test delivery timed out after 30 seconds" : error instanceof Error ? error.message : "Test delivery failed";
+		return c.json({ ok: false, event_id: null, status_code: null, error: message }, 200, PRIVATE_NO_STORE_HEADERS);
 	}
 });
 

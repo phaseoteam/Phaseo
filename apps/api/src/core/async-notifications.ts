@@ -232,6 +232,10 @@ type AsyncWebhookRequestResult = {
 	errorMessage: string | null;
 };
 
+export type WebhookTestDeliveryResult = AsyncWebhookRequestResult & {
+	eventId: string;
+};
+
 function resolveWebhookUrl(value: unknown): string | null {
 	const text = normalizeText(value);
 	if (!text) return null;
@@ -1018,7 +1022,7 @@ async function sendAsyncWebhookRequest(args: {
 	secret?: string | null;
 	body: string;
 	eventId: string;
-	eventType: AsyncNotificationEventType;
+	eventType: AsyncNotificationEventType | "webhook.test";
 	deliveryKey: string;
 	attemptNumber: number;
 	maxAttempts: number;
@@ -1109,6 +1113,37 @@ async function sendAsyncWebhookRequest(args: {
 	} finally {
 		clearTimeout(timeoutId);
 	}
+}
+
+export async function sendWebhookTestEvent(args: {
+	workspaceId: string;
+	endpointId: string;
+}): Promise<WebhookTestDeliveryResult | null> {
+	const webhook = await getWebhookEndpointSigningConfig(args);
+	if (!webhook) return null;
+	const eventId = `evt_test_${crypto.randomUUID()}`;
+	const body = JSON.stringify({
+		id: eventId,
+		type: "webhook.test",
+		created_at: Math.floor(Date.now() / 1000),
+		delivery: { key: eventId, attempt: 1, max_attempts: 1 },
+		data: {
+			object: "webhook_endpoint",
+			endpoint_id: webhook.id,
+			test: true,
+		},
+	});
+	const result = await sendAsyncWebhookRequest({
+		url: webhook.url,
+		secret: webhook.secret,
+		body,
+		eventId,
+		eventType: "webhook.test",
+		deliveryKey: eventId,
+		attemptNumber: 1,
+		maxAttempts: 1,
+	});
+	return { ...result, eventId };
 }
 
 function buildWebhookEventId(args: {

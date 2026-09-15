@@ -70,6 +70,7 @@ vi.mock("@core/webhook-endpoints", () => ({
 import {
 	dispatchAsyncWebhookEvent,
 	runAsyncWebhookRetriesJob,
+	sendWebhookTestEvent,
 } from "./async-notifications";
 
 function batchRecord(overrides: Record<string, unknown> = {}) {
@@ -141,6 +142,28 @@ describe("async webhook dispatch", () => {
 		releaseAsyncWebhookDeliveryClaimMock.mockReset().mockResolvedValue(true);
 		getWebhookEndpointSigningConfigMock.mockReset();
 		vi.stubGlobal("fetch", vi.fn());
+	});
+
+	it("sends a signed one-shot test event through a saved endpoint", async () => {
+		getWebhookEndpointSigningConfigMock.mockResolvedValue({
+			id: "wh_1",
+			url: "https://receiver.test/webhooks/phaseo",
+			secret: "whsec_test_secret",
+			events: ["batch.completed"],
+		});
+		vi.mocked(fetch).mockResolvedValueOnce(new Response("ok", { status: 202 }));
+
+		const result = await sendWebhookTestEvent({ workspaceId: "ws_1", endpointId: "wh_1" });
+
+		expect(result).toMatchObject({ ok: true, statusCode: 202 });
+		expect(fetch).toHaveBeenCalledTimes(1);
+		const [, init] = vi.mocked(fetch).mock.calls[0]!;
+		const headers = init?.headers as Record<string, string>;
+		const payload = JSON.parse(String(init?.body));
+		expect(payload).toMatchObject({ type: "webhook.test", data: { endpoint_id: "wh_1", test: true } });
+		expect(payload.delivery).toMatchObject({ attempt: 1, max_attempts: 1 });
+		expect(headers["x-phaseo-event-type"]).toBe("webhook.test");
+		expect(headers["x-phaseo-signature"]).toBe(await expectedSignature("whsec_test_secret", "1781712000", String(init?.body)));
 	});
 
 	it("builds the payload from the record refreshed after claiming delivery", async () => {

@@ -83,6 +83,24 @@ export async function rotateWebhookEndpointSecretAction(id: string) {
 	return result;
 }
 
+export async function sendWebhookEndpointTestAction(id: string) {
+	if (!id) throw new Error("Missing webhook endpoint id");
+	const context = await account();
+	const result = await fetchAccountWebApi<{
+		ok: boolean;
+		event_id: string;
+		status_code: number | null;
+		error: string | null;
+	}>(`/api/account/settings/webhooks/${encodeURIComponent(id)}/test`, context.accessToken, {
+		method: "POST",
+		body: JSON.stringify({ workspaceId: context.workspaceId }),
+	});
+	if (!result.ok) {
+		throw new Error(result.error ?? (result.status_code ? `Destination returned HTTP ${result.status_code}` : "Test delivery failed"));
+	}
+	return result;
+}
+
 export async function deleteWebhookEndpointAction(id: string) {
 	if (!id) throw new Error("Missing webhook endpoint id");
 	const context = await account();

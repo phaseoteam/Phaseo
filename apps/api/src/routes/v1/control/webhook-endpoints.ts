@@ -15,6 +15,7 @@ import {
 import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
 import { requireCapability, requireOAuthWorkspaceRole, type ManagementRouteAuth } from "./route-helpers";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
+import { sendWebhookTestEvent } from "@core/async-notifications";
 
 const app = new Hono<Env>();
 const PAGE_SIZE = 100;
@@ -319,6 +320,32 @@ app.post("/:id/rotate-secret", async (c) => {
 	return json({
 		...toPublicWebhookEndpoint(data as Record<string, unknown>),
 		signing_secret: signingSecret,
+	});
+});
+
+app.post("/:id/test", async (c) => {
+	const auth = readAuthContext(c.get("ctx"));
+	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_WRITE);
+	if (permissionError) return permissionError;
+	if (!auth.workspaceId) return validationError("workspace_id_required");
+	const endpointId = c.req.param("id");
+	const result = await sendWebhookTestEvent({ workspaceId: auth.workspaceId, endpointId });
+	if (!result) return notFound();
+	await recordWorkspaceAuditEvent(getSupabaseAdmin(), {
+		workspaceId: auth.workspaceId,
+		actorUserId: auth.userId,
+		action: "webhook_endpoint.tested",
+		targetType: "webhook_endpoint",
+		targetId: endpointId,
+		metadata: { delivered: result.ok, responseStatus: result.statusCode },
+		requestId: auth.requestId,
+	});
+	return json({
+		ok: result.ok,
+		event_id: result.eventId,
+		status_code: result.statusCode,
+		error: result.errorMessage,
+		response_body_preview: result.bodyPreview,
 	});
 });
 
