@@ -2,12 +2,27 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { canUpgradeCookieAuth } from './cookieAuthRequest'
 
+const ACTIVE_WORKSPACE_COOKIE_NAME = 'activeWorkspaceId'
+const ACTIVE_WORKSPACE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
+
 export async function updateSession(request: NextRequest) {
     const forwardedHeaders = new Headers(request.headers)
-    let supabaseResponse = NextResponse.next({
-        request: { headers: forwardedHeaders },
-    })
+    const responseCookies = new Map<string, {
+        name: string
+        value: string
+        options?: CookieOptions
+    }>()
     const pathname = request.nextUrl.pathname
+
+    const finishResponse = (response?: NextResponse) => {
+        const nextResponse = response ?? NextResponse.next({
+            request: { headers: forwardedHeaders },
+        })
+        responseCookies.forEach(({ name, value, options }) => {
+            nextResponse.cookies.set(name, value, options)
+        })
+        return nextResponse
+    }
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,13 +31,10 @@ export async function updateSession(request: NextRequest) {
             cookies: {
                 getAll: () => request.cookies.getAll(),
                 setAll: (cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>) => {
-                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-                    supabaseResponse = NextResponse.next({
-                        request: { headers: forwardedHeaders },
+                    cookiesToSet.forEach((cookie) => {
+                        request.cookies.set(cookie.name, cookie.value)
+                        responseCookies.set(cookie.name, cookie)
                     })
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
-                    )
                 },
             },
         }
@@ -36,12 +48,45 @@ export async function updateSession(request: NextRequest) {
         supabase.auth.getSession(),
     ])
 
+    if (user && !request.cookies.has(ACTIVE_WORKSPACE_COOKIE_NAME)) {
+        const { data: userRow, error } = await supabase
+            .from('users')
+            .select('default_workspace_id')
+            .eq('user_id', user.id)
+            .maybeSingle()
+        const defaultWorkspaceId = String(userRow?.default_workspace_id ?? '').trim()
+
+        if (error) {
+            // eslint-disable-next-line no-console
+            console.warn('[workspace-cookie] failed to resolve default workspace', {
+                userId: user.id,
+                error: error.message,
+            })
+        } else if (defaultWorkspaceId) {
+            const workspaceCookie = {
+                name: ACTIVE_WORKSPACE_COOKIE_NAME,
+                value: defaultWorkspaceId,
+                options: {
+                    httpOnly: true,
+                    path: '/',
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax' as const,
+                    maxAge: ACTIVE_WORKSPACE_COOKIE_MAX_AGE,
+                },
+            }
+            request.cookies.set(workspaceCookie.name, workspaceCookie.value)
+            responseCookies.set(workspaceCookie.name, workspaceCookie)
+        }
+    }
+
+    forwardedHeaders.set('cookie', request.cookies.toString())
+
     const isPrivateWebApiRequest =
         pathname.startsWith('/api/account/') ||
         pathname.startsWith('/api/chat/') ||
         pathname.startsWith('/api/internal/')
     if (isPrivateWebApiRequest) {
-        const activeWorkspaceId = request.cookies.get('activeWorkspaceId')?.value
+        const activeWorkspaceId = request.cookies.get(ACTIVE_WORKSPACE_COOKIE_NAME)?.value
         forwardedHeaders.delete('cookie')
         if (activeWorkspaceId) {
             forwardedHeaders.set(
@@ -56,12 +101,7 @@ export async function updateSession(request: NextRequest) {
         canUpgradeCookieAuth(request.headers, request.nextUrl.origin) &&
         !forwardedHeaders.has('authorization')
     ) {
-        const responseCookies = supabaseResponse.cookies.getAll()
         forwardedHeaders.set('authorization', `Bearer ${session.access_token}`)
-        supabaseResponse = NextResponse.next({
-            request: { headers: forwardedHeaders },
-        })
-        responseCookies.forEach((cookie) => supabaseResponse.cookies.set(cookie))
     }
 
     // Keep strict auth-gate behavior for settings pages only.
@@ -69,7 +109,7 @@ export async function updateSession(request: NextRequest) {
         const url = request.nextUrl.clone()
         url.pathname = '/sign-in'
         url.searchParams.set('returnUrl', request.nextUrl.pathname + request.nextUrl.search)
-        return NextResponse.redirect(url)
+        return finishResponse(NextResponse.redirect(url))
     }
 
     if (user) {
@@ -85,13 +125,13 @@ export async function updateSession(request: NextRequest) {
             aalData?.currentLevel === 'aal1' &&
             aalData?.nextLevel === 'aal2'
 
-        if (mustVerifyMfa) {
+        if (mustVerifyMfa && pathname !== '/auth/verify-mfa') {
             const url = request.nextUrl.clone()
             url.pathname = '/auth/verify-mfa'
             url.searchParams.set('returnUrl', pathname + request.nextUrl.search)
-            return NextResponse.redirect(url)
+            return finishResponse(NextResponse.redirect(url))
         }
     }
 
-    return supabaseResponse
+    return finishResponse()
 }

@@ -123,7 +123,6 @@ function classifyWorkspaceProviderFilterFailure(diagnostics: {
     activeGuardrailIds: string[];
     allowedApiModels: string[];
 	droppedByPrivacy?: unknown[];
-	accountPolicyApplied?: boolean;
     beforeCount: number;
 }): {
 	code: "validation_error" | "guardrail_blocked";
@@ -163,7 +162,7 @@ function classifyWorkspaceProviderFilterFailure(diagnostics: {
 			errorOrigin: "user",
 			operationalKind: "data_handling_policy_no_routes",
 			reason: "data_handling_policy_no_routes",
-			description: "No provider routes satisfy the account or workspace data-handling policy",
+			description: "No provider routes satisfy the workspace data-handling policy",
 			keyword: "no_routes_after_data_handling_policy",
 		};
 	}
@@ -175,7 +174,7 @@ function classifyWorkspaceProviderFilterFailure(diagnostics: {
             errorOrigin: "user",
 			operationalKind: "provider_restricted_by_policy",
 			reason: "provider_restricted_by_policy",
-			description: "All provider routes for this model are blocked by an account or workspace guardrail",
+			description: "All provider routes for this model are blocked by a workspace policy or guardrail",
 			keyword: "no_providers_after_route_access_policy",
         };
     }
@@ -1008,15 +1007,15 @@ export async function beforeRequest(
                 response: err("guardrail_blocked", {
                     model: resolvedModel || model,
 					reason: "model_restricted_by_policy",
-					description: `Model "${resolvedModel || model}" is blocked by an account or workspace guardrail`,
+					description: `Model "${resolvedModel || model}" is blocked by a workspace policy or guardrail`,
 					error_operational_kind: "model_restricted_by_policy",
 					guardrail: {
 						type: "route_access",
-						scope: workspacePolicyFailure.diagnostics.accountPolicyApplied ? "account_or_workspace" : "workspace",
+						scope: "workspace",
 						active_guardrail_ids: workspacePolicyFailure.diagnostics.activeGuardrailIds,
 					},
                     details: [{
-						message: `Model "${resolvedModel || model}" is blocked by an account or workspace guardrail`,
+						message: `Model "${resolvedModel || model}" is blocked by a workspace policy or guardrail`,
                         path: ["model"],
 						keyword: "model_restricted_by_policy",
                         params: workspacePolicyFailure.diagnostics,
@@ -1049,7 +1048,7 @@ export async function beforeRequest(
                 }],
 				guardrail: providerFilterClassification.code === "guardrail_blocked" ? {
 					type: providerFilterClassification.reason === "data_handling_policy_no_routes" ? "data_handling" : "route_access",
-					scope: workspacePolicyFailure.diagnostics.accountPolicyApplied ? "account_or_workspace" : "workspace",
+					scope: "workspace",
 					active_guardrail_ids: workspacePolicyFailure.diagnostics.activeGuardrailIds,
 				} : undefined,
                 routing_diagnostics: {

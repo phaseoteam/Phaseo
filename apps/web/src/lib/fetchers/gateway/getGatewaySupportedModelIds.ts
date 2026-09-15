@@ -27,5 +27,5 @@ export type GatewaySupportedModel = {
 	inputPricePerMillion?: number | null;
 	outputPricePerMillion?: number | null;
 	isAvailable: boolean;
-	chatBlockedReasons?: Array<{ source: "workspace" | "account" | "guardrail"; label: string; settingsHref: string }>;
+	chatBlockedReasons?: Array<{ source: "workspace" | "guardrail"; label: string; settingsHref: string }>;
 };

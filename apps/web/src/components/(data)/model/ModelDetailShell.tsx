@@ -20,7 +20,7 @@ import ModelStickyHeader from "./ModelStickyHeader";
 import { UseModelSheet } from "./UseModelSheet";
 import ModelStatusBanner from "./overview/ModelStatusBanner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import AccountPolicyNotice from "../AccountPolicyNotice";
+import WorkspacePolicyNotice from "../WorkspacePolicyNotice";
 import { resolveModelDescription } from "@/lib/models/modelDescription";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { ModelOverviewHeader } from "@/lib/fetchers/models/getModelOverviewHeader";
@@ -146,7 +146,7 @@ export default async function ModelDetailShell({
 			</Suspense>
 
 			<div className="container mx-auto px-4 py-8">
-				<AccountPolicyNotice kind="model" id={modelId} />
+				<WorkspacePolicyNotice kind="model" id={modelId} />
 				<Suspense fallback={<ModelStatusBanner status={header.status} className="mb-6" />}>
 					<ModelNotice modelId={modelId} includeHidden={includeHidden} status={header.status} />
 				</Suspense>

@@ -7,7 +7,7 @@ import { fetchFrontendAPIProviderHeader } from "@/lib/fetchers/frontend/fetchPub
 import { notFound } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import APIProviderEditButton from "./edit/APIProviderEditButton";
-import AccountPolicyNotice from "../AccountPolicyNotice";
+import WorkspacePolicyNotice from "../WorkspacePolicyNotice";
 import ModelPageToc, { type ModelPageTocItem } from "../model/ModelPageToc";
 import EntityStickyHeader from "../EntityStickyHeader";
 import { Button } from "@/components/ui/button";
@@ -77,7 +77,7 @@ export default async function APIProviderDetailShell({
 		<main className="flex flex-col">
 			<EntityStickyHeader kind="provider" id={apiProviderId} name={header.api_provider_name} observeId="provider-detail-primary-header" baseHref={`/api-providers/${apiProviderId}`} navigation={[]} />
 			<div className="container mx-auto px-4 py-6 md:py-8">
-				<AccountPolicyNotice kind="provider" id={apiProviderId} />
+				<WorkspacePolicyNotice kind="provider" id={apiProviderId} />
 				<div id="provider-detail-primary-header" className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div className="flex min-w-0 items-center gap-4">
 						<div className="relative flex size-14 shrink-0 items-center justify-center rounded-md border border-border/70 bg-card/40">

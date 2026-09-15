@@ -101,6 +101,7 @@ import {
 	PROVIDER_INSPECTOR_CHANGE_EVENT,
 	type ProviderInspectorChangeDetail,
 } from "@/components/(data)/model/pricing/providerInspectorSync";
+import type { WorkspacePolicyBlockedReason } from "@/lib/chat/effectivePolicy";
 
 const PROVIDER_STATUSES_DOCS_HREF =
 	"https://phaseo.app/docs/v1/guides/provider-statuses";
@@ -1851,6 +1852,7 @@ export default function ProviderCard({
 	comparisonProviders,
 	navigationProviders,
 	privacyIgnoredReasons,
+	workspacePolicyBlockedReasons,
 	runtimeStats,
 	runtimeStatsByServiceTier,
 	routingStatus,
@@ -1870,6 +1872,7 @@ export default function ProviderCard({
 	comparisonProviders: ProviderPricing[];
 	navigationProviders: ProviderPricing[];
 	privacyIgnoredReasons?: string[] | null;
+	workspacePolicyBlockedReasons?: WorkspacePolicyBlockedReason[] | null;
 	runtimeStats: ProviderRuntimeStats | null;
 	runtimeStatsByServiceTier?: Record<string, ProviderRuntimeStats | null>;
 	routingStatus: ProviderRoutingStatus | null;
@@ -2142,7 +2145,7 @@ export default function ProviderCard({
 	}));
 	const isWorkspacePrivacyBlocked = (privacyIgnoredReasons ?? []).some((reason) =>
 		reason.includes("workspace") || reason.includes("ZDR-only"),
-	);
+	) || Boolean(workspacePolicyBlockedReasons?.length);
 
 	const isFreePlan = selectedPlan === "free";
 	const imageInputs = sec.mediaInputs?.filter((r) => r.mod === "image") ?? [];
@@ -3202,6 +3205,7 @@ export default function ProviderCard({
 			value: provider.provider.default_data_regions?.join(", ") || "Unknown",
 		},
 	];
+	const canExpandServiceTiers = typeof onToggleServiceTiers === "function";
 
 	return (
 		<>
@@ -3327,7 +3331,7 @@ export default function ProviderCard({
 										</div>
 									</HoverCardContent>
 								</HoverCard>
-								{privacyIgnoredReasons?.length ? (
+								{privacyIgnoredReasons?.length || workspacePolicyBlockedReasons?.length ? (
 									<HoverCard openDelay={120} closeDelay={80}>
 										<HoverCardTrigger asChild>
 											<button
@@ -3344,6 +3348,12 @@ export default function ProviderCard({
 												{isWorkspacePrivacyBlocked ? "Workspace privacy prevents API and Chat traffic from using this provider." : "An assigned guardrail prevents this request from using the provider."}
 											</p>
 											<div className="mt-2 space-y-1 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
+												{workspacePolicyBlockedReasons?.map((reason) => (
+													<div key={`${reason.source}:${reason.settingsHref}`} className="space-y-1">
+														<p className="text-muted-foreground">{reason.label}</p>
+														<Link href={reason.settingsHref} className="inline-flex text-[11px] font-medium text-primary hover:underline">Review policy</Link>
+													</div>
+												))}
 												{privacyReasonMeta.map(({ reason, meta }) => (
 													<div key={reason} className="space-y-1">
 														<p className="text-muted-foreground">

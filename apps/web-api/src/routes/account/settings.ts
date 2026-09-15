@@ -22,7 +22,6 @@ import { accountSettingsWebhooksRouter } from "./settings-webhooks";
 import { accountSettingsDataContributionRouter } from "./settings-data-contribution";
 import { callDataContributionGateway } from "./settings-data-contribution";
 import { accountSettingsDynamicRoutesRouter } from "./settings-dynamic-routes";
-import { accountSettingsAccountPrivacyRouter } from "./settings-account-privacy";
 import { accountSettingsScimRouter } from "./settings-scim";
 import { accountSettingsProviderOnboardingRouter } from "./settings-provider-onboarding";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
@@ -132,7 +131,6 @@ accountSettingsRouter.route("/", accountSettingsBroadcastRouter);
 accountSettingsRouter.route("/", accountSettingsWebhooksRouter);
 accountSettingsRouter.route("/", accountSettingsDataContributionRouter);
 accountSettingsRouter.route("/", accountSettingsDynamicRoutesRouter);
-accountSettingsRouter.route("/", accountSettingsAccountPrivacyRouter);
 accountSettingsRouter.route("/", accountSettingsScimRouter);
 accountSettingsRouter.route("/", accountSettingsProviderOnboardingRouter);
 
