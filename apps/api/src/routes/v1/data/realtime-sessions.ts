@@ -455,7 +455,7 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			provider: selectedProvider,
 			voice: parsed.data.voice,
 			instructions: parsed.data.instructions,
-			thinkingLevel: parsed.data.thinking_level,
+			thinkingLevel: "thinking_level" in parsed.data ? parsed.data.thinking_level : undefined,
 			source,
 			metadata: parsed.data.metadata,
 			otelTraceContext: parseW3cTraceContext(
