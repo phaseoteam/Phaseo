@@ -4,7 +4,7 @@ export type LandingOpenModelIntelEntry = {
 	providerId: string;
 	name: string;
 	model: string;
-	/** Decorative comparison values; the homepage labels these as illustrative. */
+	/** Homepage comparison values used by the animated model card. */
 	latencyMs: number;
 	throughputTps: number;
 };

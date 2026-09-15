@@ -83,7 +83,7 @@ describe("buildHomeModelPrices", () => {
 });
 
 describe("BETA_OPEN_MODEL_INTEL", () => {
-	it("keeps distinct illustrative metrics for each animated model card", () => {
+	it("keeps distinct metrics for each animated model card", () => {
 		const metricPairs = BETA_OPEN_MODEL_INTEL.map(
 			({ latencyMs, throughputTps }) => `${latencyMs}:${throughputTps}`,
 		);
