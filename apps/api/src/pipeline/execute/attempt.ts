@@ -31,11 +31,12 @@ export async function attemptProvider(
     const attemptErrors: Array<Record<string, unknown>> = ((ctx as any).attemptErrors ??= []);
     const candidate = choice.candidate;
     const adapter = candidate.adapter;
+    const healthProvider = candidate.privateEndpoint ? choice.health.provider : adapter.name;
 
     // Admission via breaker using the routing snapshot (no extra read)
     const admission = await admitThroughBreaker(
         ctx.endpoint,
-        adapter.name,
+        healthProvider,
         baseModel,
         ctx.workspaceId,
         ctx.requestId,
@@ -52,6 +53,7 @@ export async function attemptProvider(
     }
 
     const isProbe = admission === "probe";
+    const healthObservation = { observationId: crypto.randomUUID(), startedAt: Date.now(), probe: isProbe };
 
     // Ensure billing is configured (pricing not used in scoring)
     let pricingCard = candidate.pricingCard ?? null;
@@ -81,7 +83,7 @@ export async function attemptProvider(
     delete (ctx.meta as Record<string, unknown>).latency_ms;
     delete (ctx.meta as Record<string, unknown>).generation_ms;
 
-    await onCallStart(ctx.endpoint, adapter.name, baseModel);
+    await onCallStart(ctx.endpoint, healthProvider, baseModel);
 
     if (!timing.internal.adapterMarked) {
         timing.timer.mark("adapter_start");
@@ -181,28 +183,32 @@ export async function attemptProvider(
 
             const healthImpact = classifyProviderHealthImpact({
                 upstreamStatus: r.upstream.status,
+				credentialSource: r.keySource ?? meta.keySource,
 				finishReason: (r.ir as any)?.choices?.[0]?.finishReason ?? r.bill?.finish_reason ?? null,
             });
-            await onCallEnd(ctx.endpoint, {
-                provider: adapter.name,
+            const healthUpdate = await onCallEnd(ctx.endpoint, {
+                ...healthObservation,
+                provider: healthProvider,
                 model: baseModel,
                 ok: r.upstream.ok,
+                upstreamStatus: r.upstream.status,
                 healthImpact,
                 latency_ms: ctx.meta.latency_ms ?? duration,
                 generation_ms: generationMs,
                 tokens_in: tokensIn,
                 tokens_out: tokensOut,
             });
-            if (isProbe && healthImpact !== "neutral") {
-				await reportProbeResult(ctx.endpoint, adapter.name, baseModel, healthImpact === "success");
-            } else if (healthImpact === "failure") {
-                await maybeOpenOnRecentErrors(ctx.endpoint, adapter.name, baseModel);
+            if (isProbe && healthImpact !== "neutral" && !healthUpdate.rateLimited) {
+				await reportProbeResult(ctx.endpoint, healthProvider, baseModel, healthImpact === "success");
+            } else if (healthImpact === "failure" && !healthUpdate.rateLimited) {
+                await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
             }
         }
 
         return {
             ok: true,
             result: {
+                healthContext: { ...healthObservation, isProbe, provider: healthProvider, model: baseModel },
                 kind: r.kind,
                 upstream: r.upstream,
                 stream: r.kind === "stream" ? (r.stream ?? r.upstream.body ?? null) : null,
@@ -262,7 +268,8 @@ export async function attemptProvider(
             errorMessage: e instanceof Error ? e.message : String(e),
         });
         await onCallEnd(ctx.endpoint, {
-            provider: adapter.name,
+            ...healthObservation,
+            provider: healthProvider,
             model: baseModel,
             ok: false,
             healthImpact: errorHealthImpact,
@@ -271,15 +278,14 @@ export async function attemptProvider(
         });
 
         if (isProbe && errorHealthImpact !== "neutral") {
-			await reportProbeResult(ctx.endpoint, adapter.name, baseModel, errorHealthImpact === "success");
+			await reportProbeResult(ctx.endpoint, healthProvider, baseModel, errorHealthImpact === "success");
         } else if (errorHealthImpact === "failure") {
-            await maybeOpenOnRecentErrors(ctx.endpoint, adapter.name, baseModel);
+            await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
         }
 
         return { ok: false, error: e };
     }
 }
-
 
 
 

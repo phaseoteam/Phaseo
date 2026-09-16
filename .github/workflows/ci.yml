@@ -42,7 +42,7 @@ jobs:
                   persist-credentials: false
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -155,7 +155,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -337,7 +337,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -383,7 +383,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -436,7 +436,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -464,7 +464,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -511,7 +511,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -580,7 +580,7 @@ jobs:
                   python -m pip install -e packages/sdk/sdk-py
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -609,7 +609,7 @@ jobs:
                   persist-credentials: false
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -641,7 +641,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -672,7 +672,7 @@ jobs:
 
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c
+              uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
               with:
                   distribution: "temurin"
                   java-version: "17"
@@ -740,7 +740,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -815,15 +815,16 @@ jobs:
                     exit 1
                   fi
 
-            - name: Load global gateway secrets from Infisical
-              if: matrix.target == 'api'
+            - name: Load Doubleword provider key from Infisical
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us'
               uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /provider-keys
+                  secret-name: DOUBLEWORD_API_KEY
 
             - name: Deploy API app to Cloudflare
               if: matrix.target == 'api'
@@ -890,7 +891,7 @@ jobs:
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -930,7 +931,7 @@ jobs:
                   php-version: "8.2"
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c
+              uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
               with:
                   distribution: temurin
                   java-version: "17"
@@ -993,7 +994,7 @@ jobs:
                   private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
               with:
                   version: 10.33.0
                   run_install: false
@@ -1050,7 +1051,7 @@ jobs:
 
             - name: Create release PR / publish
               id: changesets
-              uses: changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1
+              uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51
               with:
                   version-script: pnpm run changeset:version
                   publish-script: pnpm run changeset:publish

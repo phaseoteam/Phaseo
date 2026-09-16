@@ -1,3 +1,4 @@
+-- phaseo:allow-production-history-backfill reason: Restore this already-applied production migration from supabase_migrations.schema_migrations so deployment history matches main.
 -- Promote provider-catalog routes after their provider-selected release time.
 -- Five-minute cadence bounds database-side activation delay without relying on
 -- an application deployment or cache purge.

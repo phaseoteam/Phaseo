@@ -132,6 +132,20 @@ async function flushBackground(): Promise<void> {
 }
 
 describe("authenticate hot-path caching", () => {
+    it("reuses imported pepper keys while still verifying every supplied secret", async () => {
+        const secret = "secret_crypto_cache";
+        runtime.dbRow.value = { id: "crypto", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        const spy = vi.spyOn(crypto.subtle, "importKey");
+        try {
+            const { authenticate } = await import("./auth");
+            expect((await authenticate(buildRequest(`phaseo_v1_sk_CRYPTO_${secret}`))).ok).toBe(true);
+            expect((await authenticate(buildRequest(`phaseo_v1_sk_CRYPTO_${secret}`))).ok).toBe(true);
+            const imports = spy.mock.calls.length;
+            expect((await authenticate(buildRequest("phaseo_v1_sk_CRYPTO_wrong"))).ok).toBe(false);
+            expect(spy.mock.calls.length).toBe(imports);
+            expect(imports).toBe(1);
+        } finally { spy.mockRestore(); await flushBackground(); }
+    });
     it("authenticates and warms L1 while the versioned KV write is pending", async () => {
         const kid = "KIDSLOWWRITE";
         const secret = "secret_slow_write";

@@ -238,7 +238,7 @@ type DynamicContextCacheEntry = Pick<
 };
 type StaticContextCacheEntry = Pick<
 	GatewayContextData,
-	"workspaceId" | "resolvedModel" | "preset" | "providers" | "pricing" | "testingMode"
+	"workspaceId" | "resolvedModel" | "preset" | "providers" | "pricing" | "testingMode" | "publicCatalogExpiresAt"
 >;
 type CreditContextCacheEntry = Pick<GatewayContextData, "workspaceId" | "credit" | "teamEnrichment">;
 
@@ -253,6 +253,8 @@ export function isStaticContextLike(value: unknown): value is StaticContextCache
 	const ctx = value as StaticContextCacheEntry;
 	return Boolean(
 		ctx.workspaceId &&
+			(ctx.publicCatalogExpiresAt === undefined ||
+                (Number.isFinite(ctx.publicCatalogExpiresAt) && ctx.publicCatalogExpiresAt > Date.now())) &&
 			Array.isArray(ctx.providers) &&
 			ctx.pricing &&
 			typeof ctx.pricing === "object",
@@ -282,6 +284,7 @@ export function mergeCachedContext(args: {
 		workspaceId: args.dynamic.workspaceId,
 		endpoint: args.endpoint as any,
 		resolvedModel: args.static.resolvedModel ?? null,
+        publicCatalogExpiresAt: args.static.publicCatalogExpiresAt,
 		preset: args.static.preset ?? null,
 		key: args.dynamic.key,
 		keyLimit: args.dynamic.keyLimit,
@@ -315,6 +318,7 @@ export function splitContextForCache(value: GatewayContextData): {
 		static: {
 			workspaceId: value.workspaceId,
 			resolvedModel: value.resolvedModel ?? null,
+            publicCatalogExpiresAt: value.publicCatalogExpiresAt,
 			preset: value.preset ?? null,
 			providers: value.providers ?? [],
 			pricing: value.pricing ?? {},

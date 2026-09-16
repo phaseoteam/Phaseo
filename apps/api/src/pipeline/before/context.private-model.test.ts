@@ -7,15 +7,16 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("@/runtime/env", () => ({
+    getBindingsIfConfigured: () => null,
 	dispatchBackground: vi.fn(),
-	getCache: () => ({ get: vi.fn(), put: vi.fn() }),
+	getCache: () => ({ get: vi.fn(), put: vi.fn(async () => {}), delete: vi.fn(async () => {}) }),
 	getSupabaseAdmin: () => ({
 		from: () => {
 			const query: any = {
 				select: () => query,
 				eq: (column: string, value: unknown) => { state.eqCalls.push([column, value]); return query; },
 				maybeSingle: async () => ({ data: state.row, error: null }),
-				limit: async () => ({ data: state.indexRows, count: state.indexRows.length, error: null }),
+				limit: async () => ({ data: state.indexRows.length ? [structuredClone(state.row)] : [], count: state.indexRows.length, error: null }),
 			};
 			return query;
 		},
@@ -60,14 +61,19 @@ describe("workspace private model context", () => {
 		expect(await loadWorkspacePrivateModel({ ...args, disableCache: true })).not.toBeNull();
 	});
 
-	it("fetches routing and credentials fresh on every positive index match", async () => {
+	it("caches encrypted route data until invalidation and decrypts per use", async () => {
 		state.indexRows = [{ model_id: state.row.model_id }];
 		const { loadWorkspacePrivateModel } = await import("./context");
 		const args = { workspaceId: state.row.workspace_id, model: state.row.model_id, apiKeyId: "test-key", endpoint: "text.generate" };
 		expect((await loadWorkspacePrivateModel(args))?.provider.providerModelSlug).toBe("legal-v4");
 		state.row.upstream_model_id = "legal-v5";
+        expect((await loadWorkspacePrivateModel(args))?.provider.providerModelSlug).toBe("legal-v4");
+        const { invalidatePrivateRoutes } = await import("./privateModelCache");
+        await invalidatePrivateRoutes(args.workspaceId);
 		expect((await loadWorkspacePrivateModel(args))?.provider.providerModelSlug).toBe("legal-v5");
 		state.row = null;
+        state.indexRows = [];
+        await invalidatePrivateRoutes(args.workspaceId);
 		expect(await loadWorkspacePrivateModel(args)).toBeNull();
 	});
 

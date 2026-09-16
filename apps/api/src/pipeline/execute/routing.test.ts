@@ -151,6 +151,17 @@ describe("routeProviders testing mode", () => {
 		readStickyRoutingMock.mockReturnValue(null);
 	});
 
+    it("isolates private endpoint health by workspace and route despite a shared adapter", async () => {
+        const privateRoute = { ...candidate({ providerId: "private-model" }), privateEndpoint: { baseUrl: "https://customer.example/v1" }, byokMeta: [{ id: "route-1" }] };
+        const context = { endpoint: "responses" as const, model: "m", workspaceId: "workspace-a", requestId: "isolation" };
+        const first = await routeProviders([privateRoute], context);
+        const second = await routeProviders([privateRoute], { ...context, workspaceId: "workspace-b" });
+        const third = await routeProviders([{ ...privateRoute, byokMeta: [{ id: "route-2" }] }], context);
+        expect(first.ranked[0].health.provider).toBe("private-model:workspace-a:route-1");
+        expect(second.ranked[0].health.provider).toBe("private-model:workspace-b:route-1");
+        expect(third.ranked[0].health.provider).toBe("private-model:workspace-a:route-2");
+    });
+
 	it("keeps beta providers gated on public traffic", async () => {
 		const result = await routeProviders(
 			[
@@ -172,6 +183,7 @@ describe("routeProviders testing mode", () => {
 		const statusStage = result.diagnostics.filterStages.find((stage) => stage.stage === "status_gate");
 		expect(statusStage?.afterCount).toBe(1);
 	});
+
 
 	it("bypasses rollout gating when testing mode is enabled", async () => {
 		const result = await routeProviders(
@@ -592,7 +604,7 @@ describe("routeProviders testing mode", () => {
 		expect(result.diagnostics.routingMode).toBe("price");
 	});
 
-	it("balances price with latency and throughput in default routing", async () => {
+	it("keeps price dominant over latency and throughput in default routing", async () => {
 		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				lat_ewma_60s: 250,
@@ -626,13 +638,15 @@ describe("routeProviders testing mode", () => {
 			},
 		);
 
-		expect(result.ranked.map((entry) => entry.candidate.providerId)[0]).toBe("openai");
+		const cheap = result.ranked.find(entry => entry.candidate.providerId === "anthropic")!;
+		const expensive = result.ranked.find(entry => entry.candidate.providerId === "openai")!;
+		expect(cheap.score / expensive.score).toBeGreaterThan(13);
 		expect(result.diagnostics.routingMode).toBe("balanced");
 		expect(result.diagnostics.rankedProviders[0]?.scoreFactors.priceScore).toBeGreaterThan(0);
 		expect(result.diagnostics.rankedProviders[0]?.scoreFactors.reliabilitySample).toEqual(expect.any(Number));
 		expect(result.diagnostics.algorithm).toEqual(expect.objectContaining({
-			version: "provider-score-v3",
-			selectionMethod: "score_sort",
+            version: "provider-score-v6",
+			selectionMethod: "weighted_order",
 			seed: expect.any(Number),
 			poolBounds: expect.objectContaining({
 				comparablePriceMin: expect.any(Number),
@@ -645,17 +659,33 @@ describe("routeProviders testing mode", () => {
 				priceMeters: expect.arrayContaining(["input_text_tokens"]),
 			}),
 			calculation: expect.objectContaining({
-				formula: "balanced_weighted_additive",
+				formula: "price_weighted_performance",
 				finalScore: expect.any(Number),
 			}),
 			contributions: expect.objectContaining({
-				reliability: expect.any(Number),
 				latency: expect.any(Number),
 				throughput: expect.any(Number),
 				price: expect.any(Number),
 			}),
 		}));
 	});
+
+	it("shares equal-price traffic across twenty providers with only a small performance preference", async () => {
+        const pool = Array.from({ length: 20 }, (_, i) => candidate({ providerId: `provider-${i}`, pricingCard: textPricingCard(0.00001, 0.000005) }));
+        readHealthManyMock.mockImplementation(() => Object.fromEntries(pool.map((p, i) => [p.providerId, health(p.providerId, { tp_ewma_60s: i === 0 ? 110 : 100, lat_ewma_60s: 200 })])));
+        const counts = Array<number>(20).fill(0);
+        for (let i = 0; i < 10_000; i++) {
+            const result = await routeProviders(pool, { endpoint: "responses", model: "m", workspaceId: "test", requestId: `distribution-${i}`, body: {} });
+            counts[Number(result.ranked[0].candidate.providerId.split("-")[1])]++;
+            if (i === 0) {
+                const fast = result.ranked.find(p => p.candidate.providerId === "provider-0")!;
+                const normal = result.ranked.find(p => p.candidate.providerId === "provider-1")!;
+                expect(fast.score).toBeGreaterThan(normal.score);
+                expect(fast.score / normal.score).toBeLessThan(1.01);
+            }
+        }
+        for (const count of counts) { expect(count).toBeGreaterThan(400); expect(count).toBeLessThan(600); }
+    });
 
 	it("prefers a more reliable provider when the cheapest provider is repeatedly failing", async () => {
 		readHealthManyMock.mockImplementation(() => ({

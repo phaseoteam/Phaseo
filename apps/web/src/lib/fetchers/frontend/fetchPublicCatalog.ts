@@ -653,8 +653,11 @@ export async function fetchFrontendBenchmarks(
 export async function fetchFrontendBenchmark(
 	benchmarkId: string,
 ): Promise<BenchmarkPage | null> {
+	// Epoch ECI was initially cached with inverted score ordering. Keep the
+	// corrected cache namespace explicit while older edge entries expire.
+	const cacheRevision = benchmarkId === "epoch-capabilities-index" ? "?revision=2" : "";
 	const payload = await fetchOptionalPublicWebApi<{ benchmark: BenchmarkPage }>(
-		`/api/_web/benchmarks/${encodeURIComponent(benchmarkId)}`,
+		`/api/_web/benchmarks/${encodeURIComponent(benchmarkId)}${cacheRevision}`,
 	);
 	return payload?.benchmark ?? null;
 }

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { ArtificialAnalysisOverview } from "./ArtificialAnalysisOverview";
 import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
+import { EpochCapabilitiesOverview } from "./EpochCapabilitiesOverview";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -127,6 +129,7 @@ export default function BenchmarkOverview({
 	artificialAnalysisRankings?: PublicBenchmarkRanking[];
 }) {
 	if (isArtificialAnalysisBenchmark(benchmark.id)) return <ArtificialAnalysisOverview benchmark={benchmark} rankings={artificialAnalysisRankings} />;
+	if (isEpochCapabilitiesIndex(benchmark.id)) return <EpochCapabilitiesOverview benchmark={benchmark} />;
 	const results = benchmark.results ?? [];
 
 	const orderHints = results

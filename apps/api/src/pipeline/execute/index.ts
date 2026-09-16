@@ -381,6 +381,7 @@ function recordProviderAttempt(
  * Similar to RequestResult but works with IR
  */
 export type IRRequestResult = {
+	healthContext?: { observationId: string; startedAt: number; probe: boolean; isProbe: boolean; provider: string; model: string };
 	kind: "completed" | "stream";
 	allowEmptySuccess?: boolean;
 	ir?:
@@ -619,6 +620,7 @@ async function attemptProviderWithIR(
 
 	// Extract candidate from RoutedCandidate
 	const candidate = routed.candidate;
+    const healthProvider = candidate.privateEndpoint ? routed.health.provider : candidate.providerId;
 	const credentialLog = {
 		started_at_unix_ms: attemptStartedAtEpochMs,
 		credential_phase: credentialPhase,
@@ -633,7 +635,7 @@ async function attemptProviderWithIR(
 	const admission = await timing.timer.span(`${attemptPrefix}_breaker`, () =>
 		admitThroughBreaker(
 			ctx.endpoint,
-			candidate.providerId,
+			healthProvider,
 			baseModel,
 			ctx.workspaceId,
 			ctx.requestId,
@@ -664,6 +666,7 @@ async function attemptProviderWithIR(
 		return { ok: false, skip: "blocked" };
 	}
 	const isProbe = admission === "probe";
+	const healthObservation = { observationId: crypto.randomUUID(), startedAt: attemptStartedAtEpochMs, probe: isProbe };
 	const providerModelSlug = typeof candidate.providerModelSlug === "string"
 		? candidate.providerModelSlug.trim()
 		: candidate.providerModelSlug;
@@ -712,7 +715,7 @@ async function attemptProviderWithIR(
 
 	// Execute using provider-capability executor
 	let t0 = performance.now();
-	const upstreamTracker = createUpstreamTimingTracker();
+	const upstreamTracker = createUpstreamTimingTracker(ctx.gatewayTimingTrace);
 	let providerRateLimitReservation: ProviderTokenReservation | null = null;
 	try {
 		timing.timer.mark("adapter_start");
@@ -722,7 +725,7 @@ async function attemptProviderWithIR(
 		}
 		// Health accounting is advisory and must not delay the upstream request.
 		dispatchProviderHealthBackground(() =>
-			onCallStart(ctx.endpoint, candidate.providerId, baseModel),
+			onCallStart(ctx.endpoint, healthProvider, baseModel),
 		);
 		t0 = performance.now();
 
@@ -917,7 +920,7 @@ async function attemptProviderWithIR(
 		if (reservationDenial && upstreamTiming.upstreamRequestCount === 0) {
 			await releaseManagedProviderReservation(providerRateLimitReservation);
 			dispatchProviderHealthBackground(() => onCallEnd(ctx.endpoint, {
-				provider: candidate.providerId, model: baseModel, ok: false,
+				provider: healthProvider, model: baseModel, ok: false,
 				healthImpact: "neutral", latency_ms: Math.round(performance.now() - attemptStartedAt),
 			}));
 			return { ok: false, response: new Response(JSON.stringify({
@@ -1040,23 +1043,26 @@ async function attemptProviderWithIR(
 			const completedGenerationMs = ctx.meta.generation_ms ?? 0;
 			const healthImpact = classifyProviderHealthImpact({
 				upstreamStatus: executorResult.upstream.status,
+				credentialSource: executorResult.keySource ?? credentialLog.key_source,
 				finishReason: (executorResult.ir as any)?.choices?.[0]?.finishReason ?? executorResult.bill?.finish_reason ?? null,
 			});
 			dispatchProviderHealthBackground(async () => {
-				await onCallEnd(ctx.endpoint, {
-					provider: candidate.providerId,
+				const healthUpdate = await onCallEnd(ctx.endpoint, {
+					...healthObservation,
+					provider: healthProvider,
 					model: baseModel,
 					ok: executorResult.upstream.ok,
+					upstreamStatus: executorResult.upstream.status,
 					healthImpact,
 					latency_ms: completedLatencyMs,
 					generation_ms: completedGenerationMs,
 					tokens_in: tokensIn,
 					tokens_out: tokensOut,
 				});
-				if (isProbe && healthImpact !== "neutral") {
-					await reportProbeResult(ctx.endpoint, candidate.providerId, baseModel, healthImpact === "success");
-				} else if (healthImpact === "failure") {
-					await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
+				if (isProbe && healthImpact !== "neutral" && !healthUpdate?.rateLimited) {
+					await reportProbeResult(ctx.endpoint, healthProvider, baseModel, healthImpact === "success");
+				} else if (healthImpact === "failure" && !healthUpdate?.rateLimited) {
+					await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
 				}
 			});
 		}
@@ -1176,8 +1182,9 @@ async function attemptProviderWithIR(
 			mappedRequest: executorResult.mappedRequest,
 			rawResponse: executorResult.rawResponse,
 		};
-		(result as any).healthContext = {
-			provider: candidate.providerId,
+		result.healthContext = {
+			...healthObservation,
+			provider: healthProvider,
 			model: baseModel,
 			isProbe,
 		};
@@ -1276,22 +1283,27 @@ async function attemptProviderWithIR(
 			was_probe: isProbe,
 		});
 		const errorHealthImpact = classifyProviderHealthImpact({
+			credentialSource: credentialLog.key_source,
+			failureOrigin: upstreamTracker?.isProviderTransportFailure?.(err) ? "provider" : undefined,
 			errorCode: typeof (err as any)?.code === "string" ? (err as any).code : null,
 			errorMessage: message,
 		});
 		dispatchProviderHealthBackground(async () => {
-			await onCallEnd(ctx.endpoint, {
-				provider: candidate.providerId,
+			const healthUpdate = await onCallEnd(ctx.endpoint, {
+				...healthObservation,
+				provider: healthProvider,
 				model: baseModel,
 				ok: false,
 				healthImpact: errorHealthImpact,
+				errorCode: typeof (err as any)?.code === "string" ? (err as any).code : null,
+				errorMessage: message,
 				latency_ms: Math.round(performance.now() - attemptStartedAt),
 				generation_ms: ctx.meta.generation_ms ?? Math.round(performance.now() - t0),
 			});
-			if (isProbe && errorHealthImpact !== "neutral") {
-				await reportProbeResult(ctx.endpoint, candidate.providerId, baseModel, errorHealthImpact === "success");
-			} else if (errorHealthImpact === "failure") {
-				await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
+			if (isProbe && errorHealthImpact !== "neutral" && !healthUpdate?.rateLimited) {
+				await reportProbeResult(ctx.endpoint, healthProvider, baseModel, errorHealthImpact === "success");
+			} else if (errorHealthImpact === "failure" && !healthUpdate?.rateLimited) {
+				await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
 			}
 		});
 		return { ok: false, stopFallback: ctx.capability === "video.generate" };

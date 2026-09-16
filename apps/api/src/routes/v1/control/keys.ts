@@ -1,3 +1,4 @@
+import { invalidatePrivateRoutes } from "@/pipeline/before/privateModelCache";
 // Purpose: Key control-plane routes for current-key inspection and API key lifecycle operations.
 // Why: Splits ordinary data-plane key auth from elevated workspace key management.
 // How: Uses gateway-key auth for /key-like introspection and management-key auth for CRUD.
@@ -1015,6 +1016,7 @@ async function handleInvalidateKey(req: Request) {
 		}
 
 		await invalidateKeyCache({ id: data.id, kid: data.kid ?? null });
+		await invalidatePrivateRoutes(data.workspace_id);
 		if (auth.ok) await auditApiKey(auth.value, "api_key.cache_invalidated", { id: data.id, name: null, prefix: null });
 
 		return json(

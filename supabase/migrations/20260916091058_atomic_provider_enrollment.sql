@@ -1,3 +1,4 @@
+-- phaseo:allow-production-history-backfill reason: Restore this already-applied production migration from supabase_migrations.schema_migrations so deployment history matches main.
 -- Commit provider profile, catalog source, submission, ownership link and
 -- ownership-proof consumption as one transaction. Validation and remote
 -- catalog fetching happen before this service-role-only boundary.
@@ -135,4 +136,5 @@ end;
 $$;
 
 revoke all on function public.complete_provider_enrollment(uuid,text,text,jsonb,text,text,text,text,text,jsonb,jsonb,integer,text,text,uuid,text,text,text) from public, anon, authenticated;
+
 grant execute on function public.complete_provider_enrollment(uuid,text,text,jsonb,text,text,text,text,text,jsonb,jsonb,integer,text,text,uuid,text,text,text) to service_role;

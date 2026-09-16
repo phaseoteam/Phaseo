@@ -330,7 +330,10 @@ export async function finalizeRequest(args: {
 
     // 2) Handle streaming response
     if (ctx.stream) {
-        const card = await loadProviderPricing(ctx, result);
+        ctx.gatewayTimingTrace?.mark("stream_pricing_start");
+        let card: Awaited<ReturnType<typeof loadProviderPricing>>;
+        try { card = await loadProviderPricing(ctx, result); }
+        finally { ctx.gatewayTimingTrace?.mark("stream_pricing_end"); }
         return await handleStreamResponse(ctx, result, card, args.timingHeader);
     }
 
@@ -617,7 +620,6 @@ async function handleNonStreamResponse(
     const responseStatus = result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
 }
-
 
 
 

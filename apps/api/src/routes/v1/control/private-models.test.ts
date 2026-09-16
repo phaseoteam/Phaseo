@@ -6,6 +6,7 @@ const state = vi.hoisted(() => ({
 	inserted: null as Record<string, unknown> | null,
 	eqCalls: [] as Array<[string, unknown]>,
 	audit: vi.fn(async () => true),
+    cacheDelete: vi.fn(async (_key: string) => undefined),
 }));
 
 function query(table?: string) {
@@ -18,6 +19,7 @@ function query(table?: string) {
 		order: () => Promise.resolve({ data: state.rows, error: null }),
 		insert: (payload: Record<string, unknown>) => { mutation = "insert"; state.inserted = payload; return q; },
 		update: (payload: Record<string, unknown>) => { mutation = "update"; state.inserted = payload; return q; },
+        delete: () => q,
 		maybeSingle: async () => table === "workspaces"
 			? { data: { slug: "acme" }, error: null }
 			: mutation === "insert" || mutation === "update"
@@ -28,7 +30,7 @@ function query(table?: string) {
 }
 
 vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: vi.fn(async () => state.auth) }));
-vi.mock("@/runtime/env", () => ({ getSupabaseAdmin: () => ({ from: (table: string) => query(table) }) }));
+vi.mock("@/runtime/env", () => ({ getSupabaseAdmin: () => ({ from: (table: string) => query(table) }), getCache: () => ({ delete: state.cacheDelete }) }));
 vi.mock("@/core/provider-credentials", () => ({
 	encryptProviderCredential: vi.fn(async () => ({
 		enc_value: "encrypted", enc_iv: "iv", enc_tag: "tag", key_version: 1,
@@ -54,6 +56,7 @@ describe("private model management", () => {
 		state.inserted = null;
 		state.eqCalls = [];
 		state.audit.mockClear();
+        state.cacheDelete.mockReset();
 		vi.resetModules();
 	});
 
@@ -79,6 +82,7 @@ describe("private model management", () => {
 			}),
 		});
 		expect(response.status).toBe(201);
+        expect(state.cacheDelete).toHaveBeenCalledWith(`gateway:private-routes:v1:${state.auth.value.workspaceId}`);
 		expect(state.inserted).toMatchObject({
 			workspace_id: state.auth.value.workspaceId,
 			model_id: "acme/legal-assistant",
@@ -145,8 +149,18 @@ describe("private model management", () => {
 		);
 		expect(response.status).toBe(200);
 		expect(state.inserted).toMatchObject({
+            // An update invalidates the workspace snapshot shared by every key.
 			custom_provider_name: "Acme Hosting",
 			custom_provider_url: "https://new.example.com",
 		});
+        expect(state.cacheDelete).toHaveBeenCalledWith(`gateway:private-routes:v1:${state.auth.value.workspaceId}`);
 	});
+    it("deletes the route and invalidates its workspace snapshot", async () => {
+        const id = "00000000-0000-4000-8000-000000000001";
+        state.rows = [{ id, workspace_id: state.auth.value.workspaceId, model_id: "acme/private" }];
+        const { privateModelsRoutes } = await import("./private-models");
+        const response = await privateModelsRoutes.request(`https://example.com/${id}`, { method: "DELETE" });
+        expect(response.status).toBe(200);
+        expect(state.cacheDelete).toHaveBeenCalledWith(`gateway:private-routes:v1:${state.auth.value.workspaceId}`);
+    });
 });

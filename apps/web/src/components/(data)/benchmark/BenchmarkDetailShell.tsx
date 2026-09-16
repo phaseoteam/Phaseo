@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Trophy } from "lucide-react";
 import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
@@ -61,22 +62,24 @@ export default async function BenchmarkDetailShell({
 		);
 	}
 	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmark.id);
+	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmark.id);
 	const artificialAnalysisMetric = benchmark.name?.replace(/^Artificial Analysis\s*/i, "").trim() || benchmark.id;
+	const displayName = artificialAnalysis ? "Artificial Analysis" : epochCapabilitiesIndex ? "Epoch AI" : benchmark.name ?? benchmark.id;
 
 	return (
 		<main className="flex flex-col">
-			<EntityStickyHeader kind="benchmark" id={benchmark.id} name={artificialAnalysis ? "Artificial Analysis" : benchmark.name ?? benchmark.id} observeId="benchmark-detail-primary-header" baseHref={`/benchmarks/${benchmark.id}`} navigation={[]} />
+			<EntityStickyHeader kind="benchmark" id={benchmark.id} name={displayName} observeId="benchmark-detail-primary-header" baseHref={`/benchmarks/${benchmark.id}`} navigation={[]} brandLogo={epochCapabilitiesIndex ? { light: "/benchmarks/epoch-ai.svg", dark: "/benchmarks/epoch-ai_dark.svg", width: 150, height: 26 } : undefined} />
 			<div className="container mx-auto px-4 py-6 md:py-8">
 				<div id="benchmark-detail-primary-header" className="mb-6 flex w-full items-start justify-between gap-4">
 					<div className="flex min-w-0 items-center gap-4">
-						<div className="flex size-14 shrink-0 items-center justify-center rounded-md border border-border/70 bg-card/40">
-							{artificialAnalysis ? <ArtificialAnalysisLogo size={32} /> : <Trophy className="size-7 text-muted-foreground" />}
+						<div className={epochCapabilitiesIndex ? "flex h-14 w-44 shrink-0 items-center justify-center rounded-md border border-border/70 bg-card/40 px-3" : "flex size-14 shrink-0 items-center justify-center rounded-md border border-border/70 bg-card/40"}>
+							{artificialAnalysis ? <ArtificialAnalysisLogo size={32} /> : epochCapabilitiesIndex ? <><Image src="/benchmarks/epoch-ai.svg" alt="Epoch AI" width={150} height={26} className="h-[26px] w-auto dark:hidden" /><Image src="/benchmarks/epoch-ai_dark.svg" alt="" aria-hidden="true" width={150} height={26} className="hidden h-[26px] w-auto dark:block" /></> : <Trophy className="size-7 text-muted-foreground" />}
 						</div>
 						<div className="min-w-0">
 							<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-								{artificialAnalysis ? "Artificial Analysis" : benchmark.name ?? benchmark.id}
+								{displayName}
 							</h1>
-							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? `${artificialAnalysisMetric} · Independent evaluations` : "AI benchmark results and model performance"}</p>
+							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? `${artificialAnalysisMetric} · Independent evaluations` : epochCapabilitiesIndex ? "Capabilities Index · Independent evaluations" : "AI benchmark results and model performance"}</p>
 						</div>
 					</div>
 					<BenchmarkEditButton benchmarkId={benchmark.id} />

@@ -8,6 +8,7 @@ workers_dev = false
 preview_urls = false
 
 [vars]
+GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 GATEWAY_ROUTING_REGION = "us"
@@ -43,4 +44,9 @@ preview_id = "f5e23068fcd94125ad9860c817c543d9"
 [[durable_objects.bindings]]
 name = "PROVIDER_RATE_LIMITS"
 class_name = "ProviderRateLimitDurableObject"
+script_name = "phaseo-gateway"
+
+[[durable_objects.bindings]]
+name = "ROUTING_HEALTH"
+class_name = "RoutingHealthDurableObject"
 script_name = "phaseo-gateway"

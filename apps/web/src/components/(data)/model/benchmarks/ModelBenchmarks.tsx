@@ -8,7 +8,9 @@ import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublic
 import { ModelBenchmarksGrid } from "./ModelBenchmarksGrid";
 import { ModelBenchmarksTable } from "./ModelBenchmarksTable";
 import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
 import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
+import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
 
 type Props = {
 	highlightCards: ModelBenchmarkHighlight[];
@@ -29,9 +31,11 @@ export default function ModelBenchmarks({
 }: Props) {
 	const showFull = mode === "full";
 	const otherHighlights = highlightCards.filter(
-		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId),
+		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId) && !isEpochCapabilitiesIndex(item.benchmarkId),
 	);
 	const hasArtificialAnalysis = highlightCards.some((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
+	const hasEpochCapabilitiesIndex = highlightCards.some((item) => isEpochCapabilitiesIndex(item.benchmarkId) && item.score !== null);
+	const hasKeyBenchmark = hasArtificialAnalysis || hasEpochCapabilitiesIndex;
 	const otherBenchmarks = otherHighlights.length ? (
 		<ModelBenchmarksGrid highlights={otherHighlights} />
 	) : (
@@ -43,8 +47,9 @@ export default function ModelBenchmarks({
 	return (
 		<div className="space-y-8">
 			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankings={benchmarkRankings} modelId={modelId} />
-			{otherHighlights.length > 0 || !hasArtificialAnalysis ? (
-				hasArtificialAnalysis ? (
+			<EpochCapabilitiesIndex highlights={highlightCards} ranking={benchmarkRankings.find((item) => isEpochCapabilitiesIndex(item.benchmark_id))} modelId={modelId} />
+			{otherHighlights.length > 0 || !hasKeyBenchmark ? (
+				hasKeyBenchmark ? (
 					<section aria-label="Other Benchmarks">
 						<Accordion className="border-t" type="single">
 							<AccordionItem value="other-benchmarks" className="border-0">

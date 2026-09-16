@@ -1,6 +1,8 @@
 import BenchmarkDetailShell from "@/components/(data)/benchmark/BenchmarkDetailShell";
 import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
 import { applyArtificialAnalysisOrganisationColours, artificialAnalysisMetricsForBenchmark, buildArtificialAnalysisRanking, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { isEpochCapabilitiesIndex, isEpochConfidenceIntervalForScore } from "@/lib/benchmarks/epoch";
+import { epochModelKey, fetchEpochConfidenceIntervals } from "@/lib/benchmarks/epochData";
 import { fetchFrontendBenchmark, fetchFrontendOrganisations } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -81,6 +83,17 @@ export default async function Page({
 		notFound();
 	}
 	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmark.id);
+	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmark.id);
+	const epochConfidenceIntervals = epochCapabilitiesIndex ? await fetchEpochConfidenceIntervals() : {};
+	const displayBenchmark = epochCapabilitiesIndex ? {
+		...benchmark,
+		results: benchmark.results.map((result) => {
+			const interval = epochConfidenceIntervals[epochModelKey(result.model?.name ?? result.model_id)];
+			if (!isEpochConfidenceIntervalForScore(interval, result.score)) return result;
+			const withoutInterval = typeof result.other_info === "string" ? result.other_info.replace(/;?\s*95% CI\s+[\d.]+[–-][\d.]+/i, "") : "";
+			return { ...result, other_info: `${withoutInterval ? `${withoutInterval}; ` : ""}95% CI ${interval.low.toFixed(2)}–${interval.high.toFixed(2)}` };
+		}),
+	} : benchmark;
 	const artificialAnalysisRankings = artificialAnalysis
 		? await (async () => {
 			const metricDefinitions = artificialAnalysisMetricsForBenchmark(benchmark.id);
@@ -151,10 +164,11 @@ export default async function Page({
 					<JsonLdScript id="benchmark-breadcrumb-schema" data={structuredData.breadcrumbSchema} />
 				</>
 			)}
-			<BenchmarkDetailShell benchmark={benchmark} tocItems={artificialAnalysis
+			<BenchmarkDetailShell benchmark={displayBenchmark} tocItems={artificialAnalysis
 				? [{ id: "summary", label: "Summary" }, { id: "comparisons", label: "Index Comparisons" }, { id: "progress", label: "Progress" }, { id: "model-results", label: "Model Results" }]
+				: epochCapabilitiesIndex ? [{ id: "summary", label: "Summary" }, { id: "comparisons", label: "Index Leaderboard" }, { id: "progress", label: "Progress" }, { id: "model-results", label: "Model Results" }]
 				: [{ id: "summary", label: "Summary" }, { id: "progress", label: "Progress" }, { id: "model-results", label: "Model Results" }]}>
-				<BenchmarkOverview benchmark={benchmark} artificialAnalysisRankings={artificialAnalysisRankings} />
+				<BenchmarkOverview benchmark={displayBenchmark} artificialAnalysisRankings={artificialAnalysisRankings} />
 			</BenchmarkDetailShell>
 		</>
 	);

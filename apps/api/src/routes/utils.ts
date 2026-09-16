@@ -7,6 +7,7 @@ import type { GatewayBindings } from "@/runtime/env";
 import { configureRuntime, setWaitUntil, clearRuntime, getBindings, dispatchBackground } from "@/runtime/env";
 import { safeJsonStringify } from "@/lib/safe-json";
 import { sanitizeRequestHeaders } from "@pipeline/http/sanitize-headers";
+import { attachGatewayTrace, gatewayTraceFor } from "@pipeline/telemetry/gateway-trace";
 
 type Handler = (req: Request, context?: Context<{ Bindings: GatewayBindings }>) => Promise<Response>;
 type CacheOptions = {
@@ -107,6 +108,8 @@ export function withRuntime(handler: Handler) {
             clearRuntime();
         };
         const sanitized = sanitizeRequestHeaders(c.req.raw, { preserve: ["authorization"] });
+        const trace = gatewayTraceFor(c.req.raw);
+        if (trace) attachGatewayTrace(sanitized, trace);
 
         try {
             const response = await handler(sanitized, c);

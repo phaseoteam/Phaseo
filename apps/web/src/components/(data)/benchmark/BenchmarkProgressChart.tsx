@@ -14,6 +14,7 @@ import {
 	Dot,
 	ReferenceDot,
 	ReferenceLine,
+	ErrorBar,
 } from "recharts";
 import { CalendarClock } from "lucide-react";
 
@@ -33,6 +34,7 @@ import {
 	parseBenchmarkScore,
 	resolveBenchmarkIsPercentage,
 } from "@/lib/benchmarks/scoreFormat";
+import { isEpochCapabilitiesIndex, parseEpochConfidenceInterval } from "@/lib/benchmarks/epoch";
 
 const ColoredDot = (props: any) => {
 	const { cx, cy, payload } = props;
@@ -63,7 +65,7 @@ const CustomTooltip = ({ active, payload, tooltipValueFormatter }: any) => {
 	const scoreEntry = payload.find((entry: any) => entry.name === "Score");
 	if (!scoreEntry) return null;
 	const data = scoreEntry.payload;
-	const { modelName, orgName, date, color, y, orgId } = data;
+	const { modelName, orgName, date, color, y, orgId, confidenceInterval } = data;
 
 	return (
 		<div className="rounded-lg border bg-background p-3 shadow-md">
@@ -89,6 +91,7 @@ const CustomTooltip = ({ active, payload, tooltipValueFormatter }: any) => {
 				<div className="font-medium text-foreground">
 					Score: {tooltipValueFormatter(y)}
 				</div>
+				{confidenceInterval ? <div className="font-medium text-foreground">95% CI: {confidenceInterval.low.toFixed(2)}–{confidenceInterval.high.toFixed(2)}</div> : null}
 			</div>
 		</div>
 	);
@@ -108,6 +111,8 @@ type ScatterPoint = {
 	orgId?: string;
 	modelId?: string;
 	configuration: string;
+	errorY?: [number, number];
+	confidenceInterval?: { low: number; high: number } | null;
 	frontierLabel?: string;
 };
 
@@ -155,7 +160,8 @@ function buildScatterData(
 			result.id ??
 			"Unknown model";
 		const configuration = configurationLabel(result);
-		const modelName = `${baseModelName} (${configuration})`;
+		const modelName = isEpochCapabilitiesIndex(benchmark.id) ? baseModelName : `${baseModelName} (${configuration})`;
+		const confidenceInterval = isEpochCapabilitiesIndex(benchmark.id) ? parseEpochConfidenceInterval(result.other_info) : null;
 
 		const color = result.model?.organisation?.colour || "#8884d8"; // default color if no org color
 		const orgName = result.model?.organisation?.name || "Unknown";
@@ -172,6 +178,8 @@ function buildScatterData(
 			orgId,
 			modelId,
 			configuration,
+			errorY: confidenceInterval ? [numericScore - confidenceInterval.low, confidenceInterval.high - numericScore] : undefined,
+			confidenceInterval,
 		});
 	}
 
@@ -191,7 +199,7 @@ const chartConfig: ChartConfig = {
 export default function BenchmarkProgressChart({
 	benchmark,
 }: BenchmarkProgressChartProps) {
-	const [range, setRange] = React.useState<"3m" | "6m" | "1y" | "2y" | "3y" | "all">("all");
+	const [range, setRange] = React.useState<"3m" | "6m" | "1y" | "2y" | "3y" | "all">("1y");
 	const [organisation, setOrganisation] = React.useState("all");
 	const [configuration, setConfiguration] = React.useState("all");
 	const [modelQuery, setModelQuery] = React.useState("");
@@ -266,25 +274,32 @@ export default function BenchmarkProgressChart({
 			<div className="flex h-full items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">No scores match these filters.</div>
 		);
 		const frontier = paretoData(data);
+		const yValues = data.flatMap((point) => point.errorY
+			? [point.y - point.errorY[0], point.y, point.y + point.errorY[1]]
+			: [point.y]);
+		const yMinimum = Math.min(...yValues);
+		const yMaximum = Math.max(...yValues);
+		const yRange = Math.max(yMaximum - yMinimum, Math.abs(yMaximum) * 0.04, 1);
+		const yPadding = yRange * 0.08;
 		return (
 		<ChartContainer key={chartStateKey} className="h-full w-full" config={chartConfig}>
 			<ResponsiveContainer width="100%" height="100%">
 				<ScatterChart data={data} margin={{ top: 28, right: 12, bottom: 4, left: 0 }}>
 					<CartesianGrid strokeDasharray="4 8" vertical={false} stroke="rgba(148, 163, 184, 0.28)" />
 					<XAxis type="number" dataKey="x" tickLine={false} axisLine={false} minTickGap={24} tickFormatter={(value) => monthFormatter.format(new Date(value))} domain={["dataMin", "dataMax"]} tick={{ fill: "var(--chart-axis-color)" }} />
-					<YAxis tickLine={false} axisLine={false} width={52} tickFormatter={(value) => tooltipValueFormatter(value) as string} tick={{ fill: "var(--chart-axis-color)" }} />
+					<YAxis domain={[yMinimum - yPadding, yMaximum + yPadding]} allowDataOverflow tickLine={false} axisLine={false} width={52} tickFormatter={(value) => tooltipValueFormatter(value) as string} tick={{ fill: "var(--chart-axis-color)" }} />
 					<ZAxis range={[50, 50]} />
 					<ChartTooltip shared={false} cursor={{ strokeDasharray: "4 4" }} content={<CustomTooltip tooltipValueFormatter={tooltipValueFormatter} />} />
 					{frontier.slice(1).map((point, index) => <ReferenceLine key={`${frontier[index].x}-${point.x}`} segment={[{ x: frontier[index].x, y: frontier[index].y }, { x: point.x, y: point.y }]} stroke="#8b5cf6" strokeWidth={2} />)}
 					{frontier.filter((point) => point.frontierLabel).map((point) => <ReferenceDot key={`${point.x}-${point.modelId}`} x={point.x} y={point.y} r={0} label={{ value: point.frontierLabel, position: "top", fill: "var(--foreground)", fontSize: 10 }} />)}
-					<Scatter name="Score" dataKey="y" shape={ColoredDot} />
+					<Scatter name="Score" dataKey="y" shape={ColoredDot}>{isEpochCapabilitiesIndex(benchmark.id) ? <ErrorBar dataKey="errorY" direction="y" width={5} stroke="var(--foreground)" strokeWidth={1.25} /> : null}</Scatter>
 				</ScatterChart>
 			</ResponsiveContainer>
 		</ChartContainer>
 	);
 	};
 
-	if (isArtificialAnalysisBenchmark(benchmark.id)) {
+	if (isArtificialAnalysisBenchmark(benchmark.id) || isEpochCapabilitiesIndex(benchmark.id)) {
 		return <div className="space-y-4 border-t pt-6">
 			<div className="flex flex-col gap-3">
 				<div className="flex flex-wrap items-start justify-between gap-3">
@@ -294,7 +309,7 @@ export default function BenchmarkProgressChart({
 				<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 					<Input aria-label="Filter Progress by Model" placeholder="Filter Models" value={modelQuery} onChange={(event) => setModelQuery(event.target.value)} className="sm:w-48" />
 					<Select value={organisation} onValueChange={setOrganisation}><SelectTrigger aria-label="Filter Progress by Organisation" className="sm:w-52"><SelectValue>{organisation === "all" ? "All Organisations" : <><Logo id={organisation} alt="" width={16} height={16} className="size-4 object-contain" />{organisations.find(([id]) => id === organisation)?.[1] ?? organisation}</>}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">All Organisations</SelectItem>{organisations.map(([id, name]) => <SelectItem key={id} value={id}><Logo id={id} alt="" width={16} height={16} className="size-4 object-contain" />{name}</SelectItem>)}</SelectContent></Select>
-					<Select value={configuration} onValueChange={setConfiguration}><SelectTrigger aria-label="Filter Progress by Configuration" className="sm:w-44"><SelectValue>{configuration === "all" ? "All Configurations" : configuration}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">All Configurations</SelectItem>{configurations.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
+					{isArtificialAnalysisBenchmark(benchmark.id) ? <Select value={configuration} onValueChange={setConfiguration}><SelectTrigger aria-label="Filter Progress by Configuration" className="sm:w-44"><SelectValue>{configuration === "all" ? "All Configurations" : configuration}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">All Configurations</SelectItem>{configurations.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select> : null}
 				</div>
 			</div>
 			<div className="h-[420px] border-b pb-4">{chart(filteredScatterData)}</div>

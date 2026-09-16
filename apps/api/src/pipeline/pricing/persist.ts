@@ -15,6 +15,7 @@ export type ChargeRpcResult = {
     stripe_customer_id: string | null;
     applied?: boolean;
     already_applied?: boolean;
+    invalidate_credit_cache?: boolean;
 };
 
 type WorkspaceLowBalanceSettingsRow = {
@@ -65,6 +66,7 @@ function normalizeChargeRpcResult(data: any): ChargeRpcResult | null {
                 : null,
         applied: (row as any).applied === true,
         already_applied: (row as any).already_applied === true,
+        invalidate_credit_cache: typeof row.invalidate_credit_cache === "boolean" ? row.invalidate_credit_cache : undefined,
     };
 }
 
@@ -182,26 +184,37 @@ export async function recordUsageAndCharge(args: {
     requestId: string;
     workspaceId: string;
     cost_nanos: number;
+    creditSnapshotBalanceNanos?: number | null;
 }): Promise<ChargeRpcResult> {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         const supabase = getSupabaseAdmin();
-        // Invoicing is intentionally disabled right now; all charges must flow through
-        // the idempotent gateway_deduct_and_check_top_up_once RPC.
-        const onceRpc = await supabase.rpc("gateway_deduct_and_check_top_up_once", {
+        // The wrapper uses the same idempotent debit and returns an authoritative
+        // cache decision in this round trip. No local or KV spending counter.
+        const snapshotBalance = args.creditSnapshotBalanceNanos;
+        const onceRpc = await supabase.rpc("gateway_charge_with_credit_cache", {
             p_workspace_id: args.workspaceId,
             p_request_id: args.requestId,
             p_cost_nanos: args.cost_nanos,
+            p_credit_snapshot_balance_nanos: Number.isSafeInteger(snapshotBalance) && snapshotBalance! >= 0 ? snapshotBalance : null,
         });
-        if (onceRpc.error) throw onceRpc.error;
+        if (onceRpc.error) {
+            // In particular, insufficient funds must not leave a high cached
+            // balance reusable after a failed debit or an uncertain response.
+            await invalidateGatewayCreditCache(args.workspaceId);
+            throw onceRpc.error;
+        }
         const chargeResult = normalizeChargeRpcResult(onceRpc.data);
 
         if (!chargeResult) throw new Error("gateway_charge_result_missing");
         if (!chargeResult.applied && !chargeResult.already_applied) {
             throw new Error(`gateway_charge_not_applied:${chargeResult.status || "unknown"}`);
         }
+        if (chargeResult.invalidate_credit_cache === true ||
+            (chargeResult.applied && chargeResult.invalidate_credit_cache !== false)) {
+            await invalidateGatewayCreditCache(args.workspaceId);
+        }
         if (chargeResult.already_applied) return chargeResult;
-        await invalidateGatewayCreditCache(args.workspaceId);
 
         try {
             await maybeEnqueueLowBalanceAlert(args.workspaceId);
@@ -338,7 +351,6 @@ export async function recordUsageAndCharge(args: {
         releaseRuntime();
     }
 }
-
 
 
 
