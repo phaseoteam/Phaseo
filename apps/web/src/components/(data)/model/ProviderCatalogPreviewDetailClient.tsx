@@ -82,15 +82,22 @@ export default function ProviderCatalogPreviewDetailClient({
 	modelId: string;
 	initialPreview?: AuthenticatedProviderCatalogPreview | null;
 }) {
-	const { data } = useSWR<AuthenticatedProviderCatalogPreview[]>(
+	const { data, error } = useSWR<AuthenticatedProviderCatalogPreview[]>(
 		initialPreview ? null : "/api/account/settings/provider-onboarding/catalogue-previews",
-		() => fetchAuthenticatedProviderCatalogPreviews(),
+		() => fetchAuthenticatedProviderCatalogPreviews(undefined, true),
 	);
 	const preview = initialPreview ?? data?.find(
 		(item) => item.model_id === modelId || item.canonical_model_slug === modelId,
 	);
 
 	if (preview) return <PreviewClientFrame preview={preview} />;
+	if (error) {
+		return (
+			<main className="flex flex-1 items-center justify-center px-4 py-24">
+				<p className="text-sm text-muted-foreground">Model details could not be loaded. We’ll retry automatically.</p>
+			</main>
+		);
+	}
 	if (data === undefined && !initialPreview) {
 		return (
 			<main className="flex flex-1 items-center justify-center px-4 py-24">

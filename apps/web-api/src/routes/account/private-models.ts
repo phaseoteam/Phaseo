@@ -213,7 +213,10 @@ accountPrivateModelsRouter.get("/catalog", async (c) => {
 		if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 		const client = getDataClient(c.env);
 		const role = await client.from("users").select("role").eq("user_id", user.id).maybeSingle();
-		if (role.error || String(role.data?.role ?? "").toLowerCase() !== "admin") {
+		if (role.error) {
+			return c.json({ error: "private_model_catalogue_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
+		if (String(role.data?.role ?? "").toLowerCase() !== "admin") {
 			return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 		}
 		const result = await client.from("workspace_private_models").select(ADMIN_CATALOG_COLUMNS).eq("enabled", true).order("name", { ascending: true });

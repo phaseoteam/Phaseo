@@ -22,7 +22,8 @@ export async function fetchAuthenticatedPrivateModels<T>(shape: "page" | "table"
 	const [workspaceModels, adminModels] = await Promise.all([read(), read("admin")]);
 	const byModelId = new Map<string, T>();
 	for (const model of [...adminModels, ...workspaceModels]) {
-		const modelId = String((model as { model_id?: unknown })?.model_id ?? "").trim();
+		const value = model as { model_id?: unknown; modelId?: unknown };
+		const modelId = String(value?.model_id ?? value?.modelId ?? "").trim();
 		if (modelId && !byModelId.has(modelId)) byModelId.set(modelId, model);
 	}
 	return [...byModelId.values()];

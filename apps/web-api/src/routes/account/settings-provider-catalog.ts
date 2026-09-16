@@ -235,9 +235,15 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			const updated = await updateSource({ management_mode: "remote", managed_catalog: null, managed_updated_by: null, managed_updated_at: null, refresh_requested: true, next_poll_at: new Date().toISOString(), updated_at: new Date().toISOString() });
 			if (updated.error) throw updated.error;
 			if (!updated.data) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
-			await syncProviderCatalog(c.env, parsedSlug.data, "manual");
+			let syncWarning: string | null = null;
+			try {
+				await syncProviderCatalog(c.env, parsedSlug.data, "manual");
+			} catch (error) {
+				syncWarning = "Catalog saved. Synchronization will retry in the background.";
+				console.error("provider_catalog_sync_after_save_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
+			}
 			const catalog = await readProviderCatalog(client, parsedSlug.data);
-			return catalog ? c.json({ ok: true, ...catalog }, 200, PRIVATE_NO_STORE_HEADERS) : errorResponse(c, "provider_catalog_not_found", 404);
+			return catalog ? c.json({ ok: true, ...catalog, sync_warning: syncWarning }, 200, PRIVATE_NO_STORE_HEADERS) : errorResponse(c, "provider_catalog_not_found", 404);
 		}
 
 		const document = body?.catalog ?? body;

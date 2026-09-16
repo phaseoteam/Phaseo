@@ -193,7 +193,15 @@ export function filterPublicSnapshotRows<T extends string>(snapshots: Map<T, Sna
 		// These fields are complete legacy identifiers, not prose. A public dated
 		// variant may legitimately start with the slug of an unreleased base model.
 		if (field === "legacy_model_id" || field === "legacy_api_model_id") return privateIds.includes(value);
-		const matches = privateIds.filter((id) => value.includes(id));
+		const isBoundary = (character: string | undefined) => !/[a-z0-9_]/i.test(character ?? "");
+		const occurrences = (id: string) => {
+			const starts: number[] = [];
+			for (let start = value.indexOf(id); start >= 0; start = value.indexOf(id, start + 1)) {
+				if (isBoundary(value[start - 1]) && isBoundary(value[start + id.length])) starts.push(start);
+			}
+			return starts;
+		};
+		const matches = privateIds.filter((id) => occurrences(id).length > 0);
 		if (!matches.length) return false;
 		// A public dated identifier can contain a private base identifier as a
 		// prefix, including in prose/URLs. Only exempt occurrences fully covered
@@ -204,7 +212,7 @@ export function filterPublicSnapshotRows<T extends string>(snapshots: Map<T, Sna
 			for (let start = value.indexOf(id); start >= 0; start = value.indexOf(id, start + 1)) publicSpans.push([start, start + id.length]);
 		}
 		return matches.some((id) => {
-			for (let start = value.indexOf(id); start >= 0; start = value.indexOf(id, start + 1)) {
+			for (const start of occurrences(id)) {
 				if (!publicSpans.some(([left, right]) => left <= start && right >= start + id.length)) return true;
 			}
 			return false;

@@ -187,7 +187,12 @@ export default function ProviderCatalogManager({ providers }: { providers: Provi
 	}
 
 	function addModel() {
-		setModels((current) => [...current, newModel(current.length + 1)]);
+		setModels((current) => {
+			const used = new Set(current.map((model) => model.provider_model_slug));
+			let next = 1;
+			while (used.has(`model-${next}`)) next += 1;
+			return [...current, newModel(next)];
+		});
 		setSelectedIndex(models.length);
 		setDirty(true);
 	}

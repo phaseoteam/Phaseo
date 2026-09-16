@@ -56,6 +56,7 @@ type ProviderCatalogPreviewResponse = {
 
 export async function fetchAuthenticatedProviderCatalogPreviews(
 	providerSlug?: string,
+	throwOnError = false,
 ): Promise<AuthenticatedProviderCatalogPreview[]> {
 	try {
 		const query = providerSlug
@@ -78,7 +79,8 @@ export async function fetchAuthenticatedProviderCatalogPreviews(
 			);
 		}
 		return Array.isArray(payload?.models) ? payload.models : [];
-	} catch {
+	} catch (error) {
+		if (throwOnError) throw error;
 		// Signed-out visitors and users without a provider link continue to see
 		// the public catalog without an authenticated preview overlay.
 		return [];

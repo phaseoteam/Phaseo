@@ -597,6 +597,10 @@ publicProvidersRouter.get("/:providerId/models", async (c) => {
 			params.set(cap.provider_model_id, unique(params.get(cap.provider_model_id) ?? [], supported));
 		}
 		const now = Date.now();
+		const activeModelIds = new Set(providerRows.filter((row) => {
+			if (!row.model_slug) return false;
+			return routeAvailability(row, capabilityStatuses.get(row.provider_model_id) ?? [], now) === "active";
+		}).map((row) => row.model_slug));
 		const merged = new Map<string, Record<string, unknown>>(); const routeIds = new Map<string, Set<string>>();
 		for (const row of providerRows) {
 			if (!row.model_slug || !visible.has(row.model_slug)) continue;
@@ -604,6 +608,7 @@ publicProvidersRouter.get("/:providerId/models", async (c) => {
 			const availabilityStatus = routeAvailability(row, routeStatuses, now);
 			if (!availabilityStatus) continue;
 			const modelId = row.model_slug;
+			if (activeModelIds.has(modelId) && availabilityStatus !== "active") continue;
 			routeIds.set(modelId, new Set([...(routeIds.get(modelId) ?? []), row.provider_model_id]));
 			const meta = modelMeta.get(modelId); const endpoints = capabilities.get(row.provider_model_id) ?? []; const supported = params.get(row.provider_model_id) ?? [];
 			const existing = merged.get(modelId);

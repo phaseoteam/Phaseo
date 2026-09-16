@@ -266,7 +266,10 @@ begin
       and not route.is_stealth
       and not exists (select 1 from public.v2_model_provider_routes s where s.model_slug = route.model_slug and s.is_stealth)
       and exists (select 1 from public.v2_providers p where p.provider_slug = route.provider_slug
-        and (p.status = 'not_ready' or (p.status <> 'disabled' and p.routable and p.routing_enabled)))
+        and (p.status = 'not_ready' or (p.status <> 'disabled' and p.routable and p.routing_enabled))
+        and coalesce((p.metadata ->> 'adapter_ready')::boolean, false)
+        and coalesce((p.metadata ->> 'credentials_ready')::boolean, false)
+        and nullif(trim(p.base_url), '') is not null)
     for update of route skip locked
   ), activated as (
   update public.v2_model_provider_routes route

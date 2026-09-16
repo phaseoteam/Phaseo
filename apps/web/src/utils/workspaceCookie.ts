@@ -48,6 +48,12 @@ export async function setActiveWorkspaceCookie(workspaceId: string): Promise<voi
 	}
 }
 
+export async function setActiveWorkspaceCookieOrThrow(workspaceId: string): Promise<void> {
+	const normalized = String(workspaceId ?? "").trim();
+	if (!normalized) throw new Error("A workspace is required.");
+	await writeActiveWorkspaceCookieValue(normalized);
+}
+
 export async function clearActiveWorkspaceCookie(): Promise<void> {
 	try {
 		await writeActiveWorkspaceCookieValue(undefined);

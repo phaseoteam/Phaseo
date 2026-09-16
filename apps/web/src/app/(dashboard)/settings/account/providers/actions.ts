@@ -3,12 +3,12 @@
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
-import { setActiveWorkspaceCookie } from "@/utils/workspaceCookie";
+import { setActiveWorkspaceCookieOrThrow } from "@/utils/workspaceCookie";
 
 export async function activateProviderAccountAction(): Promise<void> {
 	const account = await fetchInternalAuthHeaderData();
 	if (account.isLoggedIn && account.providerMode && account.currentTeamId) {
-		await setActiveWorkspaceCookie(account.currentTeamId);
+		await setActiveWorkspaceCookieOrThrow(account.currentTeamId);
 	}
 }
 

@@ -95,7 +95,7 @@ export default async function Page({
 		: null);
 	if (!header) notFound();
 	const models = await fetchFrontendAPIProviderModels(apiProvider).catch(() => []);
-	const isPreviewOnlyProvider = initialProviderPreviews.length > 0 && models.length === 0;
+	const isPreviewOnlyProvider = !publicHeader && initialProviderPreviews.length > 0 && models.length === 0;
 	const providerTocItems = isPreviewOnlyProvider
 		? [{ id: "models", label: "Models" }]
 		: [{ id: "performance", label: "Performance" }, { id: "token-usage", label: "Token Usage" }, { id: "top-models", label: "Top Models" }, { id: "top-apps", label: "Top Apps" }, { id: "models", label: "Models" }];

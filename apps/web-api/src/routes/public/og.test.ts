@@ -26,6 +26,14 @@ it("does not publish staged provider identities in social metadata", async () =>
 	expect(response.headers.get("cache-control")).toContain("no-store");
 });
 
+it("does not publish disabled organisation identities in social metadata", async () => {
+	vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ lab_slug: "synthetic", name: "Private lab", status: "disabled" }]), { status: 200 })));
+	const response = await publicOgRouter.request("https://example.test/og?kind=organisations&id=synthetic", {}, env);
+	expect(response.status).toBe(404);
+	expect(await response.text()).not.toContain("Private lab");
+	expect(response.headers.get("cache-control")).toContain("no-store");
+});
+
 it("checks model visibility before reading its name", async () => {
 	const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response("false", { status: 200 }));
 	vi.stubGlobal("fetch", fetchMock);

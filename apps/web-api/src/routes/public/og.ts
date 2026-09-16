@@ -11,7 +11,7 @@ publicOgRouter.get("/og", async (c) => {
 	if (!kind || !id) return c.json({ error: "invalid_og_reference" }, 400);
 	try {
 		const client = getDataClient(c.env); let payload: Record<string, unknown> | null = null;
-		if (kind === "organisations") { const result = await client.from("v2_labs").select("lab_slug,name").eq("lab_slug", id).maybeSingle(); if (result.error) throw result.error; if (result.data) payload = { id: result.data.lab_slug, name: result.data.name ?? result.data.lab_slug, logoId: result.data.lab_slug }; }
+		if (kind === "organisations") { const result = await client.from("v2_labs").select("lab_slug,name,status").eq("lab_slug", id).maybeSingle(); if (result.error) throw result.error; if (!result.data || result.data.status === "disabled") return c.json({ error: "og_not_found" }, 404, PRIVATE_NO_STORE_HEADERS); payload = { id: result.data.lab_slug, name: result.data.name ?? result.data.lab_slug, logoId: result.data.lab_slug }; }
 		else if (kind === "models") {
 			const visibility = await client.rpc("catalog_model_is_public", { p_model_slug: id });
 			if (visibility.error) throw visibility.error;
