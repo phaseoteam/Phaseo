@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
 import { fetchFrontendOgPayload } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import type { OgEntity } from "@/lib/fetchers/frontend/getOgPayload";
+import type { OgEntity, OgPayload } from "@/lib/fetchers/frontend/getOgPayload";
 import { resolveLogo } from "@/lib/logos";
 
 const brandLogoPath = "/wordmark_light.svg";
@@ -57,6 +57,18 @@ function titleCaseLabel(value: string): string {
 	return value.toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function buildDiscoveryFallbackPayload(kind: OgEntity, segments: string[]): OgPayload | null {
+	if (kind !== "models" || segments.length < 2) return null;
+	const id = segments.join("/");
+	const label = segments.at(-1)?.replace(/[-_]+/g, " ").trim();
+	if (!id || !label) return null;
+	return {
+		id,
+		name: titleCaseLabel(label),
+		subtitle: "Detected by Phaseo model discovery",
+	};
+}
+
 function normaliseSegments(
 	request: NextRequest,
 	slugParam?: string | string[],
@@ -89,7 +101,11 @@ export async function GET(
 	const [kindRaw, ...segments] = rawSegments;
 	const kind = kindRaw as OgEntity;
 	const isCountry = kind === "countries";
-	const payload = await fetchFrontendOgPayload(kind, segments);
+	const payload =
+		(await fetchFrontendOgPayload(kind, segments)) ??
+		(request.nextUrl.searchParams.get("discovery") === "1"
+			? buildDiscoveryFallbackPayload(kind, segments)
+			: null);
 
 	if (!payload) return new Response("Not found", { status: 404 });
 

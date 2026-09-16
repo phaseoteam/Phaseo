@@ -2,6 +2,7 @@ export type InternalModelNotificationModel = {
 	modelId: string;
 	modelName: string;
 	modelUrl: string;
+	imageUrl?: string;
 	creatorId?: string;
 	creatorName?: string;
 	creatorColor?: string;
@@ -15,6 +16,9 @@ type DiscordEmbed = {
 	color: number;
 	footer: {
 		text: string;
+	};
+	image?: {
+		url: string;
 	};
 };
 
@@ -38,6 +42,7 @@ type BuildWebhookPayloadOptions = {
 	maxModelEmbeds?: number;
 	nowIso?: string;
 	latestModelsUrl?: string;
+	message?: string;
 };
 
 type SendDiscordTextMessageArgs = {
@@ -108,6 +113,7 @@ function sanitizeModel(input: InternalModelNotificationModel): InternalModelNoti
 		modelId,
 		modelName,
 		modelUrl,
+		imageUrl: trimOrNull(input.imageUrl) ?? undefined,
 		creatorId: creatorId ?? undefined,
 		creatorName: creatorName ?? undefined,
 		creatorColor: creatorColor ?? undefined,
@@ -157,6 +163,17 @@ function resolveEmbedColor(model: InternalModelNotificationModel): number {
 	return parseHexColor(model.creatorColor) ?? DEFAULT_EMBED_COLOR;
 }
 
+function resolveImageUrl(rawImageUrl: string | null | undefined): string | null {
+	const value = trimOrNull(rawImageUrl);
+	if (!value) return null;
+	try {
+		const parsed = new URL(value);
+		return parsed.protocol === "https:" ? parsed.toString() : null;
+	} catch {
+		return null;
+	}
+}
+
 function formatPerModelEmbed(model: InternalModelNotificationModel, nowIso: string): DiscordEmbed {
 	const safeModel = sanitizeModel(model);
 	if (!safeModel) {
@@ -169,12 +186,14 @@ function formatPerModelEmbed(model: InternalModelNotificationModel, nowIso: stri
 		...(safeModel.changeSummaryLines ? ["", ...safeModel.changeSummaryLines] : []),
 	];
 
+	const imageUrl = resolveImageUrl(safeModel.imageUrl);
 	return {
 		title: truncateText(buildDisplayTitle(safeModel), 180),
 		url: safeModel.modelUrl,
 		description: descriptionLines.join("\n"),
 		color: resolveEmbedColor(safeModel),
 		footer: { text: formatFooterText(nowIso) },
+		...(imageUrl ? { image: { url: imageUrl } } : {}),
 	};
 }
 
@@ -209,6 +228,7 @@ export function buildInternalModelWebhookPayload(
 	if (users.length > 0) mentionParts.push(`<@${users[0]}>`);
 
 	const latestModelsUrl = trimOrNull(options?.latestModelsUrl) ?? DEFAULT_LATEST_MODELS_URL;
+	const message = trimOrNull(options?.message);
 	const avatarUrl = resolveAvatarUrl(options?.avatarUrl);
 	const maxModelEmbeds = Number.isFinite(options?.maxModelEmbeds)
 		? Math.max(1, Math.floor(options?.maxModelEmbeds as number))
@@ -224,7 +244,7 @@ export function buildInternalModelWebhookPayload(
 	}
 
 	return {
-		content: mentionParts.join(" "),
+		content: [mentionParts.join(" "), message].filter(Boolean).join(mentionParts.length > 0 && message ? "\n" : ""),
 		allowed_mentions: {
 			parse: [],
 			roles,

@@ -59,7 +59,9 @@ vi.mock("@/pipeline/notifications/notification-delivery", () => ({
 
 vi.mock("@/pipeline/model-discovery", () => ({
 	DEFAULT_MODEL_DISCOVERY_SHARD_SIZE: 250,
+	DEFAULT_MODEL_DISCOVERY_CONCURRENCY: 8,
 	getModelDiscoveryShardCount: vi.fn(() => 4),
+	normalizeModelDiscoveryConcurrency: vi.fn((value: number) => value),
 	normalizeModelDiscoveryShardSize: vi.fn((value: number) => value),
 	runModelDiscoveryJob: (...args: unknown[]) => runModelDiscoveryJobMock(...args),
 }));
@@ -226,6 +228,37 @@ describe("handleScheduledEvent", () => {
 		expect(runBatchReconciliationJobMock).not.toHaveBeenCalled();
 		expect(runBatchProviderWebhookReplayJobMock).not.toHaveBeenCalled();
 		expect(runVideoReconciliationJobMock).not.toHaveBeenCalled();
+	});
+
+	it("honors the model discovery kill switch", async () => {
+		await handleScheduledEvent(
+			scheduledEventAt("2026-06-10T00:00:00.000Z"),
+			{ MODEL_DISCOVERY_ENABLED: "false" } as any,
+		);
+
+		expect(runModelDiscoveryJobMock).not.toHaveBeenCalled();
+	});
+
+	it("can run all provider checks in one Cloudflare invocation", async () => {
+		await handleScheduledEvent(
+			scheduledEventAt("2026-06-10T00:00:00.000Z"),
+			{
+				MODEL_DISCOVERY_ENABLED: "true",
+				MODEL_DISCOVERY_SHARDING_ENABLED: "false",
+				MODEL_DISCOVERY_CONCURRENCY: "12",
+			} as any,
+		);
+
+		expect(runModelDiscoveryJobMock).toHaveBeenCalledWith({
+			trigger: "scheduled",
+			source: "cloudflare_cron:all-providers",
+			scheduledAtIso: "2026-06-10T00:00:00.000Z",
+			shardIndex: 0,
+			shardCount: 1,
+			concurrency: 12,
+			notify: true,
+			prune: true,
+		});
 	});
 
 	it("publishes configured catalogs every two minutes independently of core jobs", async () => {

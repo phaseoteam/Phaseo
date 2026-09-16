@@ -23,6 +23,7 @@ import {
 	Webhook,
 	Workflow,
 	ClipboardCheck,
+	Inbox,
 } from "lucide-react";
 
 export type NavItem = {
@@ -298,7 +299,10 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 	{
 		heading: "Internal",
 		scope: "personal",
-		items: [{ href: "/settings/internal/provider-review", label: "Provider review", icon: ClipboardCheck, match: ["/settings/internal/provider-review"] }],
+		items: [
+			{ href: "/settings/internal/model-discovery", label: "Discovery queue", icon: Inbox, match: ["/settings/internal/model-discovery"] },
+			{ href: "/settings/internal/provider-review", label: "Provider review", icon: ClipboardCheck, match: ["/settings/internal/provider-review"] },
+		],
 	},
 
     // Example external group (remove or edit as needed):
@@ -350,7 +354,7 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 				(showBroadcast ? true : item.href !== "/settings/broadcast") &&
 				(showWebhooks ? true : item.href !== "/settings/webhooks") &&
 				(showEnterprise ? true : item.href !== "/settings/workspaces/enterprise") &&
-				(showInternal ? true : item.href !== "/settings/internal/provider-review"),
+				(showInternal ? true : !item.href.startsWith("/settings/internal/")),
 			)
 			.map((item) => ({
 				...item,

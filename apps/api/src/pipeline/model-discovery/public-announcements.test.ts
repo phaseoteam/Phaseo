@@ -1,0 +1,158 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+	bindings: {} as Record<string, string>,
+	getSupabaseAdmin: vi.fn(),
+	buildInternalModelWebhookPayload: vi.fn(),
+	sendDiscordWebhookPayload: vi.fn(),
+}));
+
+vi.mock("@/runtime/env", () => ({
+	getSupabaseAdmin: () => mocks.getSupabaseAdmin(),
+}));
+
+vi.mock("./helpers", () => ({
+	readBindingEnv: (names: string[]) => names.map((name) => mocks.bindings[name]).find(Boolean) ?? null,
+	toBool: (value: string | null | undefined, fallback = false) => {
+		if (value === null || value === undefined) return fallback;
+		return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+	},
+}));
+
+vi.mock("./discord", () => ({
+	buildInternalModelWebhookPayload: (...args: unknown[]) => {
+		mocks.buildInternalModelWebhookPayload(...args);
+		const models = args[0] as Array<{ modelId: string; modelUrl: string; imageUrl?: string }>;
+		const options = args[2] as { message?: string; username?: string } | undefined;
+		return {
+			content: options?.message ?? "",
+			allowed_mentions: { parse: [], roles: [], users: [] },
+			username: options?.username ?? "Phaseo",
+			embeds: models.map((model) => ({ title: model.modelId, url: model.modelUrl, image: { url: model.imageUrl } })),
+		};
+	},
+	sendDiscordWebhookPayload: (...args: unknown[]) => mocks.sendDiscordWebhookPayload(...args),
+}));
+
+import { runPublicModelAnnouncementCheck } from "./public-announcements";
+
+type ModelRow = {
+	model_slug: string;
+	name: string;
+	known?: boolean;
+	lab_slug: string;
+	hidden: boolean;
+	status: string;
+};
+
+type StateRow = {
+	model_slug: string;
+	status: string;
+	attempt_count: number;
+};
+
+function buildClient(models: ModelRow[], stateRows: StateRow[]) {
+	const upserts: Array<{ table: string; rows: unknown[] }> = [];
+	const updates: Array<{ table: string; values: unknown }> = [];
+	const client = {
+		from: vi.fn((table: string) => {
+			const query: Record<string, any> = {};
+			query.select = vi.fn(() => query);
+			query.order = vi.fn(() => query);
+			query.range = vi.fn(async () => ({
+				data: table === "v2_models" ? models : stateRows,
+				error: null,
+			}));
+			query.upsert = vi.fn(async (rows: unknown[]) => {
+				upserts.push({ table, rows });
+				return { error: null };
+			});
+			query.update = vi.fn((values: unknown) => {
+				updates.push({ table, values });
+				return query;
+			});
+			query.in = vi.fn(async () => ({ error: null }));
+			query.eq = vi.fn(async () => ({ error: null }));
+			return query;
+		}),
+	};
+	return { client, upserts, updates };
+}
+
+describe("runPublicModelAnnouncementCheck", () => {
+	beforeEach(() => {
+		mocks.bindings = {};
+		mocks.getSupabaseAdmin.mockReset();
+		mocks.buildInternalModelWebhookPayload.mockReset();
+		mocks.sendDiscordWebhookPayload.mockReset();
+		mocks.sendDiscordWebhookPayload.mockResolvedValue(undefined);
+	});
+
+	it("baselines the existing database catalog without announcing it", async () => {
+		const supabase = buildClient(
+			[
+				{ model_slug: "openai/gpt-existing", name: "GPT Existing", lab_slug: "openai", hidden: false, status: "active" },
+				{ model_slug: "openai/internal", name: "Internal", lab_slug: "openai", hidden: true, status: "active" },
+			],
+			[],
+		);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+
+		const summary = await runPublicModelAnnouncementCheck({ runId: "run-1", notify: true });
+
+		expect(summary).toMatchObject({
+			enabled: true,
+			executed: true,
+			baselineInitialized: true,
+			detected: 0,
+			notified: 0,
+			pending: 0,
+		});
+		expect(supabase.upserts[0]?.rows).toEqual([
+			expect.objectContaining({ model_slug: "openai/gpt-existing", status: "baseline", last_run_id: "run-1" }),
+			expect.objectContaining({ model_slug: "openai/internal", status: "baseline", last_run_id: "run-1" }),
+		]);
+		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
+	});
+
+	it("announces new and previously pending public models with OG image URLs", async () => {
+		const supabase = buildClient(
+			[
+				{ model_slug: "openai/gpt-new", name: "GPT New", lab_slug: "openai", hidden: false, status: "active" },
+				{ model_slug: "anthropic/claude-pending", name: "Claude Pending", lab_slug: "anthropic", hidden: false, status: "active" },
+				{ model_slug: "openai/gpt-old", name: "GPT Old", lab_slug: "openai", hidden: false, status: "active" },
+			],
+			[
+				{ model_slug: "anthropic/claude-pending", status: "pending", attempt_count: 2 },
+				{ model_slug: "openai/gpt-old", status: "announced", attempt_count: 0 },
+			],
+		);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+
+		const summary = await runPublicModelAnnouncementCheck({ runId: "run-2", notify: true });
+
+		expect(summary).toMatchObject({ detected: 1, notified: 2, pending: 0, error: null });
+		expect(mocks.sendDiscordWebhookPayload).toHaveBeenCalledTimes(1);
+		const payload = mocks.sendDiscordWebhookPayload.mock.calls[0]?.[1] as { embeds: Array<{ image: { url: string } }> };
+		expect(payload.embeds.map((embed) => embed.image.url)).toEqual([
+			"https://phaseo.app/og/models/openai/gpt-new?discovery=1",
+			"https://phaseo.app/og/models/anthropic/claude-pending?discovery=1",
+		]);
+		expect(supabase.upserts[0]?.rows).toEqual([
+			expect.objectContaining({ model_slug: "openai/gpt-new", status: "pending" }),
+		]);
+		expect(supabase.updates.map((entry) => entry.values)).toEqual([
+			{ last_run_id: "run-2", updated_at: expect.any(String) },
+			{
+				status: "announced",
+				last_run_id: "run-2",
+				announced_at: expect.any(String),
+				last_attempt_at: expect.any(String),
+				last_error: null,
+				updated_at: expect.any(String),
+			},
+		]);
+	});
+});

@@ -1,3 +1,5 @@
+// Local-only legacy helper for inspecting catalog files. Production public
+// model announcements run in the Cloudflare Worker from the database catalog.
 import { runInternalModelDiscovery } from "./run-internal";
 
 async function main(): Promise<void> {

@@ -127,6 +127,11 @@ function toModelUrlFromId(modelId: string): string {
 	return `https://phaseo.app/models/${organisation}/${slug}`;
 }
 
+function toModelOgUrlFromId(modelId: string): string {
+	const segments = modelId.split("/").filter(Boolean).map((segment) => encodeURIComponent(segment));
+	return segments.length > 0 ? `https://phaseo.app/og/models/${segments.join("/")}?discovery=1` : "https://phaseo.app/og.png";
+}
+
 function parseModelLine(rawLine: string): InternalModelNotificationModel | null {
 	const line = rawLine.trim();
 	if (!line) return null;
@@ -143,7 +148,7 @@ function parseModelLine(rawLine: string): InternalModelNotificationModel | null 
 				.replace(/\/+/g, "/")
 				.replace(/^\/|\/$/g, "") || leftRaw.toLowerCase().replace(/\s+/g, "-");
 		if (!modelName || !modelUrl || !modelId) return null;
-		return { modelId, modelName, modelUrl };
+		return { modelId, modelName, modelUrl, imageUrl: toModelOgUrlFromId(modelId) };
 	}
 
 	if (/^https?:\/\//i.test(line)) {
@@ -160,6 +165,7 @@ function parseModelLine(rawLine: string): InternalModelNotificationModel | null 
 			modelId,
 			modelName: titleCaseFromSlug(slug),
 			modelUrl,
+			imageUrl: toModelOgUrlFromId(modelId),
 		};
 	}
 
@@ -168,6 +174,7 @@ function parseModelLine(rawLine: string): InternalModelNotificationModel | null 
 		modelId,
 		modelName: titleCaseFromSlug(modelId.split("/").at(-1) ?? modelId),
 		modelUrl: toModelUrlFromId(modelId),
+		imageUrl: toModelOgUrlFromId(modelId),
 	};
 }
 

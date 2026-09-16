@@ -45,6 +45,12 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providerIds.has("zai")).toBe(false);
 	});
 
+	it("does not include external aggregators in routable discovery", () => {
+		const providerIds = new Set(MODEL_DISCOVERY_PROVIDERS.map((provider) => provider.providerId));
+
+		expect(providerIds.has("openrouter")).toBe(false);
+	});
+
 	it("accepts deployed credential aliases for linked providers", () => {
 		const providers = new Map(MODEL_DISCOVERY_PROVIDERS.map((provider) => [provider.providerId, provider]));
 
@@ -55,7 +61,7 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 
 	it("includes models.dev parity aggregator and public catalog endpoints", () => {
 		const providers = new Map(MODEL_DISCOVERY_PROVIDERS.map((provider) => [provider.providerId, provider]));
-		for (const providerId of ["crossmodel", "digitalocean", "empiriolabs", "llmgateway", "openrouter", "ovhcloud", "pioneer", "vercel"]) {
+		for (const providerId of ["crossmodel", "digitalocean", "empiriolabs", "llmgateway", "ovhcloud", "pioneer", "vercel"]) {
 			expect(providers.has(providerId), providerId).toBe(true);
 		}
 		for (const providerId of ["huggingface", "kilo", "nano-gpt"]) {
@@ -74,10 +80,6 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 			modelsEndpointParams: {
 				accountId: ["CLOUDFLARE_WORKERS_AI_SYNC_ACCOUNT_ID", "CLOUDFLARE_ACCOUNT_ID"],
 			},
-		});
-		expect(providers.get("openrouter")).toMatchObject({
-			modelsEndpoint: "https://openrouter.ai/api/v1/models",
-			authStyle: "optional_bearer",
 		});
 		expect(providers.get("novita")).toMatchObject({
 			modelsEndpoint: "https://api.novita.ai/openai/v1/models",
