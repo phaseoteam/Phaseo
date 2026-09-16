@@ -273,7 +273,52 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 		{preview?.valid ? <Card className="overflow-hidden border-border/70"><CardHeader className="flex flex-row items-end justify-between gap-4 border-b border-border/60"><div><CardTitle>Catalog preview</CardTitle><CardDescription className="mt-1">A sample of what Phaseo received from your URL.</CardDescription></div><span className="font-mono text-[11px] text-muted-foreground">{preview.truncated ? "first 100 shown" : `${preview.models.length} shown`}</span></CardHeader><CardContent className="p-0"><div className="grid max-h-[32rem] overflow-y-auto sm:grid-cols-2">{preview.models.map((model) => <PreviewModel key={model.id} model={model} displayTimeZone={effectiveDisplayTimeZone} />)}</div></CardContent></Card> : null}
 
 		</> : null}
-		{initialData.reviewRevisions.length ? <section className="space-y-3"><div><h2 className="font-heading text-base font-medium">Review outcomes</h2><p className="mt-1 text-sm text-muted-foreground">Existing models are approved automatically. New canonical models wait for review; every route remains disabled until endpoint checks pass.</p></div><div className="space-y-3">{initialData.reviewRevisions.slice(0, 5).map((revision) => <Card key={revision.id} className="border-border/70"><CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-border/60 py-4"><div><CardTitle className="text-sm">Catalog revision</CardTitle><CardDescription className="mt-1">{revision.model_count ?? revision.models.length} models · {formatDate(revision.created_at)}</CardDescription></div><StatusPill tone={revision.review_status === "approved" ? "success" : revision.review_status === "pending" || revision.review_status === "in_progress" || revision.review_status === "needs_changes" ? "warning" : "neutral"}>{revision.review_status === "partially_approved" ? "Partially approved" : revision.review_status.replaceAll("_", " ")}</StatusPill></CardHeader><CardContent className="divide-y divide-border/60 p-0">{revision.models.slice(0, 100).map((model) => <div key={`${revision.id}:${model.model_slug}`} className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{model.name}</p><p className="truncate font-mono text-[11px] text-muted-foreground">{model.model_slug} · {model.provider_model_slug}</p><p className="mt-1 text-[11px] text-muted-foreground">{model.match_type === "new_model" ? "New canonical model" : model.match_type ? `Matched by ${model.match_type}` : "Matching"} · {model.availability.replaceAll("_", " ")} · route {model.route_projection_status.replaceAll("_", " ")}</p>{model.decision_reason ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{model.decision_reason}</p> : null}</div><StatusPill tone={model.decision === "approved" ? "success" : model.decision === "pending" || model.decision === "needs_changes" ? "warning" : "neutral"}>{model.decision.replaceAll("_", " ")}</StatusPill></div>)}</CardContent></Card>)}</div></section> : null}
+		{initialData.reviewRevisions.length ? (
+			<section className="space-y-3">
+				<div>
+					<h2 className="font-heading text-base font-medium">Catalog revisions</h2>
+					<p className="mt-1 text-sm text-muted-foreground">Review progress for submitted catalog changes.</p>
+				</div>
+				<div className="divide-y divide-border border-y border-border">
+					{initialData.reviewRevisions.slice(0, 5).map((revision, index) => {
+						const revisionLabel = revision.review_status === "partially_approved"
+							? "Partially approved"
+							: revision.review_status.replaceAll("_", " ");
+						const revisionTone = revision.review_status === "approved"
+							? "success"
+							: revision.review_status === "pending" || revision.review_status === "in_progress" || revision.review_status === "needs_changes"
+								? "warning"
+								: "neutral";
+
+						return (
+							<details key={revision.id} className="group" open={index === 0}>
+								<summary className="flex cursor-pointer list-none items-center gap-3 py-4 marker:hidden">
+									<ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
+									<div className="min-w-0 flex-1">
+										<p className="truncate text-sm font-medium">{revision.provider_slug}</p>
+										<p className="mt-0.5 text-xs text-muted-foreground">{formatDate(revision.created_at)} · {revision.model_count ?? revision.models.length} models</p>
+									</div>
+									<StatusPill tone={revisionTone}>{revisionLabel}</StatusPill>
+								</summary>
+								<div className="mb-4 ml-7 overflow-hidden rounded-lg border border-border/70">
+									{revision.models.slice(0, 100).map((model) => (
+										<div key={`${revision.id}:${model.model_slug}`} className="flex items-start gap-3 border-b border-border/60 px-3 py-3 last:border-0">
+											<div className="min-w-0 flex-1">
+												<p className="truncate text-sm font-medium">{model.name}</p>
+												<p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{model.model_slug} · {model.provider_model_slug}</p>
+												<p className="mt-1 text-xs text-muted-foreground">{model.match_type === "new_model" ? "New model" : model.match_type ? `Matched by ${model.match_type}` : "Matching"} · {model.availability.replaceAll("_", " ")} · {model.route_projection_status.replaceAll("_", " ")}</p>
+												{model.decision_reason ? <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{model.decision_reason}</p> : null}
+											</div>
+											<StatusPill tone={model.decision === "approved" ? "success" : model.decision === "pending" || model.decision === "needs_changes" ? "warning" : "neutral"}>{model.decision.replaceAll("_", " ")}</StatusPill>
+										</div>
+									))}
+								</div>
+							</details>
+						);
+					})}
+				</div>
+			</section>
+		) : null}
 
 		{initialData.events.length ? <section className="space-y-3"><div><h2 className="font-heading text-base font-medium">Notifications</h2><p className="mt-1 text-sm text-muted-foreground">Catalog sync and review events for your provider accounts.</p></div><div className="overflow-hidden rounded-xl border border-border/70">{initialData.events.slice(0, 10).map((event) => <div key={event.id} className="border-b border-border/60 px-4 py-3 last:border-0"><div className="flex items-center justify-between gap-3"><p className="text-sm font-medium">{event.title}</p><span className="text-[11px] text-muted-foreground">{formatDate(event.created_at)}</span></div><p className="mt-1 text-xs text-muted-foreground">{event.message}</p></div>)}</div></section> : null}
 

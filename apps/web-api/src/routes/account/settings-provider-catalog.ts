@@ -54,7 +54,7 @@ async function readManagedCatalogBody(request: Request): Promise<unknown> {
 }
 
 async function workspaceIds(client: any, userId: string): Promise<string[]> {
-	const memberships = client.from("workspace_members").select("workspace_id,role").eq("user_id", userId).in("role", ["owner", "admin", "editor"]);
+	const memberships = client.from("workspace_members").select("workspace_id,role").eq("user_id", userId).in("role", ["owner", "admin"]);
 	const [membershipResult, ownedResult] = await Promise.all([
 		memberships,
 		client.from("workspaces").select("id").eq("owner_user_id", userId),
