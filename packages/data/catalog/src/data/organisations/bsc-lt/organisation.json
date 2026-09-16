@@ -1,0 +1,12 @@
+{
+  "organisation_id": "bsc-lt",
+  "name": "BSC Language Technologies",
+  "country_code": "ES",
+  "description": "Language Technologies group at the Barcelona Supercomputing Center.",
+  "colour": null,
+  "organisation_links": [{ "platform": "hugging_face", "url": "https://huggingface.co/BSC-LT" }],
+  "status": "active",
+  "routable": null,
+  "sources": [{ "kind": "repository", "url": "https://huggingface.co/BSC-LT", "accessed_at": "2026-08-24T00:00:00Z", "notes": "Official model publisher profile linked by Nextbit." }],
+  "verification": { "status": "verified", "checked_at": "2026-08-24T00:00:00Z", "notes": "Publisher identity verified from the repository linked by Nextbit's live catalog." }
+}
