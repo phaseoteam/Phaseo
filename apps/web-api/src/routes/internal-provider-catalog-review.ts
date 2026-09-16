@@ -92,12 +92,17 @@ internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c)
 	const providerSlugs = selfServeProviders.map((provider: any) => provider.provider_slug);
 	const [candidateResult, submissionsResult] = await Promise.all([
 		providerSlugs.length ? client.from("provider_catalog_route_candidates").select("provider_slug,status").in("provider_slug", providerSlugs).in("status", ["probe_passed", "promoted"]) : Promise.resolve({ data: [], error: null }),
-		providerSlugs.length ? client.from("provider_onboarding_submissions").select("provider_slug,contact_email,created_at").in("provider_slug", providerSlugs).order("created_at", { ascending: false }) : Promise.resolve({ data: [], error: null }),
+		providerSlugs.length ? client.from("provider_onboarding_submissions").select("provider_slug,submitted_by,created_at").in("provider_slug", providerSlugs).order("created_at", { ascending: false }) : Promise.resolve({ data: [], error: null }),
 	]);
 	if (candidateResult.error || submissionsResult.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const passedProviders = new Set((candidateResult.data ?? []).map((candidate: any) => String(candidate.provider_slug)));
-	const contacts = new Map<string, string>();
-	for (const submission of submissionsResult.data ?? []) if (submission.contact_email && !contacts.has(String(submission.provider_slug))) contacts.set(String(submission.provider_slug), String(submission.contact_email));
+	const contactUserIds = new Map<string, string>();
+	for (const submission of submissionsResult.data ?? []) if (submission.submitted_by && !contactUserIds.has(String(submission.provider_slug))) contactUserIds.set(String(submission.provider_slug), String(submission.submitted_by));
+	const authUsers = new Map<string, string>();
+	await Promise.all([...new Set(contactUserIds.values())].map(async (userId) => {
+		const authUser = await client.auth.admin.getUserById(userId);
+		if (!authUser.error && authUser.data.user?.email) authUsers.set(userId, authUser.data.user.email);
+	}));
 	const providers = selfServeProviders.map((provider: any) => ({
 		provider_slug: provider.provider_slug,
 		name: provider.name,
@@ -105,7 +110,8 @@ internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c)
 		routable: provider.routable === true,
 		routing_enabled: provider.routing_enabled === true,
 		base_url: provider.base_url ?? null,
-		contact_email: contacts.get(String(provider.provider_slug)) ?? null,
+		contact_user_id: contactUserIds.get(String(provider.provider_slug)) ?? null,
+		contact_email: authUsers.get(contactUserIds.get(String(provider.provider_slug)) ?? "") ?? null,
 		website_url: typeof provider.metadata?.website_url === "string" ? provider.metadata.website_url : null,
 		review_status: String(provider.metadata?.self_serve?.provider_review_status ?? "awaiting_approval"),
 		review_reason: typeof provider.metadata?.self_serve?.provider_review_reason === "string" ? provider.metadata.self_serve.provider_review_reason : null,
@@ -130,9 +136,13 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/providers/:provider
 			client.from("provider_catalog_route_candidates").select("run_id").eq("provider_slug", providerSlug).in("status", ["probe_passed", "promoted"]).limit(1),
 		]);
 		if (provider.error || candidate.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const contact = await client.from("provider_onboarding_submissions").select("contact_email").eq("provider_slug", providerSlug).not("contact_email", "is", null).order("created_at", { ascending: false }).limit(1);
+		const contact = await client.from("provider_onboarding_submissions").select("submitted_by").eq("provider_slug", providerSlug).not("submitted_by", "is", null).order("created_at", { ascending: false }).limit(1);
 		if (contact.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-		if (!contact.data?.[0]?.contact_email) return c.json({ error: "provider_contact_required" }, 409, PRIVATE_NO_STORE_HEADERS);
+		const contactUserId = contact.data?.[0]?.submitted_by ? String(contact.data[0].submitted_by) : null;
+		if (!contactUserId) return c.json({ error: "provider_contact_required" }, 409, PRIVATE_NO_STORE_HEADERS);
+		const contactUser = await client.auth.admin.getUserById(contactUserId);
+		if (contactUser.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (!contactUser.data.user?.email) return c.json({ error: "provider_contact_required" }, 409, PRIVATE_NO_STORE_HEADERS);
 		if (!providerTechnicallyReady(provider.data, Boolean(candidate.data?.length))) return c.json({ error: "provider_not_ready_for_approval" }, 409, PRIVATE_NO_STORE_HEADERS);
 	}
 	const result = await client.rpc("set_self_serve_provider_review", {

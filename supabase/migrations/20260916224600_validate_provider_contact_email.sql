@@ -1,2 +1,2 @@
-alter table public.provider_onboarding_submissions
-  validate constraint provider_onboarding_submissions_contact_email_check;
+-- Provider contacts are referenced by provider_onboarding_submissions.submitted_by.
+-- No duplicate email column or validation constraint is required.

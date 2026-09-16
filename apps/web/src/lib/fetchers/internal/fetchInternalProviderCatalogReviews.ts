@@ -43,6 +43,7 @@ export type InternalProviderApplication = {
 	routable: boolean;
 	routing_enabled: boolean;
 	base_url: string | null;
+	contact_user_id: string | null;
 	contact_email: string | null;
 	website_url: string | null;
 	review_status: "setup" | "awaiting_approval" | "approved" | "paused" | "rejected" | "needs_changes";

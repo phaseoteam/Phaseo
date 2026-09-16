@@ -143,7 +143,6 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 	const router = useRouter();
 	const [showConnection, setShowConnection] = React.useState(false);
 	const [providerName, setProviderName] = React.useState("");
-	const [contactEmail, setContactEmail] = React.useState("");
 	const [providerSlug, setProviderSlug] = React.useState("");
 	const [slugTouched, setSlugTouched] = React.useState(false);
 	const [websiteUrl, setWebsiteUrl] = React.useState("");
@@ -207,7 +206,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 			}>(
 				"/api/account/settings/provider-onboarding/submit",
 				await getBrowserAccessToken(),
-				{ method: "POST", body: JSON.stringify({ providerName, contactEmail, providerSlug, websiteUrl, logoUrl, catalogMode, catalogUrl: catalogMode === "remote" ? catalogUrl : undefined, claimChallengeId: claim?.challengeId }) },
+				{ method: "POST", body: JSON.stringify({ providerName, providerSlug, websiteUrl, logoUrl, catalogMode, catalogUrl: catalogMode === "remote" ? catalogUrl : undefined, claimChallengeId: claim?.challengeId }) },
 			);
 			setSubmitted({ providerSlug: result.submission.provider_slug, modelCount: result.submission.model_count, webhookUrl: result.catalogSync.webhookUrl, webhookSecret: result.catalogSync.webhookSecret });
 			toast.success("Provider profile submitted");
@@ -237,7 +236,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 		}
 	}
 
-	const profileReady = Boolean(providerName.trim() && contactEmail.trim() && providerSlug.trim() && websiteUrl.trim() && (catalogMode === "managed" || catalogUrl.trim()));
+	const profileReady = Boolean(providerName.trim() && providerSlug.trim() && websiteUrl.trim() && (catalogMode === "managed" || catalogUrl.trim()));
 
 	return <div className="space-y-7">
 		{catalogProviders.length ? <>
@@ -253,7 +252,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 			<section className="grid gap-6 py-7 first:pt-0 lg:grid-cols-[minmax(180px,0.34fr)_minmax(0,0.66fr)]">
 				<div><h2 className="text-sm font-medium">Provider profile</h2><p className="mt-1 max-w-xs text-sm leading-6 text-muted-foreground">The public identity attached to your submission.</p></div>
 				<div className="space-y-5">
-					<div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="provider-name">Provider name</Label><Input id="provider-name" value={providerName} onChange={(event) => updateName(event.target.value)} placeholder="e.g. Acme Inference" autoComplete="organization" /></div><div className="space-y-2"><Label htmlFor="provider-slug">Provider slug</Label><Input id="provider-slug" value={providerSlug} onChange={(event) => { setClaim(null); setSlugTouched(true); setProviderSlug(event.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, "-")); }} placeholder="acme-inference" /><p className="text-[11px] text-muted-foreground">Used in provider URLs and routing metadata.</p></div><div className="space-y-2"><Label htmlFor="provider-website">Website</Label><Input id="provider-website" type="url" value={websiteUrl} onChange={(event) => { setClaim(null); setWebsiteUrl(event.target.value); }} placeholder="https://acme.example" autoComplete="url" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="provider-contact">Provider contact email</Label><Input id="provider-contact" type="email" value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} placeholder="platform@acme.example" autoComplete="email" /><p className="text-[11px] text-muted-foreground">Phaseo will use this address to complete the provider review before public routing is enabled.</p></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="provider-logo">Logo URL <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="provider-logo" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} placeholder="https://acme.example/brand/logo.svg" /><p className="text-[11px] text-muted-foreground">Use a stable HTTPS image URL. We’ll review it with the provider profile.</p></div></div>
+					<div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="provider-name">Provider name</Label><Input id="provider-name" value={providerName} onChange={(event) => updateName(event.target.value)} placeholder="e.g. Acme Inference" autoComplete="organization" /></div><div className="space-y-2"><Label htmlFor="provider-slug">Provider slug</Label><Input id="provider-slug" value={providerSlug} onChange={(event) => { setClaim(null); setSlugTouched(true); setProviderSlug(event.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, "-")); }} placeholder="acme-inference" /><p className="text-[11px] text-muted-foreground">Used in provider URLs and routing metadata.</p></div><div className="space-y-2"><Label htmlFor="provider-website">Website</Label><Input id="provider-website" type="url" value={websiteUrl} onChange={(event) => { setClaim(null); setWebsiteUrl(event.target.value); }} placeholder="https://acme.example" autoComplete="url" /><p className="text-[11px] text-muted-foreground">Your signed-in account email must use this organisation’s domain.</p></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="provider-logo">Logo URL <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="provider-logo" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} placeholder="https://acme.example/brand/logo.svg" /><p className="text-[11px] text-muted-foreground">Use a stable HTTPS image URL. We’ll review it with the provider profile.</p></div></div>
 					<p className="text-xs leading-5 text-muted-foreground">Your account becomes the controlling contact for this provider profile. A provider slug that is already claimed cannot be overwritten.</p>
 					<div className="space-y-3 border-t border-border pt-5"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-medium">Claim an existing profile</p><p className="mt-1 text-xs text-muted-foreground">Create a one-hour domain proof only when this provider slug already exists.</p></div><Button type="button" size="sm" variant="outline" disabled={startingClaim || !providerSlug || !websiteUrl} onClick={() => void startClaim()}>{startingClaim ? "Creating…" : "Create proof"}</Button></div>{claim ? <div className="space-y-2 border-l-2 border-foreground/20 pl-3 text-xs"><p>Publish this token as plain text at:</p><code className="block overflow-x-auto">{claim.verificationUrl}</code><code className="block overflow-x-auto font-semibold">{claim.token}</code><p className="text-muted-foreground">Leave the file in place, then submit the provider form.</p></div> : null}</div>
 				</div>

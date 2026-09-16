@@ -25,7 +25,6 @@ const optionalHttpsUrlSchema = z.preprocess((value) => value === "" ? undefined 
 const profileSchema = z.object({
 	providerSlug: providerSlugSchema,
 	providerName: z.string().trim().min(2).max(120),
-	contactEmail: z.string().trim().email().max(320),
 	websiteUrl: httpsUrlSchema,
 	logoUrl: optionalHttpsUrlSchema,
 	catalogUrl: optionalHttpsUrlSchema,
@@ -471,7 +470,8 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 	if (!parsed.success) return responseError(c, parsed.error.issues[0]?.message ?? "Complete all provider fields.");
 	const input = parsed.data;
 	const websiteHost = hostFromUrl(input.websiteUrl);
-	const contactHost = input.contactEmail.split("@").at(-1)?.toLowerCase() ?? "";
+	const contactHost = user.email?.split("@").at(-1)?.toLowerCase() ?? "";
+	if (!contactHost) return responseError(c, "Sign in with a provider email address before enrolling.");
 	if (!sameOrSubdomain(contactHost, websiteHost) && !sameOrSubdomain(websiteHost, contactHost)) {
 		return responseError(c, "Use a provider email address on the organisation website domain.");
 	}
@@ -588,7 +588,6 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		p_catalog_preview: { models: catalog.preview.models, truncated: catalog.preview.truncated },
 		p_validation_summary: { valid: true, issues: [], checked_at: new Date().toISOString() },
 		p_model_count: catalog.preview.modelCount,
-		p_contact_email: input.contactEmail,
 		p_proof_method: proofMethod,
 		p_proof_subject: catalogHost,
 		p_claim_challenge_id: verifiedClaimChallengeId,
