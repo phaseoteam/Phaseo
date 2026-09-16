@@ -30,6 +30,7 @@ import OtherInfo from "@/components/(data)/model/overview/OtherInfo";
 import ModelLinks, { hasModelLinks } from "@/components/(data)/model/overview/ModelLinks";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/swr/providerCatalogPreviews";
 import {
 	getModelGatewayMetadataCached,
 	type ModelGatewayMetadata,
@@ -55,7 +56,6 @@ import { isEpochConfidenceIntervalForScore } from "@/lib/benchmarks/epoch";
 import { epochModelKey, fetchEpochConfidenceIntervals } from "@/lib/benchmarks/epochData";
 import { fetchFrontendRankingBenchmarks } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
 	Carousel,
@@ -82,6 +82,7 @@ import {
 import ModelVerificationSection, {
 	supportsProvenanceVerification,
 } from "@/components/(data)/model/overview/ModelVerificationSection";
+import { ProviderCatalogPreviewDetailsSection } from "@/components/(data)/model/ProviderCatalogPreviewDetailContent";
 
 type ModelOverviewSectionsProps = {
 	modelId: string;
@@ -95,6 +96,8 @@ type ModelOverviewSectionsProps = {
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
 	isPrivateModel?: boolean;
 	privateProviders?: ProviderPricing[];
+	previewOffers?: AuthenticatedProviderCatalogPreview[];
+	showPreviewDetails?: boolean;
 };
 
 export type ModelSectionSharedProps = {
@@ -227,9 +230,10 @@ export async function ModelProvidersSection({
 	modelName,
 	creatorOrganisationId,
 	creatorOrganisationName,
+	previewOffers,
 	description = "API providers, route pricing, availability, and recent reliability signals.",
 	providersOverride,
-}: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null; creatorOrganisationName?: string | null; description?: string | null; providersOverride?: ProviderPricing[] }) {
+}: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null; creatorOrganisationName?: string | null; previewOffers?: AuthenticatedProviderCatalogPreview[]; description?: string | null; providersOverride?: ProviderPricing[] }) {
 	await connection();
 	return (
 		<ModelPricing
@@ -242,6 +246,7 @@ export async function ModelProvidersSection({
 			creatorOrganisationId={creatorOrganisationId}
 			creatorOrganisationName={creatorOrganisationName}
 			providersOverride={providersOverride}
+			previewOffers={previewOffers}
 		/>
 	);
 }
@@ -249,12 +254,14 @@ export async function ModelProvidersSection({
 export async function ModelPricingInsightsOverviewSection({
 	modelId,
 	includeHidden,
-}: ModelSectionSharedProps) {
+	previewOffers = [],
+}: ModelSectionSharedProps & { previewOffers?: AuthenticatedProviderCatalogPreview[] }) {
 	return (
 		<ModelPricingInsightsSection
 			modelId={modelId}
 			includeHidden={includeHidden}
 			showPageHeader={false}
+			hasSubmittedProviderPrices={previewOffers.some((offer) => (offer.pricing?.length ?? 0) > 0)}
 		/>
 	);
 }
@@ -881,7 +888,6 @@ export async function ModelAboutSection({
 			</div>
 		);
 	};
-
 	return (
 		<>
 			<div className="space-y-2">
@@ -1340,6 +1346,8 @@ export default function ModelOverviewSections({
 	performancePromise,
 	isPrivateModel = false,
 	privateProviders,
+	previewOffers = [],
+	showPreviewDetails = Boolean(model),
 }: ModelOverviewSectionsProps) {
 	const hasInternalModelData = Boolean(model);
 	const isRetired = status === "Retired";
@@ -1377,6 +1385,15 @@ export default function ModelOverviewSections({
 								<ModelAboutSection model={model!} />
 							</Suspense>
 						</Section>
+						{showPreviewDetails && previewOffers.length > 0 ? (
+							<Section id="provider-submissions">
+								<SectionHeader
+									title="Provider submissions"
+									description="Complete provider-supplied details for authorized internal review."
+								/>
+								<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
+							</Section>
+						) : null}
 						{showSubscriptions ? (
 							<Section id="subscriptions">
 								<SectionHeader
@@ -1411,6 +1428,7 @@ export default function ModelOverviewSections({
 								modelName={model?.name}
 								creatorOrganisationId={model?.organisation_id}
 								creatorOrganisationName={model?.organisation?.name}
+								previewOffers={previewOffers}
 								description="Provider listings and known route availability for this model."
 							/>
 						</Suspense>
@@ -1444,6 +1462,15 @@ export default function ModelOverviewSections({
 								<ModelAboutSection model={model!} />
 							</Suspense>
 						</Section>
+						{showPreviewDetails && previewOffers.length > 0 ? (
+							<Section id="provider-submissions">
+								<SectionHeader
+									title="Provider submissions"
+									description="Complete provider-supplied details for authorized internal review."
+								/>
+								<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
+							</Section>
+						) : null}
 						{showSubscriptions ? (
 							<Section id="subscriptions">
 								<SectionHeader
@@ -1478,6 +1505,7 @@ export default function ModelOverviewSections({
 							creatorOrganisationId={model?.organisation_id}
 							creatorOrganisationName={model?.organisation?.name}
 							providersOverride={privateProviders}
+							previewOffers={previewOffers}
 							description="API providers, route pricing, availability, and recent reliability signals."
 						/>
 					</Suspense>
@@ -1505,6 +1533,7 @@ export default function ModelOverviewSections({
 					<ModelPricingInsightsOverviewSection
 						modelId={modelId}
 						includeHidden={includeHidden}
+						previewOffers={previewOffers}
 					/>
 				</Suspense>
 			</Section> : null}
@@ -1567,9 +1596,18 @@ export default function ModelOverviewSections({
 							description="Key dates, capabilities, and model metadata."
 						/>
 						<Suspense fallback={<AboutSectionSkeleton />}>
-							<ModelAboutSection model={model!} />
+								<ModelAboutSection model={model!} />
 						</Suspense>
 					</Section>
+					{showPreviewDetails && previewOffers.length > 0 ? (
+						<Section id="provider-submissions">
+							<SectionHeader
+								title="Provider submissions"
+								description="Complete provider-supplied details for authorized internal review."
+							/>
+							<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
+						</Section>
+					) : null}
 					{showSubscriptions ? (
 						<Section id="subscriptions">
 							<SectionHeader

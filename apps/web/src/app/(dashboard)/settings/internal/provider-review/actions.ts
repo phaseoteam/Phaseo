@@ -34,3 +34,12 @@ export async function promoteProviderRouteCandidateAction(input: { runId: string
 		{ method: "POST" },
 	);
 }
+
+export async function reviewProviderApplicationAction(input: { providerSlug: string; decision: "approved" | "paused" | "rejected" | "needs_changes"; reason?: string }) {
+	const context = await getServerAccountContext();
+	return fetchInternalWebApi<{ ok: true; provider: { providerSlug: string; decision: string; activatedRouteIds: string[] } }>(
+		`/api/internal/provider-catalog/providers/${encodeURIComponent(input.providerSlug)}`,
+		context.accessToken,
+		{ method: "PATCH", body: JSON.stringify({ decision: input.decision, reason: input.reason }) },
+	);
+}

@@ -56,6 +56,7 @@ interface HeaderProps {
 	teams?: { id: string; name: string }[];
 	currentTeamId?: string;
 	userRole?: string | undefined;
+	providerMode?: boolean;
 	variant?: "mobile" | "desktop";
 }
 
@@ -65,6 +66,7 @@ export default function HeaderClient({
 	teams = [],
 	currentTeamId,
 	userRole,
+	providerMode = false,
 	variant = "desktop",
 }: HeaderProps) {
 	const router = useRouter();
@@ -277,7 +279,7 @@ export default function HeaderClient({
 								<DropdownMenuSeparator />
 							</>
 						)}
-						{isLoggedIn && teams.length > 0 && (
+						{isLoggedIn && !providerMode && teams.length > 0 && (
 							<>
 								<Popover
 									modal={false}
@@ -393,9 +395,9 @@ export default function HeaderClient({
 							</DropdownMenuItem>
 
 							<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
-								<Link href="/settings/workspaces/settings" prefetch={false}>
+								<Link href={providerMode ? "/settings/provider/models" : "/settings/workspaces/settings"} prefetch={false}>
 									<Users className="h-4 w-4" />
-									<span>Workspaces</span>
+									<span>{providerMode ? "Manage catalog" : "Workspaces"}</span>
 								</Link>
 							</DropdownMenuItem>
 
@@ -408,6 +410,7 @@ export default function HeaderClient({
 
 							<DropdownMenuSeparator />
 
+							{!providerMode && <>
 							<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
 								<Link
 									href={`/settings/usage/overview?workspace_id=${encodeURIComponent(
@@ -442,6 +445,7 @@ export default function HeaderClient({
 									<span>Keys</span>
 								</Link>
 							</DropdownMenuItem>
+							</>}
 								<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
 									<Link href="/contact" prefetch={false}>
 										<LifeBuoy className="h-4 w-4" />
@@ -596,6 +600,7 @@ export default function HeaderClient({
 						user={user}
 						teams={teams}
 						userRole={userRole}
+						providerMode={providerMode}
 						onSignOut={handleSignOut}
 						initialActiveTeamId={currentTeamId}
 					/>

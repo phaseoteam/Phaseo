@@ -47,10 +47,10 @@ export const providerCatalogJsonSchema = {
 		model: {
 			type: "object", required: ["id", "capabilities"], additionalProperties: false,
 			properties: {
-				id: { type: "string", maxLength: MAX_STRING_LENGTH, pattern: MODEL_ID.source }, name: { type: "string", maxLength: MAX_STRING_LENGTH }, description: { type: "string", maxLength: MAX_STRING_LENGTH },
+				id: { type: "string", maxLength: MAX_STRING_LENGTH, pattern: MODEL_ID.source }, name: { type: "string", maxLength: MAX_STRING_LENGTH }, description: { type: ["string", "null"], maxLength: MAX_STRING_LENGTH },
 				provider_model_slug: { type: "string", maxLength: MAX_STRING_LENGTH }, input_modalities: { type: "array", maxItems: 32, items: { type: "string" } }, output_modalities: { type: "array", maxItems: 32, items: { type: "string" } },
-				context_length: { type: "integer", minimum: 1 }, max_output_tokens: { type: "integer", minimum: 1 },
-				availability: { enum: ["ready", "not_ready", "degraded", "deprecated", "retired"] }, available_from: { type: "string", format: "date-time" }, deprecated_at: { type: "string", format: "date-time" }, shutdown_at: { type: "string", format: "date-time" },
+				context_length: { type: ["integer", "null"], minimum: 1 }, max_output_tokens: { type: ["integer", "null"], minimum: 1 },
+				availability: { enum: ["ready", "not_ready", "degraded", "deprecated", "retired"] }, available_from: { type: ["string", "null"], format: "date-time", description: "RFC 3339 timestamp with an explicit timezone offset." }, deprecated_at: { type: ["string", "null"], format: "date-time" }, shutdown_at: { type: ["string", "null"], format: "date-time" },
 				pricing: { type: "array", items: { type: "object", additionalProperties: false, required: ["meter_key", "modality", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit"], properties: { meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: "string" }, unit: { type: "string" }, unit_quantity: { type: "number", exclusiveMinimum: 0 }, price_nanos: { type: "number", minimum: 0 }, display_label: { type: "string" }, display_unit: { type: "string" } } } },
 				capabilities: { type: "array", minItems: 1, items: { $ref: "#/$defs/capability" } },
 			},
@@ -119,8 +119,10 @@ function positiveInteger(value: unknown): number | null {
 	return Number.isInteger(number) && number > 0 ? number : null;
 }
 
+const RFC3339_EXPLICIT_TIMEZONE = /(?:Z|[+-]\d{2}:\d{2})$/i;
+
 function timestamp(value: unknown): string | null {
-	if (typeof value !== "string" || !value.trim()) return null;
+	if (typeof value !== "string" || !value.trim() || !RFC3339_EXPLICIT_TIMEZONE.test(value.trim())) return null;
 	const date = new Date(value);
 	return Number.isNaN(date.valueOf()) ? null : date.toISOString();
 }
@@ -215,8 +217,8 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		const unknownModelKey = Object.keys(model).find((key) => !allowedModelKeys.has(key));
 		if (unknownModelKey) { issues.push({ path: `data[${index}].${unknownModelKey}`, message: "Unknown model field." }); continue; }
 		if (["id", "name", "description", "provider_model_slug"].some((key) => typeof model[key] === "string" && String(model[key]).length > MAX_STRING_LENGTH)) { issues.push({ path: `data[${index}]`, message: `Model strings must not exceed ${MAX_STRING_LENGTH} characters.` }); continue; }
-		for (const key of ["name", "description", "provider_model_slug"] as const) if (model[key] !== undefined && typeof model[key] !== "string") issues.push({ path: `data[${index}].${key}`, message: "Expected a string." });
-		for (const key of ["context_length", "max_output_tokens"] as const) if (model[key] !== undefined && positiveInteger(model[key]) === null) issues.push({ path: `data[${index}].${key}`, message: "Expected a positive integer." });
+		for (const key of ["name", "description", "provider_model_slug"] as const) if (model[key] !== undefined && !(key === "description" && model[key] === null) && typeof model[key] !== "string") issues.push({ path: `data[${index}].${key}`, message: "Expected a string." });
+		for (const key of ["context_length", "max_output_tokens"] as const) if (model[key] != null && positiveInteger(model[key]) === null) issues.push({ path: `data[${index}].${key}`, message: "Expected a positive integer." });
 		if (issues.some((issue) => issue.path.startsWith(`data[${index}].`) && ["Expected a string.", "Expected a positive integer."].includes(issue.message))) continue;
 		const id = stringValue(model.id ?? model.model_id ?? model.model);
 		if (!MODEL_ID.test(id)) {
@@ -261,7 +263,7 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		const deprecatedAt = timestamp(model.deprecated_at);
 		const shutdownAt = timestamp(model.shutdown_at);
 		for (const [key, rawValue, normalized] of [["available_from", model.available_from, availableFrom], ["deprecated_at", model.deprecated_at, deprecatedAt], ["shutdown_at", model.shutdown_at, shutdownAt]] as const) {
-			if (rawValue !== undefined && normalized === null) issues.push({ path: `data[${index}].${key}`, message: "Expected an ISO 8601 timestamp." });
+			if (rawValue != null && normalized === null) issues.push({ path: `data[${index}].${key}`, message: "Expected an ISO 8601 timestamp with an explicit timezone (Z or ±HH:MM)." });
 		}
 		if ((availableFrom && deprecatedAt && deprecatedAt <= availableFrom) || (deprecatedAt && shutdownAt && shutdownAt <= deprecatedAt) || (availableFrom && shutdownAt && shutdownAt <= availableFrom)) { issues.push({ path: `data[${index}]`, message: "Lifecycle timestamps must be in chronological order." }); continue; }
 		if (issues.some((issue) => issue.path.startsWith(`data[${index}].`) && issue.message.includes("timestamp"))) continue;

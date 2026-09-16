@@ -103,6 +103,7 @@ export interface ProviderModel {
 		| null;
 	access_scope?: "public" | "internal" | null;
     is_active_gateway: boolean;
+	is_unreleased?: boolean;
     input_modalities: string;   // CSV in your current schema
     output_modalities: string;  // CSV in your current schema
     quantization_scheme?: string | null;

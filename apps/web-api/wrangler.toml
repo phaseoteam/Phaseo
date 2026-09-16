@@ -17,10 +17,11 @@ PROFILE_AVATARS_PUBLIC_BASE_URL = "https://avatars.phaseo.app"
 # Set by deployment environment; kept out of source configuration.
 # STAGING_GATEWAY_BASE_URL = "https://<staging-gateway>/v1"
 
-# Polling is the delivery backstop for providers that do not send webhooks or
-# whose webhook delivery is delayed. The worker only processes due sources.
+# The minute tick activates scheduled releases promptly. Catalog polling remains
+# bounded by each source's next_poll_at, so this does not poll every provider
+# every minute.
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["* * * * *"]
 
 [[r2_buckets]]
 binding = "PROFILE_AVATARS_BUCKET"

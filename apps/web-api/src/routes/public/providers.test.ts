@@ -217,7 +217,7 @@ describe("public provider routes", () => {
 	it("returns the provider model list with merged capabilities and current pricing", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
-			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([{ provider_model_id: "pm-1", provider_slug: "openai", provider_model_slug: "gpt-test", model_slug: "openai/gpt-test", routing_enabled: true, status: "active", input_modalities: ["text"], output_modalities: ["text"], created_at: "2026-07-01T00:00:00Z" }]), { status: 200 });
+			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([{ provider_model_id: "pm-1", provider_slug: "openai", provider_model_slug: "gpt-test", model_slug: "openai/gpt-test", routing_enabled: true, status: "active", access_scope: "public", input_modalities: ["text"], output_modalities: ["text"], created_at: "2026-07-01T00:00:00Z" }]), { status: 200 });
 			if (url.includes("v2_route_capabilities")) return new Response(JSON.stringify([{ provider_model_id: "pm-1", capability_id: "chat/completions", params: { temperature: true }, status: "active" }]), { status: 200 });
 			if (url.includes("v2_pricing_skus")) return new Response(JSON.stringify([{ sku_id: "sku-1", provider_model_id: "pm-1", service_tier_slug: "standard", status: "active", effective_from: "2026-01-01T00:00:00Z", effective_to: null }]), { status: 200 });
 			if (url.includes("v2_pricing_sku_meters")) return new Response(JSON.stringify([
@@ -234,5 +234,31 @@ describe("public provider routes", () => {
 		expect(payload.models).toHaveLength(1);
 		expect(payload.models[0]).toMatchObject({ model_id: "openai/gpt-test", api_model_id: "gpt-test", model_name: "GPT Test", endpoints: ["chat/completions"], supported_params: ["temperature"], input_price_per_1m_usd: 2, output_price_per_1m_usd: 6 });
 		expect(payload.models[0]?.pricing_meters).toEqual(expect.arrayContaining([expect.objectContaining({ meter: "input_text_tokens", price_per_1m_usd: 2 })]));
+	});
+
+	it("lists public coming-soon mappings while withholding internal routes", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([
+				{ provider_model_id: "pm-preview", provider_slug: "openai", provider_model_slug: "gpt-preview", model_slug: "openai/gpt-preview", routing_enabled: false, status: "active", provider_availability_status: "coming_soon", phaseo_status: "planned", access_scope: "public", input_modalities: ["text"], output_modalities: ["text"], created_at: "2026-07-01T00:00:00Z" },
+				{ provider_model_id: "pm-internal", provider_slug: "openai", provider_model_slug: "gpt-internal", model_slug: "openai/gpt-internal", routing_enabled: false, status: "active", provider_availability_status: "coming_soon", phaseo_status: "testing", access_scope: "internal", input_modalities: ["text"], output_modalities: ["text"], created_at: "2026-07-02T00:00:00Z" },
+			]), { status: 200 });
+			if (url.includes("v2_models")) return new Response(JSON.stringify([
+				{ model_slug: "openai/gpt-preview", name: "GPT Preview", released_at: null, announced_at: "2026-07-01", hidden: false, status: "active" },
+				{ model_slug: "openai/gpt-internal", name: "GPT Internal", released_at: null, announced_at: "2026-07-02", hidden: false, status: "active" },
+			]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/_web/api-providers/openai/models", {}, env);
+		expect(response.status).toBe(200);
+		const payload = await response.json() as { models: Array<Record<string, unknown>> };
+		expect(payload.models).toHaveLength(1);
+		expect(payload.models[0]).toMatchObject({
+			model_id: "openai/gpt-preview",
+			availability_status: "coming_soon",
+			availability_reason: "provider_coming_soon",
+			is_active_gateway: false,
+		});
 	});
 });

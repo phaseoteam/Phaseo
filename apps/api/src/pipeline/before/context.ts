@@ -715,8 +715,11 @@ async function fetchTestingProviderSnapshots(args: {
         .in("model_slug", modelCandidates)
         .eq("access_scope", "internal")
         .in("phaseo_status", ["testing", "enabled"])
-        .in("provider_availability_status", ["available", "preview", "limited_access"])
-        .in("status", ["active", "degraded"]);
+        // Internal testing may use a staged/disabled route before the model is
+        // public. Public routing still requires the normal active route and
+        // routing_enabled checks later in the pipeline.
+        .in("provider_availability_status", ["coming_soon", "available", "preview", "limited_access"])
+        .in("status", ["active", "degraded", "disabled"]);
 
     if (byApiModelResult.error) return [];
 
@@ -729,9 +732,14 @@ async function fetchTestingProviderSnapshots(args: {
     const providerRows = Array.from(providerRowById.values());
     if (!providerRows.length) return [];
 
-    const inWindowRows = providerRows.filter((row: any) =>
-        isWithinEffectiveWindow(row?.effective_from, row?.effective_to, nowMs)
-    );
+    // Internal testing is deliberately allowed before a scheduled public
+    // release. The end of a route's effective window still applies so a
+    // retired/shutdown route cannot be revived by testing mode.
+    const inWindowRows = providerRows.filter((row: any) => {
+		if (row?.effective_to == null) return true;
+		const effectiveTo = toMillis(row.effective_to);
+		return Number.isFinite(effectiveTo) && effectiveTo > nowMs;
+    });
     if (!inWindowRows.length) return [];
 
     const providerModelIds = Array.from(

@@ -419,6 +419,7 @@ describe("account settings routes", () => {
 				platformRole: "user",
 				isInternalAdmin: false,
 				isProvider: false,
+				providerMode: false,
 				providerSlugs: [],
 				workspaceRole: "admin",
 				workspaceKind: "enterprise",

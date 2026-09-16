@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/collapsible";
 import {
 	SidebarContent,
+	SidebarFooter,
 	SidebarGroup,
 	SidebarGroupContent,
 	SidebarHeader,
@@ -40,6 +41,7 @@ export default function SettingsSidebar({
 	showEnterprise = false,
 	showAutoRouting = false,
 	showInternal = false,
+	providerMode = false,
 }: {
 	/**
 	 * Optional slot for lightweight, non-blocking sidebar adornments (e.g. alert counts).
@@ -51,13 +53,14 @@ export default function SettingsSidebar({
 	showEnterprise?: boolean;
 	showAutoRouting?: boolean;
 	showInternal?: boolean;
+	providerMode?: boolean;
 }) {
 	const pathname = usePathname();
 	const { isMobile, setOpenMobile, state, toggleSidebar } = useSidebar();
 	const isCollapsed = state === "collapsed" && !isMobile;
 	const [search, setSearch] = useState("");
 	const isSearching = search.trim().length > 0 && !isCollapsed;
-	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showEnterprise, showAutoRouting, showInternal });
+	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showEnterprise, showAutoRouting, showInternal, providerMode });
 
 	function matchScore(item: NavItem) {
 		const path = pathname ?? "";
@@ -89,7 +92,7 @@ export default function SettingsSidebar({
 				return b.score!.len - a.score!.len;
 			})[0] ?? null;
 	const activeItem = activeEntry?.item ?? null;
-	const routeScope = activeEntry?.group.scope ?? "personal";
+	const routeScope = providerMode && pathname === "/settings/account/providers" ? "provider" : activeEntry?.group.scope ?? "personal";
 	const [scopeSelection, setScopeSelection] = useState<{
 		routeScope: SettingsScope;
 		selectedScope: SettingsScope;
@@ -120,6 +123,8 @@ export default function SettingsSidebar({
 	const visibleGroups = isSearching
 		? filterSettingsNavigation(navGroups, search)
 		: navGroups.filter((group) => group.scope === selectedScope);
+	const businessScope = providerMode ? "provider" : "workspace";
+	const businessLabel = providerMode ? "Provider" : "Workspace";
 	const selectScope = (nextScope: SettingsScope) => {
 		setSearch("");
 		setScopeSelection({ routeScope, selectedScope: nextScope });
@@ -323,7 +328,7 @@ export default function SettingsSidebar({
 				<div className="px-2 pb-2 pt-3">
 					<div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1" aria-label="Settings scope">
 						<button type="button" data-settings-segment aria-pressed={selectedScope === "personal"} onClick={() => selectScope("personal")} className={selectedScope === "personal" ? "flex h-8 items-center justify-center gap-1.5 rounded-md bg-background px-2 text-xs font-medium text-foreground shadow-sm" : "flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:text-foreground"}><UserRound className="size-3.5" />Account</button>
-						<button type="button" data-settings-segment aria-pressed={selectedScope === "workspace"} onClick={() => selectScope("workspace")} className={selectedScope === "workspace" ? "flex h-8 items-center justify-center gap-1.5 rounded-md bg-background px-2 text-xs font-medium text-foreground shadow-sm" : "flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:text-foreground"}><Building2 className="size-3.5" />Workspace</button>
+						<button type="button" data-settings-segment aria-pressed={selectedScope === businessScope} onClick={() => selectScope(businessScope)} className={selectedScope === businessScope ? "flex h-8 items-center justify-center gap-1.5 rounded-md bg-background px-2 text-xs font-medium text-foreground shadow-sm" : "flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:text-foreground"}><Building2 className="size-3.5" />{businessLabel}</button>
 					</div>
 				</div>
 			</div>
@@ -335,7 +340,7 @@ export default function SettingsSidebar({
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 					<SidebarMenuItem>
-						<SidebarMenuButton isActive={selectedScope === "workspace"} tooltip="Workspace" className="!rounded-lg" aria-label="Show Workspace settings" onClick={() => selectScope("workspace")}>
+						<SidebarMenuButton isActive={selectedScope === businessScope} tooltip={businessLabel} className="!rounded-lg" aria-label={`Show ${businessLabel} settings`} onClick={() => selectScope(businessScope)}>
 							<Building2 className="size-4" />
 						</SidebarMenuButton>
 					</SidebarMenuItem>
@@ -358,6 +363,16 @@ export default function SettingsSidebar({
 					</div>
 				</ScrollArea>
 			</SidebarContent>
+			{!providerMode && <SidebarFooter className="shrink-0 border-t p-2">
+				<SidebarMenu><SidebarMenuItem>
+					<SidebarMenuButton asChild tooltip="Become a Provider" isActive={pathname === "/settings/account/providers"} className="!rounded-lg">
+						<Link href="/settings/account/providers" onClick={closeMobile} aria-label="Become a Provider">
+							<Building2 className="size-4" />
+							<span className="group-data-[collapsible=icon]:hidden">Become a Provider</span>
+						</Link>
+					</SidebarMenuButton>
+				</SidebarMenuItem></SidebarMenu>
+			</SidebarFooter>}
 		</>
 	);
 }

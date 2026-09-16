@@ -12,6 +12,7 @@ export type SettingsLayoutInitialData = {
 		platformRole: string;
 		isInternalAdmin: boolean;
 		isProvider: boolean;
+		providerMode?: boolean;
 		providerSlugs: string[];
 		workspaceRole: string | null;
 		workspaceKind: "personal" | "organization" | "enterprise" | "provider" | null;
@@ -353,6 +354,15 @@ export type SettingsProviderOnboardingInitialData = {
 		status: "pending" | "active";
 		verified_at: string | null;
 	}>;
+	catalogProviders: Array<{
+		provider_slug: string;
+		name?: string;
+		operatingStatus?: string;
+		workspace_id: string;
+		role: string;
+		status: "pending" | "active";
+		verified_at: string | null;
+	}>;
 	submissions: ProviderOnboardingSubmission[];
 	syncSources: Array<{
 		provider_slug: string;
@@ -360,6 +370,7 @@ export type SettingsProviderOnboardingInitialData = {
 		delivery_mode: "polling" | "webhook_and_polling";
 		catalog_url: string;
 		webhookUrl: string;
+		webhookConfigured: boolean;
 		last_success_at: string | null;
 		last_polled_at: string | null;
 		last_catalog_sha256: string | null;

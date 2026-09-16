@@ -19,6 +19,7 @@ export type InternalAuthHeaderData = {
 	teams: Array<{ id: string; name: string }>;
 	currentTeamId?: string;
 	userRole?: string;
+	providerMode?: boolean;
 };
 
 export type InternalAuthStatsigData = {

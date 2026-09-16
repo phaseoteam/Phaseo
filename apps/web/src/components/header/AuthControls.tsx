@@ -45,6 +45,7 @@ export default async function AuthControls({
 			teams={data.teams}
 			currentTeamId={data.currentTeamId}
 			userRole={data.userRole}
+			providerMode={data.providerMode}
 			variant={variant}
 		/>
 	);

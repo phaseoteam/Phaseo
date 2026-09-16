@@ -21,12 +21,14 @@ const providerSlugSchema = z.string().trim().toLowerCase().min(2).max(64).regex(
 const MAX_PROVIDER_SOURCES_PER_USER = 5;
 const MAX_PROVIDER_SUBMISSIONS_PER_USER_PER_DAY = 5;
 const httpsUrlSchema = z.string().trim().url().refine((value) => new URL(value).protocol === "https:");
+const optionalHttpsUrlSchema = z.preprocess((value) => value === "" ? undefined : value, httpsUrlSchema.optional());
 const profileSchema = z.object({
 	providerSlug: providerSlugSchema,
 	providerName: z.string().trim().min(2).max(120),
 	websiteUrl: httpsUrlSchema,
-	logoUrl: httpsUrlSchema.optional().or(z.literal("")),
-	catalogUrl: httpsUrlSchema,
+	logoUrl: optionalHttpsUrlSchema,
+	catalogUrl: optionalHttpsUrlSchema,
+	catalogMode: z.enum(["remote", "managed"]).default("remote"),
 	claimChallengeId: z.string().uuid().optional(),
 });
 
@@ -38,7 +40,7 @@ async function sha256(value: string): Promise<string> {
 function claimUrl(domain: string): string { return `https://${domain}/.well-known/phaseo-provider-claim.txt`; }
 
 async function verifyClaimFile(domain: string, expectedHash: string): Promise<boolean> {
-	const response = await fetch(claimUrl(domain), { method: "GET", redirect: "error", signal: AbortSignal.timeout(10_000) });
+	const response = await fetch(claimUrl(domain), { method: "GET", redirect: "manual", signal: AbortSignal.timeout(10_000) });
 	if (!response.ok) return false;
 	const length = Number(response.headers.get("content-length") ?? 0);
 	if (length > 4_096) return false;
@@ -60,8 +62,11 @@ function hostFromUrl(value: string): string {
 	return new URL(value).hostname.toLowerCase().replace(/^www\./, "");
 }
 
-function providerCatalogWebhookUrl(env: Env, providerSlug: string): string {
-	const origin = env.NEXT_PUBLIC_API_URL?.trim() || "https://phaseo.app";
+function providerCatalogWebhookUrl(env: Env, providerSlug: string, requestUrl: string): string {
+	const request = new URL(requestUrl);
+	const origin = env.ENV === "production" || request.hostname === "phaseo.app" || request.hostname === "www.phaseo.app"
+		? "https://phaseo.app"
+		: request.origin;
 	const url = new URL(origin);
 	url.pathname = `/api/internal/provider-catalog/${providerSlug}`;
 	url.search = "";
@@ -125,18 +130,178 @@ async function manageableWorkspaceIds(client: any, userId: string): Promise<stri
 	return [...new Set([...(memberships.data ?? []).map((row: any) => String(row.workspace_id)), ...(owned.data ?? []).map((row: any) => String(row.id))])];
 }
 
-async function createProviderWorkspace(client: any, userId: string, providerSlug: string, providerName: string): Promise<string> {
-	for (let attempt = 0; attempt < 3; attempt += 1) {
-		const suffix = attempt === 0 ? "" : `-${crypto.randomUUID().slice(0, 6)}`;
-		const created = await client.from("workspaces").insert({ name: `${providerName} Provider`, slug: `${providerSlug}-provider${suffix}`.slice(0, 80), owner_user_id: userId, workspace_kind: "provider" }).select("id").single();
-		if (!created.error && created.data?.id) {
-			const membership = await client.from("workspace_members").upsert({ workspace_id: created.data.id, user_id: userId, role: "owner" }, { onConflict: "workspace_id,user_id" });
-			if (membership.error) throw membership.error;
-			return String(created.data.id);
-		}
-		if (created.error?.code !== "23505") throw created.error;
+function previewAvailability(model: any, now = Date.now()): { status: "coming_soon" | "not_active"; reason: string } {
+	const availability = String(model.availability ?? "ready").trim().toLowerCase();
+	if (availability === "retired") return { status: "not_active", reason: "retired" };
+	if (availability === "deprecated") return { status: "not_active", reason: "deprecated" };
+	const availableFrom = Date.parse(String(model.available_from ?? ""));
+	if (Number.isFinite(availableFrom) && availableFrom > now) return { status: "coming_soon", reason: "scheduled" };
+	if (availability === "not_ready") return { status: "coming_soon", reason: "provider_not_ready" };
+	if (availability === "degraded") return { status: "coming_soon", reason: "provider_degraded" };
+	if (String(model.decision ?? "pending") === "needs_changes") return { status: "coming_soon", reason: "needs_changes" };
+	if (String(model.route_projection_status ?? "not_projected") === "failed") return { status: "coming_soon", reason: "endpoint_checks_failed" };
+	if (String(model.decision ?? "pending") !== "approved") return { status: "coming_soon", reason: "pending_review" };
+	return { status: "coming_soon", reason: "pending_endpoint_checks" };
+}
+
+function uniqueStringValues(values: unknown[]): string[] {
+	return [...new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean))];
+}
+
+type PreviewTestBlockedReason =
+	| "model_not_testable"
+	| "provider_endpoint_missing"
+	| "provider_adapter_missing"
+	| "provider_credentials_missing"
+	| "route_not_staged";
+
+function providerCatalogPreviewRouteMatches(model: any, route: any): boolean {
+	if (String(route?.provider_slug ?? "").trim() !== String(model?.provider_slug ?? "").trim()) return false;
+	const modelCandidates = new Set([
+		model?.model_slug,
+		model?.canonical_model_slug,
+		model?.provider_model_slug,
+	].map((value) => String(value ?? "").trim()).filter(Boolean));
+	if (![route?.model_slug, route?.provider_model_slug]
+		.map((value) => String(value ?? "").trim())
+		.some((value) => modelCandidates.has(value))) return false;
+	if (String(route?.access_scope ?? "").trim().toLowerCase() !== "internal") return false;
+	if (!["testing", "enabled"].includes(String(route?.phaseo_status ?? "").trim().toLowerCase())) return false;
+	if (!["active", "degraded", "disabled"].includes(String(route?.status ?? "").trim().toLowerCase())) return false;
+	return ["coming_soon", "preview", "available", "limited_access"]
+		.includes(String(route?.provider_availability_status ?? "").trim().toLowerCase());
+}
+
+function resolvePreviewTestBlockedReason(
+	model: any,
+	provider: any,
+	routes: any[],
+): PreviewTestBlockedReason | null {
+	const availability = String(model?.availability ?? "ready").trim().toLowerCase();
+	if (["deprecated", "retired"].includes(availability)) return "model_not_testable";
+	if (!provider || !String(provider.base_url ?? "").trim()) return "provider_endpoint_missing";
+	const metadata = provider.metadata && typeof provider.metadata === "object" && !Array.isArray(provider.metadata)
+		? provider.metadata as Record<string, unknown>
+		: {};
+	if (metadata.adapter_ready !== true) return "provider_adapter_missing";
+	if (metadata.credentials_ready !== true) return "provider_credentials_missing";
+	if (!routes.some((route) => providerCatalogPreviewRouteMatches(model, route))) return "route_not_staged";
+	return null;
+}
+
+async function providerCatalogPreviewPayload(client: any, providerSlugs: string[]) {
+	if (!providerSlugs.length) return [];
+	const runsResult = await client.from("provider_catalog_sync_runs")
+		.select("id,provider_slug,status,review_status,created_at")
+		.eq("status", "applied")
+		.in("provider_slug", providerSlugs)
+		.order("created_at", { ascending: false })
+		.limit(5000);
+	if (runsResult.error) throw runsResult.error;
+	const latestRuns = new Map<string, any>();
+	for (const run of runsResult.data ?? []) {
+		const providerSlug = String(run.provider_slug ?? "").trim();
+		if (!providerSlug || latestRuns.has(providerSlug) || String(run.review_status ?? "pending") === "rejected") continue;
+		latestRuns.set(providerSlug, run);
 	}
-	throw new Error("provider_workspace_slug_unavailable");
+	const runs = [...latestRuns.values()];
+	if (!runs.length) return [];
+	const runIds = runs.map((run) => String(run.id));
+	const [modelsResult, capabilitiesResult, providersResult, routesResult] = await Promise.all([
+		client.from("provider_catalog_sync_models")
+			.select("run_id,provider_slug,model_slug,canonical_model_slug,match_type,provider_model_slug,name,description,input_modalities,output_modalities,context_length,max_output_tokens,availability,available_from,deprecated_at,shutdown_at,decision,route_projection_status,created_at,metadata")
+			.in("run_id", runIds)
+			.order("model_slug", { ascending: true }),
+		client.from("provider_catalog_sync_model_capabilities")
+			.select("run_id,model_slug,capability_id,parameters")
+			.in("run_id", runIds)
+			.order("capability_id", { ascending: true }),
+		client.from("v2_providers")
+			.select("provider_slug,name,status,base_url,metadata")
+			.in("provider_slug", runs.map((run) => String(run.provider_slug))),
+		client.from("v2_model_provider_routes")
+			.select("provider_slug,model_slug,provider_model_slug,status,provider_availability_status,phaseo_status,access_scope")
+			.in("provider_slug", runs.map((run) => String(run.provider_slug))),
+	]);
+	if (modelsResult.error || capabilitiesResult.error || providersResult.error) throw new Error("provider_catalog_preview_unavailable");
+	const capabilitiesByModel = new Map<string, any[]>();
+	for (const capability of capabilitiesResult.data ?? []) {
+		const key = `${capability.run_id}:${capability.model_slug}`;
+		capabilitiesByModel.set(key, [...(capabilitiesByModel.get(key) ?? []), capability]);
+	}
+	const providers = new Map<string, any>((providersResult.data ?? []).map((provider: any) => [String(provider.provider_slug), provider] as [string, any]));
+	const routesByProvider = new Map<string, any[]>();
+	for (const route of routesResult.error ? [] : routesResult.data ?? []) {
+		const providerSlug = String(route?.provider_slug ?? "").trim();
+		if (providerSlug) routesByProvider.set(providerSlug, [...(routesByProvider.get(providerSlug) ?? []), route]);
+	}
+	const now = Date.now();
+	const allowedProviderSlugs = new Set(providerSlugs.map((slug) => String(slug).trim().toLowerCase()));
+	return (modelsResult.data ?? [])
+		.filter((model: any) => allowedProviderSlugs.has(String(model.provider_slug ?? "").trim().toLowerCase()))
+		.filter((model: any) => String(model.decision ?? "pending") !== "rejected")
+		.filter((model: any) => String(model.route_projection_status ?? "not_projected") !== "enabled")
+		.map((model: any) => {
+			const providerSlug = String(model.provider_slug ?? "").trim();
+			const modelId = String(model.model_slug ?? "").trim();
+			const providerModelSlug = String(model.provider_model_slug ?? modelId).trim() || modelId;
+			const metadata = model.metadata && typeof model.metadata === "object" && !Array.isArray(model.metadata)
+				? model.metadata as Record<string, unknown>
+				: {};
+			const pricing = Array.isArray(metadata.pricing)
+				? metadata.pricing
+						.filter((price): price is Record<string, unknown> => Boolean(price) && typeof price === "object")
+						.map((price) => ({
+							meterKey: String(price.meterKey ?? "").trim(),
+							modality: String(price.modality ?? "").trim(),
+							direction: price.direction == null ? null : String(price.direction).trim(),
+							unit: String(price.unit ?? "").trim(),
+							unitQuantity: Number(price.unitQuantity ?? 1),
+							priceNanos: Number(price.priceNanos ?? 0),
+							displayLabel: String(price.displayLabel ?? price.meterKey ?? "").trim(),
+							displayUnit: String(price.displayUnit ?? price.unit ?? "").trim(),
+						}))
+						.filter((price) => price.meterKey && price.unit && Number.isFinite(price.priceNanos))
+				: [];
+			const capabilities = capabilitiesByModel.get(`${model.run_id}:${model.model_slug}`) ?? [];
+			const availability = previewAvailability(model, now);
+			const testBlockedReason = resolvePreviewTestBlockedReason(
+				model,
+				providers.get(providerSlug),
+				routesByProvider.get(providerSlug) ?? [],
+			);
+			return {
+				model_id: modelId,
+				canonical_model_slug: model.canonical_model_slug ?? null,
+				match_type: model.match_type ?? null,
+				pricing,
+				api_model_id: providerModelSlug,
+				model_name: String(model.name ?? modelId).trim() || modelId,
+				provider_model_slug: providerModelSlug,
+				provider_slug: providerSlug,
+				provider_name: String(providers.get(providerSlug)?.name ?? providerSlug).trim() || providerSlug,
+				description: model.description ?? null,
+				endpoints: uniqueStringValues(capabilities.map((capability) => capability.capability_id)),
+				supported_params: uniqueStringValues(capabilities.flatMap((capability) => Array.isArray(capability.parameters) ? capability.parameters : [])),
+				input_modalities: Array.isArray(model.input_modalities) ? model.input_modalities : [],
+				output_modalities: Array.isArray(model.output_modalities) ? model.output_modalities : [],
+				context_length: model.context_length ?? null,
+				max_output_tokens: model.max_output_tokens ?? null,
+				availability_status: availability.status,
+				availability_reason: availability.reason,
+				available_from: model.available_from ?? null,
+				deprecated_at: model.deprecated_at ?? null,
+				shutdown_at: model.shutdown_at ?? null,
+				release_date: model.available_from ?? null,
+				announcement_date: model.created_at ?? null,
+				created_at: model.created_at ?? null,
+				is_active_gateway: false,
+				decision: String(model.decision ?? "pending"),
+				route_projection_status: String(model.route_projection_status ?? "not_projected"),
+				can_test: testBlockedReason === null,
+				test_blocked_reason: testBlockedReason,
+			};
+		});
 }
 
 export const accountSettingsProviderOnboardingRouter = new Hono<{ Bindings: Env }>();
@@ -184,12 +349,22 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 	]);
 	if (submissions.error || links.error || events.error || role.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const linkedSlugs = (links.data ?? []).map((link) => String(link.provider_slug));
-	const sources = linkedSlugs.length
-		? await client.from("provider_catalog_sources").select("provider_slug,status,delivery_mode,catalog_url,last_success_at,last_polled_at,last_catalog_sha256,consecutive_failures,last_error,etag,last_modified,next_poll_at").in("provider_slug", linkedSlugs)
+	const isAdmin = String(role.data?.role ?? "").toLowerCase() === "admin";
+	const catalogProviderSources = isAdmin
+		? await client.from("provider_catalog_sources").select("provider_slug").order("provider_slug", { ascending: true }).limit(5000)
+		: { data: links.data ?? [], error: null };
+	if (catalogProviderSources.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const catalogSlugs = (catalogProviderSources.data ?? []).map((provider) => String(provider.provider_slug));
+	const providers = catalogSlugs.length
+		? await client.from("v2_providers").select("provider_slug,name,status,routable,routing_enabled").in("provider_slug", catalogSlugs)
+		: { data: [], error: null };
+	if (providers.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const sources = catalogSlugs.length
+		? await client.from("provider_catalog_sources").select("provider_slug,status,delivery_mode,catalog_url,last_success_at,last_polled_at,last_catalog_sha256,consecutive_failures,last_error,etag,last_modified,next_poll_at,webhook_secret_hash").in("provider_slug", catalogSlugs)
 		: { data: [], error: null };
 	if (sources.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const reviewRuns = linkedSlugs.length
-		? await client.from("provider_catalog_sync_runs").select("id,provider_slug,trigger,status,review_status,review_summary,model_count,error_message,created_at,completed_at").in("provider_slug", linkedSlugs).order("created_at", { ascending: false }).limit(20)
+	const reviewRuns = catalogSlugs.length
+		? await client.from("provider_catalog_sync_runs").select("id,provider_slug,trigger,status,review_status,review_summary,model_count,error_message,created_at,completed_at").in("provider_slug", catalogSlugs).order("created_at", { ascending: false }).limit(20)
 		: { data: [], error: null };
 	if (reviewRuns.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const reviewRunIds = (reviewRuns.data ?? []).map((run) => String(run.id));
@@ -201,14 +376,71 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 	for (const model of reviewModels.data ?? []) modelsByRun.set(String(model.run_id), [...(modelsByRun.get(String(model.run_id)) ?? []), model]);
 	return c.json({
 		signedIn: true,
-		isAdmin: String(role.data?.role ?? "").toLowerCase() === "admin",
+		isAdmin,
 		linkedProviders: links.data ?? [],
+		catalogProviders: (catalogProviderSources.data ?? []).map((provider) => ({
+			provider_slug: String(provider.provider_slug),
+			name: providers.data?.find((row) => row.provider_slug === provider.provider_slug)?.name ?? provider.provider_slug,
+			operatingStatus: (() => {
+				const state = providers.data?.find((row) => row.provider_slug === provider.provider_slug);
+				if (!state) return "Status unavailable";
+				if (state.status === "not_ready") return "In review";
+				if (state.status === "retired") return "Retired";
+				return state.routable && state.routing_enabled ? "Active" : "Paused";
+			})(),
+			workspace_id: "",
+			role: isAdmin ? "admin" : String((provider as any).role ?? "member"),
+			status: "active" as const,
+			verified_at: null,
+		})),
 		submissions: submissions.data ?? [],
-		syncSources: (sources.data ?? []).map((source) => ({ ...source, webhookUrl: providerCatalogWebhookUrl(c.env, String(source.provider_slug)) })),
+		syncSources: (sources.data ?? []).map(({ webhook_secret_hash, ...source }) => ({ ...source, webhookConfigured: Boolean(webhook_secret_hash), webhookUrl: providerCatalogWebhookUrl(c.env, String(source.provider_slug), c.req.url) })),
 		reviewRevisions: (reviewRuns.data ?? []).map((run) => ({ ...run, models: modelsByRun.get(String(run.id)) ?? [] })),
 		events: events.data ?? [],
 		contracts: { schemaUrl: "/api/internal/provider-catalog/schema", openApiUrl: "/api/internal/provider-catalog/openapi" },
 	}, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsProviderOnboardingRouter.get("/provider-onboarding/catalogue-previews", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const requestedProvider = c.req.query("providerSlug");
+	if (requestedProvider) {
+		const parsedProvider = providerSlugSchema.safeParse(requestedProvider);
+		if (!parsedProvider.success) return responseError(c, "Invalid provider slug.");
+	}
+	const client = getDataClient(c.env);
+	const role = await client.from("users").select("role").eq("user_id", user.id).maybeSingle();
+	if (role.error) return c.json({ error: "provider_catalog_preview_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const isAdmin = String(role.data?.role ?? "").toLowerCase() === "admin";
+	let providerSlugs: string[] = [];
+	if (isAdmin) {
+		if (requestedProvider) providerSlugs = [String(requestedProvider).trim().toLowerCase()];
+		else {
+			const providers = await client.from("v2_providers").select("provider_slug").order("provider_slug", { ascending: true }).limit(5000);
+			if (providers.error) return c.json({ error: "provider_catalog_preview_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+			providerSlugs = (providers.data ?? []).map((provider: any) => String(provider.provider_slug)).filter(Boolean);
+		}
+	} else {
+		let workspaceIds: string[];
+		try { workspaceIds = await accessibleWorkspaceIds(client, user.id); }
+		catch { return c.json({ error: "provider_catalog_preview_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); }
+		if (workspaceIds.length) {
+			const links = await client.from("provider_account_links")
+				.select("provider_slug")
+				.in("workspace_id", workspaceIds)
+				.in("status", ["pending", "active"]);
+			if (links.error) return c.json({ error: "provider_catalog_preview_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+			providerSlugs = uniqueStringValues((links.data ?? []).map((link: any) => link.provider_slug)).map((slug) => slug.toLowerCase());
+		}
+		if (requestedProvider) providerSlugs = providerSlugs.filter((slug) => slug === String(requestedProvider).trim().toLowerCase());
+	}
+	try {
+		const models = await providerCatalogPreviewPayload(client, providerSlugs);
+		return c.json({ authenticated: true, isAdmin, models }, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch {
+		return c.json({ error: "provider_catalog_preview_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
 });
 
 accountSettingsProviderOnboardingRouter.post("/provider-onboarding/preview", async (c) => {
@@ -231,8 +463,6 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/preview", asy
 accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-	const userClient = getAuthenticatedDataClient(c.env, c.req.raw);
-	if (!userClient) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const rateLimitResponse = await enforceOnboardingRateLimit(c, user.id);
 	if (rateLimitResponse) return rateLimitResponse;
 	const rawBody = await c.req.json().catch(() => null);
@@ -240,13 +470,21 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 	if (!parsed.success) return responseError(c, parsed.error.issues[0]?.message ?? "Complete all provider fields.");
 	const input = parsed.data;
 	const websiteHost = hostFromUrl(input.websiteUrl);
-	const catalogHost = hostFromUrl(input.catalogUrl);
-	if (!sameOrSubdomain(catalogHost, websiteHost)) {
+	const contactHost = user.email?.split("@").at(-1)?.toLowerCase() ?? "";
+	if (!contactHost) return responseError(c, "Sign in with a provider email address before enrolling.");
+	if (!sameOrSubdomain(contactHost, websiteHost) && !sameOrSubdomain(websiteHost, contactHost)) {
+		return responseError(c, "Use a provider email address on the organisation website domain.");
+	}
+	if (input.catalogMode === "remote" && !input.catalogUrl) return responseError(c, "Enter a catalog URL or choose to manage models in Phaseo.");
+	const catalogHost = input.catalogUrl ? hostFromUrl(input.catalogUrl) : websiteHost;
+	if (input.catalogMode === "remote" && !sameOrSubdomain(catalogHost, websiteHost)) {
 		return responseError(c, "The catalog URL must be hosted on the provider website domain or a subdomain.");
 	}
 	const client = getDataClient(c.env);
+	const authenticatedClient = getAuthenticatedDataClient(c.env, c.req.raw);
+	if (!authenticatedClient) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const existingSourcePreflight = await client.from("provider_catalog_sources")
-		.select("provider_slug,status")
+		.select("provider_slug,status,created_by")
 		.eq("provider_slug", input.providerSlug)
 		.maybeSingle();
 	if (existingSourcePreflight.error) return c.json({ error: "provider_sync_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -262,7 +500,9 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 
 	let catalog: Awaited<ReturnType<typeof fetchAndValidateProviderCatalog>>;
 	try {
-		catalog = await fetchAndValidateProviderCatalog(input.catalogUrl);
+		catalog = input.catalogMode === "managed"
+			? { preview: { valid: true, modelCount: 0, models: [], allModels: [], issues: [], truncated: false }, sha256: await sha256(JSON.stringify({ data: [] })), etag: null, lastModified: null, notModified: false }
+			: await fetchAndValidateProviderCatalog(input.catalogUrl!);
 		catalog = { ...catalog, preview: await validateProviderCatalogPricingMeters(client, catalog.preview) };
 	} catch (error) {
 		return responseError(c, error instanceof Error ? error.message : "Could not read the provider catalog.", 422);
@@ -291,7 +531,11 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		return responseError(c, "This provider profile is already controlled by another provider workspace. Contact Phaseo to resolve the ownership conflict.", 409);
 	}
 	if (link.data && !userManageableWorkspaceIds.includes(String(link.data.workspace_id))) return c.json({ error: "provider_workspace_admin_required" }, 403, PRIVATE_NO_STORE_HEADERS);
-	if (existing.data && !link.data) {
+	const ownsPendingEnrollment = existingSourcePreflight.data?.created_by === user.id
+		&& existing.data?.routable === false && existing.data?.routing_enabled === false
+		&& (existingMetadata.self_serve as { last_submitted_by?: unknown } | undefined)?.last_submitted_by === user.id;
+	let verifiedClaimChallengeId: string | null = null;
+	if (existing.data && !link.data && !ownsPendingEnrollment) {
 		const existingWebsite = typeof existingMetadata.website_url === "string" ? existingMetadata.website_url : typeof existingMetadata.link === "string" ? existingMetadata.link : null;
 		if (!existingWebsite) return responseError(c, "This existing provider has no verified ownership domain and must be claimed through manual verification.", 409);
 		try {
@@ -301,12 +545,10 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		const challenge = await client.from("provider_claim_challenges").select("id,domain,token_hash,status,expires_at").eq("id", input.claimChallengeId).eq("provider_slug", input.providerSlug).eq("requested_by", user.id).eq("status", "pending").gt("expires_at", new Date().toISOString()).maybeSingle();
 		if (challenge.error) return c.json({ error: "claim_verification_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		if (!challenge.data || challenge.data.domain !== hostFromUrl(existingWebsite) || !await verifyClaimFile(challenge.data.domain, challenge.data.token_hash)) return responseError(c, "The provider ownership token could not be verified.", 409);
-		const verified = await client.from("provider_claim_challenges").update({ status: "verified", verified_at: new Date().toISOString() }).eq("id", challenge.data.id).eq("status", "pending").select("id").maybeSingle();
-		if (verified.error) return c.json({ error: "claim_verification_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-		if (!verified.data) return responseError(c, "This ownership proof has already been used.", 409);
+		verifiedClaimChallengeId = String(challenge.data.id);
 	}
 	try {
-		if (!await reserveProviderSubmissionSlot(userClient, user.id)) {
+		if (!await reserveProviderSubmissionSlot(authenticatedClient, user.id)) {
 			return c.json({ ok: false, error: "rate_limited", message: "Provider onboarding submissions are limited to five per user per day." }, 429, PRIVATE_NO_STORE_HEADERS);
 		}
 	} catch {
@@ -317,99 +559,63 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		...existingMetadata,
 		website_url: input.websiteUrl,
 		logo_url: input.logoUrl || null,
-		catalog_url: input.catalogUrl,
+		catalog_url: input.catalogUrl ?? null,
 		self_serve: {
 			status: "submitted",
+			provider_review_status: "setup",
 			catalog_sha256: catalog.sha256,
 			last_submitted_by: user.id,
 			last_submitted_at: new Date().toISOString(),
 		},
 	};
-	const provider = await client.from("v2_providers").upsert({
-		provider_slug: input.providerSlug,
-		name: input.providerName,
-		status: existing.data?.status ?? "not_ready",
-		routing_enabled: existing.data?.routing_enabled ?? false,
-		routable: existing.data?.routable ?? false,
-		metadata: providerMetadata,
-	}, { onConflict: "provider_slug" }).select("provider_slug,name,status,routable,routing_enabled").single();
-	if (provider.error) return c.json({ error: "provider_profile_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-
-	const existingSource = existingSourcePreflight.data
-		? await client.from("provider_catalog_sources")
-			.select("provider_slug,status,delivery_mode,catalog_url")
-			.eq("provider_slug", input.providerSlug)
-			.maybeSingle()
-		: { data: null, error: null };
-	if (existingSource.error) return c.json({ error: "provider_sync_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	let webhookSecret: string | null = null;
-	if (!existingSource.data) {
+	let encryptedWebhookSecret: Awaited<ReturnType<typeof encryptProviderCatalogWebhookSecret>> | null = null;
+	if (!existingSourcePreflight.data) {
 		webhookSecret = generateProviderCatalogWebhookSecret();
-		const encrypted = await encryptProviderCatalogWebhookSecret(c.env, webhookSecret);
-		const source = await client.from("provider_catalog_sources").insert({
-			provider_slug: input.providerSlug,
-			catalog_url: input.catalogUrl,
-			status: "active",
-			delivery_mode: "webhook_and_polling",
-			created_by: user.id,
-			...encrypted,
-		});
-		if (source.error) return c.json({ error: "provider_sync_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	} else {
-		const source = await client.from("provider_catalog_sources").update({ catalog_url: input.catalogUrl, etag: null, last_modified: null, next_poll_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("provider_slug", input.providerSlug);
-		if (source.error) return c.json({ error: "provider_sync_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		encryptedWebhookSecret = await encryptProviderCatalogWebhookSecret(c.env, webhookSecret);
 	}
-
-	const submission = await client.from("provider_onboarding_submissions").insert({
-		provider_slug: input.providerSlug,
-		submitted_by: user.id,
-		provider_name: input.providerName,
-		website_url: input.websiteUrl,
-		logo_url: input.logoUrl || null,
-		catalog_url: input.catalogUrl,
-		status: "submitted",
-		model_count: catalog.preview.modelCount,
-		catalog_sha256: catalog.sha256,
-		catalog_preview: { models: catalog.preview.models, truncated: catalog.preview.truncated },
-		validation_summary: { valid: true, issues: [], checked_at: new Date().toISOString() },
-	}).select("id,provider_slug,provider_name,status,model_count,submitted_at").single();
-	if (submission.error) return c.json({ error: "submission_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-
-	let providerWorkspaceId = link.data?.workspace_id ? String(link.data.workspace_id) : null;
-	if (!link.data) {
-		try { providerWorkspaceId = await createProviderWorkspace(client, user.id, input.providerSlug, input.providerName); }
-		catch { return c.json({ error: "provider_workspace_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); }
-		const accountLink = await client.from("provider_account_links").insert({
-			provider_slug: input.providerSlug,
-			workspace_id: providerWorkspaceId,
-			linked_by: user.id,
-			role: "owner",
-			status: "active",
-			proof_method: "catalog_domain_match",
-			proof_subject: catalogHost,
-			verified_at: new Date().toISOString(),
-		}).select("provider_slug,workspace_id,role,status,verified_at").single();
-		if (accountLink.error) return c.json({ error: "provider_link_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	} else if (link.data.status === "pending") {
-		const accountLink = await client.from("provider_account_links").update({ status: "active", proof_method: "catalog_domain_match", proof_subject: catalogHost, verified_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("provider_slug", input.providerSlug).eq("workspace_id", providerWorkspaceId);
-		if (accountLink.error) return c.json({ error: "provider_link_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const proofMethod = verifiedClaimChallengeId ? "domain_file" : input.catalogMode === "managed" ? "self_declared" : "catalog_domain_match";
+	const enrollment = await client.rpc("complete_provider_enrollment", {
+		p_user_id: user.id,
+		p_provider_slug: input.providerSlug,
+		p_provider_name: input.providerName,
+		p_provider_metadata: providerMetadata,
+		p_website_url: input.websiteUrl,
+		p_logo_url: input.logoUrl || null,
+		p_catalog_url: input.catalogUrl ?? null,
+		p_catalog_mode: input.catalogMode,
+		p_catalog_sha256: catalog.sha256,
+		p_catalog_preview: { models: catalog.preview.models, truncated: catalog.preview.truncated },
+		p_validation_summary: { valid: true, issues: [], checked_at: new Date().toISOString() },
+		p_model_count: catalog.preview.modelCount,
+		p_proof_method: proofMethod,
+		p_proof_subject: catalogHost,
+		p_claim_challenge_id: verifiedClaimChallengeId,
+		p_webhook_secret_ciphertext: encryptedWebhookSecret?.webhook_secret_ciphertext ?? null,
+		p_webhook_secret_iv: encryptedWebhookSecret?.webhook_secret_iv ?? null,
+		p_webhook_secret_hash: encryptedWebhookSecret?.webhook_secret_hash ?? null,
+	});
+	if (enrollment.error || !enrollment.data) {
+		console.error("provider_enrollment_transaction_failed", { providerSlug: input.providerSlug, error: enrollment.error?.message ?? "empty result" });
+		return c.json({ error: "provider_enrollment_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
-	c.executionCtx.waitUntil(syncProviderCatalog(c.env, input.providerSlug, "manual", String(submission.data.id)).catch((error) => {
+	const enrollmentData = enrollment.data as { provider: any; submission: any; providerWorkspaceId: string };
+	if (catalog.preview.modelCount > 0) c.executionCtx.waitUntil(syncProviderCatalog(c.env, input.providerSlug, "manual", String(enrollmentData.submission.id)).catch((error) => {
 		console.error("provider_catalog_initial_sync_failed", { providerSlug: input.providerSlug, error: error instanceof Error ? error.message : String(error) });
 	}));
 
 	return c.json({
 		ok: true,
-		provider: provider.data,
-		submission: submission.data,
+		provider: enrollmentData.provider,
+		submission: enrollmentData.submission,
 		preview: publicPreview(catalog.preview),
 		catalogSync: {
 			deliveryMode: "webhook_and_polling",
-			webhookUrl: providerCatalogWebhookUrl(c.env, input.providerSlug),
+			webhookUrl: providerCatalogWebhookUrl(c.env, input.providerSlug, c.req.url),
 			webhookSecret,
 		},
-		providerWorkspaceId,
-		message: "Provider profile submitted. Account ownership is pending verification, and models are queued for route checks before production traffic is enabled.",
+		providerWorkspaceId: enrollmentData.providerWorkspaceId,
+		message: "Provider profile submitted for Phaseo approval. You can stage and test models while public routing remains disabled.",
 	}, 201, PRIVATE_NO_STORE_HEADERS);
 });
 
@@ -430,5 +636,5 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/webhook/rotat
 	const webhookSecret = generateProviderCatalogWebhookSecret();
 	const updated = await client.from("provider_catalog_sources").update({ ...await encryptProviderCatalogWebhookSecret(c.env, webhookSecret), updated_at: new Date().toISOString() }).eq("provider_slug", providerSlug);
 	if (updated.error) return c.json({ error: "provider_sync_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ ok: true, webhookUrl: providerCatalogWebhookUrl(c.env, providerSlug), webhookSecret }, 200, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true, webhookUrl: providerCatalogWebhookUrl(c.env, providerSlug, c.req.url), webhookSecret }, 200, PRIVATE_NO_STORE_HEADERS);
 });

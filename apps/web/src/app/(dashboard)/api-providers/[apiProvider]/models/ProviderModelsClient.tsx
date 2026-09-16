@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import useSWR from "swr";
 import {
 	AudioLines,
 	ArrowUpDown,
@@ -16,6 +17,7 @@ import {
 import Link from "next/link";
 import { debounce, useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/ui/copy-button";
 import {
 	Empty,
@@ -37,11 +39,15 @@ import type {
 	APIProviderModelListItem,
 	APIProviderModelPricingMeter,
 } from "@/lib/fetchers/api-providers/providerDataTypes";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/swr/providerCatalogPreviews";
+import { fetchAuthenticatedProviderCatalogPreviews } from "@/lib/swr/providerCatalogPreviews";
+import UnreleasedBadge from "@/components/(data)/model/UnreleasedBadge";
 
 type ProviderModelsClientProps = {
 	apiProvider: string;
 	providerLabel: string;
 	models: APIProviderModelListItem[];
+	initialProviderPreviews?: AuthenticatedProviderCatalogPreview[];
 };
 
 type IconMeta = {
@@ -153,11 +159,88 @@ function resolveSupportedParamLabels(params: string[]): ParamLabel[] {
 		.sort((a, b) => a.label.localeCompare(b.label));
 }
 
+function mapCatalogPreviewModel(model: AuthenticatedProviderCatalogPreview): APIProviderModelListItem {
+	const modelId = model.canonical_model_slug?.trim() || model.model_id;
+	const pricingMeters = (model.pricing ?? []).map((price) => {
+		const pricePerUnitUsd = price.priceNanos / 1_000_000_000;
+		const isTokenMeter = price.unit === "token" || price.meterKey.includes("token");
+		return {
+			meter: price.meterKey,
+			label: price.displayLabel || price.meterKey,
+			unit: price.unit,
+			unit_size: price.unitQuantity,
+			price_per_unit_usd: pricePerUnitUsd,
+			price_per_1m_usd: isTokenMeter ? pricePerUnitUsd * (1_000_000 / Math.max(1, price.unitQuantity)) : null,
+			estimated_price_per_image_usd: null,
+			display_unit_label: price.displayUnit || price.unit,
+		};
+	});
+	return {
+		model_id: modelId,
+		api_model_id: model.api_model_id,
+		model_name: model.model_name,
+		provider_model_slug: model.provider_model_slug,
+		endpoints: model.endpoints ?? [],
+		is_active_gateway: false,
+		is_unreleased: true,
+		availability_status: model.availability_status,
+		availability_reason: model.availability_reason,
+		input_modalities: model.input_modalities ?? [],
+		output_modalities: model.output_modalities ?? [],
+		release_date: model.release_date ?? model.available_from ?? null,
+		announcement_date: model.announcement_date ?? null,
+		created_at: model.created_at ?? null,
+		supported_params: model.supported_params ?? [],
+		pricing_meters: pricingMeters,
+	};
+}
+
+function mergeCatalogPreviewModels(
+	models: APIProviderModelListItem[],
+	previews: AuthenticatedProviderCatalogPreview[],
+): APIProviderModelListItem[] {
+	const byModelId = new Map(models.map((model) => [model.model_id, model]));
+	for (const preview of previews) {
+		const incoming = mapCatalogPreviewModel(preview);
+		const existing = byModelId.get(incoming.model_id);
+		if (!existing) {
+			byModelId.set(incoming.model_id, incoming);
+			continue;
+		}
+		byModelId.set(incoming.model_id, {
+			...existing,
+			is_unreleased: Boolean(existing.is_unreleased || incoming.is_unreleased),
+			endpoints: Array.from(new Set([...(existing.endpoints ?? []), ...(incoming.endpoints ?? [])])),
+			input_modalities: Array.from(new Set([...listify(existing.input_modalities), ...listify(incoming.input_modalities)])),
+			output_modalities: Array.from(new Set([...listify(existing.output_modalities), ...listify(incoming.output_modalities)])),
+			supported_params: Array.from(new Set([...(existing.supported_params ?? []), ...(incoming.supported_params ?? [])])),
+			pricing_meters: existing.pricing_meters?.length ? existing.pricing_meters : incoming.pricing_meters,
+			availability_status: existing.is_active_gateway ? "active" : incoming.availability_status,
+		});
+	}
+	return [...byModelId.values()];
+}
+
 export default function ProviderModelsClient({
 	apiProvider,
 	providerLabel,
 	models,
+	initialProviderPreviews,
 }: ProviderModelsClientProps) {
+	const previewKey = `/api/account/settings/provider-onboarding/catalogue-previews?providerSlug=${encodeURIComponent(apiProvider)}`;
+	const { data: providerPreviews = [] } = useSWR<AuthenticatedProviderCatalogPreview[]>(
+		previewKey,
+		() => fetchAuthenticatedProviderCatalogPreviews(apiProvider),
+		{
+			fallbackData: initialProviderPreviews,
+			revalidateOnMount: initialProviderPreviews === undefined || initialProviderPreviews.length === 0,
+			revalidateOnFocus: false,
+		},
+	);
+	const displayModels = useMemo(
+		() => mergeCatalogPreviewModels(models, providerPreviews),
+		[models, providerPreviews],
+	);
 	const [searchQuery, setSearchQuery] = useQueryState("q", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -175,7 +258,7 @@ export default function ProviderModelsClient({
 
 	const parameterOptions = useMemo(() => {
 		const map = new Map<string, string>();
-		models.forEach((model) => {
+		displayModels.forEach((model) => {
 			resolveSupportedParamLabels(listify(model.supported_params)).forEach((item) => {
 				if (!map.has(item.id)) map.set(item.id, item.label);
 			});
@@ -183,7 +266,7 @@ export default function ProviderModelsClient({
 		return Array.from(map.entries())
 			.map(([id, label]) => ({ id, label }))
 			.sort((a, b) => a.label.localeCompare(b.label));
-	}, [models]);
+	}, [displayModels]);
 
 	const parameterLabelMap = useMemo(
 		() => new Map(parameterOptions.map((option) => [option.id, option.label])),
@@ -204,7 +287,7 @@ export default function ProviderModelsClient({
 
 	const filteredModels = useMemo(() => {
 		const q = searchQuery.trim().toLowerCase();
-		return models.filter((model) => {
+		return displayModels.filter((model) => {
 			if (q) {
 				const haystack =
 					`${model.model_name ?? ""} ${model.api_model_id} ${model.model_id}`.toLowerCase();
@@ -223,7 +306,7 @@ export default function ProviderModelsClient({
 
 			return true;
 		});
-	}, [models, searchQuery, selectedParams]);
+	}, [displayModels, searchQuery, selectedParams]);
 
 	const clearHref = `/api-providers/${apiProvider}#models`;
 
@@ -246,7 +329,7 @@ export default function ProviderModelsClient({
 		setParamPickerValue("");
 	}
 
-	if (models.length === 0) {
+	if (displayModels.length === 0) {
 		return (
 			<Empty className="mt-4 rounded-xl border p-8">
 				<EmptyHeader>
@@ -349,7 +432,29 @@ export default function ProviderModelsClient({
 			</div>
 
 			<div className="mt-4">
-				{filteredModels.length === 0 ? (
+				{displayModels.length === 0 ? (
+					<Empty className="rounded-xl border p-8">
+						<EmptyHeader>
+							<EmptyMedia variant="icon">
+								<FilePlus />
+							</EmptyMedia>
+							<EmptyTitle>No models found</EmptyTitle>
+							<EmptyDescription>
+								There are no models for this provider yet.
+							</EmptyDescription>
+						</EmptyHeader>
+						<EmptyContent>
+							<div className="flex gap-2">
+								<Button asChild>
+									<a href="/contribute">Contribute</a>
+								</Button>
+								<Button variant="outline" asChild>
+									<a href="https://phaseo.app">Learn more</a>
+								</Button>
+							</div>
+						</EmptyContent>
+					</Empty>
+				) : filteredModels.length === 0 ? (
 					<Empty className="rounded-xl border p-8">
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
@@ -388,7 +493,7 @@ export default function ProviderModelsClient({
 									className="group/model-row grid gap-4 py-5 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1.65fr)_minmax(0,1fr)]"
 								>
 									<div className="min-w-0 space-y-3">
-										<div className="truncate text-base font-semibold">
+										<div className="flex flex-wrap items-center gap-2 text-base font-semibold">
 											<Link
 												href={`/models/${model.model_id}`}
 												className="hover:text-primary"
@@ -396,8 +501,28 @@ export default function ProviderModelsClient({
 												<span className="relative underline decoration-transparent transition-colors duration-200 hover:decoration-current">
 													{`${providerLabel}: ${model.model_name || model.model_id}`}
 												</span>
-											</Link>
-										</div>
+												</Link>
+							{model.is_unreleased ? (
+								<UnreleasedBadge compact />
+							) : model.availability_status === "coming_soon" ? (
+								<Badge variant="secondary" className="border-blue-200 bg-blue-50 text-xs font-medium text-blue-700">
+									Coming soon
+								</Badge>
+							) : model.availability_status === "not_active" ? (
+								<Badge variant="secondary" className="border-neutral-200 bg-neutral-50 text-xs font-medium text-neutral-700">
+									Not active
+								</Badge>
+							) : null}
+						</div>
+						{model.availability_status === "coming_soon" ? (
+							<p className="text-xs font-normal text-muted-foreground">
+								Not routable yet{model.availability_reason === "scheduled" ? ". Scheduled for a future release." : "."}
+							</p>
+						) : model.availability_status === "not_active" ? (
+							<p className="text-xs font-normal text-muted-foreground">
+								Not routable{model.availability_reason ? ` · ${model.availability_reason.replaceAll("_", " ")}.` : "."}
+							</p>
+						) : null}
 
 										<div className="flex min-w-0 items-center gap-2">
 											<div className="break-all font-mono text-xs text-muted-foreground">

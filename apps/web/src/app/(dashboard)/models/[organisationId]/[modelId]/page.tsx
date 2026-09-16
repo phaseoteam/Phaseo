@@ -41,6 +41,8 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
 import { isFreeRouterModelId } from "@/lib/models/freeRouter";
 import FreeRouterOverview from "@/components/(data)/model/free-router/FreeRouterOverview";
+import ProviderCatalogPreviewDetail from "@/components/(data)/model/ProviderCatalogPreviewDetail";
+import { fetchServerProviderCatalogPreviewsForModel } from "@/lib/fetchers/internal/fetchServerProviderCatalogPreviews";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import ModelFaqSection from "@/components/(data)/model/overview/ModelFaqSection";
 import {
@@ -313,6 +315,7 @@ async function ModelDetailPageBody({
 	availabilityPromise,
 	pricingPromise,
 	gatewayMetadataPromise,
+	providerPreviewsPromise,
 	abortPricing,
 }: {
 	modelId: string;
@@ -324,6 +327,7 @@ async function ModelDetailPageBody({
 	availabilityPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelAvailability>> | undefined>;
 	pricingPromise: ReturnType<typeof fetchFrontendModelPricing>;
 	gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null>;
+	providerPreviewsPromise: ReturnType<typeof fetchServerProviderCatalogPreviewsForModel>;
 	abortPricing: () => void;
 }) {
 	const modelPromise = Promise.resolve(prefetchedOverview);
@@ -338,7 +342,7 @@ async function ModelDetailPageBody({
 		MODEL_PROVIDER_VISIBILITY_TIMEOUT_MS,
 		abortPricing,
 	);
-	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability, gatewayMetadata, pricingProviders] =
+	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability, gatewayMetadata, pricingProviders, providerPreviews] =
 		await Promise.all([
 			modelPromise,
 			benchmarkPromise,
@@ -346,6 +350,7 @@ async function ModelDetailPageBody({
 			availabilityPromise,
 			gatewayMetadataForVisibilityPromise,
 			pricingForVisibilityPromise,
+			providerPreviewsPromise,
 		]);
 	if (!modelOverview) notFound();
 	const isPrivateModel = modelOverview.is_private === true;
@@ -360,7 +365,8 @@ async function ModelDetailPageBody({
 		modelOverview.status === "Announced" ||
 		(availability?.activeProviderCount ?? 0) > 0 ||
 		(effectiveGatewayMetadata?.providers.length ?? 0) > 0 ||
-		pricingProviders.some((provider) => provider.provider_models.length > 0);
+		pricingProviders.some((provider) => provider.provider_models.length > 0) ||
+		providerPreviews.length > 0;
 	const resolvedPerformancePromise = isPrivateModel
 		? Promise.resolve(privateModelPerformanceMetrics(modelOverview, privatePerformance))
 		: isGatewayActive
@@ -455,6 +461,8 @@ async function ModelDetailPageBody({
 								performancePromise={resolvedPerformancePromise}
 								isPrivateModel={isPrivateModel}
 								privateProviders={isPrivateModel ? privateModelProviders(modelOverview) : undefined}
+								previewOffers={providerPreviews}
+								showPreviewDetails={providerPreviews.length > 0}
 							/>
 							{modelOverview ? (
 								<Suspense fallback={null}>
@@ -506,10 +514,13 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 	const pricingAbortController = new AbortController();
 	const pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal).catch(() => []);
 	const gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
+	const providerPreviewsPromise = fetchServerProviderCatalogPreviewsForModel(modelId).catch(() => []);
 	const modelOverview = await fetchFrontendModelOverview(modelId)
 		.then(async (model) => model ?? await fetchPrivateModelOverview(modelId))
 		.catch(() => fetchPrivateModelOverview(modelId));
 	if (!modelOverview) {
+		const providerPreview = (await providerPreviewsPromise)[0] ?? null;
+		if (providerPreview) return <ProviderCatalogPreviewDetail preview={providerPreview} />;
 		if (!(await isAdminViewer().catch(() => false))) notFound();
 		const source = await fetchAdminModelSource(requestedModelId).catch(() => null);
 		const preview = source ? toAdminModelPreview(source) : null;
@@ -544,6 +555,7 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 					availabilityPromise={availabilityPromise}
 					pricingPromise={pricingPromise}
 					gatewayMetadataPromise={gatewayMetadataPromise}
+					providerPreviewsPromise={providerPreviewsPromise}
 					abortPricing={() => pricingAbortController.abort()}
 				/>
 			</Suspense>

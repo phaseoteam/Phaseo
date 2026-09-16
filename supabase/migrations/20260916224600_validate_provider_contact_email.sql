@@ -1,0 +1,2 @@
+-- Provider contacts are referenced by provider_onboarding_submissions.submitted_by.
+-- No duplicate email column or validation constraint is required.

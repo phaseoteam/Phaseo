@@ -11,12 +11,31 @@ const decisionSchema = z.object({
 	reason: z.string().trim().max(1_000).optional(),
 });
 const probeSchema = z.object({ passed: z.boolean(), summary: z.record(z.string(), z.unknown()).default({}) });
+const providerDecisionSchema = z.object({
+	decision: z.enum(["approved", "paused", "rejected", "needs_changes"]),
+	reason: z.string().trim().max(1_000).optional(),
+});
 
 async function adminUser(c: any) {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return null;
 	const role = await getDataClient(c.env).from("users").select("role").eq("user_id", user.id).maybeSingle();
 	return !role.error && String(role.data?.role ?? "").toLowerCase() === "admin" ? user : null;
+}
+
+function providerTechnicallyReady(provider: any, hasPassedProbe: boolean): boolean {
+	return Boolean(provider?.base_url && provider?.metadata?.adapter_ready === true && provider?.metadata?.credentials_ready === true && hasPassedProbe);
+}
+
+async function markProviderAwaitingApprovalIfReady(client: any, providerSlug: string) {
+	const [provider, candidate] = await Promise.all([
+		client.from("v2_providers").select("provider_slug,base_url,metadata").eq("provider_slug", providerSlug).maybeSingle(),
+		client.from("provider_catalog_route_candidates").select("run_id").eq("provider_slug", providerSlug).in("status", ["probe_passed", "promoted"]).limit(1),
+	]);
+	if (provider.error || candidate.error || !provider.data || !providerTechnicallyReady(provider.data, Boolean(candidate.data?.length))) return;
+	const selfServe = provider.data.metadata?.self_serve;
+	if (!selfServe || ["approved", "paused", "rejected"].includes(String(selfServe.provider_review_status))) return;
+	await client.from("v2_providers").update({ metadata: { ...provider.data.metadata, self_serve: { ...selfServe, provider_review_status: "awaiting_approval", ready_for_review_at: new Date().toISOString() } }, updated_at: new Date().toISOString() }).eq("provider_slug", providerSlug);
 }
 
 function decodedModelSlug(value: string): string {
@@ -60,6 +79,85 @@ async function reviewPayload(client: any, runs: any[]) {
 
 export const internalProviderCatalogReviewRouter = new Hono<{ Bindings: Env }>();
 
+internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c) => {
+	const user = await adminUser(c);
+	if (!user) return c.json({ error: "unauthorized" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const client = getDataClient(c.env);
+	const result = await client.from("v2_providers")
+		.select("provider_slug,name,status,routable,routing_enabled,base_url,metadata,created_at,updated_at")
+		.contains("metadata", { self_serve: {} })
+		.order("created_at", { ascending: false }).limit(100);
+	if (result.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const selfServeProviders = result.data ?? [];
+	const providerSlugs = selfServeProviders.map((provider: any) => provider.provider_slug);
+	const [candidateResult, submissionsResult] = await Promise.all([
+		providerSlugs.length ? client.from("provider_catalog_route_candidates").select("provider_slug,status").in("provider_slug", providerSlugs).in("status", ["probe_passed", "promoted"]) : Promise.resolve({ data: [], error: null }),
+		providerSlugs.length ? client.from("provider_onboarding_submissions").select("provider_slug,submitted_by,created_at").in("provider_slug", providerSlugs).order("created_at", { ascending: false }) : Promise.resolve({ data: [], error: null }),
+	]);
+	if (candidateResult.error || submissionsResult.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const passedProviders = new Set((candidateResult.data ?? []).map((candidate: any) => String(candidate.provider_slug)));
+	const contactUserIds = new Map<string, string>();
+	for (const submission of submissionsResult.data ?? []) if (submission.submitted_by && !contactUserIds.has(String(submission.provider_slug))) contactUserIds.set(String(submission.provider_slug), String(submission.submitted_by));
+	const authUsers = new Map<string, string>();
+	await Promise.all([...new Set(contactUserIds.values())].map(async (userId) => {
+		const authUser = await client.auth.admin.getUserById(userId);
+		if (!authUser.error && authUser.data.user?.email) authUsers.set(userId, authUser.data.user.email);
+	}));
+	const providers = selfServeProviders.map((provider: any) => ({
+		provider_slug: provider.provider_slug,
+		name: provider.name,
+		status: provider.status,
+		routable: provider.routable === true,
+		routing_enabled: provider.routing_enabled === true,
+		base_url: provider.base_url ?? null,
+		contact_user_id: contactUserIds.get(String(provider.provider_slug)) ?? null,
+		contact_email: authUsers.get(contactUserIds.get(String(provider.provider_slug)) ?? "") ?? null,
+		website_url: typeof provider.metadata?.website_url === "string" ? provider.metadata.website_url : null,
+		review_status: String(provider.metadata?.self_serve?.provider_review_status ?? "awaiting_approval"),
+		review_reason: typeof provider.metadata?.self_serve?.provider_review_reason === "string" ? provider.metadata.self_serve.provider_review_reason : null,
+		technical_ready: providerTechnicallyReady(provider, passedProviders.has(String(provider.provider_slug))),
+		created_at: provider.created_at,
+		updated_at: provider.updated_at,
+	}));
+	return c.json({ providers }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+internalProviderCatalogReviewRouter.patch("/provider-catalog/providers/:providerSlug", async (c) => {
+	const user = await adminUser(c);
+	if (!user) return c.json({ error: "unauthorized" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const parsed = providerDecisionSchema.safeParse(await c.req.json().catch(() => null));
+	if (!parsed.success) return c.json({ error: "invalid_provider_review" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (parsed.data.decision !== "approved" && !parsed.data.reason) return c.json({ error: "provider_review_reason_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const providerSlug = c.req.param("providerSlug").trim().toLowerCase();
+	const client = getDataClient(c.env);
+	if (parsed.data.decision === "approved") {
+		const [provider, candidate] = await Promise.all([
+			client.from("v2_providers").select("provider_slug,base_url,metadata").eq("provider_slug", providerSlug).maybeSingle(),
+			client.from("provider_catalog_route_candidates").select("run_id").eq("provider_slug", providerSlug).in("status", ["probe_passed", "promoted"]).limit(1),
+		]);
+		if (provider.error || candidate.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		const contact = await client.from("provider_onboarding_submissions").select("submitted_by").eq("provider_slug", providerSlug).not("submitted_by", "is", null).order("created_at", { ascending: false }).limit(1);
+		if (contact.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		const contactUserId = contact.data?.[0]?.submitted_by ? String(contact.data[0].submitted_by) : null;
+		if (!contactUserId) return c.json({ error: "provider_contact_required" }, 409, PRIVATE_NO_STORE_HEADERS);
+		const contactUser = await client.auth.admin.getUserById(contactUserId);
+		if (contactUser.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (!contactUser.data.user?.email) return c.json({ error: "provider_contact_required" }, 409, PRIVATE_NO_STORE_HEADERS);
+		if (!providerTechnicallyReady(provider.data, Boolean(candidate.data?.length))) return c.json({ error: "provider_not_ready_for_approval" }, 409, PRIVATE_NO_STORE_HEADERS);
+	}
+	const result = await client.rpc("set_self_serve_provider_review", {
+		p_provider_slug: providerSlug,
+		p_decision: parsed.data.decision,
+		p_reason: parsed.data.reason ?? null,
+		p_reviewed_by: user.id,
+	});
+	if (result.error) {
+		if (result.error.message.includes("self_serve_provider_not_found")) return c.json({ error: "provider_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ error: "provider_review_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+	return c.json({ ok: true, provider: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
 internalProviderCatalogReviewRouter.get("/provider-catalog/reviews", async (c) => {
 	const user = await adminUser(c);
 	if (!user) return c.json({ error: "unauthorized" }, 403, PRIVATE_NO_STORE_HEADERS);
@@ -91,9 +189,9 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/reviews/:runId/mode
 	if (parsed.data.decision === "approved" && !canonicalModelSlug) {
 		const labSlug = modelSlug.split("/", 1)[0]?.toLowerCase();
 		if (!labSlug) return c.json({ error: "canonical_model_invalid" }, 409, PRIVATE_NO_STORE_HEADERS);
-		const lab = await client.from("v2_labs").upsert({ lab_slug: labSlug, name: labSlug, status: "active", routable: false, metadata: { created_from_provider_proposal: true } }, { onConflict: "lab_slug", ignoreDuplicates: true });
+		const lab = await client.from("v2_labs").upsert({ lab_slug: labSlug, name: labSlug, status: "disabled", routable: false, metadata: { created_from_provider_proposal: true } }, { onConflict: "lab_slug", ignoreDuplicates: true });
 		if (lab.error) return c.json({ error: "canonical_model_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const model = await client.from("v2_models").upsert({ model_slug: modelSlug, lab_slug: labSlug, name: existing.data.name ?? modelSlug, description: existing.data.description, status: "active", hidden: false, input_modalities: existing.data.input_modalities ?? [], output_modalities: existing.data.output_modalities ?? [], metadata: { created_from_provider_proposal: true, approved_run_id: runId } }, { onConflict: "model_slug", ignoreDuplicates: true });
+		const model = await client.from("v2_models").upsert({ model_slug: modelSlug, lab_slug: labSlug, name: existing.data.name ?? modelSlug, description: existing.data.description, status: "active", hidden: true, input_modalities: existing.data.input_modalities ?? [], output_modalities: existing.data.output_modalities ?? [], metadata: { created_from_provider_proposal: true, approved_run_id: runId } }, { onConflict: "model_slug", ignoreDuplicates: true });
 		if (model.error) return c.json({ error: "canonical_model_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 		canonicalModelSlug = modelSlug;
 	}
@@ -140,10 +238,11 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/candidates/:runId/m
 	const runId = c.req.param("runId");
 	const modelSlug = decodedModelSlug(c.req.param("modelSlug"));
 	const client = getDataClient(c.env);
-	const updated = await client.from("provider_catalog_route_candidates").update({ status: parsed.data.passed ? "probe_passed" : "probe_failed", probe_summary: parsed.data.summary, probed_by: user.id, probed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("run_id", runId).eq("submitted_model_slug", modelSlug).in("status", ["pending_probe", "probe_failed", "probe_passed"]).select("run_id,submitted_model_slug,status,probe_summary,probed_at").maybeSingle();
+	const updated = await client.from("provider_catalog_route_candidates").update({ status: parsed.data.passed ? "probe_passed" : "probe_failed", probe_summary: parsed.data.summary, probed_by: user.id, probed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("run_id", runId).eq("submitted_model_slug", modelSlug).in("status", ["pending_probe", "probe_failed", "probe_passed"]).select("run_id,provider_slug,submitted_model_slug,status,probe_summary,probed_at").maybeSingle();
 	if (updated.error) return c.json({ error: "probe_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!updated.data) return c.json({ error: "route_candidate_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	await client.from("provider_catalog_sync_models").update({ route_projection_status: parsed.data.passed ? "probe_passed" : "failed", route_projection_error: parsed.data.passed ? null : String(parsed.data.summary.reason ?? "Endpoint probe failed").slice(0, 500) }).eq("run_id", runId).eq("model_slug", modelSlug);
+	if (parsed.data.passed) await markProviderAwaitingApprovalIfReady(client, String(updated.data.provider_slug));
 	return c.json({ ok: true, candidate: updated.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

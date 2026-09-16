@@ -24,13 +24,21 @@ export async function reconcileProviderCatalogClaims(client: any, args: { provid
 	const ids = args.models.map((model) => model.id.toLowerCase());
 	const now = new Date().toISOString();
 	const [exactResult, aliasResult, linkResult] = await Promise.all([
-		client.from("v2_models").select("model_slug").in("model_slug", ids),
+		client.from("v2_models").select("model_slug").in("model_slug", ids).eq("hidden", false),
 		client.from("v2_model_aliases").select("alias_slug,model_slug,effective_from,effective_to").in("alias_slug", ids).eq("enabled", true).or(`effective_from.is.null,effective_from.lte.${now}`).or(`effective_to.is.null,effective_to.gt.${now}`),
 		client.from("provider_account_links").select("workspace_id").eq("provider_slug", args.providerSlug).eq("status", "active"),
 	]);
 	if (exactResult.error || aliasResult.error) throw new Error("canonical_model_lookup_failed");
-	const exact = new Set((exactResult.data ?? []).map((row: any) => String(row.model_slug)));
-	const aliases = new Map<string, string>((aliasResult.data ?? []).map((row: any) => [String(row.alias_slug), String(row.model_slug)]));
+	const targets = [...new Set([...ids, ...(aliasResult.data ?? []).map((row: any) => String(row.model_slug))])];
+	const [visibleTargets, stealthTargets] = await Promise.all([
+		client.from("v2_models").select("model_slug").in("model_slug", targets).eq("hidden", false),
+		client.from("v2_model_provider_routes").select("model_slug").in("model_slug", targets).eq("is_stealth", true),
+	]);
+	if (visibleTargets.error || stealthTargets.error) throw new Error("canonical_model_visibility_unavailable");
+	const stealth = new Set((stealthTargets.data ?? []).map((row: any) => String(row.model_slug)));
+	const visible = new Set((visibleTargets.data ?? []).map((row: any) => String(row.model_slug)).filter((id: string) => !stealth.has(id)));
+	const exact = new Set((exactResult.data ?? []).map((row: any) => String(row.model_slug)).filter((id: string) => visible.has(id)));
+	const aliases = new Map<string, string>((aliasResult.data ?? []).filter((row: any) => visible.has(String(row.model_slug))).map((row: any) => [String(row.alias_slug), String(row.model_slug)]));
 	let approved = 0;
 	let pending = 0;
 	for (const model of args.models) {
