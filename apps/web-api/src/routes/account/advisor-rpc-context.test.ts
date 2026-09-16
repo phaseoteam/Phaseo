@@ -60,7 +60,7 @@ describe("privileged account RPC caller identity", () => {
 		const response = await app.request("https://phaseo.app/api/account/settings/provider-onboarding/submit", {
 			method: "POST",
 			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
-			body: JSON.stringify({ providerSlug: "example", providerName: "Example", websiteUrl: "https://example.com", catalogUrl: "https://example.com/catalog.json" }),
+			body: JSON.stringify({ providerSlug: "example", providerName: "Example", contactEmail: "platform@example.com", websiteUrl: "https://example.com", catalogUrl: "https://example.com/catalog.json" }),
 		}, env);
 		expect(response.status).toBe(429);
 		expect(reservation).toEqual({ authorization: "Bearer session-token", body: { p_user_id: "user-1" } });

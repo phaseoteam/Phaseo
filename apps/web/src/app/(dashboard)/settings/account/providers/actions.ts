@@ -106,6 +106,7 @@ export async function updateProviderCatalogAction(providerSlug: string, catalog:
 export async function submitProviderOnboardingAction(input: {
 	providerSlug: string;
 	providerName: string;
+	contactEmail: string;
 	websiteUrl: string;
 	logoUrl: string;
 	catalogUrl: string;

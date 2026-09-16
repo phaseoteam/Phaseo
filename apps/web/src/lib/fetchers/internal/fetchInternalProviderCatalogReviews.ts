@@ -36,6 +36,22 @@ export type InternalProviderCatalogReview = {
 	}>;
 };
 
+export type InternalProviderApplication = {
+	provider_slug: string;
+	name: string;
+	status: string;
+	routable: boolean;
+	routing_enabled: boolean;
+	base_url: string | null;
+	contact_email: string | null;
+	website_url: string | null;
+	review_status: "setup" | "awaiting_approval" | "approved" | "paused" | "rejected" | "needs_changes";
+	review_reason: string | null;
+	technical_ready: boolean;
+	created_at: string;
+	updated_at: string;
+};
+
 export async function fetchInternalProviderCatalogReviews(): Promise<InternalProviderCatalogReview[]> {
 	const context = await getServerAccountContext();
 	const payload = await fetchInternalWebApi<{ reviews: InternalProviderCatalogReview[] }>(
@@ -43,4 +59,13 @@ export async function fetchInternalProviderCatalogReviews(): Promise<InternalPro
 		context.accessToken,
 	);
 	return payload.reviews;
+}
+
+export async function fetchInternalProviderApplications(): Promise<InternalProviderApplication[]> {
+	const context = await getServerAccountContext();
+	const payload = await fetchInternalWebApi<{ providers: InternalProviderApplication[] }>(
+		"/api/internal/provider-catalog/providers",
+		context.accessToken,
+	);
+	return payload.providers;
 }

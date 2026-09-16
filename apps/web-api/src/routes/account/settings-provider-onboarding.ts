@@ -25,6 +25,7 @@ const optionalHttpsUrlSchema = z.preprocess((value) => value === "" ? undefined 
 const profileSchema = z.object({
 	providerSlug: providerSlugSchema,
 	providerName: z.string().trim().min(2).max(120),
+	contactEmail: z.string().trim().email().max(320),
 	websiteUrl: httpsUrlSchema,
 	logoUrl: optionalHttpsUrlSchema,
 	catalogUrl: optionalHttpsUrlSchema,
@@ -470,6 +471,10 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 	if (!parsed.success) return responseError(c, parsed.error.issues[0]?.message ?? "Complete all provider fields.");
 	const input = parsed.data;
 	const websiteHost = hostFromUrl(input.websiteUrl);
+	const contactHost = input.contactEmail.split("@").at(-1)?.toLowerCase() ?? "";
+	if (!sameOrSubdomain(contactHost, websiteHost) && !sameOrSubdomain(websiteHost, contactHost)) {
+		return responseError(c, "Use a provider email address on the organisation website domain.");
+	}
 	if (input.catalogMode === "remote" && !input.catalogUrl) return responseError(c, "Enter a catalog URL or choose to manage models in Phaseo.");
 	const catalogHost = input.catalogUrl ? hostFromUrl(input.catalogUrl) : websiteHost;
 	if (input.catalogMode === "remote" && !sameOrSubdomain(catalogHost, websiteHost)) {
@@ -557,6 +562,7 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		catalog_url: input.catalogUrl ?? null,
 		self_serve: {
 			status: "submitted",
+			provider_review_status: "setup",
 			catalog_sha256: catalog.sha256,
 			last_submitted_by: user.id,
 			last_submitted_at: new Date().toISOString(),
@@ -594,6 +600,11 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		return c.json({ error: "provider_enrollment_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	const enrollmentData = enrollment.data as { provider: any; submission: any; providerWorkspaceId: string };
+	const contactSaved = await client.from("provider_onboarding_submissions").update({ contact_email: input.contactEmail }).eq("id", String(enrollmentData.submission.id));
+	if (contactSaved.error) {
+		console.error("provider_enrollment_contact_write_failed", { providerSlug: input.providerSlug, submissionId: enrollmentData.submission.id });
+		return c.json({ error: "provider_enrollment_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
 	if (catalog.preview.modelCount > 0) c.executionCtx.waitUntil(syncProviderCatalog(c.env, input.providerSlug, "manual", String(enrollmentData.submission.id)).catch((error) => {
 		console.error("provider_catalog_initial_sync_failed", { providerSlug: input.providerSlug, error: error instanceof Error ? error.message : String(error) });
 	}));
@@ -609,7 +620,7 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 			webhookSecret,
 		},
 		providerWorkspaceId: enrollmentData.providerWorkspaceId,
-		message: "Provider profile submitted. Account ownership is pending verification, and models are queued for route checks before production traffic is enabled.",
+		message: "Provider profile submitted for Phaseo approval. You can stage and test models while public routing remains disabled.",
 	}, 201, PRIVATE_NO_STORE_HEADERS);
 });
 
