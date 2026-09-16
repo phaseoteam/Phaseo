@@ -46,6 +46,7 @@ export async function previewProviderCatalogAction(catalogUrl: string) {
 }
 
 export async function submitProviderOnboardingAction(input: {
+	workspaceId: string;
 	providerSlug: string;
 	providerName: string;
 	websiteUrl: string;

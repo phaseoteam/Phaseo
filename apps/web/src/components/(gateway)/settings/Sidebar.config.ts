@@ -81,7 +81,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				children: [
 					{ href: "/settings/account/details", label: "Details" },
 					{ href: "/settings/account/mfa", label: "MFA" },
-					{ href: "/settings/account/providers", label: "Provider onboarding" },
 					{ href: "/settings/authorized-apps", label: "Connected Apps" },
 					{ href: "/settings/account/danger", label: "Danger Zone" },
 				],
@@ -134,11 +133,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/teams/access",
 					"/settings/teams/settings",
 					"/settings/notifications",
+					"/settings/workspaces/provider",
 				],
 				children: [
 					{ href: "/settings/workspaces/settings", label: "General" },
 					{ href: "/settings/workspaces/members", label: "Members" },
 					{ href: "/settings/workspaces/access", label: "Access" },
+					{ href: "/settings/workspaces/provider", label: "Provider" },
 					{ href: "/settings/workspaces/activity", label: "Activity" },
 					{ href: "/settings/notifications", label: "Notifications" },
 				],
