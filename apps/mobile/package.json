@@ -17,7 +17,7 @@
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",
     "@expo/vector-icons": "^15.0.3",
-    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-async-storage/async-storage": "3.1.1",
     "@react-navigation/native": "^7.3.14",
     "@supabase/supabase-js": "2.110.9",
     "@tanstack/react-query": "^5.101.4",
