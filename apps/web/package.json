@@ -59,7 +59,7 @@
 		"@tanstack/react-table": "^8.21.3",
 		"@tanstack/react-virtual": "^3.14.6",
 		"@upstash/ratelimit": "^2.0.6",
-		"@upstash/redis": "^1.38.0",
+		"@upstash/redis": "^1.38.4",
 		"@vercel/analytics": "^2.0.1",
 		"@xyflow/react": "^12.11.1",
 		"ai": "^6.0.168",
