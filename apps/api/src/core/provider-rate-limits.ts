@@ -3,7 +3,7 @@
 // How: Loads configuration from Supabase and coordinates fixed-window counters in a Durable Object.
 
 import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
-import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { dispatchBackground, getBindings, getCache, getSupabaseAdmin } from "@/runtime/env";
 import type { PipelineContext } from "@pipeline/before/types";
 
 const CONFIG_CACHE_TTL_MS = 60_000;
@@ -143,6 +143,21 @@ export function estimateProviderTokenReservation(args: {
 type CachedConfig = { expiresAt: number; value: ProviderRateLimitConfig | null };
 const configCache = new Map<string, CachedConfig>();
 const configInflight = new Map<string, Promise<ProviderRateLimitConfig | null>>();
+const configKey = (providerId: string) => `gateway:provider-rate-limit-config:v1:${providerId}`;
+
+function readConfigSnapshot(input: unknown, providerId: string, now: number): CachedConfig | null {
+	if (!input || typeof input !== "object") return null;
+	const snapshot = input as Record<string, unknown>;
+	if (snapshot.version !== 1 || snapshot.providerId !== providerId ||
+		typeof snapshot.checkedAt !== "number" || !Number.isFinite(snapshot.checkedAt) ||
+		snapshot.checkedAt > now || now - snapshot.checkedAt >= CONFIG_CACHE_TTL_MS) return null;
+	const row = snapshot.row;
+	if (row !== null && (!row || typeof row !== "object" ||
+		(row as Record<string, unknown>).provider_id !== providerId ||
+		typeof (row as Record<string, unknown>).enabled !== "boolean")) return null;
+	return { expiresAt: snapshot.checkedAt + CONFIG_CACHE_TTL_MS,
+		value: row === null ? null : parseProviderRateLimitConfig(row as Record<string, unknown>) };
+}
 
 function finitePositive(value: unknown): number | null {
 	const parsed = Number(value);
@@ -172,6 +187,14 @@ async function loadConfig(providerId: string): Promise<ProviderRateLimitConfig |
 	if (inflight) return inflight;
 
 	const loader = (async () => {
+		// Share only configuration, never admission counters or reservations.
+		// Absolute age preserves the existing 60-second configuration window
+		// even if a KV replica retains an expired snapshot.
+		try {
+			const snapshot = readConfigSnapshot(await getCache().get(configKey(providerId), "json"), providerId, Date.now());
+			if (snapshot) { configCache.set(providerId, snapshot); return snapshot.value; }
+		} catch { /* Cache failure falls back to authoritative configuration. */ }
+		const checkedAt = Date.now();
 		const { data, error } = await getSupabaseAdmin()
 			.from("provider_rate_limits")
 			.select("provider_id,requests_per_minute,requests_per_day,tokens_per_minute,tokens_per_day,headroom_bps,enabled")
@@ -179,7 +202,12 @@ async function loadConfig(providerId: string): Promise<ProviderRateLimitConfig |
 			.maybeSingle();
 		if (error) throw new Error(`provider_rate_limit_config_error:${error.message ?? "unknown"}`);
 		const value = data ? parseProviderRateLimitConfig(data as Record<string, unknown>) : null;
-		configCache.set(providerId, { expiresAt: now + CONFIG_CACHE_TTL_MS, value });
+		configCache.set(providerId, { expiresAt: checkedAt + CONFIG_CACHE_TTL_MS, value });
+		try {
+			dispatchBackground(getCache().put(configKey(providerId), JSON.stringify({
+				version: 1, providerId, checkedAt, row: data ?? null,
+			}), { expirationTtl: 60 }).catch(() => undefined));
+		} catch { /* The authoritative result remains usable without persistence. */ }
 		return value;
 	})();
 	configInflight.set(providerId, loader);

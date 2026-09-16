@@ -31,6 +31,7 @@ const state = vi.hoisted(() => ({
 		return new Date(String(key.expires_at)).getTime() > Date.now();
 	}),
 	setKeyVersion: vi.fn(async () => undefined),
+    cacheDelete: vi.fn(async (_key: string) => undefined),
 	bindings: { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" } as Record<string, unknown>,
 }));
 
@@ -135,7 +136,7 @@ function buildKeysSupabaseMock() {
 
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => buildKeysSupabaseMock(),
-	getCache: () => ({ delete: vi.fn(async () => undefined) }),
+	getCache: () => ({ delete: state.cacheDelete }),
 	getBindings: () => state.bindings,
 }));
 
@@ -189,6 +190,7 @@ describe("management key routes", () => {
 			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false },
 		};
 		state.keyRows.length = 0;
+        state.cacheDelete.mockClear();
 		state.keyUsageRows.length = 0;
 		state.workspaceRows.length = 0;
 		state.membershipRows.length = 0;
@@ -603,6 +605,7 @@ describe("management key routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(state.setKeyVersion).toHaveBeenCalledWith("kid", "kid_legacy", expect.any(Number));
+        expect(state.cacheDelete).toHaveBeenCalledWith("gateway:private-routes:v1:ws_legacy");
 	});
 
 	it("allows scoped management auth to invalidate without a shared control secret", async () => {
@@ -621,5 +624,6 @@ describe("management key routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(state.setKeyVersion).toHaveBeenCalledWith("kid", "kid_scoped", expect.any(Number));
+        expect(state.cacheDelete).toHaveBeenCalledWith("gateway:private-routes:v1:ws_1");
 	});
 });

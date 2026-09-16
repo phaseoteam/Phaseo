@@ -46,7 +46,8 @@ const runtime = vi.hoisted(() => {
 	const rpc = vi.fn(async () => ({ data: [contextPayload], error: null }));
 	const from = vi.fn((table: string) => {
 		if (table === "workspace_private_models") {
-			return { select: () => ({ eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }) };
+			const query: any = { select: () => query, eq: () => query, limit: async () => ({ data: [], count: 0, error: null }), maybeSingle: async () => ({ data: null, error: null }) };
+            return query;
 		}
 		if (table === "wallets") {
 			return {
@@ -112,6 +113,7 @@ const runtime = vi.hoisted(() => {
 });
 
 vi.mock("@/runtime/env", () => ({
+    getBindingsIfConfigured: () => null,
 	getCache: () => runtime.cache as unknown as KVNamespace,
 	getSupabaseAdmin: () => runtime.supabase,
 	dispatchBackground: (promise: Promise<unknown>) => {
@@ -160,7 +162,7 @@ function seedContextCache(options: { legacyCredit?: boolean; credit?: unknown } 
 		}),
 	);
 	runtime.store.set(
-		`gateway:static:v4:default:${workspaceId}:v1:${endpoint}:${model}`,
+		`gateway:static:v5:default:${workspaceId}:v1:${endpoint}:${model}`,
 		JSON.stringify({
 			workspaceId,
 			resolvedModel: model,
@@ -251,6 +253,25 @@ describe("fetchGatewayContext credit-only cache refresh", () => {
 		expect(settled).toBe(true);
 	});
 
+	it("can overlap credit persistence with streaming while exposing a billing barrier", async () => {
+		seedContextCache(); runtime.deferWrites = true;
+		const writes: Promise<void>[] = [];
+		const { fetchGatewayContext } = await import("./context");
+		const context = await fetchGatewayContext({ workspaceId, model, endpoint, apiKeyId,
+			onCreditCacheWrite: write => { writes.push(write); },
+		});
+		expect(context.credit.balanceNanos).toBe(4_000_000_000);
+		expect(writes).toHaveLength(1);
+		expect(runtime.pendingWrites).toHaveLength(1);
+		expect(runtime.store.has(`gateway:credit:${workspaceId}`)).toBe(false);
+		let persisted = false;
+		void writes[0].then(() => { persisted = true; });
+		await Promise.resolve(); expect(persisted).toBe(false);
+		runtime.pendingWrites.shift()!.resolve(); await Promise.all(writes);
+		expect(runtime.store.has(`gateway:credit:${workspaceId}`)).toBe(true);
+		await Promise.all(runtime.background);
+	});
+
 	it("ignores stale legacy credit and fails closed using reserved funds", async () => {
 		seedContextCache({ legacyCredit: true });
 		runtime.walletResult = {
@@ -328,7 +349,7 @@ describe("fetchGatewayContext credit-only cache refresh", () => {
 		expect(runtime.background).toHaveLength(1);
 		expect(runtime.pendingWrites.map(({ key }) => key).sort()).toEqual([
 			`gateway:dynamic:default:${workspaceId}:${apiKeyId}:v1`,
-			`gateway:static:v4:default:${workspaceId}:v1:${endpoint}:${model}`,
+			`gateway:static:v5:default:${workspaceId}:v1:${endpoint}:${model}`,
 		]);
 
 		await fetchPromise;

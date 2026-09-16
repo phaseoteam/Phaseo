@@ -25,6 +25,7 @@ import { pruneExpiredDataContributions } from "@/pipeline/classification/data-co
 import { drainGatewayOtlpOutbox } from "@/observability/otlp-export";
 import { runAccountDeletionPurgeJob } from "@/pipeline/privacy/account-deletion";
 import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry";
+import { publishConfiguredPublicCatalog } from "./public-catalog";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -452,6 +453,19 @@ async function handleGatewayIoRetentionExpiryScheduledEvent(
 }
 
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
+	// Run before maintenance jobs so their duration cannot delay publication.
+	// Only the primary deployment configures targets; regional Workers consume KV.
+	if (env.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true" && env.GATEWAY_PUBLIC_CATALOG_TARGETS && getScheduledMinuteUtc(event) % 2 === 0) {
+		configureRuntime(env);
+		try {
+			const summary = await publishConfiguredPublicCatalog(env.GATEWAY_PUBLIC_CATALOG_TARGETS);
+			console.log("public_catalog_publication_completed", summary);
+		} catch {
+			console.error("public_catalog_publication_invalid_config");
+		} finally {
+			clearRuntime();
+		}
+	}
 	if (isDailyPaymentMethodExpiryTick(event)) {
 		try {
 			await handlePaymentMethodExpiryScheduledEvent(env);

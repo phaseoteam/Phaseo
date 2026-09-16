@@ -8,6 +8,7 @@ import type { Endpoint } from "@core/types";
 import { handleError } from "@core/error-handler";
 import { auditFailure } from "./audit";
 import { Timer } from "./telemetry/timer";
+import { gatewayTraceFor } from "./telemetry/gateway-trace";
 import type { PipelineTiming } from "./execute";
 import { resolvePipeline } from "./registry";
 import { ResponsesSchema } from "@core/schemas";
@@ -76,6 +77,8 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 
     return async function handler(req: Request) {
         const timer = new Timer();
+        const gatewayTrace = gatewayTraceFor(req);
+        gatewayTrace?.mark("pipeline_entry");
         const timing: PipelineTiming = {
             timer,
             internal: { adapterMarked: false },
@@ -121,6 +124,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
         if (beforeMs !== null) {
             pre.ctx.meta.before_ms = beforeMs;
         }
+        pre.ctx.gatewayTimingTrace = gatewayTrace;
 
         try {
             const runner = resolvePipeline(endpoint);

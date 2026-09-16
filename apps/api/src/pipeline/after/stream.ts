@@ -509,9 +509,11 @@ export async function handleStreamResponse(
             );
 			const baseModel = getBaseModel(ctx.model);
 			const healthContext = (result as any).healthContext ?? null;
+            const healthProvider = healthContext?.provider ?? result.provider;
 			const isProbe = Boolean(healthContext?.isProbe);
 			const healthImpact = classifyProviderHealthImpact({
 				upstreamStatus: result.upstream.status,
+				credentialSource: result.keySource,
 				aborted: info?.aborted === true,
 				// An upstream-completed empty response is a contract issue, not
 				// evidence that the provider is unhealthy.
@@ -519,18 +521,22 @@ export async function handleStreamResponse(
 				finishReason: cachedFinishReason ?? result.bill.finish_reason ?? null,
 			});
 			if (info?.aborted || streamFailed || healthImpact === "failure") {
-				await onCallEnd(ctx.endpoint, {
-					provider: result.provider,
+				const healthUpdate = await onCallEnd(ctx.endpoint, {
+					observationId: healthContext?.observationId,
+					startedAt: healthContext?.startedAt,
+					probe: isProbe,
+					provider: healthProvider,
 					model: baseModel,
 					ok: false,
+					upstreamStatus: result.upstream.status,
 					healthImpact,
 					latency_ms: ctx.meta.latency_ms ?? null,
 					generation_ms: ctx.meta.generation_ms ?? null,
 				});
-				if (isProbe && healthImpact !== "neutral") {
-					await reportProbeResult(ctx.endpoint, result.provider, baseModel, healthImpact === "success");
-				} else if (healthImpact === "failure") {
-					await maybeOpenOnRecentErrors(ctx.endpoint, result.provider, baseModel);
+				if (isProbe && healthImpact !== "neutral" && !healthUpdate?.rateLimited) {
+					await reportProbeResult(ctx.endpoint, healthProvider, baseModel, healthImpact === "success");
+				} else if (healthImpact === "failure" && !healthUpdate?.rateLimited) {
+					await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
 				}
 				const reason = info?.aborted ? "incomplete_stream" : "upstream_failure";
 				await recordManagedProviderTokensOnce({
@@ -557,7 +563,10 @@ export async function handleStreamResponse(
                 result.upstream.status < 400 &&
                 !info?.aborted;
             await onCallEnd(ctx.endpoint, {
-                provider: result.provider,
+                observationId: healthContext?.observationId,
+                startedAt: healthContext?.startedAt,
+                probe: isProbe,
+                provider: healthProvider,
                 model: baseModel,
                 ok,
                 healthImpact,
@@ -577,7 +586,7 @@ export async function handleStreamResponse(
                 ),
             });
             if (isProbe && healthImpact !== "neutral") {
-				await reportProbeResult(ctx.endpoint, result.provider, baseModel, healthImpact === "success");
+				await reportProbeResult(ctx.endpoint, healthProvider, baseModel, healthImpact === "success");
             }
 
             const finalizeFromBill = async (bill: Bill | null | undefined) => {
@@ -829,7 +838,6 @@ export async function handleStreamResponse(
 export function handlePassthroughFallback(upstream: Response): Response {
     return passthrough(upstream);
 }
-
 
 
 

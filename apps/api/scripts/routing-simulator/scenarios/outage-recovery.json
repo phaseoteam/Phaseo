@@ -1,0 +1,24 @@
+{
+  "name": "Outage and recovery under sustained traffic",
+  "seed": 42,
+  "durationMs": 300000,
+  "sampleMs": 5000,
+  "traceEvery": 100,
+  "context": { "routingMode": "balanced", "cacheAwareRouting": false },
+  "providers": [
+    { "id": "provider-a", "inputUsdPerMillion": 1, "outputUsdPerMillion": 2, "phases": [
+      { "atMs": 0, "behavior": { "latencyMs": 150, "generationMs": 350 } },
+      { "atMs": 60000, "behavior": { "failureRate": 1, "failureStatus": 503, "failureDurationMs": 100 } },
+      { "atMs": 150000, "behavior": { "latencyMs": 150, "generationMs": 350 } }
+    ] },
+    { "id": "provider-b", "inputUsdPerMillion": 1, "outputUsdPerMillion": 2, "phases": [
+      { "atMs": 0, "behavior": { "latencyMs": { "kind": "lognormal", "median": 250, "sigma": 0.3, "max": 1500 }, "generationMs": 500 } }
+    ] }
+  ],
+  "traffic": [{ "untilMs": 300000, "rps": 50, "arrival": "poisson" }],
+  "checks": [
+    { "name": "Fallback preserves availability", "fromMs": 60000, "untilMs": 150000, "metric": "successRate", "op": ">=", "value": 0.99 },
+    { "name": "Stop most first attempts to failed provider within 30 seconds", "fromMs": 90000, "untilMs": 150000, "metric": "firstAttemptShare", "provider": "provider-a", "op": "<=", "value": 0.1 },
+    { "name": "Circuit breaker opens during outage", "fromMs": 60000, "untilMs": 150000, "metric": "breakerOpenCount", "provider": "provider-a", "op": ">=", "value": 1 }
+  ]
+}

@@ -16,6 +16,10 @@ const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
 const pruneExpiredGatewayIoLogsMock = vi.fn();
+const publishConfiguredPublicCatalogMock = vi.fn();
+vi.mock("./public-catalog", () => ({
+	publishConfiguredPublicCatalog: (...args: unknown[]) => publishConfiguredPublicCatalogMock(...args),
+}));
 
 vi.mock("@/runtime/env", () => ({
 	clearRuntime: (...args: unknown[]) => clearRuntimeMock(...args),
@@ -90,6 +94,7 @@ function scheduledEventAt(iso: string): ScheduledController {
 
 describe("handleScheduledEvent", () => {
 	beforeEach(() => {
+		publishConfiguredPublicCatalogMock.mockReset().mockResolvedValue({ targets: 1, published: 1, failed: 0, skipped: 0 });
 		clearRuntimeMock.mockReset();
 		configureRuntimeMock.mockReset();
 		runAsyncWebhookRetriesJobMock.mockReset();
@@ -221,6 +226,16 @@ describe("handleScheduledEvent", () => {
 		expect(runBatchReconciliationJobMock).not.toHaveBeenCalled();
 		expect(runBatchProviderWebhookReplayJobMock).not.toHaveBeenCalled();
 		expect(runVideoReconciliationJobMock).not.toHaveBeenCalled();
+	});
+
+	it("publishes configured catalogs every two minutes independently of core jobs", async () => {
+		const env = { GATEWAY_CONTEXT_BUNDLE_ENABLED: "true", GATEWAY_PUBLIC_CATALOG_TARGETS: "[]" } as any;
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:01:00.000Z"), env);
+		expect(publishConfiguredPublicCatalogMock).not.toHaveBeenCalled();
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:02:00.000Z"), env);
+		expect(publishConfiguredPublicCatalogMock).toHaveBeenCalledOnce();
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:04:00.000Z"), {} as any);
+		expect(publishConfiguredPublicCatalogMock).toHaveBeenCalledOnce();
 	});
 
 	it("runs I/O retention billing on the daily billing tick", async () => {

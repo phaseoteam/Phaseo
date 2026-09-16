@@ -1,10 +1,13 @@
 // Purpose: Runtime environment type definitions.
 
 export type GatewayBindings = {
+    GATEWAY_CONTEXT_BUNDLE_ENABLED?: string;
+    GATEWAY_PUBLIC_CATALOG_TARGETS?: string;
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
 	GATEWAY_ROUTING_REGION?: "eu" | "us";
     GATEWAY_CACHE: KVNamespace;
+    ROUTING_HEALTH?: DurableObjectNamespace<import("@core/routing-health-durable-object").RoutingHealthDurableObject>;
 	GATEWAY_IO_LOGS_BUCKET?: R2Bucket;
 	GATEWAY_IO_LOGS_BUCKET_NAME?: string;
 	GATEWAY_IO_LOGGING_MAX_BYTES?: string;

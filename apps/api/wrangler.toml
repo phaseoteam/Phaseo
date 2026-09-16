@@ -6,6 +6,10 @@ workers_dev = false
 preview_urls = false
 
 [vars]
+GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
+# Two-minute publication: four public snapshots, 86,400 KV writes / 30 days.
+# Keep this only on the primary scheduler; regional Workers share its KV.
+GATEWAY_PUBLIC_CATALOG_TARGETS = '[{"model":"openai/gpt-5.4-mini","endpoint":"responses"},{"model":"openai/gpt-5.4-mini","endpoint":"text.generate"},{"model":"anthropic/claude-haiku-4.5","endpoint":"messages"},{"model":"anthropic/claude-haiku-4.5","endpoint":"text.generate"}]'
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 AMAZON_BEDROCK_REGION = "us-west-2"
@@ -137,3 +141,11 @@ new_sqlite_classes = ["RealtimeRelayDurableObject"]
 [[migrations]]
 tag = "v2-provider-rate-limits"
 new_sqlite_classes = ["ProviderRateLimitDurableObject"]
+
+[[durable_objects.bindings]]
+name = "ROUTING_HEALTH"
+class_name = "RoutingHealthDurableObject"
+
+[[migrations]]
+tag = "v3-routing-health"
+new_sqlite_classes = ["RoutingHealthDurableObject"]

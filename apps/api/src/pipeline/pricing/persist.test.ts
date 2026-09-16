@@ -85,6 +85,32 @@ describe("recordUsageAndCharge", () => {
 		expect(releaseRuntimeMock).toHaveBeenCalledTimes(1);
 	});
 
+	it("retains a high-balance snapshot only on explicit database approval", async () => {
+		rpcMock.mockResolvedValue({ data: { status: "top_up_not_required", applied: true, invalidate_credit_cache: false }, error: null });
+		const { recordUsageAndCharge } = await import("./persist");
+		await recordUsageAndCharge({ requestId: "r", workspaceId: "ws", cost_nanos: 100, creditSnapshotBalanceNanos: 100_000_000_000_000 });
+		expect(rpcMock).toHaveBeenCalledWith("gateway_charge_with_credit_cache", {
+			p_workspace_id: "ws", p_request_id: "r", p_cost_nanos: 100, p_credit_snapshot_balance_nanos: 100_000_000_000_000,
+		});
+		expect(invalidateGatewayCreditCacheMock).not.toHaveBeenCalled();
+	});
+
+	it("invalidates a replay when the database requests it without repeating top-up side effects", async () => {
+		rpcMock.mockResolvedValue({ data: { status: "top_up_required", already_applied: true, invalidate_credit_cache: true }, error: null });
+		const { recordUsageAndCharge } = await import("./persist");
+		await recordUsageAndCharge({ requestId: "r", workspaceId: "ws", cost_nanos: 100 });
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("ws");
+		expect(enqueueAutoTopUpFailedEmailMock).not.toHaveBeenCalled();
+	});
+
+	it("invalidates stale admission credit when charging fails", async () => {
+		const error = { message: "insufficient_unreserved_balance" };
+		rpcMock.mockResolvedValue({ data: null, error });
+		const { recordUsageAndCharge } = await import("./persist");
+		await expect(recordUsageAndCharge({ requestId: "r", workspaceId: "ws", cost_nanos: 100 })).rejects.toEqual(error);
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("ws");
+	});
+
 	it("queues an owner notification when Auto Top-Up has no payment method", async () => {
 		rpcMock.mockResolvedValue({
 			data: {

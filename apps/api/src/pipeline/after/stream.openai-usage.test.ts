@@ -169,6 +169,24 @@ function baseCtx(): any {
 }
 
 describe("handleStreamResponse OpenAI usage finalization", () => {
+    it.each([false, true])("keeps private stream health scoped when failure=%s", async failed => {
+        onCallEndMock.mockReset().mockResolvedValue(undefined);
+        reportProbeResultMock.mockReset().mockResolvedValue(undefined);
+        maybeOpenOnRecentErrorsMock.mockReset().mockResolvedValue(undefined);
+        classifyProviderHealthImpactMock.mockReset().mockReturnValue(failed ? "failure" : "success");
+        auditSuccessMock.mockReset().mockResolvedValue(undefined);
+        auditFailureMock.mockReset().mockResolvedValue(undefined);
+        emitGatewayRequestEventMock.mockReset().mockResolvedValue(undefined);
+        recordUsageAndChargeOnceMock.mockReset().mockResolvedValue(undefined);
+        const upstream = failed ? makeFailedOpenAIStream() : makeEmptySuccessfulOpenAIStream();
+        const scopedProvider = "private-model:workspace-a:route-1";
+        const response = await handleStreamResponse(baseCtx(), { kind: "stream", stream: upstream.body, upstream, provider: "private-model", healthContext: { provider: scopedProvider, isProbe: true }, usageFinalizer: async () => null, bill: { cost_cents: 0, currency: "USD", usage: null, finish_reason: null } } as any, null);
+        await response.text();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(onCallEndMock).toHaveBeenCalledWith("chat.completions", expect.objectContaining({ provider: scopedProvider, ok: !failed }));
+        expect(reportProbeResultMock).toHaveBeenCalledWith("chat.completions", scopedProvider, "openai/gpt-5.6-luna", !failed);
+    });
+
 	it("passes trailing usage-only tokens into charging and persisted audit facts", async () => {
 		auditSuccessMock.mockReset().mockResolvedValue(undefined);
 		emitGatewayRequestEventMock.mockReset().mockResolvedValue(undefined);

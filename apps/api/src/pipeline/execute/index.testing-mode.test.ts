@@ -19,6 +19,11 @@ const ensureRuntimeForBackgroundMock = vi.fn(() => releaseBackgroundRuntimeMock)
 vi.mock("@/runtime/env", () => ({
 	dispatchBackground: (promise: Promise<unknown>) => void promise,
 	ensureRuntimeForBackground: () => ensureRuntimeForBackgroundMock(),
+    getSupabaseAdmin: () => ({ from: (table: string) => {
+        if (table === "byok_keys") return { update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }) };
+        if (table === "provider_rate_limits") return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) };
+        throw new Error(`Unexpected database table: ${table}`);
+    } }),
 }));
 
 vi.mock("./guards", () => ({
@@ -168,6 +173,20 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(executor).toHaveBeenCalledTimes(1);
 		expect(executor.mock.calls[0][0]).toMatchObject({ apiKeyId: "key_test_1" });
 	});
+
+    it.each(["completed", "stream"] as const)("retains private health identity through %s execution", async kind => {
+        const candidate = { providerId: "private-model", privateEndpoint: { baseUrl: "https://private.example/v1", supportsResponses: true }, pricingCard: { currency: "USD", rules: [] }, byokMeta: [{ id: "route-1", key: "test-private-key", value: "test-private-key", alwaysUse: true, routingMode: "priority" }], providerModelSlug: "private", capabilityParams: {} };
+        const scopedProvider = "private-model:workspace-a:route-1";
+        guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+        rankProvidersMock.mockResolvedValue([{ candidate, health: { provider: scopedProvider } }]);
+        resolveProviderExecutorMock.mockReturnValue(vi.fn().mockResolvedValue({ kind, ir: {}, upstream: new Response("{}", { status: 200 }), stream: kind === "stream" ? new ReadableStream({ start(controller) { controller.close(); } }) : undefined, bill: { cost_cents: 0, currency: "USD" }, keySource: "byok", byokKeyId: "route-1" }));
+        const result = await doRequestWithIR(createCtx({ endpoint: "chat.completions", capability: "text.generate", workspaceId: "workspace-a", model: "acme/private", testingMode: true, stream: kind === "stream" }), { model: "acme/private", messages: [] } as any, createTiming());
+        expect(result.ok).toBe(true);
+        expect(admitThroughBreakerMock.mock.calls[0][1]).toBe(scopedProvider);
+        expect(onCallStartMock).toHaveBeenCalledWith("chat.completions", scopedProvider, "acme/private");
+        if (kind === "completed") expect(onCallEndMock).toHaveBeenCalledWith("chat.completions", expect.objectContaining({ provider: scopedProvider, ok: true }));
+        else expect((result as any).result.healthContext.provider).toBe(scopedProvider);
+    });
 
 	it("loads pricing lazily for testing-mode candidates and executes", async () => {
 		const candidate = {
