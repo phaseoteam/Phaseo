@@ -147,6 +147,7 @@ describe("account auth routes", () => {
 		expect(response.status).toBe(200);
 		await expect(response.json()).resolves.toEqual({
 			isLoggedIn: true,
+			providerMode: false,
 			user: {
 				id: "user-1",
 				email: "user@example.com",

@@ -77,6 +77,22 @@ describe("provider catalog onboarding", () => {
 		expect(model).toMatchObject({ availability: "deprecated", availableFrom: "2026-01-01T00:00:00.000Z", deprecatedAt: "2026-08-01T00:00:00.000Z", shutdownAt: "2026-10-01T00:00:00.000Z" });
 	});
 
+	it("preserves a future release timestamp for staged publication", () => {
+		const model = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", available_from: "2026-12-01T14:30:00Z", capabilities: ["text.generate"] }] }).models[0];
+		expect(model).toMatchObject({ availability: "ready", availableFrom: "2026-12-01T14:30:00.000Z" });
+	});
+
+	it("converts provider-local release times to the canonical UTC instant", () => {
+		const model = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", available_from: "2026-12-01T09:30:00-05:00", capabilities: ["text.generate"] }] }).models[0];
+		expect(model.availableFrom).toBe("2026-12-01T14:30:00.000Z");
+	});
+
+	it("rejects ambiguous lifecycle timestamps without a timezone", () => {
+		const preview = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", available_from: "2026-12-01T14:30:00", capabilities: ["text.generate"] }] });
+		expect(preview.valid).toBe(false);
+		expect(preview.issues).toContainEqual({ path: "data[0].available_from", message: "Expected an ISO 8601 timestamp with an explicit timezone (Z or ±HH:MM)." });
+	});
+
 	it("normalizes billable pricing meters for staged routes", () => {
 		const model = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"], pricing: [{ meter_key: "input_tokens", modality: "text", direction: "input", unit: "token", unit_quantity: 1_000_000, price_nanos: 250_000_000, display_label: "Input tokens", display_unit: "1M tokens" }] }] }).models[0];
 		expect(model.pricing).toEqual([{ meterKey: "input_tokens", modality: "text", direction: "input", unit: "token", unitQuantity: 1_000_000, priceNanos: 250_000_000, displayLabel: "Input tokens", displayUnit: "1M tokens" }]);

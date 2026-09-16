@@ -298,6 +298,72 @@ function timeValue(value: unknown): number {
 	return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
 }
 
+const PUBLIC_PROVIDER_AVAILABILITY = new Set([
+	"unknown",
+	"available",
+	"preview",
+	"limited_access",
+]);
+const COMING_SOON_PHASEO_STATUSES = new Set([
+	"planned",
+	"implementing",
+	"testing",
+]);
+
+function normalizedStatus(value: unknown): string {
+	return String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[\s-]+/g, "_");
+}
+
+function routeAvailability(
+	row: Record<string, any>,
+	capabilityStatuses: string[],
+	now: number,
+): "active" | "coming_soon" | null {
+	if (!["active", "degraded"].includes(normalizedStatus(row.status))) return null;
+	if (normalizedStatus(row.access_scope || "public") !== "public") return null;
+
+	const effectiveFrom = Date.parse(String(row.effective_from ?? ""));
+	const effectiveTo = Date.parse(String(row.effective_to ?? ""));
+	if (Number.isFinite(effectiveTo) && effectiveTo <= now) return null;
+
+	const providerAvailability = normalizedStatus(row.provider_availability_status);
+	if (["deprecated", "removed"].includes(providerAvailability)) return null;
+	const phaseoStatus = normalizedStatus(row.phaseo_status);
+	const capabilityPreview = capabilityStatuses.some((status) =>
+		["internal_testing", "coming_soon"].includes(normalizedStatus(status)),
+	);
+	const isComingSoon =
+		(Number.isFinite(effectiveFrom) && effectiveFrom > now) ||
+		providerAvailability === "coming_soon" ||
+		COMING_SOON_PHASEO_STATUSES.has(phaseoStatus) ||
+		capabilityPreview;
+	if (isComingSoon) return "coming_soon";
+
+	if (row.routing_enabled !== true) return null;
+	if (providerAvailability && !PUBLIC_PROVIDER_AVAILABILITY.has(providerAvailability)) return null;
+	if (phaseoStatus && phaseoStatus !== "enabled") return null;
+	return "active";
+}
+
+function routeAvailabilityReason(
+	row: Record<string, any>,
+	capabilityStatuses: string[],
+	now: number,
+): string | null {
+	const availability = routeAvailability(row, capabilityStatuses, now);
+	if (!availability) return null;
+	const effectiveFrom = Date.parse(String(row.effective_from ?? ""));
+	if (Number.isFinite(effectiveFrom) && effectiveFrom > now) return "scheduled";
+	if (capabilityStatuses.some((status) => normalizedStatus(status) === "internal_testing")) return "internal_testing";
+	if (normalizedStatus(row.provider_availability_status) === "coming_soon") return "provider_coming_soon";
+	const phaseoStatus = normalizedStatus(row.phaseo_status);
+	if (COMING_SOON_PHASEO_STATUSES.has(phaseoStatus)) return `phaseo_${phaseoStatus}`;
+	return availability === "coming_soon" ? "not_routable" : "active";
+}
+
 function lifecycleDate(model: RecentModel): string | null {
 	return typeof model.data_models?.release_date === "string"
 		? model.data_models.release_date
@@ -500,10 +566,9 @@ publicProvidersRouter.get("/:providerId/models", async (c) => {
 	try {
 		const client = getDataClient(c.env);
 		const providerResult = await client.from("v2_model_provider_routes")
-			.select("provider_model_id,provider_model_slug,model_slug,routing_enabled,status,input_modalities,output_modalities,created_at")
+			.select("provider_model_id,provider_model_slug,model_slug,routing_enabled,status,provider_availability_status,phaseo_status,access_scope,effective_from,effective_to,input_modalities,output_modalities,created_at")
 			.eq("provider_slug", providerId)
 			.eq("is_stealth", false)
-			.eq("routing_enabled", true)
 			.in("status", ["active", "degraded"])
 			.order("created_at", { ascending: false });
 		if (providerResult.error) throw providerResult.error;
@@ -523,27 +588,40 @@ publicProvidersRouter.get("/:providerId/models", async (c) => {
 		if (metersResult.error) throw metersResult.error;
 		const visible = new Set((modelsResult.data ?? []).map((row) => row.model_slug)); const modelMeta = new Map((modelsResult.data ?? []).map((row) => [row.model_slug, row]));
 		const capabilities = new Map<string, string[]>(); const params = new Map<string, string[]>();
+		const capabilityStatuses = new Map<string, string[]>();
 		for (const cap of capsResult.data ?? []) {
+			if (cap.provider_model_id && cap.status) capabilityStatuses.set(cap.provider_model_id, [...(capabilityStatuses.get(cap.provider_model_id) ?? []), cap.status]);
 			if (cap.status === "disabled" || !cap.provider_model_id || !cap.capability_id) continue;
 			capabilities.set(cap.provider_model_id, unique(capabilities.get(cap.provider_model_id) ?? [], [cap.capability_id]));
 			const supported = cap.params && typeof cap.params === "object" && !Array.isArray(cap.params) ? Object.keys(cap.params) : [];
 			params.set(cap.provider_model_id, unique(params.get(cap.provider_model_id) ?? [], supported));
 		}
+		const now = Date.now();
 		const merged = new Map<string, Record<string, unknown>>(); const routeIds = new Map<string, Set<string>>();
 		for (const row of providerRows) {
 			if (!row.model_slug || !visible.has(row.model_slug)) continue;
+			const routeStatuses = capabilityStatuses.get(row.provider_model_id) ?? [];
+			const availabilityStatus = routeAvailability(row, routeStatuses, now);
+			if (!availabilityStatus) continue;
 			const modelId = row.model_slug;
 			routeIds.set(modelId, new Set([...(routeIds.get(modelId) ?? []), row.provider_model_id]));
 			const meta = modelMeta.get(modelId); const endpoints = capabilities.get(row.provider_model_id) ?? []; const supported = params.get(row.provider_model_id) ?? [];
 			const existing = merged.get(modelId);
 			if (!existing) {
-				merged.set(modelId, { model_id: modelId, api_model_id: row.provider_model_slug ?? modelId, model_name: meta?.name ?? row.provider_model_slug ?? modelId, provider_model_slug: row.provider_model_slug ?? null, endpoints, supported_params: supported, is_active_gateway: Boolean(row.routing_enabled && ["active", "degraded"].includes(String(row.status))), input_modalities: stringList(row.input_modalities), output_modalities: stringList(row.output_modalities), release_date: meta?.released_at ?? null, announcement_date: meta?.announced_at ?? null, created_at: row.created_at ?? null });
+				merged.set(modelId, { model_id: modelId, api_model_id: row.provider_model_slug ?? modelId, model_name: meta?.name ?? row.provider_model_slug ?? modelId, provider_model_slug: row.provider_model_slug ?? null, endpoints, supported_params: supported, is_active_gateway: availabilityStatus === "active", availability_status: availabilityStatus, availability_reason: routeAvailabilityReason(row, routeStatuses, now), input_modalities: stringList(row.input_modalities), output_modalities: stringList(row.output_modalities), release_date: meta?.released_at ?? null, announcement_date: meta?.announced_at ?? null, created_at: row.created_at ?? null });
 				continue;
 			}
 			if (timeValue(row.created_at) > timeValue(existing.created_at)) existing.created_at = row.created_at ?? null;
 			existing.endpoints = unique(stringList(existing.endpoints), endpoints); existing.supported_params = unique(stringList(existing.supported_params), supported);
 			existing.input_modalities = unique(stringList(existing.input_modalities), stringList(row.input_modalities)); existing.output_modalities = unique(stringList(existing.output_modalities), stringList(row.output_modalities));
-			existing.is_active_gateway = Boolean(existing.is_active_gateway || (row.routing_enabled && ["active", "degraded"].includes(String(row.status))));
+			if (availabilityStatus === "active") {
+				existing.is_active_gateway = true;
+				existing.availability_status = "active";
+				existing.availability_reason = "active";
+			} else if (existing.availability_status !== "active") {
+				existing.availability_status = "coming_soon";
+				existing.availability_reason = existing.availability_reason ?? routeAvailabilityReason(row, routeStatuses, now);
+			}
 		}
 		const skuById = new Map((skusResult.data ?? []).map((row) => [row.sku_id, row]));
 		const rulesByRoute = new Map<string, PricingRule[]>();

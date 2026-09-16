@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { invalidateWorkspaceGatewayContext } from "./gateway-invalidation";
+import { requireUser } from "@/auth/requireUser";
+import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
@@ -12,6 +14,7 @@ export const accountPrivateModelsRouter = new Hono<{ Bindings: Env }>();
 const MODEL_SLUG = /^[a-z0-9][a-z0-9._:-]{0,126}$/;
 // Never expose both fragments: together they reconstruct short credentials.
 const SAFE_COLUMNS = "id,model_id,local_slug,catalog_model_id,host_provider_id,custom_provider_name,custom_provider_url,routing_policy,name,description,base_url,upstream_model_id,supports_responses,enabled,input_modalities,output_modalities,context_length,max_output_tokens,credential_suffix,created_at,updated_at";
+const ADMIN_CATALOG_COLUMNS = `${SAFE_COLUMNS},workspace_id`;
 
 async function resolveModelIdentity(client: any, workspaceSlug: string, reference: unknown) {
 	const value = String(reference ?? "").trim().toLowerCase();
@@ -205,6 +208,40 @@ function tableModels(row: Record<string, any>) {
 }
 
 accountPrivateModelsRouter.get("/catalog", async (c) => {
+	if (c.req.query("scope") === "admin") {
+		const user = await requireUser(c.req.raw, c.env);
+		if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+		const client = getDataClient(c.env);
+		const role = await client.from("users").select("role").eq("user_id", user.id).maybeSingle();
+		if (role.error || String(role.data?.role ?? "").toLowerCase() !== "admin") {
+			return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+		}
+		const result = await client.from("workspace_private_models").select(ADMIN_CATALOG_COLUMNS).eq("enabled", true).order("name", { ascending: true });
+		if (result.error) {
+			console.error("[web-api/account] admin private model catalogue failed", { userId: user.id, error: result.error });
+			return c.json({ error: "private_model_catalogue_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
+		const rows = (result.data ?? []) as Array<Record<string, any>>;
+		const workspaceIds = Array.from(new Set(rows.map((row) => String(row.workspace_id ?? "")).filter(Boolean)));
+		const workspacesResult = workspaceIds.length
+			? await client.from("workspaces").select("id,slug,name,logo_url").in("id", workspaceIds)
+			: { data: [], error: null };
+		if (workspacesResult.error) {
+			console.error("[web-api/account] admin private model workspace metadata failed", { userId: user.id, error: workspacesResult.error });
+			return c.json({ error: "private_model_catalogue_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
+		const workspaces = new Map((workspacesResult.data ?? []).map((workspace) => [String(workspace.id), workspace]));
+		const models = rows.map((row) => {
+			const workspace = workspaces.get(String(row.workspace_id ?? ""));
+			return pageModel(row, {
+				slug: String(workspace?.slug ?? row.workspace_id ?? "workspace").trim().toLowerCase(),
+				name: String(workspace?.name ?? workspace?.slug ?? "Workspace").trim(),
+				logoUrl: requestAwareAvatarUrl(c.env, c.req.raw, typeof workspace?.logo_url === "string" ? workspace.logo_url : null),
+			});
+		});
+		const shape = c.req.query("shape") === "table" ? "table" : "page";
+		return c.json({ private_catalogue: true, models: shape === "table" ? rows.flatMap(tableModels) : models }, 200, PRIVATE_NO_STORE_HEADERS);
+	}
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: c.req.query("workspaceId") });
 	if (!context) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.from("workspace_private_models")

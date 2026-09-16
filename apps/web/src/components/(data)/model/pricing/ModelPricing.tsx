@@ -15,6 +15,7 @@ import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWork
 import type { WorkspacePrivacySettings } from "@/lib/fetchers/internal/settingsTypes";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/swr/providerCatalogPreviews";
 import {
 	Empty,
 	EmptyContent,
@@ -25,6 +26,86 @@ import {
 } from "@/components/ui/empty";
 
 const OPTIONAL_PROVIDER_TELEMETRY_TIMEOUT_MS = 2_500;
+
+function mergePreviewOffers(
+	providers: ProviderPricing[],
+	previews: AuthenticatedProviderCatalogPreview[],
+): ProviderPricing[] {
+	if (!previews.length) return providers;
+
+	const byProvider = new Map(
+		providers.map((provider) => [provider.provider.api_provider_id, provider]),
+	);
+	for (const preview of previews) {
+		const providerId = preview.provider_slug.trim();
+		if (!providerId) continue;
+		const providerModel: ProviderPricing["provider_models"][number] = {
+			id: `provider-preview:${providerId}:${preview.provider_model_slug}`,
+			api_provider_id: providerId,
+			provider_model_slug: preview.provider_model_slug,
+			model_id: preview.canonical_model_slug?.trim() || preview.model_id,
+			endpoint: preview.endpoints?.[0] || "unmapped",
+			is_active_gateway: false,
+			is_unreleased: true,
+			provider_availability_status:
+				preview.availability_status === "not_active" ? "deprecated" : "coming_soon",
+			phaseo_status: preview.availability_status === "not_active" ? "disabled" : "planned",
+			access_scope: "internal",
+			routing_status: "preview",
+			capability_status: preview.availability_status === "not_active" ? "disabled" : "planned",
+			input_modalities: (preview.input_modalities ?? []).join(","),
+			output_modalities: (preview.output_modalities ?? []).join(","),
+			context_length: preview.context_length ?? null,
+			max_input_tokens: preview.context_length ?? null,
+			max_output_tokens: preview.max_output_tokens ?? null,
+			effective_from: preview.available_from ?? null,
+			effective_to: preview.shutdown_at ?? null,
+			created_at: preview.created_at ?? undefined,
+			params: Object.fromEntries((preview.supported_params ?? []).map((parameter) => [parameter, true])),
+		};
+		const pricingRules = (preview.pricing ?? []).map((price, index) => ({
+			id: `provider-preview:${providerId}:${preview.provider_model_slug}:${index}`,
+			model_key: `${providerId}:${preview.api_model_id}:${price.meterKey}`,
+			provider_id: providerId,
+			api_model_id: preview.api_model_id,
+			capability_id: price.modality || preview.endpoints?.[0] || "unmapped",
+			pricing_plan: "standard",
+			meter: price.meterKey,
+			unit: price.unit,
+			unit_size: price.unitQuantity,
+			price_per_unit: price.priceNanos / 1_000_000_000,
+			currency: "USD",
+			note: null,
+			priority: 100,
+			effective_from: preview.created_at ?? new Date(0).toISOString(),
+			effective_to: null,
+			match: [],
+		}));
+		const incoming: ProviderPricing = {
+			provider: {
+				api_provider_id: providerId,
+				api_provider_name: preview.provider_name,
+				status: "active",
+			},
+			provider_models: [providerModel],
+			pricing_rules: pricingRules,
+		};
+		const existing = byProvider.get(providerId);
+		byProvider.set(providerId, existing
+			? {
+					...existing,
+					provider_models: [
+						...existing.provider_models,
+						...incoming.provider_models.filter(
+							(model) => !existing.provider_models.some((candidate) => candidate.id === model.id),
+						),
+					],
+					pricing_rules: [...existing.pricing_rules, ...incoming.pricing_rules],
+				}
+			: incoming);
+	}
+	return [...byProvider.values()];
+}
 
 function withOptionalTimeout<T>(
 	promise: Promise<T>,
@@ -59,6 +140,7 @@ export default async function ModelPricing({
 	creatorOrganisationId,
 	creatorOrganisationName,
 	providersOverride,
+	previewOffers = [],
 }: {
 	modelId: string;
 	includeHidden: boolean;
@@ -69,6 +151,7 @@ export default async function ModelPricing({
 	creatorOrganisationId?: string | null;
 	creatorOrganisationName?: string | null;
 	providersOverride?: ProviderPricing[];
+	previewOffers?: AuthenticatedProviderCatalogPreview[];
 }) {
 	const [providers, identity, showAdminPricingControls, gatewayMetadata] = await Promise.all([
 		providersOverride ? Promise.resolve(providersOverride) : fetchFrontendModelPricing(modelId),
@@ -88,6 +171,7 @@ export default async function ModelPricing({
 		withOptionalTimeout(isAdminViewer(), false, "admin viewer check"),
 		withOptionalTimeout(fetchFrontendModelGatewayMetadata(modelId), null, "gateway metadata"),
 	]);
+	const providersWithPreviews = mergePreviewOffers(providers || [], previewOffers);
 	const credentialModesByProvider = new Map<string, Array<"managed_and_byok" | "byok_only">>();
 	for (const provider of gatewayMetadata?.activeProviders ?? []) {
 		const modes = credentialModesByProvider.get(provider.api_provider_id) ?? [];
@@ -100,7 +184,7 @@ export default async function ModelPricing({
 			modes.every((mode) => mode === "byok_only") ? "byok_only" : "managed_and_byok",
 		] as const),
 	);
-	const providersWithCredentialModes = providers.map((provider) => ({
+	const providersWithCredentialModes = providersWithPreviews.map((provider) => ({
 		...provider,
 		provider: {
 			...provider.provider,

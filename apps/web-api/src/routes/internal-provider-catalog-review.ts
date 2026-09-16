@@ -91,9 +91,9 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/reviews/:runId/mode
 	if (parsed.data.decision === "approved" && !canonicalModelSlug) {
 		const labSlug = modelSlug.split("/", 1)[0]?.toLowerCase();
 		if (!labSlug) return c.json({ error: "canonical_model_invalid" }, 409, PRIVATE_NO_STORE_HEADERS);
-		const lab = await client.from("v2_labs").upsert({ lab_slug: labSlug, name: labSlug, status: "active", routable: false, metadata: { created_from_provider_proposal: true } }, { onConflict: "lab_slug", ignoreDuplicates: true });
+		const lab = await client.from("v2_labs").upsert({ lab_slug: labSlug, name: labSlug, status: "disabled", routable: false, metadata: { created_from_provider_proposal: true } }, { onConflict: "lab_slug", ignoreDuplicates: true });
 		if (lab.error) return c.json({ error: "canonical_model_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const model = await client.from("v2_models").upsert({ model_slug: modelSlug, lab_slug: labSlug, name: existing.data.name ?? modelSlug, description: existing.data.description, status: "active", hidden: false, input_modalities: existing.data.input_modalities ?? [], output_modalities: existing.data.output_modalities ?? [], metadata: { created_from_provider_proposal: true, approved_run_id: runId } }, { onConflict: "model_slug", ignoreDuplicates: true });
+		const model = await client.from("v2_models").upsert({ model_slug: modelSlug, lab_slug: labSlug, name: existing.data.name ?? modelSlug, description: existing.data.description, status: "active", hidden: true, input_modalities: existing.data.input_modalities ?? [], output_modalities: existing.data.output_modalities ?? [], metadata: { created_from_provider_proposal: true, approved_run_id: runId } }, { onConflict: "model_slug", ignoreDuplicates: true });
 		if (model.error) return c.json({ error: "canonical_model_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 		canonicalModelSlug = modelSlug;
 	}

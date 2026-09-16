@@ -68,6 +68,11 @@ begin
     raise exception 'Privileged provider RPC is executable by an application role';
   end if;
 
+  if has_function_privilege('anon', 'public.activate_due_provider_catalog_releases()', 'execute')
+     or has_function_privilege('authenticated', 'public.activate_due_provider_catalog_releases()', 'execute') then
+    raise exception 'Scheduled provider release RPC is executable by an application role';
+  end if;
+
   if public.claim_provider_catalog_sync(
     '__phaseo_nonexistent_provider_smoke__',
     gen_random_uuid(),
@@ -89,6 +94,13 @@ begin
     in pg_get_functiondef('public.promote_provider_catalog_candidate(uuid,text)'::regprocedure)
   ) = 0 then
     raise exception 'Candidate promotion does not match routes by provider model identity';
+  end if;
+
+  if position(
+    'release_scheduled'
+    in pg_get_functiondef('public.activate_due_provider_catalog_releases()'::regprocedure)
+  ) = 0 then
+    raise exception 'Scheduled provider release function is missing its release gate';
   end if;
 
   begin

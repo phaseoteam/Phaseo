@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
+import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
 
 export const metadata = {
 	title: "Settings",
 };
 
-export default function SettingsIndexPage() {
-	// Redirect to credits by default
-	redirect("/settings/credits");
+export default async function SettingsIndexPage() {
+	const account = await fetchInternalAuthHeaderData();
+	redirect(account.providerMode ? "/settings/account/providers" : "/settings/credits");
 }

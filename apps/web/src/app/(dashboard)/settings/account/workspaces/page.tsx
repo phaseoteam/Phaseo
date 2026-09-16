@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
 import { ArrowUpRight, Building2 } from "lucide-react";
 
 import CreateTeamDialog from "@/components/(gateway)/settings/CreateTeamDialog";
@@ -12,6 +14,7 @@ export const metadata = {
 };
 
 export default async function AccountWorkspacesPage() {
+	if ((await fetchInternalAuthHeaderData()).providerMode) redirect("/settings/account/providers");
 	const data = await fetchSettingsTeamsInitialData();
 	const manageable = new Set(data.manageableTeamIds);
 	const activeWorkspace = data.teams.find(

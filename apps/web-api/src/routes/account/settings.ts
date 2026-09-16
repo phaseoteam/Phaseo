@@ -6,6 +6,7 @@ import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
+import { isProviderAccount } from "./provider-account";
 import { accountSettingsPolicyRouter } from "./settings-policy";
 import { accountSettingsUsageRouter } from "./settings-usage";
 import { accountSettingsUsageActionsRouter } from "./settings-usage-actions";
@@ -24,6 +25,7 @@ import { callDataContributionGateway } from "./settings-data-contribution";
 import { accountSettingsDynamicRoutesRouter } from "./settings-dynamic-routes";
 import { accountSettingsScimRouter } from "./settings-scim";
 import { accountSettingsProviderOnboardingRouter } from "./settings-provider-onboarding";
+import { accountSettingsProviderCatalogRouter } from "./settings-provider-catalog";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
 
 // Mirrors the first-party CLI allowlist enforced by the gateway OAuth service.
@@ -133,6 +135,7 @@ accountSettingsRouter.route("/", accountSettingsDataContributionRouter);
 accountSettingsRouter.route("/", accountSettingsDynamicRoutesRouter);
 accountSettingsRouter.route("/", accountSettingsScimRouter);
 accountSettingsRouter.route("/", accountSettingsProviderOnboardingRouter);
+accountSettingsRouter.route("/", accountSettingsProviderCatalogRouter);
 
 accountSettingsRouter.get("/layout", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
@@ -154,11 +157,12 @@ accountSettingsRouter.get("/layout", async (c) => {
 	]);
 	if (platformUserResult.error || membershipsResult.error || ownedWorkspacesResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const accessibleWorkspaceIds = [...new Set([...(membershipsResult.data ?? []).map((row) => String(row.workspace_id)), ...(ownedWorkspacesResult.data ?? []).map((row) => String(row.id))])];
-	const providerLinksResult = await dataClient.from("provider_account_links").select("provider_slug,workspace_id,role,status").in("workspace_id", accessibleWorkspaceIds.length ? accessibleWorkspaceIds : ["00000000-0000-0000-0000-000000000000"]).in("status", ["pending", "active"]);
+	const providerLinksResult = await dataClient.from("provider_account_links").select("provider_slug,workspace_id,role,status,linked_by").in("workspace_id", accessibleWorkspaceIds.length ? accessibleWorkspaceIds : ["00000000-0000-0000-0000-000000000000"]).in("status", ["pending", "active"]);
 	if (providerLinksResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const platformRole = String(platformUserResult.data?.role ?? "user").toLowerCase();
 	const providerSlugs = (providerLinksResult.data ?? []).map((link) => String(link.provider_slug));
 	const baseAccountContext = {
+		providerMode: isProviderAccount(user.id, platformRole, providerLinksResult.data ?? []),
 		platformRole,
 		isInternalAdmin: platformRole === "admin",
 		isProvider: providerSlugs.length > 0,

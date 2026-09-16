@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { UseModelSheet } from "./UseModelSheet";
+import UnreleasedBadge from "./UnreleasedBadge";
 
 function useStickyHeaderVisibility(observeId: string) {
 	const [visible, setVisible] = useState(false);
@@ -46,22 +47,31 @@ function useStickyHeaderVisibility(observeId: string) {
 
 export default function ModelStickyHeader({
 	modelId,
+	chatModelId,
 	organisationId,
 	organisationName,
 	modelName,
 	observeId,
 	canChat = true,
+	canCompare = true,
+	organisationHref,
 	gatewayMetadata,
+	showUnreleased = false,
 }: {
 	modelId: string;
+	chatModelId?: string;
 	organisationId: string;
 	organisationName: string;
 	modelName: string;
 	observeId: string;
 	canChat?: boolean;
+	canCompare?: boolean;
+	organisationHref?: string;
 	gatewayMetadata?: ModelGatewayMetadata | null;
+	showUnreleased?: boolean;
 }) {
 	const visible = useStickyHeaderVisibility(observeId);
+	const organisationUrl = organisationHref ?? `/organisations/${organisationId}`;
 
 	return (
 		<div className="h-0">
@@ -75,7 +85,7 @@ export default function ModelStickyHeader({
 					<div className="container mx-auto flex items-center justify-between gap-3 px-4 py-2.5 md:px-6 xl:px-8">
 						<div className="flex min-w-0 items-center gap-3">
 							<Link
-								href={`/organisations/${organisationId}`}
+								href={organisationUrl}
 								className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-background transition-opacity hover:opacity-80"
 								aria-label={`View ${organisationName}`}
 							>
@@ -88,48 +98,49 @@ export default function ModelStickyHeader({
 									/>
 								</div>
 							</Link>
-							<div className="min-w-0">
-								<p className="truncate text-sm font-semibold leading-tight text-foreground">
+						<div className="flex min-w-0 items-center gap-2">
+							<p className="min-w-0 truncate text-sm font-semibold leading-tight text-foreground">
 									<Link
-										href={`/organisations/${organisationId}`}
+										href={organisationUrl}
 										className="hover:underline underline-offset-4"
 									>
 										{organisationName}
 									</Link>
 									<span>: {modelName}</span>
 								</p>
-							</div>
+							{showUnreleased ? <UnreleasedBadge compact /> : null}
+						</div>
 						</div>
 						<div className="flex shrink-0 items-center gap-2">
 							{canChat ? (
 								<Button asChild variant="outline" size="sm" className="hidden h-8 rounded-lg px-2.5 text-[13px] sm:inline-flex">
-									<Link href={`/chat?model=${modelId}`}>
+									<Link href={`/chat?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
 										<MessageSquare className="h-4 w-4" />
 										Chat
 									</Link>
 								</Button>
 							) : null}
-							<Button asChild variant="outline" size="sm" className="hidden h-8 rounded-lg px-2.5 text-[13px] sm:inline-flex">
+							{canCompare ? <Button asChild variant="outline" size="sm" className="hidden h-8 rounded-lg px-2.5 text-[13px] sm:inline-flex">
 								<Link href={`/compare?models=${modelId}`}>
 									<Scale className="h-4 w-4" />
 									Compare
 								</Link>
-							</Button>
+							</Button> : null}
 							{canChat ? (
 								<Button asChild variant="outline" size="icon-sm" className="rounded-lg sm:hidden">
-									<Link href={`/chat?model=${modelId}`} aria-label="Chat about this model">
+									<Link href={`/chat?model=${encodeURIComponent(chatModelId ?? modelId)}`} aria-label="Chat about this model">
 										<MessageSquare className="h-4 w-4" />
 									</Link>
 								</Button>
 							) : null}
-							<Button asChild variant="outline" size="icon-sm" className="rounded-lg sm:hidden">
+			{canCompare ? <Button asChild variant="outline" size="icon-sm" className="rounded-lg sm:hidden">
 								<Link href={`/compare?models=${modelId}`} aria-label="Compare this model">
 									<Scale className="h-4 w-4" />
 								</Link>
-							</Button>
-							{canChat ? <UseModelSheet modelId={modelId} modelName={modelName} gatewayMetadata={gatewayMetadata} className="hidden h-8 px-2.5 text-[13px] sm:inline-flex" /> : null}
+							</Button> : null}
+							{canChat ? <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} className="hidden h-8 px-2.5 text-[13px] sm:inline-flex" /> : null}
 							{canChat ? (
-								<UseModelSheet modelId={modelId} modelName={modelName} gatewayMetadata={gatewayMetadata} compact className="sm:hidden" />
+								<UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} compact className="sm:hidden" />
 							) : null}
 						</div>
 					</div>

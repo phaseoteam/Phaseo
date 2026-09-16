@@ -2,6 +2,7 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import {
 	fetchAndValidateProviderCatalog,
+	normalizeProviderCatalog,
 	type ProviderCatalogPreview,
 	validateProviderCatalogPricingMeters,
 } from "./provider-catalog";
@@ -11,7 +12,9 @@ export type ProviderCatalogSyncTrigger = "webhook" | "poll" | "manual";
 
 type ProviderCatalogSource = {
 	provider_slug: string;
-	catalog_url: string;
+	catalog_url: string | null;
+	management_mode: "remote" | "managed";
+	managed_catalog: unknown;
 	status: string;
 	poll_interval_seconds: number;
 	consecutive_failures: number;
@@ -23,7 +26,7 @@ type ProviderCatalogSource = {
 	refresh_requested: boolean;
 };
 
-const SOURCE_SELECT = "provider_slug,catalog_url,status,poll_interval_seconds,consecutive_failures,webhook_secret_ciphertext,webhook_secret_iv,webhook_secret_hash,etag,last_modified,refresh_requested";
+const SOURCE_SELECT = "provider_slug,catalog_url,management_mode,managed_catalog,status,poll_interval_seconds,consecutive_failures,webhook_secret_ciphertext,webhook_secret_iv,webhook_secret_hash,etag,last_modified,refresh_requested";
 const MAX_WEBHOOK_SKEW_SECONDS = 300;
 
 function bytes(value: Uint8Array): ArrayBuffer {
@@ -43,6 +46,10 @@ function fromBase64(value: string): Uint8Array {
 
 function hex(value: Uint8Array): string {
 	return Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function sha256Text(value: string): Promise<string> {
+	return hex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))));
 }
 
 function fromHex(value: string): Uint8Array | null {
@@ -116,7 +123,7 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 	const client = getDataClient(env);
 	const sourceResult = await client.from("provider_catalog_sources").select(SOURCE_SELECT).eq("provider_slug", providerSlug).maybeSingle();
 	if (sourceResult.error) throw sourceResult.error;
-	const source = sourceResult.data as ProviderCatalogSource | null;
+	let source = sourceResult.data as ProviderCatalogSource | null;
 	if (!source) throw new Error("Provider catalog source not found");
 	if (source.status !== "active") return { status: "paused" };
 	const leaseToken = crypto.randomUUID();
@@ -150,7 +157,22 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 	const runId = String(runResult.data.id);
 
 	try {
-		const catalog = await fetchAndValidateProviderCatalog(source.catalog_url, fetch, trigger === "poll" ? { etag: source.etag, lastModified: source.last_modified } : undefined);
+		// Consume before reading the document, under the sync lease. Edits arriving
+		// after this point retain their refresh flag for the next pass.
+		const started = await client.rpc("begin_provider_catalog_refresh", { p_provider_slug: providerSlug });
+		if (started.error) throw started.error;
+		const fresh = await client.from("provider_catalog_sources").select(SOURCE_SELECT).eq("provider_slug", providerSlug).single();
+		if (fresh.error) throw fresh.error;
+		source = fresh.data as ProviderCatalogSource;
+		const catalog = source.management_mode === "managed"
+			? {
+				preview: normalizeProviderCatalog(source.managed_catalog ?? {}),
+				sha256: await sha256Text(JSON.stringify(source.managed_catalog ?? {})),
+				etag: null,
+				lastModified: null,
+				notModified: false as const,
+			}
+			: await fetchAndValidateProviderCatalog(source.catalog_url ?? "", fetch, trigger === "poll" ? { etag: source.etag, lastModified: source.last_modified } : undefined);
 		if (!("preview" in catalog)) {
 			const now = new Date().toISOString();
 			const refresh = await client.rpc("consume_provider_catalog_refresh", { p_provider_slug: providerSlug });
@@ -174,16 +196,15 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 		await reconcileProviderCatalogClaims(client, { providerSlug, runId, models: preview.allModels, renewLease });
 		await renewLease(true);
 		const now = new Date().toISOString();
-		const refresh = await client.rpc("consume_provider_catalog_refresh", { p_provider_slug: providerSlug });
 		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], checked_at: now }, completed_at: now }).eq("id", runId);
-		await client.from("provider_catalog_sources").update({ last_success_at: now, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: null, next_poll_at: refresh.data === true ? now : nextPollAt(source.poll_interval_seconds, 0), updated_at: now }).eq("provider_slug", providerSlug);
+		await client.from("provider_catalog_sources").update({ last_success_at: now, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: null, updated_at: now }).eq("provider_slug", providerSlug);
+		if (source.management_mode === "remote") await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
 		return { status: "applied", runId, modelCount: Number(applied.data ?? preview.modelCount) };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Provider catalog sync failed.";
 		await renewLease(true);
-		await client.rpc("consume_provider_catalog_refresh", { p_provider_slug: providerSlug });
 		await client.from("provider_catalog_sync_runs").update({ status: "failed", review_status: "needs_changes", error_message: message.slice(0, 500), completed_at: new Date().toISOString() }).eq("id", runId);
-		await client.from("provider_catalog_sources").update({ last_error: message.slice(0, 500), consecutive_failures: source.consecutive_failures + 1, next_poll_at: nextPollAt(source.poll_interval_seconds, source.consecutive_failures + 1), updated_at: new Date().toISOString() }).eq("provider_slug", providerSlug);
+		await client.from("provider_catalog_sources").update({ refresh_requested: true, last_error: message.slice(0, 500), consecutive_failures: source.consecutive_failures + 1, next_poll_at: nextPollAt(source.poll_interval_seconds, source.consecutive_failures + 1), updated_at: new Date().toISOString() }).eq("provider_slug", providerSlug);
 		await notifyProviderOwners(client, providerSlug, runId, "Catalog sync failed", message.slice(0, 500));
 		throw error;
 	}
@@ -195,7 +216,7 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 export async function runProviderCatalogPollingJob(env: Env, limit = 20): Promise<{ attempted: number; applied: number; failed: number }> {
 	const client = getDataClient(env);
 	const now = new Date().toISOString();
-	const sources = await client.from("provider_catalog_sources").select("provider_slug").eq("status", "active").or(`next_poll_at.lte.${now},refresh_requested.eq.true`).order("next_poll_at", { ascending: true }).limit(limit);
+	const sources = await client.from("provider_catalog_sources").select("provider_slug").eq("status", "active").lte("next_poll_at", now).or("management_mode.eq.remote,refresh_requested.eq.true").order("next_poll_at", { ascending: true }).limit(limit);
 	if (sources.error) throw sources.error;
 	let applied = 0;
 	let failed = 0;
@@ -208,4 +229,10 @@ export async function runProviderCatalogPollingJob(env: Env, limit = 20): Promis
 		}
 	}
 	return { attempted: sources.data?.length ?? 0, applied, failed };
+}
+
+export async function activateDueProviderCatalogReleases(env: Env): Promise<number> {
+	const result = await getDataClient(env).rpc("activate_due_provider_catalog_releases");
+	if (result.error) throw result.error;
+	return Number(result.data ?? 0);
 }

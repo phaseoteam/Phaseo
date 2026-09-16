@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
 import InteractiveOnboarding, {
 	type OnboardingModel,
@@ -13,6 +14,7 @@ import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySup
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { fetchOnboardingInitialData } from "@/lib/fetchers/internal/fetchOnboardingInitialData";
+import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
 
 export const metadata = {
 	title: "Developer onboarding",
@@ -94,6 +96,8 @@ function pickModels(models: GatewaySupportedModel[]) {
 }
 
 export default async function OnboardingPage() {
+	const account = await fetchInternalAuthHeaderData();
+	if (account.providerMode) redirect("/settings/account/providers");
 	const onboarding = await fetchOnboardingInitialData();
 	if (!onboarding.signedIn) {
 		redirect("/sign-in?returnUrl=%2Fonboarding");
@@ -132,6 +136,9 @@ export default async function OnboardingPage() {
 	return (
 		<>
 			<NoFooterStyle />
+			<div className="mx-auto w-full max-w-5xl px-6 pt-6 text-right text-sm">
+				<Link href="/settings/account/providers" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">Here to provide models? Become a provider</Link>
+			</div>
 			<InteractiveOnboarding
 				initialState={savedState}
 				initialCountryCode={userRow?.declared_country_code ?? null}

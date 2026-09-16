@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MapPin, Scale } from "lucide-react";
 
 import { fetchFrontendAPIProviderHeader } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { APIProviderHeader } from "@/lib/fetchers/api-providers/types";
 import { notFound } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import APIProviderEditButton from "./edit/APIProviderEditButton";
@@ -17,14 +18,18 @@ interface APIProviderDetailShellProps {
 	apiProviderId: string;
 	children: ReactNode;
 	tocItems?: ModelPageTocItem[];
+	prefetchedHeader?: APIProviderHeader | null;
 }
 
 export default async function APIProviderDetailShell({
 	apiProviderId,
 	children,
 	tocItems = [],
+	prefetchedHeader,
 }: APIProviderDetailShellProps) {
-	const header = await fetchFrontendAPIProviderHeader(apiProviderId).catch(() => null);
+	const header = prefetchedHeader !== undefined
+		? prefetchedHeader
+		: await fetchFrontendAPIProviderHeader(apiProviderId).catch(() => null);
 
 	if (!header) {
 		notFound();

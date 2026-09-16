@@ -4,6 +4,7 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { normaliseCountryCode } from "@/lib/countryCodes";
+import { isProviderAccount } from "./provider-account";
 
 function cookieValue(request: Request, name: string): string | null {
 	for (const segment of (request.headers.get("cookie") ?? "").split(";")) {
@@ -283,6 +284,10 @@ accountAuthRouter.get("/header", async (c) => {
 			...(ownedResult.data ?? []).map((row) => String(row.id ?? "").trim()),
 			defaultWorkspaceId,
 		].filter(Boolean)));
+		const links = workspaceIds.length ? await client.from("provider_account_links")
+			.select("linked_by,status").in("workspace_id", workspaceIds).eq("status", "active") : { data: [], error: null };
+		if (links.error) throw links.error;
+		const providerMode = isProviderAccount(user.id, role, links.data ?? []);
 		let teams: Array<{ id: string; name: string }> = [];
 		if (workspaceIds.length > 0) {
 			const { data, error } = await client
@@ -306,13 +311,13 @@ accountAuthRouter.get("/header", async (c) => {
 			if (right.id === defaultWorkspaceId) return 1;
 			return left.name.localeCompare(right.name);
 		});
-		const currentTeamId =
-			cookieValue(c.req.raw, "activeWorkspaceId") ??
-			(defaultWorkspaceId || undefined);
+		const currentTeamId = providerMode ? (defaultWorkspaceId || undefined) :
+			cookieValue(c.req.raw, "activeWorkspaceId") ?? (defaultWorkspaceId || undefined);
 		const displayName = String(userResult.data?.display_name ?? "").trim()
 			|| metadataString(user.userMetadata, ["full_name", "name"]);
 		return c.json({
 			isLoggedIn: true,
+			providerMode,
 			user: {
 				id: user.id,
 				email: user.email,

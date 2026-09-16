@@ -1,5 +1,87 @@
 import { excludeStealthRows, filterPublicSnapshotRows } from "./exportSnapshotPrivacy";
 
+test("redacts metadata references and rejects private descriptive text without printing values", () => {
+	const input = new Map<string, Record<string, unknown>[]>([["v2_models", [
+		{ model_slug: "hidden/base", hidden: true },
+		{ model_slug: "public/model", metadata: { note: "See hidden/base for details" } },
+	]]]);
+	expect(filterPublicSnapshotRows(input).get("v2_models")![0].metadata).toEqual({});
+	input.get("v2_models")![1].metadata = { legacy_model_id: "hidden/base-dated-public-variant" };
+	expect(filterPublicSnapshotRows(input).get("v2_models")).toHaveLength(1);
+	input.get("v2_models")![1].metadata = { legacy_model_id: "hidden/base" };
+	expect(filterPublicSnapshotRows(input).get("v2_models")![0].metadata).toEqual({});
+	input.get("v2_models")![1].description = "See hidden/base for details";
+	expect(() => filterPublicSnapshotRows(input)).toThrow("private catalog reference in v2_models.description");
+});
+
+test("redacts links from a public model to hidden model versions", () => {
+	const result = filterPublicSnapshotRows(new Map<string, Record<string, unknown>[]>([["v2_models", [
+		{ model_slug: "secret/model", hidden: true },
+		{ model_slug: "public/model", previous_model_slug: "secret/model", base_model_slug: "secret/model" },
+	]]]));
+	expect(result.get("v2_models")).toEqual([{ model_slug: "public/model", previous_model_slug: null, base_model_slug: null }]);
+});
+
+test("does not export labs and families used only by hidden models", () => {
+	const result = filterPublicSnapshotRows(new Map<string, Record<string, unknown>[]>([
+		["v2_models", [{ model_slug: "secret/model", hidden: true, lab_slug: "secret-lab", family_slug: "secret-family" }]],
+		["v2_labs", [{ lab_slug: "secret-lab" }, { lab_slug: "public-lab" }]],
+		["v2_lab_links", [{ lab_slug: "secret-lab", url: "https://secret.example" }]],
+		["v2_model_families", [{ family_slug: "secret-family" }]],
+	]));
+	expect(result.get("v2_labs")).toEqual([{ lab_slug: "public-lab" }]);
+	expect(result.get("v2_lab_links")).toEqual([]);
+	expect(result.get("v2_model_families")).toEqual([]);
+});
+
+test("excludes unreleased support on public providers and all opaque descendants", () => {
+	const now = Date.parse("2026-09-12T12:00:00Z");
+	const snapshots = new Map<string, Record<string, unknown>[]>([
+		["v2_models", [{ model_slug: "public/model" }, { model_slug: "hidden/model", hidden: true }]],
+		["v2_providers", [{ provider_slug: "public", routable: true, routing_enabled: true }]],
+		["v2_model_provider_routes", [
+			{ provider_model_id: "visible", model_slug: "public/model", provider_slug: "public", access_scope: "public" },
+			{ provider_model_id: "internal", model_slug: "public/model", provider_slug: "public", access_scope: "internal" },
+			{ provider_model_id: "future", model_slug: "public/model", effective_from: "2026-09-13T00:00:00Z" },
+			{ provider_model_id: "unready", model_slug: "public/model", provider_availability_status: "not_ready" },
+			{ provider_model_id: "hidden", model_slug: "hidden/model" },
+			{ provider_model_id: "missing-parent", model_slug: "unknown/model" },
+		]],
+		["v2_route_capabilities", ["visible", "internal", "hidden", "future", "unready", "missing-parent"].map((id) => ({ provider_model_id: id }))],
+		["v2_route_variants", [{ variant_id: "private-variant", provider_model_id: "hidden" }]],
+		["v2_pricing_skus", [{ sku_id: "indirect", route_variant_id: "private-variant" }, { sku_id: "orphan", provider_model_id: "missing-parent" }]],
+		["v2_pricing_sku_meters", [{ sku_id: "indirect" }, { sku_id: "orphan" }]],
+		["provider_catalog_models", [{ name: "must never leave database" }]],
+	]);
+	const result = filterPublicSnapshotRows(snapshots, now);
+	expect(result.get("v2_model_provider_routes")).toEqual([snapshots.get("v2_model_provider_routes")![0]]);
+	expect(result.get("v2_route_capabilities")).toEqual([{ provider_model_id: "visible" }]);
+	expect(result.get("v2_route_variants")).toEqual([]);
+	expect(result.get("v2_pricing_skus")).toEqual([]);
+	expect(result.get("v2_pricing_sku_meters")).toEqual([]);
+	expect(result.has("provider_catalog_models")).toBe(false);
+});
+
+test("stealth suppression cascades through other routes for the same model", () => {
+	const result = filterPublicSnapshotRows(new Map([
+		["v2_models", [{ model_slug: "secret/model" }]],
+		["v2_model_provider_routes", [
+			{ model_slug: "secret/model", provider_model_id: "stealth", is_stealth: true },
+			{ model_slug: "secret/model", provider_model_id: "other" },
+		]],
+		["v2_pricing_skus", [{ sku_id: "opaque", provider_model_id: "other" }]],
+		["v2_pricing_sku_meters", [{ sku_id: "opaque" }]],
+	] as [string, Record<string, unknown>[]][]));
+	expect([...result.values()].flat()).toEqual([]);
+});
+
+test("release cutoff is exact and invalid timestamps fail closed", () => {
+	const rows = [{ provider_model_id: "due", effective_from: "2026-09-12T12:00:00Z" }, { provider_model_id: "invalid", effective_from: "invalid" }];
+	const snapshot = new Map([["v2_model_provider_routes", rows]]);
+	expect(filterPublicSnapshotRows(snapshot, Date.parse("2026-09-12T11:59:59.999Z")).get("v2_model_provider_routes")).toEqual([]);
+	expect(filterPublicSnapshotRows(snapshot, Date.parse("2026-09-12T12:00:00Z")).get("v2_model_provider_routes")).toEqual([rows[0]]);
+});
+
 test("excludes stealth models and linked rows regardless of table order", () => {
 	const snapshots = new Map<string, Record<string, unknown>[]>([
 		["v2_models", [{ model_slug: "stealth/preview" }, { model_slug: "public/model", updated_at: null }]],
@@ -63,7 +145,6 @@ test("removes identity fields recursively while preserving catalog values", () =
 		name: "Public model",
 		metadata: {
 			colour: "#fff",
-			authored_by: "user-0",
 			owner_user_id: "user-1",
 			sources: [{ url: "https://example.com", submitted_by: "user-2" }],
 		},

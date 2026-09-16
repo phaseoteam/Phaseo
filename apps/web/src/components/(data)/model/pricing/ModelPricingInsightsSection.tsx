@@ -48,10 +48,12 @@ export default async function ModelPricingInsightsSection({
 	modelId,
 	includeHidden,
 	showPageHeader = false,
+	hasSubmittedProviderPrices = false,
 }: {
 	modelId: string;
 	includeHidden: boolean;
 	showPageHeader?: boolean;
+	hasSubmittedProviderPrices?: boolean;
 }) {
 	const providers = await withOptionalPricingTimeout(
 		fetchFrontendModelPricing(modelId),
@@ -80,6 +82,7 @@ export default async function ModelPricingInsightsSection({
 		),
 	).sort((a, b) => a.localeCompare(b));
 	if (!providersForDisplay.length) {
+		const isPreview = pendingApiRelease?.isPendingApiRelease === true || hasSubmittedProviderPrices;
 		return (
 			<div className="space-y-3">
 				{pendingApiRelease?.isPendingApiRelease ? (
@@ -93,16 +96,20 @@ export default async function ModelPricingInsightsSection({
 						<EmptyMedia variant="icon">
 							<CircleAlert className="size-4" />
 						</EmptyMedia>
-						<EmptyTitle>No pricing data available yet</EmptyTitle>
+						<EmptyTitle>{isPreview ? "No pricing history available yet" : "No pricing data available yet"}</EmptyTitle>
 						<EmptyDescription>
-							No API pricing information is currently available for this model.
+							{isPreview
+								? "Current submitted provider prices are shown in the provider table above."
+								: "No API pricing information is currently available for this model."}
 						</EmptyDescription>
 					</EmptyHeader>
 					<EmptyContent>
-						<EmptyDescription>
-							If you know providers we should integrate, please tell us on Discord
-							or open an issue on GitHub so we can add pricing data.
-						</EmptyDescription>
+						{!isPreview ? (
+							<EmptyDescription>
+								If you know providers we should integrate, please tell us on Discord
+								or open an issue on GitHub so we can add pricing data.
+							</EmptyDescription>
+						) : null}
 					</EmptyContent>
 				</Empty>
 			</div>

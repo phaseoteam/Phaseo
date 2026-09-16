@@ -5,6 +5,7 @@ import {
     requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
 import { setActiveWorkspaceCookie } from "@/utils/workspaceCookie";
+import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
 
 export type WorkspaceSwitchResult =
     | { ok: true }
@@ -16,6 +17,9 @@ export async function setActiveWorkspaceAction(workspaceId: string): Promise<Wor
             return { ok: false, error: 'workspaceId required' };
         }
         const { supabase, user } = await requireAuthenticatedUser();
+        if ((await fetchInternalAuthHeaderData()).providerMode) {
+            return { ok: false, error: "Provider accounts manage their catalog without switching workspaces." };
+        }
         await requireWorkspaceMembership(supabase, user.id, workspaceId);
         await setActiveWorkspaceCookie(workspaceId);
 

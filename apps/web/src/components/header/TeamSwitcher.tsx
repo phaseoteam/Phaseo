@@ -45,6 +45,7 @@ interface TeamSwitcherProps {
 	onSignOut?: () => void;
 	initialActiveTeamId?: string;
 	userRole?: string | undefined;
+	providerMode?: boolean;
 }
 
 export default function TeamSwitcher({
@@ -53,6 +54,7 @@ export default function TeamSwitcher({
 	onSignOut,
 	initialActiveTeamId,
 	userRole,
+	providerMode = false,
 }: TeamSwitcherProps) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -107,7 +109,7 @@ export default function TeamSwitcher({
 	return (
 		<div className="flex items-center gap-2">
 			{/* Workspace Dropdown */}
-			<DropdownMenu open={isTeamMenuOpen} onOpenChange={setIsTeamMenuOpen}>
+			{providerMode ? <Button asChild variant="ghost"><Link href="/settings/provider/models">Manage catalog</Link></Button> : <DropdownMenu open={isTeamMenuOpen} onOpenChange={setIsTeamMenuOpen}>
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"
@@ -229,7 +231,7 @@ export default function TeamSwitcher({
 						</DropdownMenuItem>
 					</div>
 				</DropdownMenuContent>
-			</DropdownMenu>
+			</DropdownMenu>}
 
 			{/* Profile Dropdown */}
 			<DropdownMenu
@@ -332,10 +334,10 @@ export default function TeamSwitcher({
 						className="cursor-pointer rounded-lg"
 					>
 						<Link
-							href="/settings/workspaces/settings"
+							href={providerMode ? "/settings/provider/models" : "/settings/workspaces/settings"}
 						>
 							<Users className="h-4 w-4" />
-							<span>Workspaces</span>
+							<span>{providerMode ? "Manage catalog" : "Workspaces"}</span>
 						</Link>
 					</DropdownMenuItem>
 
@@ -353,6 +355,7 @@ export default function TeamSwitcher({
 
 					<DropdownMenuSeparator />
 
+					{!providerMode && <>
 					<DropdownMenuItem asChild className="cursor-pointer rounded-lg">
 						<Link
 							href={`/settings/usage/overview?workspace_id=${encodeURIComponent(
@@ -398,6 +401,7 @@ export default function TeamSwitcher({
 							<span>Keys</span>
 						</Link>
 					</DropdownMenuItem>
+					</>}
 
 					<DropdownMenuItem asChild className="cursor-pointer rounded-lg">
 						<Link href="/contact" className="flex w-full items-center justify-between">

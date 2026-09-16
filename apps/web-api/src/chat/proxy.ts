@@ -12,6 +12,9 @@ export type ChatProxyEnvelope = {
 
 export type GatewayKeys = { apiKey: string; userId: string; workspaceId: string };
 export type GatewayKeyError = { status: number; code: string; message: string };
+type PreviewInferenceAccess =
+	| { ok: true; preview: boolean }
+	| { ok: false; status: number; code: string; message: string };
 const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const PUBLIC_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
 const ALLOWED_APP_HEADERS = new Set([
@@ -140,6 +143,178 @@ function jsonError(status: number, code: string, message: string): Response {
 	return new Response(JSON.stringify({ error: code, message }), { status, headers: { "Content-Type": "application/json", ...PRIVATE_NO_STORE_HEADERS } });
 }
 
+type PreviewModelRow = {
+	provider_slug?: unknown;
+	model_slug?: unknown;
+	canonical_model_slug?: unknown;
+	provider_model_slug?: unknown;
+	availability?: unknown;
+	decision?: unknown;
+	route_projection_status?: unknown;
+};
+
+type PreviewProviderRow = {
+	base_url?: unknown;
+	metadata?: unknown;
+};
+
+type PreviewRouteRow = {
+	provider_slug?: unknown;
+	model_slug?: unknown;
+	provider_model_slug?: unknown;
+	status?: unknown;
+	provider_availability_status?: unknown;
+	phaseo_status?: unknown;
+	access_scope?: unknown;
+};
+
+export function parsePreviewModelTarget(value: unknown): { providerSlug: string; modelSlug: string } | null {
+	if (typeof value !== "string") return null;
+	const model = value.trim();
+	const separator = model.indexOf(":");
+	if (separator <= 0 || separator === model.length - 1) return null;
+	const providerSlug = model.slice(0, separator).trim().toLowerCase();
+	const modelSlug = model.slice(separator + 1).trim();
+	if (!/^[a-z0-9][a-z0-9._-]*$/.test(providerSlug) || !modelSlug || modelSlug.length > 240) return null;
+	return { providerSlug, modelSlug };
+}
+
+function previewModelCandidates(modelSlug: string): string[] {
+	return [...new Set([modelSlug, modelSlug.split("/").at(-1) ?? ""].map((value) => value.trim()).filter(Boolean))];
+}
+
+function isPreviewModelRow(row: PreviewModelRow, candidates: Set<string>): boolean {
+	if (String(row.decision ?? "pending").toLowerCase() === "rejected") return false;
+	if (String(row.route_projection_status ?? "not_projected").toLowerCase() === "enabled") return false;
+	return [row.model_slug, row.canonical_model_slug, row.provider_model_slug]
+		.map((value) => String(value ?? "").trim())
+		.some((value) => candidates.has(value));
+}
+
+function previewRouteMatches(row: PreviewModelRow, route: PreviewRouteRow): boolean {
+	if (String(route.provider_slug ?? "").trim() !== String(row.provider_slug ?? "").trim()) return false;
+	const modelCandidates = new Set([
+		row.model_slug,
+		row.canonical_model_slug,
+		row.provider_model_slug,
+	].map((value) => String(value ?? "").trim()).filter(Boolean));
+	if (![route.model_slug, route.provider_model_slug]
+		.map((value) => String(value ?? "").trim())
+		.some((value) => modelCandidates.has(value))) return false;
+	if (String(route.access_scope ?? "").trim().toLowerCase() !== "internal") return false;
+	if (!["testing", "enabled"].includes(String(route.phaseo_status ?? "").trim().toLowerCase())) return false;
+	if (!["active", "degraded", "disabled"].includes(String(route.status ?? "").trim().toLowerCase())) return false;
+	return ["coming_soon", "preview", "available", "limited_access"]
+		.includes(String(route.provider_availability_status ?? "").trim().toLowerCase());
+}
+
+async function previewTestingReadiness(
+	client: ReturnType<typeof getDataClient>,
+	preview: PreviewModelRow,
+	): Promise<"ready" | "not_ready"> {
+	const availability = String(preview.availability ?? "").trim().toLowerCase();
+	if (["deprecated", "retired", "removed"].includes(availability)) return "not_ready";
+	const provider = await client
+		.from("v2_providers")
+		.select("base_url,metadata")
+		.eq("provider_slug", String(preview.provider_slug ?? "").trim())
+		.maybeSingle();
+	if (provider.error || !provider.data) return "not_ready";
+	if (!String((provider.data as PreviewProviderRow).base_url ?? "").trim()) return "not_ready";
+	const metadata = (provider.data as PreviewProviderRow).metadata;
+	if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return "not_ready";
+	if ((metadata as Record<string, unknown>).adapter_ready !== true || (metadata as Record<string, unknown>).credentials_ready !== true) return "not_ready";
+	const routes = await client
+		.from("v2_model_provider_routes")
+		.select("provider_slug,model_slug,provider_model_slug,status,provider_availability_status,phaseo_status,access_scope")
+		.eq("provider_slug", String(preview.provider_slug ?? "").trim());
+	if (routes.error) return "not_ready";
+	return (routes.data ?? []).some((route: PreviewRouteRow) => previewRouteMatches(preview, route)) ? "ready" : "not_ready";
+}
+
+async function hasPreviewInferenceAccess(
+	requestBody: Record<string, unknown> | undefined,
+	auth: GatewayKeys,
+	env: Env,
+): Promise<PreviewInferenceAccess> {
+	const target = parsePreviewModelTarget(requestBody?.model);
+	if (!target) return { ok: true, preview: false };
+
+	const internalToken = String(env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
+	const client = getDataClient(env);
+	const candidates = new Set(previewModelCandidates(target.modelSlug));
+	const previews = await client
+		.from("provider_catalog_sync_models")
+		.select("provider_slug,model_slug,canonical_model_slug,provider_model_slug,availability,decision,route_projection_status")
+		.eq("provider_slug", target.providerSlug)
+		.in("model_slug", [...candidates])
+		.limit(50);
+	if (previews.error) {
+		return {
+			ok: false,
+			status: 503,
+			code: "preview_testing_unavailable",
+			message: "Unable to verify access to this internal model.",
+		};
+	}
+	const matchingPreview = (previews.data ?? []).find((row: PreviewModelRow) => isPreviewModelRow(row, candidates));
+	if (!matchingPreview) {
+		return { ok: true, preview: false };
+	}
+	if (internalToken.length < 128) {
+		return {
+			ok: false,
+			status: 503,
+			code: "preview_testing_unavailable",
+			message: "Internal model testing is not configured on this environment.",
+		};
+	}
+
+	const role = await client.from("users").select("role").eq("user_id", auth.userId).maybeSingle();
+	if (role.error) {
+		return {
+			ok: false,
+			status: 503,
+			code: "preview_testing_unavailable",
+			message: "Unable to verify internal model permissions.",
+		};
+	}
+	if (String(role.data?.role ?? "").toLowerCase() !== "admin") {
+		const link = await client
+			.from("provider_account_links")
+			.select("provider_slug")
+			.eq("provider_slug", target.providerSlug)
+			.eq("workspace_id", auth.workspaceId)
+			.in("status", ["pending", "active"])
+			.maybeSingle();
+		if (link.error) {
+			return {
+				ok: false,
+				status: 503,
+				code: "preview_testing_unavailable",
+				message: "Unable to verify internal model permissions.",
+			};
+		}
+		if (!link.data) {
+			return {
+				ok: false,
+				status: 403,
+				code: "preview_model_forbidden",
+				message: "Only the submitting provider workspace or a Phaseo administrator can test this model.",
+			};
+		}
+	}
+	if (await previewTestingReadiness(client, matchingPreview) !== "ready") {
+		return {
+			ok: false,
+			status: 409,
+			code: "preview_route_not_ready",
+			message: "This unreleased model is visible for review, but its provider endpoint, credentials, adapter, or internal route is not ready for testing.",
+		};
+	}
+	return { ok: true, preview: true };
+}
+
 export function sanitizeAppHeaders(input: unknown): Record<string, string> {
 	if (!input || typeof input !== "object" || Array.isArray(input)) return {};
 	return Object.fromEntries(Object.entries(input).flatMap(([rawKey, rawValue]) => {
@@ -153,10 +328,15 @@ export async function proxyGateway(request: Request, env: Env, waitUntil: (promi
 	if (!("apiKey" in auth)) return jsonError(auth.status, auth.code, auth.message);
 	const baseUrl = resolveGatewayBaseUrlForEnvironment({ configuredBaseUrl: env.AI_STATS_GATEWAY_URL ?? env.PHASEO_GATEWAY_URL, stagingBaseUrl: env.STAGING_GATEWAY_BASE_URL, requestedBaseUrl: args.baseUrl, environment: env.ENV });
 	if (!baseUrl) return jsonError(500, "gateway_not_configured", "Missing AI_STATS_GATEWAY_URL for chat gateway proxy.");
+	const previewAccess = await hasPreviewInferenceAccess(args.requestBody, auth, env);
+	if (previewAccess.ok === false) return jsonError(previewAccess.status, previewAccess.code, previewAccess.message);
+	const previewHeaders = previewAccess.preview
+		? { "x-phaseo-internal-token": String(env.GATEWAY_INTERNAL_TEST_TOKEN), "x-phaseo-testing-mode": "true" }
+		: {};
 	try {
 		const upstream = await fetch(`${baseUrl}${args.path}`, {
 			method: args.method ?? "POST",
-			headers: { ...(args.method === "GET" ? {} : { "Content-Type": "application/json" }), ...CANONICAL_CHAT_APP_HEADERS, ...sanitizeAppHeaders(args.appHeaders), Authorization: `Bearer ${auth.apiKey}`, ...(args.debug ? { "x-gateway-debug": "true" } : {}), ...(args.stream ? { Accept: "text/event-stream" } : {}) },
+			headers: { ...(args.method === "GET" ? {} : { "Content-Type": "application/json" }), ...CANONICAL_CHAT_APP_HEADERS, ...sanitizeAppHeaders(args.appHeaders), ...previewHeaders, Authorization: `Bearer ${auth.apiKey}`, ...(args.debug ? { "x-gateway-debug": "true" } : {}), ...(args.stream ? { Accept: "text/event-stream" } : {}) },
 			...(args.method === "GET" ? {} : { body: JSON.stringify(args.requestBody ?? {}) }),
 		});
 		return privateResponse(upstream);

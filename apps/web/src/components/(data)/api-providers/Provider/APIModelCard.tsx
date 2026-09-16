@@ -4,7 +4,6 @@
 import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
@@ -253,6 +252,7 @@ function EndpointPill({ endpoint }: { endpoint?: string | null }) {
 // --- main card ---------------------------------------------------------------
 
 export default function APIModelCard({ model }: { model: APIProviderModels }) {
+	const isComingSoon = model.availability_status === "coming_soon";
 	const inputs = useMemo(
 		() => toList(model.input_modalities),
 		[model.input_modalities]
@@ -295,12 +295,14 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						<div
 							className={cn(
 								"inline-flex items-center justify-center rounded-full p-1.5 ring-1 ring-inset",
-								model.is_active_gateway
+								model.is_active_gateway && !isComingSoon
 									? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-									: "bg-neutral-50 text-neutral-600 ring-neutral-200"
+									: isComingSoon
+										? "bg-blue-50 text-blue-700 ring-blue-200"
+										: "bg-neutral-50 text-neutral-600 ring-neutral-200"
 							)}
 						>
-							{model.is_active_gateway ? (
+							{model.is_active_gateway && !isComingSoon ? (
 								<CheckCircle2 className="h-3.5 w-3.5" />
 							) : (
 								<Circle className="h-3.5 w-3.5" />
@@ -308,13 +310,18 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						</div>
 					</TooltipTrigger>
 					<TooltipContent>
-						{model.is_active_gateway ? "Gateway: Active" : "Gateway: Inactive"}
+						{isComingSoon ? "Coming soon: not routable yet" : model.is_active_gateway ? "Gateway: Active" : "Gateway: Inactive"}
 					</TooltipContent>
 				</Tooltip>
 			</div>
 
 			{/* Model name */}
 			<div className="pr-10">
+				{isComingSoon ? (
+					<Badge variant="secondary" className="mb-2 border-blue-200 bg-blue-50 text-xs font-medium text-blue-700">
+						Coming soon
+					</Badge>
+				) : null}
 				<h3 className="text-base sm:text-lg font-semibold leading-tight line-clamp-2">
 					{model.model_name}
 				</h3>

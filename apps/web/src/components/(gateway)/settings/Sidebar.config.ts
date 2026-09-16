@@ -55,7 +55,7 @@ export type NavGroup = {
 	scope: SettingsScope;
 };
 
-export type SettingsScope = "personal" | "workspace";
+export type SettingsScope = "personal" | "workspace" | "provider";
 
 export type ResolvedSettingsNav = {
 	group: NavGroup;
@@ -81,7 +81,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				children: [
 					{ href: "/settings/account/details", label: "Details" },
 					{ href: "/settings/account/mfa", label: "MFA" },
-					{ href: "/settings/account/providers", label: "Provider onboarding" },
 					{ href: "/settings/authorized-apps", label: "Connected Apps" },
 					{ href: "/settings/account/danger", label: "Danger Zone" },
 				],
@@ -328,7 +327,17 @@ const WORKSPACE_NAV_ORDER = [
 	"/settings/webhooks",
 ] as const;
 
-export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showInternal?: boolean }): NavGroup[] {
+export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showInternal?: boolean; providerMode?: boolean }): NavGroup[] {
+	if (options?.providerMode) {
+		return [
+			{ scope: "personal", items: BASE_SETTINGS_SIDEBAR[0].items.filter((item) => ["/settings/profile", "/settings/account"].includes(item.href)) },
+			{ scope: "provider", items: [
+				{ href: "/settings/provider/models", label: "Your Models", icon: Boxes, match: ["/settings/account/providers"] },
+				{ href: "/settings/provider/review", label: "Provider Review", icon: ClipboardCheck },
+				{ href: "/settings/provider/integrations", label: "Integrations", icon: Webhook },
+			] },
+		];
+	}
 	const showBroadcast = options?.showBroadcast ?? true;
 	const showWebhooks = options?.showWebhooks ?? true;
 	const showEnterprise = options?.showEnterprise ?? true;
@@ -382,7 +391,7 @@ export function isSettingsNavChildActive(
 
 export function getActiveSettingsNav(
 	pathname: string,
-	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean },
+	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean; providerMode?: boolean },
 ): ResolvedSettingsNav | null {
 	const navGroups = getSettingsSidebar(options);
 

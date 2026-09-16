@@ -4,6 +4,7 @@ import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
+import { getProviderAccountMode } from "./provider-account";
 import { workspaceHasAddon } from "@/billing/workspaceAddons";
 import { requestAwareAvatarUrl } from "./settings-profile-avatar";
 
@@ -195,6 +196,13 @@ accountSettingsTeamsRouter.post("/teams", async (c) => {
 	if (!name) return c.json({ error: "invalid_name" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const client = getDataClient(c.env);
 	const memberships = await client.from("workspace_members").select("workspace_id,role").eq("user_id", user.id);
+	try {
+		if (await getProviderAccountMode(client, user.id)) {
+			return c.json({ error: "provider_account_workspace_managed", message: "Provider accounts use a personal workspace managed automatically." }, 403, PRIVATE_NO_STORE_HEADERS);
+		}
+	} catch {
+		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
 	if (memberships.error) {
 		console.error("[web-api/teams] workspace eligibility lookup failed", memberships.error);
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
