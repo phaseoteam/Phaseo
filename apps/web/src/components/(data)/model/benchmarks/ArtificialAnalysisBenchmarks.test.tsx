@@ -1,6 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
+import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
 import ModelBenchmarks from "./ModelBenchmarks";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -52,6 +53,27 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(html).toContain('aria-expanded="false"');
 		expect(html).toContain("Other Benchmarks");
 		expect(html).toContain("Benchmark table");
+	});
+	it("features Epoch as its own key benchmark instead of hiding it under other benchmarks", () => {
+		const html = renderToStaticMarkup(<ModelBenchmarks highlightCards={[
+			{ ...highlight("epoch-capabilities-index", 159.12), benchmarkName: "Epoch Capabilities Index", rank: 8, totalModels: 266, sourceLink: "https://epoch.ai/eci" },
+			highlight("mmlu", 89),
+		]} />);
+		expect(html.indexOf("Epoch AI")).toBeLessThan(html.indexOf("Other Benchmarks"));
+		expect(html).toContain("Ranked #8 of 266");
+		expect(html).toContain("159.12");
+		expect(html.match(/Epoch Capabilities Index/g)).toHaveLength(2);
+	});
+	it("expands Epoch into an inline leaderboard with published confidence intervals", () => {
+		const epoch = { ...highlight("epoch-capabilities-index", 159.12), benchmarkName: "Epoch Capabilities Index", rank: 8, totalModels: 266, otherInfo: "GPT-5.5; Epoch Capabilities Index; 95% CI 156.91–161.95", sourceLink: "https://epoch.ai/eci" };
+		const html = renderToStaticMarkup(<EpochCapabilitiesIndex highlights={[epoch]} modelId="openai/gpt-5.5" initialExpanded ranking={{
+			benchmark_id: "epoch-capabilities-index", name: "Epoch Capabilities Index", category: "general", benchmark_type: "numerical", lower_is_better: false, total_models: 266,
+			entries: [{ model_id: "openai/gpt-5.5", model_name: "GPT-5.5", organisation_id: "openai", organisation_name: "OpenAI", score: 159.12, rank: 8, other_info: epoch.otherInfo }],
+		}} />);
+		expect(html).toContain("ECI leaderboard");
+		expect(html).toContain("95% CI 156.91–161.95");
+		expect(html).toContain("View Full Leaderboard");
+		expect(html).toContain("/benchmarks/epoch-capabilities-index");
 	});
 	it("dims other models in an expanded comparison", () => {
 		const ranking: PublicBenchmarkRanking = {
