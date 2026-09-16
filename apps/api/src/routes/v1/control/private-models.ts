@@ -1,3 +1,4 @@
+import { invalidatePrivateRoutes } from "@/pipeline/before/privateModelCache";
 import { Hono } from "hono";
 import {
 	buildPrivateModelId,
@@ -180,6 +181,7 @@ async function handleCreate(req: Request) {
 		};
 		const { data, error } = await getSupabaseAdmin().from("workspace_private_models").insert(payload).select(SAFE_COLUMNS).maybeSingle();
 		if (error || !data) throw error ?? new Error("Private model was not created");
+		await invalidatePrivateRoutes(auth.workspaceId);
 		await audit(auth, "private_model.created", data as any, { supportsResponses: payload.supports_responses });
 		return json({ data: formatPrivateModel(data as any) }, 201, { "Cache-Control": "no-store" });
 	} catch (error) { return inputError(error) ?? internalServerError("private_models.create", error); }
@@ -254,6 +256,7 @@ async function handleUpdate(req: Request) {
 		const { data, error } = await getSupabaseAdmin().from("workspace_private_models").update(patch)
 			.eq("workspace_id", auth.workspaceId).eq("id", id).select(SAFE_COLUMNS).maybeSingle();
 		if (error || !data) throw error ?? new Error("Private model was not updated");
+		await invalidatePrivateRoutes(auth.workspaceId);
 		await audit(auth, "private_model.updated", data as any, { changedFields: Object.keys(patch).filter((key) => !key.startsWith("enc_") && key !== "fingerprint_sha256") });
 		return json({ data: formatPrivateModel(data as any) }, 200, { "Cache-Control": "no-store" });
 	} catch (error) { return inputError(error) ?? internalServerError("private_models.update", error); }
@@ -270,6 +273,7 @@ async function handleDelete(req: Request) {
 		if (!existing) return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 		const { error } = await getSupabaseAdmin().from("workspace_private_models").delete().eq("workspace_id", auth.workspaceId).eq("id", id);
 		if (error) throw error;
+		await invalidatePrivateRoutes(auth.workspaceId);
 		await audit(auth, "private_model.deleted", existing);
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error) { return internalServerError("private_models.delete", error); }

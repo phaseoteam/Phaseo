@@ -55,7 +55,9 @@ export async function rankProviders(
         breaker_until_ms: entry.health.breaker_until_ms,
         score: Number.isFinite(entry.score) ? Number(entry.score.toFixed(6)) : entry.score,
         score_factor_values: entry.scoreFactorValues,
-        score_trace: entry.scoreTrace,
+        // Most requests do not consume a full trace until post-response auditing.
+        // Preserve the serialized shape without building every trace before fetch.
+        get score_trace() { return entry.scoreTrace; },
         provider_status: entry.candidate.providerStatus ?? null,
         provider_routing_status: entry.candidate.providerRoutingStatus ?? null,
         model_routing_status: entry.candidate.modelRoutingStatus ?? null,

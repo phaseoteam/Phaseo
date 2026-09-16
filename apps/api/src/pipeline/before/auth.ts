@@ -19,6 +19,7 @@ const KEY_CACHE_TTL_SECONDS = 60;
 const KEY_VERSION_L1_TTL_MS = 5_000;
 const KEY_LOOKUP_L1_TTL_MS = 30_000;
 const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
+const hmacKeys = new Map<string, CryptoKey>();
 /* -------------------- Web Crypto HMAC helpers -------------------- */
 
 /**
@@ -35,13 +36,21 @@ async function hmacHexWithKeyBytes(message: string, keyBytes: Uint8Array): Promi
     raw.set(keyBytes);
 
     // Import the raw bytes into a WebCrypto HMAC key.
-    const cryptoKey = await crypto.subtle.importKey(
+    const cacheKey = Array.from(raw, byte => byte.toString(16).padStart(2, "0")).join("");
+    let cryptoKey = hmacKeys.get(cacheKey);
+    if (!cryptoKey) {
+        cryptoKey = await crypto.subtle.importKey(
         "raw",
         raw.buffer,                         // must be an ArrayBuffer
         { name: "HMAC", hash: "SHA-256" }, // HMAC-SHA256
         false,                              // not extractable
         ["sign"]                            // only used for signing
-    );
+        );
+        // Cache completed immutable CryptoKeys only, never cross-request I/O.
+        // The exact bytes key the entry, so rotation cannot reuse an old pepper.
+        if (hmacKeys.size >= 4) hmacKeys.delete(hmacKeys.keys().next().value!);
+        hmacKeys.set(cacheKey, cryptoKey);
+    }
 
     // Compute the MAC (message authentication code).
     const mac = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(message));

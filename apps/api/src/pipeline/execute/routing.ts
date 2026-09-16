@@ -20,6 +20,8 @@ import {
 import { providerMeetsResidencyRequirement } from "@/lib/config/providerResidency";
 import { routeMeetsAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { readHealthManyOptimistic, ProviderHealth } from "./health";
+import { isRecoveryProbeRequest } from "./health.config";
+import { ageHealth } from "./health-evidence";
 import { stripPrioritySuffix } from "./utils";
 import { normalizeProviderList } from "@/lib/config/providerAliases";
 import {
@@ -39,7 +41,7 @@ type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 type ProviderStatus = ProviderRolloutStatus;
 type CapabilityStatus = CapabilityRoutingStatus;
 
-const ROUTING_ALGORITHM_VERSION = "provider-score-v3";
+const ROUTING_ALGORITHM_VERSION = "provider-score-v6";
 
 type RoutingPreset = {
     wSucc: number;
@@ -151,7 +153,8 @@ function priorityDefaultRoutingMode(priority: Priority): RoutingMode | null {
 }
 
 function normalise(v: number, min: number, max: number) {
-    if (max === min) return 0.5;
+    // Do not amplify floating-point noise in otherwise equal provider metrics.
+    if (Math.abs(max - min) <= Math.max(1, Math.abs(min), Math.abs(max)) * 1e-6) return 0.5;
     const x = (v - min) / (max - min);
     return Math.max(0, Math.min(1, x));
 }
@@ -239,20 +242,24 @@ function sampleBeta(alpha: number, beta: number, rng: () => number): number {
     return left / Math.max(left + right, Number.EPSILON);
 }
 
-function sampleProviderReliability(health: ProviderHealth, rng: () => number): {
+function sampleProviderReliability(health: ProviderHealth, rng: (() => number) | null): {
     sample: number;
     effectiveObservations: number;
 } {
     // rate_60s * 60 approximates recent observations in the EWMA window. Cap
     // its confidence so older traffic never prevents renewed exploration.
-    const effectiveObservations = Math.max(0, Math.min(60, health.rate_60s * 60));
-    const successRate = Math.max(0, Math.min(1, 1 - health.err_ewma_60s));
-    const successes = successRate * effectiveObservations;
-    const failures = (1 - successRate) * effectiveObservations;
+    const effectiveObservations = Math.max(0, Math.min(60, Math.max(health.rec_tot_ew_10s ?? 0, health.rec_tot_ew_60s ?? 0, health.rate_60s * 60)));
+    const successRate = Math.max(0, Math.min(1, 1 - Math.max(health.err_ewma_10s, health.err_ewma_60s)));
+    // Keep sampling uncertainty separate from the error penalty's evidence.
+    // Otherwise busy healthy routes monopolize the maximum draw and a provider
+    // with five successful recovery probes can remain starved indefinitely.
+    const samplingObservations = Math.min(8, effectiveObservations);
+    const successes = successRate * samplingObservations;
+    const failures = (1 - successRate) * samplingObservations;
     return {
         // An 80% prior is optimistic enough for unseen providers to be tried,
         // while sustained failures rapidly reduce their selection probability.
-        sample: sampleBeta(8 + successes, 2 + failures, rng),
+        sample: rng ? sampleBeta(8 + successes, 2 + failures, rng) : (8 + successes) / (10 + samplingObservations),
         effectiveObservations,
     };
 }
@@ -368,10 +375,9 @@ function computePriceCosts(
 }
 
 function computeInverseSquarePriceWeights(
-    endpoint: Endpoint,
+    costs: Map<string, number | null>,
     candidates: ProviderCandidate[],
 ): Map<string, number> {
-    const costs = computePriceCosts(endpoint, candidates);
     const finiteCosts = Array.from(costs.values()).filter(
         (value): value is number => typeof value === "number" && Number.isFinite(value),
     );
@@ -598,7 +604,7 @@ export type RoutingScoreTrace = {
         noise: number;
     };
     calculation: {
-        formula: "balanced_weighted_additive" | "weighted_additive";
+        formula: "price_weighted_performance" | "weighted_additive";
         baseScore: number;
         baseWeight: number;
         rolloutMultiplier: number;
@@ -607,6 +613,7 @@ export type RoutingScoreTrace = {
         latencyPreferenceMultiplier: number;
         throughputPreferenceMultiplier: number;
         recentOutageMultiplier: number;
+        reliabilityMultiplier: number;
         finalScore: number;
     };
 };
@@ -627,7 +634,7 @@ export type RoutingDiagnostics = {
     algorithm: {
         version: string;
         seed: number;
-        selectionMethod: "score_sort" | "weighted_order" | "explicit_provider_order";
+        selectionMethod: "score_sort" | "weighted_order" | "explicit_provider_order" | "recovery_probe" | "exploration";
         poolBounds: {
             latencyP50MinMs: number;
             latencyP50MaxMs: number;
@@ -880,7 +887,7 @@ export async function routeProviders(
     const mode = normalizeRoutingMode(
         suffixRoutingMode ?? requestedRoutingMode ?? ctx.routingMode,
     );
-    const deterministicRequestSort = Boolean(requestedRoutingMode);
+    const deterministicRequestSort = Boolean(requestedRoutingMode && requestedRoutingMode !== "balanced");
     const preset = applyRoutingMode(PRESETS[priority], mode);
     const hints = routingHints.merged as {
         mode?: string | null;
@@ -1290,13 +1297,27 @@ export async function routeProviders(
         poolCandidates = [...ordered, ...remaining];
     }
 
-    const providerIds = poolCandidates.map(c => c.adapter.name);
+    // Private endpoints share an adapter, not an upstream service.
+    const providerIds = poolCandidates.map(c => c.privateEndpoint
+        ? `${c.adapter.name}:${ctx.workspaceId}:${c.byokMeta?.[0]?.id ?? "default"}`
+        : c.adapter.name);
     const healthMap = readHealthManyOptimistic(ctx.endpoint, base, providerIds);
-    const healths = poolCandidates.map(candidate => ({
+    const healths = poolCandidates.map((candidate, index) => ({
         candidate,
         adapter: candidate.adapter,
-        h: healthMap[candidate.adapter.name],
+        h: ageHealth(healthMap[providerIds[index]], Date.now()),
     }));
+    // Do not mistake missing measurements for evidence that a cold provider is
+    // slow. An optimistic pool prior lets it obtain its first real observation.
+    const observed = healths.filter(v => v.h.last_success_ms !== 0);
+    if (observed.length) {
+        const priorLatency = Math.min(...observed.map(v => v.h.lat_ewma_60s));
+        const priorTail = Math.min(...observed.map(v => v.h.lat_ewma_300s));
+        const priorThroughput = Math.max(...observed.map(v => v.h.tp_ewma_60s));
+        for (const entry of healths) if (entry.h.last_success_ms === 0 && entry.h.rate_60s === 0) {
+            entry.h = { ...entry.h, lat_ewma_60s: priorLatency, lat_ewma_300s: priorTail, tp_ewma_60s: priorThroughput };
+        }
+    }
 
     const now = Date.now();
     const isRecentOutage = (entry: { h: ProviderHealth }) =>
@@ -1357,9 +1378,9 @@ export async function routeProviders(
     };
 
     const rng = seededRandom(routingSeed);
-    const priceScores = preset.wPrice > 0 ? computePriceScores(ctx.endpoint, pool.map((p) => p.candidate)) : new Map();
+    const priceScores = mode !== "balanced" && preset.wPrice > 0 ? computePriceScores(ctx.endpoint, pool.map((p) => p.candidate)) : new Map();
     const defaultPriceWeights = mode === "balanced"
-        ? computeInverseSquarePriceWeights(ctx.endpoint, pool.map((p) => p.candidate))
+        ? computeInverseSquarePriceWeights(candidatePriceCosts, pool.map((p) => p.candidate))
         : new Map<string, number>();
     const scored = pool.map(v => {
         const h = v.h;
@@ -1384,8 +1405,11 @@ export async function routeProviders(
             routingStatusMultiplier(providerRoutingStatus) *
             routingStatusMultiplier(modelRoutingStatus) *
             capabilityRoutingMultiplier;
+        const errorRate = Math.max(h.err_ewma_10s, h.err_ewma_60s);
+        const enoughFailureEvidence = (h.rec_tot_ew_10s ?? 0) >= 8 && errorRate >= 0.25;
         const cacheRoutingMultiplier =
             stickyHint &&
+            !enoughFailureEvidence &&
             stickyHint.providerId === v.candidate.providerId &&
             shouldApplyStickyRoutingBoost(v.candidate, stickyHint)
                 ? stickyRoutingCacheBoostMultiplier(stickyHint.cachedReadTokens)
@@ -1393,12 +1417,16 @@ export async function routeProviders(
         if (cacheRoutingMultiplier > 1) {
             stickyRoutingApplied = true;
         }
-        const succ = 1 - h.err_ewma_60s;
-        const reliability = sampleProviderReliability(h, rng);
+        const reliability = sampleProviderReliability(h, mode === "balanced" ? null : rng);
+        const errorConfidence = reliability.effectiveObservations / (8+reliability.effectiveObservations);
+        const succ = 1 - h.err_ewma_60s * errorConfidence;
+        const reliabilityMultiplier = Math.pow(1-errorRate*errorConfidence, 2);
         const p50Curve = 1 / (1 + (h.lat_ewma_60s / preset.L0));
         const p50Norm = 1 - normalise(h.lat_ewma_60s, minP50, maxP50);
         const tailNorm = 1 - normalise(Math.max(h.lat_ewma_300s, h.lat_ewma_60s * 1.6), minTail, maxTail);
         const tpsNorm = maxTPS > 0 ? normalise(h.tp_ewma_60s, minTPS, maxTPS) : 0;
+        const latencyScore = mode === "balanced" ? p50Curve : 0.5 * p50Curve + 0.5 * p50Norm;
+        const throughputScore = mode === "balanced" ? Math.max(0, h.tp_ewma_60s) / (100 + Math.max(0, h.tp_ewma_60s)) : tpsNorm;
         const candidateKey = getRoutingCandidateKey(v.candidate);
         const priceScore = mode === "balanced"
             ? (defaultPriceWeights.get(candidateKey) ?? 0.5)
@@ -1419,10 +1447,16 @@ export async function routeProviders(
         const tokenWeight = 0.10; // 10% weight for token affinity
 
         const noiseDraw = mode === "balanced" ? 0 : preset.noise * rng();
-        const contributions: RoutingScoreTrace["contributions"] = {
-            ...(mode === "balanced"
-                ? { reliability: preset.wSucc * reliability.sample }
-                : { success: preset.wSucc * succ }),
+        const contributions: RoutingScoreTrace["contributions"] = mode === "balanced" ? {
+            // Absolute curves keep small differences small, even in a two-provider pool.
+            price: priceScore,
+            latency: priceScore * 0.1 * latencyScore,
+            throughput: priceScore * 0.1 * throughputScore,
+            tailLatency: 0,
+            tokenAffinity: 0,
+            noise: 0,
+        } : {
+            success: preset.wSucc * succ,
             latency: preset.wP50 * (0.5 * p50Curve + 0.5 * p50Norm),
             tailLatency: preset.wTail * tailNorm,
             throughput: preset.wTPS * tpsNorm,
@@ -1442,13 +1476,14 @@ export async function routeProviders(
                 cacheRoutingMultiplier *
                 latencyPreferenceMultiplier *
                 throughputPreferenceMultiplier *
+                reliabilityMultiplier *
                 recentOutageMultiplier
         );
         const scoreFactorValues: RoutingScoreFactorValues = [
             succ,
-            0.5 * p50Curve + 0.5 * p50Norm,
+            latencyScore,
             tailNorm,
-            tpsNorm,
+            throughputScore,
             priceScore,
             reliability.sample,
             reliability.effectiveObservations,
@@ -1461,14 +1496,15 @@ export async function routeProviders(
             throughputPreferenceMultiplier,
         ];
         const formula: RoutingScoreTrace["calculation"]["formula"] =
-            mode === "balanced" ? "balanced_weighted_additive" : "weighted_additive";
+            mode === "balanced" ? "price_weighted_performance" : "weighted_additive";
+        let cachedTrace: RoutingScoreTrace | undefined;
         return {
             candidate: v.candidate,
             adapter: v.adapter,
             health: h,
             score,
 			scoreFactorValues,
-			scoreTrace: {
+			get scoreTrace(): RoutingScoreTrace { return cachedTrace ??= {
                 inputs: {
                     latencyEwma60s: roundDiagnosticNumber(h.lat_ewma_60s),
                     latencyEwma300s: roundDiagnosticNumber(h.lat_ewma_300s),
@@ -1484,16 +1520,16 @@ export async function routeProviders(
                 normalized: {
                     p50Curve: roundDiagnosticNumber(p50Curve),
                     p50PoolPosition: roundDiagnosticNumber(p50Norm),
-                    latencyScore: roundDiagnosticNumber(0.5 * p50Curve + 0.5 * p50Norm),
+                    latencyScore: roundDiagnosticNumber(latencyScore),
                     tailLatencyScore: roundDiagnosticNumber(tailNorm),
-                    throughputScore: roundDiagnosticNumber(tpsNorm),
+                    throughputScore: roundDiagnosticNumber(throughputScore),
                     priceScore: roundDiagnosticNumber(priceScore),
                     reliabilitySample: roundDiagnosticNumber(reliability.sample),
                     tokenAffinity: roundDiagnosticNumber(tokenAffinity),
                 },
                 weights: {
-                    ...preset,
-                    tokenAffinity: tokenWeight,
+                    ...(mode === "balanced" ? { ...preset, wSucc: 0, wP50: 0.1, wTail: 0, wTPS: 0.1, wPrice: 1 } : preset),
+                    tokenAffinity: mode === "balanced" ? 0 : tokenWeight,
                 },
                 contributions: Object.fromEntries(
                     Object.entries(contributions).map(([key, value]) => [key, roundDiagnosticNumber(value)]),
@@ -1508,9 +1544,10 @@ export async function routeProviders(
                     latencyPreferenceMultiplier: roundDiagnosticNumber(latencyPreferenceMultiplier),
                     throughputPreferenceMultiplier: roundDiagnosticNumber(throughputPreferenceMultiplier),
                     recentOutageMultiplier: roundDiagnosticNumber(recentOutageMultiplier),
+                    reliabilityMultiplier: roundDiagnosticNumber(reliabilityMultiplier),
                     finalScore: roundDiagnosticNumber(score),
                 },
-            },
+            }; },
 			diagnostics: collectDetailedDiagnostics ? {
                 providerId: v.candidate.providerId,
                 apiModelId: v.candidate.apiModelId ?? null,
@@ -1526,6 +1563,22 @@ export async function routeProviders(
         };
     });
     const routableScored = scored.filter((entry) => entry.score > 0);
+    const explorationRequest = Boolean(ctx.requestId && isRecoveryProbeRequest(ctx.workspaceId, ctx.requestId));
+    const selectRecovery = (entries: typeof routableScored) => {
+        if (!explorationRequest) return null;
+        const recovering = entries.filter(e => e.health.breaker === "half_open" ||
+            (e.health.breaker === "open" && e.health.breaker_until_ms <= now) ||
+            (e.health.breaker === "closed" && Math.max(e.health.err_ewma_10s, e.health.err_ewma_60s) >= 0.1 &&
+                normalizeRoutingStatus(e.candidate.providerRoutingStatus) === "active" &&
+                normalizeRoutingStatus(e.candidate.modelRoutingStatus) === "active"));
+        // A pool-wide budget, independent of scores. Age priority with jitter
+        // prevents starvation without making every edge choose the same probe.
+        return recovering.map(entry => ({ entry, priority: Math.min(300_000, Math.max(0, now - entry.health.last_ts_60s)) + rng() * 60_000 }))
+            .sort((a, b) => b.priority - a.priority)[0]?.entry ?? null;
+    };
+    const promote = (entries: typeof routableScored, selected: typeof routableScored[number]) => [selected, ...entries.filter(e => e !== selected)];
+    const compareScores = (a: typeof routableScored[number], b: typeof routableScored[number]) =>
+        b.score-a.score || seededRandom(hashSeed(b.candidate.providerId)^routingSeed)()-seededRandom(hashSeed(a.candidate.providerId)^routingSeed)();
 	const rankedProviderDiagnostics = (entries: typeof routableScored) =>
 		collectDetailedDiagnostics
 			? entries.map((entry) => entry.diagnostics!)
@@ -1549,9 +1602,7 @@ export async function routeProviders(
 			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "explicit_provider_order"),
             };
         }
-        const remainingRanked = mode === "balanced"
-            ? remaining.sort((a, b) => b.score - a.score)
-            : weightedOrder(remaining, (s) => s.score, rng);
+        const remainingRanked = weightedOrder(remaining, (s) => s.score, rng);
         const ranked = [...ordered, ...remainingRanked];
         return {
             ranked,
@@ -1560,20 +1611,23 @@ export async function routeProviders(
     }
 
     if (strict || deterministicRequestSort) {
-        const ranked = [...routableScored].sort((a, b) => b.score - a.score);
+        const ranked = [...routableScored].sort(compareScores);
+        const recovery = selectRecovery(ranked);
         return {
-            ranked,
-			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "score_sort"),
+            ranked: recovery ? promote(ranked, recovery) : ranked,
+		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(recovery ? promote(ranked, recovery) : ranked), false, recovery ? "recovery_probe" : "score_sort"),
         };
     }
 
-    // Balanced/default already contains a Thompson draw. Sorting that sampled
-    // utility avoids layering a second lottery on top of exploration.
-    const ranked = mode === "balanced"
-        ? [...routableScored].sort((a, b) => b.score - a.score)
-        : weightedOrder(routableScored, (s) => s.score, rng);
+    // Price determines traffic share; bounded performance terms gently favor faster routes.
+    const ranked = weightedOrder(routableScored, (s) => s.score, rng);
+    const recovery = selectRecovery(ranked);
+    if (recovery) {
+        const recoveredRank = promote(ranked, recovery);
+        return { ranked: recoveredRank, diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(recoveredRank), false, "recovery_probe") };
+    }
     return {
         ranked,
-		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, mode === "balanced" ? "score_sort" : "weighted_order"),
+		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "weighted_order"),
     };
 }

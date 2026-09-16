@@ -117,11 +117,18 @@ const runtime = vi.hoisted(() => {
 
     const from = vi.fn((table: string) => {
         if (table === "workspace_private_models") {
-            return { select: () => ({ eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }) };
+            const query: any = { select: () => query, eq: () => query, limit: async () => ({ data: [], count: 0, error: null }), maybeSingle: async () => ({ data: null, error: null }) };
+            return query;
         }
         if (table === "v2_model_provider_routes") {
+            const credentialQuery: any = {
+                eq: () => credentialQuery,
+                in: () => credentialQuery,
+                then: (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve),
+            };
             return {
                 select: () => ({
+                    in: () => credentialQuery,
                     eq: () => ({
                         in: () => ({
                             like: async () => ({
@@ -212,6 +219,7 @@ const runtime = vi.hoisted(() => {
 const loadPriceCardMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/runtime/env", () => ({
+    dispatchBackground: (p: Promise<unknown>) => { void p; },
     getCache: () => runtime.cache as unknown as KVNamespace,
     getSupabaseAdmin: () => runtime.supabase,
 }));

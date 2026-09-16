@@ -447,6 +447,13 @@ export async function beforeRequest(
 
     // 5) RPC + gating + providers (choose viable providers for this model/endpoint)
     const capability = normalizeCapability(resolveCapabilityFromEndpoint(endpoint));
+    // Streamed text has no wallet reservation before provider dispatch. Its
+    // cache fill may overlap inference, but must finish before final charging
+    // invalidates that cache. Media/async reservation paths remain ordered.
+    const creditCacheWrites: Promise<void>[] = [];
+    const onCreditCacheWrite = stream && ["responses", "chat.completions", "messages"].includes(endpoint)
+        ? (write: Promise<void>) => { creditCacheWrites.push(write); }
+        : undefined;
     let autoRouterEvaluation: AutoRouterEvaluation | null = null;
     let workspacePolicyLoad: Awaited<typeof workspacePolicyPromise> | null = null;
     const loadWorkspacePolicy = async () => {
@@ -463,6 +470,7 @@ export async function beforeRequest(
 		internal,
 		testingMode: testingModeEnabled,
 		disableCache: debugEnabled,
+		onCreditCacheWrite,
 	});
 
 	let c: Awaited<ReturnType<typeof guardContext>>;
@@ -633,6 +641,7 @@ export async function beforeRequest(
         context_byok_hydration: contextTelemetry?.byokHydrationMs,
         context_key_version: contextTelemetry?.keyVersionMs,
         context_cache_read: contextTelemetry?.cacheReadMs,
+        context_catalog_read: contextTelemetry?.catalogReadMs,
         context_credit_refresh: contextTelemetry?.creditRefreshMs,
         context_rpc: contextTelemetry?.rpcMs,
         context_enrich: contextTelemetry?.enrichMs,
@@ -700,6 +709,7 @@ export async function beforeRequest(
                     endpoint,
                     capability,
                     model: routedModel,
+                    onCreditCacheWrite,
                     requestId,
                     internal,
                     testingMode: testingModeEnabled,
@@ -1368,6 +1378,7 @@ export async function beforeRequest(
         providerCandidateBuildDiagnostics: candidateDiagnostics,
         providerEnablementDiagnostics,
         plugins: normalizeGatewayPlugins(mergedBody?.plugins),
+        creditCacheWrites,
         providers: enabledProviders,
         providerCapabilitiesBeta: betaCapabilities,
         pricing: context.pricing,

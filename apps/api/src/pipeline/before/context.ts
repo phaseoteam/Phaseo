@@ -10,7 +10,8 @@ import { getTextMany, keyVersionToken } from "@/core/kv";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
-import { mayHavePrivateModel } from "./privateModelIndex";
+import { loadPrivateRouteRow } from "./privateModelCache";
+import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
@@ -68,7 +69,7 @@ const CONTEXT_CACHE_PREFIX = "gateway:context";
 // Multi-tier caching constants (respecting Cloudflare KV 60s minimum)
 // Bump when the static context payload changes or a catalogue/pricing repair
 // must invalidate previously cached provider cards across Worker isolates.
-const STATIC_CACHE_PREFIX = "gateway:static:v4";
+const STATIC_CACHE_PREFIX = "gateway:static:v5";
 const DYNAMIC_CACHE_PREFIX = "gateway:dynamic";
 // Preset payloads include provider/pricing snapshots too, so invalidate them
 // with the static context when catalogue or pricing data changes.
@@ -288,30 +289,6 @@ async function hydrateByokKeys(
 	};
 }
 
-type WorkspacePrivateModelRow = {
-	id: string;
-	workspace_id: string;
-	model_id: string;
-	base_url: string;
-	upstream_model_id: string;
-	supports_responses: boolean;
-	input_modalities: string[] | null;
-	output_modalities: string[] | null;
-	context_length: number | null;
-	max_output_tokens: number | null;
-	catalog_model_id: string | null;
-	host_provider_id: string | null;
-	custom_provider_name: string | null;
-	routing_policy: "preferred" | "balanced" | "fallback";
-	provider_id: string;
-	enc_value: string;
-	enc_iv: string;
-	enc_tag: string;
-	key_version: number;
-	enc_aad_version: number;
-	fingerprint_sha256: string;
-};
-
 export async function loadWorkspacePrivateModel(args: {
 	workspaceId: string;
 	model: string;
@@ -320,16 +297,8 @@ export async function loadWorkspacePrivateModel(args: {
 	disableCache?: boolean;
 }): Promise<{ provider: GatewayProviderSnapshot; pricingKey: string; pricing: GatewayContextData["pricing"][string]; attached: boolean } | null> {
 	if (args.endpoint !== "text.generate") return null;
-	if (args.apiKeyId && !args.disableCache && !await mayHavePrivateModel({ ...args, apiKeyId: args.apiKeyId })) return null;
-	const { data, error } = await getSupabaseAdmin().from("workspace_private_models")
-		.select("id,workspace_id,model_id,base_url,upstream_model_id,supports_responses,input_modalities,output_modalities,context_length,max_output_tokens,catalog_model_id,host_provider_id,custom_provider_name,routing_policy,provider_id,enc_value,enc_iv,enc_tag,key_version,enc_aad_version,fingerprint_sha256")
-		.eq("workspace_id", args.workspaceId)
-		.eq("model_id", args.model)
-		.eq("enabled", true)
-		.maybeSingle();
-	if (error) throw new Error(`private_model_lookup_failed:${error.message ?? "unknown"}`);
-	if (!data) return null;
-	const row = data as WorkspacePrivateModelRow;
+	const row = await loadPrivateRouteRow({ ...args, disableCache: args.disableCache || !args.apiKeyId });
+	if (!row) return null;
 	const decrypted = await decryptBYOK(row);
 	let credential: string;
 	try {
@@ -1070,15 +1039,21 @@ export async function fetchGatewayContext(args: {
     apiKeyId: string;
     includeTestingMode?: boolean;
     disableCache?: boolean;
+    onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GatewayContextData> {
 	const fetchStartedAt = performance.now();
 	await assertPresetAccess(args);
 	const presetAccessMs = round3(performance.now() - fetchStartedAt);
-	const privateModelStartedAt = performance.now();
-	const privateModel = await loadWorkspacePrivateModel(args);
-	const privateModelMs = round3(performance.now() - privateModelStartedAt);
+
     const supabase = getSupabaseAdmin();
     const cache = getCache();
+    async function persistCredit(value: CreditContextSnapshot, ttl: number): Promise<void> {
+        const write = cache.put(gatewayCreditCacheKey(args.workspaceId), JSON.stringify(value), { expirationTtl: ttl }).catch(() => undefined);
+        if (args.onCreditCacheWrite) {
+            args.onCreditCacheWrite(write);
+            dispatchBackground(write);
+        } else await write;
+    }
     const telemetry: ContextFetchTelemetry = {
         cacheStatus: args.disableCache ? "bypass" : "miss",
         totalMs: 0,
@@ -1090,25 +1065,53 @@ export async function fetchGatewayContext(args: {
         cacheWriteMs: null,
         fallbackRemap: false,
         presetAccessMs,
-        privateModelMs,
+        privateModelMs: null,
     };
+    const privateStartedAt = performance.now();
+    const privateModelLoad = loadWorkspacePrivateModel(args).then(
+        value => ({ ok: true as const, value }),
+        error => ({ ok: false as const, error }),
+    ).then(result => {
+        telemetry.privateModelMs = round3(performance.now() - privateStartedAt);
+        return result;
+    });
     async function finishContext(value: GatewayContextData): Promise<GatewayContextData> {
+        const privateResult = await privateModelLoad;
+        if (privateResult.ok === false) throw privateResult.error;
+        const privateModel = privateResult.value;
         const startedAt = performance.now();
+		if (privateModel) {
+			value = {
+				...value,
+				resolvedModel: args.model,
+				providers: privateModel.attached
+					? [privateModel.provider, ...(value.providers ?? [])]
+					: [privateModel.provider],
+				pricing: {
+					...(value.pricing ?? {}),
+					[privateModel.pricingKey]: privateModel.pricing,
+				},
+			};
+		}
+
         const hydrated = await hydrateByokKeys(value, args.workspaceId, args.model, args.apiKeyId);
         return {
             ...hydrated,
             contextTelemetry: {
-                ...(value.contextTelemetry ?? telemetry),
+                ...telemetry,
                 presetAccessMs,
-                privateModelMs,
+                privateModelMs: telemetry.privateModelMs,
                 byokHydrationMs: round3(performance.now() - startedAt),
                 totalMs: round3(performance.now() - fetchStartedAt),
             },
         };
     }
+    try {
     // Check if model is a preset
     const isPreset = args.model.startsWith("@");
-    const shouldUseCache = !args.disableCache && !privateModel;
+    const useContextBundle = !isPreset && !args.includeTestingMode && !isFreeRouterModel(args.model) &&
+        ["responses", "chat.completions", "messages", "text.generate"].includes(args.endpoint) && contextBundleEnabled();
+    const shouldUseCache = !args.disableCache;
     const needsVersionToken = shouldUseCache;
     let versionToken = "v0";
     if (needsVersionToken) {
@@ -1145,6 +1148,7 @@ export async function fetchGatewayContext(args: {
                 const staticParsed = JSON.parse(staticCachedRaw);
                 if (
 					isDynamicContextLike(dynamicParsed) &&
+                    dynamicParsed.workspaceId === args.workspaceId && staticParsed.workspaceId === args.workspaceId &&
 					isStaticContextLike(staticParsed) &&
 					!hasConfiguredKeyLimits(dynamicParsed.keyLimit)
 				) {
@@ -1180,13 +1184,12 @@ export async function fetchGatewayContext(args: {
 						const creditTtl = clampTtl(
 							computeCreditSnapshotTtlForContext(creditOnlyContext),
 						);
-						await cache.put(
-							creditCacheKey,
-							JSON.stringify(creditContext),
-							{ expirationTtl: creditTtl },
-						).catch(() => undefined);
+						const creditWriteStartedAt = performance.now();
+                        await persistCredit(creditContext, creditTtl);
+						telemetry.cacheWriteMs = round3(performance.now() - creditWriteStartedAt);
 					}
-					const merged = mergeCachedContext({
+					telemetry.cacheStatus = cacheStatus;
+                    const merged = mergeCachedContext({
                         dynamic: dynamicParsed,
                         static: staticParsed,
                         credit: creditContext,
@@ -1208,7 +1211,9 @@ export async function fetchGatewayContext(args: {
         }
     }
 
-    const inflightKey = shouldUseCache ? compositionCacheKey : null;
+    // Deferred persistence belongs to this request's billing barrier. Do not
+    // share another request's loader/I/O when that barrier is in use.
+    const inflightKey = shouldUseCache && !args.onCreditCacheWrite ? compositionCacheKey : null;
     if (inflightKey) {
 		const inflight = contextInflight.get(inflightKey);
 		if (inflight) {
@@ -1261,8 +1266,17 @@ export async function fetchGatewayContext(args: {
         let contextCapability = contextCapabilityCandidates[0] ?? args.endpoint;
         let parsed: GatewayContextData;
 
+        let contextBundle: ContextBundle | null = null;
         if (textContextCapabilities) {
-            const variants = await Promise.all(
+            if (useContextBundle) {
+                contextBundle = await loadTextContextBundle(args);
+                rpcTotalMs += contextBundle.rpcMs;
+                telemetry.catalogReadMs = round3(contextBundle.catalogReadMs);
+                telemetry.catalogCacheStatus = contextBundle.cacheStatus;
+            }
+            const variants = contextBundle
+                ? contextBundle.variants.map(variant => ({ candidateCapability: variant.endpoint, parsed: contextSchema.parse(variant.payload) }))
+                : await Promise.all(
                 textContextCapabilities.map(async (candidateCapability) => ({
                     candidateCapability,
                     parsed: await fetchParsedContextMeasured(
@@ -1304,6 +1318,7 @@ export async function fetchGatewayContext(args: {
                 }
             }
         }
+        if (contextBundle) parsed.publicCatalogExpiresAt = contextBundle.catalog.expiresAt;
 
         // Fallback path for provider-scoped model slugs (e.g. mistral/mistral-medium-2508):
         // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.
@@ -1336,19 +1351,6 @@ export async function fetchGatewayContext(args: {
             }
         }
 
-		if (privateModel) {
-			parsed = {
-				...parsed,
-				resolvedModel: args.model,
-				providers: privateModel.attached
-					? [privateModel.provider, ...(parsed.providers ?? [])]
-					: [privateModel.provider],
-				pricing: {
-					...(parsed.pricing ?? {}),
-					[privateModel.pricingKey]: privateModel.pricing,
-				},
-			};
-		}
 
         parsed = applyNebiusRegionalModelAllowlist({
             parsed,
@@ -1520,19 +1522,24 @@ export async function fetchGatewayContext(args: {
                 )
             );
 
-            const providerStatusQuery = providerIds.length
+            const providerStatusQuery = contextBundle
+                ? Promise.resolve({ data: contextBundle.catalog.providerRows, error: null })
+                : providerIds.length
                 ? supabase
                     .from("v2_providers")
                     .select("provider_slug,status,routing_enabled,credential_mode,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,data_policy_variant,stream_cancellation_support,stream_cancellation_stops_provider_billing,stream_cancellation_usage_recovery,stream_cancellation_evidence_kind,stream_cancellation_source_url,metadata")
                     .in("provider_slug", providerIds)
                 : Promise.resolve({ data: [], error: null } as any);
-			const routeCredentialModeQuery = providerIds.length
+			const routeCredentialModeQuery = contextBundle
+                ? Promise.resolve({ data: contextBundle.catalog.routeModes, error: null })
+                : providerIds.length
 				? supabase.from("v2_model_provider_routes").select("provider_slug,credential_mode")
 					.in("provider_slug", providerIds).eq("model_slug", parsed.resolvedModel ?? args.model)
 					.eq("routing_enabled", true).in("status", ["active", "degraded"])
 				: Promise.resolve({ data: [], error: null } as any);
 
             const settingsQuery = (async () => {
+                if (contextBundle) return { data: contextBundle.settings, error: null };
                 const columns = "routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,privacy_zdr_only,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,io_logging_enabled,io_logging_include_provider_payloads,data_contribution_enabled,data_contribution_policy_version,data_contribution_sample_rate_bps,data_contribution_classifier_sample_rate_bps,data_contribution_discount_bps,response_healing_enabled,response_healing_locked,response_healing_mode";
                 const withCacheAwareRouting = await supabase
                     .from("workspace_settings")
@@ -1559,7 +1566,7 @@ export async function fetchGatewayContext(args: {
                 settingsQuery,
                 providerStatusQuery,
 				routeCredentialModeQuery,
-                supabase
+                contextBundle ? Promise.resolve({ data: { billing_mode: contextBundle.billingMode }, error: null }) : supabase
                     .from("workspaces")
                     .select("billing_mode")
                     .eq("id", args.workspaceId)
@@ -1904,11 +1911,7 @@ export async function fetchGatewayContext(args: {
                     ? null
                     : clampTtl(isPreset ? Math.min(PRESET_TTL, pricingAwareStaticTtl) : pricingAwareStaticTtl);
                 const creditTtl = clampTtl(computeCreditSnapshotTtlForContext(parsed));
-                await cache.put(
-                    creditCacheKey,
-                    JSON.stringify(split.credit),
-                    { expirationTtl: creditTtl },
-                );
+                await persistCredit(split.credit, creditTtl);
                 const backgroundCacheWrites: Promise<void>[] = [
                     ...(hasConfiguredKeyLimits(parsed.keyLimit)
                         ? []
@@ -1953,5 +1956,10 @@ export async function fetchGatewayContext(args: {
         if (inflightKey && contextInflight.get(inflightKey) === dbLoader) {
             contextInflight.delete(inflightKey);
         }
+    }
+    } finally {
+        // Keep request runtime alive until the parallel private lookup settles,
+        // including when the public context or access check failed.
+        await privateModelLoad;
     }
 }

@@ -21,6 +21,7 @@ type RuntimeState = {
 let runtimeState: RuntimeState | null = null;
 let runtimeActiveCount = 0;
 let lastBindingsSnapshot: GatewayBindings | null = null;
+let cachedSupabase: { url: string; key: string; client: SupabaseClient } | null = null;
 type WaitUntilEntry = {
     id: number;
     handler: (promise: Promise<unknown>) => void;
@@ -62,10 +63,14 @@ export function configureRuntime(env: GatewayBindings) {
 
     const globalFetch: typeof fetch = (input, init) => fetch(input, init);
 
-    const supabaseAdmin = createClient(bindings.SUPABASE_URL, bindings.SUPABASE_SERVICE_ROLE_KEY, {
+    const reusable = cachedSupabase?.url === bindings.SUPABASE_URL && cachedSupabase.key === bindings.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseAdmin = reusable ? cachedSupabase!.client : createClient(bindings.SUPABASE_URL, bindings.SUPABASE_SERVICE_ROLE_KEY, {
         auth: { autoRefreshToken: false, persistSession: false },
         global: { fetch: globalFetch },
     });
+    // This client has no user session or mutable request headers. Keep only one
+    // configuration, and replace it immediately on URL/service-key rotation.
+    cachedSupabase = { url: bindings.SUPABASE_URL, key: bindings.SUPABASE_SERVICE_ROLE_KEY, client: supabaseAdmin };
 
     runtimeState = { bindings, cache: bindings.GATEWAY_CACHE, supabase: supabaseAdmin };
 }
@@ -165,5 +170,4 @@ export function getByokKey(version: number): string {
     const s = String(raw).trim().replace(/^["']|["']$/g, "");
     return s.startsWith("base64:") ? s.slice(7) : s;
 }
-
 

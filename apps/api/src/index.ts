@@ -6,17 +6,15 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 
-import { rootRouter } from "@/routes/root";
-import { authRouter } from "@/routes/auth";
-import { oauthRouter } from "@/routes/oauth";
 import { v1Router } from "@/routes/v1";
-import { internalRouter } from "@/routes/internal";
-import { handleScheduledEvent } from "@/scheduled";
+import { lazyRouter } from "@/routes/lazy";
+import type { GatewayBindings } from "@/runtime/env";
 import { sendAxiomWideEvent } from "@/observability/axiom";
 import { requestIdFor } from "@/runtime/request-id";
 import { enforceRegionalSurface } from "@/regional-surface";
 export { RealtimeRelayDurableObject } from "@core/realtime-relay-durable-object";
 export { ProviderRateLimitDurableObject } from "@core/provider-rate-limit-durable-object";
+export { RoutingHealthDurableObject } from "@core/routing-health-durable-object";
 
 const app = new Hono<Env>();
 
@@ -35,11 +33,19 @@ app.use("*", async (c, next) => {
 });
 app.use("*", enforceRegionalSurface);
 
-app.route("/", rootRouter);
-app.route("/auth", authRouter);
-app.route("/oauth", oauthRouter);
+const root = lazyRouter("/", () => import("@/routes/root").then(module => module.rootRouter));
+app.all("/", root);
+app.all("/.well-known/*", root);
+const auth = lazyRouter("/auth", () => import("@/routes/auth").then(module => module.authRouter));
+app.all("/auth", auth);
+app.all("/auth/*", auth);
+const oauth = lazyRouter("/oauth", () => import("@/routes/oauth").then(module => module.oauthRouter));
+app.all("/oauth", oauth);
+app.all("/oauth/*", oauth);
 app.route("/v1", v1Router);
-app.route("/internal", internalRouter);
+const internal = lazyRouter("/internal", () => import("@/routes/internal").then(module => module.internalRouter));
+app.all("/internal", internal);
+app.all("/internal/*", internal);
 
 app.onError((error, c) => {
 	const requestId = c.get("requestId") ?? requestIdFor(c.req.raw);
@@ -84,7 +90,8 @@ app.onError((error, c) => {
 
 export default {
 	fetch: app.fetch,
-	scheduled: handleScheduledEvent,
+	async scheduled(event: ScheduledController, env: GatewayBindings) {
+		const { handleScheduledEvent } = await import("@/scheduled");
+		await handleScheduledEvent(event, env);
+	},
 };
-
-

@@ -9,55 +9,43 @@ import type { Env } from "@/runtime/types";
 import { chatCompletionsRoutes } from "./chat-completions";
 import { messagesRoutes } from "./messages";
 import { responsesRoutes } from "./responses";
-import { embeddingsRoutes } from "./embeddings";
-import { moderationsRoutes } from "./moderations";
-import { rerankRoutes } from "./rerank";
-import { audioSpeechRoutes } from "./audio-speech";
-import { audioTranscriptionRoutes } from "./audio-transcription";
-import { audioTranslationRoutes } from "./audio-translation";
-import { musicGenerateRoutes } from "./music-generate";
-import { realtimeSessionsRoutes, liveSessionsRoutes } from "./realtime-sessions";
-import { imagesGenerationsRoutes } from "./images-generations";
-import { imagesEditsRoutes } from "./images-edits";
-import { batchRoutes } from "./batches";
-import { videosRoutes } from "./videos";
-import { filesRoutes } from "./files";
-import { ocrRoutes } from "./ocr";
-import { parseRoutes } from "./parse";
-import { asyncJobsRoutes } from "./async-jobs";
+import { lazyRouter } from "@/routes/lazy";
 
 export const inferenceRouter = new Hono<Env>();
 
 inferenceRouter.route("/chat/completions", chatCompletionsRoutes);
 inferenceRouter.route("/messages", messagesRoutes);
 inferenceRouter.route("/responses", responsesRoutes);
-inferenceRouter.route("/embeddings", embeddingsRoutes);
-inferenceRouter.route("/moderations", moderationsRoutes);
-inferenceRouter.route("/rerank", rerankRoutes);
-inferenceRouter.route("/audio/speech", audioSpeechRoutes);
-inferenceRouter.route("/audio/transcriptions", audioTranscriptionRoutes);
-inferenceRouter.route("/audio/translations", audioTranslationRoutes);
-inferenceRouter.route("/audio/realtime/sessions", realtimeSessionsRoutes);
-inferenceRouter.route("/realtime/sessions", realtimeSessionsRoutes);
-// Deliberately gated to authenticated playground identities, not general API keys.
-inferenceRouter.route("/live/sessions", liveSessionsRoutes);
-inferenceRouter.route("/images/generations", imagesGenerationsRoutes);
-inferenceRouter.route("/images/edits", imagesEditsRoutes);
-inferenceRouter.route("/videos", videosRoutes);
-inferenceRouter.route("/video/generations", videosRoutes);
-inferenceRouter.route("/ocr", ocrRoutes);
-inferenceRouter.route("/parse", parseRoutes);
-inferenceRouter.route("/music/generate", musicGenerateRoutes);
-inferenceRouter.route("/music/generations", musicGenerateRoutes);
-inferenceRouter.route("/batch", batchRoutes);
-inferenceRouter.route("/batches", batchRoutes);
-inferenceRouter.route("/files", filesRoutes);
-inferenceRouter.route("/async", asyncJobsRoutes);
+// Keep text route initialization small; initialize other surfaces on first use.
+function mount(path: string, load: () => Promise<Hono<Env>>) {
+    const handler = lazyRouter(null, load);
+    inferenceRouter.all(path, handler);
+    inferenceRouter.all(`${path}/*`, handler);
+}
+mount("/embeddings", () => import("./embeddings").then(m => m.embeddingsRoutes));
+mount("/moderations", () => import("./moderations").then(m => m.moderationsRoutes));
+mount("/rerank", () => import("./rerank").then(m => m.rerankRoutes));
+mount("/audio/speech", () => import("./audio-speech").then(m => m.audioSpeechRoutes));
+mount("/audio/transcriptions", () => import("./audio-transcription").then(m => m.audioTranscriptionRoutes));
+mount("/audio/translations", () => import("./audio-translation").then(m => m.audioTranslationRoutes));
+mount("/audio/realtime/sessions", () => import("./realtime-sessions").then(m => m.realtimeSessionsRoutes));
+mount("/realtime/sessions", () => import("./realtime-sessions").then(m => m.realtimeSessionsRoutes));
+mount("/live/sessions", () => import("./realtime-sessions").then(m => m.liveSessionsRoutes));
+mount("/images/generations", () => import("./images-generations").then(m => m.imagesGenerationsRoutes));
+mount("/images/edits", () => import("./images-edits").then(m => m.imagesEditsRoutes));
+mount("/videos", () => import("./videos").then(m => m.videosRoutes));
+mount("/video/generations", () => import("./videos").then(m => m.videosRoutes));
+mount("/ocr", () => import("./ocr").then(m => m.ocrRoutes));
+mount("/parse", () => import("./parse").then(m => m.parseRoutes));
+mount("/music/generate", () => import("./music-generate").then(m => m.musicGenerateRoutes));
+mount("/music/generations", () => import("./music-generate").then(m => m.musicGenerateRoutes));
+mount("/batch", () => import("./batches").then(m => m.batchRoutes));
+mount("/batches", () => import("./batches").then(m => m.batchRoutes));
+mount("/files", () => import("./files").then(m => m.filesRoutes));
+mount("/async", () => import("./async-jobs").then(m => m.asyncJobsRoutes));
 
 // Backward-compatible alias for existing imports.
 export const dataRouter = inferenceRouter;
-
-
 
 
 

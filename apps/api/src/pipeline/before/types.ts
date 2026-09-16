@@ -312,6 +312,8 @@ export type KeyEnrichment = {
 };
 
 export type ContextFetchTelemetry = {
+    catalogReadMs?: number;
+    catalogCacheStatus?: "hit" | "miss" | "bypass";
     presetAccessMs?: number | null;
     privateModelMs?: number | null;
     byokHydrationMs?: number | null;
@@ -331,6 +333,8 @@ export type ContextFetchTelemetry = {
  * Includes team info, gate checks, providers, and pricing
  */
 export type GatewayContextData = {
+    /** Absolute public-catalog deadline; never extend it when caching workspace composition. */
+    publicCatalogExpiresAt?: number;
     workspaceId: string;
     endpoint?: Endpoint;
     resolvedModel?: string | null;
@@ -664,6 +668,10 @@ export type WebFetchObservability = {
  * Contains all information needed for request processing
  */
 export type PipelineContext = {
+    /** Request-owned diagnostics; never cache or serialize. Not enabled by public headers. */
+    gatewayTimingTrace?: import("../telemetry/gateway-trace").GatewayTimingTrace;
+    /** Request-owned persistence barrier; never cache or serialize this field. */
+    creditCacheWrites?: Promise<void>[];
     endpoint: Endpoint;
     capability: string;
     /** Server-owned idempotency key for this billable pipeline execution. */
