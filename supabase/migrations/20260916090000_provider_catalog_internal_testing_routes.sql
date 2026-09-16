@@ -1,3 +1,4 @@
+-- phaseo:allow-production-history-backfill reason: Restore this already-applied production migration from supabase_migrations.schema_migrations so deployment history matches main.
 -- Keep provider catalogue promotions private until the provider/model is ready
 -- for public routing. Internal testing still needs a real endpoint, credentials,
 -- and an adapter, which the promotion function already validates.
