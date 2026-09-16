@@ -66,6 +66,14 @@ async function main() {
 		const { error } = await db.from("v2_benchmark_results").upsert(rows.slice(index, index + 250), { onConflict: "result_id" });
 		if (error) throw error;
 	}
+	const { data: activeRows, error: activeRowsError } = await db.from("v2_benchmark_results").select("result_id").eq("benchmark_id", BENCHMARK_ID).is("effective_to", null);
+	if (activeRowsError) throw activeRowsError;
+	const currentResultIds = new Set(rows.map((row) => row.result_id));
+	const staleResultIds = (activeRows ?? []).filter((row) => !currentResultIds.has(row.result_id)).map((row) => row.result_id);
+	if (staleResultIds.length) {
+		const { error } = await db.from("v2_benchmark_results").update({ effective_to: updatedAt, updated_at: updatedAt }).is("effective_to", null).in("result_id", staleResultIds);
+		if (error) throw error;
+	}
 	console.log(`Synchronized ${rows.length} Epoch ECI results. Public caches expire under their normal TTLs.`);
 }
 
