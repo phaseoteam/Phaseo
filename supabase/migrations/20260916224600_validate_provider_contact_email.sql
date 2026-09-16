@@ -1,0 +1,2 @@
+alter table public.provider_onboarding_submissions
+  validate constraint provider_onboarding_submissions_contact_email_check;

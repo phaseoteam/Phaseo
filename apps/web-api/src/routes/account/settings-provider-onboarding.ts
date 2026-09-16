@@ -588,6 +588,7 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		p_catalog_preview: { models: catalog.preview.models, truncated: catalog.preview.truncated },
 		p_validation_summary: { valid: true, issues: [], checked_at: new Date().toISOString() },
 		p_model_count: catalog.preview.modelCount,
+		p_contact_email: input.contactEmail,
 		p_proof_method: proofMethod,
 		p_proof_subject: catalogHost,
 		p_claim_challenge_id: verifiedClaimChallengeId,
@@ -600,11 +601,6 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		return c.json({ error: "provider_enrollment_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	const enrollmentData = enrollment.data as { provider: any; submission: any; providerWorkspaceId: string };
-	const contactSaved = await client.from("provider_onboarding_submissions").update({ contact_email: input.contactEmail }).eq("id", String(enrollmentData.submission.id));
-	if (contactSaved.error) {
-		console.error("provider_enrollment_contact_write_failed", { providerSlug: input.providerSlug, submissionId: enrollmentData.submission.id });
-		return c.json({ error: "provider_enrollment_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	}
 	if (catalog.preview.modelCount > 0) c.executionCtx.waitUntil(syncProviderCatalog(c.env, input.providerSlug, "manual", String(enrollmentData.submission.id)).catch((error) => {
 		console.error("provider_catalog_initial_sync_failed", { providerSlug: input.providerSlug, error: error instanceof Error ? error.message : String(error) });
 	}));

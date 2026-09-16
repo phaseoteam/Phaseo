@@ -85,9 +85,10 @@ internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c)
 	const client = getDataClient(c.env);
 	const result = await client.from("v2_providers")
 		.select("provider_slug,name,status,routable,routing_enabled,base_url,metadata,created_at,updated_at")
+		.contains("metadata", { self_serve: {} })
 		.order("created_at", { ascending: false }).limit(100);
 	if (result.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const selfServeProviders = (result.data ?? []).filter((provider: any) => provider.metadata?.self_serve);
+	const selfServeProviders = result.data ?? [];
 	const providerSlugs = selfServeProviders.map((provider: any) => provider.provider_slug);
 	const [candidateResult, submissionsResult] = await Promise.all([
 		providerSlugs.length ? client.from("provider_catalog_route_candidates").select("provider_slug,status").in("provider_slug", providerSlugs).in("status", ["probe_passed", "promoted"]) : Promise.resolve({ data: [], error: null }),
