@@ -815,15 +815,16 @@ jobs:
                     exit 1
                   fi
 
-            - name: Load global gateway secrets from Infisical
-              if: matrix.target == 'api'
+            - name: Load Doubleword provider key from Infisical
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us'
               uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /provider-keys
+                  secret-name: DOUBLEWORD_API_KEY
 
             - name: Deploy API app to Cloudflare
               if: matrix.target == 'api'
