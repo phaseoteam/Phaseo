@@ -54,7 +54,7 @@ async function readManagedCatalogBody(request: Request): Promise<unknown> {
 }
 
 async function workspaceIds(client: any, userId: string): Promise<string[]> {
-	const memberships = client.from("workspace_members").select("workspace_id,role").eq("user_id", userId);
+	const memberships = client.from("workspace_members").select("workspace_id,role").eq("user_id", userId).in("role", ["owner", "admin", "editor"]);
 	const [membershipResult, ownedResult] = await Promise.all([
 		memberships,
 		client.from("workspaces").select("id").eq("owner_user_id", userId),
@@ -257,12 +257,18 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			deprecated_at: model.deprecatedAt,
 			shutdown_at: model.shutdownAt,
 		}, model.capabilities, model.pricing)) };
-		const updated = await updateSource({ management_mode: "managed", managed_catalog: managedDocument, managed_updated_by: user.id, managed_updated_at: new Date().toISOString(), refresh_requested: true, etag: null, last_modified: null, last_error: null, updated_at: new Date().toISOString() });
+		const updated = await updateSource({ management_mode: "managed", managed_catalog: managedDocument, managed_updated_by: user.id, managed_updated_at: new Date().toISOString(), refresh_requested: true, next_poll_at: new Date().toISOString(), etag: null, last_modified: null, last_error: null, updated_at: new Date().toISOString() });
 		if (updated.error) throw updated.error;
 		if (!updated.data) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
-		await syncProviderCatalog(c.env, parsedSlug.data, "manual");
+		let syncWarning: string | null = null;
+		try {
+			await syncProviderCatalog(c.env, parsedSlug.data, "manual");
+		} catch (error) {
+			syncWarning = "Catalog saved. Synchronization will retry in the background.";
+			console.error("provider_catalog_sync_after_save_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
+		}
 		const catalog = await readProviderCatalog(client, parsedSlug.data);
-		return catalog ? c.json({ ok: true, ...catalog }, 200, PRIVATE_NO_STORE_HEADERS) : errorResponse(c, "provider_catalog_not_found", 404);
+		return catalog ? c.json({ ok: true, ...catalog, sync_warning: syncWarning }, 200, PRIVATE_NO_STORE_HEADERS) : errorResponse(c, "provider_catalog_not_found", 404);
 	} catch (error) {
 		console.error("provider_catalog_write_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
 		return errorResponse(c, "provider_catalog_update_failed", 503);

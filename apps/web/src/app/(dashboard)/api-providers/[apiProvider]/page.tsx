@@ -89,7 +89,7 @@ export default async function Page({
 		? {
 			api_provider_id: apiProvider,
 			api_provider_name: initialProviderPreviews[0].provider_name,
-			country_code: "xx",
+			country_code: "",
 			subdivision_code: null,
 		}
 		: null);

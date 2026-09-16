@@ -98,7 +98,7 @@ export function mergeProviderCatalogPreviews(
 			...existing,
 			description: existing.description ?? incoming.description,
 			gateway_status: existing.gateway_status === "active" ? "active" : incoming.gateway_status,
-			gateway_provider_count: new Set([...(existing.gateway_provider_names ?? []), ...(incoming.gateway_provider_names ?? [])]).size,
+			gateway_provider_count: providerDetails.length,
 			gateway_active_provider_count: existing.gateway_active_provider_count ?? 0,
 			gateway_endpoints: uniqueStrings([...(existing.gateway_endpoints ?? []), ...(incoming.gateway_endpoints ?? [])]),
 			gateway_input_modalities: uniqueStrings([...(existing.gateway_input_modalities ?? []), ...(incoming.gateway_input_modalities ?? [])]),
@@ -174,15 +174,16 @@ async function fetchModelsPageDataForVersion(
 	}
 	if (providerPreviews.length > 0) {
 		const existingModelIds = new Set(models.map((model) => model.model_id));
+		const uniquePreviewModels = mergeProviderCatalogPreviews([], providerPreviews);
 		const addFacet = (options: Array<{ value: string; count: number }>, value: string) => {
 			const existing = options.find((option) => option.value === value);
 			if (existing) existing.count += 1;
 			else options.push({ value, count: 1 });
 		};
-		for (const preview of providerPreviews) {
-			const mapped = mapProviderCatalogPreview(preview);
+		for (const mapped of uniquePreviewModels) {
 			if (!existingModelIds.has(mapped.model_id)) {
 				firstPage.facets.statusCounts[mapped.gateway_status === "inactive" ? "not_active" : "coming_soon"] += 1;
+				existingModelIds.add(mapped.model_id);
 			}
 			for (const endpoint of mapped.gateway_endpoints ?? []) addFacet(firstPage.facets.endpointOptions, endpoint);
 			for (const modality of mapped.gateway_input_modalities ?? []) addFacet(firstPage.facets.inputModalityOptions, modality);

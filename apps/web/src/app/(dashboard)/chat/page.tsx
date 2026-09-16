@@ -41,10 +41,10 @@ async function ChatPlaygroundContent({ searchParams }: ChatPageProps) {
 		fetchChatEffectivePolicy().catch(() => null),
 		fetchServerProviderCatalogPreviews(),
 	]);
-	const models = [
-		...applyChatEffectivePolicy(catalogue, effectivePolicy),
-		...providerCatalogPreviewsToGatewayModels(providerPreviews),
-	];
+	const catalogueIds = new Set(catalogue.map((model) => model.modelId));
+	const previewModels = providerCatalogPreviewsToGatewayModels(providerPreviews)
+		.filter((model) => !catalogueIds.has(model.modelId));
+	const models = applyChatEffectivePolicy([...catalogue, ...previewModels], effectivePolicy);
 	const resolvedParams = (await searchParams) ?? {};
 	const modelParamRaw = resolvedParams.model;
 	const promptParamRaw = resolvedParams.prompt;

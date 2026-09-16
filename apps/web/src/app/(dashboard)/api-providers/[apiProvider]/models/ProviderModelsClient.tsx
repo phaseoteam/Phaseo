@@ -329,7 +329,7 @@ export default function ProviderModelsClient({
 		setParamPickerValue("");
 	}
 
-	if (models.length === 0) {
+	if (displayModels.length === 0) {
 		return (
 			<Empty className="mt-4 rounded-xl border p-8">
 				<EmptyHeader>

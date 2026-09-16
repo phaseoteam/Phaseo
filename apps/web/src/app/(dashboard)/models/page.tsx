@@ -6,6 +6,7 @@ import { ModelsPageSkeleton } from "@/components/(data)/models/Models/ModelsPage
 import { resolveModelsCatalogueVersion } from "@/lib/models/catalogueVersion";
 import { buildMetadata } from "@/lib/seo";
 import { fetchServerProviderCatalogPreviews } from "@/lib/fetchers/internal/fetchServerProviderCatalogPreviews";
+import { createHash } from "node:crypto";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Models",
@@ -27,10 +28,14 @@ async function ModelsPageContent() {
 		resolveModelsCatalogueVersion(),
 		fetchServerProviderCatalogPreviews(),
 	]);
+	const previewCacheScope = initialProviderPreviews.length === 0
+		? "public"
+		: createHash("sha256").update(JSON.stringify(initialProviderPreviews.map((preview) => [preview.provider_slug, preview.model_id, preview.created_at]))).digest("hex").slice(0, 16);
 	return (
 		<ModelsPageClient
 			catalogueVersion={catalogueVersion}
 			initialProviderPreviews={initialProviderPreviews}
+			previewCacheScope={previewCacheScope}
 		/>
 	);
 }

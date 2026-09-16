@@ -96,7 +96,8 @@ function pickModels(models: GatewaySupportedModel[]) {
 }
 
 export default async function OnboardingPage() {
-	const account = await fetchInternalAuthHeaderData();
+	const account = await fetchInternalAuthHeaderData().catch(() => null);
+	if (!account) return <main className="container mx-auto max-w-xl px-4 py-16"><h1 className="text-xl font-semibold">Account setup is temporarily unavailable</h1><p className="mt-2 text-sm text-muted-foreground">We could not verify your account mode. Please try again before continuing.</p><Link className="mt-5 inline-flex text-sm font-medium underline underline-offset-4" href="/onboarding">Try again</Link></main>;
 	if (account.providerMode) redirect("/settings/account/providers");
 	const onboarding = await fetchOnboardingInitialData();
 	if (!onboarding.signedIn) {

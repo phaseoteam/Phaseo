@@ -7,6 +7,7 @@ const PRIVATE_TABLES = new Set(["v2_catalogue_source_overrides"]);
 const PRIVATE_KEYS = new Set([
 	"account_id",
 	"actor_user_id",
+	"authored_by",
 	"catalog_preview",
 	"catalog_url",
 	"created_by",

@@ -767,8 +767,9 @@ async function fetchTestingProviderSnapshots(args: {
     // release. The end of a route's effective window still applies so a
     // retired/shutdown route cannot be revived by testing mode.
     const inWindowRows = providerRows.filter((row: any) => {
-        const effectiveTo = toMillis(row?.effective_to);
-        return !Number.isFinite(effectiveTo) || effectiveTo > nowMs;
+		if (row?.effective_to == null) return true;
+		const effectiveTo = toMillis(row.effective_to);
+		return Number.isFinite(effectiveTo) && effectiveTo > nowMs;
     });
     if (!inWindowRows.length) return [];
 

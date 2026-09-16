@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { client } from "./database";
 import { buildEnumSnapshot } from "./enumSnapshot";
 import { filterPublicSnapshotRows } from "./exportSnapshotPrivacy";
-import { PUBLIC_CATALOG_TABLE_NAMES, PUBLIC_CATALOG_TABLES, type PublicCatalogTableName } from "./exportSnapshotTables";
+import { INTERNAL_CATALOG_FILTER_COLUMNS, PUBLIC_CATALOG_TABLE_COLUMNS, PUBLIC_CATALOG_TABLE_NAMES, PUBLIC_CATALOG_TABLES, type PublicCatalogTableName } from "./exportSnapshotTables";
 
 const PAGE_SIZE = 1_000;
 const OUTPUT_DIR = resolve(process.cwd(), "../../packages/data/catalog/generated/database-v2");
@@ -32,7 +32,8 @@ async function fetchTable(table: TableName): Promise<Record<string, unknown>[]> 
 	const supabase = client();
 	const rows: Record<string, unknown>[] = [];
 	for (let from = 0; ; from += PAGE_SIZE) {
-		let query: any = supabase.from(table).select("*");
+		const columns = [...PUBLIC_CATALOG_TABLE_COLUMNS[table], ...(INTERNAL_CATALOG_FILTER_COLUMNS[table] ?? [])];
+		let query: any = supabase.from(table).select([...new Set(columns)].join(","));
 		for (const column of PUBLIC_CATALOG_TABLES[table]) query = query.order(column, { ascending: true });
 		const result = await query.range(from, from + PAGE_SIZE - 1);
 		if (result.error) throw new Error(`Failed to export ${table}: ${result.error.message}`);

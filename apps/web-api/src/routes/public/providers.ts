@@ -323,7 +323,7 @@ function routeAvailability(
 	now: number,
 ): "active" | "coming_soon" | null {
 	if (!["active", "degraded"].includes(normalizedStatus(row.status))) return null;
-	if (normalizedStatus(row.access_scope || "public") !== "public") return null;
+	if (normalizedStatus(row.access_scope) !== "public") return null;
 
 	const effectiveFrom = Date.parse(String(row.effective_from ?? ""));
 	const effectiveTo = Date.parse(String(row.effective_to ?? ""));

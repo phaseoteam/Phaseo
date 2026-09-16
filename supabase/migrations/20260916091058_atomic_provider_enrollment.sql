@@ -82,6 +82,12 @@ begin
            managed_updated_by = null, managed_updated_at = null, etag = null,
            last_modified = null, next_poll_at = now(), updated_at = now()
      where provider_slug = p_provider_slug;
+	else
+		update public.provider_catalog_sources
+		   set catalog_url = null, management_mode = 'managed', managed_catalog = '{"data":[]}'::jsonb,
+		       managed_updated_by = p_user_id, managed_updated_at = now(), etag = null,
+		       last_modified = null, next_poll_at = null, refresh_requested = true, updated_at = now()
+		 where provider_slug = p_provider_slug;
   end if;
 
   insert into public.provider_onboarding_submissions (
@@ -96,6 +102,17 @@ begin
    where provider_slug = p_provider_slug and status in ('pending', 'active')
    order by case when status = 'active' then 0 else 1 end limit 1 for update;
   if found then
+	if not exists (
+		select 1 from public.workspaces workspace
+		 where workspace.id = v_link.workspace_id and workspace.owner_user_id = p_user_id
+		union all
+		select 1 from public.workspace_members membership
+		 where membership.workspace_id = v_link.workspace_id
+		   and membership.user_id = p_user_id
+		   and membership.role in ('owner', 'admin', 'editor')
+	) then
+		raise exception 'provider_already_linked';
+	end if;
     v_workspace_id := v_link.workspace_id;
     if v_link.status = 'pending' then
       update public.provider_account_links

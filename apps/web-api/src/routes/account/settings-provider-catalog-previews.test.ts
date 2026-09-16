@@ -59,7 +59,8 @@ describe("authenticated provider catalog previews", () => {
 		);
 
 		expect(response.status).toBe(200);
-		await expect(response.json()).resolves.toMatchObject({
+		const payload = await response.json();
+		expect(payload).toMatchObject({
 			isAdmin: true,
 			models: expect.arrayContaining([
 				expect.objectContaining({
@@ -76,7 +77,11 @@ describe("authenticated provider catalog previews", () => {
 					test_blocked_reason: "provider_endpoint_missing",
 				}),
 			]),
-	});
+		});
+		expect(payload.models).toEqual(expect.arrayContaining([
+			expect.objectContaining({ model_id: "synthetic/model-a" }),
+			expect.objectContaining({ model_id: "other/model-b", provider_name: "Other Provider" }),
+		]));
 	});
 
 	it("preserves the canonical match for an existing model offer", async () => {

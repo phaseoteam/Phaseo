@@ -25,7 +25,7 @@ publicOgRouter.get("/og", async (c) => {
 			const result = await client.from("v2_providers").select("provider_slug,name,status,routable,routing_enabled,metadata").eq("provider_slug", id).maybeSingle();
 			if (result.error) throw result.error;
 			const provider = result.data;
-			if (provider && !["disabled", "not_ready", "coming_soon", "draft", "pending"].includes(String(provider.status))
+			if (provider && ["active", "degraded"].includes(String(provider.status ?? "").trim().toLowerCase())
 				&& !(provider.metadata?.self_serve && (!provider.routable || !provider.routing_enabled))) {
 				payload = { id: provider.provider_slug, name: provider.name ?? provider.provider_slug, logoId: provider.provider_slug };
 			}

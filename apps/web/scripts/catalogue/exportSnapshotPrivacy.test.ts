@@ -105,6 +105,7 @@ test("excludes stealth models and linked rows regardless of table order", () => 
 test("does not publish private tables, onboarding identities, or unpublished self-serve providers", () => {
 	const snapshots = new Map<string, Record<string, unknown>[]>([
 		["v2_catalogue_source_overrides", [{ actor_user_id: "user-1", source_key: "private-price" }]],
+		["v2_labs", [{ lab_slug: "public-lab", metadata: { authored_by: "user-0", colour: "#fff" } }]],
 		["v2_providers", [
 			{ provider_slug: "submitted-provider", routable: false, routing_enabled: false, metadata: { self_serve: { last_submitted_by: "user-1" }, website_url: "https://provider.example" } },
 			{ provider_slug: "partially-published-provider", routable: true, routing_enabled: false, metadata: { self_serve: { last_submitted_by: "user-3" } } },

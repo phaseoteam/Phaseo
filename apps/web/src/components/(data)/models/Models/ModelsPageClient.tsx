@@ -19,11 +19,13 @@ const ModelsDisplay = dynamic(() => import("./ModelsDisplay"), {
 type ModelsPageClientProps = {
 	catalogueVersion?: "v1" | "v2";
 	initialProviderPreviews?: AuthenticatedProviderCatalogPreview[];
+	previewCacheScope?: string;
 };
 
 export default function ModelsPageClient({
 	catalogueVersion = "v1",
 	initialProviderPreviews,
+	previewCacheScope = "public",
 }: ModelsPageClientProps) {
 	const swrKey =
 		catalogueVersion === "v2" ? publicSWRKeys.modelsV2 : publicSWRKeys.models;
@@ -31,7 +33,7 @@ export default function ModelsPageClient({
 		catalogueVersion === "v2"
 			? fetchModelsPageDataV2(path, initialProviderPreviews)
 			: fetchModelsPageData(path, initialProviderPreviews);
-	const { data, error, mutate } = useSWR(swrKey, fetcher, {
+	const { data, error, mutate } = useSWR([swrKey, previewCacheScope], () => fetcher(swrKey), {
 		// The resume listener covers focus, restored tabs, and reconnects.
 		revalidateOnFocus: false,
 		revalidateOnReconnect: false,

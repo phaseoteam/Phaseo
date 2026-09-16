@@ -216,7 +216,7 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 export async function runProviderCatalogPollingJob(env: Env, limit = 20): Promise<{ attempted: number; applied: number; failed: number }> {
 	const client = getDataClient(env);
 	const now = new Date().toISOString();
-	const sources = await client.from("provider_catalog_sources").select("provider_slug").eq("status", "active").lte("next_poll_at", now).or("management_mode.eq.remote,refresh_requested.eq.true").order("next_poll_at", { ascending: true }).limit(limit);
+	const sources = await client.from("provider_catalog_sources").select("provider_slug").eq("status", "active").or(`next_poll_at.lte.${now},and(refresh_requested.eq.true,next_poll_at.is.null)`).or("management_mode.eq.remote,refresh_requested.eq.true").order("next_poll_at", { ascending: true, nullsFirst: true }).limit(limit);
 	if (sources.error) throw sources.error;
 	let applied = 0;
 	let failed = 0;

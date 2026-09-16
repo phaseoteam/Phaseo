@@ -39,6 +39,7 @@ function mergePreviewOffers(
 	for (const preview of previews) {
 		const providerId = preview.provider_slug.trim();
 		if (!providerId) continue;
+		const isRetired = ["deprecated", "retired", "removed", "shutdown"].includes(String(preview.availability_reason ?? "").trim().toLowerCase());
 		const providerModel: ProviderPricing["provider_models"][number] = {
 			id: `provider-preview:${providerId}:${preview.provider_model_slug}`,
 			api_provider_id: providerId,
@@ -47,12 +48,11 @@ function mergePreviewOffers(
 			endpoint: preview.endpoints?.[0] || "unmapped",
 			is_active_gateway: false,
 			is_unreleased: true,
-			provider_availability_status:
-				preview.availability_status === "not_active" ? "deprecated" : "coming_soon",
-			phaseo_status: preview.availability_status === "not_active" ? "disabled" : "planned",
+			provider_availability_status: isRetired ? "deprecated" : "coming_soon",
+			phaseo_status: isRetired ? "disabled" : "planned",
 			access_scope: "internal",
 			routing_status: "preview",
-			capability_status: preview.availability_status === "not_active" ? "disabled" : "planned",
+			capability_status: isRetired ? "disabled" : "planned",
 			input_modalities: (preview.input_modalities ?? []).join(","),
 			output_modalities: (preview.output_modalities ?? []).join(","),
 			context_length: preview.context_length ?? null,

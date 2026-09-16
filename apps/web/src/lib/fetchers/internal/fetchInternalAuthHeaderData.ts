@@ -9,15 +9,21 @@ export async function fetchInternalAuthHeaderData(): Promise<InternalAuthHeaderD
 	const activeWorkspaceId = String(
 		cookieStore.get("activeWorkspaceId")?.value ?? "",
 	).trim();
-	return fetchAccountWebApi<InternalAuthHeaderData>(
-		"/api/account/auth/header",
-		data.session?.access_token,
-		activeWorkspaceId
-			? {
-				headers: {
-					Cookie: `activeWorkspaceId=${encodeURIComponent(activeWorkspaceId)}`,
-				},
-			}
-			: undefined,
-	);
+	const options = activeWorkspaceId
+		? { headers: { Cookie: `activeWorkspaceId=${encodeURIComponent(activeWorkspaceId)}` } }
+		: undefined;
+	let lastError: unknown;
+	for (let attempt = 0; attempt < 2; attempt += 1) {
+		try {
+			return await fetchAccountWebApi<InternalAuthHeaderData>(
+				"/api/account/auth/header",
+				data.session?.access_token,
+				options,
+			);
+		} catch (error) {
+			lastError = error;
+			if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 100));
+		}
+	}
+	throw lastError;
 }

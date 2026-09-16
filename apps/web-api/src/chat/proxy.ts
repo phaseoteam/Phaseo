@@ -243,9 +243,27 @@ async function hasPreviewInferenceAccess(
 	const internalToken = String(env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 	const client = getDataClient(env);
 	const candidates = new Set(previewModelCandidates(target.modelSlug));
+	const latestRun = await client
+		.from("provider_catalog_sync_runs")
+		.select("id")
+		.eq("provider_slug", target.providerSlug)
+		.eq("status", "applied")
+		.order("created_at", { ascending: false })
+		.limit(1)
+		.maybeSingle();
+	if (latestRun.error) {
+		return {
+			ok: false,
+			status: 503,
+			code: "preview_testing_unavailable",
+			message: "Unable to verify access to this internal model.",
+		};
+	}
+	if (!latestRun.data?.id) return { ok: true, preview: false };
 	const previews = await client
 		.from("provider_catalog_sync_models")
 		.select("provider_slug,model_slug,canonical_model_slug,provider_model_slug,availability,decision,route_projection_status")
+		.eq("run_id", latestRun.data.id)
 		.eq("provider_slug", target.providerSlug)
 		.in("model_slug", [...candidates])
 		.limit(50);

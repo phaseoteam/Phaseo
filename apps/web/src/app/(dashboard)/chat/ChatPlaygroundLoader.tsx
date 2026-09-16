@@ -27,10 +27,10 @@ export default async function ChatPlaygroundLoader({
 		fetchChatEffectivePolicy().catch(() => null),
 		fetchServerProviderCatalogPreviews(),
 	]);
-	const models = [
-		...applyChatEffectivePolicy(catalogue, effectivePolicy),
-		...providerCatalogPreviewsToGatewayModels(providerPreviews),
-	];
+	const catalogueIds = new Set(catalogue.map((model) => model.modelId));
+	const previewModels = providerCatalogPreviewsToGatewayModels(providerPreviews)
+		.filter((model) => !catalogueIds.has(model.modelId));
+	const models = applyChatEffectivePolicy([...catalogue, ...previewModels], effectivePolicy);
 	const trimmedModelParam = decodeQueryValue((modelParam ?? "").trim());
 	const modelIdSet = new Set(models.map((m) => m.modelId));
 	let resolvedModelParam: string | null = trimmedModelParam || null;
