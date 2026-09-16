@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatArtificialAnalysisScore, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
 import {
 	formatBenchmarkScore,
 	normalizeBenchmarkScoreValue,
@@ -59,6 +60,8 @@ export default function ModelsUsingBenchmarkClient({
 	const [limit, setLimit] = React.useState(25);
 	const filteredModels = models.filter((model) => `${model.name} ${model.organisation?.display_name ?? ""}`.toLowerCase().includes(search.toLowerCase()));
 	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmarkId);
+	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmarkId);
+	const rankedLeaderboard = artificialAnalysis || epochCapabilitiesIndex;
 	const allArtificialAnalysisRows = models.flatMap((model) => (model.benchmark_results || []).map((result: any) => ({ model, result })));
 	const configurations = [...new Set(allArtificialAnalysisRows.map(({ result }) => configurationLabel(result)))].sort();
 	const artificialAnalysisRows = allArtificialAnalysisRows.filter(({ result }) => configuration === "all" || configurationLabel(result) === configuration).sort((left, right) => {
@@ -134,7 +137,7 @@ export default function ModelsUsingBenchmarkClient({
 					<Input aria-label="Search Benchmark Results" placeholder="Search Models" value={search} onChange={(event) => { setSearch(event.target.value); setLimit(25); }} className="sm:w-64" />
 				</div>
 			</div>
-			{visibleArtificialAnalysisRows.length > 0 && artificialAnalysis ? (
+			{visibleArtificialAnalysisRows.length > 0 && rankedLeaderboard ? (
 				<div className="overflow-hidden rounded-xl border">
 					<div className="overflow-x-auto">
 						<table className="min-w-[580px] w-full text-sm">
@@ -155,9 +158,9 @@ export default function ModelsUsingBenchmarkClient({
 											<td className="px-4 py-3 font-medium tabular-nums text-muted-foreground">{rank}</td>
 											<td className="px-3 py-3"><div className="flex items-center gap-3">
 												<span className="relative size-7 shrink-0 overflow-hidden rounded-md bg-muted"><Logo id={model.organisation?.organisation_id ?? model.id} alt="" fill className="object-contain p-1" /></span>
-												<div className="min-w-0"><Link href={`/models/${model.id}`} className="block truncate font-medium hover:underline">{model.name} <span className="text-muted-foreground">({configuration})</span></Link><span className="block truncate text-xs text-muted-foreground">{organisationLabel}</span></div>
+												<div className="min-w-0"><Link href={`/models/${model.id}`} className="block truncate font-medium hover:underline">{model.name}{artificialAnalysis ? <span className="text-muted-foreground"> ({configuration})</span> : null}</Link><span className="block truncate text-xs text-muted-foreground">{organisationLabel}</span></div>
 											</div></td>
-											<td className="px-3 py-3 text-right font-semibold tabular-nums">{formatScoreDisplay(result)}</td>
+											<td className="px-3 py-3 text-right font-semibold tabular-nums">{formatScoreDisplay(result)}{epochCapabilitiesIndex && typeof result.other_info === "string" && result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i) ? <span className="block whitespace-nowrap text-[10px] font-normal text-muted-foreground">95% CI {result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i)?.[1]}–{result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i)?.[2]}</span> : null}</td>
 											<td className="px-3 py-3 text-muted-foreground">{formatReportedDate(model.reported_date)}</td>
 											<td className="px-3 py-3 text-right">{result.source_link ? <Button asChild variant="ghost" size="icon-sm"><a href={result.source_link} target="_blank" rel="noreferrer" aria-label={`Open source for ${model.name} ${configuration}`}><ExternalLink /></a></Button> : null}</td>
 										</tr>
@@ -440,7 +443,7 @@ export default function ModelsUsingBenchmarkClient({
 					{search ? "No models match your search." : "No results available for this benchmark yet."}
 				</p>
 			)}
-			{(artificialAnalysis ? visibleArtificialAnalysisRows.length : filteredModels.length) > limit ? <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + 25)}>Show more results ({limit} of {artificialAnalysis ? visibleArtificialAnalysisRows.length : filteredModels.length})</Button> : null}
+			{(rankedLeaderboard ? visibleArtificialAnalysisRows.length : filteredModels.length) > limit ? <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + 25)}>Show more results ({limit} of {rankedLeaderboard ? visibleArtificialAnalysisRows.length : filteredModels.length})</Button> : null}
 		</div>
 	);
 }

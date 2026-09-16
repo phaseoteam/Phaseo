@@ -29,10 +29,10 @@ describe("Artificial Analysis metric charts", () => {
 		expect(html).toContain('data-testid="coding-chart"');
 		expect(html).toContain('data-testid="agentic-chart"');
 		expect(html).toContain('data-testid="cost-chart"');
-		expect(html).toContain("Show top 14");
+		expect(html).toContain("Show all models");
 		expect(html).toContain("bg-black text-white");
 		expect(html).toContain("background-color:#736cd3");
-		expect(html.indexOf('title="Claude Fable 5.1')).toBeLessThan(html.indexOf('title="GPT-6 Astra'));
+		expect(html.indexOf('aria-label="Claude Fable 5.1')).toBeLessThan(html.indexOf('aria-label="GPT-6 Astra'));
 	});
 
 	it("uses a dark score label for light organisation colours", () => {
