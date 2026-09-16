@@ -46,9 +46,9 @@ export function EpochCapabilitiesIndex({ highlights, ranking, modelId, initialEx
 		<button type="button" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)} className="group mt-4 flex w-full items-center justify-between gap-6 border-y py-5 text-left">
 			<div>
 				<p className="text-sm font-medium">Epoch Capabilities Index</p>
-				<div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-					<p className="text-3xl font-semibold tracking-tight tabular-nums">{result.score.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-					{interval ? <span className="inline-flex rounded-md border bg-muted/40 px-2.5 py-1.5 text-sm font-medium tabular-nums">95% CI {interval.low.toFixed(2)}–{interval.high.toFixed(2)}</span> : null}
+				<div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-2">
+					<p className="text-xl font-semibold tracking-tight tabular-nums sm:text-2xl">{result.score.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+					{interval ? <span className="inline-flex items-baseline gap-2 border-l pl-4 tabular-nums"><span className="text-xs text-muted-foreground">95% CI</span><span className="text-sm font-medium">{interval.low.toFixed(2)}–{interval.high.toFixed(2)}</span></span> : null}
 				</div>
 				{result.rank ? <p className="mt-1 text-xs font-medium text-muted-foreground">Ranked #{result.rank}{result.totalModels ? ` of ${result.totalModels}` : ""}</p> : null}
 			</div>

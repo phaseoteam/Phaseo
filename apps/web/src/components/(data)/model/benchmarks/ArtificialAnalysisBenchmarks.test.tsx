@@ -54,14 +54,17 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(html).toContain("Other Benchmarks");
 		expect(html).toContain("Benchmark table");
 	});
-	it("features Epoch as its own key benchmark instead of hiding it under other benchmarks", () => {
+	it("features Epoch beneath Artificial Analysis instead of hiding it under other benchmarks", () => {
 		const html = renderToStaticMarkup(<ModelBenchmarks highlightCards={[
 			{ ...highlight("epoch-capabilities-index", 159.12), benchmarkName: "Epoch Capabilities Index", rank: 8, totalModels: 266, sourceLink: "https://epoch.ai/eci" },
+			highlight("aa-intelligence-index-v4", 42),
 			highlight("mmlu", 89),
 		]} />);
+		expect(html.indexOf("Artificial Analysis")).toBeLessThan(html.indexOf("Epoch AI"));
 		expect(html.indexOf("Epoch AI")).toBeLessThan(html.indexOf("Other Benchmarks"));
 		expect(html).toContain("Ranked #8 of 266");
 		expect(html).toContain("159.12");
+		expect(html).toContain("text-xl font-semibold tracking-tight tabular-nums sm:text-2xl");
 		expect(html.match(/Epoch Capabilities Index/g)).toHaveLength(2);
 	});
 	it("expands Epoch into an inline leaderboard with published confidence intervals", () => {
@@ -71,7 +74,10 @@ describe("Artificial Analysis benchmark panel", () => {
 			entries: [{ model_id: "openai/gpt-5.5", model_name: "GPT-5.5", organisation_id: "openai", organisation_name: "OpenAI", score: 159.12, rank: 8, other_info: epoch.otherInfo }],
 		}} />);
 		expect(html).toContain("ECI leaderboard");
-		expect(html).toContain("95% CI 156.91–161.95");
+		expect(html).toContain("95% CI");
+		expect(html).toContain("156.91–161.95");
+		expect(html).toContain("inline-flex items-baseline gap-2 border-l pl-4 tabular-nums");
+		expect(html).not.toContain("rounded-md border bg-muted/40");
 		expect(html).toContain("View Full Leaderboard");
 		expect(html).toContain("/benchmarks/epoch-capabilities-index");
 	});
