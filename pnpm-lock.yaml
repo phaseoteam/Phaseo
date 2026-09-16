@@ -1181,8 +1181,8 @@ importers:
   packages/openapi/oapi-core:
     dependencies:
       '@apidevtools/swagger-parser':
-        specifier: ^12.1.0
-        version: 12.1.0(openapi-types@12.1.3)
+        specifier: ^13.0.0
+        version: 13.0.0(openapi-types@12.1.3)
       openapi-types:
         specifier: ^12.1.3
         version: 12.1.3
@@ -1336,9 +1336,11 @@ packages:
       zod:
         optional: true
 
-  '@apidevtools/json-schema-ref-parser@14.0.1':
-    resolution: {integrity: sha512-Oc96zvmxx1fqoSEdUmfmvvb59/KDOnUoJ7s2t7bISyAn0XEz57LCCw8k2Y4Pf3mwKaZLMciESALORLgfe2frCw==}
-    engines: {node: '>= 16'}
+  '@apidevtools/json-schema-ref-parser@15.3.6':
+    resolution: {integrity: sha512-oPFDSviRrreUmCZn09LCD4S9QQa6j7zfEwBM1pkGa/kXY0O4sXsEXn4emLP/Tt6tik2+BtgwKk2eldAeOWZ2Rw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@types/json-schema': ^7.0.15
 
   '@apidevtools/openapi-schemas@2.1.0':
     resolution: {integrity: sha512-Zc1AlqrJlX3SlpupFGpiLi2EbteyP7fXmUOGup6/DnkRgjP9bgMM/ag+n91rsv0U1Gpz0H3VILA/o3bW7Ua6BQ==}
@@ -1347,8 +1349,9 @@ packages:
   '@apidevtools/swagger-methods@3.0.2':
     resolution: {integrity: sha512-QAkD5kK2b1WfjDS/UQn/qQkbwF31uqRjPTrsCs5ZG9BQGAkjwvqGFjjPqAuzac/IYzpPtRzjCP1WrTuAIjMrXg==}
 
-  '@apidevtools/swagger-parser@12.1.0':
-    resolution: {integrity: sha512-e5mJoswsnAX0jG+J09xHFYQXb/bUc5S3pLpMxUuRUA2H8T2kni3yEoyz2R3Dltw5f4A6j6rPNMpWTK+iVDFlng==}
+  '@apidevtools/swagger-parser@13.0.0':
+    resolution: {integrity: sha512-TcvnmBzJD7DBREkc/2qaxMqbKpttOaHhOFsYRYKdYAv6HGY+iNlWY2IUA209C2/NmvL9z8RBZhkrESqvGkjqmw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       openapi-types: '>=7'
 
@@ -11203,6 +11206,10 @@ packages:
     resolution: {integrity: sha512-1td788aAnnZ5qs7V2QIRl1owjtYpbKt749Y3xauqQgwIIGF/xXWz1wMTEBx5O3LK3lXLVuqXPdPxj2BoFHaW9Q==}
     hasBin: true
 
+  js-yaml@4.3.2:
+    resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
+    hasBin: true
+
   jsc-safe-url@0.2.4:
     resolution: {integrity: sha512-0wM3YBWtYePOjfyXQH5MWQ8H7sdk5EXSwZvmSLKk2RboVQ2Bu239jycHDz5J/8Blf3K0Qnoy2b6xD+z10MFB+Q==}
 
@@ -15742,20 +15749,21 @@ snapshots:
     optionalDependencies:
       zod: 4.4.3
 
-  '@apidevtools/json-schema-ref-parser@14.0.1':
+  '@apidevtools/json-schema-ref-parser@15.3.6(@types/json-schema@7.0.15)':
     dependencies:
       '@types/json-schema': 7.0.15
-      js-yaml: 4.3.0
+      js-yaml: 4.3.2
 
   '@apidevtools/openapi-schemas@2.1.0': {}
 
   '@apidevtools/swagger-methods@3.0.2': {}
 
-  '@apidevtools/swagger-parser@12.1.0(openapi-types@12.1.3)':
+  '@apidevtools/swagger-parser@13.0.0(openapi-types@12.1.3)':
     dependencies:
-      '@apidevtools/json-schema-ref-parser': 14.0.1
+      '@apidevtools/json-schema-ref-parser': 15.3.6(@types/json-schema@7.0.15)
       '@apidevtools/openapi-schemas': 2.1.0
       '@apidevtools/swagger-methods': 3.0.2
+      '@types/json-schema': 7.0.15
       ajv: 8.20.0
       ajv-draft-04: 1.0.0(ajv@8.20.0)
       call-me-maybe: 1.0.2
@@ -15791,7 +15799,7 @@ snapshots:
       ajv-errors: 3.0.0(ajv@8.20.0)
       ajv-formats: 2.1.1(ajv@8.20.0)
       avsc: 5.7.9
-      js-yaml: 4.3.0
+      js-yaml: 4.3.2
       jsonpath-plus: 10.4.0
       node-fetch: 2.6.7(encoding@0.1.13)
     transitivePeerDependencies:
@@ -17888,7 +17896,7 @@ snapshots:
     dependencies:
       '@babel/code-frame': 7.29.7
       chalk: 4.1.2
-      js-yaml: 4.3.0
+      js-yaml: 4.3.2
 
   '@flags-sdk/statsig@0.2.5(@opentelemetry/api@1.9.1)(encoding@0.1.13)(next@16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(@types/node@26.2.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))':
     dependencies:
@@ -18746,7 +18754,7 @@ snapshots:
       camelcase: 5.3.1
       find-up: 4.1.0
       get-package-type: 0.1.0
-      js-yaml: 4.3.0
+      js-yaml: 4.3.2
       resolve-from: 5.0.0
 
   '@istanbuljs/schema@0.1.6': {}
@@ -19464,7 +19472,7 @@ snapshots:
       hast-util-to-text: 4.0.2
       hex-rgb: 5.0.0
       ignore: 7.0.5
-      js-yaml: 4.3.0
+      js-yaml: 4.3.2
       lodash: 4.18.1
       mdast-util-from-markdown: 2.0.2
       mdast-util-gfm: 3.0.0
@@ -19587,7 +19595,7 @@ snapshots:
       favicons: 7.2.0
       front-matter: 4.0.2
       fs-extra: 11.1.0
-      js-yaml: 4.3.0
+      js-yaml: 4.3.2
       openapi-types: 12.1.3
       sharp: 0.33.5
       sharp-ico: 0.1.5(@types/node@26.2.0)
@@ -19626,7 +19634,7 @@ snapshots:
       ink: 6.3.0(@types/react@19.2.18)(react@19.2.3)
       ink-spinner: 5.0.0(ink@6.3.0(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
       is-online: 10.0.0
-      js-yaml: 4.3.0
+      js-yaml: 4.3.2
       openapi-types: 12.1.3
       react: 19.2.3
       socket.io: 4.8.0
@@ -19656,7 +19664,7 @@ snapshots:
       '@mintlify/openapi-parser': 0.0.8
       fs-extra: 11.1.1
       hast-util-to-mdast: 10.1.0
-      js-yaml: 4.3.0
+      js-yaml: 4.3.2
       mdast-util-mdx-jsx: 3.1.3
       neotraverse: 0.6.18
       puppeteer: 22.14.0(typescript@6.0.3)
@@ -19690,7 +19698,7 @@ snapshots:
       '@mintlify/mdx': 3.0.4(@radix-ui/react-popover@1.1.19(@types/react-dom@19.2.3(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.3))(react@19.2.3))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
       '@mintlify/models': 0.0.313
       arktype: 2.1.27
-      js-yaml: 4.3.0
+      js-yaml: 4.3.2
       lcm: 0.0.3
       lodash: 4.18.1
       neotraverse: 0.6.18
@@ -29011,6 +29019,10 @@ snapshots:
       esprima: 4.0.1
 
   js-yaml@4.3.0:
+    dependencies:
+      argparse: 2.0.1
+
+  js-yaml@4.3.2:
     dependencies:
       argparse: 2.0.1
 
