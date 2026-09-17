@@ -40,10 +40,11 @@ internalModelDiscoveryReviewRouter.get("/model-discovery/reviews", async (c) => 
 	let query = getDataClient(c.env)
 		.from("model_discovery_review_items")
 		.select("id,dedupe_key,run_id,source,provider_id,provider_name,model_id,change_type,details,status,first_detected_at,last_detected_at,reviewed_by,reviewed_at,review_note,created_at")
-		.order("status", { ascending: true })
 		.order("last_detected_at", { ascending: false })
 		.limit(200);
-	if (status) query = query.eq("status", status);
+	query = status
+		? query.eq("status", status)
+		: query.in("status", ["pending", "in_progress"]);
 
 	const result = await query;
 	if (result.error) {
@@ -69,37 +70,17 @@ internalModelDiscoveryReviewRouter.patch("/model-discovery/reviews/:itemId", asy
 
 	const client = getDataClient(c.env);
 	const itemId = c.req.param("itemId");
-	const existing = await client
-		.from("model_discovery_review_items")
-		.select("id")
-		.eq("id", itemId)
-		.maybeSingle();
-	if (existing.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	if (!existing.data) return c.json({ error: "review_item_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-
 	const now = new Date().toISOString();
-	const updated = await client
-		.from("model_discovery_review_items")
-		.update({
-			status: parsed.data.decision,
-			reviewed_by: user.id,
-			reviewed_at: now,
-			review_note: parsed.data.decision === "approved" || parsed.data.decision === "in_progress"
-				? null
-				: parsed.data.reason,
-		})
-		.eq("id", itemId)
-		.select("id,dedupe_key,run_id,source,provider_id,provider_name,model_id,change_type,details,status,first_detected_at,last_detected_at,reviewed_by,reviewed_at,review_note,created_at")
-		.single();
-	if (updated.error) return c.json({ error: "review_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-
-	const event = await client.from("model_discovery_review_events").insert({
-		item_id: itemId,
-		decision: parsed.data.decision,
-		reason: parsed.data.reason ?? null,
-		actor_user_id: user.id,
+	const result = await client.rpc("record_model_discovery_review_decision", {
+		p_item_id: itemId,
+		p_decision: parsed.data.decision,
+		p_reason: parsed.data.reason ?? null,
+		p_actor_user_id: user.id,
+		p_reviewed_at: now,
 	});
-	if (event.error) return c.json({ error: "review_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (result.error) return c.json({ error: "review_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const item = Array.isArray(result.data) ? result.data[0] : result.data;
+	if (!item) return c.json({ error: "review_item_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 
-	return c.json({ ok: true, item: updated.data }, 200, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true, item }, 200, PRIVATE_NO_STORE_HEADERS);
 });

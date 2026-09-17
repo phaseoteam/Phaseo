@@ -1772,7 +1772,7 @@ export async function sendDiscordNotification(args: {
 	if (failures.length > 0) {
 		const error = failures.join("; ");
 		console.warn("[model-discovery] Partial notification delivery (" + deliveredChannels.join(", ") + "): " + error);
-		return { delivered: true, skipped: false, reason: "partial notification delivery", error };
+		return { delivered: false, skipped: false, reason: "partial notification delivery", error };
 	}
 	return { delivered: true, skipped: false };
 }

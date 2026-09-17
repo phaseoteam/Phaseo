@@ -840,11 +840,14 @@ export async function fetchFrontendPublicProfile(
 export async function fetchFrontendOgPayload(
 	kind: OgEntity,
 	segments: string[],
+	options: { allowDiscoveryFallback?: boolean } = {},
 ): Promise<OgPayload | null> {
 	const id = kind === "models" ? segments.join("/") : segments[0];
 	if (!id) return null;
+	const params = new URLSearchParams({ kind, id });
+	if (options.allowDiscoveryFallback) params.set("discovery", "1");
 	const response = await fetchOptionalPublicWebApi<{ payload: OgPayload }>(
-		`/api/_web/og?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(id)}`,
+		`/api/_web/og?${params.toString()}`,
 	);
 	if (!response?.payload || kind !== "models") return response?.payload ?? null;
 	const [model, pricing] = await Promise.all([

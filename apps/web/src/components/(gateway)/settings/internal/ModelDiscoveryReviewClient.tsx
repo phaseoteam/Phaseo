@@ -83,7 +83,7 @@ export default function ModelDiscoveryReviewClient({ initialItems }: Props) {
 
 						{pending ? (
 							<div className="mt-4 flex flex-col gap-3 border-t border-border/60 pt-4">
-								<Input value={reasons[item.id] ?? ""} onChange={(event) => setReasons((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="Reason for rejection or snooze (required for those actions)" className="max-w-xl text-xs" />
+								<Input aria-label={`Review reason for ${item.model_id}`} value={reasons[item.id] ?? ""} onChange={(event) => setReasons((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="Reason for rejection or snooze (required for those actions)" className="max-w-xl text-xs" />
 								<div className="flex flex-wrap gap-2">
 									<Button size="sm" onClick={() => void decide(item, "approved")} disabled={saving === item.id}><Check className="mr-1.5 size-3.5" /> Acknowledge</Button>
 									<Button size="sm" variant="outline" onClick={() => void decide(item, "in_progress")} disabled={saving === item.id}>Mark in progress</Button>

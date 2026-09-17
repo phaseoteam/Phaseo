@@ -645,7 +645,7 @@ async function upsertModelDiscoveryReviewItems(
 	const detectedAt = new Date().toISOString();
 	const rows = changes.flatMap((change) => [
 		...change.added.map((modelId) => ({
-			dedupe_key: `${change.providerId}:added:${modelId}`.toLowerCase(),
+			dedupe_key: JSON.stringify([change.providerId, "added", modelId]),
 			run_id: runId,
 			source,
 			provider_id: change.providerId,
@@ -660,7 +660,7 @@ async function upsertModelDiscoveryReviewItems(
 			last_detected_at: detectedAt,
 		})),
 		...change.removed.map((modelId) => ({
-			dedupe_key: `${change.providerId}:removed:${modelId}`.toLowerCase(),
+			dedupe_key: JSON.stringify([change.providerId, "removed", modelId]),
 			run_id: runId,
 			source,
 			provider_id: change.providerId,
@@ -679,9 +679,9 @@ async function upsertModelDiscoveryReviewItems(
 
 	const supabase = getSupabaseAdmin();
 	for (let index = 0; index < rows.length; index += UPSERT_BATCH_SIZE) {
-		const { error } = await supabase
-			.from("model_discovery_review_items")
-			.upsert(rows.slice(index, index + UPSERT_BATCH_SIZE), { onConflict: "dedupe_key" });
+		const { error } = await supabase.rpc("upsert_model_discovery_review_items", {
+			p_rows: rows.slice(index, index + UPSERT_BATCH_SIZE),
+		});
 		if (error) throw new Error(error.message || "Failed to persist model discovery review items");
 	}
 	return rows.length;

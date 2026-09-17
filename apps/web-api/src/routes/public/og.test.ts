@@ -16,6 +16,36 @@ describe("public OG payload", () => {
 		expect(response.headers.get("cache-tag")).toBe("web-api-og");
 		await expect(response.json()).resolves.toEqual({ payload: { id: "openai/gpt-test", name: "GPT Test", logoId: "openai", badge: "Available" } });
 	});
+
+	it("allows discovery OG fallbacks only for queued model additions", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("model_discovery_review_items")) {
+				return new Response(JSON.stringify([{ model_id: "gpt-new", provider_id: "openai" }]), { status: 200 });
+			}
+			return new Response("[]", { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/_web/og?kind=models&id=openai%2Fgpt-new&discovery=1", {}, env);
+
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toEqual({
+			payload: {
+				id: "openai/gpt-new",
+				name: "Gpt New",
+				subtitle: "Detected by Phaseo model discovery",
+				logoId: "openai",
+			},
+		});
+	});
+
+	it("does not render arbitrary discovery OG fallbacks", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response("[]", { status: 200 })));
+
+		const response = await app.request("https://phaseo.app/api/_web/og?kind=models&id=openai%2Fnot-queued&discovery=1", {}, env);
+
+		expect(response.status).toBe(404);
+	});
 });
 
 it("does not publish staged provider identities in social metadata", async () => {

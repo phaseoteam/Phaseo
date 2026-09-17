@@ -51,7 +51,11 @@ type StateRow = {
 	attempt_count: number;
 };
 
-function buildClient(models: ModelRow[], stateRows: StateRow[]) {
+function buildClient(
+	models: ModelRow[],
+	stateRows: StateRow[],
+	claimedRows: StateRow[] = [],
+) {
 	const upserts: Array<{ table: string; rows: unknown[] }> = [];
 	const updates: Array<{ table: string; values: unknown }> = [];
 	const client = {
@@ -71,10 +75,11 @@ function buildClient(models: ModelRow[], stateRows: StateRow[]) {
 				updates.push({ table, values });
 				return query;
 			});
-			query.in = vi.fn(async () => ({ error: null }));
+			query.in = vi.fn(() => query);
 			query.eq = vi.fn(async () => ({ error: null }));
 			return query;
 		}),
+		rpc: vi.fn(async () => ({ data: claimedRows, error: null })),
 	};
 	return { client, upserts, updates };
 }
@@ -127,6 +132,10 @@ describe("runPublicModelAnnouncementCheck", () => {
 				{ model_slug: "anthropic/claude-pending", status: "pending", attempt_count: 2 },
 				{ model_slug: "openai/gpt-old", status: "announced", attempt_count: 0 },
 			],
+			[
+				{ model_slug: "openai/gpt-new", status: "pending", attempt_count: 0 },
+				{ model_slug: "anthropic/claude-pending", status: "pending", attempt_count: 2 },
+			],
 		);
 		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
 		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
@@ -144,15 +153,41 @@ describe("runPublicModelAnnouncementCheck", () => {
 			expect.objectContaining({ model_slug: "openai/gpt-new", status: "pending" }),
 		]);
 		expect(supabase.updates.map((entry) => entry.values)).toEqual([
-			{ last_run_id: "run-2", updated_at: expect.any(String) },
 			{
 				status: "announced",
 				last_run_id: "run-2",
 				announced_at: expect.any(String),
 				last_attempt_at: expect.any(String),
 				last_error: null,
+				claim_run_id: null,
+				claim_expires_at: null,
 				updated_at: expect.any(String),
 			},
+		]);
+	});
+
+	it("promotes a baseline model when it becomes public", async () => {
+		const supabase = buildClient(
+			[
+				{ model_slug: "openai/gpt-promoted", name: "GPT Promoted", lab_slug: "openai", hidden: false, status: "active" },
+			],
+			[
+				{ model_slug: "openai/gpt-promoted", status: "baseline", attempt_count: 0 },
+			],
+			[
+				{ model_slug: "openai/gpt-promoted", status: "pending", attempt_count: 0 },
+			],
+		);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+
+		const summary = await runPublicModelAnnouncementCheck({ runId: "run-3", notify: true });
+
+		expect(summary).toMatchObject({ detected: 1, notified: 1, pending: 0, error: null });
+		expect(supabase.upserts).toHaveLength(0);
+		expect(supabase.updates.map((entry) => entry.values)).toEqual([
+			expect.objectContaining({ status: "pending", last_run_id: "run-3" }),
+			expect.objectContaining({ status: "announced", claim_run_id: null }),
 		]);
 	});
 });

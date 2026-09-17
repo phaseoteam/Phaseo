@@ -483,9 +483,9 @@ async function insertRunStart(
 ): Promise<void> {
     const { error } = await client.from("model_discovery_runs").insert({
         id: runId,
-        trigger: "scheduled",
+        trigger: "manual",
         source: "manual:provider-api",
-        scheduled_at: startedAtIso,
+        scheduled_at: null,
         status: "running",
         started_at: startedAtIso,
         providers_total: providersTotal,

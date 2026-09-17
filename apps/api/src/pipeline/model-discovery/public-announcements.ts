@@ -4,6 +4,7 @@ import { buildInternalModelWebhookPayload, sendDiscordWebhookPayload } from "./d
 
 const PUBLIC_ANNOUNCEMENT_BATCH_SIZE = 10;
 const PUBLIC_ANNOUNCEMENT_PAGE_SIZE = 1_000;
+const PUBLIC_ANNOUNCEMENT_CLAIM_LEASE_SECONDS = 300;
 const PUBLIC_MODEL_DISCOVERY_USERNAME = "Phaseo Public Model Discovery";
 const PUBLIC_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_light.png";
 const PUBLIC_MODELS_URL = "https://phaseo.app/models";
@@ -167,18 +168,60 @@ async function insertNewAnnouncementState(
 	if (error) throw new Error(error.message || "Failed to persist public model announcement state");
 }
 
+async function promoteBaselineAnnouncementState(
+	runId: string,
+	models: PublicModelRow[],
+	nowIso: string,
+): Promise<void> {
+	const modelSlugs = models.flatMap((model) => {
+		const modelSlug = normalizeSlug(model.model_slug);
+		return modelSlug ? [modelSlug] : [];
+	});
+	if (modelSlugs.length === 0) return;
+
+	const supabase = getSupabaseAdmin();
+	const { error } = await supabase
+		.from("model_discovery_public_announcements")
+		.update({
+			status: "pending",
+			last_run_id: runId,
+			last_error: null,
+			updated_at: nowIso,
+		})
+		.in("model_slug", modelSlugs)
+		.eq("status", "baseline");
+	if (error) throw new Error(error.message || "Failed to promote public model announcement state");
+}
+
 async function markPendingRun(
 	runId: string,
 	models: PendingAnnouncement[],
 	nowIso: string,
-): Promise<void> {
-	if (models.length === 0) return;
+): Promise<PendingAnnouncement[]> {
+	if (models.length === 0) return [];
 	const supabase = getSupabaseAdmin();
-	const { error } = await supabase
-		.from("model_discovery_public_announcements")
-		.update({ last_run_id: runId, updated_at: nowIso })
-		.in("model_slug", models.map((model) => model.modelSlug));
+	const { data, error } = await supabase.rpc("claim_model_discovery_public_announcements", {
+		p_run_id: runId,
+		p_model_slugs: models.map((model) => model.modelSlug),
+		p_now: nowIso,
+		p_lease_seconds: PUBLIC_ANNOUNCEMENT_CLAIM_LEASE_SECONDS,
+	});
 	if (error) throw new Error(error.message || "Failed to update public model announcement run state");
+
+	const attemptsBySlug = new Map<string, number>();
+	for (const row of (Array.isArray(data) ? data : []) as Array<{ model_slug?: unknown; attempt_count?: unknown }>) {
+		const modelSlug = normalizeSlug(typeof row.model_slug === "string" ? row.model_slug : null);
+		if (!modelSlug) continue;
+		const attemptCount = typeof row.attempt_count === "number" && Number.isFinite(row.attempt_count)
+			? Math.max(0, Math.trunc(row.attempt_count))
+			: 0;
+		attemptsBySlug.set(modelSlug, attemptCount);
+	}
+
+	return models.flatMap((model) => {
+		const stateAttemptCount = attemptsBySlug.get(model.modelSlug);
+		return stateAttemptCount === undefined ? [] : [{ ...model, stateAttemptCount }];
+	});
 }
 
 async function markAnnounced(
@@ -196,9 +239,12 @@ async function markAnnounced(
 			announced_at: nowIso,
 			last_attempt_at: nowIso,
 			last_error: null,
+			claim_run_id: null,
+			claim_expires_at: null,
 			updated_at: nowIso,
 		})
-		.in("model_slug", models.map((model) => model.modelSlug));
+		.in("model_slug", models.map((model) => model.modelSlug))
+		.eq("claim_run_id", runId);
 	if (error) throw new Error(error.message || "Failed to mark public model announcements delivered");
 }
 
@@ -219,9 +265,12 @@ async function markAttemptFailed(
 				last_attempt_at: nowIso,
 				attempt_count: model.stateAttemptCount + 1,
 				last_error: errorMessage.slice(0, 2_000),
+				claim_run_id: null,
+				claim_expires_at: null,
 				updated_at: nowIso,
 			})
-			.eq("model_slug", model.modelSlug);
+			.eq("model_slug", model.modelSlug)
+			.eq("claim_run_id", runId);
 		if (error) throw new Error(error.message || "Failed to persist public model announcement attempt");
 	}
 }
@@ -268,7 +317,9 @@ export async function runPublicModelAnnouncementCheck(args: {
 			return summary;
 		}
 
+		const nowIso = new Date().toISOString();
 		const newModels: PublicModelRow[] = [];
+		const promotedModels: PublicModelRow[] = [];
 		const skippedModels: PublicModelRow[] = [];
 		for (const model of models) {
 			const modelSlug = normalizeSlug(model.model_slug);
@@ -276,13 +327,19 @@ export async function runPublicModelAnnouncementCheck(args: {
 			if (isPublicModel(model)) newModels.push(model);
 			else skippedModels.push(model);
 		}
+		for (const model of models) {
+			const modelSlug = normalizeSlug(model.model_slug);
+			const state = modelSlug ? stateBySlug.get(modelSlug) : undefined;
+			if (state?.status === "baseline" && isPublicModel(model)) promotedModels.push(model);
+		}
 
-		summary.detected = newModels.length;
+		summary.detected = newModels.length + promotedModels.length;
 		summary.skipped = skippedModels.length;
-		await insertNewAnnouncementState(args.runId, [...newModels, ...skippedModels], new Date().toISOString());
+		await insertNewAnnouncementState(args.runId, [...newModels, ...skippedModels], nowIso);
+		await promoteBaselineAnnouncementState(args.runId, promotedModels, nowIso);
 
 		const newModelSlugs = new Set(
-			newModels.flatMap((model) => {
+			[...newModels, ...promotedModels].flatMap((model) => {
 				const modelSlug = normalizeSlug(model.model_slug);
 				return modelSlug ? [modelSlug] : [];
 			}),
@@ -313,9 +370,10 @@ export async function runPublicModelAnnouncementCheck(args: {
 			return summary;
 		}
 
-		await markPendingRun(args.runId, pendingModels, new Date().toISOString());
-		for (let index = 0; index < pendingModels.length; index += PUBLIC_ANNOUNCEMENT_BATCH_SIZE) {
-			const batch = pendingModels.slice(index, index + PUBLIC_ANNOUNCEMENT_BATCH_SIZE);
+		const claimedModels = await markPendingRun(args.runId, pendingModels, new Date().toISOString());
+		if (claimedModels.length === 0) return summary;
+		for (let index = 0; index < claimedModels.length; index += PUBLIC_ANNOUNCEMENT_BATCH_SIZE) {
+			const batch = claimedModels.slice(index, index + PUBLIC_ANNOUNCEMENT_BATCH_SIZE);
 			try {
 				const payload = buildInternalModelWebhookPayload(
 					batch.map((model) => ({
@@ -344,7 +402,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 				summary.error = reason;
 				await markAttemptFailed(
 					args.runId,
-					pendingModels.slice(index),
+					claimedModels.slice(index),
 					reason,
 					new Date().toISOString(),
 				);
