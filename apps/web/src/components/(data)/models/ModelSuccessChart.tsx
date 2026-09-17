@@ -17,7 +17,7 @@ import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformanc
 
 const successChartConfig: ChartConfig = {
 	overall: {
-		label: "Request success",
+		label: "Average uptime",
 		color: "hsl(142, 76%, 36%)",
 	},
 	worst: {
@@ -48,6 +48,18 @@ function toHourlyBucket(value: Date | string) {
 function getDisplayedUptime(value: number | null | undefined, requests: number) {
 	if (value != null && Number.isFinite(value)) return value;
 	return requests === 0 ? 100 : null;
+}
+
+export function calculateAverageUptime(
+	values: Array<number | null | undefined>,
+) {
+	const validValues = values.filter(
+		(value): value is number => value != null && Number.isFinite(value),
+	);
+
+	return validValues.length > 0
+		? validValues.reduce((sum, value) => sum + value, 0) / validValues.length
+		: null;
 }
 
 function formatUptime(value: number | null | undefined) {
@@ -98,55 +110,34 @@ export default function ModelSuccessChart({
 		...point,
 		worst: showLeastStableProvider ? point.worst : null,
 	}));
-	const totalRequests = chartData.reduce((sum, point) => sum + point.requests, 0);
-	const measuredPoints = chartData.filter(
-		(point) => point.requests > 0 && point.overall != null,
+	const averageUptime = calculateAverageUptime(
+		chartData.map((point) => point.overall),
 	);
-	const measuredRequests = measuredPoints.reduce(
-		(sum, point) => sum + point.requests,
-		0,
-	);
-	const summaryUptime =
-		totalRequests === 0
-			? 100
-			: measuredRequests > 0
-				? measuredPoints.reduce(
-						(sum, point) => sum + (point.overall ?? 0) * point.requests,
-						0,
-					) / measuredRequests
-				: null;
 	const measuredWorstPoints = chartData.filter(
 		(point) => point.worstRequests > 0 && point.worst != null,
 	);
-	const measuredWorstRequests = measuredWorstPoints.reduce(
-		(sum, point) => sum + point.worstRequests,
-		0,
+	const withoutRoutingUptime = calculateAverageUptime(
+		measuredWorstPoints.map((point) => point.worst),
 	);
-	const withoutRoutingUptime = measuredWorstRequests > 0
-		? measuredWorstPoints.reduce(
-				(sum, point) => sum + (point.worst ?? 0) * point.worstRequests,
-				0,
-			) / measuredWorstRequests
-		: null;
 
 	return (
 		<div className="grid gap-4 rounded-lg border border-border/70 bg-background p-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-center">
 			<div className="min-w-0">
 				{showTitle ? (
-					<h3 className="text-sm font-medium text-foreground">Request success</h3>
+					<h3 className="text-sm font-medium text-foreground">Average uptime</h3>
 				) : null}
 				<p className="mt-1 text-3xl font-semibold tracking-tight text-emerald-600 tabular-nums dark:text-emerald-400">
-					{formatUptime(summaryUptime)}
+					{formatUptime(averageUptime)}
 				</p>
 				<p className="mt-1 text-xs text-muted-foreground">
-					Last 24 hours{totalRequests > 0 ? ` · ${totalRequests.toLocaleString()} requests · request-weighted` : " · No requests"}
+					Last 24 hours · hourly average
 				</p>
 			</div>
 			<div className="min-w-0">
 				<div
 					className="h-[112px] w-full"
 					role="img"
-					aria-label={`Hourly request success over the last 24 hours. Phaseo Routing: ${formatUptime(summaryUptime)}.${showLeastStableProvider ? ` Without Phaseo Routing: ${formatUptime(withoutRoutingUptime)}.` : ""}`}
+					aria-label={`Hourly model uptime over the last 24 hours. Phaseo Routing: ${formatUptime(averageUptime)}.${showLeastStableProvider ? ` Without Phaseo Routing: ${formatUptime(withoutRoutingUptime)}.` : ""}`}
 				>
 				<ChartContainer
 					config={successChartConfig}
@@ -184,7 +175,7 @@ export default function ModelSuccessChart({
 											</p>
 											<p className="text-sm">
 												<span className="font-semibold">
-													Request success:
+													Uptime:
 												</span>{" "}
 												{formatUptime(payload[0].payload.overall)}
 											</p>
@@ -228,7 +219,7 @@ export default function ModelSuccessChart({
 				<div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
 					<span className="inline-flex items-center gap-1.5">
 						<span className="h-0.5 w-4 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />
-						Phaseo Routing <span className="font-medium tabular-nums text-foreground">{formatUptime(summaryUptime)}</span>
+						Phaseo Routing <span className="font-medium tabular-nums text-foreground">{formatUptime(averageUptime)}</span>
 					</span>
 					{showLeastStableProvider ? (
 						<span className="inline-flex items-center gap-1.5">
