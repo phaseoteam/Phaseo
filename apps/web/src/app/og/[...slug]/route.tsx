@@ -53,6 +53,10 @@ function getLogoUrl(logoId: string | undefined, assetBaseUrl: string): string | 
 	return absoluteAsset(resolved?.src, assetBaseUrl);
 }
 
+function titleCaseLabel(value: string): string {
+	return value.toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
 function normaliseSegments(
 	request: NextRequest,
 	slugParam?: string | string[],
