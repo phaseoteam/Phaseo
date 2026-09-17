@@ -27,6 +27,11 @@ describe("cache scopes", () => {
 		}
 	});
 
+	it("invalidates the main and gateway model lists together", () => {
+		const result = resolveCacheScope("catalogue");
+		expect(result.tags).toEqual(expect.arrayContaining(["web-api-models", "web-api-gateway-models"]));
+	});
+
 	it("keeps the incident scope within Cloudflare's per-request operation limit", () => {
 		const result = resolveCacheScope("all-public");
 		expect(result.definition.danger).toBe("high");

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { buildModelsPageFacets, fetchModelsPageCatalogue } from "@/models/page-catalogue";
@@ -49,14 +50,7 @@ function suppressSmallPublicPerformanceCohorts(value: Record<string, any>): Reco
 }
 
 const CACHE_PROFILES = {
-	catalogue: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
-		staleIfErrorSeconds: 60 * 60,
-		browserTtlSeconds: 0,
-		browserStaleWhileRevalidateSeconds: 0,
-		cacheTags: ["web-api-models"],
-	},
+	catalogue: PUBLIC_MODEL_CATALOGUE_CACHE,
 	overview: {
 		edgeTtlSeconds: 60 * 60,
 		staleWhileRevalidateSeconds: 60 * 60,

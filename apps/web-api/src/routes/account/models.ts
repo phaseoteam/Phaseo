@@ -1,9 +1,11 @@
 import { catalogRegistries, registrySchema } from "./catalogRegistries";
 import { Hono } from "hono";
+import { PUBLIC_MODEL_CATALOGUE_CACHE_TAGS } from "@/cache/catalogue";
 import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { purgeWorkerCacheTags } from "@/http/invalidation";
 import { fetchModelPricingSources } from "@/models/pricing";
 import { z } from "zod";
 
@@ -126,6 +128,19 @@ async function requireAdminContext(request: Request, env: Env) {
 		return { status: 403 as const, context: null };
 	}
 	return { status: 200 as const, context: { user, client } };
+}
+
+async function purgeModelCatalogueCache(c: any) {
+	try {
+		return await purgeWorkerCacheTags(c.executionCtx, [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS]);
+	} catch (error) {
+		console.error("[web-api/account/models] catalogue cache purge failed", { error });
+		return {
+			success: false,
+			unavailable: false,
+			tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS],
+		};
+	}
 }
 
 async function fetchAllRows<T>(fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>, pageSize = 1000): Promise<T[]> {
@@ -484,7 +499,8 @@ async function runCatalogMutation(c: any, resource: keyof typeof catalogMutation
       ? await admin.context.client.rpc("mutate_v2_admin_model_with_successor", { p_actor_user_id: admin.context.user.id, p_action: action, p_model_slug: resourceId, p_payload: payload })
       : await admin.context.client.rpc("mutate_v2_admin_catalogue", { p_actor_user_id: admin.context.user.id, p_resource_type: resource, p_action: action, p_resource_id: resourceId, p_payload: payload });
 	if (result.error) return c.json({ error: "admin_catalogue_mutation_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ success: true, record: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+	const cache = await purgeModelCatalogueCache(c);
+	return c.json({ success: true, record: result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 }
 
 for (const resource of ["organisations", "providers", "benchmarks", "subscription-plans"] as const) {
@@ -503,7 +519,8 @@ accountModelsRouter.put("/:modelId/graph", async (c) => {
 	if (!parsed.success || parsed.data.modelId !== c.req.param("modelId")) return c.json({ error: "invalid_model_graph", issues: parsed.success ? [] : parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await admin.context.client.rpc("mutate_v2_admin_model_graph_with_successor", { p_actor_user_id: admin.context.user.id, p_model_slug: parsed.data.modelId, p_payload: parsed.data });
 	if (result.error) return c.json({ ok: false, error: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ ok: true, graph: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+	const cache = await purgeModelCatalogueCache(c);
+	return c.json({ ok: true, graph: result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.get("/:modelId/pricing-editor", async (c) => {
@@ -581,7 +598,8 @@ accountModelsRouter.put("/:modelId/provider-routes", async (c) => {
 	if (!parsed.success) return c.json({ error: "invalid_provider_route", issues: parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await admin.context.client.rpc("mutate_v2_admin_provider_route", { p_actor_user_id: admin.context.user.id, p_model_slug: c.req.param("modelId"), p_route: parsed.data });
 	if (result.error) return c.json({ error: "admin_provider_route_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ route: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+	const cache = await purgeModelCatalogueCache(c);
+	return c.json({ route: result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.put("/:modelId/notice", async (c) => {
@@ -621,7 +639,8 @@ accountModelsRouter.put("/:modelId/pricing-editor", async (c) => {
 		console.error("[web-api/account/models] pricing save failed", { modelId, error: result.error });
 		return c.json({ error: "admin_pricing_save_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
 	}
-	return c.json({ pricing: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+	const cache = await purgeModelCatalogueCache(c);
+	return c.json({ pricing: result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.delete("/:modelId/pricing-editor/:skuId", async (c) => {
@@ -641,7 +660,8 @@ accountModelsRouter.post("/:modelId/pricing-editor/:skuId/end-date", async (c) =
   p_action: "end_date", p_sku: { sku_id: skuId.data, effective_to: body.data.effective_to },
  });
  if (result.error) return c.json({ error: "admin_pricing_end_date_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
- return c.json({ pricing: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+ const cache = await purgeModelCatalogueCache(c);
+ return c.json({ pricing: result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.all("*", async (c) => {

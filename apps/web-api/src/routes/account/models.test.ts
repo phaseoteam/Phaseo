@@ -181,10 +181,17 @@ describe("account model source routes", () => {
 		}));
 		const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" };
 		const headers = { authorization: "Bearer session-token", "content-type": "application/json" };
+		const purgedTags: string[][] = [];
+		const executionContext = {
+			waitUntil: vi.fn(),
+			passThroughOnException: vi.fn(),
+			props: {},
+			cache: { purge: vi.fn(async ({ tags }: { tags: string[] }) => { purgedTags.push(tags); return { success: true }; }) },
+		} as unknown as ExecutionContext;
 
-		const organisation = await app.request("https://phaseo.app/api/account/models/catalog/organisations", { method: "POST", headers, body: JSON.stringify({ organisation_id: "test-lab", name: "Test Lab", social_links: [] }) }, env);
-		const graph = await app.request("https://phaseo.app/api/account/models/openai%2Fgpt-test/graph", { method: "PUT", headers, body: JSON.stringify({ modelId: "openai/gpt-test", name: "GPT Test", organisation_id: "openai" }) }, env);
-		const route = await app.request("https://phaseo.app/api/account/models/openai%2Fgpt-test/provider-routes", { method: "PUT", headers, body: JSON.stringify({ provider_slug: "external-provider", provider_model_slug: "gpt-test", status: "active", routing_enabled: false }) }, env);
+		const organisation = await app.request("https://phaseo.app/api/account/models/catalog/organisations", { method: "POST", headers, body: JSON.stringify({ organisation_id: "test-lab", name: "Test Lab", social_links: [] }) }, env, executionContext);
+		const graph = await app.request("https://phaseo.app/api/account/models/openai%2Fgpt-test/graph", { method: "PUT", headers, body: JSON.stringify({ modelId: "openai/gpt-test", name: "GPT Test", organisation_id: "openai" }) }, env, executionContext);
+		const route = await app.request("https://phaseo.app/api/account/models/openai%2Fgpt-test/provider-routes", { method: "PUT", headers, body: JSON.stringify({ provider_slug: "external-provider", provider_model_slug: "gpt-test", status: "active", routing_enabled: false }) }, env, executionContext);
 
 		expect(organisation.status).toBe(200);
 		expect(graph.status).toBe(200);
@@ -192,6 +199,8 @@ describe("account model source routes", () => {
 		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_catalogue"))).toBe(true);
 		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_model_graph_with_successor"))).toBe(true);
 		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_provider_route"))).toBe(true);
+		expect(purgedTags).toHaveLength(3);
+		expect(purgedTags.every((tags) => tags.includes("web-api-models") && tags.includes("web-api-gateway-models"))).toBe(true);
 	});
 	it("submits a model and successor as one RPC and reports validation failure", async () => {
 		const requests: string[] = [];

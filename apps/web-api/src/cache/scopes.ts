@@ -1,3 +1,5 @@
+import { PUBLIC_MODEL_CATALOGUE_CACHE_TAGS } from "@/cache/catalogue";
+
 export const CACHE_SCOPE_IDS = [
 	"search",
 	"catalogue",
@@ -33,7 +35,7 @@ export type CacheScopeDefinition = {
 const SEARCH_TAGS = ["web-api-search"] as const;
 
 const CATALOGUE_TAGS = [
-	"web-api-models",
+	...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS,
 	"web-api-models-v2",
 	"web-api-model-details",
 	"web-api-model-benchmarks",
@@ -88,7 +90,6 @@ const ALL_PUBLIC_TAGS = [
 	"web-api-rankings",
 	"web-api-ranking-metadata",
 	"web-api-pricing-models",
-	"web-api-gateway-models",
 	"web-api-monitor-history",
 	"web-api-og",
 ] as const;
@@ -131,7 +132,7 @@ const DEFINITIONS: Record<CacheScopeId, CacheScopeDefinition> = {
 		targetRequired: true,
 		affectsSearch: false,
 		danger: "normal",
-		tags: ["web-api-models", "web-api-models-v2"],
+		tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-models-v2"],
 	},
 	"model-providers": {
 		id: "model-providers",
@@ -141,7 +142,7 @@ const DEFINITIONS: Record<CacheScopeId, CacheScopeDefinition> = {
 		targetRequired: true,
 		affectsSearch: false,
 		danger: "normal",
-		tags: ["web-api-models", "web-api-models-v2", "web-api-provider-routing-health"],
+		tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-models-v2", "web-api-provider-routing-health"],
 	},
 	"model-telemetry": {
 		id: "model-telemetry",
@@ -151,7 +152,7 @@ const DEFINITIONS: Record<CacheScopeId, CacheScopeDefinition> = {
 		targetRequired: true,
 		affectsSearch: false,
 		danger: "normal",
-		tags: ["web-api-models", "web-api-models-v2"],
+		tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-models-v2"],
 	},
 	provider: {
 		id: "provider",
@@ -231,7 +232,7 @@ const DEFINITIONS: Record<CacheScopeId, CacheScopeDefinition> = {
 		targetRequired: false,
 		affectsSearch: false,
 		danger: "normal",
-		tags: ["web-api-pricing-models", "web-api-catalog-pricing", "web-api-model-pricing", "web-api-model-pricing-history", "web-api-subscription-plans"],
+		tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-pricing-models", "web-api-catalog-pricing", "web-api-model-pricing", "web-api-model-pricing-history", "web-api-subscription-plans"],
 	},
 	"all-public": {
 		id: "all-public",

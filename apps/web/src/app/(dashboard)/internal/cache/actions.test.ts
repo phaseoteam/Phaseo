@@ -1,7 +1,8 @@
 import { revalidatePath, updateTag } from "next/cache";
+import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchInternalWebApi } from "@/lib/web-api/client";
-import { purgeCacheScopeAction } from "./actions";
+import { purgeCacheScopeAction, revalidatePublicModelCatalogueAction } from "./actions";
 
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), updateTag: jest.fn() }));
 jest.mock("@/lib/fetchers/internal/serverAccountContext", () => ({ getServerAccountContext: jest.fn() }));
@@ -19,6 +20,7 @@ describe("complete model page revalidation", () => {
 
 	beforeEach(() => {
 		jest.resetAllMocks();
+		jest.mocked(fetchInternalAuthStatus).mockResolvedValue({ signedIn: true, isAdmin: true } as Awaited<ReturnType<typeof fetchInternalAuthStatus>>);
 		jest.mocked(getServerAccountContext).mockResolvedValue({ accessToken: "test-session" } as Awaited<ReturnType<typeof getServerAccountContext>>);
 	});
 
@@ -70,5 +72,26 @@ describe("complete model page revalidation", () => {
 		await expect(purgeCacheScopeAction(input)).rejects.toThrow("Sign in again");
 		expect(fetchInternalWebApi).not.toHaveBeenCalled();
 		expect(revalidatePath).not.toHaveBeenCalled();
+	});
+
+	it("keeps local and gateway invalidation when the Worker purge fails", async () => {
+		jest.mocked(fetchInternalWebApi).mockRejectedValue(new Error("Worker purge failed"));
+		const previousGatewayToken = process.env.GATEWAY_INTERNAL_TEST_TOKEN;
+		process.env.GATEWAY_INTERNAL_TEST_TOKEN = "test-gateway-token";
+		const fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValue({ ok: true } as Response);
+
+		try {
+			const result = await revalidatePublicModelCatalogueAction();
+
+			expect(result.ok).toBe(false);
+			expect(result.message).toContain("Web API cache purge failed: Worker purge failed.");
+			expect(updateTag).toHaveBeenCalledWith("public-model-catalogue");
+			expect(revalidatePath).toHaveBeenCalledWith("/chat");
+			expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/internal/cache/purge"), expect.objectContaining({ body: JSON.stringify({ tags: ["models"] }) }));
+		} finally {
+			fetchMock.mockRestore();
+			if (previousGatewayToken === undefined) delete process.env.GATEWAY_INTERNAL_TEST_TOKEN;
+			else process.env.GATEWAY_INTERNAL_TEST_TOKEN = previousGatewayToken;
+		}
 	});
 });
