@@ -38,7 +38,7 @@ create index if not exists model_discovery_review_items_provider_idx
 
 create table if not exists public.model_discovery_review_events (
   id uuid not null default gen_random_uuid(),
-  item_id uuid not null references public.model_discovery_review_items(id) on delete cascade,
+  item_id uuid not null references public.model_discovery_review_items(id) on delete restrict,
   decision text not null,
   reason text,
   actor_user_id uuid not null references auth.users(id) on delete restrict,

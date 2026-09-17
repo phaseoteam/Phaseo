@@ -30,7 +30,7 @@ function formatDate(value: string): string {
 export default function ModelDiscoveryReviewClient({ initialItems }: Props) {
 	const [items, setItems] = React.useState(initialItems);
 	const [reasons, setReasons] = React.useState<Record<string, string>>({});
-	const [saving, setSaving] = React.useState<string | null>(null);
+	const [saving, setSaving] = React.useState<Set<string>>(() => new Set());
 
 	async function decide(item: InternalModelDiscoveryReviewItem, decision: "in_progress" | "approved" | "rejected" | "snoozed") {
 		const reason = reasons[item.id]?.trim();
@@ -38,7 +38,7 @@ export default function ModelDiscoveryReviewClient({ initialItems }: Props) {
 			toast.error("Add a reason before rejecting or snoozing a detection.");
 			return;
 		}
-		setSaving(item.id);
+		setSaving((current) => new Set(current).add(item.id));
 		try {
 			const result = await reviewModelDiscoveryItemAction({ itemId: item.id, decision, reason });
 			setItems((current) => current.map((entry) => entry.id === item.id ? result.item : entry));
@@ -46,7 +46,11 @@ export default function ModelDiscoveryReviewClient({ initialItems }: Props) {
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : "Could not save review decision");
 		} finally {
-			setSaving(null);
+			setSaving((current) => {
+				const next = new Set(current);
+				next.delete(item.id);
+				return next;
+			});
 		}
 	}
 
@@ -85,10 +89,10 @@ export default function ModelDiscoveryReviewClient({ initialItems }: Props) {
 							<div className="mt-4 flex flex-col gap-3 border-t border-border/60 pt-4">
 								<Input aria-label={`Review reason for ${item.model_id}`} value={reasons[item.id] ?? ""} onChange={(event) => setReasons((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="Reason for rejection or snooze (required for those actions)" className="max-w-xl text-xs" />
 								<div className="flex flex-wrap gap-2">
-									<Button size="sm" onClick={() => void decide(item, "approved")} disabled={saving === item.id}><Check className="mr-1.5 size-3.5" /> Acknowledge</Button>
-									<Button size="sm" variant="outline" onClick={() => void decide(item, "in_progress")} disabled={saving === item.id}>Mark in progress</Button>
-									<Button size="sm" variant="outline" onClick={() => void decide(item, "snoozed")} disabled={saving === item.id}>Snooze</Button>
-									<Button size="sm" variant="outline" onClick={() => void decide(item, "rejected")} disabled={saving === item.id}><X className="mr-1.5 size-3.5" /> Reject</Button>
+									<Button size="sm" onClick={() => void decide(item, "approved")} disabled={saving.has(item.id)}><Check className="mr-1.5 size-3.5" /> Acknowledge</Button>
+									<Button size="sm" variant="outline" onClick={() => void decide(item, "in_progress")} disabled={saving.has(item.id)}>Mark in progress</Button>
+									<Button size="sm" variant="outline" onClick={() => void decide(item, "snoozed")} disabled={saving.has(item.id)}>Snooze</Button>
+									<Button size="sm" variant="outline" onClick={() => void decide(item, "rejected")} disabled={saving.has(item.id)}><X className="mr-1.5 size-3.5" /> Reject</Button>
 								</div>
 							</div>
 						) : null}
