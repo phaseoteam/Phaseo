@@ -135,6 +135,38 @@ describe("resolveProviderState", () => {
 			availability: "coming_soon",
 		});
 	});
+
+	test("keeps an opted-in external route labeled External while showing active availability", () => {
+		expect(
+			resolveProviderState(
+				makeProvider({
+					availability_status: "active",
+					availability_reason: "active",
+					provider_status: "external",
+					is_active_gateway: true,
+				}),
+			),
+		).toMatchObject({
+			key: "external",
+			label: "External",
+			availability: "active",
+		});
+	});
+
+	test("keeps a non-routable external route labeled External while showing inactive availability", () => {
+		expect(
+			resolveProviderState(
+				makeProvider({
+					availability_status: "inactive",
+					provider_status: "external",
+				}),
+			),
+		).toMatchObject({
+			key: "external",
+			label: "External",
+			availability: "inactive",
+		});
+	});
 });
 
 describe("groupProviders", () => {

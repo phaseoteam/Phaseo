@@ -259,6 +259,33 @@ describe("routeProviders testing mode", () => {
 		).toBe(0.1);
 	});
 
+	it("keeps overridden external providers out of the primary weighted pool", async () => {
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai" }),
+				{
+					...candidate({
+						providerId: "openrouter",
+						providerStatus: "external",
+						externalRoutingOverride: true,
+					}),
+					baseWeight: 1_000,
+				},
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini:fast",
+				workspaceId: "team_123",
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
+			"openai",
+			"openrouter",
+		]);
+	});
+
 	it("keeps alpha providers gated unless alpha channel is enabled", async () => {
 		const result = await routeProviders(
 			[
@@ -697,7 +724,7 @@ describe("routeProviders testing mode", () => {
 		expect(result.diagnostics.rankedProviders[0]?.scoreFactors.priceScore).toBeGreaterThan(0);
 		expect(result.diagnostics.rankedProviders[0]?.scoreFactors.reliabilitySample).toEqual(expect.any(Number));
 		expect(result.diagnostics.algorithm).toEqual(expect.objectContaining({
-            version: "provider-score-v7",
+            version: "provider-score-v8",
 			selectionMethod: "weighted_order",
 			seed: expect.any(Number),
 			poolBounds: expect.objectContaining({

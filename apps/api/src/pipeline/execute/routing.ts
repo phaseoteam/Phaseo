@@ -41,9 +41,10 @@ type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 type ProviderStatus = ProviderRolloutStatus;
 type CapabilityStatus = CapabilityRoutingStatus;
 
-const ROUTING_ALGORITHM_VERSION = "provider-score-v7";
+const ROUTING_ALGORITHM_VERSION = "provider-score-v8";
 // External providers are available only as explicit provider-level overrides;
-// keep them as a fallback by applying a strong, visible score penalty.
+// keep them behind non-external providers and retain the score penalty within
+// the fallback pool.
 const EXTERNAL_PROVIDER_ROUTING_MULTIPLIER = 0.1;
 
 type RoutingPreset = {
@@ -1572,10 +1573,26 @@ export async function routeProviders(
         };
     });
     const routableScored = scored.filter((entry) => entry.score > 0);
+    const isExternalProvider = (entry: typeof routableScored[number]) =>
+        normalizeProviderStatus(entry.candidate.providerStatus) === "external";
+    const splitExternalFallback = (entries: typeof routableScored) => ({
+        primary: entries.filter((entry) => !isExternalProvider(entry)),
+        external: entries.filter(isExternalProvider),
+    });
+    const weightedOrderWithExternalFallback = (entries: typeof routableScored) => {
+        const { primary, external } = splitExternalFallback(entries);
+        return [
+            ...weightedOrder(primary, (entry) => entry.score, rng),
+            ...weightedOrder(external, (entry) => entry.score, rng),
+        ];
+    };
     const explorationRequest = Boolean(ctx.requestId && isRecoveryProbeRequest(ctx.workspaceId, ctx.requestId));
     const selectRecovery = (entries: typeof routableScored) => {
         if (!explorationRequest) return null;
-        const recovering = entries.filter(e => e.health.breaker === "half_open" ||
+        const recoveryPool = entries.some((entry) => !isExternalProvider(entry))
+            ? entries.filter((entry) => !isExternalProvider(entry))
+            : entries;
+        const recovering = recoveryPool.filter(e => e.health.breaker === "half_open" ||
             (e.health.breaker === "open" && e.health.breaker_until_ms <= now) ||
             (e.health.breaker === "closed" && Math.max(e.health.err_ewma_10s, e.health.err_ewma_60s) >= 0.1 &&
                 normalizeRoutingStatus(e.candidate.providerRoutingStatus) === "active" &&
@@ -1611,7 +1628,7 @@ export async function routeProviders(
 			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "explicit_provider_order"),
             };
         }
-        const remainingRanked = weightedOrder(remaining, (s) => s.score, rng);
+        const remainingRanked = weightedOrderWithExternalFallback(remaining);
         const ranked = [...ordered, ...remainingRanked];
         return {
             ranked,
@@ -1620,7 +1637,11 @@ export async function routeProviders(
     }
 
     if (strict || deterministicRequestSort) {
-        const ranked = [...routableScored].sort(compareScores);
+        const { primary, external } = splitExternalFallback(routableScored);
+        const ranked = [
+            ...primary.sort(compareScores),
+            ...external.sort(compareScores),
+        ];
         const recovery = selectRecovery(ranked);
         return {
             ranked: recovery ? promote(ranked, recovery) : ranked,
@@ -1629,7 +1650,7 @@ export async function routeProviders(
     }
 
     // Price determines traffic share; bounded performance terms gently favor faster routes.
-    const ranked = weightedOrder(routableScored, (s) => s.score, rng);
+    const ranked = weightedOrderWithExternalFallback(routableScored);
     const recovery = selectRecovery(ranked);
     if (recovery) {
         const recoveredRank = promote(ranked, recovery);

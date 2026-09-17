@@ -223,8 +223,15 @@ function describeKnownInactiveProviderState(
 function stateFromAvailabilityReason(
 	reason: GatewayProviderModel["availability_reason"],
 	availabilityStatus: GatewayProviderModel["availability_status"],
+	providerStatus: GatewayProviderModel["provider_status"],
 ): ProviderState | null {
 	if (!reason) return null;
+	if (
+		providerStatus === "external" &&
+		(reason === "active" || reason === "inactive" || reason === "provider_inactive")
+	) {
+		return describeExternalProvider(availabilityStatus);
+	}
 	if (
 		reason === "deranked_lvl1" ||
 		reason === "deranked_lvl2" ||
@@ -403,6 +410,17 @@ function stateFromAvailabilityReason(
 	};
 }
 
+function describeExternalProvider(
+	availability: GatewayProviderModel["availability_status"],
+): ProviderState {
+	return {
+		key: "external",
+		label: "External",
+		description: "Listed from an external catalogue; routing requires an explicit provider-level override.",
+		availability,
+	};
+}
+
 export function resolveProviderState(
 	providerModel: GatewayProviderModel,
 	now: Date = new Date()
@@ -410,6 +428,7 @@ export function resolveProviderState(
 	const explicitReasonState = stateFromAvailabilityReason(
 		providerModel.availability_reason,
 		providerModel.availability_status,
+		providerModel.provider_status,
 	);
 	if (explicitReasonState) {
 		return explicitReasonState;
@@ -435,12 +454,7 @@ export function resolveProviderState(
 
 	if (providerModel.provider_status && providerModel.provider_status !== "active") {
 		if (providerModel.provider_status === "external") {
-			return {
-				key: "external",
-				label: "External",
-				description: "Listed from an external catalogue; routing requires an explicit provider-level override.",
-				availability: "inactive",
-			};
+			return describeExternalProvider(providerModel.availability_status);
 		}
 		if (providerModel.provider_status === "beta" || providerModel.provider_status === "alpha") {
 			return {
