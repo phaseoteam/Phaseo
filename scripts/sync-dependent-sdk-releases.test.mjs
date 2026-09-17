@@ -62,6 +62,7 @@ test("release synchronization updates real manifests, dependencies, attribution 
     ["agent-sdk-java/src/main/java/app/phaseo/agent/AgentSdk.java", /"phaseo-agent-java", "0\.3\.0"/],
     ["agent-sdk-php/VERSION", /^0\.3\.0\s*$/],
     ["agent-sdk-php/composer.json", /"phaseo\/sdk": "\^3\.0\.0"/],
+    ["agent-sdk-php/src/AgentSdk.php", /clientSourceVersion: "0\.3\.0"/],
     ["agent-sdk-ruby/phaseo_agent_sdk.gemspec", /spec.version\s*=\s*"0\.3\.0"/, /">= 3\.0\.0", "< 4\.0\.0"/],
     ["agent-sdk-ruby/lib/phaseo_agent_sdk.rb", /client_source_version: "0\.3\.0"/],
     ["sdk-rust/Cargo.toml", /version = "0\.2\.0"/],

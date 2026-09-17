@@ -126,6 +126,8 @@ jobs:
 
       - name: Run tests
         working-directory: packages/sdk/sdk-go
+        env:
+          GOWORK: "off"
         run: go test ./...
 
       - name: Create and push module tag

@@ -81,6 +81,7 @@ export async function syncDependentSdkReleases(root) {
     } else if (language === "php") {
       await writeFile(path.join(root, directory, "VERSION"), `${agent}\n`);
       await replace(root, `${directory}/composer.json`, /("phaseo\/sdk": ")[^"]+/, `$1^${core}`);
+      await replace(root, `${directory}/src/AgentSdk.php`, /(clientSourceVersion: ")[^"]+/, `$1${agent}`);
     } else if (language === "ruby") {
       await replace(root, `${directory}/phaseo_agent_sdk.gemspec`, /(spec.version\s*=\s*")[^"]+/, `$1${agent}`);
       await replace(root, `${directory}/phaseo_agent_sdk.gemspec`, /spec.add_runtime_dependency "phaseo_sdk"[^\r\n]+/, `spec.add_runtime_dependency "phaseo_sdk", ">= ${core}", "< ${major + 1}.0.0"`);
