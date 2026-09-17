@@ -384,7 +384,7 @@ export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult>
 
 export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpResult> {
 	return runAdminAction("Public catalogue", async () => {
-		expirePublicModelCatalogueCache();
+		const webApiPurge = await purgeCacheScopeAction({ scope: "catalogue" });
 		for (const tag of APP_FRONTEND_TAGS) {
 			updateTag(tag);
 		}
@@ -392,8 +392,8 @@ export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpRes
 		return {
 			ok: gatewayPurge.ok,
 			message: gatewayPurge.ok
-				? `Public catalogue cache revalidated. ${gatewayPurge.message}`
-				: `Public catalogue website cache revalidated. ${gatewayPurge.message}`,
+				? `Public catalogue cache revalidated. Web API cache purged (${webApiPurge.tags.join(", ")}). ${gatewayPurge.message}`
+				: `Public catalogue website cache revalidated. Web API cache purged (${webApiPurge.tags.join(", ")}). ${gatewayPurge.message}`,
 		};
 	});
 }

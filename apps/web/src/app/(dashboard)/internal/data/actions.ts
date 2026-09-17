@@ -817,14 +817,14 @@ export async function revalidateSingleModelDataAction(modelId: string) {
 	revalidatePath(`/internal/data/models/edit/${modelId}`);
 	revalidatePath("/models");
 	revalidatePath(`/models/${modelId}`);
-	await revalidateCloudflare(["web-api-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-notices", "web-api-search"]);
+	await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-notices", "web-api-search"]);
 
 	return { ok: true as const, message: "Model data cache revalidated." };
 }
 
 // react-doctor-disable-next-line
 export async function revalidateSingleModelApiInfoAction(modelId: string) {
-	await revalidateCloudflare(["web-api-models", "web-api-model-pricing", "web-api-model-performance", "web-api-model-provider-health", "web-api-provider-routing-health", "web-api-providers"]);
+	await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-pricing", "web-api-model-performance", "web-api-model-provider-health", "web-api-provider-routing-health", "web-api-providers"]);
 	revalidateModelApiInfoTags({ modelId });
 	revalidatePath(`/internal/data/models/edit/${modelId}`);
 	revalidatePath("/models");
@@ -836,7 +836,7 @@ export async function revalidateSingleModelApiInfoAction(modelId: string) {
 
 // react-doctor-disable-next-line
 export async function revalidateSingleModelAllAction(modelId: string) {
-	await revalidateCloudflare(["web-api-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-pricing", "web-api-model-performance", "web-api-model-notices", "web-api-providers", "web-api-organisations", "web-api-reference-data", "web-api-search"]);
+	await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-pricing", "web-api-model-performance", "web-api-model-notices", "web-api-providers", "web-api-organisations", "web-api-reference-data", "web-api-search"]);
 	revalidateModelDataTags({ modelId });
 	revalidatePath(`/internal/data/models/edit/${modelId}`);
 	revalidatePath("/models");

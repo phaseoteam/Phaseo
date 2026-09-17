@@ -71,6 +71,7 @@ const MODEL_API_GLOBAL_TAGS = [
 	"data:data_api_models",
 	"data:data_api_pricing_rules",
 	"web-api-models",
+	"web-api-gateway-models",
 	"web-api-models-v2",
 	"data:gateway_requests",
 	"data:gateway_usage_rollups",

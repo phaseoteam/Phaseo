@@ -1,9 +1,10 @@
 import { Hono } from "hono";
+import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache } from "@/http/cache";
 
-const CACHE = { edgeTtlSeconds: 5 * 60, staleWhileRevalidateSeconds: 5 * 60, cacheTags: ["web-api-gateway-models"] } as const;
+const CACHE = PUBLIC_MODEL_CATALOGUE_CACHE;
 export const publicGatewayRouter = new Hono<{ Bindings: Env }>();
 
 function normalizeCapabilityId(value: unknown): string {

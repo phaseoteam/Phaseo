@@ -22,8 +22,31 @@ describe("public gateway catalogue", () => {
 		}));
 		const response = await app.request("https://phaseo.app/api/_web/gateway/models", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300, stale-if-error=3600");
+		expect(response.headers.get("cache-control")).toBe("public, max-age=0");
+		expect(response.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models");
 		await expect(response.json()).resolves.toMatchObject({ models: [{ modelId: "gpt-test", internalModelId: "openai/gpt-test", providerId: "openai", capabilities: ["responses", "rerank"], capabilityParamsById: { responses: { response_format: true }, rerank: { top_n: true } }, inputModalities: ["text", "image"], outputModalities: ["text"], organisationId: "openai", organisationName: "OpenAI", inputPricePerMillion: 2, outputPricePerMillion: 8, isAvailable: true }] });
+	});
+
+	it("preserves available_only filtering", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("v2_route_capabilities")) return new Response(JSON.stringify([{ provider_api_model_id: "pm-1", capability_id: "responses", status: "active" }]), { status: 200 });
+			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([{ provider_api_model_id: "pm-1", provider_id: "openai", api_model_id: "gpt-test", model_id: "openai/gpt-test", is_active_gateway: true, effective_to: "2020-01-01T00:00:00Z" }]), { status: 200 });
+			if (url.includes("v2_providers")) return new Response(JSON.stringify([{ api_provider_id: "openai", api_provider_name: "OpenAI" }]), { status: 200 });
+			if (url.includes("v2_labs")) return new Response(JSON.stringify([{ lab_slug: "openai", name: "OpenAI" }]), { status: 200 });
+			return new Response(JSON.stringify([{ model_id: "openai/gpt-test", name: "GPT Test", status: "Available", organisation_id: "openai" }]), { status: 200 });
+		}));
+
+		const [availableOnly, allModels] = await Promise.all([
+			app.request("https://phaseo.app/api/_web/gateway/models?available_only=true", {}, env),
+			app.request("https://phaseo.app/api/_web/gateway/models?available_only=false", {}, env),
+		]);
+
+		expect(availableOnly.status).toBe(200);
+		await expect(availableOnly.json()).resolves.toEqual({ models: [] });
+		expect(allModels.status).toBe(200);
+		await expect(allModels.json()).resolves.toMatchObject({ models: [{ modelId: "gpt-test", isAvailable: false }] });
 	});
 
 	it("keeps deprecated models discoverable until their retirement date", async () => {

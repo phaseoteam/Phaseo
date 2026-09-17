@@ -575,7 +575,7 @@ describe("public model routes", () => {
 			catalogue_version: "v2",
 			total: 1,
 		});
-		expect(v2.headers.get("cache-tag")).toBe("web-api-models,web-api-models-v2");
+		expect(v2.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models,web-api-models-v2");
 		expect(fetchMock.mock.calls.some(([input]) => String(input).includes("v2_models"))).toBe(true);
 		expect(fetchMock.mock.calls.some(([input]) => String(input).includes("status=neq.disabled"))).toBe(true);
 		expect(invalid.status).toBe(400);
@@ -703,6 +703,7 @@ describe("public model routes", () => {
 		expect(catalogue.status).toBe(200);
 		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300, stale-if-error=3600");
 		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0");
+		expect(catalogue.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models,web-api-models-v2");
 		expect(benchmarks.status).toBe(200);
 		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400");
 		expect(benchmarks.headers.get("cache-control")).toBe("public, max-age=0");
