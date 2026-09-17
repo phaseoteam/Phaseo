@@ -5,6 +5,11 @@ import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 export interface RequestRow {
+	response_timeline?: { version?: number; routing_ms?: number | null } | null;
+	stream?: boolean | null;
+	latency_ms?: number | null;
+	generation_ms?: number | null;
+	detail_metadata?: { response_timeline?: { version?: number; routing_ms?: number | null; first_dispatch_at_ms?: number } | null; [key: string]: any } | null;
 	id?: string; request_id: string; created_at: string; endpoint: string | null; model_id: string | null; provider: string | null;
 	app_id: string | null; session_id: string | null; success: boolean; status_code: number | null; error_code: string | null;
 	error_message: string | null; error_payload: Record<string, unknown> | null; usage: any; cost_nanos: number | null;
@@ -14,7 +19,7 @@ export interface RequestRow {
 		sequence?: number | null; attempt_number?: number | null; round_number?: number | null;
 		internal_attempt_number?: number | null; provider?: string | null; api_model_id?: string | null;
 		provider_model_slug?: string | null; outcome?: string | null; status?: number | null;
-		status_text?: string | null; duration_ms?: number | null; latency_ms?: number | null;
+		status_text?: string | null; duration_ms?: number | null; latency_ms?: number | null; started_at_unix_ms?: number | null;
 		generation_ms?: number | null; total_ms?: number | null; cost_nanos?: number | null;
 		currency?: string | null; finish_reason?: string | null; provider_finish_reason?: string | null;
 		retryable?: boolean | null; fallback_attempted?: boolean; upstream_error_code?: string | null;
@@ -40,7 +45,7 @@ export type GatewayIoLog = { status: string; storage_provider: string | null; by
 export type ModelMetadataEntry = { organisationId: string; organisationName: string; canonicalModelId?: string; modelName?: string };
 export interface InvestigateGenerationResult { request: RequestRow; appName: string | null; modelMetadata: Array<[string, ModelMetadataEntry]>; providerNames: Array<[string, string]>; providerMetadata: Array<[string, ProviderMetadataEntry]>; ioLog?: GatewayIoLog | null; [key: string]: any }
 export interface ChartDataResult { requestsChart: any[]; tokensChart: any[]; costChart: any[]; current: any; previous: any; [key: string]: any }
-export interface SessionRollupRow { session_id: string; request_count: number; total_cost_nanos: number; total_cost_usd: number; first_request_at: string; last_request_at: string; app_ids: string[] | null; model_ids: string[] | null; provider_ids: string[] | null; end_user_ids: string[] | null; app_counts?: Array<{ app_id: string; request_count: number }>; model_counts?: Array<{ model_id: string; request_count: number }>; [key: string]: any }
+export interface SessionRollupRow { session_id: string; request_count: number; total_cost_nanos: number; total_cost_usd: number; first_request_at: string; last_request_at: string; app_ids: string[] | null; model_ids: string[] | null; provider_ids: string[] | null; end_user_ids: string[] | null; app_counts?: Array<{ app_id: string; request_count: number }>; model_counts?: Array<{ model_id: string; request_count: number }>; model_provider_counts?: Array<{ model_id: string; provider: string; request_count: number }>; [key: string]: any }
 export interface SessionRequestRow extends RequestRow { session_id: string | null; end_user_id: string | null }
 export interface AsyncJobRow { kind: "video" | "batch"; internal_id: string; request_id: string | null; model: string | null; provider: string | null; app_id: string | null; status: string | null; created_at: string; updated_at: string; job_failure_category: string | null; job_failure_provider: string | null; job_failure_hint: string | null; [key: string]: any }
 export interface AsyncJobDetailRow extends AsyncJobRow { batch_pricing_lines: AsyncJobRequestPricingLine[]; request_pricing_lines: AsyncJobRequestPricingLine[]; request_provider_attempts: Array<Record<string, any>>; webhook_attempts: Array<Record<string, any>>; job_failure_sample: Array<Record<string, any>>; [key: string]: any }

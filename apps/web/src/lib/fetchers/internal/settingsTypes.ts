@@ -591,6 +591,8 @@ export type UsageUpstreamRequestRow = {
 	round_number: number;
 	attempt_number: number | null;
 	attempt_count?: number | null;
+	request_latency_ms?: number | null;
+	request_created_at?: string | null;
 	internal_attempt_number: number | null;
 	stage: string;
 	endpoint: string;

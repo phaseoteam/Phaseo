@@ -18,6 +18,8 @@ describe("settings UI contracts", () => {
 		);
 
 		expect(layoutSource).toContain("<SettingsSidebar");
+		// Keep the sidebar hidden for the full mobile-menu breakpoint.
+		expect(layoutSource).toContain('desktopClassName="hidden md:hidden lg:block"');
 		expect(layoutSource).not.toContain("SettingsTopTabsClientOnly");
 		expect(sidebarSource).toContain("<Collapsible");
 		expect(sidebarSource).toContain("<CollapsibleTrigger asChild>");

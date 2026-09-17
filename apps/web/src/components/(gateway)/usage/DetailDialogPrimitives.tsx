@@ -123,7 +123,7 @@ export function DetailTimingBar({
 	items: Array<{
 		key: string;
 		label: React.ReactNode;
-		duration: number;
+		duration: number | null;
 		colorClass: string;
 	}>;
 }) {
@@ -141,12 +141,12 @@ export function DetailTimingBar({
 	const safeItems = items
 		.map((item) => ({
 			...item,
-			duration: Math.max(0, Math.round(item.duration || 0)),
-		}))
-		.filter((item) => item.duration > 0);
-	const total = safeItems.reduce((sum, item) => sum + item.duration, 0);
+			duration: typeof item.duration === "number" && Number.isFinite(item.duration) && item.duration >= 0
+				? Math.round(item.duration) : null,
+		}));
+	const total = safeItems.reduce((sum, item) => sum + (item.duration ?? 0), 0);
 
-	if (!safeItems.length || total <= 0) {
+	if (!safeItems.length) {
 		return (
 			<div className="text-sm text-muted-foreground">
 				No timing metrics available for this request.
@@ -159,13 +159,14 @@ export function DetailTimingBar({
 				{safeItems.map((item, index) => {
 					const consumedBefore = safeItems
 						.slice(0, index)
-						.reduce((sum, current) => sum + current.duration, 0);
-					const leftPct = (consumedBefore / total) * 100;
-					const widthPct = Math.max((item.duration / total) * 100, 1);
+						.reduce((sum, current) => sum + (current.duration ?? 0), 0);
+					const leftPct = total > 0 ? (consumedBefore / total) * 100 : 0;
+					const widthPct = total > 0 && item.duration !== null && item.duration > 0
+						? Math.max((item.duration / total) * 100, 1) : 0;
 					return (
 						<div
 							key={item.key}
-							className="grid grid-cols-[minmax(96px,140px)_minmax(120px,1fr)_60px] items-center gap-2.5 text-xs"
+							className="grid grid-cols-[minmax(80px,140px)_minmax(40px,1fr)_72px] items-center gap-2.5 text-xs"
 						>
 							<div className="min-w-0 leading-tight text-foreground">
 								{item.label}
@@ -180,18 +181,19 @@ export function DetailTimingBar({
 								/>
 							</div>
 							<div className="text-right font-mono text-muted-foreground">
-								{formatDuration(item.duration)}
+								{item.duration === null ? <span className="font-sans text-[10px]">Not recorded</span> : formatDuration(item.duration)}
 							</div>
 						</div>
 					);
 				})}
 			</div>
-			<div className="grid grid-cols-[minmax(96px,140px)_minmax(120px,1fr)_60px] items-start gap-2.5 pt-2 text-xs">
+			<div className="grid grid-cols-[minmax(80px,140px)_minmax(40px,1fr)_72px] items-start gap-2.5 pt-2 text-xs">
 				<div />
 				<div />
 				<div className="text-right font-mono text-muted-foreground">
 					<div className="mb-1 border-t border-border/70" />
-					<div>{formatDuration(total)}</div>
+					<div className="text-[10px] font-sans">Measured</div>
+					<div>{safeItems.every((item) => item.duration === null) ? "—" : formatDuration(total)}</div>
 				</div>
 			</div>
 		</div>

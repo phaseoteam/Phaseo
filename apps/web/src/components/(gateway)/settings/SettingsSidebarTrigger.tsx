@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
 	Building2,
 	ChevronRight,
@@ -54,6 +54,12 @@ export default function SettingsSidebarTrigger({
 }) {
 	const pathname = usePathname() ?? "";
 	const [open, setOpen] = useState(false);
+	useEffect(() => {
+		const desktop = window.matchMedia("(min-width: 1024px)");
+		const closeOnDesktop = () => { if (desktop.matches) setOpen(false); };
+		desktop.addEventListener("change", closeOnDesktop);
+		return () => desktop.removeEventListener("change", closeOnDesktop);
+	}, []);
 	const isHydrated = useSyncExternalStore(
 		subscribe,
 		getClientSnapshot,

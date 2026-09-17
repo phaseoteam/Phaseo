@@ -45,6 +45,15 @@ function formatNumber(value: unknown, digits = 4): string {
 }
 
 function label(value: string): string {
+	const names: Record<string, string> = {
+		priceScore: "Price", price_score: "Price",
+		reliabilitySample: "Reliability", reliability_sample: "Reliability",
+		latencyScore: "Response speed", latency_score: "Response speed",
+		tailLatencyScore: "Slow responses", tail_latency_score: "Slow responses",
+		throughputScore: "Output speed", throughput_score: "Output speed",
+		tokenAffinity: "Token fit", token_affinity: "Token fit",
+	};
+	if (names[value]) return names[value];
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
 		.replace(/[_-]+/g, " ")
@@ -135,8 +144,8 @@ function MetricGrid({ values }: { values: Record<string, unknown> }) {
 						<span className="truncate">{label(key)}</span>
 						<MetricInfo metric={key} />
 					</span>
-					<code className="shrink-0 text-[11px] font-medium tabular-nums text-foreground">
-						{typeof value === "number" ? formatNumber(value, 6) : String(value ?? "—")}
+					<code title={String(value ?? "")} className="min-w-0 break-words text-right text-xs font-medium tabular-nums text-foreground">
+						{typeof value === "number" ? formatNumber(value, 3) : String(value ?? "—")}
 					</code>
 				</div>
 			))}
@@ -184,9 +193,10 @@ function CandidateCard({
 		: usesWeightedBalancedFormula
 			? ["latencyScore", "latency_score", "tailLatencyScore", "tail_latency_score", "throughputScore", "throughput_score", "priceScore", "price_score", "reliabilitySample", "reliability_sample", "tokenAffinity", "token_affinity", "baseWeight", "base_weight", "rolloutMultiplier", "rollout_multiplier", "routingMultiplier", "routing_multiplier", "cacheBoostMultiplier", "cache_boost_multiplier", "latencyPreferenceMultiplier", "latency_preference_multiplier", "throughputPreferenceMultiplier", "throughput_preference_multiplier"]
 		: ["successRate", "success_rate", "latencyScore", "latency_score", "tailLatencyScore", "tail_latency_score", "throughputScore", "throughput_score", "priceScore", "price_score", "tokenAffinity", "token_affinity", "baseWeight", "base_weight", "rolloutMultiplier", "rollout_multiplier", "routingMultiplier", "routing_multiplier", "cacheBoostMultiplier", "cache_boost_multiplier", "latencyPreferenceMultiplier", "latency_preference_multiplier", "throughputPreferenceMultiplier", "throughput_preference_multiplier"]);
+	const isPrimaryFactor = (key: string) => activeFactorKeys.has(key) && !/weight|multiplier/i.test(key);
 	const splitFactors = (values: Record<string, unknown>) => ({
-		active: Object.fromEntries(Object.entries(values).filter(([key]) => activeFactorKeys.has(key))),
-		context: Object.fromEntries(Object.entries(values).filter(([key]) => !activeFactorKeys.has(key))),
+		active: Object.fromEntries(Object.entries(values).filter(([key]) => isPrimaryFactor(key))),
+		context: Object.fromEntries(Object.entries(values).filter(([key]) => !isPrimaryFactor(key))),
 	});
 	const legacyFactors = splitFactors(legacyScoreFactors);
 	const normalizedFactors = splitFactors(normalized);
@@ -197,10 +207,10 @@ function CandidateCard({
 		["capabilityStatus", decision.capability_status],
 	].filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].startsWith("deranked")));
 	const derankLevel = Math.max(0, ...Object.values(routingStatuses).map((status) => Number(status.match(/\d+/)?.[0] ?? 0)));
-	const width = maxScore > 0 ? Math.max(1, Math.min(100, (score / maxScore) * 100)) : 0;
+	const width = !isExcluded && score > 0 && maxScore > 0 ? Math.max(1, Math.min(100, (score / maxScore) * 100)) : 0;
 
 	return (
-		<details className="group border-t border-border/60 first:border-t-0" open={decision.selected}>
+		<details className="group/candidate border-t border-border/60 first:border-t-0" open={decision.selected}>
 			<summary className="list-none cursor-pointer py-2.5 marker:hidden">
 				<div className="flex items-center gap-3">
 					<div className="w-5 shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
@@ -208,8 +218,8 @@ function CandidateCard({
 					</div>
 					<Logo id={providerId} width={18} height={18} className="shrink-0" />
 					<div className="min-w-0 flex-1">
-						<div className="flex min-w-0 items-center gap-2">
-							<span className="truncate text-sm font-semibold">{providerLabel(providerId, providerNames)}</span>
+						<div className="flex min-w-0 flex-wrap items-center gap-1.5">
+							<span title={providerLabel(providerId, providerNames)} className="max-w-full truncate text-sm font-semibold">{providerLabel(providerId, providerNames)}</span>
 							{decision.selected ? (
 								<span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
 									<Check className="size-3" /> Selected
@@ -232,10 +242,10 @@ function CandidateCard({
 						</div>
 					</div>
 					<div className="text-right">
-						<div className="font-mono text-sm font-semibold tabular-nums">{parsedScore === null ? "—" : formatNumber(score, 6)}</div>
+						<div title={parsedScore === null ? undefined : String(parsedScore)} className="font-mono text-sm font-semibold tabular-nums">{parsedScore === null ? "—" : formatNumber(score, 3)}</div>
 						<div className="text-[10px] text-muted-foreground">Score</div>
 					</div>
-					<ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+					<ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open/candidate:rotate-180" />
 				</div>
 			</summary>
 			<div className="space-y-4 pb-3 pl-10 pt-1">
@@ -249,14 +259,20 @@ function CandidateCard({
 					/>
 				) : null}
 				{Object.keys(routingStatuses).length > 0 ? <TraceGroup title="Routing Status" values={routingStatuses} /> : null}
-				{Object.keys(calculation).length > 0 ? <TraceGroup title="Calculation" values={calculation} /> : null}
-				{Object.keys(contributions).length > 0 && (calculation.formula === "weighted_additive" || calculation.formula === "balanced_weighted_additive") ? <TraceGroup title="Weighted Contributions" values={contributions} /> : null}
-				{Object.keys(normalizedFactors.active).length > 0 ? <TraceGroup title="Score Factors" values={normalizedFactors.active} /> : null}
-				{Object.keys(trace).length > 0 && Object.keys(recordedContext).length > 0 ? <TraceGroup title="Recorded Context" values={recordedContext} /> : null}
-				{Object.keys(inputs).length > 0 ? <TraceGroup title="Recorded Inputs" values={inputs} /> : null}
-				{Object.keys(weights).length > 0 ? <TraceGroup title="Weights" values={weights} /> : null}
-				{Object.keys(trace).length === 0 && Object.keys(legacyFactors.active).length > 0 ? <TraceGroup title="Score Factors" values={legacyFactors.active} /> : null}
-				{Object.keys(trace).length === 0 && Object.keys(legacyFactors.context).length > 0 ? <TraceGroup title="Recorded Context" values={legacyFactors.context} /> : null}
+				{Object.keys(normalizedFactors.active).length > 0 ? <TraceGroup title="Score breakdown" values={normalizedFactors.active} /> : null}
+				{Object.keys(trace).length === 0 && Object.keys(legacyFactors.active).length > 0 ? <TraceGroup title="Score breakdown" values={legacyFactors.active} /> : null}
+				{Object.keys(calculation).length + Object.keys(inputs).length + Object.keys(weights).length + Object.keys(recordedContext).length + Object.keys(contributions).length > 0 ? (
+					<details className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+						<summary className="cursor-pointer text-xs text-muted-foreground">Technical details</summary>
+						<div className="mt-3 space-y-4">
+							{Object.keys(calculation).length > 0 ? <TraceGroup title="Calculation" values={calculation} /> : null}
+							{Object.keys(contributions).length > 0 ? <TraceGroup title="Contributions" values={contributions} /> : null}
+							{Object.keys(inputs).length > 0 ? <TraceGroup title="Recorded inputs" values={inputs} /> : null}
+							{Object.keys(weights).length > 0 ? <TraceGroup title="Weights" values={weights} /> : null}
+							{Object.keys(recordedContext).length > 0 ? <TraceGroup title="Recorded context" values={recordedContext} /> : null}
+						</div>
+					</details>
+				) : null}
 			</div>
 		</details>
 	);
@@ -285,33 +301,30 @@ export function RoutingTracePanel({
 	if (!trace && ranked.length === 0 && excluded.length === 0) return null;
 
 	const maxScore = Math.max(0, ...ranked.map((decision) => number(decision.score) ?? 0));
-	const selected = ranked.find((decision) => decision.selected) ?? ranked[0];
+	const selected = ranked.find((decision) => decision.selected);
 	const algorithm = trace?.algorithm_version ? String(trace.algorithm_version) : "Partial trace";
 	const mode = trace ? String(trace.routing_mode ?? "balanced") : "balanced";
 
 	return (
-		<details className="group mt-3 border-t border-border/70 pt-1">
+		<details className="group/routing mt-4 rounded-lg border border-border/70 px-3 py-1">
 			<summary className="list-none cursor-pointer py-2 marker:hidden">
 				<div className="flex items-center justify-between gap-4">
 					<div className="min-w-0">
-						<div className="text-xs font-medium text-foreground">Routing observability</div>
-						<div className="mt-0.5 truncate text-[11px] text-muted-foreground">
-							{selected ? `${providerLabel(selected.provider_slug ?? "unknown", providerNames)} selected from ${ranked.length} scored candidate${ranked.length === 1 ? "" : "s"}${excluded.length > 0 ? ` · ${excluded.length} excluded` : ""}` : "No candidate was selected"}
+						<div className="text-sm font-medium text-foreground">Routing decision</div>
+						<div className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+							{selected ? `${providerLabel(selected.provider_slug ?? "unknown", providerNames)} selected from ${ranked.length} scored candidate${ranked.length === 1 ? "" : "s"}${excluded.length > 0 ? ` · ${excluded.length} excluded` : ""}` : "No selection recorded"}
 						</div>
 					</div>
 					<div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
-						<span className="flex items-center gap-1 font-mono">
-							{algorithm}
-							{!trace?.algorithm_version ? <MetricInfo metric="partialTrace" /> : null}
-						</span>
-						<span>·</span>
-						<span>{label(mode)}</span>
-						<ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
+						<span className="rounded-md bg-muted px-2 py-1">{label(mode)}</span>
+						<ChevronDown className="size-3.5 transition-transform group-open/routing:rotate-180" />
 					</div>
 				</div>
 			</summary>
 
-			<div className="border-t border-border/60 py-3">
+			<details className="border-t border-border/60 py-2 text-xs text-muted-foreground">
+				<summary className="cursor-pointer">Decision metadata</summary>
+				<div className="my-3 flex items-center gap-1">{algorithm}{!trace?.algorithm_version ? <MetricInfo metric="partialTrace" /> : null}</div>
 				{trace ? (
 					<MetricGrid values={{ seed: formatNumber(trace.random_seed, 0), priority: String(trace.priority ?? "default"), candidatePool: formatNumber(trace.final_candidate_count, 0) }} />
 				) : null}
@@ -320,7 +333,7 @@ export function RoutingTracePanel({
 						Selection method <code className="text-foreground">{label(String(trace.selection_method))}</code>
 					</div>
 				) : null}
-			</div>
+			</details>
 
 			<div className="mt-2 border-y border-border/60">
 				{ranked.map((decision) => <CandidateCard key={`${decision.decision_order}-${decision.provider_slug}`} decision={decision} maxScore={maxScore} providerNames={providerNames} routingMode={mode} />)}

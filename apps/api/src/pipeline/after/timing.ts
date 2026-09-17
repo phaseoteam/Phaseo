@@ -1,5 +1,21 @@
 import type { PipelineContext } from "../before/types";
 
+/** Receipt to the first upstream dispatch, including admission and request construction.
+ * Do not infer this from end-to-end time: retries and provider waits would be included.
+ */
+export function buildResponseTimeline(ctx?: PipelineContext | null) {
+	const value = ctx?.meta.timeToUpstreamRequestMs;
+	const startedAt = ctx?.meta.startedAtMs;
+	const valid = typeof value === "number" && Number.isFinite(value) && value >= 0;
+	return {
+		version: 1,
+		routing_ms: valid ? Math.round(value) : null,
+		// Allows retry intervals to exclude preparation already shown as routing.
+		...(valid && typeof startedAt === "number" && Number.isFinite(startedAt)
+			? { first_dispatch_at_ms: startedAt + value } : {}),
+	};
+}
+
 function readTimingMetric(ctx: PipelineContext, key: string): number | null {
 	const timing = (ctx as any)?.timing;
 	if (!timing || typeof timing !== "object") return null;

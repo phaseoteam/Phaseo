@@ -18,6 +18,7 @@ import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { extractSearchObservability } from "./search-observability";
 import { mergeWebFetchObservability } from "./fetch-observability";
 import {
+	buildResponseTimeline,
 	resolveBeforeLatencyMs,
 	resolveExecuteTotalLatencyMs,
 	resolveNonStreamLatencyMs,
@@ -397,6 +398,7 @@ export async function handleFailureAudit(
             providerResponse: errorDetails ?? result.rawResponse ?? null,
             detailMetadata: {
                 stage: "execute",
+                response_timeline: buildResponseTimeline(ctx),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
@@ -674,6 +676,7 @@ export async function handleSuccessAudit(
             providerResponse: result.rawResponse ?? null,
             detailMetadata: {
                 stage: "execute",
+                response_timeline: buildResponseTimeline(ctx),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
                 finish_reason: finishReason ?? null,

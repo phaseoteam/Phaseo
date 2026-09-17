@@ -28,13 +28,15 @@ accountSettingsUsageActionsRouter.get("/usage/realtime", async (c) => {
 	const account = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!account) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const page = Math.max(1, Math.min(10000, Math.trunc(Number(c.req.query("page")) || 1)));
+	const requestedSize = Number(c.req.query("pageSize"));
+	const pageSize = [25, 50, 100].includes(requestedSize) ? requestedSize : 50;
 	const { data, error } = await account.client.from("gateway_realtime_sessions")
 		.select("session_id,provider,model_id,voice,status,source,started_at,connected_at,ended_at,expires_at,reservation_count,reserved_nanos,captured_nanos,released_nanos,estimated_cost_nanos,final_cost_nanos,currency,usage,pricing_lines,disconnect_reason,error_code")
 		.eq("workspace_id", account.workspaceId)
 		.order("started_at", { ascending: false }).order("session_id", { ascending: false })
-		.range((page - 1) * 50, page * 50);
+		.range((page - 1) * pageSize, page * pageSize);
 	if (error) return c.json({ error: "realtime_sessions_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ sessions: (data ?? []).slice(0, 50), hasMore: (data ?? []).length > 50 }, 200, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ sessions: (data ?? []).slice(0, pageSize), pageSize, hasMore: (data ?? []).length > pageSize }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsUsageActionsRouter.get("/usage/logs/:requestId", async (c) => {

@@ -209,7 +209,7 @@ export async function UsageLogsContent({
 	const pageDescription = view === "logs"
 		? "Inspect gateway requests, routing decisions, usage, and errors."
 		: view === "upstream"
-			? "Inspect each provider attempt made while serving gateway requests."
+			? "Review each generation’s final provider, attempts, and latency."
 			: view === "jobs"
 				? forcedJobKind === "video" ? "Inspect asynchronous video generation jobs." : forcedJobKind === "batch" ? "Inspect asynchronous batch processing jobs." : "Inspect asynchronous video and batch jobs."
 				: "Inspect grouped request activity across apps and models.";
@@ -247,6 +247,7 @@ export async function UsageLogsContent({
 		/>;
 		content = (
 			<UpstreamRequestsTable
+				settingsTargetId="request-column-settings"
 				rows={filteredRows}
 				modelMetadata={new Map(data?.modelMetadataEntries ?? [])}
 				providerNames={new Map(data?.providerNameEntries ?? [])}
@@ -270,6 +271,7 @@ export async function UsageLogsContent({
 		);
 		content = (
 			<AsyncJobsPanel
+				settingsTargetId="request-column-settings"
 				initialJobs={data.recentJobs}
 				title="Async jobs"
 				description="Recent long-running video and batch jobs, including status, billing, and webhook delivery history."
@@ -313,6 +315,7 @@ export async function UsageLogsContent({
 
 		content = (
 			<SessionsPanel
+				settingsTargetId="request-column-settings"
 				initialSessions={data.sessions}
 				initialAppMetadata={appMetadata}
 				initialModelMetadata={modelMetadata}
@@ -395,6 +398,8 @@ export async function UsageLogsContent({
 					</Card>
 				) : null}
 				<RequestsSection
+					columnSettingsTargetId="request-column-settings"
+					apiKeys={data.availableKeys}
 					timeRange={timeRange}
 					appNames={appNames}
 					providerNames={providerNames}
@@ -449,23 +454,19 @@ export async function UsageLogsContent({
 	}
 	return (
 		<NuqsAdapter>
-		<div className="min-w-0 space-y-6">
-			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-				<div>
-					<h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
-					<p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-						{pageDescription}
-					</p>
-				</div>
-				<div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
+		<div className="min-w-0 space-y-4">
+			<div>
+				<h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
+				<p className="mt-1 max-w-3xl text-sm text-muted-foreground">{pageDescription}</p>
+			</div>
+			<div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+				<div className="flex min-w-0 flex-wrap items-center gap-2">
 					{filters}
 					{view === "logs" ? <InvestigateGeneration /> : null}
-					<UsageLogsToolbar
-						view={view}
-						preset={preset}
-						customFrom={customFrom}
-						customTo={customTo}
-					/>
+				</div>
+				<div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+					<UsageLogsToolbar view={view} preset={preset} customFrom={customFrom} customTo={customTo} />
+					<div id="request-column-settings" className="flex shrink-0 items-center empty:hidden" />
 				</div>
 			</div>
 			<div id="usage-log-active-filters" className="empty:hidden" />

@@ -295,6 +295,7 @@ async function upsertV2RequestFact(args: {
     itlMs?: number | null;
     phaseoOverheadMs?: number | null;
     internalDispatchMs?: number | null;
+    responseTimeline?: unknown;
     gatewayTotalMs?: number | null;
     throughput?: number | null;
     edgeColo?: string | null;
@@ -588,6 +589,7 @@ async function upsertV2RequestFact(args: {
             },
             safe_metadata: {
                 provider: args.provider ?? null,
+                response_timeline: args.responseTimeline ?? null,
                 routed_model: publicRoutedModel ?? args.requestedModel,
 				service_tier_requested: serviceTier.requested,
 				service_tier_observed: serviceTier.observed,
@@ -1054,6 +1056,7 @@ export async function auditSuccess(input: {
                     itlMs: args.itlMs ?? null,
                     phaseoOverheadMs: args.phaseoOverheadMs ?? null,
                     internalDispatchMs: args.internalLatencyMs ?? null,
+                    responseTimeline: args.detailMetadata?.response_timeline ?? null,
                     gatewayTotalMs: args.endToEndMs ?? null,
                     throughput: args.throughput ?? null,
                     edgeColo: args.edgeColo ?? null,
@@ -1371,6 +1374,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                             errorCode: args.errorCode,
                             latencyMs: args.latencyMs ?? null,
                             internalDispatchMs: args.internalLatencyMs ?? null,
+                            responseTimeline: args.detailMetadata?.response_timeline ?? null,
                             edgeColo: args.edgeColo ?? null,
                             edgeCountry: args.edgeCountry ?? null,
                             edgeContinent: args.edgeContinent ?? null,
@@ -1554,6 +1558,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         latencyMs: args.latencyMs ?? null,
                         generationMs: args.generationMs ?? null,
                         internalDispatchMs: args.internalLatencyMs ?? null,
+                        responseTimeline: args.detailMetadata?.response_timeline ?? null,
                         edgeColo: args.edgeColo ?? null,
                         edgeCountry: args.edgeCountry ?? null,
                         edgeContinent: args.edgeContinent ?? null,

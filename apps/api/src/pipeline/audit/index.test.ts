@@ -135,7 +135,7 @@ describe("audit request detail persistence", () => {
 			gatewayResponse: { id: "resp_1", output_text: "hi" },
 			providerRequest: { model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hello" }] },
 			providerResponse: { id: "chatcmpl_1" },
-			detailMetadata: { replay_supported: true },
+			detailMetadata: { replay_supported: true, response_timeline: { version: 1, routing_ms: 12 } },
 			userAgent: "phaseo-typescript/2.2.0",
 			clientSource: {
 				id: "phaseo-typescript",
@@ -174,6 +174,7 @@ describe("audit request detail persistence", () => {
 				detail_metadata: expect.objectContaining({
 					labels: [{ key: "team", value: "support" }],
 					replay_supported: true,
+					response_timeline: { version: 1, routing_ms: 12 },
 					client_source: expect.objectContaining({ id: "phaseo-typescript" }),
 					request: expect.objectContaining({ user_agent: "phaseo-typescript/2.2.0" }),
 				}),
@@ -191,7 +192,7 @@ describe("audit request detail persistence", () => {
 					messages: [{ role: "user", content: "hello" }],
 				},
 				request_content: [{ role: "user", content: "hello" }],
-				metadata: expect.objectContaining({ replay_supported: true }),
+				metadata: expect.objectContaining({ replay_supported: true, response_timeline: { version: 1, routing_ms: 12 } }),
 			}),
 		);
 		expect(consoleErrorSpy).not.toHaveBeenCalledWith(
@@ -588,6 +589,7 @@ describe("audit request detail persistence", () => {
 					score_factor_values: [0.99, 0.8, 0.7, 0.6, 1, 0.95, 50, 0.5, 1, 1, 1, 1, 1, 1],
 					score_trace: { calculation: { baseScore: 0.82, finalScore: 0.82 } },
 				}],
+				response_timeline: { version: 1, routing_ms: 0 },
 				routing_diagnostics: {
 					algorithm: {
 						version: "provider-score-v2",
@@ -646,6 +648,7 @@ describe("audit request detail persistence", () => {
 			expect.objectContaining({ meter_key: "output_tokens", quantity: 4 }),
 		]));
 		expect(event.safe_metadata).toEqual(expect.objectContaining({
+			response_timeline: { version: 1, routing_ms: 0 },
 			cached_input_tokens_are_subset_of_input: true,
 			service_tier: "priority",
 		}));

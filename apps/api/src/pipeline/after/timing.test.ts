@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PipelineContext } from "../before/types";
 import {
+	buildResponseTimeline,
 	resolveBeforeLatencyMs,
 	resolveExecuteTotalLatencyMs,
 	resolveNonStreamLatencyMs,
@@ -34,6 +35,29 @@ function buildContext(overrides?: Partial<PipelineContext>): PipelineContext {
 }
 
 describe("after timing helpers", () => {
+	it("records the dispatch boundary for deduplicating retry preparation", () => {
+		const ctx = buildContext();
+		ctx.meta.startedAtMs = 1000;
+		ctx.meta.timeToUpstreamRequestMs = 20;
+		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: 20, first_dispatch_at_ms: 1020 });
+	});
+
+	it.each([0, 12.6])("records first-dispatch routing time (%s)", (value) => {
+		const ctx = buildContext();
+		ctx.meta.timeToUpstreamRequestMs = value;
+		ctx.meta.timeToLatestUpstreamRequestMs = 5000;
+		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: Math.round(value) });
+	});
+
+	it.each([undefined, -1, NaN, Infinity])("does not fabricate missing or invalid routing time (%s)", (value) => {
+		const ctx = buildContext();
+		ctx.meta.timeToUpstreamRequestMs = value;
+		ctx.meta.before_ms = 12;
+		ctx.meta.generation_ms = 400;
+		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: null });
+		expect(buildResponseTimeline(null)).toEqual({ version: 1, routing_ms: null });
+	});
+
 	it("prefers explicit latency from request meta", () => {
 		const ctx = buildContext({
 			meta: {

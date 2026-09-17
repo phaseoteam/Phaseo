@@ -49,6 +49,30 @@ const historicalRequestWithoutCollections = {
 } as RequestRow;
 
 describe("RequestDetailDialog", () => {
+	it("shows routing first and non-overlapping streaming intervals", () => {
+		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={{
+			...historicalRequestWithoutCollections,
+			stream: true, provider: "openai", latency_ms: 120, generation_ms: 520,
+			detail_metadata: { response_timeline: { version: 1, routing_ms: 15 } },
+			provider_attempts: [{ provider: "openai", attempt_number: 1, outcome: "success", status: 200, duration_ms: 120 }],
+		}} />);
+		expect(markup).toContain("Response Timeline");
+		const timeline = markup.slice(markup.indexOf("Response Timeline"));
+		expect(timeline).toContain("Phaseo routing");
+		expect(timeline.indexOf("Phaseo routing")).toBeLessThan(timeline.indexOf("openai"));
+		expect(timeline).toContain("15 ms");
+		expect(timeline).toContain("120 ms");
+		expect(timeline).toContain("400 ms");
+		expect(timeline).toContain("535 ms");
+		expect(timeline).not.toContain("520 ms");
+	});
+
+	it("marks historical routing timing as unavailable", () => {
+		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={historicalRequestWithoutCollections} />);
+		expect(markup).toContain("Phaseo routing");
+		expect(markup).toContain("Not recorded");
+	});
+
 	it("opens a historical request when optional collections are absent", () => {
 		expect(() =>
 			renderToStaticMarkup(

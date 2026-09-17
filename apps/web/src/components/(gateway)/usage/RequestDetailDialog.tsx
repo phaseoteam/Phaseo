@@ -64,6 +64,7 @@ import {
 import { formatRoomError } from "@/lib/chat/formatRoomError";
 import UsageEntityHoverCard from "./UsageEntityHoverCard";
 import { RoutingTracePanel } from "@/components/(gateway)/usage/RoutingTracePanel";
+import { providerAttemptTimelineDuration, responseTimelineTiming } from "./responseTimeline";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -876,8 +877,9 @@ export default function RequestDetailDialog({
 		(meter) => !internalUsageMeters.some((internal) => internal.key === meter.key),
 	);
 	const usageSummary = buildUsageSummary(normalizedUsage);
-	const timingLatency = Number(request.latency_ms ?? 0) || 0;
-	const timingGeneration = Number(request.generation_ms ?? 0) || 0;
+	const timelineTiming = responseTimelineTiming(request);
+	const timingLatency = timelineTiming.providerMs ?? 0;
+	const timingGeneration = timelineTiming.generationMs ?? 0;
 	const requestedModelId = getRequestedModelId(request);
 	const routedModelId = getRoutedModelId(request);
 	const requestedModelHref = getModelDetailsHref(requestedModelId);
@@ -911,7 +913,7 @@ export default function RequestDetailDialog({
 		apiModelId: finalSuccessAttempt?.api_model_id,
 		providerModelSlug: finalSuccessAttempt?.provider_model_slug,
 	});
-	const responseTimelineItems =
+	const providerTimelineItems =
 		attempts.length > 0
 			? attempts.flatMap((attempt, index) => {
 					const attemptProviderId = attempt.provider ?? null;
@@ -921,7 +923,7 @@ export default function RequestDetailDialog({
 						`Attempt ${index + 1}`;
 					const statusTone = getAttemptStatusTone(attempt);
 					const statusDescription = getAttemptStatusDescription(attempt);
-					const durationMs = Number(attempt.total_ms ?? attempt.duration_ms ?? 0) || 0;
+					const durationMs = providerAttemptTimelineDuration(attempt, request.detail_metadata?.response_timeline);
 					const attemptFinishReason =
 						attempt.provider_finish_reason ?? attempt.finish_reason ?? null;
 					const attemptCostNanos = Number(attempt.cost_nanos ?? 0) || 0;
@@ -1011,14 +1013,15 @@ export default function RequestDetailDialog({
 								</HoverCard>
 							</div>
 						),
-						duration: durationMs,
+						duration: finalSuccessAttempt === attempt && timelineTiming.providerMs !== null
+							? timelineTiming.providerMs : durationMs,
 						colorClass: statusTone.barClass,
 					};
 
 					if (
 						finalSuccessAttempt === attempt &&
-						timingLatency > 0 &&
-						timingGeneration > 0
+						timelineTiming.providerMs !== null &&
+						timelineTiming.generationMs !== null
 					) {
 						return [
 							{
@@ -1041,7 +1044,7 @@ export default function RequestDetailDialog({
 					return [providerRow];
 			  })
 			: [
-					...(timingLatency > 0
+					...(timelineTiming.providerMs !== null
 						? [
 								{
 								key: "provider-latency",
@@ -1065,7 +1068,7 @@ export default function RequestDetailDialog({
 								},
 						  ]
 						: []),
-					...(timingGeneration > 0
+					...(timelineTiming.generationMs !== null
 						? [
 								{
 								key: "generation",
@@ -1080,6 +1083,20 @@ export default function RequestDetailDialog({
 						  ]
 						: []),
 			  ];
+	const responseTimelineItems = [
+		{
+			key: "phaseo-routing",
+			label: (
+				<div className="flex min-w-0 items-center gap-2" title="Authentication, validation, routing and request preparation before the first upstream request.">
+					<Logo id="phaseo" alt="" width={14} height={14} className="shrink-0" />
+					<span>Phaseo routing</span>
+				</div>
+			),
+			duration: timelineTiming.routingMs,
+			colorClass: "bg-violet-500",
+		},
+		...providerTimelineItems,
+	];
 	const sessionFilterHref = request.session_id
 		? buildUsageLogsFilterHref({
 				searchParams,
@@ -2644,8 +2661,8 @@ export default function RequestDetailDialog({
 							<DetailKeyValueGrid
 								columns={3}
 								items={[
-									{ label: "Provider latency", value: <span className="font-mono">{timingLatency > 0 ? `${timingLatency} ms` : "-"}</span> },
-									{ label: "Generation time", value: <span className="font-mono">{timingGeneration > 0 ? `${timingGeneration} ms` : "-"}</span> },
+									{ label: timelineTiming.generationMs !== null ? "Provider latency" : "Provider duration", value: <span className="font-mono">{timelineTiming.providerMs !== null ? `${timingLatency} ms` : "-"}</span> },
+									{ label: "Generation time", value: <span className="font-mono">{timelineTiming.generationMs !== null ? `${timingGeneration} ms` : "-"}</span> },
 									{ label: "Throughput", value: <span className="font-mono">{formatThroughput(request.throughput)}</span> },
 									{ label: "Cost", value: <span className="font-mono">{formatCost(request.cost_nanos)}</span> },
 									{ label: "Tokens", value: <span className="font-mono">{usageSummary.input != null || usageSummary.output != null ? `${formatUsageNumber(usageSummary.input ?? 0)} → ${formatUsageNumber(usageSummary.output ?? 0)}` : "-"}</span> },
@@ -2654,7 +2671,7 @@ export default function RequestDetailDialog({
 							/>
 						</GenerationSection>
 
-						<GenerationSection title="Provider Responses">
+						<GenerationSection title="Response timeline">
 							<DetailTimingBar items={responseTimelineItems} />
 							<RoutingTracePanel
 								trace={request.routing_trace ?? null}
