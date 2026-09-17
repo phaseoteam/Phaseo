@@ -1,11 +1,9 @@
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import {
 	assertSafeDiscoverySnapshot,
-	buildDiscordMessage,
 	buildProviderApiModelSnapshotDiff,
 	confirmModelRemovals,
 	collapseDiscordProviderChanges,
-	computeDiscordNotificationFingerprint,
 	extractDiscoveredModels,
 	extractProviderApiModelSnapshot,
 	fetchProviderModels,
@@ -13,6 +11,11 @@ import {
 	getDiscordProviderFamilyId,
 	resolveProviderModelsEndpoint,
 } from "./helpers";
+import {
+	buildPrivateModelDiscoveryMessage,
+	computePrivateModelDiscoveryFingerprint,
+	sendPrivateModelDiscoveryNotification,
+} from "./private-model-discovery-notifications";
 import { installFetchMock, jsonResponse } from "../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../tests/helpers/runtime";
 
@@ -382,7 +385,7 @@ describe("confirmModelRemovals", () => {
 	});
 });
 
-describe("buildDiscordMessage", () => {
+describe("buildPrivateModelDiscoveryMessage", () => {
 	it("collapses regional and endpoint variants into provider families", () => {
 		const collapsed = collapseDiscordProviderChanges([
 			{ providerId: "nebius-token-factory", providerName: "Nebius", previousCount: 1, currentCount: 2, added: ["model-a"], removed: [] },
@@ -396,7 +399,7 @@ describe("buildDiscordMessage", () => {
 	});
 
 	it("preserves pricing update counts while deduplicating visible samples", () => {
-		const message = buildDiscordMessage({
+		const message = buildPrivateModelDiscoveryMessage({
 			modelChanges: [],
 			pricing: {
 				updatesDetected: 10,
@@ -423,7 +426,7 @@ describe("buildDiscordMessage", () => {
 
 	it("includes pricing-only changes", () => {
 		setupRuntimeFromEnv({} as any);
-		expect(buildDiscordMessage({
+		expect(buildPrivateModelDiscoveryMessage({
 			modelChanges: [],
 			pricing: { updatesDetected: 1, providerChanges: [{ providerId: "groq", updates: 1, samples: ["llama-3.3 | price changed"] }] },
 			providerApiPricing: { updatesDetected: 1, providerChanges: [{ providerId: "deepinfra", updates: 1, samples: ["model | price changed"] }] },
@@ -434,7 +437,7 @@ describe("buildDiscordMessage", () => {
 
 	it("does not notify for pricing source failures without a pricing change", () => {
 		setupRuntimeFromEnv({} as any);
-		expect(buildDiscordMessage({
+		expect(buildPrivateModelDiscoveryMessage({
 			modelChanges: [],
 			pricing: { updatesDetected: 0, providerChanges: [] },
 			providerApiPricing: { updatesDetected: 0, providerChanges: [] },
@@ -449,7 +452,7 @@ describe("buildDiscordMessage", () => {
 
 	it("reports pricing page changes with added and removed price lines", () => {
 		setupRuntimeFromEnv({} as any);
-		const message = buildDiscordMessage({
+		const message = buildPrivateModelDiscoveryMessage({
 			modelChanges: [],
 			pricing: { updatesDetected: 0, providerChanges: [] },
 			providerApiPricing: { updatesDetected: 0, providerChanges: [] },
@@ -706,7 +709,7 @@ describe("extractProviderApiModelSnapshot pricing comparisons", () => {
 	});
 });
 
-describe("computeDiscordNotificationFingerprint", () => {
+describe("computePrivateModelDiscoveryFingerprint", () => {
 	it("is stable for an identical notification and changes with its payload", async () => {
 		setupRuntimeFromEnv({} as any);
 		const input = {
@@ -717,9 +720,9 @@ describe("computeDiscordNotificationFingerprint", () => {
 			configuredModelCoverage: { updatesDetected: 0, providerChanges: [] },
 		} as any;
 
-		const first = await computeDiscordNotificationFingerprint(input);
-		const repeated = await computeDiscordNotificationFingerprint(input);
-		const changed = await computeDiscordNotificationFingerprint({
+		const first = await computePrivateModelDiscoveryFingerprint(input);
+		const repeated = await computePrivateModelDiscoveryFingerprint(input);
+		const changed = await computePrivateModelDiscoveryFingerprint({
 			...input,
 			providerApiPricing: { updatesDetected: 2, providerChanges: [{ providerId: "openrouter", updates: 2, samples: ["two prices changed"] }] },
 		});
@@ -727,6 +730,48 @@ describe("computeDiscordNotificationFingerprint", () => {
 		expect(first).toMatch(/^[0-9a-f]{64}$/);
 		expect(repeated).toBe(first);
 		expect(changed).not.toBe(first);
+	});
+});
+
+describe("sendPrivateModelDiscoveryNotification", () => {
+	it("sends a text-only operator alert even when models were added", async () => {
+		const webhookUrl = "https://discord.example/private-discovery";
+		setupRuntimeFromEnv({
+			DISCORD_WEBHOOK_URL: webhookUrl,
+			DISCORD_ROLE_ID: "role-1",
+			DISCORD_USER_ID: "user-1",
+		} as any);
+		const fetchMock = installFetchMock([{
+			match: (url) => url === webhookUrl,
+			response: new Response(null, { status: 204 }),
+		}]);
+
+		try {
+			const summary = await sendPrivateModelDiscoveryNotification({
+				modelChanges: [{
+					providerId: "novita",
+					providerName: "Novita",
+					previousCount: 0,
+					currentCount: 1,
+					added: ["novita/new-model"],
+					removed: [],
+				}],
+				pricing: { updatesDetected: 0, providerChanges: [] },
+				providerApiPricing: { updatesDetected: 0, providerChanges: [] },
+				pricingTable: { updatesDetected: 0, providerChanges: [], errors: [] },
+				configuredModelCoverage: { updatesDetected: 0, providerChanges: [] },
+			} as any);
+
+			expect(summary).toMatchObject({ delivered: true, skipped: false });
+			expect(fetchMock.calls).toHaveLength(1);
+			expect(fetchMock.calls[0]?.bodyJson).toMatchObject({
+				username: "Phaseo Private Model Discovery",
+				content: expect.stringContaining("novita/new-model"),
+			});
+			expect(fetchMock.calls[0]?.bodyJson.embeds).toBeUndefined();
+		} finally {
+			fetchMock.restore();
+		}
 	});
 });
 

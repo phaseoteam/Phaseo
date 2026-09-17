@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
 	bindings: {} as Record<string, string>,
 	getSupabaseAdmin: vi.fn(),
-	buildInternalModelWebhookPayload: vi.fn(),
+	buildPublicModelAnnouncementPayload: vi.fn(),
 	sendDiscordWebhookPayload: vi.fn(),
 }));
 
@@ -19,9 +19,9 @@ vi.mock("./helpers", () => ({
 	},
 }));
 
-vi.mock("./discord", () => ({
-	buildInternalModelWebhookPayload: (...args: unknown[]) => {
-		mocks.buildInternalModelWebhookPayload(...args);
+vi.mock("./public-model-announcement-discord", () => ({
+	buildPublicModelAnnouncementPayload: (...args: unknown[]) => {
+		mocks.buildPublicModelAnnouncementPayload(...args);
 		const models = args[0] as Array<{ modelId: string; modelUrl: string; imageUrl?: string }>;
 		const options = args[2] as { message?: string; username?: string } | undefined;
 		return {
@@ -31,10 +31,13 @@ vi.mock("./discord", () => ({
 			embeds: models.map((model) => ({ title: model.modelId, url: model.modelUrl, image: { url: model.imageUrl } })),
 		};
 	},
+}));
+
+vi.mock("./discord-webhook", () => ({
 	sendDiscordWebhookPayload: (...args: unknown[]) => mocks.sendDiscordWebhookPayload(...args),
 }));
 
-import { runPublicModelAnnouncementCheck } from "./public-announcements";
+import { runPublicModelAnnouncementCheck } from "./public-model-catalog-announcements";
 
 type ModelRow = {
 	model_slug: string;
@@ -88,7 +91,7 @@ describe("runPublicModelAnnouncementCheck", () => {
 	beforeEach(() => {
 		mocks.bindings = {};
 		mocks.getSupabaseAdmin.mockReset();
-		mocks.buildInternalModelWebhookPayload.mockReset();
+		mocks.buildPublicModelAnnouncementPayload.mockReset();
 		mocks.sendDiscordWebhookPayload.mockReset();
 		mocks.sendDiscordWebhookPayload.mockResolvedValue(undefined);
 	});
@@ -144,10 +147,14 @@ describe("runPublicModelAnnouncementCheck", () => {
 
 		expect(summary).toMatchObject({ detected: 1, notified: 2, pending: 0, error: null });
 		expect(mocks.sendDiscordWebhookPayload).toHaveBeenCalledTimes(1);
+		const buildOptions = mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[2] as {
+			includeMentions?: boolean;
+		};
+		expect(buildOptions.includeMentions).toBe(false);
 		const payload = mocks.sendDiscordWebhookPayload.mock.calls[0]?.[1] as { embeds: Array<{ image: { url: string } }> };
 		expect(payload.embeds.map((embed) => embed.image.url)).toEqual([
-			"https://phaseo.app/og/models/openai/gpt-new?discovery=1",
-			"https://phaseo.app/og/models/anthropic/claude-pending?discovery=1",
+			"https://phaseo.app/og/models/openai/gpt-new",
+			"https://phaseo.app/og/models/anthropic/claude-pending",
 		]);
 		expect(supabase.upserts[0]?.rows).toEqual([
 			expect.objectContaining({ model_slug: "openai/gpt-new", status: "pending" }),

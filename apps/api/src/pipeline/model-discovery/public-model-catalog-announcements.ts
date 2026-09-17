@@ -1,6 +1,8 @@
+// Track public catalog state and claim announcements; embed formatting lives in public-model-announcement-discord.ts.
 import { getSupabaseAdmin } from "@/runtime/env";
 import { readBindingEnv, toBool } from "./helpers";
-import { buildInternalModelWebhookPayload, sendDiscordWebhookPayload } from "./discord";
+import { buildPublicModelAnnouncementPayload } from "./public-model-announcement-discord";
+import { sendDiscordWebhookPayload } from "./discord-webhook";
 
 const PUBLIC_ANNOUNCEMENT_BATCH_SIZE = 10;
 const PUBLIC_ANNOUNCEMENT_PAGE_SIZE = 1_000;
@@ -97,7 +99,7 @@ function modelUrl(modelSlug: string): string {
 }
 
 function modelImageUrl(modelSlug: string): string {
-	return `https://phaseo.app/og/models/${modelPath(modelSlug)}?discovery=1`;
+	return `https://phaseo.app/og/models/${modelPath(modelSlug)}`;
 }
 
 async function loadPublicModels(): Promise<PublicModelRow[]> {
@@ -375,7 +377,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 		for (let index = 0; index < claimedModels.length; index += PUBLIC_ANNOUNCEMENT_BATCH_SIZE) {
 			const batch = claimedModels.slice(index, index + PUBLIC_ANNOUNCEMENT_BATCH_SIZE);
 			try {
-				const payload = buildInternalModelWebhookPayload(
+				const payload = buildPublicModelAnnouncementPayload(
 					batch.map((model) => ({
 						modelId: model.modelSlug,
 						modelName: model.modelName,
@@ -391,6 +393,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 						avatarUrl: PUBLIC_MODEL_DISCOVERY_AVATAR_URL,
 						latestModelsUrl: PUBLIC_MODELS_URL,
 						message: "New public model catalog entries detected.",
+						includeMentions: false,
 						maxModelEmbeds: PUBLIC_ANNOUNCEMENT_BATCH_SIZE,
 					},
 				);

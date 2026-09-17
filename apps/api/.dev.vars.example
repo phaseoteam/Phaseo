@@ -3,6 +3,10 @@ AMAZON_BEDROCK_REGION=us-east-1
 AMAZON_BEDROCK_MANTLE_BASE_URL=https://bedrock-mantle.us-east-1.api.aws
 AMAZON_BEDROCK_API_KEY=replace-with-a-bedrock-api-key
 
+# Local-only Discord smoke test. Use a webhook for a private test channel;
+# never use the production or private operator webhook here.
+# DISCORD_WEBHOOK_NEW_MODELS_PUBLIC_TEST=https://discord.com/api/webhooks/...
+
 # Optional SigV4 alternative to AMAZON_BEDROCK_API_KEY.
 # AWS_ACCESS_KEY_ID=replace-with-an-access-key-id
 # AWS_SECRET_ACCESS_KEY=replace-with-a-secret-access-key

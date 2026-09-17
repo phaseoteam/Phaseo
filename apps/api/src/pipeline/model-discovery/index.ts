@@ -1,6 +1,7 @@
 // Purpose: Run model discovery on a schedule and persist compact state in Supabase.
 // Why: Replace filesystem snapshots with durable DB state for Cloudflare Worker cron runs.
 // How: Poll provider model endpoints, diff against DB, notify on changes, and prune stale rows.
+// Notifications: private operator alerts and public catalog announcements are separate workflows.
 
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import {
@@ -9,7 +10,6 @@ import {
 	buildProviderApiModelSnapshotDiff,
 	canonicalProviderId,
 	confirmModelRemovals,
-	computeDiscordNotificationFingerprint,
 	computeConfiguredModelCoverageFingerprint,
 	diffModelIds,
 	extractProviderApiModelSnapshot,
@@ -23,13 +23,16 @@ import {
 	loadPricingPageStates,
 	readBindingEnv,
 	runPricingMonitorCheck,
-	sendDiscordNotification,
 	shouldRunPricingMonitor,
 	savePricingPageStates,
 	summarizeMissingConfiguredProviderModels,
 	toBool,
 	toInt,
 } from "./helpers";
+import {
+	computePrivateModelDiscoveryFingerprint,
+	sendPrivateModelDiscoveryNotification,
+} from "./private-model-discovery-notifications";
 import {
 	buildPricingTableIssueEntries,
 	buildCatalogPricingIssueEntries,
@@ -49,7 +52,7 @@ import {
 import {
 	runPublicModelAnnouncementCheck,
 	type PublicModelAnnouncementSummary,
-} from "./public-announcements";
+} from "./public-model-catalog-announcements";
 
 export {
 	DEFAULT_MODEL_DISCOVERY_CONCURRENCY,
@@ -1139,7 +1142,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const hasNotifiableChanges = hasDiscordNotifiableChanges(notificationInput);
 		if (shouldNotify && hasNotifiableChanges) {
 			try {
-				notificationFingerprint = await computeDiscordNotificationFingerprint(notificationInput);
+				notificationFingerprint = await computePrivateModelDiscoveryFingerprint(notificationInput);
 				let previousFingerprint: string | null = null;
 				try {
 					previousFingerprint = await loadLatestDiscordNotificationFingerprint(args.source);
@@ -1154,7 +1157,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 					notificationSummary = { delivered: true, skipped: true, reason: "duplicate notification fingerprint" };
 					console.log("[model-discovery] Discord notification skipped: duplicate notification fingerprint");
 				} else {
-					notificationSummary = await sendDiscordNotification(notificationInput);
+					notificationSummary = await sendPrivateModelDiscoveryNotification(notificationInput);
 					notificationError = notificationSummary.error ?? null;
 					if (!notificationSummary.delivered) notificationFingerprint = null;
 				}

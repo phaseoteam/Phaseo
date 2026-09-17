@@ -60,6 +60,7 @@
 		"data:precommit": "pnpm run data:prep-pr",
 		"data:check-new-models": "tsx scripts/model-discovery/run.ts",
 		"data:check-new-models:internal-public": "tsx scripts/model-discovery/run-internal-public.ts",
+		"data:test-public-model-announcement": "tsx scripts/model-discovery/send-public-announcement-test.ts",
 		"data:check-new-models:hf-private": "tsx scripts/model-discovery/run-hf-private.ts",
 		"data:probe-model-endpoints": "node internal/fetch-provider-model-endpoints.mjs",
 		"data:check-new-models:test": "tsx scripts/model-discovery/validate-providers.ts",

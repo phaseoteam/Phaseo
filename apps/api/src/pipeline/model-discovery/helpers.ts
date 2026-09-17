@@ -1,13 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
 import {
-	buildInternalModelWebhookPayload,
-	sendDiscordTextMessage,
-	sendDiscordWebhookPayload,
-	type InternalModelNotificationModel,
-} from "./discord";
-import { sendSlackWebhookMessage } from "./slack";
-import {
 	extractProviderApiModelSnapshot,
 	hasProviderApiSnapshotValue,
 	normalizeJson,
@@ -18,6 +11,7 @@ import {
 } from "./watch-snapshot";
 import type { ProviderConfig } from "./providers";
 
+// Shared provider, diff, pricing, and message-section utilities. Notification delivery lives in its workflow module.
 export {
 	extractProviderApiModelSnapshot,
 	hasProviderApiSnapshotValue,
@@ -40,7 +34,7 @@ type RunArgs = {
 	prune?: boolean;
 };
 
-type ProviderChange = {
+export type ProviderChange = {
 	providerId: string;
 	providerName: string;
 	previousCount: number;
@@ -136,7 +130,7 @@ type PricingCursor = {
 	ruleIdsAtTimestamp: string[];
 };
 
-type PricingMonitorSummary = {
+export type PricingMonitorSummary = {
 	enabled: boolean;
 	executed: boolean;
 	baselineInitialized: boolean;
@@ -148,7 +142,7 @@ type PricingMonitorSummary = {
 	error?: string | null;
 };
 
-type ProviderApiPricingMonitorSummary = {
+export type ProviderApiPricingMonitorSummary = {
 	enabled: boolean;
 	executed: boolean;
 	baselineInitialized: boolean;
@@ -159,7 +153,7 @@ type ProviderApiPricingMonitorSummary = {
 	error?: string | null;
 };
 
-type PricingTableMonitorSummary = {
+export type PricingTableMonitorSummary = {
 	enabled: boolean;
 	executed: boolean;
 	sourcesChecked: number;
@@ -177,7 +171,7 @@ type PricingTableMonitorSummary = {
 	error?: string | null;
 };
 
-type ConfiguredModelCoverageMonitorSummary = {
+export type ConfiguredModelCoverageMonitorSummary = {
 	enabled: boolean;
 	executed: boolean;
 	providersChecked: number;
@@ -1631,148 +1625,4 @@ export function buildPricingTableDiscordSection(pricing: PricingTableMonitorSumm
 		}
 	}
 	return lines.join("\n").trim();
-}
-
-const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
-const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
-const DEFAULT_MODEL_DISCOVERY_REVIEW_URL = "https://phaseo.app/settings/internal/model-discovery";
-const MAX_DISCORD_MESSAGE_LENGTH = 1_900;
-
-function titleCaseModelId(modelId: string): string {
-	const label = modelId.split("/").at(-1) ?? modelId;
-	return label
-		.replace(/[-_]+/g, " ")
-		.replace(/\s+/g, " ")
-		.trim()
-		.replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function modelPathSegments(providerId: string, modelId: string): string[] {
-	const modelSegments = modelId.split("/").map((segment) => segment.trim()).filter(Boolean);
-	if (modelSegments[0]?.toLowerCase() === providerId.toLowerCase()) return modelSegments;
-	return [providerId, ...modelSegments];
-}
-
-function buildModelNotificationUrl(providerId: string, modelId: string, prefix: string): string {
-	const path = modelPathSegments(providerId, modelId).map((segment) => encodeURIComponent(segment)).join("/");
-	const route = prefix ? `${prefix}/models` : "models";
-	return `https://phaseo.app/${route}/${path}`;
-}
-
-function buildAddedModelNotifications(changes: ProviderChange[]): InternalModelNotificationModel[] {
-	return changes.flatMap((change) => change.added.map((modelId) => ({
-		modelId: modelPathSegments(change.providerId, modelId).join("/"),
-		modelName: titleCaseModelId(modelId),
-		modelUrl: buildModelNotificationUrl(change.providerId, modelId, ""),
-		imageUrl: `${buildModelNotificationUrl(change.providerId, modelId, "og")}?discovery=1`,
-		creatorId: change.providerId,
-		creatorName: change.providerName,
-		changeSummaryLines: ["Detected in the provider model list."],
-	})));
-}
-
-function appendReviewQueueLink(message: string): string {
-	const reviewUrl = readBindingEnv(["MODEL_DISCOVERY_REVIEW_URL"]) ?? DEFAULT_MODEL_DISCOVERY_REVIEW_URL;
-	const suffix = `\n\nReview queue: ${reviewUrl}`;
-	const available = Math.max(0, MAX_DISCORD_MESSAGE_LENGTH - suffix.length);
-	const base = message.length <= available ? message : `${message.slice(0, Math.max(0, available - 16))}\n...[truncated]`;
-	return `${base}${suffix}`;
-}
-
-export function buildDiscordMessage(args: {
-	modelChanges: ProviderChange[];
-	pricing: PricingMonitorSummary;
-	providerApiPricing: ProviderApiPricingMonitorSummary;
-	pricingTable: PricingTableMonitorSummary;
-	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
-}): string {
-	const sections: string[] = [];
-	const modelSection = buildModelDiscordSection(args.modelChanges);
-	const pricingSection = buildPricingDiscordSection(args.pricing);
-	const providerApiPricingSection = buildProviderApiPricingDiscordSection(args.providerApiPricing);
-	const pricingTableSection = buildPricingTableDiscordSection(args.pricingTable);
-	if (modelSection) sections.push(modelSection);
-	if (pricingSection) sections.push(pricingSection);
-	if (providerApiPricingSection) sections.push(providerApiPricingSection);
-	if (pricingTableSection) sections.push(pricingTableSection);
-	const text = sections.join("\n\n").trim();
-	if (text.length <= 1900) return text;
-	return `${text.slice(0, 1888)}\n...[truncated]`;
-}
-
-export async function computeDiscordNotificationFingerprint(args: Parameters<typeof buildDiscordMessage>[0]): Promise<string | null> {
-	const message = buildDiscordMessage(args).trim();
-	if (!message) return null;
-	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(message));
-	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-export async function sendDiscordNotification(args: {
-	modelChanges: ProviderChange[];
-	pricing: PricingMonitorSummary;
-	providerApiPricing: ProviderApiPricingMonitorSummary;
-	pricingTable: PricingTableMonitorSummary;
-	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
-}): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null; error?: string | null }> {
-	if (!hasDiscordNotifiableChanges(args)) {
-		return { delivered: false, skipped: true, reason: "no notifiable changes" };
-	}
-	const discordWebhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
-	const slackWebhookUrl = readBindingEnv(["MODEL_DISCOVERY_SLACK_WEBHOOK_URL"]);
-	if (!discordWebhookUrl && !slackWebhookUrl) {
-		return { delivered: false, skipped: true, reason: "missing Discord and Slack webhook URLs" };
-	}
-
-	const message = appendReviewQueueLink(buildDiscordMessage(args));
-	if (!message.trim()) {
-		return { delivered: false, skipped: true, reason: "empty Discord message" };
-	}
-
-	const failures: string[] = [];
-	const deliveredChannels: string[] = [];
-	if (discordWebhookUrl) {
-		try {
-			const addedModels = buildAddedModelNotifications(args.modelChanges);
-			if (addedModels.length > 0) {
-				const payload = buildInternalModelWebhookPayload(
-					addedModels,
-					readBindingEnv(["DISCORD_ROLE_ID"]),
-					{
-						discordUserId: readBindingEnv(["DISCORD_USER_ID"]),
-						username: PRIVATE_MODEL_DISCOVERY_USERNAME,
-						avatarUrl: PRIVATE_MODEL_DISCOVERY_AVATAR_URL,
-						message,
-					},
-				);
-				await sendDiscordWebhookPayload(discordWebhookUrl, payload);
-			} else {
-				await sendDiscordTextMessage({
-					webhookUrl: discordWebhookUrl,
-					message,
-					roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
-					userId: readBindingEnv(["DISCORD_USER_ID"]),
-					username: PRIVATE_MODEL_DISCOVERY_USERNAME,
-					avatarUrl: PRIVATE_MODEL_DISCOVERY_AVATAR_URL,
-				});
-			}
-			deliveredChannels.push("Discord");
-		} catch (error) {
-			failures.push(`Discord: ${error instanceof Error ? error.message : String(error)}`);
-		}
-	}
-	if (slackWebhookUrl) {
-		try {
-			await sendSlackWebhookMessage(slackWebhookUrl, message);
-			deliveredChannels.push("Slack");
-		} catch (error) {
-			failures.push(`Slack: ${error instanceof Error ? error.message : String(error)}`);
-		}
-	}
-	if (failures.length > 0 && deliveredChannels.length === 0) throw new Error(failures.join("; "));
-	if (failures.length > 0) {
-		const error = failures.join("; ");
-		console.warn("[model-discovery] Partial notification delivery (" + deliveredChannels.join(", ") + "): " + error);
-		return { delivered: true, skipped: false, reason: "partial notification delivery", error };
-	}
-	return { delivered: true, skipped: false };
 }

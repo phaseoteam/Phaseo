@@ -863,6 +863,17 @@ jobs:
                   secret-path: /
                   secret-name: OPENROUTER_API_KEY
 
+            - name: Load public model discovery webhook from Infisical
+              if: matrix.target == 'api'
+              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              with:
+                  method: oidc
+                  identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+                  project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+                  env-slug: prod
+                  secret-path: /
+                  secret-name: DISCORD_WEBHOOK_NEW_MODELS_PUBLIC
+
             - name: Deploy API app to Cloudflare
               if: matrix.target == 'api'
               shell: pwsh
