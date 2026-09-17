@@ -60,6 +60,7 @@ export type GatewayBindings = {
 	LINEAR_ASSIGNEE_ID?: string;
 	LINEAR_OBSERVABILITY_LABEL_ID?: string;
 	OPENAI_API_KEY?: string;
+	OPENROUTER_API_KEY?: string;
 	OPENAI_EU_BASE_URL?: string;
     OPENAI_BASE_URL?: string;
     OPENAI_WEBHOOK_SECRET?: string;

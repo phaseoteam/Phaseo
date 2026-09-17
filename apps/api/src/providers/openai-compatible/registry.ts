@@ -78,6 +78,7 @@ import { STREAMLAKE_OPENAI_COMPAT_CONFIGS } from "../streamlake/config";
 import { SWITCHPOINT_OPENAI_COMPAT_CONFIGS } from "../switchpoint/config";
 import { WAFER_OPENAI_COMPAT_CONFIGS } from "../wafer/config";
 import { TENCENT_CLOUD_OPENAI_COMPAT_CONFIGS } from "../tencent-cloud/config";
+import { OPENROUTER_OPENAI_COMPAT_CONFIGS } from "../openrouter/config";
 
 export const OPENAI_COMPAT_CONFIG = {
 	...OPENAI_OPENAI_COMPAT_CONFIGS,
@@ -159,4 +160,5 @@ export const OPENAI_COMPAT_CONFIG = {
 	...SWITCHPOINT_OPENAI_COMPAT_CONFIGS,
 	...WAFER_OPENAI_COMPAT_CONFIGS,
 	...TENCENT_CLOUD_OPENAI_COMPAT_CONFIGS,
+	...OPENROUTER_OPENAI_COMPAT_CONFIGS,
 } satisfies Record<string, OpenAICompatConfig>;
