@@ -57,6 +57,46 @@ Providers not present in `discovery-policy.ts` are also treated as inactive by d
   - Local/manual external upstream Hugging Face discovery. The production scheduled equivalent lives in `.github/workflows/huggingface-model-discovery.yml`.
 - `scripts/model-discovery/run-internal-public.ts`
   - Local/manual file-based internal catalog discovery helper. Production public model announcements run from the Cloudflare Worker instead.
+- `scripts/model-discovery/send-public-announcement-test.ts`
+  - Local one-shot Discord smoke test for the public announcement formatter and webhook transport. It does not read `DISCORD_ROLE_ID`, does not access Supabase, and does not change announcement state.
+
+To test the public Discord payload safely, create a webhook in a private Discord
+test channel and put it in the ignored local file `apps/api/.dev.vars`:
+
+```text
+DISCORD_WEBHOOK_NEW_MODELS_PUBLIC_TEST=https://discord.com/api/webhooks/...
+```
+
+The test webhook must be separate from both the private operator webhook and the
+eventual public production webhook. The command defaults to a dry run:
+
+```bash
+pnpm run data:test-public-model-announcement
+pnpm run data:test-public-model-announcement -- --send
+```
+
+The `--send` form posts one sample public embed with empty user and role
+mention lists. It never uses `DISCORD_ROLE_ID` and does not mark any database
+announcement as delivered. Keep the webhook value out of chat, source files,
+and committed environment files.
+
+For a one-time integration test using the production-scoped public webhook
+already stored in Infisical, inject the secret without printing it and opt into
+that source explicitly:
+
+```bash
+infisical run --projectId=<project-id> --env=prod --path=/ -- pnpm run data:test-public-model-announcement -- --send --webhook-env DISCORD_WEBHOOK_NEW_MODELS_PUBLIC
+```
+
+This still sends the sample payload with empty user and role mention lists. It
+does not read `DISCORD_ROLE_ID` or the private discovery webhook. Use this only
+when the configured public webhook points to the intended test channel.
+
+For the deployed primary Worker, the production value belongs in Infisical at
+the `prod` environment and `/` path under the name
+`DISCORD_WEBHOOK_NEW_MODELS_PUBLIC`. The API deployment workflow loads that
+secret through Infisical OIDC and passes it to Wrangler as a temporary secrets
+file. It is not stored in `wrangler.toml` or committed to Git.
 
 ## Local run
 
@@ -71,6 +111,7 @@ pnpm run data:check-new-models:test
 ## Environment variables
 
 - `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` (public webhook URL for database catalog additions)
+- `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC_TEST` (local-only test webhook used by the no-mention smoke-test command; never a production binding)
 - `DISCORD_WEBHOOK_URL` (private/default webhook URL for provider and Hugging Face tracking alerts)
 - `MODEL_DISCOVERY_SLACK_WEBHOOK_URL` (optional Slack incoming webhook for private discovery alerts)
 - `MODEL_DISCOVERY_REVIEW_URL` (optional deep link for the internal discovery queue; defaults to `https://phaseo.app/settings/internal/model-discovery`)

@@ -9,6 +9,21 @@ import { resolveLogo } from "@/lib/logos";
 const brandLogoPath = "/wordmark_light.svg";
 const OG_CACHE_CONTROL =
 	"public, max-age=0, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=86400";
+const OG_CDN_CACHE_CONTROL =
+	"public, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=86400";
+const OG_NO_STORE_HEADERS = {
+	"Cache-Control": "private, no-store",
+	"CDN-Cache-Control": "no-store",
+	"Vercel-CDN-Cache-Control": "no-store",
+};
+const OG_ENTITIES = new Set<OgEntity>([
+	"organisations",
+	"models",
+	"benchmarks",
+	"api-providers",
+	"countries",
+	"subscription-plans",
+]);
 const ASSET_BASE_URL =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ??
 	process.env.WEBSITE_URL ??
@@ -77,6 +92,10 @@ function getTitleFontSize(name: string): number {
 	return 70;
 }
 
+function isOgEntity(value: string): value is OgEntity {
+	return OG_ENTITIES.has(value as OgEntity);
+}
+
 export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ slug: string[] }> },
@@ -84,16 +103,27 @@ export async function GET(
 	const { slug } = await params;
 	const rawSegments = normaliseSegments(request, slug);
 
-	if (rawSegments.length < 2) return new Response("Missing OG target", { status: 400 });
+	if (rawSegments.length < 2) {
+		return new Response("Missing OG target", { status: 400, headers: OG_NO_STORE_HEADERS });
+	}
 
 	const [kindRaw, ...segments] = rawSegments;
-	const kind = kindRaw as OgEntity;
+	if (!isOgEntity(kindRaw)) {
+		return new Response("Not found", { status: 404, headers: OG_NO_STORE_HEADERS });
+	}
+	const kind = kindRaw;
 	const isCountry = kind === "countries";
-	const payload = await fetchFrontendOgPayload(kind, segments, {
-		allowDiscoveryFallback: kind === "models" && request.nextUrl.searchParams.get("discovery") === "1",
-	});
+	let payload;
+	try {
+		// Public OG data comes from the public catalog API. URL query markers are
+		// intentionally not treated as authority to expose discovery records.
+		payload = await fetchFrontendOgPayload(kind, segments);
+	} catch (error) {
+		console.error("[og] payload unavailable", { kind, error });
+		return new Response("OG image unavailable", { status: 503, headers: OG_NO_STORE_HEADERS });
+	}
 
-	if (!payload) return new Response("Not found", { status: 404 });
+	if (!payload) return new Response("Not found", { status: 404, headers: OG_NO_STORE_HEADERS });
 
 	const [montserratRegular, montserratSemibold, montserratBold] = await Promise.all([
 		montserratRegularPromise,
@@ -305,6 +335,8 @@ export async function GET(
 			],
 			headers: {
 				"Cache-Control": OG_CACHE_CONTROL,
+				"CDN-Cache-Control": OG_CDN_CACHE_CONTROL,
+				"Vercel-CDN-Cache-Control": OG_CDN_CACHE_CONTROL,
 			},
 		},
 	);

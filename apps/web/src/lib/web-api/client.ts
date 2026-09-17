@@ -67,9 +67,10 @@ export async function fetchPublicWebApi<T>(
 
 export async function fetchOptionalPublicWebApi<T>(
 	path: `/api/_web/${string}`,
+	options: { signal?: AbortSignal } = {},
 ): Promise<T | null> {
 	try {
-		return await fetchPublicWebApi<T>(path);
+		return await fetchPublicWebApi<T>(path, options);
 	} catch (error) {
 		if (error instanceof WebApiError && error.status === 404) return null;
 		throw error;

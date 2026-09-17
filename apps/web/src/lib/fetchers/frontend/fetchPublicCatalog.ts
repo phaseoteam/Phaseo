@@ -272,9 +272,11 @@ export async function fetchFrontendMonitorHistoryPage(
 
 export async function fetchFrontendModelOverview(
 	modelId: string,
+	signal?: AbortSignal,
 ): Promise<ModelOverviewPage | null> {
 	const payload = await fetchOptionalPublicWebApi<{ model: ModelOverviewPage }>(
 		`/api/_web/models/${encodeURIComponent(modelId)}?projection=variants-v1`,
+		{ signal },
 	);
 	return payload?.model ?? null;
 }
@@ -840,24 +842,32 @@ export async function fetchFrontendPublicProfile(
 export async function fetchFrontendOgPayload(
 	kind: OgEntity,
 	segments: string[],
-	options: { allowDiscoveryFallback?: boolean } = {},
 ): Promise<OgPayload | null> {
 	const id = kind === "models" ? segments.join("/") : segments[0];
 	if (!id) return null;
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), 5_000);
 	const params = new URLSearchParams({ kind, id });
-	if (options.allowDiscoveryFallback) params.set("discovery", "1");
-	const response = await fetchOptionalPublicWebApi<{ payload: OgPayload }>(
-		`/api/_web/og?${params.toString()}`,
-	);
-	if (!response?.payload || kind !== "models") return response?.payload ?? null;
-	const [model, pricing] = await Promise.all([
-		fetchFrontendModelOverview(id).catch(() => null),
-		fetchFrontendModelPricing(id).catch(() => []),
-	]);
-	return {
-		...response.payload,
-		stats: buildModelOgStats(model, pricing),
-	};
+	try {
+		const response = await fetchOptionalPublicWebApi<{ payload: OgPayload }>(
+			`/api/_web/og?${params.toString()}`,
+			{ signal: controller.signal },
+		);
+		if (!response?.payload || kind !== "models") return response?.payload ?? null;
+
+		const resolvedModelId = response.payload.id;
+		if (!resolvedModelId || resolvedModelId !== id) return null;
+		const [model, pricing] = await Promise.all([
+			fetchFrontendModelOverview(resolvedModelId, controller.signal).catch(() => null),
+			fetchFrontendModelPricing(resolvedModelId, controller.signal).catch(() => []),
+		]);
+		return {
+			...response.payload,
+			stats: buildModelOgStats(model, pricing),
+		};
+	} finally {
+		clearTimeout(timeout);
+	}
 }
 
 export async function fetchFrontendAppUsage(

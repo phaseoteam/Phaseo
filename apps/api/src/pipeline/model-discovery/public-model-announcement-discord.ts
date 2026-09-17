@@ -1,4 +1,7 @@
-export type InternalModelNotificationModel = {
+import type { DiscordEmbed, DiscordWebhookPayload } from "./discord-webhook";
+
+// Public catalog announcements own model links, OG images, and Discord embeds.
+export type PublicModelAnnouncementModel = {
 	modelId: string;
 	modelName: string;
 	modelUrl: string;
@@ -9,32 +12,7 @@ export type InternalModelNotificationModel = {
 	changeSummaryLines?: string[];
 };
 
-type DiscordEmbed = {
-	title: string;
-	description?: string;
-	url?: string;
-	color: number;
-	footer: {
-		text: string;
-	};
-	image?: {
-		url: string;
-	};
-};
-
-export type DiscordWebhookPayload = {
-	content: string;
-	allowed_mentions: {
-		parse: [];
-		roles: string[];
-		users: string[];
-	};
-	username: string;
-	avatar_url?: string;
-	embeds?: DiscordEmbed[];
-};
-
-type BuildWebhookPayloadOptions = {
+type BuildPublicAnnouncementPayloadOptions = {
 	discordUserId?: string | null;
 	includeMentions?: boolean;
 	username?: string;
@@ -45,22 +23,12 @@ type BuildWebhookPayloadOptions = {
 	message?: string;
 };
 
-type SendDiscordTextMessageArgs = {
-	webhookUrl: string;
-	message: string;
-	roleId?: string | null;
-	userId?: string | null;
-	username?: string | null;
-	avatarUrl?: string | null;
-};
-
 const DEFAULT_EMBED_COLOR = 0x2563eb;
-const DEFAULT_USERNAME = "Phaseo Model Discovery";
+const DEFAULT_USERNAME = "Phaseo Public Model Discovery";
 const DEFAULT_MAX_MODEL_EMBEDS = 10;
 const DEFAULT_LATEST_MODELS_URL = "https://phaseo.app/models";
 const DEFAULT_ASSET_BASE_URL = "https://phaseo.app";
 const DEFAULT_AVATAR_PATH = "/png_logo_light.png";
-const DISCORD_WEBHOOK_TIMEOUT_MS = 30_000;
 
 function trimOrNull(value: string | null | undefined): string | null {
 	if (typeof value !== "string") return null;
@@ -90,11 +58,11 @@ function formatFooterText(nowIso: string): string {
 	return `Phaseo | ${day} ${month} ${year}`;
 }
 
-function toAnnouncementKey(model: Pick<InternalModelNotificationModel, "modelId">): string {
+function toAnnouncementKey(model: Pick<PublicModelAnnouncementModel, "modelId">): string {
 	return model.modelId.trim().toLowerCase();
 }
 
-function sanitizeModel(input: InternalModelNotificationModel): InternalModelNotificationModel | null {
+function sanitizeModel(input: PublicModelAnnouncementModel): PublicModelAnnouncementModel | null {
 	const modelId = trimOrNull(input.modelId);
 	const modelName = trimOrNull(input.modelName);
 	const modelUrl = trimOrNull(input.modelUrl);
@@ -121,8 +89,8 @@ function sanitizeModel(input: InternalModelNotificationModel): InternalModelNoti
 	};
 }
 
-function normalizeModels(models: InternalModelNotificationModel[]): InternalModelNotificationModel[] {
-	const deduped = new Map<string, InternalModelNotificationModel>();
+function normalizeModels(models: PublicModelAnnouncementModel[]): PublicModelAnnouncementModel[] {
+	const deduped = new Map<string, PublicModelAnnouncementModel>();
 	for (const model of models) {
 		const sanitized = sanitizeModel(model);
 		if (!sanitized) continue;
@@ -132,7 +100,7 @@ function normalizeModels(models: InternalModelNotificationModel[]): InternalMode
 	return Array.from(deduped.values());
 }
 
-function buildDisplayTitle(model: InternalModelNotificationModel): string {
+function buildDisplayTitle(model: PublicModelAnnouncementModel): string {
 	const safeModel = sanitizeModel(model);
 	if (!safeModel) return "Model";
 	const creator = trimOrNull(safeModel.creatorName);
@@ -159,7 +127,7 @@ function resolveAvatarUrl(rawAvatarUrl: string | null | undefined): string {
 	}
 }
 
-function resolveEmbedColor(model: InternalModelNotificationModel): number {
+function resolveEmbedColor(model: PublicModelAnnouncementModel): number {
 	return parseHexColor(model.creatorColor) ?? DEFAULT_EMBED_COLOR;
 }
 
@@ -174,7 +142,7 @@ function resolveImageUrl(rawImageUrl: string | null | undefined): string | null 
 	}
 }
 
-function formatPerModelEmbed(model: InternalModelNotificationModel, nowIso: string): DiscordEmbed {
+function formatPerModelEmbed(model: PublicModelAnnouncementModel, nowIso: string): DiscordEmbed {
 	const safeModel = sanitizeModel(model);
 	if (!safeModel) {
 		throw new Error("formatPerModelEmbed requires modelId, modelName, and modelUrl.");
@@ -207,14 +175,14 @@ function formatOverflowEmbed(hiddenCount: number, nowIso: string, latestModelsUr
 	};
 }
 
-export function buildInternalModelWebhookPayload(
-	models: InternalModelNotificationModel[],
+export function buildPublicModelAnnouncementPayload(
+	models: PublicModelAnnouncementModel[],
 	roleId: string | null,
-	options?: BuildWebhookPayloadOptions
+	options?: BuildPublicAnnouncementPayloadOptions,
 ): DiscordWebhookPayload {
 	const normalized = normalizeModels(models);
 	if (normalized.length === 0) {
-		throw new Error("buildInternalModelWebhookPayload requires at least one model.");
+		throw new Error("buildPublicModelAnnouncementPayload requires at least one model.");
 	}
 
 	const includeMentions = options?.includeMentions !== false;
@@ -254,47 +222,4 @@ export function buildInternalModelWebhookPayload(
 		avatar_url: avatarUrl,
 		embeds,
 	};
-}
-
-function validateWebhookUrl(webhookUrl: string): URL {
-	const parsed = new URL(webhookUrl);
-	if (parsed.protocol !== "https:") {
-		throw new Error("Discord webhook URL must use https.");
-	}
-	return parsed;
-}
-
-export async function sendDiscordWebhookPayload(webhookUrl: string, payload: DiscordWebhookPayload): Promise<void> {
-	const parsed = validateWebhookUrl(webhookUrl);
-	const response = await fetch(parsed.toString(), {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(payload),
-		signal: AbortSignal.timeout(DISCORD_WEBHOOK_TIMEOUT_MS),
-	});
-
-	if (!response.ok) {
-		const body = await response.text().catch(() => "");
-		throw new Error(`Discord webhook failed with HTTP ${response.status}${body ? `: ${body.slice(0, 300)}` : ""}`);
-	}
-}
-
-export async function sendDiscordTextMessage(args: SendDiscordTextMessageArgs): Promise<void> {
-	const roleId = trimOrNull(args.roleId);
-	const userId = trimOrNull(args.userId);
-	const mentions: string[] = [];
-	if (roleId) mentions.push(`<@&${roleId}>`);
-	if (userId) mentions.push(`<@${userId}>`);
-	const content = mentions.length > 0 ? `${mentions.join(" ")}\n${args.message}` : args.message;
-
-	await sendDiscordWebhookPayload(args.webhookUrl, {
-		content,
-		allowed_mentions: {
-			parse: [],
-			roles: roleId ? [roleId] : [],
-			users: userId ? [userId] : [],
-		},
-		username: trimOrNull(args.username) ?? DEFAULT_USERNAME,
-		avatar_url: resolveAvatarUrl(args.avatarUrl),
-	});
 }

@@ -1,3 +1,4 @@
+// Legacy local/manual runner. The scheduled production workflows live in apps/api/src/pipeline/model-discovery.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
