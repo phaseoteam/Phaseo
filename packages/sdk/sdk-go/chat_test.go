@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2/src/gen"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/src/gen"
 )
 
 func TestGenerateTextPreservesGatewayMetadata(t *testing.T) {

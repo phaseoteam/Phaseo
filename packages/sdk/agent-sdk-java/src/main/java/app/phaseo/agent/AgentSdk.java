@@ -130,7 +130,7 @@ public final class AgentSdk {
     if (client == null) {
       String key = first(options.apiKey(), System.getenv("PHASEO_API_KEY"));
       if (key == null) throw new IllegalArgumentException("PHASEO_API_KEY is required");
-      client = new Phaseo(key, options.baseUrl() == null ? "https://api.phaseo.app/v1" : options.baseUrl(), "phaseo-agent-java", "0.2.0");
+      client = new Phaseo(key, options.baseUrl() == null ? "https://api.phaseo.app/v1" : options.baseUrl(), "phaseo-agent-java", "0.3.0");
     }
     Phaseo resolvedClient = client;
     return new StreamingModelClient() {

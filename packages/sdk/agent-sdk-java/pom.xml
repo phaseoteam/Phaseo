@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>app.phaseo</groupId>
   <artifactId>phaseo-agent-sdk</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
   <name>Phaseo Java Agent SDK</name>
   <description>Local agent runtime for building tool-using applications on Phaseo Gateway.</description>
   <url>https://phaseo.app</url>
@@ -15,7 +15,7 @@
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.version>5.10.2</junit.version>
-    <phaseo.sdk.version>2.1.0</phaseo.sdk.version>
+    <phaseo.sdk.version>3.0.0</phaseo.sdk.version>
   </properties>
   <dependencies>
     <dependency><groupId>app.phaseo</groupId><artifactId>phaseo-sdk</artifactId><version>${phaseo.sdk.version}</version></dependency>

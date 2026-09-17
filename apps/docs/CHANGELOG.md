@@ -1,5 +1,17 @@
 # @phaseo/docs
 
+## 1.0.1
+
+### Patch Changes
+
+- [#2225](https://github.com/phaseoteam/Phaseo/pull/2225) [`102e87b`](https://github.com/phaseoteam/Phaseo/commit/102e87beae0d7b885ac773782c38e9832157818e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Limit batch result downloads to ten attempts per workspace and batch in a rolling thirty-minute window, with Retry-After responses and shared global admission.
+
+- [#1662](https://github.com/phaseoteam/Phaseo/pull/1662) [`6de47c7`](https://github.com/phaseoteam/Phaseo/commit/6de47c70ebddd779ddda7da8d97a6052d74be3ae) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add automatic, integration-specific API-key provisioning for coding-agent setup, add DeepSeek Harness configuration support, and accept the documented Chat Completions `store` parameter required by Harness.
+
+- [#2224](https://github.com/phaseoteam/Phaseo/pull/2224) [`013b172`](https://github.com/phaseoteam/Phaseo/commit/013b17260c5745a320bf6f167017fedae52fe641) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Use one OpenAPI specification for documentation and SDKs, publish Video and Batch endpoint references with Beta labels, and complete sidebar icons on main documentation pages while preserving OpenAPI reference styling.
+  
+  Organise the API Reference into six task-based sections. Consolidate duplicate guides with redirects, simplify onboarding and integration indexes, and correct stale authentication, streaming, and retry guidance.
+
 ## 1.0.0
 
 ### Major Changes
