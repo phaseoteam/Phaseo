@@ -14,12 +14,21 @@ $ErrorActionPreference = "Stop"
 $config = "wrangler.$Region.toml"
 $worker = "phaseo-gateway-$Region"
 $temporarySecretsFile = $null
+$deployApiToken = [Environment]::GetEnvironmentVariable("CLOUDFLARE_DEPLOY_API_TOKEN")
+$deployAccountId = [Environment]::GetEnvironmentVariable("CLOUDFLARE_DEPLOY_ACCOUNT_ID")
+$previousApiToken = $env:CLOUDFLARE_API_TOKEN
+$previousAccountId = $env:CLOUDFLARE_ACCOUNT_ID
+$apiTokenOverridden = -not [string]::IsNullOrWhiteSpace($deployApiToken)
+$accountIdOverridden = -not [string]::IsNullOrWhiteSpace($deployAccountId)
 
 $regionalSecretNames = @(
     "SUPABASE_SERVICE_ROLE_KEY",
     "KEY_PEPPER_ACTIVE",
     "KEY_PEPPER_PREVIOUS",
     "OPENAI_API_KEY",
+    "OPENROUTER_API_KEY",
+    "CLOUDFLARE_API_TOKEN",
+    "CLOUDFLARE_ACCOUNT_ID",
     "DOUBLEWORD_API_KEY",
     "MISTRAL_API_KEY",
     "MISTRAL_AI_API_KEY",
@@ -76,6 +85,15 @@ if ($SecretsFromEnvironment) {
 }
 
 try {
+    # Keep the Wrangler deployment credential separate from provider credentials
+    # loaded from Infisical into the Worker secret file.
+    if ($apiTokenOverridden) {
+        $env:CLOUDFLARE_API_TOKEN = $deployApiToken
+    }
+    if ($accountIdOverridden) {
+        $env:CLOUDFLARE_ACCOUNT_ID = $deployAccountId
+    }
+
     $arguments = @("exec", "wrangler", "deploy", "--config", $config)
     if ($SecretsFile) {
         $resolvedSecretsFile = Resolve-Path -LiteralPath $SecretsFile -ErrorAction Stop
@@ -87,6 +105,20 @@ try {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 finally {
+    if ($apiTokenOverridden) {
+        if ($null -eq $previousApiToken) {
+            Remove-Item Env:CLOUDFLARE_API_TOKEN -ErrorAction SilentlyContinue
+        } else {
+            $env:CLOUDFLARE_API_TOKEN = $previousApiToken
+        }
+    }
+    if ($accountIdOverridden) {
+        if ($null -eq $previousAccountId) {
+            Remove-Item Env:CLOUDFLARE_ACCOUNT_ID -ErrorAction SilentlyContinue
+        } else {
+            $env:CLOUDFLARE_ACCOUNT_ID = $previousAccountId
+        }
+    }
     if ($temporarySecretsFile -and (Test-Path -LiteralPath $temporarySecretsFile)) {
         Remove-Item -LiteralPath $temporarySecretsFile -Force
     }

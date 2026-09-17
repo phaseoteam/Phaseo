@@ -59,6 +59,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     atlascloud: createOpenAICompatibleAdapter("atlas-cloud"), // Alias for database naming
     clarifai: createOpenAICompatibleAdapter("clarifai"),
     cloudflare: createOpenAICompatibleAdapter("cloudflare"),
+    openrouter: createOpenAICompatibleAdapter("openrouter"),
     baseten: createOpenAICompatibleAdapter("baseten"),
     cerebras: createOpenAICompatibleAdapter("cerebras"),
     chutes: createOpenAICompatibleAdapter("chutes"),
