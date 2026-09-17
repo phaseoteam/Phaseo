@@ -384,16 +384,26 @@ export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult>
 
 export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpResult> {
 	return runAdminAction("Public catalogue", async () => {
-		const webApiPurge = await purgeCacheScopeAction({ scope: "catalogue" });
+		let webApiPurge: CachePurgeResult | null = null;
+		let webApiPurgeError = "";
+		try {
+			webApiPurge = await purgeCacheScopeAction({ scope: "catalogue" });
+		} catch (error) {
+			webApiPurgeError = error instanceof Error ? error.message : "request failed";
+			expirePublicModelCatalogueCache();
+		}
 		for (const tag of APP_FRONTEND_TAGS) {
 			updateTag(tag);
 		}
 		const gatewayPurge = await purgeGatewayCatalogueCache(["models"]);
+		const webApiMessage = webApiPurge
+			? `Web API cache purged (${webApiPurge.tags.join(", ")}).`
+			: `Web API cache purge failed: ${webApiPurgeError}.`;
 		return {
-			ok: gatewayPurge.ok,
+			ok: Boolean(webApiPurge) && gatewayPurge.ok,
 			message: gatewayPurge.ok
-				? `Public catalogue cache revalidated. Web API cache purged (${webApiPurge.tags.join(", ")}). ${gatewayPurge.message}`
-				: `Public catalogue website cache revalidated. Web API cache purged (${webApiPurge.tags.join(", ")}). ${gatewayPurge.message}`,
+				? `Public catalogue cache revalidated. ${webApiMessage} ${gatewayPurge.message}`
+				: `Public catalogue website cache revalidated. ${webApiMessage} ${gatewayPurge.message}`,
 		};
 	});
 }
