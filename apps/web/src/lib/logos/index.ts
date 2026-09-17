@@ -76,6 +76,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	submodel: "SubModel",
 	togetherai: "Together AI",
 	tinyfish: "TinyFish",
+	typesafe: "TypeSafe",
 	wandb: "Weights & Biases",
 	"spacex-ai": "SpaceXAI",
 	"zai": "Z.ai",

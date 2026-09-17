@@ -10,6 +10,7 @@ import {
 	ChevronsUpDown,
 	GitMerge,
 	ImageIcon,
+	ListChecks,
 	Mic,
 	MessageSquareText,
 	Music2,
@@ -51,6 +52,7 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	embeddings: Sparkles,
 	ocr: ScanText,
 	rerank: ArrowUpDown,
+	systemone: ListChecks,
 };
 
 const DISABLED_ROOMS = new Set<ChatRoomId>(["ocr", "rerank"]);

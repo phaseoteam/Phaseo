@@ -63,6 +63,7 @@ function normalizeModality(value: string): string {
 	if (!normalized) return "";
 	if (normalized === "embedding") return "embeddings";
 	if (normalized === "moderation") return "moderations";
+	if (normalized.includes("decision")) return "decisions";
 	if (normalized.includes("music")) return "audio_music";
 	if (
 		normalized.includes("transcri") ||
@@ -108,6 +109,8 @@ function formatModality(value: string): string {
 			return "embedding";
 		case "moderations":
 			return "moderation";
+		case "decisions":
+			return "decision";
 		default:
 			return value.replace(/_/g, " ");
 	}

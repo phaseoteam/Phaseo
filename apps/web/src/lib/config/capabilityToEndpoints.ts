@@ -1,6 +1,12 @@
 // Config file mapping capabilities to supported endpoints
 export const capabilityToEndpoints: Record<string, string[]> = {
     "text.generate": ["/chat/completions", "/responses", "/messages"],
+    "decisions.make": ["/systemone"],
+    // Compatibility alias for the upstream TypeSafe System One surface.
+    "systemone": ["/systemone"],
+    "system.one": ["/systemone"],
+    "decision.make": ["/systemone"],
+    "typed.decisions": ["/systemone"],
     "text.embed": ["/embeddings"],
     "image.generate": ["/images/generations"],
     "images.generate": ["/images/generations"],

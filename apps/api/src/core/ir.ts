@@ -471,6 +471,31 @@ export type IRRerankResponse = {
 };
 
 // ============================================================================
+// TYPESAFE SYSTEM ONE
+// ============================================================================
+
+export type IRSystemOneQuestion = {
+	type: "noul" | "choice" | "score";
+	instructions: string | Record<string, any> | any[];
+	criteria?: Record<string, string | null> | string[] | { true?: string; false?: string };
+	[key: string]: any;
+};
+
+export type IRSystemOneRequest = {
+	model: string;
+	state: string | Record<string, any> | any[];
+	questions: Record<string, IRSystemOneQuestion>;
+	rawRequest?: any;
+};
+
+export type IRSystemOneResponse = {
+	model: string;
+	answers: Record<string, any>;
+	usage?: IRUsage;
+	rawResponse?: any;
+};
+
+// ============================================================================
 // IMAGE GENERATION (BASELINE)
 // ============================================================================
 

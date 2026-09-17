@@ -13,6 +13,7 @@ describe("endpoint metadata", () => {
         ["text.rerank", "rerank", "/v1/rerank", "rerank"],
         ["text.moderate", "moderations", "/v1/moderations", "moderation"],
         ["video.edit", "video.generation", "/v1/videos", "video"],
+        ["systemone", "decisions.make", "/v1/systemone", "decisions"],
     ])("maps %s to its public endpoint", (alias, id, publicPath, collection) => {
         expect(getEndpointMetadata(alias)).toMatchObject({
             id,

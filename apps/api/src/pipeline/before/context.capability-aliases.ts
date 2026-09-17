@@ -13,6 +13,13 @@ const RERANK_CONTEXT_CAPABILITY_ALIASES = [
 	"rerank.create",
 	"text.rerank",
 ] as const;
+const DECISIONS_CONTEXT_CAPABILITY_ALIASES = [
+	"decisions.make",
+	"decision.make",
+	"systemone",
+	"system.one",
+	"typed.decisions",
+] as const;
 const IMAGE_CONTEXT_CAPABILITY_ALIASES = [
 	"image.generate",
 	"images.generate",
@@ -91,6 +98,17 @@ export function getContextCapabilityCandidates(capability: string, model?: strin
 		return Array.from(new Set<string>([
 			normalized,
 			...RERANK_CONTEXT_CAPABILITY_ALIASES,
+		]));
+	}
+	if (
+		DECISIONS_CONTEXT_CAPABILITY_ALIASES.includes(
+			normalized as (typeof DECISIONS_CONTEXT_CAPABILITY_ALIASES)[number],
+		)
+	) {
+		return Array.from(new Set<string>([
+			"decisions.make",
+			normalized,
+			...DECISIONS_CONTEXT_CAPABILITY_ALIASES,
 		]));
 	}
 	if (

@@ -6,6 +6,8 @@ import {
 	Headphones,
 	Music4,
 	Speech,
+	ListChecks,
+	Braces,
 	type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +32,8 @@ const MODALITIES: Modality[] = [
 	{ key: "audio_tts", label: "Speech", icon: Speech },
 	{ key: "audio_stt", label: "Transcription", icon: Captions },
 	{ key: "audio_music", label: "Music", icon: Music4 },
+	{ key: "structured", label: "Structured state", icon: Braces },
+	{ key: "decisions", label: "Decisions", icon: ListChecks },
 ];
 
 export default function Modalities({

@@ -12,6 +12,7 @@ function normalizeModalityStyleKey(value: string): string {
 		return "rerank";
 	}
 	if (normalized.includes("moderat")) return "moderations";
+	if (normalized.includes("decision")) return "decisions";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
 	if (normalized.includes("music")) return "audio_music";
@@ -166,6 +167,17 @@ const MODALITY_TONES: Record<string, ModalityTone> = {
 			"group-hover:border-[#F2A4A4] group-hover:bg-[#FFF1F1] group-hover:text-[#D45B5B] dark:group-hover:border-[#9A4545] dark:group-hover:bg-[#311515] dark:group-hover:text-[#FFAAAA]",
 		sidebarIconSelectedClassName:
 			"border-[#F2A4A4] bg-[#FFF1F1] text-[#D45B5B] dark:border-[#9A4545] dark:bg-[#311515] dark:text-[#FFAAAA]",
+	},
+	decisions: {
+		badgeClassName:
+			"border-[#F3C98B] bg-[#FFF8E8] text-[#A15C12] dark:border-[#8D641F] dark:bg-[#31240D] dark:text-[#FFD88A]",
+		iconClassName: "text-[#C47A1C] dark:text-[#F8C96B]",
+		ghostIconHoverClassName:
+			"group-hover:text-[#C47A1C] dark:group-hover:text-[#F8C96B]",
+		sidebarIconHoverClassName:
+			"group-hover:border-[#F3C98B] group-hover:bg-[#FFF8E8] group-hover:text-[#C47A1C] dark:group-hover:border-[#8D641F] dark:group-hover:bg-[#31240D] dark:group-hover:text-[#F8C96B]",
+		sidebarIconSelectedClassName:
+			"border-[#F3C98B] bg-[#FFF8E8] text-[#C47A1C] dark:border-[#8D641F] dark:bg-[#31240D] dark:text-[#F8C96B]",
 	},
 	rerank: {
 		badgeClassName:

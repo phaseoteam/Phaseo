@@ -51,7 +51,12 @@ function fallbackLabel(modelId: string): string {
 function capabilitySummary(capabilities: Iterable<string>): string {
 	const labels = Array.from(new Set(capabilities))
 		.slice(0, 3)
-		.map((value) => titleCase(value));
+		.map((value) => {
+			const normalized = value.trim().toLowerCase();
+			return normalized === "decisions.make" || normalized === "decision.make" || normalized === "systemone" || normalized === "system.one" || normalized === "typed.decisions"
+				? "Decisions"
+				: titleCase(value);
+		});
 	return labels.join(" | ");
 }
 

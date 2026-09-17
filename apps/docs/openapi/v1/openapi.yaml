@@ -899,6 +899,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RerankResponse'
+  /systemone:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: makeDecision
+      summary: Make structured decisions
+      description: >-
+        Evaluates typed Noul, Choice, and Score questions against structured
+        state using a decision model such as TypeSafe Jev.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemOneRequest'
+      responses:
+        '200':
+          description: Structured decisions response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemOneResponse'
   /audio/speech:
     post:
       x-beta: true
@@ -10861,6 +10884,140 @@ components:
         - type: string
         - type: object
           additionalProperties: true
+    SystemOneRequest:
+      type: object
+      required:
+        - model
+        - state
+        - questions
+      properties:
+        model:
+          type: string
+          description: Canonical Phaseo model id or provider model alias.
+          default: typesafe/jev
+        state:
+          description: Structured state evaluated by the model.
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+            - type: array
+              items: {}
+        questions:
+          type: object
+          minProperties: 1
+          maxProperties: 128
+          additionalProperties:
+            oneOf:
+              - $ref: '#/components/schemas/SystemOneNoulQuestion'
+              - $ref: '#/components/schemas/SystemOneChoiceQuestion'
+              - $ref: '#/components/schemas/SystemOneScoreQuestion'
+        meta:
+          type: boolean
+          default: false
+        echo_upstream_request:
+          type: boolean
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
+        provider:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+        routing:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+        metadata:
+          type: object
+          additionalProperties: true
+    SystemOneNoulQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      properties:
+        type:
+          type: string
+          enum:
+            - noul
+        instructions:
+          $ref: '#/components/schemas/SystemOneInstructions'
+        criteria:
+          type: object
+          properties:
+            'true':
+              type: string
+            'false':
+              type: string
+          additionalProperties: true
+    SystemOneChoiceQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      properties:
+        type:
+          type: string
+          enum:
+            - choice
+        instructions:
+          $ref: '#/components/schemas/SystemOneInstructions'
+        criteria:
+          type: object
+          minProperties: 1
+          additionalProperties:
+            type: string
+            nullable: true
+    SystemOneScoreQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      properties:
+        type:
+          type: string
+          enum:
+            - score
+        instructions:
+          $ref: '#/components/schemas/SystemOneInstructions'
+        criteria:
+          type: array
+          minItems: 2
+          items:
+            type: string
+    SystemOneResponse:
+      type: object
+      properties:
+        model:
+          type: string
+        answers:
+          type: object
+          additionalProperties: true
+        usage:
+          $ref: '#/components/schemas/SystemOneUsage'
+        request_id:
+          type: string
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+    SystemOneUsage:
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+        output_tokens:
+          type: integer
+          minimum: 0
+        total_tokens:
+          type: integer
+          minimum: 0
+    SystemOneInstructions:
+      oneOf:
+        - type: string
+        - type: object
+          additionalProperties: true
+        - type: array
+          items: {}
     ModerationResult:
       type: object
       properties:

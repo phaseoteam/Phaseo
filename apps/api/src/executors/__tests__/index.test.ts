@@ -4,6 +4,13 @@ import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { OPENAI_COMPAT_CONFIG } from "@providers/openai-compatible/registry";
 
 describe("resolveProviderExecutor", () => {
+	it("resolves the canonical Decisions capability and its System One alias", () => {
+		const executor = EXECUTORS_BY_PROVIDER.typesafe?.["decisions.make"];
+		expect(executor).toBeTruthy();
+		expect(resolveProviderExecutor("typesafe", "decisions.make")).toBe(executor);
+		expect(resolveProviderExecutor("typesafe", "systemone")).toBe(executor);
+	});
+
 	it("registers every configured OpenAI-wire text provider explicitly", () => {
 		for (const providerId of Object.keys(OPENAI_COMPAT_CONFIG)) {
 			// Voyage uses the shared transport configuration for its native

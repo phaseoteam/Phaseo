@@ -26,6 +26,7 @@ import type {
 	IRModerationsRequest,
 	IRModerationsResponse,
 	IRRerankResponse,
+	IRSystemOneResponse,
 } from "@core/ir";
 import type { ByokKeyMeta } from "@pipeline/before/types";
 import type { Endpoint } from "@core/types";
@@ -114,6 +115,7 @@ export type ExecutorCompletedResult = {
 		| IREmbeddingsResponse
 		| IRModerationsResponse
 		| IRRerankResponse
+		| IRSystemOneResponse
 		| IRImageGenerationResponse
 		| IRAudioSpeechResponse
 		| IRAudioTranscriptionResponse

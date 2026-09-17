@@ -24,5 +24,6 @@ describe("resolveCapabilityFromEndpoint", () => {
 		expect(resolveCapabilityFromEndpoint("/audio/transcriptions")).toBe("audio.transcription");
 		expect(resolveCapabilityFromEndpoint("/realtime")).toBe("audio.realtime");
 		expect(resolveCapabilityFromEndpoint("/rerank")).toBe("text.rerank");
+		expect(resolveCapabilityFromEndpoint("/systemone")).toBe("decisions.make");
 	});
 });

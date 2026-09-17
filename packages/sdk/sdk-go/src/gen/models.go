@@ -4134,6 +4134,52 @@ type SubagentToolDefinition struct {
 type SupportedParameterDetails struct {
 }
 
+type SystemOneChoiceQuestion struct {
+	Criteria map[string]interface{} `json:"criteria"`
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
+type SystemOneInstructions = interface{}
+
+type SystemOneNoulQuestion struct {
+	Criteria *map[string]interface{} `json:"criteria,omitempty"`
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
+type SystemOneRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
+	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Meta *bool `json:"meta,omitempty"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Questions map[string]interface{} `json:"questions"`
+	Routing *map[string]interface{} `json:"routing,omitempty"`
+	State interface{} `json:"state"`
+}
+
+type SystemOneResponse struct {
+	Answers *map[string]interface{} `json:"answers,omitempty"`
+	Meta *map[string]interface{} `json:"meta,omitempty"`
+	Model *string `json:"model,omitempty"`
+	RequestId *string `json:"request_id,omitempty"`
+	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type SystemOneScoreQuestion struct {
+	Criteria []string `json:"criteria"`
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
+type SystemOneUsage struct {
+	InputTokens *int `json:"input_tokens,omitempty"`
+	OutputTokens *int `json:"output_tokens,omitempty"`
+	TotalTokens *int `json:"total_tokens,omitempty"`
+}
+
 type TextContentPart struct {
 	Text string `json:"text"`
 	Type string `json:"type"`

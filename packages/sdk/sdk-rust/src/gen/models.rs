@@ -2586,6 +2586,52 @@ pub struct SubagentToolDefinition {
 pub struct SupportedParameterDetails {
 }
 
+pub struct SystemOneChoiceQuestion {
+	pub criteria: HashMap<String, String>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub type SystemOneInstructions = JsonValue;
+
+pub struct SystemOneNoulQuestion {
+	pub criteria: Option<HashMap<String, String>>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub struct SystemOneRequest {
+	pub debug: Option<HashMap<String, String>>,
+	pub echo_upstream_request: Option<bool>,
+	pub meta: Option<bool>,
+	pub metadata: Option<HashMap<String, String>>,
+	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
+	pub questions: HashMap<String, String>,
+	pub routing: Option<HashMap<String, String>>,
+	pub state: String,
+}
+
+pub struct SystemOneResponse {
+	pub answers: Option<HashMap<String, String>>,
+	pub meta: Option<HashMap<String, String>>,
+	pub model: Option<String>,
+	pub request_id: Option<Option<String>>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct SystemOneScoreQuestion {
+	pub criteria: Vec<String>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub struct SystemOneUsage {
+	pub input_tokens: Option<i64>,
+	pub output_tokens: Option<i64>,
+	pub total_tokens: Option<i64>,
+}
+
 pub struct TextContentPart {
 	pub text: String,
 	pub r#type: String,

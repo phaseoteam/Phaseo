@@ -4,6 +4,7 @@ import { runTextGeneratePipeline } from "./surfaces/text-generate";
 import { runEmbeddingsPipeline } from "./surfaces/embeddings";
 import { runModerationsPipeline } from "./surfaces/moderations";
 import { runRerankPipeline } from "./surfaces/rerank";
+import { runSystemOnePipeline } from "./surfaces/systemone";
 import { runVideoGeneratePipeline } from "./surfaces/video-generate";
 import { runNotImplementedPipeline } from "./surfaces/not-implemented";
 import { runNonTextPipeline } from "./surfaces/non-text";
@@ -16,6 +17,7 @@ describe("resolvePipeline", () => {
 		expect(resolvePipeline("embeddings")).toBe(runEmbeddingsPipeline);
 		expect(resolvePipeline("moderations")).toBe(runModerationsPipeline);
 		expect(resolvePipeline("rerank")).toBe(runRerankPipeline);
+		expect(resolvePipeline("systemone")).toBe(runSystemOnePipeline);
 	});
 
 	it("routes non-text generation endpoints to non-text IR surface", () => {

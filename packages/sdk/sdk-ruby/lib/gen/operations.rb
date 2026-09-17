@@ -993,6 +993,12 @@ module Phaseo
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.makeDecision(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/systemone"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.mergeWorkspaceApp(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/apps/#{URI.encode_uri_component(path["id"].to_s)}/merge"

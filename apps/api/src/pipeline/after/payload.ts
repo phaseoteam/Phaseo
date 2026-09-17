@@ -871,6 +871,28 @@ export function formatClientPayload(args: {
         return attachTopLevelPricing(body, usage);
     }
 
+	if (ctx.endpoint === "systemone") {
+		const {
+			provider,
+			provider_id: _providerId,
+			requestId,
+			meta: _m,
+			usage: _u,
+			model,
+			answers,
+			...rest
+		} = payload ?? {};
+		const body: any = {
+			model: model ?? ctx.model,
+			answers: answers && typeof answers === "object" && !Array.isArray(answers) ? answers : {},
+			...(requestId ? { request_id: requestId } : {}),
+			...rest,
+			...(usage ? { usage } : {}),
+		};
+		if (meta) body.meta = meta;
+		return attachTopLevelPricing(body, usage);
+	}
+
 	if (ctx.endpoint === "moderations") {
 		const {
 			provider,
@@ -937,8 +959,6 @@ export function formatClientPayload(args: {
     if (meta) fallback.meta = meta;
     return attachTopLevelPricing(fallback, usage);
 }
-
-
 
 
 

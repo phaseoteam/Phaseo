@@ -170,7 +170,7 @@ export type ChatThread = {
 const DB_NAME = "phaseo-chat";
 const LEGACY_DB_NAME = "ai-stats-chat";
 const DEFAULT_CHAT_TAG_COLOR = "#737373";
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 const LEGACY_TEXT_STORE_NAME = "chats";
 const TAG_STORE_NAME = "chat-tags";
 const ROOM_STORE_NAMES: Record<ChatRoomId, string> = {
@@ -187,6 +187,7 @@ const ROOM_STORE_NAMES: Record<ChatRoomId, string> = {
     embeddings: "chats-embeddings",
     ocr: "chats-ocr",
     rerank: "chats-rerank",
+    systemone: "chats-systemone",
 };
 
 function getStoreName(roomId: ChatRoomId): string {
