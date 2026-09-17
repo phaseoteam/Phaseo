@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"testing"
 
-	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
-	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2/src/gen"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/src/gen"
 )
 
 func TestSmokeResponsesSDK(t *testing.T) {

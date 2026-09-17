@@ -4,7 +4,7 @@ title: "Go SDK"
 description: "Official Go client for the Phaseo Gateway."
 ---
 
-Install the published [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2) module.
+Install the published [`sdk-go/v2`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3) module.
 
 The local wrapper at `packages/sdk/sdk-go/index.go` currently exposes these methods:
 
@@ -43,7 +43,7 @@ For endpoints that are not yet promoted to the wrapper, use the generated client
 import (
   "context"
   "fmt"
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 client := phaseo.New("YOUR_KEY", "https://api.phaseo.app/v1")

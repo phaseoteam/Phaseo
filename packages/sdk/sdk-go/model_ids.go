@@ -3,7 +3,7 @@
 
 package phaseo
 
-import gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2/src/gen"
+import gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/src/gen"
 
 // ModelIds contains known model IDs for editor autocomplete and hover docs.
 const (

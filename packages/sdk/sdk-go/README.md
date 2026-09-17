@@ -4,12 +4,12 @@ Official Go SDK for Phaseo Gateway.
 
 Module path:
 
-`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2`
+`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3`
 
 ## Installation
 
 ```bash
-go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2@latest
+go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3@latest
 ```
 
 ## Quick start
@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 func main() {

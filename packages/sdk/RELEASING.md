@@ -15,7 +15,7 @@ This repo uses a hybrid release model:
 - TypeScript Agent SDK (`@phaseo/agent-sdk`) -> npm
 - Python (`phaseo`) -> PyPI
 - Python Agent SDK (`phaseo-agent-sdk`) -> PyPI
-- Go (`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2`) -> Go proxy (`pkg.go.dev`) via git tags
+- Go (`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3`) -> Go proxy (`pkg.go.dev`) via git tags
 - Go Agent SDK (`github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go`) -> Go proxy via git tags
 - C# (`Phaseo.Sdk`) -> NuGet
 - C# Agent SDK (`Phaseo.AgentSdk`) -> NuGet

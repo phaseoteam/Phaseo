@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2/src/gen"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/src/gen"
 )
 
 const defaultBaseURL = "https://api.phaseo.app/v1"
