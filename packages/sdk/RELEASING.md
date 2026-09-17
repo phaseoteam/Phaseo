@@ -80,6 +80,20 @@ General policy:
 - `minor`: backward-compatible feature additions (new optional params/endpoints).
 - `major`: breaking changes (removed/renamed params, signature/shape breaks).
 
+For the pre-1.0 Rust core and Agent SDKs, incompatible changes advance the minor version. A `1.0.0` release is a separate decision to commit to a stable public API.
+
+## Coordinated Core v3 Release
+
+- Core TypeScript, Python, Go, C#, Java, PHP and Ruby SDKs move to `3.0.0` because the native model discovery contract changes. Consumers should review the `providers` to `offers` migration and the updated lifecycle fields before upgrading.
+- Rust core and Agent SDKs move to `0.2.0`; the other Agent SDKs move to `0.3.0` alongside their core dependencies.
+- The AI SDK provider moves to `2.0.0` for AI SDK 7 / ProviderV4 and Node.js 22 requirements.
+- `changeset:version` synchronizes language Agent SDK manifests, core dependency constraints and attribution headers. Private `package.json` files track versions for the native-language packages; they are not npm distributions.
+- Go major versions also update the module declaration, dependent imports, examples and documentation. Model constants are regenerated from the canonical generator. The core v3 import path ends in `/v3`.
+- The Go workspace and C# project reference allow local tests against unpublished core releases. The packed C# Agent SDK retains a NuGet dependency on `Phaseo.Sdk` at the core project's version.
+- `sdk:check-version-literals` exercises version synchronization in an isolated fixture. `packages:pack:ts` installs the actual tarball offline and checks all ESM/CommonJS entrypoints and TypeScript declarations.
+
+Before merging the version PR, run SDK Publish Readiness with secret checks enabled. Maven Central publishing remains blocked until its four documented credentials are configured in the `release` environment. A passing package build does not verify registry credentials or OIDC publisher registration.
+
 ## Language SDK Publish Workflows
 
 - Agent SDKs: `.github/workflows/publish-agent-sdks.yml`

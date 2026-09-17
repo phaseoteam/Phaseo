@@ -91,7 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           major="${VERSION%%.*}"
-          module="$(go -C packages/sdk/sdk-go list -m)"
+          module="$(GOWORK=off go -C packages/sdk/sdk-go list -m)"
           expected="github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v${major}"
           if [ "$major" -lt 2 ]; then
             expected="github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"

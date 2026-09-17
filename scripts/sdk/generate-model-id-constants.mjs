@@ -8,6 +8,9 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
 const specPath = path.join(repoRoot, "apps/docs/openapi/v1/openapi.yaml");
 const websiteBase = "https://phaseo.app";
+const goMod = await fs.readFile(path.join(repoRoot, "packages/sdk/sdk-go/go.mod"), "utf8");
+const goModule = goMod.match(/^module\s+(\S+)/m)?.[1];
+if (!goModule) throw new Error("Missing Go SDK module path");
 
 const specRaw = await fs.readFile(specPath, "utf8");
 const spec = yaml.load(specRaw);
@@ -167,6 +170,7 @@ function enrichAliasEntry(id, usedUpperRegistry, usedPascalRegistry) {
 }
 
 async function writeFile(relativePath, contents) {
+	if (process.argv.includes("--go-only") && relativePath !== "packages/sdk/sdk-go/model_ids.go") return;
 	const fullPath = path.join(repoRoot, relativePath);
 	await fs.mkdir(path.dirname(fullPath), { recursive: true });
 	await fs.writeFile(fullPath, contents, "utf8");
@@ -250,7 +254,7 @@ function renderPy(items, aliases) {
 }
 
 function renderGo(items, aliases) {
-	const lines = [renderHeader("//").trimEnd(), "", "package phaseo", "", "import gen \"github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2/src/gen\"", "", "// ModelIds contains known model IDs for editor autocomplete and hover docs.", "const (",];
+	const lines = [renderHeader("//").trimEnd(), "", "package phaseo", "", `import gen "${goModule}/src/gen"`, "", "// ModelIds contains known model IDs for editor autocomplete and hover docs.", "const (",];
 	for (const item of items) {
 		if (item.retired) {
 			lines.push("\t// Deprecated: CrofAI is retired; retained for compatibility only.");

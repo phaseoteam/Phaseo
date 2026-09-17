@@ -338,7 +338,8 @@ jobs:
       - name: Test and build
         working-directory: packages/sdk/agent-sdk-ruby
         run: |
-          gem install phaseo_sdk -v '~> 2.1' --no-document
+          (cd ../sdk-ruby && gem build phaseo_sdk.gemspec)
+          gem install --local ../sdk-ruby/phaseo_sdk-*.gem --no-document
           ruby -Ilib -Itests tests/agent_loop_test.rb
           gem build phaseo_agent_sdk.gemspec
       - name: Upload gem

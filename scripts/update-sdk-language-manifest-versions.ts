@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { syncDependentSdkReleases } from "./sync-dependent-sdk-releases.mjs";
 
 type NpmPackageVersionConfig = {
   packageJsonPath: string;
@@ -330,6 +331,7 @@ async function syncAll(): Promise<void> {
     throw new Error("Missing version in packages/sdk/sdk-rust/package.json");
   }
   await syncAgentRustDependencyVersion(rustSdkPackage.version);
+  await syncDependentSdkReleases(ROOT);
 }
 
 syncAll().catch((error) => {
