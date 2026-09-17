@@ -1,13 +1,15 @@
 // src/scheduled/index.ts
 // Purpose: Scheduled event handlers.
 // Why: Keep cron logic out of the main app routing entrypoint.
-// How: Runs one deterministic model discovery shard per cron invocation.
+// How: Runs the Cloudflare model discovery sweep on its configured cadence.
 
 import type { GatewayBindings } from "@/runtime/env";
 import { clearRuntime, configureRuntime, getSupabaseAdmin } from "@/runtime/env";
 import {
 	DEFAULT_MODEL_DISCOVERY_SHARD_SIZE,
+	DEFAULT_MODEL_DISCOVERY_CONCURRENCY,
 	getModelDiscoveryShardCount,
+	normalizeModelDiscoveryConcurrency,
 	normalizeModelDiscoveryShardSize,
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
@@ -139,21 +141,32 @@ function getModelDiscoveryExecutionIndex(event: ScheduledController): number {
 }
 
 async function handleModelDiscoveryScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.MODEL_DISCOVERY_ENABLED, true)) {
+		return;
+	}
+
+	const shardingEnabled = toBool(env.MODEL_DISCOVERY_SHARDING_ENABLED, true);
 	const shardSize = normalizeModelDiscoveryShardSize(
 		toInt(env.MODEL_DISCOVERY_SHARD_SIZE, DEFAULT_MODEL_DISCOVERY_SHARD_SIZE),
 	);
-	const shardCount = getModelDiscoveryShardCount(shardSize);
+	const shardCount = shardingEnabled ? getModelDiscoveryShardCount(shardSize) : 1;
 	const executionIndex = getModelDiscoveryExecutionIndex(event);
 	const shardIndex = executionIndex % shardCount;
+	const concurrency = normalizeModelDiscoveryConcurrency(
+		toInt(env.MODEL_DISCOVERY_CONCURRENCY, DEFAULT_MODEL_DISCOVERY_CONCURRENCY),
+	);
 
 	configureRuntime(env);
 	try {
 		await runModelDiscoveryJob({
 			trigger: "scheduled",
-			source: `cloudflare_cron:shard-${shardIndex + 1}-of-${shardCount}`,
+			source: shardingEnabled
+				? `cloudflare_cron:shard-${shardIndex + 1}-of-${shardCount}`
+				: "cloudflare_cron:all-providers",
 			scheduledAtIso: new Date(event.scheduledTime).toISOString(),
 			shardIndex,
 			shardCount,
+			concurrency,
 			notify: true,
 			prune: shardIndex === 0,
 		});

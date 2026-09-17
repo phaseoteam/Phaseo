@@ -17,6 +17,8 @@ On subsequent runs, the runner computes per-provider:
 - removed models
 - changed model payloads
 
+The production provider watcher is `apps/api/src/pipeline/model-discovery` and runs in the Cloudflare Worker. The scripts in this directory are local/manual helpers, plus the separate Hugging Face GitHub Actions runner; the package scripts should not be treated as the production scheduler.
+
 ## Private upstream discovery
 
 External upstream discovery checks model sources outside Phaseo, including provider `/models` APIs and watched Hugging Face organisations/models. Provider `/models` checks run from the Cloudflare Worker scheduled runner. Hugging Face checks run from GitHub Actions on an hourly schedule. Both can send Discord notifications. Provider model and pricing changes can dispatch `.github/workflows/provider-catalog-sync.yml`, which validates and creates or updates one batched ready-for-review pull request. The Worker requires `GITHUB_TOKEN` or `GH_TOKEN` with repository Contents write permission to send that repository dispatch.
@@ -27,7 +29,7 @@ Provider `/models` state is stored as compact per-model watch snapshots (`model_
 
 Structured official-page adapters currently cover Anthropic, Cloudflare Workers AI, DeepSeek, Fireworks, Moonshot AI, OpenAI, Perplexity, StepFun, Voyage, Weights & Biases, Xiaomi, and Z.AI. Other configured official pages remain fingerprint-monitored until a provider-specific parser is added; they never fall back to a third-party catalog. The hourly workflow batch includes every configured official source and every persisted provider-discovery record.
 
-The Worker also watches the public or authenticated catalogs used by models.dev, including OpenRouter, LLM Gateway, Vercel AI Gateway, ZenMux, FastRouter, Mara, NovitaAI, OrcaRouter, Pioneer, Requesty, Poe, CrossModel, OVHcloud, and the provider-owned W&B feed. Phaseo's catalogue watcher uses an explicit provider-module registry under `apps/web/scripts/catalogue/provider-sync/providers/`; each module owns its endpoint, optional credential, and response parsing while the shared runner owns provenance, canonical mapping, and pricing writes. The hourly catalog workflow checks direct feeds first, then uses the public provider-keyed models.dev catalogue only to fill missing simple pricing without overwriting direct rates. Conditional, tiered, stale, and credential-gated rows remain in the sync report for review. The workflow checks all configured provider sources in one run and reuses one batch branch and pull request; manual runs and repository dispatches can still limit the provider list.
+The Cloudflare Worker watches routable provider feeds and does not treat OpenRouter as a routable provider. The separate catalogue synchronizer reads the public or authenticated catalogs used by models.dev, including OpenRouter, LLM Gateway, Vercel AI Gateway, ZenMux, FastRouter, Mara, NovitaAI, OrcaRouter, Pioneer, Requesty, Poe, CrossModel, OVHcloud, and the provider-owned W&B feed. Phaseo's catalogue watcher uses an explicit provider-module registry under `apps/web/scripts/catalogue/provider-sync/providers/`; each module owns its endpoint, optional credential, and response parsing while the shared runner owns provenance, canonical mapping, and pricing writes. The hourly catalog workflow checks direct feeds first, then uses the public provider-keyed models.dev catalogue only to fill missing simple pricing without overwriting direct rates. Conditional, tiered, stale, and credential-gated rows remain in the sync report for review. The workflow checks all configured provider sources in one run and reuses one batch branch and pull request; manual runs and repository dispatches can still limit the provider list.
 
 See [AUTOMATION_COVERAGE.md](./AUTOMATION_COVERAGE.md) for source parity, credential requirements, automatic-PR safety boundaries, and the explicit manual pricing queue.
 
@@ -40,16 +42,9 @@ Issue state is stored in `scripts/model-discovery/state/provider-change-issues.j
 
 ## Internal Phaseo catalog discovery
 
-Public Phaseo catalog discovery checks Phaseo-owned state such as database records, public model/catalog files, provider mapping data, and generated SDK/OpenAPI model surfaces. These checks may send Discord notifications or write reports, but they do not create, update, comment on, close, label, or otherwise mutate GitHub issues.
+Public Phaseo catalog additions are checked by the same Cloudflare Worker schedule as provider discovery. The Worker reads `v2_models`, keeps a database-backed cursor in `model_discovery_public_announcements`, silently baselines the existing catalog on first run, and leaves later public additions pending until the public Discord webhook accepts the embed. Failed deliveries remain pending for a later retry. These checks may send Discord notifications or write reports, but they do not create, update, comment on, close, label, or otherwise mutate GitHub issues.
 
-Internal model file checks read from `packages/data/catalog/src/data/models`.
-Internal Discord alerts are sent as embed payloads only when internal models are added. Lifecycle/status edits are recorded in the discovery report but do not send Discord notifications.
-Already-announced model IDs are persisted to:
-
-- `scripts/model-discovery/state/internal-announced-models.json`
-
-This avoids duplicate notifications across runs while the GitHub Actions cache is retained.
-The legacy script state files under `scripts/model-discovery/state` are still useful for local/manual runs.
+The legacy file-based helper still reads `packages/data/catalog/src/data/models` for local/manual investigations. It is no longer the production source for public model announcements, and the old push-triggered `check-new-models.yml` workflow has been retired because the catalog is database-backed.
 
 Providers marked inactive in `discovery-policy.ts` are skipped explicitly with an `Inactive by policy` reason. Use this for providers without a stable/public models endpoint.
 Providers not present in `discovery-policy.ts` are also treated as inactive by default.
@@ -61,7 +56,7 @@ Providers not present in `discovery-policy.ts` are also treated as inactive by d
 - `scripts/model-discovery/run-hf-private.ts`
   - Local/manual external upstream Hugging Face discovery. The production scheduled equivalent lives in `.github/workflows/huggingface-model-discovery.yml`.
 - `scripts/model-discovery/run-internal-public.ts`
-  - Local/manual internal catalog/database discovery helper. Production runs from `.github/workflows/check-new-models.yml` on pushes to `main`.
+  - Local/manual file-based internal catalog discovery helper. Production public model announcements run from the Cloudflare Worker instead.
 
 ## Local run
 
@@ -75,8 +70,14 @@ pnpm run data:check-new-models:test
 
 ## Environment variables
 
-- `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` (public webhook URL for internal website model additions)
+- `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` (public webhook URL for database catalog additions)
 - `DISCORD_WEBHOOK_URL` (private/default webhook URL for provider and Hugging Face tracking alerts)
+- `MODEL_DISCOVERY_SLACK_WEBHOOK_URL` (optional Slack incoming webhook for private discovery alerts)
+- `MODEL_DISCOVERY_REVIEW_URL` (optional deep link for the internal discovery queue; defaults to `https://phaseo.app/settings/internal/model-discovery`)
+- `MODEL_UPDATES_NOTIFICATIONS_DISABLED` (set to `true` or `1` to keep public announcement rows pending without sending)
+- `MODEL_DISCOVERY_ENABLED` (Cloudflare Worker kill switch; defaults to enabled)
+- `MODEL_DISCOVERY_SHARDING_ENABLED` (defaults to enabled for compatibility; production is configured for one all-provider invocation)
+- `MODEL_DISCOVERY_CONCURRENCY` (bounded provider-request concurrency; production defaults to `8`)
 - `DISCORD_PUBLIC_MODEL_DISCOVERY_AVATAR_URL` (optional public bot avatar override; defaults to `https://phaseo.app/png_logo_light.png`)
 - `DISCORD_PRIVATE_MODEL_DISCOVERY_AVATAR_URL` (optional private bot avatar override; defaults to `https://phaseo.app/png_logo_dark.png`)
 - `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (legacy fallback avatar override when calling internal runner scripts with `--discord-avatar-url`)

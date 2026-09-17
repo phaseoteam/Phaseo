@@ -1,6 +1,12 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
-import { sendDiscordTextMessage } from "./discord";
+import {
+	buildInternalModelWebhookPayload,
+	sendDiscordTextMessage,
+	sendDiscordWebhookPayload,
+	type InternalModelNotificationModel,
+} from "./discord";
+import { sendSlackWebhookMessage } from "./slack";
 import {
 	extractProviderApiModelSnapshot,
 	hasProviderApiSnapshotValue,
@@ -1629,6 +1635,49 @@ export function buildPricingTableDiscordSection(pricing: PricingTableMonitorSumm
 
 const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
 const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
+const DEFAULT_MODEL_DISCOVERY_REVIEW_URL = "https://phaseo.app/settings/internal/model-discovery";
+const MAX_DISCORD_MESSAGE_LENGTH = 1_900;
+
+function titleCaseModelId(modelId: string): string {
+	const label = modelId.split("/").at(-1) ?? modelId;
+	return label
+		.replace(/[-_]+/g, " ")
+		.replace(/\s+/g, " ")
+		.trim()
+		.replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function modelPathSegments(providerId: string, modelId: string): string[] {
+	const modelSegments = modelId.split("/").map((segment) => segment.trim()).filter(Boolean);
+	if (modelSegments[0]?.toLowerCase() === providerId.toLowerCase()) return modelSegments;
+	return [providerId, ...modelSegments];
+}
+
+function buildModelNotificationUrl(providerId: string, modelId: string, prefix: string): string {
+	const path = modelPathSegments(providerId, modelId).map((segment) => encodeURIComponent(segment)).join("/");
+	const route = prefix ? `${prefix}/models` : "models";
+	return `https://phaseo.app/${route}/${path}`;
+}
+
+function buildAddedModelNotifications(changes: ProviderChange[]): InternalModelNotificationModel[] {
+	return changes.flatMap((change) => change.added.map((modelId) => ({
+		modelId: modelPathSegments(change.providerId, modelId).join("/"),
+		modelName: titleCaseModelId(modelId),
+		modelUrl: buildModelNotificationUrl(change.providerId, modelId, ""),
+		imageUrl: `${buildModelNotificationUrl(change.providerId, modelId, "og")}?discovery=1`,
+		creatorId: change.providerId,
+		creatorName: change.providerName,
+		changeSummaryLines: ["Detected in the provider model list."],
+	})));
+}
+
+function appendReviewQueueLink(message: string): string {
+	const reviewUrl = readBindingEnv(["MODEL_DISCOVERY_REVIEW_URL"]) ?? DEFAULT_MODEL_DISCOVERY_REVIEW_URL;
+	const suffix = `\n\nReview queue: ${reviewUrl}`;
+	const available = Math.max(0, MAX_DISCORD_MESSAGE_LENGTH - suffix.length);
+	const base = message.length <= available ? message : `${message.slice(0, Math.max(0, available - 16))}\n...[truncated]`;
+	return `${base}${suffix}`;
+}
 
 export function buildDiscordMessage(args: {
 	modelChanges: ProviderChange[];
@@ -1664,34 +1713,66 @@ export async function sendDiscordNotification(args: {
 	providerApiPricing: ProviderApiPricingMonitorSummary;
 	pricingTable: PricingTableMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
-}): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null }> {
+}): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null; error?: string | null }> {
 	if (!hasDiscordNotifiableChanges(args)) {
 		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
-	const webhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
-	if (!webhookUrl) {
-		return { delivered: false, skipped: true, reason: "missing DISCORD_WEBHOOK_URL" };
+	const discordWebhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
+	const slackWebhookUrl = readBindingEnv(["MODEL_DISCOVERY_SLACK_WEBHOOK_URL"]);
+	if (!discordWebhookUrl && !slackWebhookUrl) {
+		return { delivered: false, skipped: true, reason: "missing Discord and Slack webhook URLs" };
 	}
 
-	let parsedUrl: URL;
-	try {
-		parsedUrl = new URL(webhookUrl);
-	} catch {
-		console.warn("[model-discovery] invalid DISCORD_WEBHOOK_URL; skipping notification");
-		return { delivered: false, skipped: true, reason: "invalid DISCORD_WEBHOOK_URL" };
-	}
-
-	const message = buildDiscordMessage(args);
+	const message = appendReviewQueueLink(buildDiscordMessage(args));
 	if (!message.trim()) {
 		return { delivered: false, skipped: true, reason: "empty Discord message" };
 	}
-	await sendDiscordTextMessage({
-		webhookUrl: parsedUrl.toString(),
-		message,
-		roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
-		userId: readBindingEnv(["DISCORD_USER_ID"]),
-		username: PRIVATE_MODEL_DISCOVERY_USERNAME,
-		avatarUrl: PRIVATE_MODEL_DISCOVERY_AVATAR_URL,
-	});
+
+	const failures: string[] = [];
+	const deliveredChannels: string[] = [];
+	if (discordWebhookUrl) {
+		try {
+			const addedModels = buildAddedModelNotifications(args.modelChanges);
+			if (addedModels.length > 0) {
+				const payload = buildInternalModelWebhookPayload(
+					addedModels,
+					readBindingEnv(["DISCORD_ROLE_ID"]),
+					{
+						discordUserId: readBindingEnv(["DISCORD_USER_ID"]),
+						username: PRIVATE_MODEL_DISCOVERY_USERNAME,
+						avatarUrl: PRIVATE_MODEL_DISCOVERY_AVATAR_URL,
+						message,
+					},
+				);
+				await sendDiscordWebhookPayload(discordWebhookUrl, payload);
+			} else {
+				await sendDiscordTextMessage({
+					webhookUrl: discordWebhookUrl,
+					message,
+					roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
+					userId: readBindingEnv(["DISCORD_USER_ID"]),
+					username: PRIVATE_MODEL_DISCOVERY_USERNAME,
+					avatarUrl: PRIVATE_MODEL_DISCOVERY_AVATAR_URL,
+				});
+			}
+			deliveredChannels.push("Discord");
+		} catch (error) {
+			failures.push(`Discord: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
+	if (slackWebhookUrl) {
+		try {
+			await sendSlackWebhookMessage(slackWebhookUrl, message);
+			deliveredChannels.push("Slack");
+		} catch (error) {
+			failures.push(`Slack: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
+	if (failures.length > 0 && deliveredChannels.length === 0) throw new Error(failures.join("; "));
+	if (failures.length > 0) {
+		const error = failures.join("; ");
+		console.warn("[model-discovery] Partial notification delivery (" + deliveredChannels.join(", ") + "): " + error);
+		return { delivered: true, skipped: false, reason: "partial notification delivery", error };
+	}
 	return { delivered: true, skipped: false };
 }

@@ -89,7 +89,9 @@ export async function GET(
 	const [kindRaw, ...segments] = rawSegments;
 	const kind = kindRaw as OgEntity;
 	const isCountry = kind === "countries";
-	const payload = await fetchFrontendOgPayload(kind, segments);
+	const payload = await fetchFrontendOgPayload(kind, segments, {
+		allowDiscoveryFallback: kind === "models" && request.nextUrl.searchParams.get("discovery") === "1",
+	});
 
 	if (!payload) return new Response("Not found", { status: 404 });
 

@@ -18,6 +18,10 @@ MODEL_DISCOVERY_ENABLED = "true"
 ACCOUNT_DELETION_PURGE_ENABLED = "true"
 MODEL_DISCOVERY_RETENTION_DAYS = "7"
 MODEL_DISCOVERY_SHARD_SIZE = "20"
+# Run every provider check in one scheduled invocation. The watcher itself
+# uses bounded concurrency so this removes shard-to-shard notification delay.
+MODEL_DISCOVERY_SHARDING_ENABLED = "false"
+MODEL_DISCOVERY_CONCURRENCY = "8"
 MODEL_DISCOVERY_ISSUE_SYNC_ENABLED = "false"
 VIDEO_RECONCILIATION_ENABLED = "true"
 VIDEO_RECONCILIATION_LIMIT = "1000"

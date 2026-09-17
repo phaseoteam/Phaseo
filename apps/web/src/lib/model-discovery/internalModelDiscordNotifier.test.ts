@@ -158,6 +158,17 @@ describe("internal model discord notifier", () => {
 		expect(embed.timestamp).toBeUndefined();
 	});
 
+	it("adds the deployed model OG route when an image URL is available", () => {
+		const embed = formatSingleModelEmbed({
+			modelId: "openai/gpt-5.6",
+			modelName: "GPT 5.6",
+			modelUrl: "https://phaseo.app/models/openai/gpt-5.6",
+			imageUrl: "https://phaseo.app/og/models/openai/gpt-5.6?discovery=1",
+		});
+
+		expect(embed.image).toEqual({ url: "https://phaseo.app/og/models/openai/gpt-5.6?discovery=1" });
+	});
+
 	it("rejects webhook URLs that are not Discord hosts", () => {
 		expect(() =>
 			validateDiscordWebhookUrl("https://example.com/api/webhooks/123/token")

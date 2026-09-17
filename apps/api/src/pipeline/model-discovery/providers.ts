@@ -240,13 +240,6 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 		authStyle: "optional_bearer",
 	},
 	{
-		providerId: "openrouter",
-		providerName: "OpenRouter",
-		modelsEndpoint: "https://openrouter.ai/api/v1/models",
-		apiKeyEnv: ["OPENROUTER_API_KEY"],
-		authStyle: "optional_bearer",
-	},
-	{
 		providerId: "pioneer",
 		providerName: "Pioneer",
 		modelsEndpoint: "https://api.pioneer.ai/v1/models",

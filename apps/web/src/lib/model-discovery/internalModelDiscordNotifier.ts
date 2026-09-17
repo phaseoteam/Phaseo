@@ -2,6 +2,7 @@ export type InternalModelNotificationModel = {
 	modelId: string;
 	modelName: string;
 	modelUrl: string;
+	imageUrl?: string;
 	creatorId?: string;
 	creatorName?: string;
 	creatorColor?: string;
@@ -16,6 +17,9 @@ export type DiscordEmbed = {
 		text: string;
 	};
 	timestamp?: string;
+	image?: {
+		url: string;
+	};
 };
 
 export type DiscordWebhookPayload = {
@@ -90,6 +94,7 @@ function sanitizeModel(input: InternalModelNotificationModel): InternalModelNoti
 		modelId,
 		modelName,
 		modelUrl,
+		imageUrl: trimOrNull(input.imageUrl) ?? undefined,
 		creatorId: creatorId ?? undefined,
 		creatorName: creatorName ?? undefined,
 		creatorColor: creatorColor ?? undefined,
@@ -122,6 +127,17 @@ function parseHexColor(value: string | null | undefined): number | null {
 function resolveEmbedColor(model: InternalModelNotificationModel): number {
 	const parsed = parseHexColor(model.creatorColor);
 	return parsed ?? DEFAULT_EMBED_COLOR;
+}
+
+function resolveImageUrl(rawImageUrl: string | null | undefined): string | null {
+	const value = trimOrNull(rawImageUrl);
+	if (!value) return null;
+	try {
+		const parsed = new URL(value);
+		return parsed.protocol === "https:" ? parsed.toString() : null;
+	} catch {
+		return null;
+	}
 }
 
 function formatFooterText(nowIso: string): string {
@@ -189,12 +205,14 @@ export function formatSingleModelEmbed(
 		`[View Model](${safeModel.modelUrl})`,
 	];
 
+	const imageUrl = resolveImageUrl(safeModel.imageUrl);
 	return {
 		title: truncateText(buildDisplayTitle(safeModel), 180),
 		url: safeModel.modelUrl,
 		description: descriptionLines.join("\n"),
 		color: resolveEmbedColor(safeModel),
 		footer: { text: formatFooterText(nowIso) },
+		...(imageUrl ? { image: { url: imageUrl } } : {}),
 	};
 }
 
@@ -212,12 +230,14 @@ function formatPerModelDetailEmbed(
 		`[View Model](${safeModel.modelUrl})`,
 	];
 
+	const imageUrl = resolveImageUrl(safeModel.imageUrl);
 	return {
 		title: truncateText(buildDisplayTitle(safeModel), 180),
 		url: safeModel.modelUrl,
 		description: descriptionLines.join("\n"),
 		color: resolveEmbedColor(safeModel),
 		footer: { text: formatFooterText(nowIso) },
+		...(imageUrl ? { image: { url: imageUrl } } : {}),
 	};
 }
 
