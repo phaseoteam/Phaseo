@@ -1,3 +1,4 @@
+import { collectSessionCounts } from "@/usage/sessionCounts";
 import { Hono } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
@@ -303,7 +304,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	if (view === "upstream") {
 		const v2Result = await context.client
 			.from("v2_request_facts")
-			.select("request_event_id,occurred_at,request_id,key_id,endpoint,requested_model_input,requested_model_slug,routed_model_slug,provider_model_id,status_code,success,error_code,byok,latency_ms,generation_ms,gateway_total_ms,upstream_attempt_count,throughput,cost_nanos,currency,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,v2_request_attempts(attempt_id,attempt_number,provider_model_id,started_at,completed_at,status_code,success,error_code,failure_class,upstream_response_id,latency_ms,safe_metadata)")
+			.select("request_event_id,occurred_at,request_id,key_id,endpoint,requested_model_input,requested_model_slug,routed_model_slug,provider_model_id,status_code,success,error_code,byok,stream,latency_ms,gateway_ttft_ms,generation_ms,gateway_total_ms,upstream_attempt_count,throughput,cost_nanos,currency,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,v2_request_attempts(attempt_id,attempt_number,provider_model_id,started_at,completed_at,status_code,success,error_code,failure_class,upstream_response_id,latency_ms,safe_metadata)")
 			.eq("workspace_id", workspaceId)
 			.gte("occurred_at", timeRange.from)
 			.lte("occurred_at", timeRange.to)
@@ -335,6 +336,8 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 					round_number: 1,
 					attempt_number: attempt.attempt_number,
 					attempt_count: fact.upstream_attempt_count,
+					request_latency_ms: fact.stream === false ? fact.gateway_total_ms ?? null : fact.gateway_ttft_ms ?? null,
+					request_created_at: fact.occurred_at,
 					internal_attempt_number: null,
 					stage: "upstream",
 					endpoint: fact.endpoint,
@@ -388,6 +391,12 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 				.limit(500);
 			if (legacyResult.error && v2Result.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 			upstreamRequests = legacyResult.data ?? [];
+			const requestIds = Array.from(new Set(upstreamRequests.map((row) => row.request_id)));
+			if (requestIds.length) {
+				const latencyResult = await context.client.from("gateway_requests").select("request_id,created_at,gateway_ttft_ms").eq("workspace_id", workspaceId).in("request_id", requestIds);
+				const latencies = new Map((latencyResult.data ?? []).map((row) => [row.request_id, row]));
+				upstreamRequests = upstreamRequests.map((row) => ({ ...row, request_latency_ms: latencies.get(row.request_id)?.gateway_ttft_ms ?? null, request_created_at: latencies.get(row.request_id)?.created_at ?? null }));
+			}
 		}
 		const models = Array.from(new Set(upstreamRequests.map((row) => String(row.model_id ?? "").trim()).filter(Boolean)));
 		const providers = Array.from(new Set(upstreamRequests.map((row) => String(row.provider ?? "").trim()).filter(Boolean)));
@@ -408,12 +417,17 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		const requestIds = Array.from(new Set(recentJobsBase.map((row) => row.request_id).filter(Boolean)));
 		const requestSourcesResult = requestIds.length
 			? await context.client.from("gateway_requests")
-				.select("request_id,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection")
+				.select("request_id,created_at,cost_nanos,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection")
 				.eq("workspace_id", workspaceId)
 				.in("request_id", requestIds)
 			: { data: [], error: null };
 		const requestSources = new Map((requestSourcesResult.data ?? []).map((row) => [row.request_id, row]));
-		const recentJobs = recentJobsBase.map((row) => ({ ...row, ...(requestSources.get(row.request_id) ?? {}) }));
+		const recentJobs = recentJobsBase.map((row) => {
+			const request = requestSources.get(row.request_id);
+			if (!request) return row;
+			const { created_at, cost_nanos, ...source } = request;
+			return { ...row, ...source, request_created_at: created_at ?? null, request_cost_nanos: cost_nanos == null ? null : Number(cost_nanos) };
+		});
 		const models = recentJobs.map((row) => String(row.model ?? "")).filter(Boolean); const providers = recentJobs.map((row) => String(row.provider ?? "")).filter(Boolean); const apps = recentJobs.map((row) => String(row.app_id ?? "")).filter(Boolean);
 		const metadata = await metadataForIds(context, { models, providers, apps });
 		return c.json({ data: { appMetadataEntries: metadata.appMetadataEntries, jobProviders: Array.from(new Set(providers)), modelMetadataEntries: metadata.modelMetadataEntries, providerNameEntries: metadata.providerNameEntries, recentJobs }, signedIn: true, view, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -431,7 +445,8 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 			if (!row.session_id) continue; const entry = groups.get(row.session_id) ?? { session_id: row.session_id, request_count: 0, total_cost_nanos: 0, first_request_at: row.created_at, last_request_at: row.created_at, app_ids: new Set<string>(), model_ids: new Set<string>(), provider_ids: new Set<string>(), end_user_ids: new Set<string>() };
 			entry.request_count += 1; entry.total_cost_nanos += Number(row.cost_nanos ?? 0); if (row.created_at < entry.first_request_at) entry.first_request_at = row.created_at; if (row.created_at > entry.last_request_at) entry.last_request_at = row.created_at; if (row.app_id) entry.app_ids.add(row.app_id); if (row.model_id) entry.model_ids.add(row.model_id); if (row.provider) entry.provider_ids.add(row.provider); if (row.end_user_id) entry.end_user_ids.add(row.end_user_id); groups.set(row.session_id, entry);
 		}
-		const sessions = Array.from(groups.values()).sort((a, b) => Date.parse(b.last_request_at) - Date.parse(a.last_request_at)).slice(0, 100).map((entry) => ({ ...entry, total_cost_usd: entry.total_cost_nanos / 1e9, app_ids: Array.from(entry.app_ids), model_ids: Array.from(entry.model_ids), provider_ids: Array.from(entry.provider_ids), end_user_ids: Array.from(entry.end_user_ids) }));
+		const sessionCounts = collectSessionCounts(result.data ?? []);
+		const sessions = Array.from(groups.values()).sort((a, b) => Date.parse(b.last_request_at) - Date.parse(a.last_request_at)).slice(0, 100).map((entry) => ({ ...entry, ...sessionCounts.get(entry.session_id), total_cost_usd: entry.total_cost_nanos / 1e9, app_ids: Array.from(entry.app_ids), model_ids: Array.from(entry.model_ids), provider_ids: Array.from(entry.provider_ids), end_user_ids: Array.from(entry.end_user_ids) }));
 		const appIds = Array.from(new Set(sessions.flatMap((row) => row.app_ids))); const modelIds = Array.from(new Set(sessions.flatMap((row) => row.model_ids))); const providerIds = Array.from(new Set(sessions.flatMap((row) => row.provider_ids)));
 		const metadata = await metadataForIds(context, { models: modelIds, providers: providerIds, apps: appIds });
 		return c.json({ data: { appMetadataEntries: metadata.appMetadataEntries, modelMetadataEntries: metadata.modelMetadataEntries, providerMetadataEntries: metadata.providerMetadataEntries, providerNameEntries: metadata.providerNameEntries, sessionAppIds: appIds, sessionModelIds: modelIds, sessionProviderIds: providerIds, sessions }, signedIn: true, view, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -442,7 +457,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	const labelFilterResult = requestLabelFilter(url);
 	if (labelFilterResult && "error" in labelFilterResult) return c.json({ error: "invalid_label_filter", description: labelFilterResult.error }, 400, PRIVATE_NO_STORE_HEADERS);
 	const labelFilter = labelFilterResult && "key" in labelFilterResult ? labelFilterResult : null;
-	let requestQuery = context.client.from("gateway_requests").select("id,request_id,created_at,endpoint,model_id,requested_model_id,routed_model_id,provider,native_response_id,stream,session_id,app_id,usage,usage_input_tokens,usage_output_tokens,usage_total_tokens,cost_nanos,generation_ms,latency_ms,finish_reason,success,status_code,error_code,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,key_id,throughput").eq("workspace_id", workspaceId).gte("created_at", timeRange.from).lte("created_at", timeRange.to).not("endpoint", "in", '("video.generation","batch","music.generate")');
+	let requestQuery = context.client.from("gateway_requests").select("id,request_id,created_at,endpoint,model_id,requested_model_id,routed_model_id,provider,native_response_id,stream,session_id,app_id,usage,usage_input_tokens,usage_output_tokens,usage_total_tokens,cost_nanos,generation_ms,latency_ms,finish_reason,success,status_code,error_code,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,key_id,throughput,response_timeline:detail_metadata->response_timeline").eq("workspace_id", workspaceId).gte("created_at", timeRange.from).lte("created_at", timeRange.to).not("endpoint", "in", '("video.generation","batch","music.generate")');
 	if (labelFilter) requestQuery = requestQuery.contains("detail_metadata", { labels: [{ key: labelFilter.key, value: labelFilter.value }] });
 	for (const [param, column, operatorParam = `${param}_op`] of [
 		["model", "model_id"], ["provider", "provider"], ["app", "app_id"],

@@ -254,6 +254,40 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		]);
 	});
 
+	it.each([false, true])("retains first dispatch through a transport failure (fallback succeeds: %s)", async (recover) => {
+		const candidates = (recover ? ["openai", "other"] : ["openai"]).map((providerId) => ({
+			providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+			providerModelSlug: "model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+		let now = 1000;
+		const dateSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
+		const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+			now += 2000;
+			if (fetchSpy.mock.calls.length === 1) throw new Error("connection lost");
+			return new Response("{}", { status: 200 });
+		});
+		resolveProviderExecutorMock.mockReturnValue(async (args: any) => {
+			now += 15;
+			const upstream = await args.upstreamTiming.fetch("https://provider.test/generate");
+			return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		});
+		const ctx = createCtx({ testingMode: true, meta: { startedAtMs: 1000 } });
+		try {
+			const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+			expect(ctx.meta.timeToUpstreamRequestMs).toBe(15);
+			expect(fetchSpy).toHaveBeenCalledTimes(recover ? 2 : 1);
+			if (recover) {
+				expect(result.ok).toBe(true);
+				expect(ctx.meta.timeToLatestUpstreamRequestMs).toBe(2030);
+			}
+		} finally {
+			dateSpy.mockRestore();
+			fetchSpy.mockRestore();
+		}
+	});
+
 	it("retains executor timing for a successful moderation response", async () => {
 		const candidate = {
 			providerId: "openai",

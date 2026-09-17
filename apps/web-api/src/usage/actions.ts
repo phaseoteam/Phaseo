@@ -1,3 +1,4 @@
+import { collectSessionCounts } from "./sessionCounts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Env } from "@/env";
@@ -103,6 +104,7 @@ export interface PaginatedRequestsParams {
 }
 
 export interface RequestDetailMetadata {
+	response_timeline?: { version: number; routing_ms: number | null; first_dispatch_at_ms?: number } | null;
 	provider_candidate_diagnostics?: unknown;
 	provider_enablement_diagnostics?: unknown;
 	routing_diagnostics?: unknown;
@@ -158,6 +160,7 @@ export interface NormalizedRequestUsageColumns {
 }
 
 export interface RequestRow extends NormalizedRequestUsageColumns {
+	response_timeline?: RequestDetailMetadata["response_timeline"];
 	id?: string;
 	request_id: string;
 	created_at: string;
@@ -205,6 +208,7 @@ export interface RequestRow extends NormalizedRequestUsageColumns {
 		status: number | null;
 		status_text: string | null;
 		duration_ms: number | null;
+		started_at_unix_ms?: number | null;
 		latency_ms?: number | null;
 		generation_ms?: number | null;
 		total_ms?: number | null;
@@ -297,7 +301,8 @@ async function fetchGatewayUpstreamRequests(
 			fallback_attempted,
 			error_code,
 			error_message,
-			error_description
+			error_description,
+			metadata
 		`)
 		.eq("workspace_id", workspaceId)
 		.eq("request_id", requestId)
@@ -334,6 +339,7 @@ export function normalizeGatewayUpstreamRows(
 		status: numberOrNull(row.status_code),
 		status_text: stringOrNull(row.status_text),
 		duration_ms: numberOrNull(row.duration_ms),
+		started_at_unix_ms: numberOrNull((row.metadata as Record<string, unknown> | null)?.started_at_unix_ms),
 		latency_ms: numberOrNull(row.latency_ms),
 		generation_ms: numberOrNull(row.generation_ms),
 		total_ms: numberOrNull(row.total_ms),
@@ -445,6 +451,7 @@ function normalizeProviderAttempts(
 ): RequestRow["provider_attempts"] {
 	if (!Array.isArray(value)) return [];
 	return value.map((attempt: any) => ({
+		started_at_unix_ms: numberOrNull(attempt?.started_at_unix_ms),
 		attempt_number:
 			typeof attempt?.attempt_number === "number"
 				? attempt.attempt_number
@@ -625,6 +632,7 @@ export async function fetchPaginatedRequests(
 			cost_nanos,
 			generation_ms,
 			latency_ms,
+			response_timeline:detail_metadata->response_timeline,
 			finish_reason,
                         success,
                         status_code,
@@ -736,6 +744,7 @@ export async function fetchPaginatedRequests(
 				cost_nanos,
 				generation_ms,
 				latency_ms,
+				response_timeline:detail_metadata->response_timeline,
 				finish_reason,
                                 success,
                                 status_code,
@@ -803,6 +812,7 @@ export async function fetchPaginatedRequests(
 					cost_nanos,
 					generation_ms,
 					latency_ms,
+					response_timeline:detail_metadata->response_timeline,
 					finish_reason,
                                         success,
                                         status_code,
@@ -867,6 +877,7 @@ export async function fetchPaginatedRequests(
 						cost_nanos,
 						generation_ms,
 						latency_ms,
+						response_timeline:detail_metadata->response_timeline,
 						finish_reason,
 						success,
 						key_id
@@ -2349,6 +2360,7 @@ export interface SessionRollupRow {
 	end_user_ids: string[] | null;
 	app_counts?: Array<{ app_id: string; request_count: number }>;
 	model_counts?: Array<{ model_id: string; request_count: number }>;
+	model_provider_counts?: Array<{ model_id: string; provider: string; request_count: number }>;
 }
 
 type SessionRollupSourceRow = {
@@ -2498,7 +2510,7 @@ async function enrichSessionRollups(args: {
 
 	const { data, error } = await supabase
 		.from("gateway_requests")
-		.select("session_id, app_id, model_id")
+		.select("session_id, app_id, model_id, provider")
 		.eq("workspace_id", workspaceId)
 		.in("session_id", sessionIds)
 		.gte("created_at", timeRange.from)
@@ -2510,63 +2522,8 @@ async function enrichSessionRollups(args: {
 		return sessions;
 	}
 
-	const appCountsBySession = new Map<string, Map<string, number>>();
-	const modelCountsBySession = new Map<string, Map<string, number>>();
-
-	for (const row of (data ?? []) as Array<{
-		session_id: string | null;
-		app_id: string | null;
-		model_id: string | null;
-	}>) {
-		const sessionId =
-			typeof row.session_id === "string" ? row.session_id.trim() : "";
-		if (!sessionId) continue;
-
-		if (typeof row.app_id === "string" && row.app_id.trim()) {
-			const appId = row.app_id.trim();
-			const appCounts = appCountsBySession.get(sessionId) ?? new Map<string, number>();
-			appCounts.set(appId, (appCounts.get(appId) ?? 0) + 1);
-			appCountsBySession.set(sessionId, appCounts);
-		}
-
-		if (typeof row.model_id === "string" && row.model_id.trim()) {
-			const modelId = row.model_id.trim();
-			const modelCounts =
-				modelCountsBySession.get(sessionId) ?? new Map<string, number>();
-			modelCounts.set(modelId, (modelCounts.get(modelId) ?? 0) + 1);
-			modelCountsBySession.set(sessionId, modelCounts);
-		}
-	}
-
-	const sortCounts = (counts: Map<string, number>) =>
-		Array.from(counts.entries())
-			.map(([id, request_count]) => ({ id, request_count }))
-			.sort((a, b) => {
-				if (b.request_count !== a.request_count) {
-					return b.request_count - a.request_count;
-				}
-				return a.id.localeCompare(b.id);
-			});
-
-	return sessions.map((session) => {
-		const appCounts = appCountsBySession.get(session.session_id);
-		const modelCounts = modelCountsBySession.get(session.session_id);
-		return {
-			...session,
-			app_counts: appCounts
-				? sortCounts(appCounts).map(({ id, request_count }) => ({
-						app_id: id,
-						request_count,
-					}))
-				: [],
-			model_counts: modelCounts
-				? sortCounts(modelCounts).map(({ id, request_count }) => ({
-						model_id: id,
-						request_count,
-					}))
-				: [],
-		};
-	});
+	const counts = collectSessionCounts(data ?? []);
+	return sessions.map((session) => ({ ...session, ...(counts.get(session.session_id) ?? { app_counts: [], model_counts: [], model_provider_counts: [] }) }));
 }
 
 export async function fetchSessionRollups(

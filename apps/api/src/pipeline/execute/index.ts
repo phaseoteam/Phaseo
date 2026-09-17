@@ -915,7 +915,16 @@ async function attemptProviderWithIR(
 
 		const executorResult = await timing.timer.span(`${attemptPrefix}_executor_total`, () =>
 			executeWithRetry(),
-		);
+		).finally(() => {
+			// Retain the first dispatch even when a transport error throws or a
+			// later provider succeeds. Retry waiting is not Phaseo routing time.
+			const firstDispatch = upstreamTracker.snapshot().upstreamFetchStartMs;
+			const receivedAt = ctx.meta.startedAtMs;
+			if (typeof firstDispatch === "number" && Number.isFinite(firstDispatch) &&
+				typeof receivedAt === "number" && Number.isFinite(receivedAt)) {
+				ctx.meta.timeToUpstreamRequestMs ??= Math.max(0, firstDispatch - receivedAt);
+			}
+		});
 		const upstreamTiming = upstreamTracker.snapshot();
 		if (reservationDenial && upstreamTiming.upstreamRequestCount === 0) {
 			await releaseManagedProviderReservation(providerRateLimitReservation);

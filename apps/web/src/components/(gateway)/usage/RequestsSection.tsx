@@ -1,20 +1,29 @@
 "use client";
 
 import React, { useRef } from "react";
+import { createPortal } from "react-dom";
 import { Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import UnifiedRequestsTable from "./UnifiedRequestsTable";
 import ExportDropdown from "./ExportDropdown";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { runUsageViewRefresh } from "@/lib/gateway/usage/refreshBus";
 import type {
 	ProviderMetadataEntry,
 	RequestRow,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 import { type ModelMetadataMap } from "./model-display";
+import RequestColumnSettings, {
+	useRequestColumns,
+} from "./RequestColumnSettings";
 
 interface RequestsSectionProps {
+	apiKeys?: Array<{ id: string; name: string | null }>;
 	title?: string;
 	timeRange: { from: string; to: string };
 	appNames: Map<string, string>;
@@ -29,9 +38,11 @@ interface RequestsSectionProps {
 	initialNextCursor: { createdAt: string; id: string } | null;
 	initialPageSize: number;
 	detailBasePath?: string;
+	columnSettingsTargetId?: string;
 }
 
 export default function RequestsSection({
+	apiKeys,
 	title,
 	timeRange,
 	appNames,
@@ -46,7 +57,27 @@ export default function RequestsSection({
 	initialNextCursor,
 	initialPageSize,
 	detailBasePath,
+	columnSettingsTargetId,
 }: RequestsSectionProps) {
+	const { columns, updateColumns, density, updateDensity } =
+		useRequestColumns();
+	const [columnSettingsTarget, setColumnSettingsTarget] =
+		React.useState<HTMLElement | null>(null);
+	React.useEffect(() => {
+		setColumnSettingsTarget(
+			columnSettingsTargetId
+				? document.getElementById(columnSettingsTargetId)
+				: null,
+		);
+	}, [columnSettingsTargetId]);
+	const columnSettings = (
+		<RequestColumnSettings
+			columns={columns}
+			onChange={updateColumns}
+			density={density}
+			onDensityChange={updateDensity}
+		/>
+	);
 	const exportRef = useRef<((format: "csv" | "pdf") => void) | null>(null);
 	const [refreshing, setRefreshing] = React.useState(false);
 
@@ -100,7 +131,15 @@ export default function RequestsSection({
 					</div>
 				</div>
 			) : null}
+			{columnSettingsTarget ? (
+				createPortal(columnSettings, columnSettingsTarget)
+			) : !columnSettingsTargetId ? (
+				<div className="flex justify-end">{columnSettings}</div>
+			) : null}
 			<UnifiedRequestsTable
+				columns={columns}
+				density={density}
+				apiKeys={apiKeys}
 				timeRange={timeRange}
 				appNames={appNames}
 				modelMetadata={modelMetadata}

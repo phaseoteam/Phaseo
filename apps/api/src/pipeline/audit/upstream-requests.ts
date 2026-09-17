@@ -191,6 +191,7 @@ function buildRows(args: PersistGatewayUpstreamRequestsArgs) {
             request_payload: null,
             response_payload: null,
             metadata: normalizeJsonValue({
+                started_at_unix_ms: finiteInteger(attempt.started_at_unix_ms),
                 response_kind: attempt.response_kind ?? null,
                 upstream_request_count: attempt.upstream_request_count ?? null,
                 upstream_poll_count: attempt.upstream_poll_count ?? null,

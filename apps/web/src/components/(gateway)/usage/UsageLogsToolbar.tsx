@@ -510,7 +510,7 @@ export default function UsageLogsToolbar({
 					}}
 				>
 					<PopoverAnchor asChild>
-						<div ref={rangeAnchorRef} className="relative min-w-[17rem] sm:min-w-[20rem]">
+						<div ref={rangeAnchorRef} className="relative w-[min(17rem,calc(100vw-8rem))] sm:w-[18rem]">
 							{effectivePreset === "live" ? (
 								<div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
 									<LiveIndicator />

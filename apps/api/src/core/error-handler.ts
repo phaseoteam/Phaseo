@@ -11,6 +11,7 @@ import {
 import type { PipelineContext } from "@pipeline/before/types";
 import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
+import { buildResponseTimeline } from "@pipeline/after/timing";
 import { getEdgeMeta } from "./edge";
 import { sanitizeForAxiom, stringifyForAxiom } from "@observability/privacy";
 import { emitGatewayRequestEvent } from "@observability/events";
@@ -1069,6 +1070,7 @@ export async function handleError({
         providerResponse: body ?? null,
         detailMetadata: {
             stage,
+            response_timeline: buildResponseTimeline(ctx),
             routing_snapshot: sanitizeForAxiom((ctx as any)?.routingSnapshot ?? null),
             routing_diagnostics: sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null),
             replay_supported: Boolean(
