@@ -1765,7 +1765,7 @@ export const PROVIDER_STATUS_META: Record<
 		label: "External",
 		icon: ArrowUpRight,
 		iconClass: "text-violet-600",
-		description: "Listed from an external catalogue; not routable through Phaseo.",
+		description: "Listed from an external catalogue; routing requires an explicit provider-level override.",
 	},
 	internal_testing: {
 		label: "Internal Testing",

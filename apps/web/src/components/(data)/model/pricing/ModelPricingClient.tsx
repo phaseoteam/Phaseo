@@ -214,6 +214,7 @@ const DEFAULT_PROVIDER_STATUS_FILTERS: ProviderStatusFilter[] = [
     "routable",
     "preview",
     "inactive",
+    "external",
 ];
 
 function providerStatusFilterKey(status: CanonicalGatewayStatus): ProviderStatusFilter {
@@ -1276,7 +1277,6 @@ export default function ModelPricingClient({
         ignoredProviderCount > 0;
     const activeFilterCount =
         DEFAULT_PROVIDER_STATUS_FILTERS.filter((filter) => !providerStatusFilters.includes(filter)).length +
-        (providerStatusFilters.includes("external") ? 1 : 0) +
         (privacyFilter === "workspace" ? 0 : 1);
     const visibleProviders = filteredProviders;
     const visibleOfferings = useMemo(() => {

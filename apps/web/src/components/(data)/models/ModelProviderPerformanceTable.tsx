@@ -189,7 +189,7 @@ export default function ModelProviderPerformanceTable({
 			},
 			{
 				id: "uptime",
-				header: "Uptime",
+				header: "Request success",
 				enableSorting: false,
 				cell: ({ row }) => (
 					<div className="flex items-center gap-4">

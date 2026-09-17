@@ -852,6 +852,7 @@ describe("public model routes", () => {
 						requests: 1,
 						success_pct: 100,
 						avg_latency_ms: 240,
+						gateway_e2e_ms: 680,
 						avg_throughput: 18.5,
 					}],
 					provider_uptime_24h: [],
@@ -873,6 +874,7 @@ describe("public model routes", () => {
 		expect(payload.metrics.rangeDays).toBe(1);
 		expect(payload.metrics.summary).toMatchObject({ totalRequests: 1, successfulRequests: 1 });
 		expect(payload.metrics.hourly).toHaveLength(1);
+		expect(payload.metrics.hourly[0]).toMatchObject({ avgEndToEndMs: 680 });
 		expect(payload.metrics.successSeries).toHaveLength(1);
 		expect(payload.metrics.successSeries[0]).toMatchObject({ overallSuccessPct: 100, requests: 1 });
 		expect(payload.metrics.providerPerformance[0].uptimeBuckets[0]).toMatchObject({ successPct: 100, errorPct: 0, requests: 1, failedRequests: 0 });

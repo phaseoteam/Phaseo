@@ -41,7 +41,10 @@ type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 type ProviderStatus = ProviderRolloutStatus;
 type CapabilityStatus = CapabilityRoutingStatus;
 
-const ROUTING_ALGORITHM_VERSION = "provider-score-v6";
+const ROUTING_ALGORITHM_VERSION = "provider-score-v7";
+// External providers are available only as explicit provider-level overrides;
+// keep them as a fallback by applying a strong, visible score penalty.
+const EXTERNAL_PROVIDER_ROUTING_MULTIPLIER = 0.1;
 
 type RoutingPreset = {
     wSucc: number;
@@ -1089,9 +1092,10 @@ export async function routeProviders(
 
     // Channel/status gating before health scoring.
     const beforeStatusGate = poolCandidates;
-	poolCandidates = filterStable(poolCandidates, (candidate) => {
-        if (testingMode) return true;
+    poolCandidates = filterStable(poolCandidates, (candidate) => {
         const status = normalizeProviderStatus(candidate.providerStatus);
+        if (status === "external") return candidate.externalRoutingOverride === true;
+        if (testingMode) return true;
         if (status === "active") return true;
         if (status === "beta") return allowBetaProviders;
         if (status === "alpha") return includeAlpha;
@@ -1099,6 +1103,9 @@ export async function routeProviders(
     });
     pushStage("status_gate", beforeStatusGate, poolCandidates, (candidate) => {
         const status = normalizeProviderStatus(candidate.providerStatus);
+        if (status === "external" && candidate.externalRoutingOverride !== true) {
+            return "external_provider_requires_explicit_routing_override";
+        }
         if (status === "beta") return "beta_requires_team_beta_channel";
         if (status === "alpha") return "alpha_requires_beta_and_alpha_channels";
         if (status === "not_ready") return "provider_status_not_ready";
@@ -1390,7 +1397,9 @@ export async function routeProviders(
         const modelRoutingStatus = normalizeRoutingStatus(v.candidate.modelRoutingStatus);
         const capabilityStatus = normalizeCapabilityStatus(v.candidate.capabilityStatus);
         const rolloutMultiplier =
-            providerStatus === "beta"
+            providerStatus === "external"
+                ? EXTERNAL_PROVIDER_ROUTING_MULTIPLIER
+                : providerStatus === "beta"
                 ? 0.05
                 : providerStatus === "alpha"
                     ? 0.03

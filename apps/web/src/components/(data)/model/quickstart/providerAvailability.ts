@@ -438,7 +438,7 @@ export function resolveProviderState(
 			return {
 				key: "external",
 				label: "External",
-				description: "Listed from an external catalogue; not routable through Phaseo.",
+				description: "Listed from an external catalogue; routing requires an explicit provider-level override.",
 				availability: "inactive",
 			};
 		}

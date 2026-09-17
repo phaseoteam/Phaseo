@@ -17,7 +17,7 @@ import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformanc
 
 const successChartConfig: ChartConfig = {
 	overall: {
-		label: "Model uptime",
+		label: "Request success",
 		color: "hsl(142, 76%, 36%)",
 	},
 	worst: {
@@ -133,18 +133,20 @@ export default function ModelSuccessChart({
 		<div className="grid gap-4 rounded-lg border border-border/70 bg-background p-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-center">
 			<div className="min-w-0">
 				{showTitle ? (
-					<h3 className="text-sm font-medium text-foreground">Model uptime</h3>
+					<h3 className="text-sm font-medium text-foreground">Request success</h3>
 				) : null}
 				<p className="mt-1 text-3xl font-semibold tracking-tight text-emerald-600 tabular-nums dark:text-emerald-400">
 					{formatUptime(summaryUptime)}
 				</p>
-				<p className="mt-1 text-xs text-muted-foreground">Last 24 hours</p>
+				<p className="mt-1 text-xs text-muted-foreground">
+					Last 24 hours{totalRequests > 0 ? ` · ${totalRequests.toLocaleString()} requests · request-weighted` : " · No requests"}
+				</p>
 			</div>
 			<div className="min-w-0">
 				<div
 					className="h-[112px] w-full"
 					role="img"
-					aria-label={`Hourly model uptime over the last 24 hours. Phaseo Routing: ${formatUptime(summaryUptime)}.${showLeastStableProvider ? ` Without Phaseo Routing: ${formatUptime(withoutRoutingUptime)}.` : ""}`}
+					aria-label={`Hourly request success over the last 24 hours. Phaseo Routing: ${formatUptime(summaryUptime)}.${showLeastStableProvider ? ` Without Phaseo Routing: ${formatUptime(withoutRoutingUptime)}.` : ""}`}
 				>
 				<ChartContainer
 					config={successChartConfig}
@@ -182,14 +184,14 @@ export default function ModelSuccessChart({
 											</p>
 											<p className="text-sm">
 												<span className="font-semibold">
-													Uptime:
+													Request success:
 												</span>{" "}
 												{formatUptime(payload[0].payload.overall)}
 											</p>
 											{showLeastStableProvider ? (
 												<p className="text-sm">
 													<span className="font-semibold">
-												Without Phaseo Routing:
+														Without Phaseo Routing:
 													</span>{" "}
 													{formatUptime(payload[0].payload.worst)}
 												</p>

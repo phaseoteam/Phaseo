@@ -405,6 +405,7 @@ export function normalizeProviderStatus(value: unknown): ProviderRolloutStatus {
 	if (status === "active") return "active";
 	if (status === "beta") return "beta";
 	if (status === "alpha") return "alpha";
+	if (status === "external") return "external";
 	if (status === "notready" || status === "not_ready") {
 		return "not_ready";
 	}

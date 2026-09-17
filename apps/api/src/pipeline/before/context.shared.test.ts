@@ -130,6 +130,10 @@ describe("fail-closed rollout status normalization", () => {
 		expect(normalizeProviderStatus("unexpected")).toBe("not_ready");
 	});
 
+	it("preserves the external provider status for explicit routing checks", () => {
+		expect(normalizeProviderStatus("external")).toBe("external");
+	});
+
 	it("does not treat missing or unknown routing status as active", () => {
 		expect(normalizeRoutingStatus(undefined)).toBe("disabled");
 		expect(normalizeRoutingStatus("unexpected")).toBe("disabled");

@@ -1,6 +1,7 @@
 import type { ModelProviderDailyPoint } from "@/lib/fetchers/models/getModelPerformance";
 import type { ModelPerformanceQualityPoint } from "@/lib/fetchers/models/getModelPerformance";
 import {
+	buildAggregateTrendData,
 	hasQualityMetricData,
 	selectMetricData,
 	selectProviderTrendData,
@@ -122,6 +123,37 @@ describe("selectProviderTrendData", () => {
 			data: daily,
 			resolution: "day",
 		});
+	});
+});
+
+describe("buildAggregateTrendData", () => {
+	it("preserves model-wide metrics when provider identity is redacted", () => {
+		expect(
+			buildAggregateTrendData([
+				{
+					bucket: "2026-09-17T09:00:00Z",
+					avgThroughput: 18.2,
+					avgOutputSpeed: 22.4,
+					avgLatencyMs: 240,
+					avgEndToEndMs: 680,
+					avgGenerationMs: 440,
+					avgPhaseoOverheadMs: 240,
+					avgTpotMs: null,
+					avgItlMs: null,
+					requests: 1,
+					successPct: 100,
+				},
+			]),
+		).toEqual([
+			expect.objectContaining({
+				provider: "model-aggregate",
+				providerName: "Model-wide",
+				avgThroughput: 18.2,
+				avgLatencyMs: 240,
+				avgEndToEndMs: 680,
+				requests: 1,
+			}),
+		]);
 	});
 });
 
