@@ -304,7 +304,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	if (view === "upstream") {
 		const v2Result = await context.client
 			.from("v2_request_facts")
-			.select("request_event_id,occurred_at,request_id,key_id,endpoint,requested_model_input,requested_model_slug,routed_model_slug,provider_model_id,status_code,success,error_code,byok,latency_ms,generation_ms,gateway_total_ms,upstream_attempt_count,throughput,cost_nanos,currency,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,v2_request_attempts(attempt_id,attempt_number,provider_model_id,started_at,completed_at,status_code,success,error_code,failure_class,upstream_response_id,latency_ms,safe_metadata)")
+			.select("request_event_id,occurred_at,request_id,key_id,endpoint,requested_model_input,requested_model_slug,routed_model_slug,provider_model_id,status_code,success,error_code,byok,stream,latency_ms,gateway_ttft_ms,generation_ms,gateway_total_ms,upstream_attempt_count,throughput,cost_nanos,currency,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,v2_request_attempts(attempt_id,attempt_number,provider_model_id,started_at,completed_at,status_code,success,error_code,failure_class,upstream_response_id,latency_ms,safe_metadata)")
 			.eq("workspace_id", workspaceId)
 			.gte("occurred_at", timeRange.from)
 			.lte("occurred_at", timeRange.to)
@@ -336,7 +336,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 					round_number: 1,
 					attempt_number: attempt.attempt_number,
 					attempt_count: fact.upstream_attempt_count,
-					request_latency_ms: fact.latency_ms ?? null,
+					request_latency_ms: fact.stream === false ? fact.gateway_total_ms ?? null : fact.gateway_ttft_ms ?? null,
 					request_created_at: fact.occurred_at,
 					internal_attempt_number: null,
 					stage: "upstream",
@@ -393,9 +393,9 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 			upstreamRequests = legacyResult.data ?? [];
 			const requestIds = Array.from(new Set(upstreamRequests.map((row) => row.request_id)));
 			if (requestIds.length) {
-				const latencyResult = await context.client.from("gateway_requests").select("request_id,created_at,latency_ms").eq("workspace_id", workspaceId).in("request_id", requestIds);
+				const latencyResult = await context.client.from("gateway_requests").select("request_id,created_at,gateway_ttft_ms").eq("workspace_id", workspaceId).in("request_id", requestIds);
 				const latencies = new Map((latencyResult.data ?? []).map((row) => [row.request_id, row]));
-				upstreamRequests = upstreamRequests.map((row) => ({ ...row, request_latency_ms: latencies.get(row.request_id)?.latency_ms ?? null, request_created_at: latencies.get(row.request_id)?.created_at ?? null }));
+				upstreamRequests = upstreamRequests.map((row) => ({ ...row, request_latency_ms: latencies.get(row.request_id)?.gateway_ttft_ms ?? null, request_created_at: latencies.get(row.request_id)?.created_at ?? null }));
 			}
 		}
 		const models = Array.from(new Set(upstreamRequests.map((row) => String(row.model_id ?? "").trim()).filter(Boolean)));

@@ -12,7 +12,7 @@ export const UPSTREAM_COLUMNS = [
 		label: "Latency",
 		numeric: true,
 		description:
-			"Recorded generation latency to first response, including routing. Not total streaming duration.",
+			"Gateway time to first token for streaming, or completion for non-streaming. Includes routing and retries; unavailable when not recorded.",
 	},
 ] as const satisfies readonly TableColumnDefinition[];
 

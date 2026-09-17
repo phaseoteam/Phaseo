@@ -209,19 +209,8 @@ export default function ConfigurableLogTable<Row, Id extends string>({
 								rows.map((row) => (
 									<TableRow
 										key={rowKey(row)}
-										tabIndex={onRowClick ? 0 : undefined}
 										className={onRowClick ? "cursor-pointer" : undefined}
 										onClick={() => onRowClick?.(row)}
-										onKeyDown={(event) => {
-											if (
-												onRowClick &&
-												event.target === event.currentTarget &&
-												(event.key === "Enter" || event.key === " ")
-											) {
-												event.preventDefault();
-												onRowClick(row);
-											}
-										}}
 									>
 										{visible.map(({ id }, index) => (
 											<TableCell
@@ -234,6 +223,16 @@ export default function ConfigurableLogTable<Row, Id extends string>({
 														: undefined
 												}
 											>
+												{index === 0 && onRowClick && (
+													<button
+														type="button"
+														className="sr-only focus:not-sr-only focus:rounded focus:px-2 focus:py-1 focus:ring-2 focus:ring-ring"
+														aria-label={`Open details for ${label}: ${rowKey(row)}`}
+														onClick={(event) => { event.stopPropagation(); onRowClick(row); }}
+													>
+														Open details
+													</button>
+												)}
 												{renderCell(row, id)}
 											</TableCell>
 										))}
