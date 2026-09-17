@@ -61,6 +61,7 @@ export function buildProviderCandidatesWithDiagnostics(
             apiModelId: provider.apiModelId ?? null,
             pricingKey: provider.pricingKey ?? provider.providerId,
             providerStatus: provider.providerStatus ?? "active",
+            externalRoutingOverride: provider.externalRoutingOverride === true,
             providerRoutingStatus: provider.providerRoutingStatus ?? "active",
             modelRoutingStatus: provider.modelRoutingStatus ?? "active",
             capabilityStatus: provider.capabilityStatus ?? "active",

@@ -151,6 +151,7 @@ export type ProviderRolloutStatus =
     | "active"
     | "beta"
     | "alpha"
+    | "external"
     | "not_ready"
     | "gated"
     | "access_limited"
@@ -199,6 +200,8 @@ export type GatewayProviderSnapshot = {
     apiModelId?: string | null;
     pricingKey?: string | null;
     providerStatus?: ProviderRolloutStatus | null;
+    /** Explicit provider-level opt-in that permits routing an external provider. */
+    externalRoutingOverride?: boolean;
     providerRoutingStatus?: RoutingStatus | null;
     modelRoutingStatus?: RoutingStatus | null;
     capabilityStatus?: CapabilityRoutingStatus | null;
@@ -365,6 +368,8 @@ export type ProviderCandidate = {
     apiModelId?: string | null;
     pricingKey?: string | null;
     providerStatus?: ProviderRolloutStatus | null;
+    /** Explicit provider-level opt-in that permits routing an external provider. */
+    externalRoutingOverride?: boolean;
     providerRoutingStatus?: RoutingStatus | null;
     modelRoutingStatus?: RoutingStatus | null;
     capabilityStatus?: CapabilityRoutingStatus | null;

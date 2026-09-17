@@ -135,6 +135,36 @@ export function selectProviderTrendData(
 	return { data: providerHourly7d, resolution: "hour" };
 }
 
+/**
+ * Build a privacy-safe model-wide series for models whose provider identities
+ * are intentionally redacted from public telemetry (for example, stealth).
+ */
+export function buildAggregateTrendData(
+	hourly: ModelPerformancePoint[],
+): ModelProviderHourlyPoint[] {
+	return hourly
+		.filter((point) => point.requests > 0)
+		.map((point) => ({
+			bucket: point.bucket,
+			provider: "model-aggregate",
+			providerName: "Model-wide",
+			providerColor: null,
+			avgThroughput: point.avgThroughput,
+			avgOutputSpeed: point.avgOutputSpeed ?? null,
+			avgLatencyMs: point.avgLatencyMs,
+			avgEndToEndMs: point.avgEndToEndMs ?? null,
+			avgGenerationMs: point.avgGenerationMs,
+			avgPhaseoOverheadMs: point.avgPhaseoOverheadMs ?? null,
+			avgTpotMs: point.avgTpotMs ?? null,
+			avgItlMs: point.avgItlMs ?? null,
+			cachedInputPct: point.cachedInputPct ?? null,
+			cachedInputTokens: null,
+			effectiveInputTokens: null,
+			cacheTelemetryRequests: point.cacheTelemetryRequests ?? 0,
+			requests: point.requests,
+		}));
+}
+
 interface ModelPerformanceCardsProps {
 	summary: ModelPerformanceSummary;
 	prevSummary?: ModelPerformanceSummary | null;
@@ -161,24 +191,30 @@ export default function ModelPerformanceCards({
 		providerHourly7d,
 		providerDaily7d,
 	);
-	const usesHourlyData = resolution === "hour";
+	const aggregateData = buildAggregateTrendData(hourly);
+	const hasProviderObservations = providerData.some((point) => point.requests > 0);
+	const trendData = hasProviderObservations ? providerData : aggregateData;
+	const usesAggregateData = !hasProviderObservations && aggregateData.length > 0;
+	const usesHourlyData = usesAggregateData || resolution === "hour";
 	const detailData: ModelProviderTrendPoint[] =
-		chartProviderDaily7d ?? providerData;
+		chartProviderDaily7d ?? trendData;
 	const cardData = chartProviderDaily7d
 		? chartProviderDaily7d.filter((point) =>
 				["percentile-10", "percentile-50", "percentile-90"].includes(
 					point.provider,
 				),
 			)
-		: providerData;
+		: trendData;
 	const providerCount = new Set(
-		providerData
+		trendData
 			.filter((point) => point.requests > 0)
 			.map((point) => point.provider),
 	).size;
 	const detailSeriesLabel = chartProviderDaily7d
 		? "All available percentile bands"
-		: `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
+		: usesAggregateData
+			? "Model-wide observations; provider identities are hidden"
+			: `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
 	const metricUsesPercentiles = (metric: MetricKey) => {
 		if (!chartProviderDaily7d) return false;
 		const definition = METRIC_DEFINITIONS[metric];
@@ -193,14 +229,16 @@ export default function ModelPerformanceCards({
 			detailData,
 			cardData,
 			chartProviderDaily7d != null,
-			providerData,
+			trendData,
 		);
 	const metricTimeResolution = (metric: MetricKey) =>
 		metricUsesPercentiles(metric) ? "day" : usesHourlyData ? "hour" : "day";
 	const metricSeriesLabel = (metric: MetricKey) =>
 		metricUsesPercentiles(metric)
 			? detailSeriesLabel
-			: `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
+			: usesAggregateData
+				? "Model-wide observations; provider identities are hidden"
+				: `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
 	const qualityMetrics = [
 		{
 			title: "Tool Call Errors",
@@ -278,6 +316,10 @@ export default function ModelPerformanceCards({
 				<p className="text-xs text-muted-foreground">
 					Low sample volume in the last 24 hours. Trends use the available{" "}
 					seven-day history.
+				</p>
+			) : usesAggregateData ? (
+				<p className="text-xs text-muted-foreground">
+					Provider attribution is hidden for this model. Trends use model-wide observations.
 				</p>
 			) : null}
 		</div>

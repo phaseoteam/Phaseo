@@ -153,6 +153,7 @@ function buildSupabaseMock(
                             country_code: row.country_code,
                             status: row.status,
                             routing_enabled: row.routing_status === "active",
+                            routable: row.routable === true,
                         }));
                         return Promise.resolve({ ...next, data }).then(onfulfilled as any, onrejected as any);
                     }
@@ -2364,6 +2365,84 @@ describe("fetchCatalogue", () => {
             api_provider_id: "openai",
             availability_status: "active",
             availability_reason: "active",
+        });
+    });
+
+    it("includes an explicitly routable external provider in active catalogue results", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [{
+                data: [{
+                    model_id: "test/model-external",
+                    name: "External Model",
+                    release_date: null,
+                    deprecation_date: null,
+                    retirement_date: null,
+                    status: "active",
+                    organisation_id: "openai",
+                    input_types: ["text"],
+                    output_types: ["text"],
+                    organisation: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_models: [{
+                data: [{
+                    provider_api_model_id: "pam_external",
+                    provider_id: "openrouter",
+                    api_model_id: "test/model-external",
+                    model_id: "test/model-external",
+                    provider_model_slug: "external-model",
+                    is_active_gateway: true,
+                    routing_status: "active",
+                    input_modalities: ["text"],
+                    output_modalities: ["text"],
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_model_capabilities: [{
+                data: [{
+                    provider_api_model_id: "pam_external",
+                    capability_id: "responses",
+                    status: "active",
+                    params: { temperature: true },
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [{
+                data: [{
+                    api_provider_id: "openrouter",
+                    api_provider_name: "OpenRouter",
+                    link: null,
+                    country_code: null,
+                    status: "external",
+                    routing_status: "active",
+                    routable: true,
+                }],
+                error: null,
+            }],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({});
+
+        expect(models).toHaveLength(1);
+        expect(models[0]).toMatchObject({
+            model_id: "test/model-external",
+            providers: [{
+                api_provider_id: "openrouter",
+                provider_status: "external",
+                availability_status: "active",
+                availability_reason: "active",
+            }],
         });
     });
 

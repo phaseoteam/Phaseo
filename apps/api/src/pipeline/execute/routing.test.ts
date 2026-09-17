@@ -69,7 +69,8 @@ function candidate(args: {
 	dataPolicyVariant?: "standard" | "zdr" | null;
 	apiModelId?: string | null;
 	providerModelSlug?: string | null;
-	providerStatus?: "active" | "beta" | "alpha" | "not_ready";
+	providerStatus?: "active" | "beta" | "alpha" | "external" | "not_ready";
+	externalRoutingOverride?: boolean;
 	providerRoutingStatus?: "active" | "deranked" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
 	modelRoutingStatus?: "active" | "deranked" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
 	capabilityStatus?: "active" | "deranked" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled" | "internal_testing";
@@ -87,6 +88,7 @@ function candidate(args: {
 		offerLabel: args.offerLabel ?? null,
 		dataPolicyVariant: args.dataPolicyVariant ?? "standard",
 		providerStatus: args.providerStatus ?? "active",
+		externalRoutingOverride: args.externalRoutingOverride ?? false,
 		providerRoutingStatus: args.providerRoutingStatus ?? "active",
 		modelRoutingStatus: args.modelRoutingStatus ?? "active",
 		capabilityStatus: args.capabilityStatus ?? "active",
@@ -205,6 +207,83 @@ describe("routeProviders testing mode", () => {
 		expect(result.diagnostics.testingMode).toBe(true);
 		const statusStage = result.diagnostics.filterStages.find((stage) => stage.stage === "status_gate");
 		expect(statusStage?.afterCount).toBe(2);
+	});
+
+	it("requires an explicit override for external providers, including testing mode", async () => {
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai", providerStatus: "active" }),
+				candidate({ providerId: "openrouter", providerStatus: "external" }),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				testingMode: true,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["openai"]);
+		expect(
+			result.diagnostics.filterStages.find((stage) => stage.stage === "status_gate")?.droppedProviders,
+		).toEqual([
+			expect.objectContaining({
+				providerId: "openrouter",
+				reason: "external_provider_requires_explicit_routing_override",
+			}),
+		]);
+	});
+
+	it("admits an explicitly overridden external provider but keeps it behind active providers", async () => {
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai", providerStatus: "active" }),
+				candidate({
+					providerId: "openrouter",
+					providerStatus: "external",
+					externalRoutingOverride: true,
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				body: { provider: { sort: "latency" } },
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["openai", "openrouter"]);
+		expect(
+			result.ranked.find((entry) => entry.candidate.providerId === "openrouter")?.scoreTrace.calculation.rolloutMultiplier,
+		).toBe(0.1);
+	});
+
+	it("keeps overridden external providers out of the primary weighted pool", async () => {
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai" }),
+				{
+					...candidate({
+						providerId: "openrouter",
+						providerStatus: "external",
+						externalRoutingOverride: true,
+					}),
+					baseWeight: 1_000,
+				},
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini:fast",
+				workspaceId: "team_123",
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
+			"openai",
+			"openrouter",
+		]);
 	});
 
 	it("keeps alpha providers gated unless alpha channel is enabled", async () => {
@@ -645,7 +724,7 @@ describe("routeProviders testing mode", () => {
 		expect(result.diagnostics.rankedProviders[0]?.scoreFactors.priceScore).toBeGreaterThan(0);
 		expect(result.diagnostics.rankedProviders[0]?.scoreFactors.reliabilitySample).toEqual(expect.any(Number));
 		expect(result.diagnostics.algorithm).toEqual(expect.objectContaining({
-            version: "provider-score-v6",
+            version: "provider-score-v8",
 			selectionMethod: "weighted_order",
 			seed: expect.any(Number),
 			poolBounds: expect.objectContaining({

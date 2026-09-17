@@ -627,7 +627,7 @@ function ExternalProviderBadge() {
 					<ArrowUpRight className="size-3" aria-hidden="true" />
 				</span>
 			</TooltipTrigger>
-			<TooltipContent>Listed from an external catalogue; not routable through Phaseo.</TooltipContent>
+			<TooltipContent>Listed from an external catalogue; routing requires an explicit provider-level override.</TooltipContent>
 		</Tooltip>
 	);
 }

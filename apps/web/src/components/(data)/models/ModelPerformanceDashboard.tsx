@@ -184,6 +184,7 @@ export default function ModelPerformanceDashboard({
 		),
 	})).filter((group) => group.colos.length > 0);
 	const allRangePoints = [
+		...activeMetrics.hourly,
 		...(activeMetrics.providerHourly7d ?? []),
 		...activeMetrics.providerDaily7d,
 		...(activeMetrics.providerPercentileDaily7d ?? []),
@@ -194,6 +195,11 @@ export default function ModelPerformanceDashboard({
 	);
 	const rangeProviderHourly = filterPerformanceRange(
 		activeMetrics.providerHourly7d ?? [],
+		selectedRangeDays,
+		latestRangeTimestamp,
+	);
+	const rangeHourly = filterPerformanceRange(
+		activeMetrics.hourly,
 		selectedRangeDays,
 		latestRangeTimestamp,
 	);
@@ -371,7 +377,7 @@ export default function ModelPerformanceDashboard({
 				<ModelPerformanceCards
 					summary={activeMetrics.summary}
 					prevSummary={activeMetrics.prevSummary}
-					hourly={activeMetrics.hourly}
+					hourly={rangeHourly}
 					providerDaily7d={rangeProviderDaily}
 					providerHourly7d={chartProviderHourly}
 					chartProviderDaily7d={singleProviderPercentileSeries ?? undefined}

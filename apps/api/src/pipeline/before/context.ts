@@ -1535,7 +1535,7 @@ export async function fetchGatewayContext(args: {
                 : providerIds.length
                 ? supabase
                     .from("v2_providers")
-                    .select("provider_slug,status,routing_enabled,credential_mode,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,data_policy_variant,stream_cancellation_support,stream_cancellation_stops_provider_billing,stream_cancellation_usage_recovery,stream_cancellation_evidence_kind,stream_cancellation_source_url,metadata")
+                    .select("provider_slug,status,routing_enabled,routable,credential_mode,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,data_policy_variant,stream_cancellation_support,stream_cancellation_stops_provider_billing,stream_cancellation_usage_recovery,stream_cancellation_evidence_kind,stream_cancellation_source_url,metadata")
                     .in("provider_slug", providerIds)
                 : Promise.resolve({ data: [], error: null } as any);
 			const routeCredentialModeQuery = contextBundle
@@ -1659,6 +1659,7 @@ export async function fetchGatewayContext(args: {
             const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
 			const credentialModeByProvider = new Map<string, GatewayProviderSnapshot["credentialMode"]>();
             const routingStatusByProvider = new Map<string, RoutingStatus>();
+            const externalRoutingOverrideByProvider = new Map<string, boolean>();
             const providerFamilyByProvider = new Map<string, string | null>();
             const offerScopeByProvider = new Map<string, GatewayProviderSnapshot["offerScope"]>();
             const offerLabelByProvider = new Map<string, string | null>();
@@ -1691,6 +1692,10 @@ export async function fetchGatewayContext(args: {
                         providerId,
                         normalizeProviderStatus(row.status),
                     );
+					externalRoutingOverrideByProvider.set(
+						providerId,
+						normalizeProviderStatus(row.status) === "external" && row.routable === true,
+					);
 					credentialModeByProvider.set(providerId, row.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok");
                     routingStatusByProvider.set(
                         providerId,
@@ -1823,6 +1828,10 @@ export async function fetchGatewayContext(args: {
                         (provider.providerStatus == null
                             ? "not_ready"
                             : normalizeProviderStatus(provider.providerStatus)),
+                    externalRoutingOverride:
+                        externalRoutingOverrideByProvider.get(provider.providerId) ??
+                        provider.externalRoutingOverride ??
+                        false,
                     providerRoutingStatus:
                         routingStatusByProvider.get(provider.providerId) ??
                         (provider.providerRoutingStatus == null

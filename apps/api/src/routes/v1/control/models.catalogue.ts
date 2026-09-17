@@ -95,6 +95,7 @@ type ProviderDetails = {
     country_code: string | null;
     status: string | null;
     routing_status: string | null;
+    routable: boolean;
     execution_regions: string[];
     data_regions: string[];
 };
@@ -143,6 +144,7 @@ type CatalogueProvider = {
         | "active"
         | "beta"
         | "alpha"
+        | "external"
         | "not_ready"
         | "gated"
         | "access_limited"
@@ -205,6 +207,7 @@ export type ProviderInfo = {
         | "active"
         | "beta"
         | "alpha"
+        | "external"
         | "not_ready"
         | "gated"
         | "access_limited"
@@ -765,10 +768,12 @@ function isPublicCapabilityStatus(
 
 function resolveProviderAvailabilityStatus(args: {
     isActiveGateway: boolean;
+    externalRoutingOverride: boolean;
     providerStatus:
         | "active"
         | "beta"
         | "alpha"
+        | "external"
         | "not_ready"
         | "gated"
         | "access_limited"
@@ -797,7 +802,8 @@ function resolveProviderAvailabilityStatus(args: {
     if (
         args.isActiveGateway &&
         !isFutureEffectiveWindow(args.effectiveFrom, args.now) &&
-        args.providerStatus === "active" &&
+        (args.providerStatus === "active" ||
+            (args.providerStatus === "external" && args.externalRoutingOverride)) &&
         isPublicRoutingStatus(args.providerRoutingStatus) &&
         isPublicRoutingStatus(args.modelRoutingStatus) &&
         isPublicCapabilityStatus(args.capabilityStatus)
@@ -820,10 +826,12 @@ function resolveProviderAvailabilityStatus(args: {
 
 function resolveProviderAvailabilityReason(args: {
     isActiveGateway: boolean;
+    externalRoutingOverride: boolean;
     providerStatus:
         | "active"
         | "beta"
         | "alpha"
+        | "external"
         | "not_ready"
         | "gated"
         | "access_limited"
@@ -896,7 +904,10 @@ function resolveProviderAvailabilityReason(args: {
     if (args.providerStatus === "soft_blocked") {
         return "soft_blocked";
     }
-    if (args.providerStatus !== "active") {
+    if (
+        args.providerStatus !== "active" &&
+        !(args.providerStatus === "external" && args.externalRoutingOverride)
+    ) {
         return "provider_inactive";
     }
     if (args.providerRoutingStatus === "disabled") {
@@ -1303,7 +1314,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         for (const providerIdChunk of chunkArray(Array.from(providerIdSet), 200)) {
             const { data, error: providerDetailsError } = await supabase
                 .from("v2_providers")
-                .select("provider_slug, name, metadata, country_code, status, routing_enabled, default_execution_regions, default_data_regions")
+                .select("provider_slug, name, metadata, country_code, status, routing_enabled, routable, default_execution_regions, default_data_regions")
                 .in("provider_slug", providerIdChunk);
             if (providerDetailsError) {
                 throw new Error(`Failed to load provider metadata: ${providerDetailsError.message || "unknown error"}`);
@@ -1315,6 +1326,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                 country_code: row.country_code ?? null,
                 status: row.status ?? null,
                 routing_status: row.routing_enabled ? "active" : "disabled",
+                routable: row.routable === true,
                 execution_regions: toStringArray(row.default_execution_regions).map((region) => region.toLowerCase()),
                 data_regions: toStringArray(row.default_data_regions).map((region) => region.toLowerCase()),
             })) as ProviderDetails[]);
@@ -1328,6 +1340,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                 country_code: provider.country_code ?? null,
                 status: (provider as any).status ?? null,
                 routing_status: (provider as any).routing_status ?? null,
+                routable: provider.routable,
                 execution_regions: [...provider.execution_regions],
                 data_regions: [...provider.data_regions],
             });
@@ -1507,6 +1520,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                 if (!cap.capability_id) continue;
                 const providerStatus = normalizeProviderStatus(providerDetails?.status);
                 const providerRoutingStatus = normalizeRoutingStatus(providerDetails?.routing_status);
+                const externalRoutingOverride = providerStatus === "external" && providerDetails?.routable === true;
                 const modelRoutingStatus = normalizeRoutingStatus(row.routing_status);
                 const capabilityStatus = normalizeCapabilityStatusForPublicCatalogue(cap.capability_id, cap.status);
                 const effectiveFrom = cap.effective_from ?? row.effective_from ?? null;
@@ -1523,6 +1537,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                     is_active_gateway: Boolean(row.is_active_gateway),
                     availability_status: resolveProviderAvailabilityStatus({
                         isActiveGateway: Boolean(row.is_active_gateway),
+                        externalRoutingOverride,
                         providerStatus,
                         providerRoutingStatus,
                         modelRoutingStatus,
@@ -1533,6 +1548,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                     }),
                     availability_reason: resolveProviderAvailabilityReason({
                         isActiveGateway: Boolean(row.is_active_gateway),
+                        externalRoutingOverride,
                         providerStatus,
                         providerRoutingStatus,
                         modelRoutingStatus,
