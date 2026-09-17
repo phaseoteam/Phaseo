@@ -5,29 +5,25 @@
 	"type": "module",
 	"private": false,
 	"license": "MIT",
-	"main": "./dist/index.cjs",
+	"main": "./dist/cjs/index.js",
 	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js",
-			"require": "./dist/index.cjs"
+			"import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+			"require": { "types": "./dist/cjs/index.d.ts", "default": "./dist/cjs/index.js" }
 		},
 		"./devtools": {
-			"types": "./dist/devtools/index.d.ts",
-			"import": "./dist/devtools/index.js",
-			"require": "./dist/devtools/index.cjs"
+			"import": { "types": "./dist/devtools/index.d.ts", "default": "./dist/devtools/index.js" },
+			"require": { "types": "./dist/cjs/devtools/index.d.ts", "default": "./dist/cjs/devtools/index.js" }
 		},
 		"./compat/openai": {
-			"types": "./dist/compat/openai.d.ts",
-			"import": "./dist/compat/openai.js",
-			"require": "./dist/compat/openai.cjs"
+			"import": { "types": "./dist/compat/openai.d.ts", "default": "./dist/compat/openai.js" },
+			"require": { "types": "./dist/cjs/compat/openai.d.ts", "default": "./dist/cjs/compat/openai.js" }
 		},
 		"./compat/anthropic": {
-			"types": "./dist/compat/anthropic.d.ts",
-			"import": "./dist/compat/anthropic.js",
-			"require": "./dist/compat/anthropic.cjs"
+			"import": { "types": "./dist/compat/anthropic.d.ts", "default": "./dist/compat/anthropic.js" },
+			"require": { "types": "./dist/cjs/compat/anthropic.d.ts", "default": "./dist/cjs/compat/anthropic.js" }
 		}
 	},
 	"files": [
@@ -40,7 +36,7 @@
 	"scripts": {
 		"clean": "rimraf dist src/oapi-gen",
 		"gen": "pnpm -w oapi:gen:ts",
-		"build": "rimraf dist && tsc -p tsconfig.build.json",
+		"build": "node scripts/build.mjs",
 		"prepublishOnly": "pnpm run build",
 		"test:unit": "pnpm exec vitest run tests/client-async-jobs.test.ts tests/client-batches.test.ts tests/client-chat.test.ts tests/client-endpoints.test.ts tests/client-files.test.ts tests/client-health.test.ts tests/client-video.test.ts tests/devtools.test.ts tests/package-metadata.test.ts tests/webhooks.test.ts",
 		"test:smoke": "pnpm smoke:all",
@@ -50,6 +46,7 @@
 		"smoke:compat-anthropic": "dotenv -e .env.local -- tsx tests/compat-anthropic.ts",
 		"smoke:all": "pnpm smoke:responses && pnpm smoke:chat && pnpm smoke:compat-openai && pnpm smoke:compat-anthropic",
 		"test": "pnpm test:unit",
+		"test:package": "pnpm run build && node scripts/test-package.mjs",
 		"pack:dry": "npm pack --dry-run"
 	},
 	"dependencies": {},

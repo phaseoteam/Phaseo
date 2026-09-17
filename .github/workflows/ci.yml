@@ -695,6 +695,10 @@ jobs:
               run: rustup component add clippy rustfmt
 
             - name: Run lifecycle tests
+              env:
+                  # Test the core Go SDK on its declared minimum independently
+                  # of the Agent SDK workspace, which requires Go 1.24.
+                  GOWORK: "off"
               run: pnpm run test:sdk-${{ matrix.sdk }}
 
     deploy:

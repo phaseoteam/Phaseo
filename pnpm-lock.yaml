@@ -1200,6 +1200,18 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/sdk/agent-sdk-csharp: {}
+
+  packages/sdk/agent-sdk-go: {}
+
+  packages/sdk/agent-sdk-java: {}
+
+  packages/sdk/agent-sdk-php: {}
+
+  packages/sdk/agent-sdk-py: {}
+
+  packages/sdk/agent-sdk-ruby: {}
+
   packages/sdk/agent-sdk-rust: {}
 
   packages/sdk/agent-sdk-ts:
