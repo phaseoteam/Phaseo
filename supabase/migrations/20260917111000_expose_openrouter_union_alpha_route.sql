@@ -1,14 +1,8 @@
 -- Union Alpha remains a stealth model identity, but its OpenRouter route is a
 -- public provider route. Keep the route explicit so a fresh environment does
--- not depend on the manually verified production row.
-
--- This is the provider-level visibility switch. Route-level switches still
--- decide which individual OpenRouter model routes can actually be selected.
-update public.v2_providers
-set routing_enabled = true,
-    routable = true,
-    updated_at = now()
-where provider_slug = 'openrouter';
+-- not depend on the manually verified production row. Do not change the
+-- provider-wide visibility flags here: the route below is the only OpenRouter
+-- route this migration enables.
 
 insert into public.v2_model_provider_routes (
   provider_model_id,
