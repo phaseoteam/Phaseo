@@ -17,6 +17,7 @@ const inheritedContractByProvider: Record<string, string> = {
 	"tencent-cloud": "openai",
 	"ionrouter-kimi": "ionrouter",
 	"ionrouter-minimax": "ionrouter",
+	openrouter: "openai",
 	tensorx: "tensorix",
     wafer: "openai",
     "wafer-zdr": "openai",
