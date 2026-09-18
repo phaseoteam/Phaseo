@@ -28,7 +28,7 @@ import {
 	Eye,
 	Bot,
 	Link2,
-	ListChecks,
+	GitBranch,
 } from "lucide-react";
 import type { APIProviderModels } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -48,7 +48,7 @@ const MOD_ICON: Record<string, React.ElementType> = {
 	rerank: ArrowUpDown,
 	embeddings: Braces,
 	vision: Eye,
-	decisions: ListChecks,
+	decisions: GitBranch,
 };
 
 const MOD_BADGE_CLASS: Record<string, string> = {
@@ -218,7 +218,7 @@ const ENDPOINT_META: Record<
 	},
 	"/decisions": {
 		label: "Decisions",
-		icon: ListChecks,
+		icon: GitBranch,
 		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 	},
 };

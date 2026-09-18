@@ -8,9 +8,9 @@ import {
 	ArrowUpDown,
 	BadgeCheck,
 	ChevronsUpDown,
+	GitBranch,
 	GitMerge,
 	ImageIcon,
-	ListChecks,
 	Mic,
 	MessageSquareText,
 	Music2,
@@ -52,7 +52,7 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	embeddings: Sparkles,
 	ocr: ScanText,
 	rerank: ArrowUpDown,
-	systemone: ListChecks,
+	systemone: GitBranch,
 };
 
 const DISABLED_ROOMS = new Set<ChatRoomId>(["ocr", "rerank"]);

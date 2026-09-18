@@ -53,6 +53,7 @@ import { normalizeMediaGenerationStatus } from "@/lib/chat/mediaGenerationStatus
 import { extractResponseText } from "@/components/(chat)/chatPayload";
 import { extractTotalCostUsd } from "@/components/(chat)/playground/chat-playground-core";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import { jsonToPythonLiteral } from "@/components/(data)/model/quickstart/quickstartPayloads";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
 import { normalizePlaygroundMediaUrl } from "@/lib/utils/urlSafety";
@@ -801,13 +802,6 @@ function resolvePromptForSnippet(prompt: string, modelName: string): string {
 	const trimmed = prompt.trim();
 	if (trimmed) return trimmed;
 	return `Give me a concise overview of ${modelName}.`;
-}
-
-function jsonToPythonLiteral(json: string): string {
-	return json
-		.replace(/true/g, "True")
-		.replace(/false/g, "False")
-		.replace(/null/g, "None");
 }
 
 function buildPlaygroundCodeSnippets({

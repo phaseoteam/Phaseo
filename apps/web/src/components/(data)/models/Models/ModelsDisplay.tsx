@@ -46,7 +46,7 @@ import {
 	CalendarDays,
 	Globe2,
 	LockKeyhole,
-	ListChecks,
+	GitBranch,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -200,6 +200,7 @@ const ENDPOINT_DISPLAY_ORDER = [
 	"audio/translations",
 	"audio/realtime",
 	"video/generations",
+	"decisions",
 	"decisions/make",
 ] as const;
 
@@ -222,6 +223,8 @@ const ENDPOINT_LABELS: Record<string, string> = {
 	"audio/translations": "Translation",
 	"audio/realtime": "Real-time",
 	"video/generations": "Video Generation",
+	decisions: "Decisions",
+	"decision/make": "Decisions",
 	"decisions/make": "Decisions",
 	systemone: "Decisions",
 	"system.one": "Decisions",
@@ -577,8 +580,16 @@ function getModalityIcon(modality: string): LucideIcon {
 
 function getEndpointIcon(endpoint: string): LucideIcon {
 	const normalized = normalizeEndpointValue(endpoint);
-	if (normalized === "decisions/make" || normalized === "systemone") {
-		return ListChecks;
+	if (
+		normalized === "decisions" ||
+		normalized === "/decisions" ||
+		normalized === "decision/make" ||
+		normalized === "decisions/make" ||
+		normalized === "systemone" ||
+		normalized === "system/one" ||
+		normalized === "typed/decisions"
+	) {
+		return GitBranch;
 	}
 	if (normalized.includes("embedding")) return Database;
 	if (normalized.includes("rerank")) return ArrowUpDown;

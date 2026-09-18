@@ -23,6 +23,13 @@ const ENDPOINT_ROUTE_META: Record<string, Omit<EndpointRoute, "value">> = {
 		description: "Modern response API with text, tools, and multimodal input support.",
 		tag: "Recommended",
 	},
+	decisions: {
+		method: "POST",
+		path: "/v1/decisions",
+		title: "Decisions",
+		description: "Evaluate typed questions against structured application state.",
+		tag: "Recommended",
+	},
 	"chat.completions": {
 		method: "POST",
 		path: "/v1/chat/completions",
@@ -132,6 +139,7 @@ const ENDPOINT_ROUTE_META: Record<string, Omit<EndpointRoute, "value">> = {
 
 export const ENDPOINT_OPTIONS: EndpointOption[] = [
 	{ value: "responses", label: "Responses" },
+	{ value: "decisions", label: "Decisions" },
 	{ value: "chat.completions", label: "Chat Completions" },
 	{ value: "messages", label: "Messages" },
 	{ value: "embeddings", label: "Embeddings" },

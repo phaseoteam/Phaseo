@@ -6,7 +6,7 @@ import {
 	Headphones,
 	Music4,
 	Speech,
-	ListChecks,
+	GitBranch,
 	Braces,
 	type LucideIcon,
 } from "lucide-react";
@@ -33,7 +33,7 @@ const MODALITIES: Modality[] = [
 	{ key: "audio_stt", label: "Transcription", icon: Captions },
 	{ key: "audio_music", label: "Music", icon: Music4 },
 	{ key: "structured", label: "Structured state", icon: Braces },
-	{ key: "decisions", label: "Decisions", icon: ListChecks },
+	{ key: "decisions", label: "Decisions", icon: GitBranch },
 ];
 
 export default function Modalities({

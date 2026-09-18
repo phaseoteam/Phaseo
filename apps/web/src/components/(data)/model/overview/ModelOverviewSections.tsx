@@ -9,8 +9,8 @@ import {
 	Braces,
 	Captions,
 	ChevronRight,
+	GitBranch,
 	Headphones,
-	ListChecks,
 	ImageIcon,
 	Music4,
 	Speech,
@@ -213,7 +213,7 @@ const KNOWN_MODALITY_META = [
 	{ key: "structured", label: "Structured state", icon: Braces },
 	{ key: "embeddings", label: "Embeddings", icon: Braces },
 	{ key: "moderations", label: "Moderation", icon: BadgeAlert },
-	{ key: "decisions", label: "Decisions", icon: ListChecks },
+	{ key: "decisions", label: "Decisions", icon: GitBranch },
 ];
 
 function formatTypeLabel(value: string): string {
