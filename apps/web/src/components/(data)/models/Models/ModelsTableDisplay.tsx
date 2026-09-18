@@ -41,7 +41,7 @@ import {
 	CalendarDays,
 	XCircle,
 	LockKeyhole,
-	GitBranch,
+	Scale,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -368,7 +368,7 @@ function formatStatusLabel(value: string): string {
 
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
-	if (normalized.includes("decision")) return GitBranch;
+	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}
