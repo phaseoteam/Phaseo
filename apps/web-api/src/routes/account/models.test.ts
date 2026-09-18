@@ -190,14 +190,15 @@ describe("account model source routes", () => {
 		} as unknown as ExecutionContext;
 
 		const organisation = await app.request("https://phaseo.app/api/account/models/catalog/organisations", { method: "POST", headers, body: JSON.stringify({ organisation_id: "test-lab", name: "Test Lab", social_links: [] }) }, env, executionContext);
-		const graph = await app.request("https://phaseo.app/api/account/models/openai%2Fgpt-test/graph", { method: "PUT", headers, body: JSON.stringify({ modelId: "openai/gpt-test", name: "GPT Test", organisation_id: "openai" }) }, env, executionContext);
+		const graph = await app.request("https://phaseo.app/api/account/models/openai%2Fgpt-test/graph", { method: "PUT", headers, body: JSON.stringify({ modelId: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", provider_capabilities: [{ provider_id: "external-provider", provider_model_id: "external-route", provider_model_slug: "gpt-test", capability_id: "text.generate", previous_capability_id: "chat.generate" }] }) }, env, executionContext);
 		const route = await app.request("https://phaseo.app/api/account/models/openai%2Fgpt-test/provider-routes", { method: "PUT", headers, body: JSON.stringify({ provider_slug: "external-provider", provider_model_slug: "gpt-test", status: "active", routing_enabled: false }) }, env, executionContext);
 
 		expect(organisation.status).toBe(200);
 		expect(graph.status).toBe(200);
 		expect(route.status).toBe(200);
 		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_catalogue"))).toBe(true);
-		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_model_graph_with_successor"))).toBe(true);
+		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_model_graph_editable"))).toBe(true);
+		expect(requests.find((request) => request.url.includes("/rpc/mutate_v2_admin_model_graph_editable"))?.body).toContain("previous_capability_id");
 		expect(requests.some((request) => request.url.includes("/rpc/mutate_v2_admin_provider_route"))).toBe(true);
 		expect(purgedTags).toHaveLength(3);
 		expect(purgedTags.every((tags) => tags.includes("web-api-models") && tags.includes("web-api-gateway-models"))).toBe(true);
@@ -209,7 +210,7 @@ describe("account model source routes", () => {
 			requests.push(url);
 			if (url.includes("/auth/v1/user")) return Response.json({ id: "00000000-0000-4000-8000-000000000001" });
 			if (url.includes("/rest/v1/users")) return Response.json({ role: "admin" });
-			if (url.includes("/rpc/mutate_v2_admin_model_graph_with_successor")) return Response.json({ message: "recommended successor cannot be the same model" }, { status: 400 });
+			if (url.includes("/rpc/mutate_v2_admin_model_graph_editable")) return Response.json({ message: "recommended successor cannot be the same model" }, { status: 400 });
 			return Response.json({ ok: true });
 		}));
 		const response = await app.request("https://phaseo.app/api/account/models/openai%2Fgpt-test/graph", {
@@ -218,7 +219,7 @@ describe("account model source routes", () => {
 			body: JSON.stringify({ modelId: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", replacement_model_id: "openai/gpt-test" }),
 		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
 		expect(response.status).toBe(409);
-		expect(requests.filter((url) => url.includes("/rpc/"))).toEqual([expect.stringContaining("/rpc/mutate_v2_admin_model_graph_with_successor")]);
+		expect(requests.filter((url) => url.includes("/rpc/"))).toEqual([expect.stringContaining("/rpc/mutate_v2_admin_model_graph_editable")]);
 	});
     it("end-dates a saved price and rejects deletion without a delete RPC", async () => {
         const requests: Array<{ url: string; body: string | null }> = [];

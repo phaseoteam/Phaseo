@@ -61,6 +61,7 @@ export interface ProviderCapabilityRow {
   provider_id: string
   api_model_id: string
   capability_id: string
+  original_capability_id?: string | null
   status:
     | "active"
     | "deranked_lvl1"
@@ -152,6 +153,12 @@ function formatDateForPicker(value: string | null): string {
   return `${year}-${month}-${day}`
 }
 
+function isCapabilityEnded(value: string | null): boolean {
+  if (!value) return false
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) && timestamp <= Date.now()
+}
+
 function createCapabilityId() {
   return `cap-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -179,6 +186,7 @@ function defaultCapability(providerRowId: string, providerId: string, apiModelId
     provider_id: providerId,
     api_model_id: apiModelId,
     capability_id: "text.generate",
+    original_capability_id: null,
     status: "active",
     effective_from: null,
     effective_to: null,
@@ -324,6 +332,7 @@ export default function ProvidersTab({
           provider_id: providerRow.provider_id,
           api_model_id: providerRow.api_model_id,
           capability_id: capability.capability_id,
+          original_capability_id: capability.capability_id,
           status: normalizeCapabilityStatus(capability.status),
           effective_from: capability.effective_from ?? null,
           effective_to: capability.effective_to ?? null,
@@ -458,7 +467,11 @@ export default function ProvidersTab({
   }
 
   const removeCapability = (capabilityId: string) => {
-    setProviderCapabilities((rows) => rows.map((row) => row.id === capabilityId ? { ...row, effective_to: new Date().toISOString() } : row))
+    setProviderCapabilities((rows) => rows.flatMap((row) => {
+      if (row.id !== capabilityId) return [row]
+      if (row.id.startsWith("new-")) return []
+      return [{ ...row, effective_to: new Date().toISOString() }]
+    }))
   }
 
   return (
@@ -716,7 +729,7 @@ export default function ProvidersTab({
                   )
 
                   return (
-                    <AccordionItem value={capability.id} key={capability.id}><AccordionTrigger>{editorOptionLabel(capability.capability_id)} · {capability.effective_to ? "End-dated" : editorOptionLabel(capability.status)}</AccordionTrigger><AccordionContent className="space-y-4">
+                    <AccordionItem value={capability.id} key={capability.id}><AccordionTrigger>{editorOptionLabel(capability.capability_id)} · {capability.effective_to ? "End-dated" : editorOptionLabel(capability.status)}</AccordionTrigger><AccordionContent><fieldset disabled={isCapabilityEnded(capability.effective_to)} className="m-0 min-w-0 space-y-4 border-0 p-0">
                       <div className="flex items-center justify-between">
                         <div className="text-xs font-medium text-muted-foreground">
                           Edit capability
@@ -733,7 +746,7 @@ export default function ProvidersTab({
                       </div>
 
                       <FieldRow label="Capability">
-                        <SearchableSelect label="Capability" disabled={!capability.id.startsWith("new-")} value={capability.capability_id} options={capabilityOptions.map((value) => ({ value, label: editorOptionLabel(value), disabled: usedByOther.has(value.trim().toLowerCase()) }))} onValueChange={(value) => updateCapability(capability.id, (row) => ({ ...row, capability_id: value }))} />
+                        <SearchableSelect label="Capability" disabled={isCapabilityEnded(capability.effective_to)} value={capability.capability_id} options={capabilityOptions.map((value) => ({ value, label: editorOptionLabel(value), disabled: usedByOther.has(value.trim().toLowerCase()) }))} onValueChange={(value) => updateCapability(capability.id, (row) => ({ ...row, capability_id: value }))} />
                       </FieldRow>
 
                       <FieldRow label="Support dates"><div className="grid gap-2 sm:grid-cols-2"><DatePickerInput value={formatDateForPicker(capability.effective_from)} onChange={(value) => updateCapability(capability.id, (row) => ({ ...row, effective_from: value || null }))} placeholder="Starts" /><DatePickerInput value={formatDateForPicker(capability.effective_to)} onChange={(value) => updateCapability(capability.id, (row) => ({ ...row, effective_to: value || null }))} placeholder="Ends" /></div></FieldRow>
@@ -794,7 +807,7 @@ export default function ProvidersTab({
                         </div>
                       </FieldRow>
 
-                    </AccordionContent></AccordionItem>
+                    </fieldset></AccordionContent></AccordionItem>
                   )
                 })}
                 </Accordion>

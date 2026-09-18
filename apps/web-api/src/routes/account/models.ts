@@ -517,7 +517,7 @@ accountModelsRouter.put("/:modelId/graph", async (c) => {
 	if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
 	const parsed = modelGraphSchema.safeParse(await c.req.json().catch(() => null));
 	if (!parsed.success || parsed.data.modelId !== c.req.param("modelId")) return c.json({ error: "invalid_model_graph", issues: parsed.success ? [] : parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
-	const result = await admin.context.client.rpc("mutate_v2_admin_model_graph_with_successor", { p_actor_user_id: admin.context.user.id, p_model_slug: parsed.data.modelId, p_payload: parsed.data });
+	const result = await admin.context.client.rpc("mutate_v2_admin_model_graph_editable", { p_actor_user_id: admin.context.user.id, p_model_slug: parsed.data.modelId, p_payload: parsed.data });
 	if (result.error) return c.json({ ok: false, error: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
 	const cache = await purgeModelCatalogueCache(c);
 	return c.json({ ok: true, graph: result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);

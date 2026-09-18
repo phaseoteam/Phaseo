@@ -356,6 +356,7 @@ export default function ModelLegacyEditor({
                             provider_model_slug: providerRows.find((route) => route.id === row.provider_row_id)?.provider_model_slug || row.api_model_id || modelId,
 							api_model_id: row.api_model_id || modelId,
 							capability_id: row.capability_id,
+							previous_capability_id: row.original_capability_id || row.capability_id,
 							status: row.status,
 							effective_from: row.effective_from ?? null,
 							effective_to: row.effective_to ?? null,
