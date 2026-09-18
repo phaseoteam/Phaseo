@@ -13,6 +13,7 @@ Use this page to find the correct API path before opening an endpoint reference.
 | --- | --- |
 | Send your first request | [Quickstart](../quickstart) |
 | Generate text or use tools | [`POST /responses`](./endpoint/responses) |
+| Make typed decisions | [`POST /decisions`](./endpoint/decisions) |
 | Keep an existing OpenAI-compatible integration | [`POST /chat/completions`](./endpoint/chat-completions) |
 | Browse models and providers | [`GET /models`](./endpoint/models) and [`GET /providers`](./endpoint/providers) |
 | Create music or manage files | [`POST /music/generations`](./endpoint/music-generate) and [`POST /files`](./endpoint/files) |
@@ -41,7 +42,7 @@ Use the OpenAPI file if you want to import the API into Postman, Hoppscotch, or 
 	View the specification file
 </Card>
 
-The documentation and SDKs use this same specification. Video and Batch endpoints are labelled **Beta**; workspace preview access is still required.
+The documentation and SDKs use this same specification. Video, Batch, and Decisions endpoints are labelled **Beta**; workspace preview access may be required.
 
 ## Authentication
 
@@ -57,7 +58,7 @@ If authentication fails, the API returns `401`.
 
 | Resource | What it does |
 | --- | --- |
-| Inference | Generate text, images, audio, and embeddings; rerank, moderate, or parse content. Start with [Responses](./endpoint/responses.mdx). |
+| Inference | Generate text, images, audio, and embeddings; make decisions, rerank, moderate, or parse content. Start with [Responses](./endpoint/responses.mdx) or [Decisions](./endpoint/decisions.mdx). |
 | Async Jobs & Files | Submit [video](./endpoint/video-create.mdx) or [batch](./endpoint/batches-create.mdx) jobs, transfer files, and configure webhooks. |
 | Models & Pricing | Discover [models](./endpoint/models.mdx), provider offers, and [estimated costs](./endpoint/pricing-calculate.mdx). |
 | Routing & Policies | Configure presets, provider credentials, private models, and [guardrails](./endpoint/guardrails.mdx). |

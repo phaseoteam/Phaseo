@@ -399,6 +399,14 @@
 								]
 							},
 							{
+								"group": "Decisions",
+								"tag": "Beta",
+								"expanded": false,
+								"pages": [
+									"v1/api-reference/endpoint/decisions"
+								]
+							},
+							{
 								"group": "OCR",
 								"tag": "Beta",
 								"expanded": false,

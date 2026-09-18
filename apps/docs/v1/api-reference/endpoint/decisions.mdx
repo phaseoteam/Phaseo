@@ -1,0 +1,21 @@
+---
+title: "Make a decision"
+sidebarTitle: "Decisions"
+badge: "Beta"
+openapi: "POST /decisions"
+description: "Evaluate typed questions against application state with a decision model such as Jev 1.13."
+---
+
+Use `POST /v1/decisions` when your application needs structured answers that code can consume directly. Phaseo exposes TypeSafe's Jev 1.13 as `typesafe/jev`.
+
+The request contains:
+
+- `state`: a string, object, or array containing the information to evaluate.
+- `questions`: a map of named questions. Each question is `noul`, `choice`, or `score` and must include `instructions`.
+- `model`: the Phaseo model ID. Use `typesafe/jev` for Jev 1.13.
+
+Answers use the same keys as `questions`. `choice` answers include the selected option, probabilities, and confidence; `noul` answers include a 0–1 probability; and `score` answers include a probability-weighted score, legend, probabilities, and confidence.
+
+You can mix all three question types in one request. See the [Quickstart](../../quickstart) for copy-pasteable cURL, JavaScript, TypeScript SDK, and Python SDK examples. Jev 1.13 is billed at $0.042 per 1M input tokens; output tokens are free.
+
+For the upstream question semantics, see TypeSafe's [API reference](https://docs.typesafe.ai/api).
