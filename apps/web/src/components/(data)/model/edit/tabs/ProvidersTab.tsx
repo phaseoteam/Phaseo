@@ -729,7 +729,7 @@ export default function ProvidersTab({
                   )
 
                   return (
-                    <AccordionItem value={capability.id} key={capability.id}><AccordionTrigger>{editorOptionLabel(capability.capability_id)} · {capability.effective_to ? "End-dated" : editorOptionLabel(capability.status)}</AccordionTrigger><AccordionContent className="space-y-4">
+                    <AccordionItem value={capability.id} key={capability.id}><AccordionTrigger>{editorOptionLabel(capability.capability_id)} · {capability.effective_to ? "End-dated" : editorOptionLabel(capability.status)}</AccordionTrigger><AccordionContent><fieldset disabled={isCapabilityEnded(capability.effective_to)} className="m-0 min-w-0 space-y-4 border-0 p-0">
                       <div className="flex items-center justify-between">
                         <div className="text-xs font-medium text-muted-foreground">
                           Edit capability
@@ -807,7 +807,7 @@ export default function ProvidersTab({
                         </div>
                       </FieldRow>
 
-                    </AccordionContent></AccordionItem>
+                    </fieldset></AccordionContent></AccordionItem>
                   )
                 })}
                 </Accordion>

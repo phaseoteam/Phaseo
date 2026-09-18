@@ -114,27 +114,30 @@ begin
 
     v_existing_capability_id := null;
     v_existing_effective_to := null;
+    v_has_previous := false;
+    select capability.capability_id, capability.effective_to
+    into v_existing_capability_id, v_existing_effective_to
+    from public.v2_route_capabilities capability
+    where capability.provider_model_id = v_route_id
+      and lower(capability.capability_id) = coalesce(v_previous_capability_id, v_capability_id)
+    for update;
+
+    v_has_previous := v_existing_capability_id is not null;
+    -- Historical rows are immutable even when the editor keeps the same
+    -- capability identity. Lock and validate the source before any upsert.
+    if v_has_previous and v_existing_effective_to is not null
+       and v_existing_effective_to <= now() then
+      raise exception 'historical capabilities cannot be changed';
+    end if;
+
     if v_previous_capability_id is not null
        and v_previous_capability_id <> v_capability_id then
-      select capability.capability_id, capability.effective_to
-      into v_existing_capability_id, v_existing_effective_to
-      from public.v2_route_capabilities capability
-      where capability.provider_model_id = v_route_id
-        and lower(capability.capability_id) = v_previous_capability_id
-      for update;
-
-      v_has_previous := v_existing_capability_id is not null;
       if v_has_previous and v_has_target then
         raise exception 'provider model already has capability %', v_capability_id;
       end if;
 
       -- A historical row is immutable. An active or future row can be
       -- reassigned in place, which is the operation the editor needs.
-      if v_has_previous and v_existing_effective_to is not null
-         and v_existing_effective_to <= now() then
-        raise exception 'historical capabilities cannot be changed';
-      end if;
-
       if v_has_previous and exists (
         select 1
         from public.v2_route_parameter_support support
@@ -342,13 +345,18 @@ begin
       end if;
     end if;
 
-    v_provider_availability_status := lower(coalesce(
-      nullif(trim(v_route->>'provider_availability_status'), ''),
-      nullif(trim(v_existing.provider_availability_status), ''),
-      case when v_routing_enabled then 'available' else 'unknown' end
-    ));
+    -- The editor does not currently send provider availability. Preserve an
+    -- existing deprecated route during its future-dated retirement window.
+    v_provider_availability_status := lower(case
+      when v_route ? 'provider_availability_status' then
+        coalesce(nullif(trim(v_route->>'provider_availability_status'), ''), 'unknown')
+      when v_existing.provider_model_id is not null then
+        coalesce(nullif(trim(v_existing.provider_availability_status), ''), 'unknown')
+      when v_routing_enabled then 'available'
+      else 'unknown'
+    end);
     if v_routing_enabled
-       and v_provider_availability_status not in ('available', 'preview', 'limited_access') then
+       and v_provider_availability_status not in ('available', 'preview', 'limited_access', 'deprecated') then
       if not (v_route ? 'provider_availability_status') then
         v_provider_availability_status := 'available';
       else
@@ -366,19 +374,25 @@ begin
     end if;
 
     v_input_modalities := case
-      when jsonb_typeof(v_route->'input_modalities') = 'array' then
-        array(select jsonb_array_elements_text(v_route->'input_modalities'))
-      when nullif(trim(v_route->>'input_modalities'), '') is not null then
-        string_to_array(v_route->>'input_modalities', ',')
+      when v_route ? 'input_modalities' then case
+        when jsonb_typeof(v_route->'input_modalities') = 'array' then
+          array(select jsonb_array_elements_text(v_route->'input_modalities'))
+        when nullif(trim(v_route->>'input_modalities'), '') is not null then
+          string_to_array(v_route->>'input_modalities', ',')
+        else '{}'::text[]
+      end
       when v_existing.provider_model_id is not null then
         coalesce(v_existing.input_modalities, '{}'::text[])
       else '{}'::text[]
     end;
     v_output_modalities := case
-      when jsonb_typeof(v_route->'output_modalities') = 'array' then
-        array(select jsonb_array_elements_text(v_route->'output_modalities'))
-      when nullif(trim(v_route->>'output_modalities'), '') is not null then
-        string_to_array(v_route->>'output_modalities', ',')
+      when v_route ? 'output_modalities' then case
+        when jsonb_typeof(v_route->'output_modalities') = 'array' then
+          array(select jsonb_array_elements_text(v_route->'output_modalities'))
+        when nullif(trim(v_route->>'output_modalities'), '') is not null then
+          string_to_array(v_route->>'output_modalities', ',')
+        else '{}'::text[]
+      end
       when v_existing.provider_model_id is not null then
         coalesce(v_existing.output_modalities, '{}'::text[])
       else '{}'::text[]
@@ -467,7 +481,13 @@ begin
       max_output_tokens = excluded.max_output_tokens,
       effective_from = excluded.effective_from,
       effective_to = excluded.effective_to,
-      metadata = public.v2_model_provider_routes.metadata || excluded.metadata,
+      metadata = (
+        coalesce(public.v2_model_provider_routes.metadata, '{}'::jsonb)
+          - 'prompt_training_policy_override'
+          - 'prompt_training_override_notes'
+          - 'prompt_training_override_source_url'
+          - 'quantization_scheme'
+      ) || excluded.metadata,
       provider_availability_status = excluded.provider_availability_status,
       phaseo_status = excluded.phaseo_status,
       access_scope = excluded.access_scope,

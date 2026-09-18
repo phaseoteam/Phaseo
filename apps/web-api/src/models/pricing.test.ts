@@ -65,6 +65,16 @@ describe("publicPricingRouteIdentity", () => {
 					meter_order: 1,
 				}]));
 			}
+			if (url.includes("v2_route_capabilities")) {
+				return new Response(JSON.stringify([{
+					provider_model_id: "stealth:preview",
+					capability_id: "text.generate",
+					params: {},
+					effective_from: "2026-01-01T00:00:00Z",
+					effective_to: "2026-12-01T00:00:00Z",
+					status: "active",
+				}]));
+			}
 			return new Response(JSON.stringify([]));
 		});
 		vi.stubGlobal("fetch", fetchMock);
@@ -78,6 +88,11 @@ describe("publicPricingRouteIdentity", () => {
 		expect(result.providerRows[0]).toMatchObject({
 			provider_id: "stealth",
 			provider_model_slug: "stealth/preview",
+			data_api_provider_model_capabilities: [{
+				capability_id: "text.generate",
+				effective_from: "2026-01-01T00:00:00Z",
+				effective_to: "2026-12-01T00:00:00Z",
+			}],
 			data_api_providers: {
 				api_provider_name: "Stealth",
 				provider_family_id: "stealth",
