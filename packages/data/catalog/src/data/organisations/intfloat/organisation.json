@@ -1,0 +1,29 @@
+{
+  "organisation_id": "intfloat",
+  "name": "intfloat",
+  "country_code": null,
+  "description": "Publisher of open model weights hosted by Infermatic.",
+  "colour": null,
+  "organisation_links": [
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/intfloat"
+    }
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [
+    {
+      "kind": "repository",
+      "url": "https://huggingface.co/intfloat",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Identity source."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Identity verified for provider catalog reconciliation."
+  }
+}
+
