@@ -225,7 +225,9 @@ values (
   'unbiased',
   'Unbiased',
   'active',
-  false,
+  -- The public catalogue projection requires provider routing_enabled=true
+  -- for preview rows; routable remains false and no route is executable.
+  true,
   false,
   'xx',
   null,
@@ -270,7 +272,7 @@ on conflict (provider_slug) do update set
   lab_slug = excluded.lab_slug,
   name = excluded.name,
   status = excluded.status,
-  routing_enabled = false,
+  routing_enabled = true,
   routable = false,
   country_code = excluded.country_code,
   base_url = excluded.base_url,
@@ -341,7 +343,7 @@ values (
       'notes', 'This is a catalogue-only mapping. Phaseo has no endpoint credentials or executable provider adapter.'
     )
   ),
-  'limited_access',
+  'coming_soon',
   'planned',
   'public',
   false,
