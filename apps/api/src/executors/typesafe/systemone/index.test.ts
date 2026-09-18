@@ -23,7 +23,7 @@ function buildArgs(overrides: Partial<ExecutorExecuteArgs> = {}): ExecutorExecut
 		endpoint: "systemone",
 		protocol: "typesafe.systemone",
 		capability: "decisions.make",
-		providerModelSlug: "jev-latest",
+		providerModelSlug: "jev-1.13.0",
 		capabilityParams: null,
 		byokMeta: [],
 		pricingCard: { rules: [] },
@@ -40,7 +40,7 @@ describe("TypeSafe System One executor", () => {
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.typesafe.ai/v1/systemone",
 			response: jsonResponse({
-				model: "jev-latest",
+				model: "jev-1.13.0",
 				answers: { segment: { choice: "startup", confidence: 0.94 } },
 				usage: { input_tokens: 120, output_tokens: 0 },
 			}),
@@ -51,7 +51,7 @@ describe("TypeSafe System One executor", () => {
 			expect(mock.calls[0]?.method).toBe("POST");
 			expect(mock.calls[0]?.headers.Authorization).toBe("Bearer typesafe-test-key");
 			expect(mock.calls[0]?.bodyJson).toEqual({
-				model: "jev-latest",
+				model: "jev-1.13.0",
 				state: { plan: "pro", active_users: 42 },
 				questions: {
 					segment: {

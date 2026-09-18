@@ -46,6 +46,14 @@ const MINIMAX_DISCOVERY_PROVIDER = {
 	authStyle: "bearer",
 } as const;
 
+const TYPESAFE_DISCOVERY_PROVIDER = {
+	providerId: "typesafe",
+	providerName: "TypeSafe",
+	modelsEndpoint: "https://api.typesafe.ai/v1/models",
+	apiKeyEnv: ["TYPESAFE_API_KEY"],
+	authStyle: "bearer",
+} as const;
+
 afterEach(() => {
 	teardownTestRuntime();
 });
@@ -112,6 +120,25 @@ describe("fetchProviderModels", () => {
 			const models = await fetchProviderModels(MINIMAX_DISCOVERY_PROVIDER, "test-minimax-key");
 			expect(models.map((model) => model.id)).toEqual(["MiniMax-H3-Max", "MiniMax-M3"]);
 			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-minimax-key");
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("fetches TypeSafe's native model list with bearer auth", async () => {
+		const fetchMock = installFetchMock([{
+			match: (url) => url === "https://api.typesafe.ai/v1/models",
+			response: jsonResponse({
+				models: [
+					{ name: "jev-latest", version: "jev-1.13.0" },
+					{ name: "jev-1.13.0", version: "jev-1.13.0" },
+				],
+			}),
+		}]);
+		try {
+			const models = await fetchProviderModels(TYPESAFE_DISCOVERY_PROVIDER, "test-typesafe-key");
+			expect(models.map((model) => model.id)).toEqual(["jev-1.13.0", "jev-latest"]);
+			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-typesafe-key");
 		} finally {
 			fetchMock.restore();
 		}

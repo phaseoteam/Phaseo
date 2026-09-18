@@ -68,7 +68,7 @@ insert into public.v2_models (
 values (
   'typesafe/jev',
   'typesafe',
-  'Jev',
+  'Jev 1.13',
   'TypeSafe Jev evaluates typed Noul, Choice, and Score questions against structured state.',
   'active',
   false,
@@ -78,7 +78,7 @@ values (
   jsonb_build_object(
     'source_url', 'https://docs.typesafe.ai/models',
     'api_reference', 'https://docs.typesafe.ai/api',
-    'provider_model_slug', 'jev-latest',
+    'provider_model_slug', 'jev-1.13.0',
     'model_version', 'jev-1.13.0',
     'capability', 'decisions.make',
     'legacy_capability', 'systemone',
@@ -105,14 +105,14 @@ values
     'typesafe/jev',
     'public',
     true,
-    jsonb_build_object('provider_model_slug', 'jev-latest', 'source', 'typesafe')
+    jsonb_build_object('provider_model_slug', 'jev-1.13.0', 'source', 'typesafe')
   ),
   (
     'typesafe/jev-preview',
     'typesafe/jev',
     'public',
     true,
-    jsonb_build_object('provider_model_slug', 'jev-preview', 'source', 'typesafe')
+    jsonb_build_object('provider_model_slug', 'jev-1.13.0', 'source', 'typesafe')
   ),
   (
     'typesafe/jev-1.13.0',
@@ -138,7 +138,7 @@ values (
   'typesafe:typesafe/jev:systemone',
   'typesafe/jev',
   'typesafe',
-  'jev-latest',
+  'jev-1.13.0',
   'active',
   false,
   array['structured']::text[],
@@ -270,7 +270,7 @@ values (
   'decisions.make',
   'active',
   'standard',
-  'Jev Decisions',
+  'Jev 1.13',
   '$0.042 per million input tokens. TypeSafe reports output as free.',
   'USD',
   '2026-09-17T00:00:00Z'::timestamptz,

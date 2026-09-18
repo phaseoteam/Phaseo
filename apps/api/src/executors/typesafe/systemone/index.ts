@@ -44,7 +44,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		},
 		() => bindings.TYPESAFE_API_KEY,
 	);
-	const model = args.providerModelSlug?.trim() || "jev-latest";
+	const model = args.providerModelSlug?.trim() || "jev-1.13.0";
 	const requestBody = {
 		model,
 		state: ir.state,

@@ -62,6 +62,7 @@ const EXPECTED_PLATFORM_NAMES = [
     "StepFun",
     "Suno",
     "Together",
+    "TypeSafe",
     "Venice",
     "Weights & Biases",
     "SpaceXAI",
@@ -128,6 +129,10 @@ function payloadForProvider(providerId: string): unknown {
 
     if (providerId === "elevenlabs") {
         return { models: [{ model_id: "test-model" }] };
+    }
+
+    if (providerId === "typesafe") {
+        return { models: [{ name: "jev-1.13.0" }, { name: "jev-latest" }] };
     }
 
     if (providerId === "clarifai") {

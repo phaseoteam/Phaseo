@@ -303,6 +303,13 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 		apiKeyEnv: ["ELEVENLABS_API_KEY"],
 		authStyle: "elevenlabs",
 	},
+	{
+		providerId: "typesafe",
+		providerName: "TypeSafe",
+		modelsEndpoint: "https://api.typesafe.ai/v1/models",
+		apiKeyEnv: ["TYPESAFE_API_KEY"],
+		authStyle: "bearer",
+	},
 ];
 
 const openAICompatProviders = new Map<string, ProviderConfig>();

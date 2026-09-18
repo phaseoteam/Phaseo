@@ -405,6 +405,13 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         active: true,
     },
     {
+        platformId: "typesafe",
+        platformName: "TypeSafe",
+        providerIds: ["typesafe"],
+        modelsEndpoint: "https://api.typesafe.ai/v1/models",
+        active: true,
+    },
+    {
         platformId: "venice",
         platformName: "Venice",
         providerIds: ["venice"],
