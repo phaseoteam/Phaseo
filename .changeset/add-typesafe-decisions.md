@@ -14,4 +14,4 @@
 "@phaseo/web-api": patch
 ---
 
-Add TypeSafe Jev structured Decisions support through the `/v1/systemone` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
+Add TypeSafe Jev structured Decisions support through the `/v1/decisions` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
