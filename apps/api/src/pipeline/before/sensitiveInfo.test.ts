@@ -34,6 +34,36 @@ describe("sensitive info guardrails", () => {
 		if (!result.ok) return;
 		expect(result.body.contents[0].parts[0].text).toContain("[EMAIL]");
 	});
+	it("redacts sensitive text nested in System One state and questions", () => {
+		const body = {
+			state: { customer: { email: "state@example.com" } },
+			questions: {
+				contact: {
+					type: "noul",
+					instructions: { prompt: "Contact question for question@example.com" },
+				},
+			},
+		};
+		const result = applySensitiveInfoGuardrails({
+			body,
+			rawBody: structuredClone(body),
+			endpoint: "systemone",
+			workspacePolicy: {
+				...workspacePolicy,
+				sensitiveInfoRules: [{ id: "email_address", kind: "builtin", action: "redact" }],
+			},
+			requestId: "req_systemone",
+			workspaceId: "ws_123",
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.body.state.customer.email).toBe("[EMAIL]");
+		expect(result.body.questions.contact.instructions.prompt).toBe("Contact question for [EMAIL]");
+		expect(result.rawBody.state.customer.email).toBe("[EMAIL]");
+		expect(result.rawBody.questions.contact.instructions.prompt).toBe("Contact question for [EMAIL]");
+		expect(result.enforcement?.redactionCount).toBe(2);
+	});
 	it("detects deterministic sensitive info", () => {
 		const detections = inspectSensitiveInfo("Contact test@example.com", [
 			{ id: "email_address", kind: "builtin", action: "redact" },

@@ -319,6 +319,35 @@ function collectResponsesTargets(body: any): TextTarget[] {
 	return targets;
 }
 
+function collectSystemOneTargetsFromValue(
+	value: unknown,
+	path: Array<string | number>,
+	targets: TextTarget[],
+): void {
+	if (typeof value === "string" && value.trim()) {
+		targets.push({ path, text: value });
+		return;
+	}
+	if (Array.isArray(value)) {
+		value.forEach((entry, index) =>
+			collectSystemOneTargetsFromValue(entry, [...path, index], targets),
+		);
+		return;
+	}
+	if (!value || typeof value !== "object") return;
+
+	for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+		collectSystemOneTargetsFromValue(child, [...path, key], targets);
+	}
+}
+
+function collectSystemOneTargets(body: any): TextTarget[] {
+	const targets: TextTarget[] = [];
+	collectSystemOneTargetsFromValue(body?.state, ["state"], targets);
+	collectSystemOneTargetsFromValue(body?.questions, ["questions"], targets);
+	return targets;
+}
+
 function collectGenericPromptTargets(body: any): TextTarget[] {
 	const targets: TextTarget[] = [];
 	for (const key of ["prompt", "input", "query"]) {
@@ -334,6 +363,7 @@ function collectSensitiveInfoTargets(endpoint: Endpoint, body: any): TextTarget[
 	if (endpoint === "chat.completions") return collectChatTargets(body);
 	if (endpoint === "messages") return collectAnthropicTargets(body);
 	if (endpoint === "responses") return collectResponsesTargets(body);
+	if (endpoint === "systemone") return collectSystemOneTargets(body);
 	return collectGenericPromptTargets(body);
 }
 
