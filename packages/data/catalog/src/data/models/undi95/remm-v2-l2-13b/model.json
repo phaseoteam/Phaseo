@@ -1,0 +1,82 @@
+{
+  "model_id": "undi95/remm-v2-l2-13b",
+  "organisation_id": "undi95",
+  "name": "ReMM v2 L2 13B",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "ReMM v2 L2 13B is a text-generation model available through Mancer.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "undi95/remm-v2-l2-13b",
+  "variants": [],
+  "links": [
+    {
+      "title": "Model source",
+      "kind": "weights",
+      "url": "https://huggingface.co/Undi95/ReMM-v2-L2-13B"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 6144
+    },
+    {
+      "name": "output_context_length",
+      "value": 6144
+    }
+  ],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 6144,
+    "input": 6144,
+    "output": 6144
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": true,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": true,
+  "sources": [
+    {
+      "kind": "model_card",
+      "url": "https://huggingface.co/Undi95/ReMM-v2-L2-13B",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Primary source linked by Mancer's official catalogue."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Canonical identity and Mancer-hosted limits verified."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
