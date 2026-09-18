@@ -46,7 +46,7 @@ import {
 	CalendarDays,
 	Globe2,
 	LockKeyhole,
-	GitBranch,
+	Scale,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -546,6 +546,7 @@ function getEndpointSortRank(value: string): number {
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 
+	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}
@@ -589,7 +590,7 @@ function getEndpointIcon(endpoint: string): LucideIcon {
 		normalized === "system/one" ||
 		normalized === "typed/decisions"
 	) {
-		return GitBranch;
+		return Scale;
 	}
 	if (normalized.includes("embedding")) return Database;
 	if (normalized.includes("rerank")) return ArrowUpDown;

@@ -12,7 +12,7 @@ import {
 	ArrowRight,
 	AudioLines,
 	BadgeCheck,
-	GitBranch,
+	Scale,
 	ImageIcon,
 	MessageSquareText,
 	Mic,
@@ -501,7 +501,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 
 const WORKLOADS = [
 	{ label: "Text", detail: "Chat & responses", icon: MessageSquareText, tone: "text" },
-	{ label: "Decisions", detail: "Typed answers", icon: GitBranch, tone: "decisions" },
+	{ label: "Decisions", detail: "Typed answers", icon: Scale, tone: "decisions" },
 	{ label: "Images", detail: "Generate & edit", icon: ImageIcon, tone: "image" },
 	{ label: "Video", detail: "Prompt to video", icon: Video, tone: "video" },
 	{ label: "Text to Speech", detail: "Natural voice", icon: Mic, tone: "audio_tts" },
