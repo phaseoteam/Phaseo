@@ -549,6 +549,9 @@ export const logoManifest = {
 	togetherai: {
 		color: "/logos/together.svg",
 	},
+	unbiased: {
+		color: "/logos/unbiased.svg",
+	},
 	tinfoil: {
 		light: "/logos/tinfoil_light.svg",
 		dark: "/logos/tinfoil_dark.svg",
