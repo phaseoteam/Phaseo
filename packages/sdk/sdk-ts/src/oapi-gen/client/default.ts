@@ -17284,7 +17284,7 @@ export async function makeDecision(
   };
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = "/systemone";
+  const resolvedPath = "/decisions";
   return client.request<{
     answers?: {
       [key: string]: unknown;

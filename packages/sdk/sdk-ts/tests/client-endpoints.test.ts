@@ -52,7 +52,7 @@ describe("Phaseo endpoints discovery helper", () => {
       if (url === "https://example.test/rerank" && method === "POST") {
         return jsonResponse({ id: "rerank_1", model: body.model, results: [] });
       }
-      if (url === "https://example.test/systemone" && method === "POST") {
+      if (url === "https://example.test/decisions" && method === "POST") {
         return jsonResponse({ model: body.model, answers: { segment: "startup" } });
       }
       if (url === "https://example.test/music/generate" && method === "POST") {
@@ -117,7 +117,7 @@ describe("Phaseo endpoints discovery helper", () => {
       "GET https://example.test/models?model_id=voyage%2Frerank-2&limit=1",
       "POST https://example.test/rerank",
       "GET https://example.test/models?model_id=typesafe%2Fjev&limit=1",
-      "POST https://example.test/systemone",
+      "POST https://example.test/decisions",
       "GET https://example.test/models?model_id=minimax%2Fmusic-2.6&limit=1",
       "POST https://example.test/music/generate",
       "GET https://example.test/music/generate/music_1",

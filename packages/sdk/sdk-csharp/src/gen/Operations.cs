@@ -1994,7 +1994,7 @@ public static class Operations
 		object? body = null
 	)
 	{
-		var resolvedPath = "/systemone";
+		var resolvedPath = "/decisions";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 

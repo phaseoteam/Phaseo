@@ -108,7 +108,7 @@ export function getProtocolPath(protocol: Protocol): string {
 		case "openai.rerank":
 			return "/v1/rerank";
 		case "typesafe.systemone":
-			return "/v1/systemone";
+			return "/v1/decisions";
 		case "anthropic.messages":
 			return "/v1/messages";
 	}

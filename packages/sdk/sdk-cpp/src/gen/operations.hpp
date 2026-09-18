@@ -830,7 +830,7 @@ inline Response ListWorkspaceScimAuditEvents(Client& client, const std::map<std:
 }
 
 inline Response MakeDecision(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/systemone";
+	const std::string resolved_path = "/decisions";
 	return client.request("POST", resolved_path, body);
 }
 

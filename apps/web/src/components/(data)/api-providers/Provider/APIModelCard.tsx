@@ -216,7 +216,7 @@ const ENDPOINT_META: Record<
 		icon: Music4,
 		className: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 	},
-	"/systemone": {
+	"/decisions": {
 		label: "Decisions",
 		icon: ListChecks,
 		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",

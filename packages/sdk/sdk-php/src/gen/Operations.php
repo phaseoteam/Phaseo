@@ -1161,7 +1161,7 @@ function listWorkspaceScimAuditEvents(Client $client, ?array $path = null, ?arra
 function makeDecision(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/systemone";
+	$resolvedPath = "/decisions";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 

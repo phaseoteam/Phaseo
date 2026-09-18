@@ -995,7 +995,7 @@ module Phaseo
 
       def self.makeDecision(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/systemone"
+        resolved_path = "/decisions"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 

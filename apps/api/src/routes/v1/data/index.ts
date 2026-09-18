@@ -25,7 +25,7 @@ function mount(path: string, load: () => Promise<Hono<Env>>) {
 mount("/embeddings", () => import("./embeddings").then(m => m.embeddingsRoutes));
 mount("/moderations", () => import("./moderations").then(m => m.moderationsRoutes));
 mount("/rerank", () => import("./rerank").then(m => m.rerankRoutes));
-mount("/systemone", () => import("./systemone").then(m => m.systemOneRoutes));
+mount("/decisions", () => import("./systemone").then(m => m.systemOneRoutes));
 mount("/audio/speech", () => import("./audio-speech").then(m => m.audioSpeechRoutes));
 mount("/audio/transcriptions", () => import("./audio-transcription").then(m => m.audioTranscriptionRoutes));
 mount("/audio/translations", () => import("./audio-translation").then(m => m.audioTranslationRoutes));
@@ -47,5 +47,4 @@ mount("/async", () => import("./async-jobs").then(m => m.asyncJobsRoutes));
 
 // Backward-compatible alias for existing imports.
 export const dataRouter = inferenceRouter;
-
 

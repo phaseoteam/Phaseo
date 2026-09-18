@@ -831,7 +831,7 @@ pub fn listWorkspaceScimAuditEvents<T: Transport>(client: &Client<T>, path: &Has
 }
 
 pub fn makeDecision<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/systemone");
+	let resolved_path = String::from("/decisions");
 	client.request("POST", &resolved_path, body)
 }
 

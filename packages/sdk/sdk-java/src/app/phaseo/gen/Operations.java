@@ -832,7 +832,7 @@ public final class Operations {
 	}
 
 	public static Object makeDecision(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/systemone";
+		String resolvedPath = "/decisions";
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 

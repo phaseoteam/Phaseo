@@ -99,7 +99,7 @@ const ENDPOINT_METADATA: EndpointMetadata[] = [
     },
     {
         id: "decisions.make",
-        public_path: "/v1/systemone",
+        public_path: "/v1/decisions",
         collection: "decisions",
         aliases: ["systemone", "system.one", "decision.make", "typed.decisions"],
     },

@@ -42,7 +42,7 @@ describe("detectProtocol", () => {
 		expect(detectProtocol("rerank", "/v1/rerank")).toBe(
 			"openai.rerank",
 		);
-		expect(detectProtocol("systemone", "/v1/systemone")).toBe(
+		expect(detectProtocol("systemone", "/v1/decisions")).toBe(
 			"typesafe.systemone",
 		);
 	});

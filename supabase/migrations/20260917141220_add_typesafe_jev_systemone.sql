@@ -45,6 +45,7 @@ values (
     'auth_env', 'TYPESAFE_API_KEY',
     'api', jsonb_build_object(
       'endpoint', '/v1/systemone',
+      'public_endpoint', '/v1/decisions',
       'format', 'typesafe.systemone'
     )
   ),
@@ -149,6 +150,7 @@ values (
     'source_url', 'https://docs.typesafe.ai/api',
     'api', jsonb_build_object(
       'endpoint', '/v1/systemone',
+      'public_endpoint', '/v1/decisions',
       'format', 'typesafe.systemone'
     ),
     'verification', jsonb_build_object(
@@ -238,7 +240,7 @@ values
     'text',
     'input',
     'token',
-    1000000000,
+    1000000,
     'Tokens sent to TypeSafe System One.',
     'active',
     jsonb_build_object('source', 'typesafe')
@@ -249,7 +251,7 @@ values
     'text',
     'output',
     'token',
-    1000000000,
+    1000000,
     'TypeSafe reports output tokens as free.',
     'active',
     jsonb_build_object('source', 'typesafe')
@@ -268,8 +270,8 @@ values (
   'decisions.make',
   'active',
   'standard',
-  'Jev System One',
-  '$42 per billion input tokens. TypeSafe reports output as free.',
+  'Jev Decisions',
+  '$0.042 per million input tokens. TypeSafe reports output as free.',
   'USD',
   '2026-09-17T00:00:00Z'::timestamptz,
   (
@@ -317,14 +319,14 @@ from public.v2_pricing_skus sku
 cross join (
   values
     (
-      'input_tokens', 'text', 'input', 'token', 1000000000::numeric,
-      42000000000::numeric, 'Input tokens', '1B tokens', true, 100,
-      jsonb_build_object('source', 'typesafe', 'price_per_billion_usd', 42)
+      'input_tokens', 'text', 'input', 'token', 1000000::numeric,
+      42000000::numeric, 'Input tokens', '1M tokens', true, 100,
+      jsonb_build_object('source', 'typesafe', 'price_per_million_usd', 0.042, 'published_price_per_billion_usd', 42)
     ),
     (
-      'output_tokens', 'text', 'output', 'token', 1000000000::numeric,
-      0::numeric, 'Output tokens', '1B tokens', true, 110,
-      jsonb_build_object('source', 'typesafe', 'price_per_billion_usd', 0)
+      'output_tokens', 'text', 'output', 'token', 1000000::numeric,
+      0::numeric, 'Output tokens', '1M tokens', true, 110,
+      jsonb_build_object('source', 'typesafe', 'price_per_million_usd', 0, 'published_price_per_billion_usd', 0)
     )
 ) as meter(
   meter_key, modality, direction, unit, unit_quantity, price_nanos,
@@ -371,7 +373,7 @@ insert into public.v2_model_page_notices (model_slug, tone, markdown)
 values (
   'typesafe/jev',
   'info',
-  'Jev is a structured decision model. Use the Decisions playground or the `/v1/systemone` endpoint with typed Noul, Choice, and Score questions. The route remains in preview until the managed TypeSafe credential is installed.'
+  'Jev is a structured decision model. Use the Decisions playground or the `/v1/decisions` endpoint with typed Noul, Choice, and Score questions. The route remains in preview until the managed TypeSafe credential is installed.'
 )
 on conflict (model_slug) do update set
   tone = excluded.tone,

@@ -899,7 +899,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RerankResponse'
-  /systemone:
+  /decisions:
     post:
       x-beta: true
       tags:

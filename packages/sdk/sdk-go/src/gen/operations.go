@@ -2473,7 +2473,7 @@ func ListWorkspaceScimAuditEvents(client *Client, path map[string]string, query 
 }
 
 func MakeDecision(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/systemone"
+	resolvedPath := "/decisions"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
