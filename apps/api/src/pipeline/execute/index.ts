@@ -82,6 +82,8 @@ import type {
 	IRModerationsResponse,
 	IRRerankRequest,
 	IRRerankResponse,
+	IRSystemOneRequest,
+	IRSystemOneResponse,
 	IROcrRequest,
 	IROcrResponse,
 	IRParseRequest,
@@ -389,6 +391,7 @@ export type IRRequestResult = {
 		| IREmbeddingsResponse
 		| IRModerationsResponse
 		| IRRerankResponse
+		| IRSystemOneResponse
 		| IRImageGenerationResponse
 		| IRAudioSpeechResponse
 		| IRAudioTranscriptionResponse
@@ -430,6 +433,7 @@ export async function doRequestWithIR(
 		| IREmbeddingsRequest
 		| IRModerationsRequest
 		| IRRerankRequest
+		| IRSystemOneRequest
 		| IRImageGenerationRequest
 		| IRAudioSpeechRequest
 		| IRAudioTranscriptionRequest
@@ -598,6 +602,7 @@ async function attemptProviderWithIR(
 		| IREmbeddingsRequest
 		| IRModerationsRequest
 		| IRRerankRequest
+		| IRSystemOneRequest
 		| IRImageGenerationRequest
 		| IRAudioSpeechRequest
 		| IRAudioTranscriptionRequest

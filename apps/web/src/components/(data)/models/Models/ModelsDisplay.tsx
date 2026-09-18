@@ -46,6 +46,7 @@ import {
 	CalendarDays,
 	Globe2,
 	LockKeyhole,
+	GitBranch,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -199,6 +200,8 @@ const ENDPOINT_DISPLAY_ORDER = [
 	"audio/translations",
 	"audio/realtime",
 	"video/generations",
+	"decisions",
+	"decisions/make",
 ] as const;
 
 const ENDPOINT_LABELS: Record<string, string> = {
@@ -220,6 +223,12 @@ const ENDPOINT_LABELS: Record<string, string> = {
 	"audio/translations": "Translation",
 	"audio/realtime": "Real-time",
 	"video/generations": "Video Generation",
+	decisions: "Decisions",
+	"decision/make": "Decisions",
+	"decisions/make": "Decisions",
+	systemone: "Decisions",
+	"system.one": "Decisions",
+	"typed.decisions": "Decisions",
 };
 
 const endpointOrder = new Map(
@@ -451,6 +460,16 @@ function toTitleCase(value: string): string {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase();
+	if (
+		normalized === "decisions.make" ||
+		normalized === "decision.make" ||
+		normalized === "systemone" ||
+		normalized === "system.one" ||
+		normalized === "typed.decisions" ||
+		normalized === "decisions"
+	) {
+		return "Decisions";
+	}
 	if (normalized === "realtime") return "Real-time";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
@@ -561,6 +580,17 @@ function getModalityIcon(modality: string): LucideIcon {
 
 function getEndpointIcon(endpoint: string): LucideIcon {
 	const normalized = normalizeEndpointValue(endpoint);
+	if (
+		normalized === "decisions" ||
+		normalized === "/decisions" ||
+		normalized === "decision/make" ||
+		normalized === "decisions/make" ||
+		normalized === "systemone" ||
+		normalized === "system/one" ||
+		normalized === "typed/decisions"
+	) {
+		return GitBranch;
+	}
 	if (normalized.includes("embedding")) return Database;
 	if (normalized.includes("rerank")) return ArrowUpDown;
 	if (normalized.includes("moderation")) return BadgeAlert;

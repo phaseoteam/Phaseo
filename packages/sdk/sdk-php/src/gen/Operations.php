@@ -1158,6 +1158,13 @@ function listWorkspaceScimAuditEvents(Client $client, ?array $path = null, ?arra
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function makeDecision(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/decisions";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function mergeWorkspaceApp(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];

@@ -52,6 +52,9 @@ describe("Phaseo endpoints discovery helper", () => {
       if (url === "https://example.test/rerank" && method === "POST") {
         return jsonResponse({ id: "rerank_1", model: body.model, results: [] });
       }
+      if (url === "https://example.test/decisions" && method === "POST") {
+        return jsonResponse({ model: body.model, answers: { segment: "startup" } });
+      }
       if (url === "https://example.test/music/generate" && method === "POST") {
         return jsonResponse({ id: "music_1", model: body.model, status: "queued" });
       }
@@ -90,6 +93,17 @@ describe("Phaseo endpoints discovery helper", () => {
       query: "best",
       documents: ["a", "b"],
     });
+    await client.decisions.make({
+      model: "typesafe/jev",
+      state: { plan: "pro" },
+      questions: {
+        segment: {
+          type: "choice",
+          instructions: "Which segment?",
+          criteria: { startup: "An early-stage company." },
+        },
+      },
+    });
     await client.music.create({ model: "minimax/music-2.6", prompt: "short theme" } as any);
     await client.music.get("music_1");
     await client.getModels({ limit: 1 });
@@ -102,6 +116,8 @@ describe("Phaseo endpoints discovery helper", () => {
       "POST https://example.test/parse",
       "GET https://example.test/models?model_id=voyage%2Frerank-2&limit=1",
       "POST https://example.test/rerank",
+      "GET https://example.test/models?model_id=typesafe%2Fjev&limit=1",
+      "POST https://example.test/decisions",
       "GET https://example.test/models?model_id=minimax%2Fmusic-2.6&limit=1",
       "POST https://example.test/music/generate",
       "GET https://example.test/music/generate/music_1",

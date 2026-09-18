@@ -137,6 +137,9 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     wafer: createOpenAICompatibleAdapter("wafer"),
     "wafer-zdr": createOpenAICompatibleAdapter("wafer-zdr"),
     "tencent-cloud": createOpenAICompatibleAdapter("tencent-cloud"),
+    // TypeSafe uses a native structured endpoint; the legacy adapter only
+    // exists so testing-mode capability discovery does not drop the provider.
+    typesafe: createUnsupportedAdapter("typesafe", "decisions.make uses the dedicated TypeSafe executor"),
 };
 
 // Capability-specific adapter overrides (e.g. Mistral OCR)

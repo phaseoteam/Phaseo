@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import { jsonToPythonLiteral } from "@/components/(data)/model/quickstart/quickstartPayloads";
 import { Switch } from "@/components/ui/switch";
 import {
 	Accordion,
@@ -163,12 +164,6 @@ export default function RequestBuilder({ models }: RequestBuilderProps) {
 
 	const escapeForSingleQuotedShell = (json: string) =>
 		json.replace(/'/g, "'\\''");
-
-	const jsonToPythonLiteral = (json: string) =>
-		json
-			.replace(/true/g, "True")
-			.replace(/false/g, "False")
-			.replace(/null/g, "None");
 
 	const addMessage = () => {
 		setMessages((prev) => [...prev, { role: "user", content: "" }]);

@@ -41,6 +41,7 @@ import {
 	CalendarDays,
 	XCircle,
 	LockKeyhole,
+	GitBranch,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -142,6 +143,7 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"moderations",
 	"rerank",
 	"embeddings",
+	"decisions",
 ] as const;
 
 const STATUS_FILTER_DISPLAY_ORDER = [
@@ -332,6 +334,9 @@ function toTitleCase(value: string): string {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase();
+	if (normalized === "decisions.make" || normalized === "systemone" || normalized === "system.one" || normalized === "typed.decisions" || normalized === "decisions") {
+		return "Decisions";
+	}
 	if (normalized === "realtime") return "Real-time";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
@@ -363,6 +368,7 @@ function formatStatusLabel(value: string): string {
 
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("decision")) return GitBranch;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}

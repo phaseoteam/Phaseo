@@ -123,6 +123,7 @@ import { executor as upstageText } from "./upstage/text-generate";
 import { executor as waferText } from "./wafer/text-generate";
 import { executor as tencentCloudText } from "./tencent-cloud/text-generate";
 import { executor as privateModelText } from "./private-model/text-generate";
+import { executor as typesafeSystemOne } from "./typesafe/systemone";
 
 // Embeddings executors (migrated providers only)
 import { executor as openaiEmbeddings } from "./openai/embeddings";
@@ -156,6 +157,8 @@ type Capability =
 	| "embeddings"
 	| "moderations"
 	| "rerank"
+	| "decisions.make"
+	| "systemone"
 	| "image.generate"
 	| "image.edit"
 	| "audio.speech"
@@ -188,6 +191,10 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 	"audio.translate": "audio.translations",
 	"video.generation": "video.generate",
 	"video.generations": "video.generate",
+	"systemone": "decisions.make",
+	"system.one": "decisions.make",
+	"decision.make": "decisions.make",
+	"typed.decisions": "decisions.make",
 };
 
 export function normalizeCapability(capability: string): Capability {
@@ -337,6 +344,9 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"audio.transcription": cloudflareAudioTranscription,
 	},
 	openrouter: { "text.generate": openrouterText },
+	typesafe: {
+		"decisions.make": typesafeSystemOne,
+	},
 	cohere: {
 		"text.generate": cohereText,
 		embeddings: openaiEmbeddings,

@@ -536,6 +536,10 @@ export const logoManifest = {
 	synthetic: {
 		color: "/logos/synthetic.svg",
 	},
+	typesafe: {
+		light: "/logos/typesafe_light.svg",
+		dark: "/logos/typesafe_dark.svg",
+	},
 	tencent: {
 		color: "/logos/hunyuan.svg",
 	},

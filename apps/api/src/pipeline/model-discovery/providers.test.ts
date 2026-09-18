@@ -19,6 +19,7 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providerIds.has("switchpoint")).toBe(true);
 		expect(providerIds.has("upstage")).toBe(true);
 		expect(providerIds.has("wafer")).toBe(true);
+		expect(providerIds.has("typesafe")).toBe(true);
 		expect(providerIds.has("streamlake")).toBe(false);
 	});
 
@@ -91,6 +92,12 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		});
 		expect(providers.get("together")).toMatchObject({
 			modelsEndpoint: "https://api.together.ai/v1/models",
+		});
+		expect(providers.get("typesafe")).toMatchObject({
+			providerName: "TypeSafe",
+			modelsEndpoint: "https://api.typesafe.ai/v1/models",
+			apiKeyEnv: ["TYPESAFE_API_KEY"],
+			authStyle: "bearer",
 		});
 		expect(providers.get("minimax")).toMatchObject({
 			baseUrl: "https://api.minimax.io",

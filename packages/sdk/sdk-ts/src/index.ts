@@ -32,6 +32,8 @@ import type {
   RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
+  SystemOneRequest,
+  SystemOneResponse,
   VideoGenerationRequest,
   VideoGenerationResponse
 } from "./oapi-gen/models/index.js";
@@ -353,6 +355,8 @@ export type {
   RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
+  SystemOneRequest,
+  SystemOneResponse,
   VideoBillingSummary,
   VideoGenerationRequest,
   VideoGenerationResponse
@@ -381,6 +385,8 @@ export {
 } from "./webhooks.js";
 export type PhaseoOptions = Options;
 export type PhaseoRequestOptions = { signal?: AbortSignal };
+export type DecisionsRequest = SystemOneRequest;
+export type DecisionsResponse = SystemOneResponse;
 
 export class Phaseo {
   private readonly client: Client;
@@ -483,6 +489,10 @@ export class Phaseo {
 
   readonly rerank = {
     create: async (req: RerankRequest): Promise<RerankResponse> => this.createRerank(req),
+  };
+
+  readonly decisions = {
+    make: async (req: DecisionsRequest): Promise<DecisionsResponse> => this.makeDecision(req),
   };
 
   readonly providers = {
@@ -988,6 +998,18 @@ export class Phaseo {
         () => req,
         extractGatewayMetadata
       )
+    );
+  }
+
+  makeDecision(req: DecisionsRequest): Promise<DecisionsResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "decisions.make",
+        () => ops.makeDecision(this.client, { body: req }) as Promise<DecisionsResponse>,
+        () => req,
+        extractGatewayMetadata,
+      ),
     );
   }
 

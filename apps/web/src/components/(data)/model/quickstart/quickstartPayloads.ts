@@ -36,6 +36,49 @@ export function buildExamplePayload(
 				model,
 				input: "Give me one fun fact about cURL.",
 			};
+		case "decisions":
+		case "decisions.make":
+		case "systemone":
+		case "system.one":
+		case "decision.make":
+		case "typed.decisions":
+			return {
+				model,
+				state: {
+					customer_message: "I was charged twice and need help with a refund.",
+					account_tier: "pro",
+					days_waiting: 3,
+				},
+				questions: {
+					department: {
+						type: "choice",
+						instructions: "Which team should handle this request?",
+						criteria: {
+							billing: "Payments, invoices, refunds, and duplicate charges.",
+							support: "Product usage questions and troubleshooting.",
+							sales: "Upgrades and new accounts.",
+						},
+					},
+					is_urgent: {
+						type: "noul",
+						instructions: "Does this request require urgent handling?",
+						criteria: {
+							true: "The customer is blocked or the issue is time-sensitive.",
+							false: "The request can follow the normal support queue.",
+						},
+					},
+					customer_impact: {
+						type: "score",
+						instructions: "How severe is the customer impact?",
+						criteria: [
+							"No impact",
+							"Minor inconvenience",
+							"Significant impact",
+							"Service blocked",
+						],
+					},
+				},
+			};
 		case "messages":
 			return {
 				model,
@@ -178,8 +221,40 @@ export function applyRoutingPreferenceToPayload(
 	};
 }
 
-export const jsonToPythonLiteral = (json: string) =>
-	json.replace(/true/g, "True").replace(/false/g, "False").replace(/null/g, "None");
+export const jsonToPythonLiteral = (json: string) => {
+	const value = JSON.parse(json) as unknown;
+
+	const format = (current: unknown, depth: number): string => {
+		const indent = "  ".repeat(depth);
+		const childIndent = "  ".repeat(depth + 1);
+
+		if (current === null) return "None";
+		if (typeof current === "boolean") return current ? "True" : "False";
+		if (typeof current === "string") return JSON.stringify(current);
+		if (typeof current === "number") return String(current);
+
+		if (Array.isArray(current)) {
+			if (current.length === 0) return "[]";
+			return `[
+${current.map((item) => `${childIndent}${format(item, depth + 1)}`).join(",\n")}
+${indent}]`;
+		}
+
+		if (typeof current === "object") {
+			const entries = Object.entries(current as Record<string, unknown>);
+			if (entries.length === 0) return "{}";
+			return `{
+${entries
+				.map(([key, item]) => `${childIndent}${JSON.stringify(key)}: ${format(item, depth + 1)}`)
+				.join(",\n")}
+${indent}}`;
+		}
+
+		return "None";
+	};
+
+	return format(value, 0);
+};
 
 export const buildStreamingDiff = (payloadJson: string) => {
 	const lines = payloadJson.split("\n");

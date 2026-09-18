@@ -2472,6 +2472,21 @@ func ListWorkspaceScimAuditEvents(client *Client, path map[string]string, query 
 	return out, nil
 }
 
+func MakeDecision(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/decisions"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func MergeWorkspaceApp(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/apps/" + url.PathEscape(path["id"]) + "/merge"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)

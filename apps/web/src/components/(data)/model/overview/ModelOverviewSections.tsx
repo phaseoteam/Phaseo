@@ -9,6 +9,7 @@ import {
 	Braces,
 	Captions,
 	ChevronRight,
+	GitBranch,
 	Headphones,
 	ImageIcon,
 	Music4,
@@ -184,6 +185,7 @@ function parseTypes(types: unknown): string[] {
 		) {
 			return "audio_tts";
 		}
+		if (normalized.includes("decision")) return "decisions";
 		return normalized;
 	};
 
@@ -208,8 +210,10 @@ const KNOWN_MODALITY_META = [
 	{ key: "audio_tts", label: "Speech", icon: Speech },
 	{ key: "audio_stt", label: "Transcription", icon: Captions },
 	{ key: "audio_music", label: "Music", icon: Music4 },
+	{ key: "structured", label: "Structured state", icon: Braces },
 	{ key: "embeddings", label: "Embeddings", icon: Braces },
 	{ key: "moderations", label: "Moderation", icon: BadgeAlert },
+	{ key: "decisions", label: "Decisions", icon: GitBranch },
 ];
 
 function formatTypeLabel(value: string): string {

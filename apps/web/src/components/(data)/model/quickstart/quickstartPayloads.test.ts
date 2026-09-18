@@ -1,6 +1,6 @@
 import { resolveGatewayPath } from "./endpoint-paths";
 import { buildEndpointRoutes, ENDPOINT_OPTIONS } from "./endpointRoutes";
-import { buildExamplePayload } from "./quickstartPayloads";
+import { buildExamplePayload, jsonToPythonLiteral } from "./quickstartPayloads";
 
 describe("Parse quickstart", () => {
 	test("uses the dedicated Parse route", () => {
@@ -29,5 +29,48 @@ describe("Parse quickstart", () => {
 			},
 			output_format: "markdown",
 		});
+	});
+});
+
+describe("Decisions quickstart", () => {
+	test("uses the public Decisions route and typed question payload", () => {
+		expect(resolveGatewayPath("decisions.make")).toBe("/decisions");
+		expect(ENDPOINT_OPTIONS).toContainEqual({
+			value: "decisions",
+			label: "Decisions",
+		});
+		expect(
+			buildEndpointRoutes([{ value: "decisions", label: "Decisions" }]),
+		).toEqual([
+			expect.objectContaining({
+				value: "decisions",
+				method: "POST",
+				path: "/v1/decisions",
+			}),
+		]);
+
+		expect(buildExamplePayload("decisions", "typesafe/jev")).toMatchObject({
+			model: "typesafe/jev",
+			state: expect.objectContaining({ account_tier: "pro" }),
+			questions: expect.objectContaining({
+				department: expect.objectContaining({ type: "choice" }),
+				is_urgent: expect.objectContaining({
+					type: "noul",
+					criteria: expect.objectContaining({
+						true: expect.any(String),
+						false: expect.any(String),
+					}),
+				}),
+				customer_impact: expect.objectContaining({ type: "score" }),
+			}),
+		});
+	});
+
+	test("preserves string criteria keys in Python examples", () => {
+		const payload = buildExamplePayload("decisions", "typesafe/jev");
+		const python = jsonToPythonLiteral(JSON.stringify(payload, null, 2));
+
+		expect(python).toContain('"true": "The customer is blocked');
+		expect(python).toContain('"false": "The request can follow');
 	});
 });

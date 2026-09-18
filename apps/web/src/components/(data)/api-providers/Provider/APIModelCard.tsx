@@ -28,6 +28,7 @@ import {
 	Eye,
 	Bot,
 	Link2,
+	GitBranch,
 } from "lucide-react";
 import type { APIProviderModels } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -47,6 +48,7 @@ const MOD_ICON: Record<string, React.ElementType> = {
 	rerank: ArrowUpDown,
 	embeddings: Braces,
 	vision: Eye,
+	decisions: GitBranch,
 };
 
 const MOD_BADGE_CLASS: Record<string, string> = {
@@ -61,6 +63,7 @@ const MOD_BADGE_CLASS: Record<string, string> = {
 	rerank: "bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200",
 	embeddings: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
 	vision: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
+	decisions: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 };
 
 const KNOWN_MODALITIES = [
@@ -73,6 +76,7 @@ const KNOWN_MODALITIES = [
 	"audio_music",
 	"rerank",
 	"embeddings",
+	"decisions",
 ];
 
 function normalizeModality(value: string): string {
@@ -81,6 +85,7 @@ function normalizeModality(value: string): string {
 		.toLowerCase()
 		.replace(/[._/-]+/g, " ");
 	if (!normalized) return "";
+	if (normalized.includes("decision")) return "decisions";
 	if (normalized.includes("embed")) return "embeddings";
 	if (normalized.includes("rerank") || normalized.includes("re rank")) return "rerank";
 	if (normalized.includes("vision") || normalized.includes("image")) return "image";
@@ -107,6 +112,7 @@ function normalizeModality(value: string): string {
 }
 
 function formatModalityLabel(value: string): string {
+	if (value === "decisions") return "Decisions";
 	if (value === "audio_stt") return "Transcription";
 	if (value === "audio_tts") return "Speech";
 	if (value === "audio_music") return "Music";
@@ -209,6 +215,11 @@ const ENDPOINT_META: Record<
 		label: "Music Generations",
 		icon: Music4,
 		className: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
+	},
+	"/decisions": {
+		label: "Decisions",
+		icon: GitBranch,
+		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 	},
 };
 

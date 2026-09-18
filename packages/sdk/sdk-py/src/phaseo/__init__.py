@@ -112,6 +112,14 @@ class _ModerationsResource:
         return self._parent.generate_moderation(params)
 
 
+class _DecisionsResource:
+    def __init__(self, parent: "Phaseo"):
+        self._parent = parent
+
+    def make(self, params: models.SystemOneRequest) -> dict[str, Any]:
+        return self._parent.make_decision(params)
+
+
 class _BatchesResource:
     def __init__(self, parent: "Phaseo"):
         self._parent = parent
@@ -388,6 +396,7 @@ class Phaseo:
         self.images = _ImagesResource(self)
         self.audio = _AudioResource(self)
         self.moderations = _ModerationsResource(self)
+        self.decisions = _DecisionsResource(self)
         self.batches = _BatchesResource(self)
         self.files = _FilesResource(self)
         self.models = _ModelsResource(self)
@@ -713,6 +722,28 @@ class Phaseo:
         except Exception as exc:
             self._capture_error(
                 endpoint="moderations",
+                request=payload,
+                error=exc,
+                started_at=started,
+            )
+            raise
+
+    def make_decision(self, request: models.SystemOneRequest) -> dict[str, Any]:
+        payload = dict(request)
+        self._maybe_warn_for_payload(payload)
+        started = time.time()
+        try:
+            response = ops.makeDecision(self._client, body=payload)
+            self._capture_success(
+                endpoint="decisions.make",
+                request=payload,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="decisions.make",
                 request=payload,
                 error=exc,
                 started_at=started,

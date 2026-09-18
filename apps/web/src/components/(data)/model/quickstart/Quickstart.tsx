@@ -21,6 +21,7 @@ import { QuickstartUsageSection } from "./QuickstartUsageSection";
 import { buildEndpointRoutes, ENDPOINT_OPTIONS } from "./endpointRoutes";
 import {
 	AI_SDK_ENDPOINTS,
+	GENERIC_PHASEO_SDK_ENDPOINTS,
 	PHASEO_METHODS,
 	LANGUAGE_OPTIONS,
 	OPENAI_METHODS,
@@ -200,6 +201,10 @@ const ENDPOINT_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: stri
 	responses: {
 		label: "Responses API",
 		href: `${DOCS_BASE_URL}/api-reference/endpoint/responses`,
+	},
+	decisions: {
+		label: "Decisions API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/decisions`,
 	},
 	"chat.completions": {
 		label: "Chat Completions API",
@@ -420,11 +425,13 @@ export default function Quickstart({
 			"curl",
 			"node-fetch",
 			"python-requests",
-			"go-sdk",
-			"csharp-sdk",
-			"php-sdk",
-			"ruby-sdk",
 		]);
+		if (GENERIC_PHASEO_SDK_ENDPOINTS.has(normalizedEndpoint)) {
+			supported.add("go-sdk");
+			supported.add("csharp-sdk");
+			supported.add("php-sdk");
+			supported.add("ruby-sdk");
+		}
 		if (AI_SDK_ENDPOINTS.has(normalizedEndpoint)) {
 			supported.add("ai-sdk");
 			supported.add("agent-sdk-ts");
@@ -757,6 +764,12 @@ ${payloadObjectNode}
 
 const audioBytes = await audio.arrayBuffer();
 console.log(\`Generated speech bytes: \${audioBytes.byteLength}\`);`
+			: normalizedEndpoint === "decisions"
+				? `const decision = await client.${phaseoMethod?.ts}({
+${payloadObjectNode}
+});
+
+console.log(JSON.stringify(decision.answers ?? decision, null, 2));`
 			: `const response = await client.${phaseoMethod?.ts}({
 ${payloadObjectNode}
 });
@@ -767,6 +780,10 @@ console.log(JSON.stringify(response, null, 2));`;
 			? `audio = client.${phaseoMethod?.py}(payload)
 
 print(audio)`
+			: normalizedEndpoint === "decisions"
+				? `decision = client.${phaseoMethod?.py}(payload)
+
+print(decision.get("answers", decision))`
 			: `response = client.${phaseoMethod?.py}(payload)
 
 print(response)`;
@@ -1537,6 +1554,8 @@ console.log(outputText ?? JSON.stringify(data, null, 2));`
   ?.text;
 
 console.log(messageText ?? JSON.stringify(data, null, 2));`
+			: normalizedEndpoint === "decisions"
+				? `console.log(data.answers ?? JSON.stringify(data, null, 2));`
 			: `console.log(
   data.choices?.[0]?.message?.content ?? JSON.stringify(data, null, 2),
 );`
@@ -1661,7 +1680,9 @@ print(output_text or data)`
 )
 
 print(message_text or data)`
-			: `print(data.get("choices", [])[0].get("message", {}).get("content") if data.get("choices") else data)`
+		: normalizedEndpoint === "decisions"
+			? `print(data.get("answers", data))`
+		: `print(data.get("choices", [])[0].get("message", {}).get("content") if data.get("choices") else data)`
 }`;
 
 	const pythonRequestsStreamingQuickstart = `# Import json, os and requests libraries

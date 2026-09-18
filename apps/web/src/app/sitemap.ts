@@ -83,6 +83,7 @@ const staticRoutes: Array<{
         { path: "/chat/audio", changeFrequency: "weekly", priority: 0.5 },
         { path: "/chat/moderation", changeFrequency: "weekly", priority: 0.5 },
         { path: "/chat/embeddings", changeFrequency: "weekly", priority: 0.5 },
+        { path: "/chat/systemone", changeFrequency: "weekly", priority: 0.5 },
         { path: "/help", changeFrequency: "weekly", priority: 0.6 },
         { path: "/updates/models", changeFrequency: "weekly", priority: 0.55 },
         { path: "/updates/calendar", changeFrequency: "weekly", priority: 0.55 },

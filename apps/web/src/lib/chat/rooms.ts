@@ -11,7 +11,8 @@ export type ChatRoomId =
 	| "moderation"
 	| "embeddings"
 	| "ocr"
-	| "rerank";
+	| "rerank"
+	| "systemone";
 
 export type ChatRoomConfig = {
 	id: ChatRoomId;
@@ -69,6 +70,16 @@ const MODERATION_CAPABILITY_HINTS = ["moderation", "moderations.create", "text.m
 const EMBEDDINGS_CAPABILITY_HINTS = ["text.embed", "embeddings", "embedding"];
 const OCR_CAPABILITY_HINTS = ["ocr"];
 const RERANK_CAPABILITY_HINTS = ["rerank"];
+const DECISIONS_CAPABILITY_HINTS = [
+	"decisions.make",
+	"decision.make",
+	"systemone",
+	"system.one",
+	"typed.decisions",
+	"decision.outputs",
+	"decision_output",
+	"decisions",
+];
 
 export const CHAT_ROOMS: ChatRoomConfig[] = [
 	{
@@ -149,6 +160,14 @@ export const CHAT_ROOMS: ChatRoomConfig[] = [
 		capabilityHints: RERANK_CAPABILITY_HINTS,
 	},
 	{
+		id: "systemone",
+		label: "Decisions",
+		route: "/chat/systemone",
+		description: "Generate typed decisions from structured state.",
+		capabilityHints: DECISIONS_CAPABILITY_HINTS,
+		beta: true,
+	},
+	{
 		id: "fusion",
 		label: "Fusion",
 		route: "/chat/fusion",
@@ -177,7 +196,8 @@ export const CHAT_ROOM_BY_ID: Record<ChatRoomId, ChatRoomConfig> = {
 	embeddings: CHAT_ROOMS[8],
 	ocr: CHAT_ROOMS[9],
 	rerank: CHAT_ROOMS[10],
-	fusion: CHAT_ROOMS[11],
+	systemone: CHAT_ROOMS[11],
+	fusion: CHAT_ROOMS[12],
 };
 
 const IMAGE_MODEL_HINTS = [
@@ -205,6 +225,7 @@ const REALTIME_MODEL_HINTS = ["realtime", "real-time", "gpt-4o-realtime"];
 const MODERATION_MODEL_HINTS = ["moderation"];
 const EMBEDDING_MODEL_HINTS = ["embedding", "embed"];
 const MUSIC_MODEL_HINTS = ["music", "suno", "udio", "melody", "song"];
+const SYSTEM_ONE_MODEL_HINTS = ["typesafe/jev", "system-one", "systemone", "decisions"];
 
 function normalizeCapability(capabilityId: string): string {
 	return capabilityId.trim().toLowerCase();
@@ -236,6 +257,9 @@ export function capabilityIdToRoomId(
 	capabilityId: string,
 ): ChatRoomId | null {
 	const normalized = normalizeChatCapabilityId(capabilityId);
+	if (matchesCapability(normalized, DECISIONS_CAPABILITY_HINTS)) {
+		return "systemone";
+	}
 	if (matchesCapability(normalized, TEXT_CAPABILITY_HINTS)) {
 		return "text";
 	}
@@ -290,6 +314,7 @@ export function roomIdsFromCapabilities(
 
 export function inferModelRoomFromId(modelId: string): ChatRoomId {
 	const normalized = modelId.toLowerCase();
+	if (includesHint(normalized, SYSTEM_ONE_MODEL_HINTS)) return "systemone";
 	if (includesHint(normalized, REALTIME_MODEL_HINTS)) return "realtime";
 	if (includesHint(normalized, VIDEO_MODEL_HINTS)) return "video";
 	if (includesHint(normalized, IMAGE_MODEL_HINTS)) return "image";
@@ -327,6 +352,15 @@ function roomIdsFromOutputModalities(
 		else if (modality === "moderations") rooms.add("moderation");
 		else if (modality === "ocr") rooms.add("ocr");
 		else if (modality === "rerank") rooms.add("rerank");
+		else if (
+			modality === "structured" ||
+			modality === "system_one" ||
+			modality === "decision" ||
+			modality === "decisions" ||
+			modality === "decision_make" ||
+			modality === "decision_output" ||
+			modality === "decision_outputs"
+		) rooms.add("systemone");
 	}
 	return Array.from(rooms);
 }

@@ -3740,6 +3740,65 @@ module Phaseo
     #   @return [String]
     SubagentToolDefinition = Struct.new(:parameters, :type, keyword_init: true)
     SupportedParameterDetails = Struct.new(:_unused, keyword_init: true)
+    # @!attribute [rw] criteria
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    SystemOneChoiceQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    SystemOneInstructions = Object
+    # @!attribute [rw] criteria
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    SystemOneNoulQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] debug
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] echo_upstream_request
+    #   @return [Boolean, nil]
+    # @!attribute [rw] meta
+    #   @return [Boolean, nil]
+    # @!attribute [rw] metadata
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] provider
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] questions
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] routing
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] state
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    SystemOneRequest = Struct.new(:debug, :echo_upstream_request, :meta, :metadata, :model, :provider, :questions, :routing, :state, keyword_init: true)
+    # @!attribute [rw] answers
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] meta
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] request_id
+    #   @return [String, nil]
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}, nil]
+    SystemOneResponse = Struct.new(:answers, :meta, :model, :request_id, :usage, keyword_init: true)
+    # @!attribute [rw] criteria
+    #   @return [Array<String>]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    SystemOneScoreQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] input_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] total_tokens
+    #   @return [Integer, nil]
+    SystemOneUsage = Struct.new(:input_tokens, :output_tokens, :total_tokens, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String]
     # @!attribute [rw] type

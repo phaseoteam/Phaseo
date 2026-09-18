@@ -100,6 +100,17 @@ function normalizeCapabilityKey(value: string): string {
 }
 
 function formatCapabilityLabel(value: string): string {
+	const normalizedValue = value.trim().toLowerCase();
+	if (
+		normalizedValue === "decisions.make" ||
+		normalizedValue === "decision.make" ||
+		normalizedValue === "systemone" ||
+		normalizedValue === "system.one" ||
+		normalizedValue === "typed.decisions"
+	) {
+		return "Decisions";
+	}
+
 	const acronymMap: Record<string, string> = {
 		api: "API",
 		id: "ID",

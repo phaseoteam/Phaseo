@@ -19,6 +19,7 @@ export type EndpointType =
   | "ocr"
   | "parse"
   | "rerank"
+  | "decisions.make"
   | "moderations"
   | "responses"
   | "responses.websocket"

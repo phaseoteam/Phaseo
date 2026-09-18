@@ -4,7 +4,7 @@ description: "Create an API key and make your first Phaseo request with a curren
 icon: "rocket"
 ---
 
-Use this tutorial to make one successful Phaseo request and confirm where the response text appears.
+Use this tutorial to make a successful Phaseo request—either generated text or a structured decision—and confirm where the response appears.
 
 <Note>
 **Using a coding agent?** Copy and paste this prompt before you start:
@@ -16,8 +16,8 @@ You are integrating this project with Phaseo Gateway. Read the Phaseo agent guid
 
 You will:
 - create an API key
-- send one text request
-- read the assistant output
+- send one text request or structured decision
+- read the generated text or typed answers
 - know what to check first if the request fails
 
 ---
@@ -284,7 +284,260 @@ If you use the Vercel AI SDK, read the reply from `result.text`.
 
 ---
 
-## 3. Troubleshoot the first request
+## 3. Make a structured decision
+
+Use `POST /v1/decisions` when your application needs typed answers instead of generated text. Phaseo exposes TypeSafe's Jev 1.13 with the model ID `typesafe/jev`. Send a `state` value and one or more named questions; each answer is returned under the same name.
+
+<Note>
+Decisions is a beta capability and may require workspace enablement. Jev 1.13 is billed at $0.042 per 1M input tokens; output tokens are free.
+</Note>
+
+Run these examples on your server with `PHASEO_API_KEY` set. Never expose a Gateway API key in browser code.
+
+The three question types are:
+
+- `choice` selects one option from a criteria map and returns probabilities and confidence.
+- `noul` returns a yes/no probability from 0 to 1.
+- `score` evaluates an ordered criteria array and returns a probability-weighted score.
+
+You can mix question types in the same request.
+
+### Request
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/decisions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "typesafe/jev",
+    "state": {
+      "customer_message": "I was charged twice and need help with a refund.",
+      "account_tier": "pro",
+      "days_waiting": 3
+    },
+    "questions": {
+      "department": {
+        "type": "choice",
+        "instructions": "Which team should handle this request?",
+        "criteria": {
+          "billing": "Payments, invoices, refunds, and duplicate charges.",
+          "support": "Product usage questions and troubleshooting.",
+          "sales": "Upgrades and new accounts."
+        }
+      },
+      "is_urgent": {
+        "type": "noul",
+        "instructions": "Does this request require urgent handling?",
+        "criteria": {
+          "true": "The customer is blocked or the issue is time-sensitive.",
+          "false": "The request can follow the normal support queue."
+        }
+      },
+      "customer_impact": {
+        "type": "score",
+        "instructions": "How severe is the customer impact?",
+        "criteria": [
+          "No impact",
+          "Minor inconvenience",
+          "Significant impact",
+          "Service blocked"
+        ]
+      }
+    }
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.phaseo.app/v1/decisions", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "typesafe/jev",
+    state: {
+      customer_message: "I was charged twice and need help with a refund.",
+      account_tier: "pro",
+      days_waiting: 3,
+    },
+    questions: {
+      department: {
+        type: "choice",
+        instructions: "Which team should handle this request?",
+        criteria: {
+          billing: "Payments, invoices, refunds, and duplicate charges.",
+          support: "Product usage questions and troubleshooting.",
+          sales: "Upgrades and new accounts.",
+        },
+      },
+      is_urgent: {
+        type: "noul",
+        instructions: "Does this request require urgent handling?",
+        criteria: {
+          true: "The customer is blocked or the issue is time-sensitive.",
+          false: "The request can follow the normal support queue.",
+        },
+      },
+      customer_impact: {
+        type: "score",
+        instructions: "How severe is the customer impact?",
+        criteria: [
+          "No impact",
+          "Minor inconvenience",
+          "Significant impact",
+          "Service blocked",
+        ],
+      },
+    },
+  }),
+});
+
+if (!response.ok) throw new Error(await response.text());
+const data = await response.json();
+console.log(data.answers);
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const decision = await client.decisions.make({
+  model: "typesafe/jev",
+  state: {
+    customer_message: "I was charged twice and need help with a refund.",
+    account_tier: "pro",
+    days_waiting: 3,
+  },
+  questions: {
+    department: {
+      type: "choice",
+      instructions: "Which team should handle this request?",
+      criteria: {
+        billing: "Payments, invoices, refunds, and duplicate charges.",
+        support: "Product usage questions and troubleshooting.",
+        sales: "Upgrades and new accounts.",
+      },
+    },
+    is_urgent: {
+      type: "noul",
+      instructions: "Does this request require urgent handling?",
+      criteria: {
+        true: "The customer is blocked or the issue is time-sensitive.",
+        false: "The request can follow the normal support queue.",
+      },
+    },
+    customer_impact: {
+      type: "score",
+      instructions: "How severe is the customer impact?",
+      criteria: [
+        "No impact",
+        "Minor inconvenience",
+        "Significant impact",
+        "Service blocked",
+      ],
+    },
+  },
+});
+
+console.log(decision.answers);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+decision = client.decisions.make(
+    {
+        "model": "typesafe/jev",
+        "state": {
+            "customer_message": "I was charged twice and need help with a refund.",
+            "account_tier": "pro",
+            "days_waiting": 3,
+        },
+        "questions": {
+            "department": {
+                "type": "choice",
+                "instructions": "Which team should handle this request?",
+                "criteria": {
+                    "billing": "Payments, invoices, refunds, and duplicate charges.",
+                    "support": "Product usage questions and troubleshooting.",
+                    "sales": "Upgrades and new accounts.",
+                },
+            },
+            "is_urgent": {
+                "type": "noul",
+                "instructions": "Does this request require urgent handling?",
+                "criteria": {
+                    "true": "The customer is blocked or the issue is time-sensitive.",
+                    "false": "The request can follow the normal support queue.",
+                },
+            },
+            "customer_impact": {
+                "type": "score",
+                "instructions": "How severe is the customer impact?",
+                "criteria": [
+                    "No impact",
+                    "Minor inconvenience",
+                    "Significant impact",
+                    "Service blocked",
+                ],
+            },
+        },
+    }
+)
+
+print(decision["answers"])
+```
+</CodeGroup>
+
+### Response
+
+```json
+{
+  "model": "typesafe/jev",
+  "answers": {
+    "department": {
+      "type": "choice",
+      "choice": "billing",
+      "probabilities": { "billing": 0.91, "support": 0.06, "sales": 0.03 },
+      "confidence": 0.89
+    },
+    "is_urgent": {
+      "type": "noul",
+      "noul": 0.84
+    },
+    "customer_impact": {
+      "type": "score",
+      "score": 2.4,
+      "legend": {
+        "0": "No impact",
+        "1": "Minor inconvenience",
+        "2": "Significant impact",
+        "3": "Service blocked"
+      },
+      "probabilities": { "0": 0.02, "1": 0.12, "2": 0.61, "3": 0.25 },
+      "confidence": 0.76
+    }
+  },
+  "usage": {
+    "input_tokens": 42,
+    "output_tokens": 18,
+    "total_tokens": 60
+  }
+}
+```
+
+Read the typed value from the answer that matches your question ID—for example, `answers.department.choice`, `answers.is_urgent.noul`, or `answers.customer_impact.score`. Use `confidence` and `probabilities` when you need to set an application threshold instead of branching on the value alone.
+
+See the [Decisions API reference](./api-reference/endpoint/decisions) for the full request and response contract, and TypeSafe's [Jev model reference](https://docs.typesafe.ai/models) for model behavior and upstream limits.
+
+---
+
+## 4. Troubleshoot the first request
 
 - `401`: check the API key and `Authorization` header.
 - `400`: check the request body and model ID.
@@ -295,7 +548,7 @@ Use the [Error Handling reference](./api-reference/errors) to debug quickly.
 
 ---
 
-## 4. If you are building video
+## 5. If you are building video
 
 Video generation is async. Create a job first, then poll or subscribe for the result.
 
@@ -320,7 +573,7 @@ curl https://api.phaseo.app/v1/videos/VIDEO_ID \
 
 ---
 
-## 5. Keep building
+## 6. Keep building
 
 <Columns cols={2}>
 	<Card title="Integrating with the Gateway" icon="plug" href="./developers/integrating-with-the-gateway">

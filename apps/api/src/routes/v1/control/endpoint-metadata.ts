@@ -9,6 +9,7 @@ export type EndpointCollection =
     | "audio"
     | "embeddings"
     | "rerank"
+    | "decisions"
     | "moderation"
     | "ocr"
     | "parse"
@@ -95,6 +96,12 @@ const ENDPOINT_METADATA: EndpointMetadata[] = [
         public_path: "/v1/rerank",
         collection: "rerank",
         aliases: ["text.rerank"],
+    },
+    {
+        id: "decisions.make",
+        public_path: "/v1/decisions",
+        collection: "decisions",
+        aliases: ["systemone", "system.one", "decision.make", "typed.decisions"],
     },
     {
         id: "moderations",

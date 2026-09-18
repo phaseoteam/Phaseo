@@ -1,6 +1,12 @@
 // Config file mapping capabilities to supported endpoints
 export const capabilityToEndpoints: Record<string, string[]> = {
     "text.generate": ["/chat/completions", "/responses", "/messages"],
+    "decisions.make": ["/decisions"],
+    // Compatibility aliases for the legacy capability names. The public route is /decisions.
+    "systemone": ["/decisions"],
+    "system.one": ["/decisions"],
+    "decision.make": ["/decisions"],
+    "typed.decisions": ["/decisions"],
     "text.embed": ["/embeddings"],
     "image.generate": ["/images/generations"],
     "images.generate": ["/images/generations"],

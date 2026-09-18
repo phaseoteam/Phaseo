@@ -1127,6 +1127,8 @@ export async function beforeRequest(
         "embeddings",
         "moderations",
         "rerank",
+        "decisions.make",
+        "systemone",
         "image.generate",
         "image.edit",
         "audio.speech",

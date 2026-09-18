@@ -6302,6 +6302,110 @@ public sealed class SupportedParameterDetails
 {
 }
 
+public sealed class SystemOneChoiceQuestion
+{
+	[JsonPropertyName("criteria")]
+	public Dictionary<string, object> Criteria { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class SystemOneInstructions { }
+
+public sealed class SystemOneNoulQuestion
+{
+	[JsonPropertyName("criteria")]
+	public Dictionary<string, object>? Criteria { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class SystemOneRequest
+{
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
+	[JsonPropertyName("echo_upstream_request")]
+	public bool? EchoUpstreamRequest { get; set; }
+
+	[JsonPropertyName("meta")]
+	public bool? Meta { get; set; }
+
+	[JsonPropertyName("metadata")]
+	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("provider")]
+	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("questions")]
+	public Dictionary<string, object> Questions { get; set; }
+
+	[JsonPropertyName("routing")]
+	public Dictionary<string, object>? Routing { get; set; }
+
+	[JsonPropertyName("state")]
+	public object State { get; set; }
+
+}
+
+public sealed class SystemOneResponse
+{
+	[JsonPropertyName("answers")]
+	public Dictionary<string, object>? Answers { get; set; }
+
+	[JsonPropertyName("meta")]
+	public Dictionary<string, object>? Meta { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
+public sealed class SystemOneScoreQuestion
+{
+	[JsonPropertyName("criteria")]
+	public List<string> Criteria { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class SystemOneUsage
+{
+	[JsonPropertyName("input_tokens")]
+	public long? InputTokens { get; set; }
+
+	[JsonPropertyName("output_tokens")]
+	public long? OutputTokens { get; set; }
+
+	[JsonPropertyName("total_tokens")]
+	public long? TotalTokens { get; set; }
+
+}
+
 public sealed class TextContentPart
 {
 	[JsonPropertyName("text")]

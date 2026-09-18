@@ -75,6 +75,11 @@ export const DIRECT_LANGUAGE_ORDER = ["curl", "ai-sdk"] as const;
 
 export const STREAMING_PATHS = new Set(["/chat/completions", "/responses", "/messages"]);
 export const AI_SDK_ENDPOINTS = new Set(["chat.completions", "messages", "responses"]);
+export const GENERIC_PHASEO_SDK_ENDPOINTS = new Set([
+	"chat.completions",
+	"messages",
+	"responses",
+]);
 export const INSTALLABLE_LANGUAGES = new Set([
 	"ai-sdk",
 	"agent-sdk-ts",
@@ -98,6 +103,7 @@ export const INSTALLABLE_LANGUAGES = new Set([
 export const PHASEO_METHODS: Record<string, { ts: string; py: string }> = {
 	"chat.completions": { ts: "generateText", py: "generate_text" },
 	responses: { ts: "generateResponse", py: "generate_response" },
+	decisions: { ts: "decisions.make", py: "decisions.make" },
 	embeddings: { ts: "generateEmbedding", py: "generate_embedding" },
 	moderations: { ts: "generateModeration", py: "generate_moderation" },
 	"moderations.create": { ts: "generateModeration", py: "generate_moderation" },

@@ -49,6 +49,8 @@ export const MODEL_MODALITY_OPTIONS = [
   "embedding",
   "rerank",
   "moderation",
+  "structured",
+  "decisions",
 ] as const
 
 export type ModelModalityOption = (typeof MODEL_MODALITY_OPTIONS)[number]
@@ -64,6 +66,7 @@ export const MODEL_CAPABILITY_OPTIONS = [
   "text.embed",
   "text.rerank",
   "text.moderate",
+  "decisions.make",
   "image.generate",
   "image.edit",
   "audio.transcribe",
@@ -104,7 +107,7 @@ export function normalizeCapabilityStatus(
 
 export function editorOptionLabel(value: string): string {
   const labels: Record<string, string> = {
-    "text.generate": "Text generation", "text.embed": "Text embeddings", "text.rerank": "Text reranking", "text.moderate": "Text moderation",
+    "text.generate": "Text generation", "text.embed": "Text embeddings", "text.rerank": "Text reranking", "text.moderate": "Text moderation", "decisions.make": "Decisions",
     "image.generate": "Image generation", "image.edit": "Image editing", "audio.transcribe": "Audio transcription", "audio.transcription": "Audio transcription (legacy)",
     "audio.translations": "Audio translation", "audio.realtime": "Realtime audio", realtime: "Realtime", ocr: "Optical character recognition",
     "video.edit": "Video editing", "video.generate": "Video generation", deranked_lvl1: "Deprioritized · Level 1", deranked_lvl2: "Deprioritized · Level 2", deranked_lvl3: "Deprioritized · Level 3",

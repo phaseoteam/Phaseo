@@ -830,6 +830,11 @@ pub fn listWorkspaceScimAuditEvents<T: Transport>(client: &Client<T>, path: &Has
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn makeDecision<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/decisions");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn mergeWorkspaceApp<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/apps/{}/merge", path.get("id").cloned().unwrap_or_default());
 	client.request("POST", &resolved_path, body)
