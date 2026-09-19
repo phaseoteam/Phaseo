@@ -1,3 +1,5 @@
+import { load } from "cheerio";
+import { markdownToPlainText } from "@/lib/models/modelDescription";
 import { absoluteUrl } from "@/lib/seo";
 import { resolveLogo } from "@/lib/logos";
 
@@ -18,14 +20,7 @@ export interface DiscordModelComponentEmbedOptions {
 
 function normalizeText(value: string | null | undefined): string | null {
 	if (typeof value !== "string") return null;
-	const normalized = value
-		.replace(/<[^>]*>/g, "")
-		.replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
-		.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-		.replace(/[`*_>#]/g, "")
-		.replace(/\s+/g, " ")
-		.trim();
-	return normalized || null;
+	return markdownToPlainText(load(value).root().text());
 }
 
 function truncateText(value: string, maxLength: number): string {

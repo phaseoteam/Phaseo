@@ -87,6 +87,21 @@ describe("Discord component embed", () => {
 		expect(serializeDiscordComponentEmbed(options)).toContain("GLM 5.3 FlashX");
 	});
 
+	it("keeps plain text while escaping angle brackets in the JSON script payload", () => {
+		const serialized = serializeDiscordComponentEmbed({
+			...options,
+			description:
+				"Valid comparison: 1 < 2 > 0. Literal &lt;script&gt;. </script><script>alert(1)</script>",
+		});
+		const payload = JSON.parse(serialized);
+		const text = payload.component.components[0]?.components?.[0]?.content;
+
+		expect(serialized).not.toContain("<");
+		expect(serialized).toContain("\\u003c");
+		expect(text).toContain("1 < 2 > 0");
+		expect(text).toContain("<script>");
+	});
+
 	it("falls back to the Phaseo accent when a lab colour is unavailable", () => {
 		expect(discordAccentColor(null)).toBe(0x2563eb);
 		expect(
