@@ -227,7 +227,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 				const MetricIcon = metricIcons[key];
 				return <button key={id} type="button" aria-expanded={active} onClick={() => { setPickerOpen(false); setExpandedMetric(active ? null : id); }} className={`group min-w-0 py-3 text-left sm:py-4 ${index % 2 ? "border-l pl-4 sm:pl-5" : "pr-4 sm:pr-5"} ${index > 1 ? "border-t lg:border-t-0 lg:border-l lg:pl-5" : ""}`}>
 					<span className="flex items-center gap-2 text-sm font-medium"><MetricIcon className={`size-4 transition-colors ${active ? "text-[#8842FD]" : "text-muted-foreground group-hover:text-foreground"}`} />{label}</span>
-					<span className="mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl"><span>{result?.score == null ? "—" : <AnimatedScore benchmarkId={id} score={result.score} />}</span>{result?.score != null && rank ? <span className="flex items-baseline text-sm font-medium text-muted-foreground" title={`Rank ${rank.rank} of ${rank.total} evaluated configurations`}>(#<NumberFlow value={rank.rank} />)</span> : null}</span>
+					<span className="mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl"><span>{result?.score == null ? "—" : <AnimatedScore benchmarkId={id} score={result.score} />}</span>{result?.score != null && rank ? <><span aria-hidden="true" className="flex items-baseline text-sm font-medium text-muted-foreground" title={`Rank ${rank.rank} of ${rank.total} evaluated configurations`}>(#<NumberFlow value={rank.rank} />)</span><span className="sr-only">Rank {rank.rank} of {rank.total} evaluated configurations</span></> : null}</span>
 				</button>;
 			})}
 		</div>

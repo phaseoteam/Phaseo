@@ -44,6 +44,7 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(html).toContain('aria-label="Step 5 Preview"');
 		expect(html).toContain('href="/models/stepfun/step-5"');
 		expect(html).toContain("(#3)");
+		expect(html).toContain('<span class="sr-only">Rank 3 of 3 evaluated configurations</span>');
 		expect(html).not.toContain("Other models dimmed");
 		expect(html).toContain("ranked across evaluated configurations");
 	});
