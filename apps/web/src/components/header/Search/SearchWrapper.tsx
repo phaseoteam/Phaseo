@@ -6,6 +6,7 @@ import { Search as SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { SearchCapabilities } from "@/components/header/Search/Search.navigation";
+import type { AccountQueryScope } from "@/lib/query/queryKeys";
 
 const Search = dynamic(() => import("./Search"), {
 	ssr: false,
@@ -16,9 +17,10 @@ interface SearchWrapperProps {
 	className?: string;
 	mobileGhost?: boolean;
 	capabilities?: SearchCapabilities;
+	accountQueryScope?: AccountQueryScope | null;
 }
 
-export function SearchWrapper({ className, mobileGhost, capabilities }: SearchWrapperProps) {
+export function SearchWrapper({ className, mobileGhost, capabilities, accountQueryScope }: SearchWrapperProps) {
 	const [activated, setActivated] = useState(false);
 
 	useEffect(() => {
@@ -38,6 +40,7 @@ export function SearchWrapper({ className, mobileGhost, capabilities }: SearchWr
 				className={className}
 				mobileGhost={mobileGhost}
 				capabilities={capabilities}
+				accountQueryScope={accountQueryScope}
 				initiallyOpen
 			/>
 		);

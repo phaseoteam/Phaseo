@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import useSWR, { useSWRConfig } from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTheme } from "next-themes";
@@ -53,7 +53,14 @@ import type {
 	CompactSearchData,
 	SearchData,
 } from "@/lib/fetchers/search/types";
-import { publicSWRKeys } from "@/lib/swr/keys";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import { clearAccountQueryScope } from "@/lib/query/invalidation";
+import {
+	ANONYMOUS_ACCOUNT_QUERY_SCOPE,
+	publicQueryPaths,
+	webQueryKeys,
+	type AccountQueryScope,
+} from "@/lib/query/queryKeys";
 import {
 	canRefreshSearchIndex,
 	wasAwayLongEnough,
@@ -65,6 +72,7 @@ interface Props {
 	mobileGhost?: boolean;
 	initiallyOpen?: boolean;
 	capabilities?: SearchCapabilities;
+	accountQueryScope?: AccountQueryScope | null;
 }
 
 type SearchableItem = PaletteItem;
@@ -266,10 +274,12 @@ function expandSearchData(value: SearchData | CompactSearchData): SearchData {
 	};
 }
 
-async function fetchSearchData(path: string): Promise<SearchData> {
+async function fetchSearchData(path: string, signal?: AbortSignal): Promise<SearchData> {
 	const response = await fetch(path, {
 		method: "GET",
 		credentials: "omit",
+		headers: { Accept: "application/json" },
+		signal,
 	});
 	if (!response.ok) throw new Error("Failed to load search data");
 	return expandSearchData(
@@ -278,6 +288,7 @@ async function fetchSearchData(path: string): Promise<SearchData> {
 }
 
 let lastSearchRefreshAt = 0;
+const EMPTY_WORKSPACE_ITEMS: PaletteItem[] = [];
 
 const ACTION_SEARCH_INDEX = createSearchIndex(GLOBAL_ACTION_ITEMS);
 const RESOURCE_SEARCH_INDEX = createSearchIndex(EXTERNAL_RESOURCE_ITEMS);
@@ -628,6 +639,7 @@ export default function Search({
 	mobileGhost = false,
 	initiallyOpen = false,
 	capabilities = DEFAULT_SEARCH_CAPABILITIES,
+	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: Props) {
 	const navigationItems = useMemo(() => getGlobalNavigationItems(capabilities), [capabilities]);
 	const navigationSearchIndex = useMemo(() => createSearchIndex(navigationItems), [navigationItems]);
@@ -644,31 +656,31 @@ export default function Search({
 	const inputValueRef = useRef("");
 	const awaySinceRef = useRef<number | null>(null);
 	const hasLoadedSearchRef = useRef(false);
-	const { mutate: mutateGlobalSearch } = useSWRConfig();
+	const queryClient = useQueryClient();
+	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
 	const [open, setOpen] = useState(initiallyOpen);
 	const [query, setQuery] = useState("");
 	const [activeRowIndex, setActiveRowIndex] = useState(0);
-	const {
-		data: searchData,
-		error: searchDataFetchError,
-		isLoading: isLoadingSearchData,
-	} = useSWR(open ? publicSWRKeys.search : null, fetchSearchData, {
-		dedupingInterval: 60 * 1_000,
-		revalidateIfStale: true,
-		// The resume handler also refreshes the cached index while the palette is closed.
-		revalidateOnFocus: false,
-		revalidateOnReconnect: false,
+	const searchQuery = useQuery({
+		queryKey: webQueryKeys.public.search(),
+		queryFn: ({ signal }) => fetchSearchData(publicQueryPaths.search, signal),
+		...WEB_QUERY_POLICIES.public,
+		enabled: open,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 	});
+	const searchData = searchQuery.data;
+	const searchDataFetchError = searchQuery.error;
+	const isLoadingSearchData = searchQuery.isLoading;
 	if (searchData) hasLoadedSearchRef.current = true;
-	const { data: workspaceItems = [] } = useSWR(
-		open ? "/api/search/workspaces" : null,
-		fetchWorkspaceSearchItems,
-		{
-			dedupingInterval: 5 * 60 * 1_000,
-			revalidateIfStale: false,
-			shouldRetryOnError: false,
-		},
-	);
+	const workspaceQuery = useQuery({
+		queryKey: webQueryKeys.account.workspaceSearch(scope),
+		queryFn: ({ signal }) =>
+			fetchWorkspaceSearchItems("/api/search/workspaces", { signal }),
+		...WEB_QUERY_POLICIES.privateNoRetry,
+		enabled: open && Boolean(scope.userId),
+	});
+	const workspaceItems = workspaceQuery.data ?? EMPTY_WORKSPACE_ITEMS;
 	const searchDataError = searchDataFetchError
 		? "Unable to load search data."
 		: null;
@@ -706,11 +718,11 @@ export default function Search({
 			if (!canRefreshSearchIndex(lastSearchRefreshAt, now)) return;
 			lastSearchRefreshAt = now;
 
-			void mutateGlobalSearch(
-				publicSWRKeys.search,
-				fetchSearchData(publicSWRKeys.search),
-				{ revalidate: false },
-			)
+			void queryClient.fetchQuery({
+				queryKey: webQueryKeys.public.search(),
+				queryFn: ({ signal }) => fetchSearchData(publicQueryPaths.search, signal),
+				staleTime: WEB_QUERY_POLICIES.public.staleTime,
+			})
 				.catch(() => {
 					// The existing index remains usable; the next eligible focus can retry.
 				});
@@ -730,7 +742,7 @@ export default function Search({
 			window.removeEventListener("blur", markAway);
 			window.removeEventListener("focus", maybeRefreshAfterAway);
 		};
-	}, [mutateGlobalSearch]);
+	}, [queryClient]);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
@@ -806,6 +818,7 @@ export default function Search({
 					if (!result?.ok) {
 						throw new Error(result?.error ?? "Failed to switch workspace");
 					}
+					clearAccountQueryScope(queryClient, scope);
 					router.push("/settings/workspaces/settings");
 					router.refresh();
 					toast.success(`Switched to ${item.title} workspace`, {
@@ -827,7 +840,7 @@ export default function Search({
 			return;
 		}
 		router.push(item.href);
-	}, [resolvedTheme, router, setTheme]);
+	}, [queryClient, resolvedTheme, router, scope, setTheme]);
 
 	const handleTogglePin = useCallback((item: SearchableItem) => {
 		setPinnedItems((currentItems) => {

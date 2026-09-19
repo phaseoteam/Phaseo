@@ -1,4 +1,4 @@
-import type { AuthenticatedProviderCatalogPreview } from "@/lib/swr/providerCatalogPreviews";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 

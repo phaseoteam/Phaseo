@@ -13,6 +13,8 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { fetchServerProviderCatalogPreviews } from "@/lib/fetchers/internal/fetchServerProviderCatalogPreviews";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { toAccountQueryScope, type AccountQueryScope } from "@/lib/query/queryKeys";
 import type { APIProviderHeader } from "@/lib/fetchers/api-providers/types";
 
 // Provider metadata comes from an uncached API request. Allow this route to
@@ -81,10 +83,12 @@ export default async function Page({
 }) {
 	const resolved = await params;
 	const apiProvider = resolved.apiProvider;
-	const [publicHeader, initialProviderPreviews] = await Promise.all([
+	const [publicHeader, initialProviderPreviews, accountContext] = await Promise.all([
 		fetchProviderMeta(apiProvider),
 		fetchServerProviderCatalogPreviews(apiProvider),
+		getServerAccountContext(),
 	]);
+	const accountQueryScope = toAccountQueryScope(accountContext);
 	const header: APIProviderHeader | null = publicHeader ?? (initialProviderPreviews[0]
 		? {
 			api_provider_id: apiProvider,
@@ -186,6 +190,7 @@ export default async function Page({
 								providerLabel={header.api_provider_name}
 								models={models}
 								initialProviderPreviews={initialProviderPreviews}
+								accountQueryScope={accountQueryScope}
 							/>
 						</Suspense>
 					</section>
@@ -200,11 +205,13 @@ async function ProviderModelsWithPreview({
 	providerLabel,
 	models,
 	initialProviderPreviews,
+	accountQueryScope,
 }: {
 	apiProvider: string;
 	providerLabel: string;
 	models: Awaited<ReturnType<typeof fetchFrontendAPIProviderModels>>;
 	initialProviderPreviews: Awaited<ReturnType<typeof fetchServerProviderCatalogPreviews>>;
+	accountQueryScope: AccountQueryScope;
 }) {
 	await connection();
 	return (
@@ -213,6 +220,7 @@ async function ProviderModelsWithPreview({
 			providerLabel={providerLabel}
 			models={models}
 			initialProviderPreviews={initialProviderPreviews}
+			accountQueryScope={accountQueryScope}
 		/>
 	);
 }

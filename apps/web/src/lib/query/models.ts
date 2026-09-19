@@ -5,10 +5,14 @@ import type {
 } from "@/components/(data)/models/Models/modelsDisplay.types";
 import { getCatalogPricingSummariesCached } from "@/lib/fetchers/models/getCatalogPricingSummaries";
 import { withMissingCatalogPricing } from "@/lib/models/withMissingCatalogPricing";
-import { publicSWRFetcher } from "@/lib/swr/publicFetcher";
-import { fetchAuthenticatedPrivateModels } from "@/lib/swr/privateModels";
-import type { AuthenticatedProviderCatalogPreview } from "@/lib/swr/providerCatalogPreviews";
-import { fetchAuthenticatedProviderCatalogPreviews } from "@/lib/swr/providerCatalogPreviews";
+import { publicFetcher } from "@/lib/query/publicFetcher";
+import { fetchAuthenticatedPrivateModels } from "@/lib/query/privateModels";
+import {
+	hasAuthenticatedAccountQueryScope,
+	type AccountQueryScope,
+} from "@/lib/query/queryKeys";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
+import { fetchAuthenticatedProviderCatalogPreviews } from "@/lib/query/providerCatalogPreviews";
 
 type PublicModelsResponse = {
 	models: ModelsPageModel[];
@@ -21,6 +25,13 @@ type PublicModelsResponse = {
 };
 
 type ModelsCatalogueVersion = "v1" | "v2";
+
+export type ModelsQueryOptions = {
+	signal?: AbortSignal;
+	accountQueryScope?: AccountQueryScope | null;
+	accessToken?: string | null;
+	fetchProviderPreviews?: boolean;
+};
 
 function uniqueStrings(values: unknown[]): string[] {
 	return [...new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean))];
@@ -114,11 +125,14 @@ export function mergeProviderCatalogPreviews(
 }
 
 async function fetchModelsPageDataForVersion(
-	path: string,
+	path: `/api/_web/${string}`,
 	expectedVersion: ModelsCatalogueVersion,
 	initialProviderPreviews?: AuthenticatedProviderCatalogPreview[],
+	options: ModelsQueryOptions = {},
 ): Promise<ModelsPageData> {
-	const firstPage = await publicSWRFetcher<PublicModelsResponse>(path);
+	const firstPage = await publicFetcher<PublicModelsResponse>(path, {
+		signal: options.signal,
+	});
 	if (
 		firstPage.catalogue_version &&
 		firstPage.catalogue_version !== expectedVersion
@@ -137,7 +151,10 @@ async function fetchModelsPageDataForVersion(
 		pageOffsets.map((offset) => {
 			const url = new URL(path, "https://phaseo.local");
 			url.searchParams.set("offset", String(offset));
-			return publicSWRFetcher<PublicModelsResponse>(`${url.pathname}${url.search}`);
+			return publicFetcher<PublicModelsResponse>(
+				`${url.pathname}${url.search}` as `/api/_web/${string}`,
+				{ signal: options.signal },
+			);
 		}),
 	);
 	let models = [firstPage, ...laterPages]
@@ -147,18 +164,31 @@ async function fetchModelsPageDataForVersion(
 	if (firstPage.pricing_complete !== true) {
 		models = withMissingCatalogPricing(
 			models,
-			await getCatalogPricingSummariesCached(),
+			await getCatalogPricingSummariesCached(options.signal),
 		);
 	}
 
 	if (!firstPage.facets) {
 		throw new Error("Models API response did not include filter facets");
 	}
+	const canReadAccountData = hasAuthenticatedAccountQueryScope(
+		options.accountQueryScope,
+	);
 	const [privateModels, providerPreviews] = await Promise.all([
-		fetchAuthenticatedPrivateModels<ModelsPageModel>("page"),
-		initialProviderPreviews === undefined || initialProviderPreviews.length === 0
-			? fetchAuthenticatedProviderCatalogPreviews()
-			: Promise.resolve(initialProviderPreviews),
+		canReadAccountData
+			? fetchAuthenticatedPrivateModels<ModelsPageModel>("page", {
+					signal: options.signal,
+					accessToken: options.accessToken,
+					workspaceId: options.accountQueryScope?.workspaceId,
+				})
+			: Promise.resolve([] as ModelsPageModel[]),
+		canReadAccountData
+			? options.fetchProviderPreviews === false
+				? Promise.resolve(initialProviderPreviews ?? [])
+				: fetchAuthenticatedProviderCatalogPreviews(undefined, false, {
+						signal: options.signal,
+					})
+			: Promise.resolve([]),
 	]);
 	if (privateModels.length > 0) {
 		const privateIds = new Set(privateModels.map((model) => model.model_id));
@@ -200,15 +230,27 @@ async function fetchModelsPageDataForVersion(
 }
 
 export function fetchModelsPageData(
-	path: string,
+	path: `/api/_web/${string}`,
 	initialProviderPreviews?: AuthenticatedProviderCatalogPreview[],
+	options: ModelsQueryOptions = {},
 ): Promise<ModelsPageData> {
-	return fetchModelsPageDataForVersion(path, "v1", initialProviderPreviews);
+	return fetchModelsPageDataForVersion(
+		path,
+		"v1",
+		initialProviderPreviews,
+		options,
+	);
 }
 
 export function fetchModelsPageDataV2(
-	path: string,
+	path: `/api/_web/${string}`,
 	initialProviderPreviews?: AuthenticatedProviderCatalogPreview[],
+	options: ModelsQueryOptions = {},
 ): Promise<ModelsPageData> {
-	return fetchModelsPageDataForVersion(path, "v2", initialProviderPreviews);
+	return fetchModelsPageDataForVersion(
+		path,
+		"v2",
+		initialProviderPreviews,
+		options,
+	);
 }

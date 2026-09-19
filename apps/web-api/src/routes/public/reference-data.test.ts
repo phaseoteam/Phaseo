@@ -33,7 +33,7 @@ describe("public reference-data routes", () => {
         expect(retired.status).toBe(404);
     });
 
-	it("returns stable public datasets with a long-lived edge policy", async () => {
+	it("keeps reference data long-lived but refreshes provider information every fifteen minutes", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_labs")) {
@@ -54,7 +54,11 @@ describe("public reference-data routes", () => {
 
 		for (const response of [organisations, benchmarks, providerHeader, sources]) {
 			expect(response.status).toBe(200);
-			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=86400, stale-while-revalidate=604800");
+			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
+				response === providerHeader || response === sources
+					? "public, max-age=900"
+					: "public, max-age=86400, stale-while-revalidate=604800",
+			);
 		}
 		await expect(organisations.json()).resolves.toMatchObject({ organisations: [{ organisation_id: "openai" }] });
 		await expect(benchmarks.json()).resolves.toMatchObject({ benchmarks: [{ benchmark_id: "mmlu" }] });

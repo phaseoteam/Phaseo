@@ -25,11 +25,14 @@ export function createWorkspaceSearchItem(
 
 export async function fetchWorkspaceSearchItems(
 	path: string,
+	options: { signal?: AbortSignal } = {},
 ): Promise<PaletteItem[]> {
 	const response = await fetch(path, {
 		method: "GET",
 		credentials: "same-origin",
+		cache: "no-store",
 		headers: { Accept: "application/json" },
+		signal: options.signal,
 	});
 
 	if (!response.ok) return [];

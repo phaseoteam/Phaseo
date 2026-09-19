@@ -60,6 +60,8 @@ import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
 import { toAdminModelPreview } from "@/lib/models/adminModelPreview";
 import AdminHiddenModelPreview from "@/components/(data)/model/AdminHiddenModelPreview";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { toAccountQueryScope } from "@/lib/query/queryKeys";
 
 const MODEL_PROVIDER_VISIBILITY_TIMEOUT_MS = 1_000;
 
@@ -525,7 +527,13 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 		const source = await fetchAdminModelSource(requestedModelId).catch(() => null);
 		const preview = source ? toAdminModelPreview(source) : null;
 		if (!preview) notFound();
-		return <AdminHiddenModelPreview initial={preview} />;
+		const accountContext = await getServerAccountContext();
+		return (
+			<AdminHiddenModelPreview
+				initial={preview}
+				accountQueryScope={toAccountQueryScope(accountContext)}
+			/>
+		);
 	}
 	const modelHeader = {
 		model_id: modelOverview.model_id,

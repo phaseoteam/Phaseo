@@ -701,7 +701,7 @@ describe("public model routes", () => {
 		]);
 
 		expect(catalogue.status).toBe(200);
-		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300, stale-if-error=3600");
+		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900");
 		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(catalogue.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models,web-api-models-v2");
 		expect(benchmarks.status).toBe(200);
@@ -710,7 +710,7 @@ describe("public model routes", () => {
 		expect(benchmarks.headers.get("cache-tag")).toContain("web-api-model-info-openai2Fgpt-test");
 		await expect(benchmarks.json()).resolves.toMatchObject({ highlights: [{ benchmarkId: "mmlu", score: 85, scoreDisplay: "85%", rank: 2 }] });
 		expect(performance.status).toBe(200);
-		expect(performance.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+		expect(performance.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900");
 		expect(performance.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(performance.headers.get("cache-tag")).toContain("web-api-model-telemetry-openai2Fgpt-test");
 	});
@@ -1299,7 +1299,7 @@ describe("public model routes", () => {
 		}));
 		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/apps", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900");
 		await expect(response.json()).resolves.toEqual({ apps: [{ appId: "app-2", title: "Example", imageUrl: "https://example.com/app.png", url: "https://example.com", lastSeen: "2026-07-17T00:00:00Z", totalRequests: 10, successfulRequests: 9, totalTokens: 100 }], source: "v2" });
 	});
 
@@ -1412,7 +1412,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=300, stale-while-revalidate=300, stale-if-error=3600",
+			"public, max-age=900",
 		);
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-notices");
 		await expect(response.json()).resolves.toEqual({
@@ -1450,7 +1450,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=300, stale-while-revalidate=300",
+			"public, max-age=900",
 		);
 		await expect(response.json()).resolves.toEqual({ stats: {
 			requestsInWindow: 2,
@@ -1482,7 +1482,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=3600, stale-while-revalidate=21600",
+			"public, max-age=900",
 		);
 		await expect(response.json()).resolves.toMatchObject({ trajectory: {
 			releaseDate: "2026-01-01",

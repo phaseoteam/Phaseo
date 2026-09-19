@@ -1,16 +1,15 @@
 import { Hono } from "hono";
+import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 const TELEMETRY_CACHE: PublicCachePolicy = {
-	edgeTtlSeconds: 5 * 60,
-	staleWhileRevalidateSeconds: 5 * 60,
+	...PUBLIC_LIVE_DATA_CACHE,
 	cacheTags: ["web-api-providers", "web-api-provider-telemetry"],
 };
 const UPDATES_CACHE: PublicCachePolicy = {
-	edgeTtlSeconds: 60 * 60,
-	staleWhileRevalidateSeconds: 24 * 60 * 60,
+	...PUBLIC_LIVE_DATA_CACHE,
 	cacheTags: ["web-api-providers", "web-api-provider-updates"],
 };
 const IDENTITY_CACHE: PublicCachePolicy = { edgeTtlSeconds: 24 * 60 * 60, staleWhileRevalidateSeconds: 7 * 24 * 60 * 60, cacheTags: ["web-api-providers"] };

@@ -1,5 +1,5 @@
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
-import type { AuthenticatedProviderCatalogPreview } from "@/lib/swr/providerCatalogPreviews";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 
 function pricePerMillion(
 	preview: AuthenticatedProviderCatalogPreview,

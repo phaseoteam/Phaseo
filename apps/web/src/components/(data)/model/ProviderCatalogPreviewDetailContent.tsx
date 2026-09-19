@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { AlertTriangle, Info, Route, Server } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import type { AuthenticatedProviderCatalogPreview } from "@/lib/swr/providerCatalogPreviews";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
 import ModelPageToc from "./ModelPageToc";
 import UnreleasedBadge from "./UnreleasedBadge";

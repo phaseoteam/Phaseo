@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	Activity,
 	Logs,
@@ -49,6 +50,8 @@ import { CurrentUserAvatar } from "@/components/ui/current-user-avatar";
 import { getSupportAvailability } from "@/lib/support/schedule";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
 import { isPublicDataPathname } from "@/lib/publicDataRoutes";
+import { clearAccountQueryCache, clearAccountQueryScope } from "@/lib/query/invalidation";
+import { toAccountQueryScope } from "@/lib/query/queryKeys";
 
 interface HeaderProps {
 	isLoggedIn: boolean;
@@ -70,6 +73,7 @@ export default function HeaderClient({
 	variant = "desktop",
 }: HeaderProps) {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const pathname = usePathname() ?? "/";
 	const isPublicDataPage = isPublicDataPathname(pathname);
 	const { theme, setTheme } = useTheme();
@@ -108,6 +112,7 @@ export default function HeaderClient({
 		} catch (error) {
 			console.error("Sign out error", error);
 		} finally {
+			clearAccountQueryCache(queryClient);
 			window.location.assign("/");
 		}
 	}
@@ -127,6 +132,10 @@ export default function HeaderClient({
 			return false;
 		}
 
+		clearAccountQueryScope(
+			queryClient,
+			toAccountQueryScope({ userId: user?.id, workspaceId: previousTeamId }),
+		);
 		router.refresh();
 		toast.success(`Switched to ${teamName} workspace`, {
 			position: "bottom-right",

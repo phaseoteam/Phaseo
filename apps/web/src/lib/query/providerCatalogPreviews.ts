@@ -57,6 +57,7 @@ type ProviderCatalogPreviewResponse = {
 export async function fetchAuthenticatedProviderCatalogPreviews(
 	providerSlug?: string,
 	throwOnError = false,
+	options: { signal?: AbortSignal } = {},
 ): Promise<AuthenticatedProviderCatalogPreview[]> {
 	try {
 		const query = providerSlug
@@ -67,6 +68,7 @@ export async function fetchAuthenticatedProviderCatalogPreviews(
 			headers: { Accept: "application/json" },
 			credentials: "same-origin",
 			cache: "no-store",
+			signal: options.signal,
 		});
 		const payload = (await response.json().catch(() => null)) as
 			| (ProviderCatalogPreviewResponse & { error?: unknown })
@@ -80,6 +82,9 @@ export async function fetchAuthenticatedProviderCatalogPreviews(
 		}
 		return Array.isArray(payload?.models) ? payload.models : [];
 	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") throw error;
+		// Replace previously authorized data with an empty result on revocation.
+		if (error instanceof WebApiError && [401, 403, 404].includes(error.status)) return [];
 		if (throwOnError) throw error;
 		// Signed-out visitors and users without a provider link continue to see
 		// the public catalog without an authenticated preview overlay.

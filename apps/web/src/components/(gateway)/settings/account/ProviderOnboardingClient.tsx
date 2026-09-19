@@ -3,6 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateAccountQueries } from "@/lib/query/invalidation";
 import {
 	ArrowRight,
 	BadgeCheck,
@@ -141,6 +143,7 @@ function PreviewModel({ model, displayTimeZone }: { model: ProviderCatalogPrevie
 
 export default function ProviderOnboardingClient({ initialData }: Props) {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const [showConnection, setShowConnection] = React.useState(false);
 	const [providerName, setProviderName] = React.useState("");
 	const [providerSlug, setProviderSlug] = React.useState("");
@@ -210,6 +213,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 			);
 			setSubmitted({ providerSlug: result.submission.provider_slug, modelCount: result.submission.model_count, webhookUrl: result.catalogSync.webhookUrl, webhookSecret: result.catalogSync.webhookSecret });
 			toast.success("Provider profile submitted");
+			await invalidateAccountQueries(queryClient);
 			await activateProviderAccountAction().catch(() => toast.error("Provider connected. Sign in again to refresh your account workspace."));
 			router.refresh();
 		} catch (error) {
