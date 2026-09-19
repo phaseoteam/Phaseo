@@ -9,7 +9,7 @@ export function ocrText(value: unknown): string {
 	if (!Array.isArray(result.pages)) return "";
 	return result.pages.map((page) => {
 		if (!page || typeof page !== "object") return "";
-		return typeof page.markdown === "string" ? page.markdown : typeof page.text === "string" ? page.text : "";
+		return typeof page.markdown === "string" && page.markdown.trim() ? page.markdown : typeof page.text === "string" ? page.text : "";
 	}).filter(Boolean).join("\n\n");
 }
 

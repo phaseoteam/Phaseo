@@ -5,6 +5,7 @@ describe("document tools", () => {
 		expect(ocrText({ text: "Extracted", pages: [{ markdown: "Duplicate" }] })).toBe("Extracted");
 		expect(ocrText({ text: "", pages: [{ markdown: "Page 1" }, null, { text: "Page 2" }] })).toBe("Page 1\n\nPage 2");
 		expect(ocrText(null)).toBe("");
+		expect(ocrText({ pages: [{ markdown: "", text: "Text fallback" }, { markdown: "  ", text: "Second page" }] })).toBe("Text fallback\n\nSecond page");
 	});
 	it("maps ranked indices back to the submitted documents, preserving provider order", () => {
 		const documents = rerankDocuments(" First \r\n\nSecond\n Third ");
