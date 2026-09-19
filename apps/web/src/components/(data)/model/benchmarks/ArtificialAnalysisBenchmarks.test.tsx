@@ -18,6 +18,20 @@ const highlight = (benchmarkId: string, score: number): ModelBenchmarkHighlight 
 });
 
 describe("Artificial Analysis benchmark panel", () => {
+	it.each(["aa-intelligence-index-cost-v4", "aa-intelligence-index-cost-v5"])("orders %s by lowest cost without leaderboard metadata", (benchmarkId) => {
+		const results = [100, 10].map((score, index) => ({
+			id: `cost-${index}`, benchmark_id: benchmarkId, score, raw_score: score, score_display: String(score),
+			is_percentage: false, is_self_reported: false, other_info: highlight(benchmarkId, score).otherInfo,
+			source_link: null, created_at: null, updated_at: null, rank: null,
+			variant: index === 0 ? "max" : "low", result_key: `cost-${index}`,
+			benchmark: { id: benchmarkId, name: "Evaluation cost", category: "cost", link: null, total_models: null, max_score: null, order: null, ascending_order: false, type: "numerical" as const },
+		}));
+		const html = renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[highlight(benchmarkId, 100)]} results={results} modelId="test/model" modelName="Test model" initialExpandedMetric={benchmarkId} />);
+		expect(html).toContain("Lower is better");
+		expect(html).not.toContain("Higher is better");
+		expect(html.indexOf("(Low)")).toBeLessThan(html.indexOf("(Max)"));
+		expect(html).not.toContain("#1 of");
+	});
 	it("includes the current model when the shared leaderboard is stale and ranks configurations", () => {
 		const benchmarkId = "aa-intelligence-index-v4";
 		const ranking: PublicBenchmarkRanking = {
