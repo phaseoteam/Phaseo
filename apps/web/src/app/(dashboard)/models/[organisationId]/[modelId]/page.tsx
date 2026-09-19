@@ -16,6 +16,7 @@ import ModelOverviewSections, {
 	ModelOverviewSectionsSkeleton,
 } from "@/components/(data)/model/overview/ModelOverviewSections";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
+import { DiscordComponentEmbed } from "@/components/metadata/DiscordComponentEmbed";
 import ModelPageToc, {
 	type ModelPageTocItem,
 } from "@/components/(data)/model/ModelPageToc";
@@ -32,6 +33,7 @@ import {
 	buildModelOverviewMetadataDescription,
 	buildModelOverviewMetadataTitle,
 	countModelMetadataProviders,
+	markdownToPlainText,
 } from "@/lib/models/modelDescription";
 import {
 	analyseModelIndexability,
@@ -385,6 +387,20 @@ async function ModelDetailPageBody({
 	const modelName = modelOverview?.name ?? modelId.split("/").slice(-1)[0] ?? modelId;
 	const organisationName =
 		modelOverview?.organisation?.name ?? routeParams.organisationId;
+	const contextLength =
+		effectiveGatewayMetadata?.providers
+			.map((provider) => provider.context_length ?? 0)
+			.filter((value) => value > 0)
+			.sort((left, right) => right - left)[0] ?? null;
+	const discordDescription =
+		markdownToPlainText(modelOverview.description) ??
+		buildModelOverviewMetadataDescription({
+			modelName,
+			organisationName,
+			providerCount: effectiveGatewayMetadata?.activeProviders.length ?? 0,
+			benchmarkCount: benchmarkHighlights.length,
+			hasPricing: subscriptionPlans.length > 0,
+		});
 	const datasetSchema = {
 		"@context": "https://schema.org",
 		"@type": "Dataset",
@@ -434,6 +450,19 @@ async function ModelDetailPageBody({
 
 	return (
 		<>
+			<DiscordComponentEmbed
+				modelId={modelId}
+				modelName={modelName}
+				organisationName={organisationName}
+				modelPath={getModelPath(modelId)}
+				description={discordDescription}
+				contextLength={contextLength}
+				organisationColour={
+					modelOverview.organisation?.colour ??
+					modelOverview.organisation?.color ??
+					null
+				}
+			/>
 			<JsonLdScript
 				id="model-dataset-schema"
 				data={datasetSchema}
@@ -504,7 +533,20 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 	const requestedAlias = isAliasRoute ? requestedModelId : undefined;
 	const modelId = canonicalModelId;
 	if (isFreeRouterModelId(modelId)) {
-		return <ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} requestedAlias={requestedAlias}><FreeRouterOverview /></ModelDetailShell>;
+		return (
+			<>
+				<DiscordComponentEmbed
+					modelId={modelId}
+					modelName="Free Router"
+					organisationName="Phaseo"
+					modelPath={getModelPath(modelId)}
+					description="A flexible gateway route for discovering and comparing available models."
+				/>
+				<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} requestedAlias={requestedAlias}>
+					<FreeRouterOverview />
+				</ModelDetailShell>
+			</>
+		);
 	}
 	// Start independent section requests alongside the overview so the header can
 	// stream as soon as its own data arrives, without serializing the lower body.
