@@ -21,6 +21,7 @@ export function DocumentToolsRoom({ room, models }: { room: "ocr" | "rerank"; mo
 	const modelId = available.some((model) => model.modelId === selected) ? selected : available[0]?.modelId ?? "";
 	const [imageUrl, setImageUrl] = useState("");
 	const [file, setFile] = useState<File | null>(null);
+	const fileInput = useRef<HTMLInputElement>(null);
 	const [query, setQuery] = useState("");
 	const [documents, setDocuments] = useState("");
 	const [topN, setTopN] = useState(5);
@@ -98,7 +99,8 @@ export function DocumentToolsRoom({ room, models }: { room: "ocr" | "rerank"; mo
 					<fieldset disabled={pending} className="grid min-w-0 gap-4">
 						{isOcr ? <>
 							<label className="grid gap-2 text-sm" htmlFor="ocr-url">Image URL<Input id="ocr-url" type="url" placeholder="https://example.com/image.png" value={imageUrl} disabled={Boolean(file)} onChange={(event) => setImageUrl(event.target.value)} /></label>
-							<label className="grid gap-2 text-sm" htmlFor="ocr-file">Or upload an image<Input id="ocr-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /><span className="text-xs text-muted-foreground">PNG, JPEG, WEBP, or GIF, up to 10 MB.</span></label>
+							<label className="grid gap-2 text-sm" htmlFor="ocr-file">Or upload an image<Input ref={fileInput} id="ocr-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /><span className="text-xs text-muted-foreground">PNG, JPEG, WEBP, or GIF, up to 10 MB.</span></label>
+							{file && <Button type="button" variant="outline" className="justify-self-start" onClick={() => { setFile(null); if (fileInput.current) fileInput.current.value = ""; }}>Remove image</Button>}
 						</> : <>
 							<label className="grid gap-2 text-sm" htmlFor="rerank-query">Query<Input id="rerank-query" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="What are you looking for?" required /></label>
 							<label className="grid gap-2 text-sm" htmlFor="rerank-documents">Documents<Textarea id="rerank-documents" rows={7} value={documents} onChange={(event) => setDocuments(event.target.value)} placeholder="One document per line" required /><span className="text-xs text-muted-foreground">One document per line. {inputDocuments.length} documents.</span></label>
