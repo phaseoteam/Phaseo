@@ -77,6 +77,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	togetherai: "Together AI",
 	tinyfish: "TinyFish",
 	typesafe: "TypeSafe",
+	"tencent-cloud": "Tencent Cloud",
 	wandb: "Weights & Biases",
 	"spacex-ai": "SpaceXAI",
 	"zai": "Z.ai",

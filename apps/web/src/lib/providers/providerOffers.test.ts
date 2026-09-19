@@ -79,6 +79,21 @@ describe("providerOffers", () => {
         ).toBe("Claude Platform for AWS (US)");
     });
 
+    test("uses Tencent Cloud for the Tencent Cloud provider identity", () => {
+        expect(
+            resolveProviderDisplayName({
+                providerId: "tencent-cloud",
+                providerName: "Tencent Cloud TokenHub",
+            }),
+        ).toBe("Tencent Cloud");
+        expect(
+            resolveProviderLogoId({
+                providerId: "tencent-cloud",
+                providerFamilyId: "tencent-cloud",
+            }),
+        ).toBe("tencent-cloud");
+    });
+
     test("formats regional offers with bracketed regions", () => {
         expect(
             formatProviderOfferDisplayName({

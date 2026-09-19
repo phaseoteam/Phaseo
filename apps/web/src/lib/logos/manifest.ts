@@ -543,6 +543,9 @@ export const logoManifest = {
 	tencent: {
 		color: "/logos/hunyuan.svg",
 	},
+	"tencent-cloud": {
+		color: "/logos/tencent-cloud.svg",
+	},
 	together: {
 		color: "/logos/together.svg",
 	},

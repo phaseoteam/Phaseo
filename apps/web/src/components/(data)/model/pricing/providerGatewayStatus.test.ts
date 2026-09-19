@@ -34,6 +34,20 @@ describe("providerGatewayStatus", () => {
 		).toBe("external");
 	});
 
+	it("shows route lifecycle status for an external provider offer", () => {
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: false,
+				providerAvailabilityStatus: "available",
+				phaseoStatus: "planned",
+				providerStatus: "external",
+				providerRoutingStatus: "active",
+				modelRoutingStatus: "active",
+				capabilityStatus: "active",
+			}),
+		).toBe("coming_soon");
+	});
+
 	it("prefers the best routable status within a provider offer", () => {
 		expect(
 			chooseGatewayStatus([
