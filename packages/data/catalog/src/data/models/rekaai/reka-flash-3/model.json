@@ -1,0 +1,81 @@
+{
+  "model_id": "rekaai/reka-flash-3",
+  "organisation_id": "rekaai",
+  "name": "Reka Flash 3",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Reka Flash 3 is a general-purpose, instruction-tuned large language model with 21 billion parameters, developed by Reka. It excels at general chat, coding tasks, instruction-following, and function calling. Featuring a...",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": [
+    "text"
+  ],
+  "output_types": [
+    "text"
+  ],
+  "api_model_id": "rekaai/reka-flash-3",
+  "family_id": null,
+  "links": [
+    {
+      "title": "Kilo Gateway models",
+      "kind": "api_reference",
+      "url": "https://api.kilo.ai/api/gateway/models"
+    }
+  ],
+  "details": [
+    {
+      "name": "kilo_catalog_created",
+      "value": "2025-03-12T20:53:33.000Z"
+    }
+  ],
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": "inference",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 65536,
+    "input": 65536,
+    "output": 65536
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": false,
+    "structured_output": true,
+    "temperature": true,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "official_models",
+      "url": "https://api.kilo.ai/api/gateway/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Exact Kilo Gateway model identity, description, availability, modalities, limits, and supported parameters."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Kilo Gateway availability and technical metadata verified; upstream release lifecycle was not published by Kilo."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
