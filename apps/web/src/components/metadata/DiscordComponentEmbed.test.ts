@@ -62,7 +62,7 @@ describe("Discord component embed", () => {
 			expect.objectContaining({
 				accessory: expect.objectContaining({
 					media: expect.objectContaining({
-						url: expect.stringContaining("png_logo_light.png"),
+						url: expect.stringContaining("png_logo_discord.png"),
 					}),
 				}),
 			}),
@@ -135,7 +135,7 @@ describe("Discord component embed", () => {
 			expect.objectContaining({
 				accessory: expect.objectContaining({
 					media: expect.objectContaining({
-						url: expect.stringContaining("png_logo_light.png"),
+						url: expect.stringContaining("png_logo_discord.png"),
 					}),
 				}),
 			}),
@@ -210,6 +210,15 @@ describe("Discord component embed", () => {
 		expect(missingPngs).toEqual([]);
 	});
 
+	it("ships a Discord-sized Phaseo logo", () => {
+		const phaseoLogoPath = path.resolve(
+			__dirname,
+			"../../../public/png_logo_discord.png",
+		);
+
+		expect(existsSync(phaseoLogoPath)).toBe(true);
+	});
+
 	it("adds the Vercel bypass to preview-hosted lab logos", () => {
 		const previousEnvironment = {
 			VERCEL_ENV: process.env.VERCEL_ENV,
@@ -226,15 +235,26 @@ describe("Discord component embed", () => {
 				...options,
 				organisationLogoUrl: null,
 			});
-			const labSection = payload.component.components.find(
+			const sections = payload.component.components.filter(
 				(component) => component.type === 9,
 			);
+			const labSection = sections[0];
+			const phaseoSection = sections[1];
 
 			expect(labSection).toEqual(
 				expect.objectContaining({
 					accessory: expect.objectContaining({
 						media: expect.objectContaining({
 						url: "https://phaseo-preview.vercel.app/logos/discord/zai.png?x-vercel-protection-bypass=preview-test-secret",
+						}),
+					}),
+				}),
+			);
+			expect(phaseoSection).toEqual(
+				expect.objectContaining({
+					accessory: expect.objectContaining({
+						media: expect.objectContaining({
+							url: "https://phaseo-preview.vercel.app/png_logo_discord.png?x-vercel-protection-bypass=preview-test-secret",
 						}),
 					}),
 				}),

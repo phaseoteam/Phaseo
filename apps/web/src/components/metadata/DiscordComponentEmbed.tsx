@@ -84,6 +84,7 @@ export function buildDiscordModelComponentEmbed(
 	const context = formatContextLength(options.contextLength);
 	const modelUrl = absoluteUrl(options.modelPath);
 	const phaseoLogoUrl = absoluteUrl("/png_logo_light.png");
+	const phaseoDiscordLogoUrl = absoluteMediaUrl("/png_logo_discord.png");
 	const knownOrganisationLogoUrl = discordLogoUrlForOrganisation(
 		options.organisationId,
 	);
@@ -122,7 +123,7 @@ export function buildDiscordModelComponentEmbed(
 						],
 						accessory: {
 							type: 11,
-							media: { url: phaseoLogoUrl },
+							media: { url: phaseoDiscordLogoUrl ?? phaseoLogoUrl },
 						},
 					},
 				]

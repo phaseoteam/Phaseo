@@ -13,6 +13,8 @@ const modelDirectory = join(
 	"packages/data/catalog/src/data/models",
 );
 const outputDirectory = join(publicDirectory, "logos/discord");
+const phaseoLogoSource = join(publicDirectory, "png_logo_light.png");
+const phaseoDiscordLogoOutput = join(publicDirectory, "png_logo_discord.png");
 
 const mimeTypes: Record<string, string> = {
 	".gif": "image/gif",
@@ -115,12 +117,80 @@ async function main() {
 				omitBackground: true,
 			});
 		}
+
+		const phaseoLogoContent = await readFile(phaseoLogoSource);
+		await page.setContent(`<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<style>
+			html, body { width: 128px; height: 128px; margin: 0; background: transparent; }
+			#discord-logo { width: 128px; height: 128px; }
+			canvas { width: 128px; height: 128px; display: block; }
+		</style>
+	</head>
+	<body><canvas id="discord-logo" width="256" height="256"></canvas></body>
+</html>`);
+		await page.evaluate(async (logoDataUrl) => {
+			const image = new Image();
+			image.src = logoDataUrl;
+			await image.decode();
+
+			const sourceCanvas = document.createElement("canvas");
+			sourceCanvas.width = image.naturalWidth;
+			sourceCanvas.height = image.naturalHeight;
+			const sourceContext = sourceCanvas.getContext("2d", {
+				willReadFrequently: true,
+			});
+			if (!sourceContext) throw new Error("Could not prepare the Phaseo logo.");
+			sourceContext.drawImage(image, 0, 0);
+			const sourcePixels = sourceContext.getImageData(
+				0,
+				0,
+				sourceCanvas.width,
+				sourceCanvas.height,
+			);
+			for (let index = 0; index < sourcePixels.data.length; index += 4) {
+				const brightness = Math.max(
+					sourcePixels.data[index] ?? 0,
+					sourcePixels.data[index + 1] ?? 0,
+					sourcePixels.data[index + 2] ?? 0,
+				);
+				sourcePixels.data[index] = 255;
+				sourcePixels.data[index + 1] = 255;
+				sourcePixels.data[index + 2] = 255;
+				sourcePixels.data[index + 3] = brightness;
+			}
+			sourceContext.putImageData(sourcePixels, 0, 0);
+
+			const targetCanvas = document.querySelector<HTMLCanvasElement>(
+				"#discord-logo",
+			);
+			const targetContext = targetCanvas?.getContext("2d");
+			if (!targetCanvas || !targetContext) {
+				throw new Error("Could not render the Discord Phaseo logo.");
+			}
+			targetContext.fillStyle = "#000000";
+			targetContext.fillRect(0, 0, targetCanvas.width, targetCanvas.height);
+			const markSize = targetCanvas.width * 0.72;
+			const inset = (targetCanvas.width - markSize) / 2;
+			targetContext.drawImage(
+				sourceCanvas,
+				inset,
+				inset,
+				markSize,
+				markSize,
+			);
+		}, `data:image/png;base64,${phaseoLogoContent.toString("base64")}`);
+		await page.locator("#discord-logo").screenshot({
+			path: phaseoDiscordLogoOutput,
+		});
 	} finally {
 		await browser.close();
 	}
 
 	process.stdout.write(
-		`Generated ${logoSources.size} Discord PNG logos from ${modelOrganisations.length} catalog model organizations.\n`,
+		`Generated ${logoSources.size} Discord lab PNG logos, a smaller Phaseo Discord PNG, and processed ${modelOrganisations.length} catalog model organizations.\n`,
 	);
 }
 
