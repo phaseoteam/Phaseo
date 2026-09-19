@@ -151,7 +151,9 @@ export default function HeaderClient({
 					open={isMobileNavOpen}
 					onOpenChange={(open) => setIsMobileNavOpen(Boolean(open))}
 				>
-					<ButtonGroup className="h-8 items-stretch overflow-hidden rounded-lg shadow-xs">
+					<ButtonGroup
+						className="h-8 items-stretch overflow-hidden rounded-l-lg rounded-r-md shadow-xs [&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-md!"
+					>
 						<Button asChild className="h-8 rounded-r-none px-4">
 							<Link href="/sign-up">
 								Sign Up
