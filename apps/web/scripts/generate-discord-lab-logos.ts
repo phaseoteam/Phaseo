@@ -136,33 +136,6 @@ async function main() {
 			image.src = logoDataUrl;
 			await image.decode();
 
-			const sourceCanvas = document.createElement("canvas");
-			sourceCanvas.width = image.naturalWidth;
-			sourceCanvas.height = image.naturalHeight;
-			const sourceContext = sourceCanvas.getContext("2d", {
-				willReadFrequently: true,
-			});
-			if (!sourceContext) throw new Error("Could not prepare the Phaseo logo.");
-			sourceContext.drawImage(image, 0, 0);
-			const sourcePixels = sourceContext.getImageData(
-				0,
-				0,
-				sourceCanvas.width,
-				sourceCanvas.height,
-			);
-			for (let index = 0; index < sourcePixels.data.length; index += 4) {
-				const brightness = Math.max(
-					sourcePixels.data[index] ?? 0,
-					sourcePixels.data[index + 1] ?? 0,
-					sourcePixels.data[index + 2] ?? 0,
-				);
-				sourcePixels.data[index] = 255;
-				sourcePixels.data[index + 1] = 255;
-				sourcePixels.data[index + 2] = 255;
-				sourcePixels.data[index + 3] = brightness;
-			}
-			sourceContext.putImageData(sourcePixels, 0, 0);
-
 			const targetCanvas = document.querySelector<HTMLCanvasElement>(
 				"#discord-logo",
 			);
@@ -170,27 +143,21 @@ async function main() {
 			if (!targetCanvas || !targetContext) {
 				throw new Error("Could not render the Discord Phaseo logo.");
 			}
-			targetContext.fillStyle = "#000000";
-			targetContext.fillRect(0, 0, targetCanvas.width, targetCanvas.height);
-			const markSize = targetCanvas.width * 0.72;
-			const inset = (targetCanvas.width - markSize) / 2;
-			targetContext.drawImage(
-				sourceCanvas,
-				inset,
-				inset,
-				markSize,
-				markSize,
-			);
+			// Discord fixes Thumbnail accessory dimensions; shrink the full tile on transparency.
+			const tileSize = targetCanvas.width * 0.68;
+			const inset = (targetCanvas.width - tileSize) / 2;
+			targetContext.drawImage(image, inset, inset, tileSize, tileSize);
 		}, `data:image/png;base64,${phaseoLogoContent.toString("base64")}`);
 		await page.locator("#discord-logo").screenshot({
 			path: phaseoDiscordLogoOutput,
+			omitBackground: true,
 		});
 	} finally {
 		await browser.close();
 	}
 
 	process.stdout.write(
-		`Generated ${logoSources.size} Discord lab PNG logos, a smaller Phaseo Discord PNG, and processed ${modelOrganisations.length} catalog model organizations.\n`,
+		`Generated ${logoSources.size} Discord lab PNG logos, a smaller Phaseo Discord tile, and processed ${modelOrganisations.length} catalog model organizations.\n`,
 	);
 }
 
