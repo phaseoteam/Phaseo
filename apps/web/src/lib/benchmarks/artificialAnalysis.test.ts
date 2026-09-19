@@ -4,6 +4,10 @@ describe("Artificial Analysis benchmark helpers", () => {
 	it("ignores sentence punctuation without merging index versions", () => {
 		expect(artificialAnalysisVersion("Intelligence Index v4.3. Rounded headline score")).toBe("4.3");
 		expect(artificialAnalysisVersion("Intelligence Index v4.1.1; historical")).toBe("4.1.1");
+		expect(artificialAnalysisVersion("Intelligence Index v4.3.")).toBe("4.3");
+	});
+	it.each(["1..2", "4.3..1", "4.3beta", "4.3.2x"])("rejects the malformed version %s", (version) => {
+		expect(artificialAnalysisVersion(`Intelligence Index v${version}`)).toBeNull();
 	});
 	it("counts every configuration, preserves ties, and reverses cost ordering", () => {
 		const entries = [{ model_id: "test/model", model_name: "Test", organisation_id: null, organisation_name: null, score: 50, rank: 1,

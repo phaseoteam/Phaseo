@@ -222,6 +222,7 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
     { benchmark_id: ids[0], model_slug: "test/hidden", score_numeric: 1000, other_info: info },
     { benchmark_id: ids[0], model_slug: "test/old", score_numeric: 1200, other_info: "Intelligence Index v4.1.1" },
     { benchmark_id: ids[0], model_slug: "test/preview", score_numeric: 43.6, other_info: "Intelligence Index v4.3. Preview result." },
+    { benchmark_id: ids[0], model_slug: "test/malformed", score_numeric: 1300, other_info: "Intelligence Index v4.3..2" },
     { benchmark_id: ids[3], model_slug: "test/last", score_numeric: 10.25, other_info: info },
     { benchmark_id: ids[3], model_slug: "test/model-0", score_numeric: 0, other_info: info },
     { benchmark_id: ids[3], model_slug: "test/model-1", score_numeric: 0, other_info: info },
@@ -248,7 +249,7 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
   expect(benchmarks).toHaveLength(4);
   expect(benchmarks[0].entries[0]).toMatchObject({ model_id:'test/last', score:900, rank:1, other_info:info });
 	expect(benchmarks[0].entries[0]).toMatchObject({ organisation_colour:'#123456', release_date:'2026-09-01', configurations:[{variant:'max',score:900},{variant:'high',score:850}] });
-  expect(benchmarks[0].entries.some((entry:any)=>['test/old','test/hidden'].includes(entry.model_id))).toBe(false);
+  expect(benchmarks[0].entries.some((entry:any)=>['test/old','test/hidden','test/malformed'].includes(entry.model_id))).toBe(false);
   expect(benchmarks[0].entries).toEqual(expect.arrayContaining([expect.objectContaining({ model_id: 'test/preview', score: 43.6 })]));
   expect(benchmarks[3].lower_is_better).toBe(true);
   expect(benchmarks[3].entries.map((entry:any)=>[entry.score,entry.rank])).toEqual([[0,1],[0,1],[10.25,3]]);

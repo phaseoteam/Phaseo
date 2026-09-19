@@ -52,7 +52,7 @@ export function formatArtificialAnalysisScore(id: string, score: number) {
     : { maximumFractionDigits: 2 }).format(score);
 }
 export function artificialAnalysisVersion(info?: string | null) {
-	return info?.match(/Intelligence Index v(\d+(?:\.\d+)*)/)?.[1] ?? null;
+	return info?.match(/Intelligence Index v(\d+(?:\.\d+)*)(?=$|[\s;]|[.!?](?=$|\s))/)?.[1] ?? null;
 }
 
 /** Rank the evaluated configurations, including ties, rather than one best score per model. */
