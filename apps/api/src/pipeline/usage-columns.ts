@@ -346,6 +346,15 @@ function countInputParts(payload: unknown, types: string[]): number {
 	);
 }
 
+function countImageInputs(endpoint: Endpoint | undefined, payload: unknown): number {
+	if (endpoint !== "images.edits") return countInputParts(payload, ["image_url", "input_image", "image"]);
+	const image = payload && typeof payload === "object" ? (payload as Record<string, unknown>).image : undefined;
+	const uploads = Array.isArray(image) ? image : [image];
+	return uploads.filter((upload) => typeof upload === "string"
+		? upload.trim().length > 0
+		: typeof Blob !== "undefined" && upload instanceof Blob && upload.size > 0).length;
+}
+
 export function buildGatewayRequestUsageColumns(args: {
 	usage: unknown;
 	endpoint?: Endpoint;
@@ -434,8 +443,8 @@ export function buildGatewayRequestUsageColumns(args: {
 		usage_output_audio_tokens: outputAudioTokens,
 		usage_input_video_tokens: inputVideoTokens,
 		usage_output_video_tokens: outputVideoTokens,
-		usage_image_inputs: firstNumber(rawUsage, ["input_image_count", "input_images"]) ||
-			countInputParts(args.requestPayload, ["image_url", "input_image", "image"]),
+		usage_image_inputs: firstNumber(rawUsage, ["input_image_count", "input_images", "input_image"]) ||
+			countImageInputs(args.endpoint, args.requestPayload),
 		usage_image_outputs: firstNumber(rawUsage, ["output_image_count", "output_images", "output_image"]) ||
 			(args.endpoint === "images.generations" || args.endpoint === "images.edits"
 				? (Array.isArray((args.gatewayResponse as any)?.data) ? (args.gatewayResponse as any).data.length : 0)

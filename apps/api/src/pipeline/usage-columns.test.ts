@@ -166,6 +166,34 @@ describe("buildV2RequestUsageMeters", () => {
 		expect(JSON.stringify(meters)).not.toContain("private");
 	});
 
+	it.each([
+		{ image: "private-url", count: 1 },
+		{ image: ["private-url", "private-base64"], count: 2 },
+		{ image: new Blob(["private-upload"]), count: 1 },
+		{ image: [new Blob(["private-upload"]), "private-url"], count: 2 },
+	])("counts $count image-edit uploads without counting the mask", ({ image, count }) => {
+		const meters = buildV2RequestUsageMeters({
+			endpoint: "images.edits", usage: { input_image_tokens: 1500 },
+			requestPayload: { image, mask: new Blob(["private-mask"]), n: 4 },
+		});
+		expect(meters).toContainEqual(expect.objectContaining({ meter_key: "input_images", quantity: count }));
+		expect(JSON.stringify(meters)).not.toContain("private");
+	});
+
+	it.each(["input_image_count", "input_images", "input_image"])("prefers the explicit %s count over image-edit uploads", (alias) => {
+		const meters = buildV2RequestUsageMeters({ endpoint: "images.edits", usage: { [alias]: 3 }, requestPayload: { image: "private-url" } });
+		expect(meters).toContainEqual(expect.objectContaining({ meter_key: "input_images", quantity: 3 }));
+	});
+
+	it("does not count absent image-edit uploads or top-level images on other endpoints", () => {
+		for (const args of [
+			{ endpoint: "images.edits" as const, requestPayload: { mask: "private-mask" } },
+			{ endpoint: "chat.completions" as const, requestPayload: { image: "private-url" } },
+		]) {
+			expect(buildV2RequestUsageMeters({ ...args, usage: {} }).some((meter) => meter.meter_key === "input_images")).toBe(false);
+		}
+	});
+
 	it("projects flexible cache, token, media, and character meters without content", () => {
 		const meters = buildV2RequestUsageMeters({
 			endpoint: "chat.completions",
