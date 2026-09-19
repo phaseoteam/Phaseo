@@ -1,6 +1,7 @@
 export type PhaseoEnv = Cloudflare.Env & {
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: string;
 	OPENAI_APPS_CHALLENGE_TOKEN?: string;
+	PHASEO_WEB_BASE_URL: string;
 };
 
 export type GatewayMeter = {
@@ -53,6 +54,27 @@ type ProvidersResponse = {
 	}>;
 	message?: string;
 };
+
+export type BenchmarkRanking = {
+	benchmark_id: string;
+	name: string;
+	category: string | null;
+	benchmark_type: string | null;
+	lower_is_better: boolean;
+	total_models: number | null;
+	entries: Array<{
+		model_id: string;
+		model_name: string;
+		organisation_id: string | null;
+		organisation_name: string | null;
+		score: number;
+		rank: number;
+		source_link: string | null;
+		updated_at: string | null;
+	}>;
+};
+
+type BenchmarkRankingsResponse = { benchmarks?: BenchmarkRanking[]; error?: string };
 
 export class PhaseoApiError extends Error {
 	constructor(message: string, readonly status?: number) {
@@ -145,6 +167,34 @@ export async function listProviders(env: PhaseoEnv, credentials?: PhaseoCredenti
 	const payload = await requestPhaseo<ProvidersResponse>(env, "/v1/providers", { query: { limit: 250 }, credentials });
 	if (!payload.ok || !payload.providers) throw new PhaseoApiError(payload.message ?? "Phaseo could not load providers.");
 	return payload.providers;
+}
+
+export async function listBenchmarkRankings(env: PhaseoEnv): Promise<BenchmarkRanking[]> {
+	const baseUrl = env.PHASEO_WEB_BASE_URL?.trim();
+	if (!baseUrl) throw new PhaseoApiError("Phaseo benchmark rankings are not configured.");
+	const url = new URL(
+		"/api/_web/rankings/benchmarks",
+		baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`,
+	);
+	let response: Response;
+	try {
+		response = await fetch(url, {
+			headers: { Accept: "application/json" },
+			signal: AbortSignal.timeout(10_000),
+		});
+	} catch {
+		throw new PhaseoApiError("Phaseo benchmark rankings are temporarily unavailable.");
+	}
+	const payload = await response.json<BenchmarkRankingsResponse>().catch(() => null);
+	if (!response.ok || !payload?.benchmarks) {
+		throw new PhaseoApiError(
+			response.status >= 500
+				? `Phaseo could not load benchmark rankings (${response.status}).`
+				: payload?.error || `Phaseo benchmark request failed (${response.status}).`,
+			response.status,
+		);
+	}
+	return payload.benchmarks;
 }
 
 export async function authenticatePhaseoUser(request: Request, env: PhaseoEnv): Promise<AuthenticatedPhaseoUser | null> {
