@@ -23,7 +23,7 @@ export async function recordUsageAndChargeOnce(args: {
 	const meta = ctx.meta as Record<string, unknown>;
 	if (meta.__usageChargeRecorded === true) return;
 
-	// Preserve fill -> debit -> invalidation order without delaying first token.
+	// Preserve fill -> debit -> invalidation order without delaying provider dispatch.
 	// Fills swallow cache failures, just as synchronous persistence did.
 	await Promise.all(ctx.creditCacheWrites ?? []);
 	const { recordUsageAndCharge } = await import("../pricing/persist");

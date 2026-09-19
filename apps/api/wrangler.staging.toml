@@ -9,6 +9,7 @@ routes = [{ pattern = "api-staging.phaseo.app", custom_domain = true }]
 [vars]
 ENV = "staging"
 GATEWAY_REQUEST_STATE_MODE = "synthetic"
+GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
 GATEWAY_PUBLIC_BASE_URL = "https://api-staging.phaseo.app"
 NODE_ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
