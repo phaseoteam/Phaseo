@@ -30,7 +30,7 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(html).toContain("Lower is better");
 		expect(html).not.toContain("Higher is better");
 		expect(html.indexOf("(Low)")).toBeLessThan(html.indexOf("(Max)"));
-		expect(html).not.toContain("#1 of");
+		expect(html).not.toContain("(#1)");
 	});
 	it("includes the current model when the shared leaderboard is stale and ranks configurations", () => {
 		const benchmarkId = "aa-intelligence-index-v4";
@@ -43,8 +43,9 @@ describe("Artificial Analysis benchmark panel", () => {
 		const html = renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[highlight(benchmarkId, 43.6)]} rankings={[ranking]} modelId="stepfun/step-5" modelName="Step 5 Preview" initialExpandedMetric={benchmarkId} />);
 		expect(html).toContain('aria-label="Step 5 Preview"');
 		expect(html).toContain('href="/models/stepfun/step-5"');
-		expect(html).toContain("#3 of 3 configurations");
-		expect(html).toContain("Other models dimmed");
+		expect(html).toContain("(#3)");
+		expect(html).toContain('<span class="sr-only">Rank 3 of 3 evaluated configurations</span>');
+		expect(html).not.toContain("Other models dimmed");
 		expect(html).toContain("ranked across evaluated configurations");
 	});
 	it("does not duplicate an existing model or compare different index versions", () => {
@@ -59,12 +60,12 @@ describe("Artificial Analysis benchmark panel", () => {
 		const html = renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[highlight(benchmarkId, 43.6)]} rankings={[ranking]} modelId="stepfun/step-5" initialExpandedMetric={benchmarkId} />);
 		expect(html.match(/aria-label="Step 5 Preview"/g)).toHaveLength(1);
 		expect(html).not.toContain("Old index result");
-		expect(html).not.toContain("#1 of");
+		expect(html).not.toContain("(#1)");
 	});
 	it("does not invent a first-place rank when the comparison dataset is unavailable", () => {
 		const html = renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[highlight("aa-intelligence-index-v4", 43.6)]} modelId="stepfun/step-5" modelName="Step 5 Preview" initialExpandedMetric="aa-intelligence-index-v4" />);
 		expect(html).toContain('aria-label="Step 5 Preview"');
-		expect(html).not.toContain("#1 of");
+		expect(html).not.toContain("(#1)");
 	});
 	it("shows indices as numbers, exact currency, missing values and provenance", () => {
 		const html = renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[
@@ -163,7 +164,7 @@ describe("Artificial Analysis benchmark panel", () => {
 			}]} rankings={[ranking]} modelId="openai/gpt-6-astra" initialExpandedMetric="aa-intelligence-index-v4" />);
 		const selectedBar = html.match(/aria-label="GPT-6 Astra"[\s\S]*?href="\/models\/openai\/gpt-6-astra"/)?.[0];
 		const dimmedBar = html.match(/aria-label="Claude Fable 5.1"[\s\S]*?href="\/models\/anthropic\/claude-fable-5.1"/)?.[0];
-		expect(html).toContain("Other models dimmed");
+		expect(html).not.toContain("Other models dimmed");
 		expect(selectedBar).toContain("bg-black");
 		expect(selectedBar).toContain("text-white");
 		expect(selectedBar).not.toContain("opacity-20");
