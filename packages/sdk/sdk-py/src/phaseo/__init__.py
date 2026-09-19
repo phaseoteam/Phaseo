@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Iterator, Literal, Optional, TypeAlias, Union
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import NotRequired, TypedDict, Unpack
 
 import httpx
 import json
@@ -16,6 +16,10 @@ from gen import models
 from gen import operations as ops
 from phaseo_devtools import TelemetryRecorder, create_phaseo_devtools
 from .model_ids import MODEL_IDS, ModelIds
+from .jobs import (
+    JobWaitOptions, JobTimeoutError, JobCancelledError, JobFailedError,
+    wait_for_job, create_and_wait_for_job,
+)
 from .webhooks import compute_async_webhook_signature, verify_async_webhook_signature
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
@@ -127,6 +131,12 @@ class _BatchesResource:
     def create(self, params: models.BatchRequest | dict[str, Any]) -> dict[str, Any]:
         return self._parent.create_batch(params)
 
+    def create_and_wait(self, params: models.BatchRequest | dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.create_batch_and_wait(params, **options)
+
+    def wait(self, batch_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.wait_for_batch(batch_id, **options)
+
     def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._parent.list_batches(params)
 
@@ -194,6 +204,12 @@ class _VideosResource:
 
     def create(self, params: dict[str, Any]) -> dict[str, Any]:
         return self._parent.generate_video(params)
+
+    def generate_and_wait(self, params: dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.generate_video_and_wait(params, **options)
+
+    def wait(self, video_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.wait_for_video(video_id, **options)
 
     def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._parent.list_videos(params)
@@ -346,6 +362,23 @@ class VideoCreateRequest(TypedDict, total=False):
     beta: dict[str, Any]
 
 
+class _MusicResource:
+    def __init__(self, parent: "Phaseo"):
+        self._parent = parent
+
+    def create(self, params: models.MusicGenerateRequest | dict[str, Any]) -> dict[str, Any]:
+        return self._parent.generate_music(params)
+
+    def retrieve(self, music_id: str) -> dict[str, Any]:
+        return self._parent.get_music_generation(music_id)
+
+    def generate_and_wait(self, params: models.MusicGenerateRequest | dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.generate_music_and_wait(params, **options)
+
+    def wait(self, music_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.wait_for_music(music_id, **options)
+
+
 class Phaseo:
     def __init__(
         self,
@@ -401,6 +434,7 @@ class Phaseo:
         self.files = _FilesResource(self)
         self.models = _ModelsResource(self)
         self.videos = _VideosResource(self)
+        self.music = _MusicResource(self)
         self.async_jobs = _AsyncJobsResource(self)
         self._coming_soon_message = "This endpoint is not yet supported in the SDK."
         self._devtools = TelemetryRecorder(devtools)
@@ -771,6 +805,47 @@ class Phaseo:
                 started_at=started,
             )
             raise
+
+    def generate_music(self, request: models.MusicGenerateRequest | dict[str, Any]) -> dict[str, Any]:
+        payload = dict(request)
+        self._maybe_warn_for_payload(payload)
+        started = time.time()
+        try:
+            response = ops.generateMusic(self._client, body=payload)
+            self._capture_success(endpoint="music.generations", request=payload, response=response, started_at=started)
+            return response
+        except Exception as exc:
+            self._capture_error(endpoint="music.generations", request=payload, error=exc, started_at=started)
+            raise
+
+    def get_music_generation(self, music_id: str) -> dict[str, Any]:
+        request = {"music_id": music_id}
+        started = time.time()
+        try:
+            response = ops.getMusicGeneration(self._client, path={"music_id": quote(music_id, safe="")})
+            self._capture_success(endpoint="music.retrieve", request=request, response=response, started_at=started)
+            return response
+        except Exception as exc:
+            self._capture_error(endpoint="music.retrieve", request=request, error=exc, started_at=started)
+            raise
+
+    def wait_for_music(self, music_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return wait_for_job("music", music_id, self.get_music_generation, **options)
+
+    def generate_music_and_wait(self, request: models.MusicGenerateRequest | dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return create_and_wait_for_job("music", lambda: self.generate_music(request), self.get_music_generation, **options)
+
+    def wait_for_video(self, video_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return wait_for_job("video", video_id, self.get_video, **options)
+
+    def generate_video_and_wait(self, request: VideoCreateRequest | dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return create_and_wait_for_job("video", lambda: self.generate_video(request), self.get_video, **options)
+
+    def wait_for_batch(self, batch_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return wait_for_job("batch", batch_id, self.get_batch, **options)
+
+    def create_batch_and_wait(self, request: models.BatchRequest | dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return create_and_wait_for_job("batch", lambda: self.create_batch(request), self.get_batch, **options)
 
     def list_videos(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         query = dict(params or {})
@@ -1681,6 +1756,10 @@ def _as_trimmed_string(value: Any) -> Optional[str]:
 
 
 __all__ = [
+    "JobWaitOptions",
+    "JobTimeoutError",
+    "JobCancelledError",
+    "JobFailedError",
     "Phaseo",
     "PhaseoLogLevel",
     "PhaseoLogger",

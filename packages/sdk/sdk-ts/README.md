@@ -57,6 +57,31 @@ Regional endpoints currently accept text-only requests. This is regional
 provider routing, not an end-to-end data residency guarantee. `region` cannot be
 combined with a custom `baseUrl`.
 
+## Waiting for music, video, and batches
+
+Submit once and wait for completion, whether the model returns immediately or needs polling:
+
+```ts
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, intervalMs: 5_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+| Resource | Submit and wait for success | Wait for an existing job |
+| --- | --- | --- |
+| Music | `music.generateAndWait(request, options)` | `music.wait(id, options)` |
+| Video | `videos.generateAndWait(request, options)` | `videos.wait(id, options)` |
+| Batch | `batches.createAndWait(request, options)` | `batches.wait(id, options)` |
+
+The same helpers are available as `generateMusicAndWait`, `generateVideoAndWait`, `createBatchAndWait`, `waitForMusic`, `waitForVideo`, and `waitForBatch` on the client.
+
+All helpers return the full response. Submit-and-wait throws `JobFailedError` for failed, cancelled, or expired jobs; `error.response` preserves provider errors and other fields. Wait-by-ID returns any terminal response for inspection. A completed batch may still contain failed individual requests: inspect `request_counts`, `error_file_id`, or `batches.listRequests()`.
+
+Options are `intervalMs` (default 5 seconds, minimum 250 ms), `timeoutMs` (default 30 minutes), `signal`, and `onPoll`. Submit-and-wait's waiting timeout starts after creation returns; it does not extend the client's HTTP request timeout or turn the gateway's synchronous submission into a background job. Callbacks receive the initial response and each retrieved snapshot.
+
+`JobTimeoutError` and `JobCancelledError` expose `jobId` and `lastResponse`; resume with `.wait(error.jobId)`. An `AbortSignal` stops local waiting, not the remote generation or any HTTP request already in flight. No submission is automatically retried. Existing `.create()` and `.get()` methods remain direct HTTP calls. Retain the ID yourself when using those methods.
+
 ## Streaming example
 
 ```ts

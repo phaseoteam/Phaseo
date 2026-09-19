@@ -32,6 +32,26 @@ response = client.generate_response(
 print(response.get("id"))
 ```
 
+## Wait for music, video, or batches
+
+```python
+import os
+
+music = client.music.generate_and_wait(
+    {"model": os.environ["PHASEO_MUSIC_MODEL"], "prompt": "Gentle instrumental piano"},
+    timeout=600,
+    on_poll=lambda job: print(job["id"], job["status"]),
+)
+```
+
+Use `videos.generate_and_wait(request, **options)` for video and `batches.create_and_wait(request, **options)` for batches. These synchronous helpers submit once and return the full completed response, polling only when needed. `JobFailedError.response` retains failed, cancelled, or expired job details. Completed batches may still contain failed individual requests.
+
+Each resource supports `wait(id, **options)` to resume an existing job and return any terminal response. Music also exposes direct `create(request)` and `retrieve(id)` methods.
+
+Options are `interval` (seconds; default 5, minimum 0.25), `timeout` (seconds; default 1800), `on_poll`, and `cancel_event` (a `threading.Event`). The waiting timeout starts after submission returns. The synchronous client checks cancellation and deadlines between requests and callbacks; it cannot interrupt an HTTP call already in progress with these options.
+
+`JobTimeoutError` and `JobCancelledError` retain `job_id` and `last_response`. Resume with `.wait(error.job_id)`. Local timeout/cancellation does not cancel the remote job, and submissions are never automatically retried. These helpers do not add background execution to the gateway.
+
 ## What's included
 
 -   `Phaseo` client
