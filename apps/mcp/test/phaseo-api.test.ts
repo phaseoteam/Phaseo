@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getModel, listModels, listProviders, requestPhaseo } from "../src/phaseo-api";
+import { getModel, listBenchmarkRankings, listModels, listProviders, requestPhaseo } from "../src/phaseo-api";
 
 const env = {
 	PHASEO_API_BASE_URL: "https://api.phaseo.app",
+	PHASEO_WEB_BASE_URL: "https://phaseo.app",
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64),
 };
 
@@ -49,5 +50,16 @@ describe("Phaseo API client", () => {
 
 		await expect(listProviders(env, { accessToken: "oauth-token" })).resolves.toEqual([]);
 		expect((fetchMock.mock.calls[0]?.[0] as Request).url).toBe("https://api.phaseo.app/v1/providers?limit=250");
+	});
+
+	it("loads benchmark rankings only from the configured Phaseo web origin", async () => {
+		fetchMock.mockResolvedValue(Response.json({ benchmarks: [{ benchmark_id: "quality", entries: [] }] }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(listBenchmarkRankings(env)).resolves.toEqual([{ benchmark_id: "quality", entries: [] }]);
+		const input = fetchMock.mock.calls[0]?.[0] as Request | URL;
+		const request = input instanceof Request ? input : new Request(input);
+		expect(request.url).toBe("https://phaseo.app/api/_web/rankings/benchmarks");
+		expect(request.headers.get("authorization")).toBeNull();
 	});
 });

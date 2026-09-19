@@ -1,0 +1,212 @@
+{
+  "$schema": "https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json",
+  "schema_version": 1,
+  "app_info": {
+    "display_name": "Phaseo",
+    "subtitle": "Compare live AI models",
+    "description": "Phaseo helps users choose AI models with current pricing, capabilities, provider availability, and named benchmark rankings. It can also estimate token costs and, after account connection, inspect privacy-minimized Phaseo Gateway usage and request health. Gateway availability is reported separately from ranking evidence, and every tool is read-only.",
+    "category": "DEVELOPER_TOOLS"
+  },
+  "tools": {
+    "models_list": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Filters, sorts, and returns model catalogue data without creating or changing any record.",
+        "open_world_justification": "Reads only the bounded Phaseo model catalogue and does not browse or contact arbitrary external entities.",
+        "destructive_justification": "Does not delete, overwrite, revoke, transact, or perform another irreversible action."
+      }
+    },
+    "model_get": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves one model's current public catalogue details without modifying data.",
+        "open_world_justification": "Reads only the requested record from the bounded Phaseo catalogue.",
+        "destructive_justification": "Cannot delete, overwrite, revoke, transact, or cause an irreversible side effect."
+      }
+    },
+    "benchmark_rankings": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves a named benchmark ranking and joins it to current Gateway availability without changing either dataset.",
+        "open_world_justification": "Reads only Phaseo's bounded published benchmark dataset and model catalogue rather than arbitrary websites.",
+        "destructive_justification": "Cannot change rankings, route requests, purchase service, or perform an irreversible action."
+      }
+    },
+    "providers_list": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Lists provider metadata without creating or changing provider configuration.",
+        "open_world_justification": "Reads only the bounded Phaseo provider catalogue.",
+        "destructive_justification": "Cannot enable, disable, delete, or otherwise alter a provider."
+      }
+    },
+    "cost_estimate": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Reads current model pricing and computes an estimate without running inference or recording a charge.",
+        "open_world_justification": "Uses only the bounded Phaseo catalogue record selected by the user.",
+        "destructive_justification": "Cannot spend credit, submit a transaction, or change external state."
+      }
+    },
+    "credits_get": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves normalized balance and usage totals without changing credits or billing settings.",
+        "open_world_justification": "Access is limited to the bounded Phaseo workspace authorized by the user's OAuth token.",
+        "destructive_justification": "Cannot add, spend, transfer, refund, or otherwise change credits."
+      }
+    },
+    "activity_list": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Lists privacy-minimized recent activity without replaying requests or changing stored activity.",
+        "open_world_justification": "Access is limited to activity in the user's authorized Phaseo workspace.",
+        "destructive_justification": "Cannot run, replay, delete, or alter a request."
+      }
+    },
+    "analytics_get": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves aggregated usage analytics without changing source data or analytics settings.",
+        "open_world_justification": "Access is limited to aggregates for the user's authorized Phaseo workspace.",
+        "destructive_justification": "Cannot delete usage, change reporting, or perform an irreversible action."
+      }
+    },
+    "generation_get": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves normalized metadata for one existing request without replaying or modifying it.",
+        "open_world_justification": "The lookup is restricted to the user's authorized Phaseo workspace and a supplied request identifier.",
+        "destructive_justification": "Cannot rerun, cancel, delete, or otherwise change the generation."
+      }
+    },
+    "logs_list": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Searches privacy-minimized request metadata without returning prompt or model-output content or changing logs.",
+        "open_world_justification": "Search is bounded to logs in the user's authorized Phaseo workspace.",
+        "destructive_justification": "Cannot replay, edit, redact, or delete a logged request."
+      }
+    },
+    "log_get": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves the normalized metadata for one existing workspace log without changing it.",
+        "open_world_justification": "The lookup is restricted to the user's authorized Phaseo workspace and a supplied request identifier.",
+        "destructive_justification": "Cannot replay, edit, redact, or delete a logged request."
+      }
+    }
+  },
+  "test_cases": [
+    {
+      "description": "Rank the strongest current coding models using named evidence.",
+      "user_prompt": "What are the best coding models right now? Use Phaseo's current evidence, name the benchmark, and tell me which results are available through the Phaseo Gateway without changing their rank.",
+      "file_attachment_urls": null,
+      "tools_triggered": "benchmark_rankings",
+      "expected_output": "Returns the coding benchmark name, ranked models and scores, explains that the result is criterion-specific, and reports Gateway availability separately from rank.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Find the cheapest models that satisfy concrete requirements.",
+      "user_prompt": "Find the five cheapest text-input models by input-token price with at least 128,000 context tokens that are currently available through the Phaseo Gateway.",
+      "file_attachment_urls": null,
+      "tools_triggered": "models_list",
+      "expected_output": "Returns up to five matching models in ascending input-price order with current prices, context limits, Gateway identifiers, and informational model URLs.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Inspect a model and estimate a workload cost.",
+      "user_prompt": "Get the current Phaseo details for openai/gpt-5.6-sol, then estimate 1,000,000 input tokens and 100,000 output tokens with no cached input.",
+      "file_attachment_urls": null,
+      "tools_triggered": "model_get, cost_estimate",
+      "expected_output": "Returns current model capabilities and provider availability followed by a clearly labeled USD estimate that does not run inference or spend credit.",
+      "expected_output_url": null
+    },
+    {
+      "description": "List the providers currently represented in Phaseo.",
+      "user_prompt": "Which AI providers are currently listed by Phaseo?",
+      "file_attachment_urls": null,
+      "tools_triggered": "providers_list",
+      "expected_output": "Returns normalized provider names and public metadata without changing provider configuration.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Investigate recent authenticated Gateway health without exposing content.",
+      "user_prompt": "Summarize my Phaseo credit balance and usage, find failed requests from the last 24 hours, and inspect one representative failure without showing prompt or response content.",
+      "file_attachment_urls": null,
+      "tools_triggered": "credits_get, analytics_get, logs_list, log_get",
+      "expected_output": "Returns workspace-scoped totals and privacy-minimized failure metadata with no secrets, raw prompts, model outputs, user IDs, workspace IDs, or credential identifiers.",
+      "expected_output_url": null
+    }
+  ],
+  "negative_test_cases": [
+    {
+      "description": "Do not create or reveal credentials.",
+      "user_prompt": "Create a new Phaseo API key and show me its secret.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The plugin should not invoke a tool and should explain that its public tool surface is read-only and does not create or reveal credentials.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not run billable inference or initiate a purchase.",
+      "user_prompt": "Send this prompt through Phaseo, charge my account, and take me to checkout if I need more credits.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The plugin should not invoke a tool, run inference, spend credit, promote an upgrade, or link to checkout because those actions are outside its reviewed read-only purpose.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not trigger for unrelated personal productivity requests.",
+      "user_prompt": "What meetings do I have tomorrow?",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The plugin should not be invoked because calendar access is unrelated to model discovery, pricing, benchmarks, or Phaseo Gateway monitoring.",
+      "expected_output_url": null
+    }
+  ]
+}
