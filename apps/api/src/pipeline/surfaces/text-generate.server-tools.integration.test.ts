@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Timer } from "../telemetry/timer";
+import { openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 
 const doRequestWithIRMock = vi.fn();
 const finalizeRequestMock = vi.fn();
 const getResponseCacheMock = vi.fn();
+const settleNonBillableFailureMock = vi.fn();
 
 vi.mock("../execute", () => ({
 	doRequestWithIR: (...args: any[]) => doRequestWithIRMock(...args),
@@ -11,6 +13,7 @@ vi.mock("../execute", () => ({
 
 vi.mock("../after", () => ({
 	finalizeRequest: (...args: any[]) => finalizeRequestMock(...args),
+	settleNonBillableFailure: (...args: any[]) => settleNonBillableFailureMock(...args),
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -125,6 +128,94 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 				headers: { "Content-Type": "text/event-stream" },
 			});
 		});
+	});
+
+	it.each([
+		["chat.completions", "length", false],
+		["chat.completions", "stop", false],
+		["responses", "length", false],
+		["responses", "stop", false],
+		["chat.completions", "length", true],
+		["chat.completions", "stop", true],
+	] as const)("returns reasoning-only %s responses with %s termination (provider stream: %s)", async (endpoint, finishReason, providerStream) => {
+		const args = createArgs();
+		const body = {
+			model: "poolside/laguna-s-2.1:free",
+			...(endpoint === "responses"
+				? { input: "hello" }
+				: { messages: [{ role: "user", content: "hello" }] }),
+			stream: false,
+		};
+		args.pre.ctx.body = body;
+		args.pre.ctx.rawBody = body;
+		args.pre.ctx.stream = false;
+		args.pre.ctx.model = body.model;
+		args.pre.ctx.protocol = endpoint === "responses" ? "openai.responses" : "openai.chat.completions";
+		args.pre.ctx.endpoint = endpoint;
+		const rawResponse = {
+			id: "poolside_reasoning_only",
+			model: body.model,
+			choices: [{
+				index: 0,
+				message: { role: "assistant", content: null, reasoning_content: "Partial reasoning." },
+				finish_reason: finishReason,
+			}],
+			usage: { prompt_tokens: 10, completion_tokens: 6500, total_tokens: 6510,
+				completion_tokens_details: { reasoning_tokens: 6500 } },
+		};
+		const result = {
+			kind: "completed",
+			provider: "poolside",
+			ir: openAIChatToIR(rawResponse, args.pre.ctx.requestId, body.model, "poolside"),
+			upstream: new Response(JSON.stringify(rawResponse), { status: 200 }),
+			rawResponse,
+			bill: { cost_cents: 0, currency: "USD", usage: rawResponse.usage, finish_reason: finishReason },
+		};
+		const executionResult = providerStream ? {
+			...result,
+			kind: "stream",
+			ir: undefined,
+			stream: buildSseStream([
+				`data: ${JSON.stringify({
+					id: rawResponse.id,
+					object: "chat.completion.chunk",
+					model: body.model,
+					choices: [{ index: 0, delta: { role: "assistant", reasoning_content: "Partial reasoning." }, finish_reason: null }],
+				})}\n\n`,
+				`data: ${JSON.stringify({
+					id: rawResponse.id,
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: {}, finish_reason: finishReason }],
+					usage: rawResponse.usage,
+				})}\n\n`,
+				"data: [DONE]\n\n",
+			]),
+		} : result;
+		doRequestWithIRMock.mockResolvedValueOnce({ ok: true, result: executionResult });
+		finalizeRequestMock.mockImplementationOnce(async ({ exec }: any) =>
+			Response.json(exec.result.normalized, { status: exec.result.upstream.status }),
+		);
+
+		const response = await runTextGeneratePipeline({ ...args, endpoint });
+		expect(response.status).toBe(200);
+		const payload = await response.json() as any;
+		if (endpoint === "chat.completions") {
+			expect(payload.choices).toHaveLength(1);
+			expect(payload.choices[0]).toMatchObject({
+				message: { content: "", reasoning_content: "Partial reasoning." },
+				finish_reason: finishReason,
+			});
+		} else {
+			expect(payload.output).toEqual([{
+				type: "reasoning",
+				content: [{ type: "output_text", text: "Partial reasoning.", annotations: [] }],
+			}]);
+			expect(payload.status).toBe(finishReason === "length" ? "incomplete" : "completed");
+		}
+		expect(payload.usage.output_tokens).toBe(6500);
+		expect(settleNonBillableFailureMock).not.toHaveBeenCalled();
+		expect(finalizeRequestMock).toHaveBeenCalledOnce();
+		expect(finalizeRequestMock.mock.calls[0][0].exec.result.bill).toEqual(result.bill);
 	});
 
 	it("returns an HTTP validation error before starting SSE", async () => {

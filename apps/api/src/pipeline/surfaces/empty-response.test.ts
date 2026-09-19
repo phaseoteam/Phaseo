@@ -31,7 +31,7 @@ describe("empty response diagnostics", () => {
 			usage: { inputTokens: 6, outputTokens: 27, reasoningTokens: 29, totalTokens: 35 },
 		});
 
-		expect(hasUsableIRChatResponse(ir)).toBe(false);
+		expect(hasUsableIRChatResponse(ir)).toBe(true);
 		const diagnostics = buildEmptyResponseDiagnostics(ir);
 		expect(diagnostics).toEqual({
 			reason: "reasoning_only",
@@ -46,6 +46,16 @@ describe("empty response diagnostics", () => {
 		});
 		expect(JSON.stringify(diagnostics)).not.toContain("private reasoning");
 		expect(emptyResponseMessage(diagnostics)).toContain("Increase max_tokens");
+	});
+
+	it.each(["", "   "])("rejects empty reasoning %j", (text) => {
+		expect(hasUsableIRChatResponse(response({
+			choices: [{
+				index: 0,
+				message: { role: "assistant", content: [{ type: "reasoning_text", text }] },
+				finishReason: "stop",
+			}],
+		}))).toBe(false);
 	});
 
 	it("treats a refusal as usable user-facing output", () => {

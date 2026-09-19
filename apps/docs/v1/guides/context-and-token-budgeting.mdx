@@ -22,6 +22,12 @@ Total request footprint usually includes:
 - Overlong prompts can degrade relevance if context quality is low.
 - Tiny output budgets can cause truncation and invalid structured outputs.
 
+Reasoning can consume the output budget before a model produces an answer. These
+responses return HTTP 200 with the reasoning that was produced, without a fabricated
+answer. Chat completions retain `reasoning_content` and `finish_reason: "length"`
+when the output limit is reached. Responses retain the reasoning output item and
+report `status: "incomplete"`. A normal provider stop remains `stop` or `completed`.
+
 ## Budgeting strategy
 
 1. Set max input target per route.
