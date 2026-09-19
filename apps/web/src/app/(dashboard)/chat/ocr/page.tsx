@@ -5,7 +5,12 @@ import { DocumentToolsRoom } from "@/components/(chat)/rooms/DocumentToolsRoom";
 
 export const metadata = buildMetadata({ title: "OCR", description: "Extract text from images.", path: "/chat/ocr" });
 
-export default async function ChatOcrPage() {
-	const models = await fetchFrontendGatewayModels();
-	return <RoomScaffold><DocumentToolsRoom room="ocr" models={models} /></RoomScaffold>;
+export default function ChatOcrPage() {
+	return <RoomScaffold><Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">Loading OCR models…</p>}><OcrContent /></Suspense></RoomScaffold>;
 }
+
+async function OcrContent() {
+	const models = await fetchFrontendGatewayModels();
+	return <DocumentToolsRoom room="ocr" models={models} />;
+}
+import { Suspense } from "react";
