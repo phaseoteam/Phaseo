@@ -11,6 +11,7 @@ export interface DiscordModelComponentEmbedOptions {
 	description?: string | null;
 	contextLength?: number | null;
 	organisationColour?: string | null;
+	organisationLogoUrl?: string | null;
 }
 
 function normalizeText(value: string | null | undefined): string | null {
@@ -30,6 +31,13 @@ function truncateText(value: string, maxLength: number): string {
 	const truncated = value.slice(0, maxLength - 1).trimEnd();
 	const lastSpace = truncated.lastIndexOf(" ");
 	return `${(lastSpace > maxLength / 2 ? truncated.slice(0, lastSpace) : truncated).trimEnd()}…`;
+}
+
+function absoluteMediaUrl(value: string | null | undefined): string | null {
+	const trimmed = value?.trim();
+	if (!trimmed) return null;
+	if (/^https?:\/\//i.test(trimmed)) return trimmed;
+	return absoluteUrl(trimmed.startsWith("/") ? trimmed : `/${trimmed}`);
 }
 
 function formatContextLength(contextLength: number | null | undefined): string | null {
@@ -60,6 +68,8 @@ export function buildDiscordModelComponentEmbed(
 	const description = normalizeText(options.description);
 	const context = formatContextLength(options.contextLength);
 	const modelUrl = absoluteUrl(options.modelPath);
+	const phaseoLogoUrl = absoluteUrl("/png_logo_light.png");
+	const organisationLogoUrl = absoluteMediaUrl(options.organisationLogoUrl);
 	const queryModelId = encodeURIComponent(options.modelId);
 	const summary = [organisationName, context ? `${context} context` : "Model profile"]
 		.join(" · ");
@@ -71,45 +81,65 @@ export function buildDiscordModelComponentEmbed(
 		.filter(Boolean)
 		.join("\n");
 
+	const components = [
+		{
+			type: 9,
+			components: [{ type: 10, content: text }],
+			accessory: {
+				type: 11,
+				media: { url: organisationLogoUrl ?? phaseoLogoUrl },
+			},
+		},
+		...(organisationLogoUrl
+			? [
+					{ type: 14, spacing: 1 },
+					{
+						type: 9,
+						components: [
+							{
+								type: 10,
+								content: `Powered by [Phaseo](${absoluteUrl("/")})`,
+							},
+						],
+						accessory: {
+							type: 11,
+							media: { url: phaseoLogoUrl },
+						},
+					},
+				]
+			: []),
+		{ type: 14, spacing: 1 },
+		{
+			type: 1,
+			components: [
+				{ type: 2, style: 5, url: modelUrl, label: "Open" },
+				{
+					type: 2,
+					style: 5,
+					url: absoluteUrl(`/chat?model=${queryModelId}`),
+					label: "Chat",
+				},
+				{
+					type: 2,
+					style: 5,
+					url: absoluteUrl(`/compare?models=${queryModelId}`),
+					label: "Compare",
+				},
+				{
+					type: 2,
+					style: 5,
+					url: absoluteUrl("/docs/v1/api-reference/introduction"),
+					label: "API",
+				},
+			],
+		},
+	] as const;
+
 	return {
 		component: {
 			type: 17,
 			accent_color: discordAccentColor(options.organisationColour),
-			components: [
-				{
-					type: 9,
-					components: [{ type: 10, content: text }],
-					accessory: {
-						type: 11,
-						media: { url: absoluteUrl("/png_logo_light.png") },
-					},
-				},
-				{ type: 14, spacing: 1 },
-				{
-					type: 1,
-					components: [
-						{ type: 2, style: 5, url: modelUrl, label: "Open" },
-						{
-							type: 2,
-							style: 5,
-							url: absoluteUrl(`/chat?model=${queryModelId}`),
-							label: "Chat",
-						},
-						{
-							type: 2,
-							style: 5,
-							url: absoluteUrl(`/compare?models=${queryModelId}`),
-							label: "Compare",
-						},
-						{
-							type: 2,
-							style: 5,
-							url: absoluteUrl("/docs/v1/api-reference/introduction"),
-							label: "API",
-						},
-					],
-				},
-			],
+			components,
 		},
 	} as const;
 }

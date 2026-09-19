@@ -462,6 +462,7 @@ async function ModelDetailPageBody({
 					modelOverview.organisation?.color ??
 					null
 				}
+				organisationLogoUrl={modelOverview.organisation?.logo_url}
 			/>
 			<JsonLdScript
 				id="model-dataset-schema"

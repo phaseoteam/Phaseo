@@ -14,6 +14,7 @@ describe("Discord component embed", () => {
 			"A fast native multimodal model with a long context window.</script>",
 		contextLength: 1_000_000,
 		organisationColour: "#12abef",
+		organisationLogoUrl: "https://cdn.example.com/z-ai.png",
 	};
 
 	it("serializes a model preview with branded actions", () => {
@@ -39,11 +40,21 @@ describe("Discord component embed", () => {
 			]),
 		);
 
-		const section = payload.component.components.find(
+		const sections = payload.component.components.filter(
 			(component) => component.type === 9,
 		);
-		expect(section?.accessory?.type).toBe(11);
-		expect(section?.accessory?.media?.url).toContain("png_logo_light.png");
+		expect(sections).toHaveLength(2);
+		expect(sections[0]?.accessory?.type).toBe(11);
+		expect(sections[0]?.accessory?.media?.url).toBe(
+			"https://cdn.example.com/z-ai.png",
+		);
+		expect(sections[1]?.components?.[0]).toEqual(
+			expect.objectContaining({
+				type: 10,
+				content: expect.stringContaining("Powered by [Phaseo]"),
+			}),
+		);
+		expect(sections[1]?.accessory?.media?.url).toContain("png_logo_light.png");
 
 		const actionRow = payload.component.components.find(
 			(component) => component.type === 1,
@@ -72,5 +83,26 @@ describe("Discord component embed", () => {
 				organisationColour: "not-a-colour",
 			}).component.accent_color,
 		).toBe(0x2563eb);
+	});
+
+	it("uses the Phaseo logo once when a lab logo is unavailable", () => {
+		const payload = buildDiscordModelComponentEmbed({
+			...options,
+			organisationLogoUrl: null,
+		});
+		const sections = payload.component.components.filter(
+			(component) => component.type === 9,
+		);
+
+		expect(sections).toHaveLength(1);
+		expect(sections[0]).toEqual(
+			expect.objectContaining({
+				accessory: expect.objectContaining({
+					media: expect.objectContaining({
+						url: expect.stringContaining("png_logo_light.png"),
+					}),
+				}),
+			}),
+		);
 	});
 });
