@@ -87,8 +87,15 @@ export function resolveGatewayStatus({
 		normalizeGatewayStatusValue(providerRoutingStatus);
 	const normalizedModelRoutingStatus = normalizeGatewayStatusValue(modelRoutingStatus);
 	const normalizedCapabilityStatus = normalizeGatewayStatusValue(capabilityStatus);
+	const hasRouteLifecycleStatus =
+		isFutureEffectiveWindow(effectiveFrom) ||
+		normalizedProviderAvailabilityStatus === "coming_soon" ||
+		normalizedPhaseoStatus === "planned" ||
+		normalizedPhaseoStatus === "implementing" ||
+		normalizedPhaseoStatus === "testing" ||
+		normalizedCapabilityStatus === "coming_soon";
 
-	if (normalizedProviderStatus === "external") {
+	if (normalizedProviderStatus === "external" && !hasRouteLifecycleStatus) {
 		return "external";
 	}
 

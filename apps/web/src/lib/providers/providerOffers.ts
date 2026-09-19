@@ -6,6 +6,7 @@ const KNOWN_PROVIDER_DISPLAY_NAME_OVERRIDES = new Map<string, string>([
     ["openai", "OpenAI"],
     ["openai-eu", "OpenAI"],
 	["openrouter", "OpenRouter"],
+	["tencent-cloud", "Tencent Cloud"],
     ["anthropic", "Anthropic"],
     ["anthropic-us", "Anthropic"],
     ["anthropic-aws", "Claude Platform for AWS"],
