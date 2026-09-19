@@ -97,20 +97,12 @@ export const ModelIds = {
   BAIDU_ERNIE_X1_1: "baidu/ernie-x1.1",
   /** Model ID: `black-forest-labs/flux-1-dev`. Model page: https://phaseo.app/models/black-forest-labs/flux-1-dev */
   BLACK_FOREST_LABS_FLUX_1_DEV: "black-forest-labs/flux-1-dev",
-  /** Model ID: `black-forest-labs/flux-1-kontext-max`. Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-max */
-  BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX: "black-forest-labs/flux-1-kontext-max",
-  /** Model ID: `black-forest-labs/flux-1-kontext-pro`. Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-pro */
-  BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO: "black-forest-labs/flux-1-kontext-pro",
   /** Model ID: `black-forest-labs/flux-1-schnell`. Model page: https://phaseo.app/models/black-forest-labs/flux-1-schnell */
   BLACK_FOREST_LABS_FLUX_1_SCHNELL: "black-forest-labs/flux-1-schnell",
   /** Model ID: `black-forest-labs/flux-1.1-pro`. Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro */
   BLACK_FOREST_LABS_FLUX_1_1_PRO: "black-forest-labs/flux-1.1-pro",
-  /** Model ID: `black-forest-labs/flux-1.1-pro-ultra`. Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro-ultra */
-  BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA: "black-forest-labs/flux-1.1-pro-ultra",
   /** Model ID: `black-forest-labs/flux-2-dev`. Model page: https://phaseo.app/models/black-forest-labs/flux-2-dev */
   BLACK_FOREST_LABS_FLUX_2_DEV: "black-forest-labs/flux-2-dev",
-  /** Model ID: `black-forest-labs/flux-2-flex`. Model page: https://phaseo.app/models/black-forest-labs/flux-2-flex */
-  BLACK_FOREST_LABS_FLUX_2_FLEX: "black-forest-labs/flux-2-flex",
   /** Model ID: `black-forest-labs/flux-2-klein-4b`. Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-4b */
   BLACK_FOREST_LABS_FLUX_2_KLEIN_4B: "black-forest-labs/flux-2-klein-4b",
   /** Model ID: `black-forest-labs/flux-2-klein-9b`. Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-9b */
@@ -255,8 +247,8 @@ export const ModelIds = {
   DEEPSEEK_DEEPSEEK_V4_PRO: "deepseek/deepseek-v4-pro",
   /** Model ID: `deepseek/deepseek-v4-pro-0813`. Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813 */
   DEEPSEEK_DEEPSEEK_V4_PRO_0813: "deepseek/deepseek-v4-pro-0813",
-  /** Model ID: `deepseek/deepseek-v4.1-flash-beta`. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta */
-  DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA: "deepseek/deepseek-v4.1-flash-beta",
+  /** Model ID: `deepseek/deepseek-v4.1-flash`. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash */
+  DEEPSEEK_DEEPSEEK_V4_1_FLASH: "deepseek/deepseek-v4.1-flash",
   /** Model ID: `deepseek/deepseek-v4.1-flash-preview`. Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview */
   DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW: "deepseek/deepseek-v4.1-flash-preview",
   /** Model ID: `early-access/ea-29b-a4b`. Model page: https://phaseo.app/models/early-access/ea-29b-a4b */
@@ -319,6 +311,10 @@ export const ModelIds = {
   GOOGLE_GEMINI_3_7_FLASH: "google/gemini-3.7-flash",
   /** Model ID: `google/gemini-3.8-flash`. Model page: https://phaseo.app/models/google/gemini-3.8-flash */
   GOOGLE_GEMINI_3_8_FLASH: "google/gemini-3.8-flash",
+  /** Model ID: `google/gemini-3.8-live`. Model page: https://phaseo.app/models/google/gemini-3.8-live */
+  GOOGLE_GEMINI_3_8_LIVE: "google/gemini-3.8-live",
+  /** Model ID: `google/gemini-3.8-live-extended-thinking`. Model page: https://phaseo.app/models/google/gemini-3.8-live-extended-thinking */
+  GOOGLE_GEMINI_3_8_LIVE_EXTENDED_THINKING: "google/gemini-3.8-live-extended-thinking",
   /** Model ID: `google/gemini-embedding-001`. Model page: https://phaseo.app/models/google/gemini-embedding-001 */
   GOOGLE_GEMINI_EMBEDDING_001: "google/gemini-embedding-001",
   /** Model ID: `google/gemini-embedding-2`. Model page: https://phaseo.app/models/google/gemini-embedding-2 */
@@ -387,10 +383,12 @@ export const ModelIds = {
   INCLUSIONAI_LING_3_0_FLASH: "inclusionai/ling-3.0-flash",
   /** Model ID: `inclusionai/ling-3.0-flash-fin`. Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-fin */
   INCLUSIONAI_LING_3_0_FLASH_FIN: "inclusionai/ling-3.0-flash-fin",
-  /** Model ID: `inclusionai/ling-3.0-flash-sante`. Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-sante */
-  INCLUSIONAI_LING_3_0_FLASH_SANTE: "inclusionai/ling-3.0-flash-sante",
+  /** Model ID: `inclusionai/ling-3.0-flash-sante:free`. Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-sante%3Afree */
+  INCLUSIONAI_LING_3_0_FLASH_SANTE_FREE: "inclusionai/ling-3.0-flash-sante:free",
   /** Model ID: `inclusionai/ling-3.0-flash-vl`. Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-vl */
   INCLUSIONAI_LING_3_0_FLASH_VL: "inclusionai/ling-3.0-flash-vl",
+  /** Model ID: `inclusionai/ling-3.0-flash-vl:free`. Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-vl%3Afree */
+  INCLUSIONAI_LING_3_0_FLASH_VL_FREE: "inclusionai/ling-3.0-flash-vl:free",
   /** Model ID: `inclusionai/ling-flash-2.0`. Model page: https://phaseo.app/models/inclusionai/ling-flash-2.0 */
   INCLUSIONAI_LING_FLASH_2_0: "inclusionai/ling-flash-2.0",
   /** Model ID: `inclusionai/ring-2.6-1t`. Model page: https://phaseo.app/models/inclusionai/ring-2.6-1t */
@@ -463,12 +461,8 @@ export const ModelIds = {
   META_MUSE_IMAGE_1_0: "meta/muse-image-1.0",
   /** Model ID: `meta/muse-spark-1.2`. Model page: https://phaseo.app/models/meta/muse-spark-1.2 */
   META_MUSE_SPARK_1_2: "meta/muse-spark-1.2",
-  /** Model ID: `meta/muse-spark-1.2-contributor`. Model page: https://phaseo.app/models/meta/muse-spark-1.2-contributor */
-  META_MUSE_SPARK_1_2_CONTRIBUTOR: "meta/muse-spark-1.2-contributor",
   /** Model ID: `meta/muse-spark-1.3`. Model page: https://phaseo.app/models/meta/muse-spark-1.3 */
   META_MUSE_SPARK_1_3: "meta/muse-spark-1.3",
-  /** Model ID: `meta/muse-spark-1.3-contributor`. Model page: https://phaseo.app/models/meta/muse-spark-1.3-contributor */
-  META_MUSE_SPARK_1_3_CONTRIBUTOR: "meta/muse-spark-1.3-contributor",
   /** Model ID: `meta/muse-voice-transcribe-1.0`. Model page: https://phaseo.app/models/meta/muse-voice-transcribe-1.0 */
   META_MUSE_VOICE_TRANSCRIBE_1_0: "meta/muse-voice-transcribe-1.0",
   /** Model ID: `microsoft/phi-4`. Model page: https://phaseo.app/models/microsoft/phi-4 */
@@ -519,8 +513,6 @@ export const ModelIds = {
   MINIMAX_SPEECH_2_8_HD: "minimax/speech-2.8-hd",
   /** Model ID: `minimax/speech-2.8-turbo`. Model page: https://phaseo.app/models/minimax/speech-2.8-turbo */
   MINIMAX_SPEECH_2_8_TURBO: "minimax/speech-2.8-turbo",
-  /** Model ID: `minimax/speech-2.8:free`. Model page: https://phaseo.app/models/minimax/speech-2.8%3Afree */
-  MINIMAX_SPEECH_2_8_FREE: "minimax/speech-2.8:free",
   /** Model ID: `mistral/codestral`. Model page: https://phaseo.app/models/mistral/codestral */
   MISTRAL_CODESTRAL: "mistral/codestral",
   /** Model ID: `mistral/codestral-embed`. Model page: https://phaseo.app/models/mistral/codestral-embed */
@@ -665,8 +657,6 @@ export const ModelIds = {
   OPENAI_BABBAGE_002: "openai/babbage-002",
   /** Model ID: `openai/chat-latest`. Model page: https://phaseo.app/models/openai/chat-latest */
   OPENAI_CHAT_LATEST: "openai/chat-latest",
-  /** Model ID: `openai/chatgpt-4o`. Model page: https://phaseo.app/models/openai/chatgpt-4o */
-  OPENAI_CHATGPT_4O: "openai/chatgpt-4o",
   /** Model ID: `openai/davinci-002`. Model page: https://phaseo.app/models/openai/davinci-002 */
   OPENAI_DAVINCI_002: "openai/davinci-002",
   /** Model ID: `openai/gpt-3.5-turbo-0613`. Model page: https://phaseo.app/models/openai/gpt-3.5-turbo-0613 */
@@ -1035,6 +1025,8 @@ export const ModelIds = {
   QWEN_QWEN3_5_35B_A3B: "qwen/qwen3.5-35b-a3b",
   /** Model ID: `qwen/qwen3.5-397b-a17b`. Model page: https://phaseo.app/models/qwen/qwen3.5-397b-a17b */
   QWEN_QWEN3_5_397B_A17B: "qwen/qwen3.5-397b-a17b",
+  /** Model ID: `qwen/qwen3.5-4b`. Model page: https://phaseo.app/models/qwen/qwen3.5-4b */
+  QWEN_QWEN3_5_4B: "qwen/qwen3.5-4b",
   /** Model ID: `qwen/qwen3.5-9b`. Model page: https://phaseo.app/models/qwen/qwen3.5-9b */
   QWEN_QWEN3_5_9B: "qwen/qwen3.5-9b",
   /** Model ID: `qwen/qwen3.5-flash`. Model page: https://phaseo.app/models/qwen/qwen3.5-flash */
@@ -1103,16 +1095,10 @@ export const ModelIds = {
   REKA_REKA_EDGE_2603: "reka/reka-edge-2603",
   /** Model ID: `reka/reka-flash`. Model page: https://phaseo.app/models/reka/reka-flash */
   REKA_REKA_FLASH: "reka/reka-flash",
-  /** Model ID: `reka/reka-flash-research`. Model page: https://phaseo.app/models/reka/reka-flash-research */
-  REKA_REKA_FLASH_RESEARCH: "reka/reka-flash-research",
   /** Model ID: `relace/relace-rank`. Model page: https://phaseo.app/models/relace/relace-rank */
   RELACE_RELACE_RANK: "relace/relace-rank",
   /** Model ID: `relace/relace-search`. Model page: https://phaseo.app/models/relace/relace-search */
   RELACE_RELACE_SEARCH: "relace/relace-search",
-  /** Model ID: `sakana/fugu-ultra`. Model page: https://phaseo.app/models/sakana/fugu-ultra */
-  SAKANA_FUGU_ULTRA: "sakana/fugu-ultra",
-  /** Model ID: `sakana/namazu`. Model page: https://phaseo.app/models/sakana/namazu */
-  SAKANA_NAMAZU: "sakana/namazu",
   /** Model ID: `spacex-ai/grok-4.20`. Model page: https://phaseo.app/models/spacex-ai/grok-4.20 */
   SPACEX_AI_GROK_4_20: "spacex-ai/grok-4.20",
   /** Model ID: `spacex-ai/grok-4.20-multi-agent-beta`. Model page: https://phaseo.app/models/spacex-ai/grok-4.20-multi-agent-beta */
@@ -1141,6 +1127,8 @@ export const ModelIds = {
   SPACEX_AI_GROK_TTS: "spacex-ai/grok-tts",
   /** Model ID: `spacex-ai/grok-voice-think-fast-2.0`. Model page: https://phaseo.app/models/spacex-ai/grok-voice-think-fast-2.0 */
   SPACEX_AI_GROK_VOICE_THINK_FAST_2_0: "spacex-ai/grok-voice-think-fast-2.0",
+  /** Model ID: `spacex-ai/grok-voice-transcribe-2.0`. Model page: https://phaseo.app/models/spacex-ai/grok-voice-transcribe-2.0 */
+  SPACEX_AI_GROK_VOICE_TRANSCRIBE_2_0: "spacex-ai/grok-voice-transcribe-2.0",
   /** Model ID: `stability-ai/stable-diffusion-xl-base-1.0`. Model page: https://phaseo.app/models/stability-ai/stable-diffusion-xl-base-1.0 */
   STABILITY_AI_STABLE_DIFFUSION_XL_BASE_1_0: "stability-ai/stable-diffusion-xl-base-1.0",
   /** Model ID: `stepfun/step-1-32k`. Model page: https://phaseo.app/models/stepfun/step-1-32k */
@@ -1215,6 +1203,8 @@ export const ModelIds = {
   THINKING_MACHINES_INKLING: "thinking-machines/inkling",
   /** Model ID: `thinking-machines/inkling-small`. Model page: https://phaseo.app/models/thinking-machines/inkling-small */
   THINKING_MACHINES_INKLING_SMALL: "thinking-machines/inkling-small",
+  /** Model ID: `typesafe/jev-1.13.0`. Model page: https://phaseo.app/models/typesafe/jev-1.13.0 */
+  TYPESAFE_JEV_1_13_0: "typesafe/jev-1.13.0",
   /** Model ID: `upstage/document-ocr`. Model page: https://phaseo.app/models/upstage/document-ocr */
   UPSTAGE_DOCUMENT_OCR: "upstage/document-ocr",
   /** Model ID: `upstage/document-parse`. Model page: https://phaseo.app/models/upstage/document-parse */

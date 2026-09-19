@@ -106,6 +106,8 @@ export type OrganisationIdList = (
   | "tencent"
   | "thedrummer"
   | "thinking-machines"
+  | "typesafe"
+  | "unbiased"
   | "undi95"
   | "upstage"
   | "venice"

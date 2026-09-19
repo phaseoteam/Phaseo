@@ -13234,6 +13234,8 @@ components:
         - tencent
         - thedrummer
         - thinking-machines
+        - typesafe
+        - unbiased
         - undi95
         - upstage
         - venice
@@ -13332,12 +13334,16 @@ components:
       enum:
         - 2-bench-retail
         - 2-bench-telecom
+        - aa-agentic-index
         - aa-agentic-index-v4
         - aa-agentic-index-v5
         - aa-briefcase
+        - aa-coding-index
         - aa-coding-index-v4
         - aa-coding-index-v5
         - aa-index
+        - aa-intelligence-index
+        - aa-intelligence-index-cost
         - aa-intelligence-index-cost-v4
         - aa-intelligence-index-cost-v5
         - aa-intelligence-index-v4
@@ -13398,6 +13404,7 @@ components:
         - babyvision
         - babyvision-python
         - balrog-ai
+        - bbeh
         - bbh
         - bcflv4
         - beam128k
@@ -13435,6 +13442,7 @@ components:
         - cfeval
         - cgbench
         - charadessta
+        - chartography
         - chartqa
         - chartqapro
         - charxiv-d
@@ -13479,6 +13487,7 @@ components:
         - ct-dataset-1-macro-accuracy
         - ctf-challenge-tasks
         - cursorbench-3.1
+        - cvbench
         - cxr14-3cond-macro-f1
         - cybench
         - cybergym
@@ -13517,12 +13526,14 @@ components:
         - embspatialbench
         - emma
         - encyclo-k
+        - epoch-capabilities-index
         - eq-bench
         - eqbench
         - erqa
         - evalplus
         - expert-swe
         - exploitbench-cap
+        - exploitgym
         - eyepacs-accuracy
         - facts
         - facts-benchmark-suite
@@ -13623,7 +13634,6 @@ components:
         - infovqatest
         - instruct-humaneval
         - intergps
-        - internal-api-instruction-following-(hard)
         - inverse-ifeval
         - investment-banking-modeling
         - iq-bench
@@ -13864,6 +13874,7 @@ components:
         - screenspot-pro
         - seal-0
         - seal-multichallenege
+        - sec-bench-pro
         - seccodebench
         - sfe
         - sifo
@@ -13916,6 +13927,8 @@ components:
         - terminal-bench
         - terminal-bench-2.0
         - terminal-bench-2.1
+        - terminal-bench-3.0
+        - terminal-bench-4.0
         - terminal-bench-hard
         - textvqa
         - thematic-generalisation
@@ -20969,13 +20982,9 @@ components:
         - baidu/ernie-5.1
         - baidu/ernie-x1.1
         - black-forest-labs/flux-1-dev
-        - black-forest-labs/flux-1-kontext-max
-        - black-forest-labs/flux-1-kontext-pro
         - black-forest-labs/flux-1-schnell
         - black-forest-labs/flux-1.1-pro
-        - black-forest-labs/flux-1.1-pro-ultra
         - black-forest-labs/flux-2-dev
-        - black-forest-labs/flux-2-flex
         - black-forest-labs/flux-2-klein-4b
         - black-forest-labs/flux-2-klein-9b
         - black-forest-labs/flux-2-max
@@ -21046,7 +21055,7 @@ components:
         - deepseek/deepseek-v4-flash-vision-exp
         - deepseek/deepseek-v4-pro
         - deepseek/deepseek-v4-pro-0813
-        - deepseek/deepseek-v4.1-flash-beta
+        - deepseek/deepseek-v4.1-flash
         - deepseek/deepseek-v4.1-flash-preview
         - early-access/ea-29b-a4b
         - eleven-labs/eleven-flash-v2
@@ -21078,6 +21087,8 @@ components:
         - google/gemini-3.6-flash
         - google/gemini-3.7-flash
         - google/gemini-3.8-flash
+        - google/gemini-3.8-live
+        - google/gemini-3.8-live-extended-thinking
         - google/gemini-embedding-001
         - google/gemini-embedding-2
         - google/gemini-robotics-er-2-preview
@@ -21112,8 +21123,9 @@ components:
         - inclusionai/ling-2.6-flash
         - inclusionai/ling-3.0-flash
         - inclusionai/ling-3.0-flash-fin
-        - inclusionai/ling-3.0-flash-sante
+        - inclusionai/ling-3.0-flash-sante:free
         - inclusionai/ling-3.0-flash-vl
+        - inclusionai/ling-3.0-flash-vl:free
         - inclusionai/ling-flash-2.0
         - inclusionai/ring-2.6-1t
         - inclusionai/ring-flash-2.0
@@ -21150,9 +21162,7 @@ components:
         - meta/muse-glimmer-30b
         - meta/muse-image-1.0
         - meta/muse-spark-1.2
-        - meta/muse-spark-1.2-contributor
         - meta/muse-spark-1.3
-        - meta/muse-spark-1.3-contributor
         - meta/muse-voice-transcribe-1.0
         - microsoft/phi-4
         - microsoft/wizardlm-2-8x22b
@@ -21178,7 +21188,6 @@ components:
         - minimax/speech-2.6-turbo
         - minimax/speech-2.8-hd
         - minimax/speech-2.8-turbo
-        - minimax/speech-2.8:free
         - mistral/codestral
         - mistral/codestral-embed
         - mistral/devstral-2
@@ -21251,7 +21260,6 @@ components:
         - nvidia/riva-tts-it-it
         - openai/babbage-002
         - openai/chat-latest
-        - openai/chatgpt-4o
         - openai/davinci-002
         - openai/gpt-3.5-turbo-0613
         - openai/gpt-3.5-turbo-16k
@@ -21436,6 +21444,7 @@ components:
         - qwen/qwen3.5-27b
         - qwen/qwen3.5-35b-a3b
         - qwen/qwen3.5-397b-a17b
+        - qwen/qwen3.5-4b
         - qwen/qwen3.5-9b
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19
@@ -21470,11 +21479,8 @@ components:
         - reka/reka-edge
         - reka/reka-edge-2603
         - reka/reka-flash
-        - reka/reka-flash-research
         - relace/relace-rank
         - relace/relace-search
-        - sakana/fugu-ultra
-        - sakana/namazu
         - spacex-ai/grok-4.20
         - spacex-ai/grok-4.20-multi-agent-beta
         - spacex-ai/grok-4.20-multi-agent-beta-0309
@@ -21489,6 +21495,7 @@ components:
         - spacex-ai/grok-transcribe
         - spacex-ai/grok-tts
         - spacex-ai/grok-voice-think-fast-2.0
+        - spacex-ai/grok-voice-transcribe-2.0
         - stability-ai/stable-diffusion-xl-base-1.0
         - stepfun/step-1-32k
         - stepfun/step-1-8k
@@ -21526,6 +21533,7 @@ components:
         - thedrummer/skyfall-36b-v2
         - thinking-machines/inkling
         - thinking-machines/inkling-small
+        - typesafe/jev-1.13.0
         - upstage/document-ocr
         - upstage/document-parse
         - upstage/solar-embedding-1-large-passage
