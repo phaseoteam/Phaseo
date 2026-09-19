@@ -144,27 +144,15 @@ pub mod model_ids {
     /// Model ID: `black-forest-labs/flux-1-dev`.
     /// Model page: https://phaseo.app/models/black-forest-labs/flux-1-dev
     pub const BLACK_FOREST_LABS_FLUX_1_DEV: &str = "black-forest-labs/flux-1-dev";
-    /// Model ID: `black-forest-labs/flux-1-kontext-max`.
-    /// Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-max
-    pub const BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX: &str = "black-forest-labs/flux-1-kontext-max";
-    /// Model ID: `black-forest-labs/flux-1-kontext-pro`.
-    /// Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-pro
-    pub const BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO: &str = "black-forest-labs/flux-1-kontext-pro";
     /// Model ID: `black-forest-labs/flux-1-schnell`.
     /// Model page: https://phaseo.app/models/black-forest-labs/flux-1-schnell
     pub const BLACK_FOREST_LABS_FLUX_1_SCHNELL: &str = "black-forest-labs/flux-1-schnell";
     /// Model ID: `black-forest-labs/flux-1.1-pro`.
     /// Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro
     pub const BLACK_FOREST_LABS_FLUX_1_1_PRO: &str = "black-forest-labs/flux-1.1-pro";
-    /// Model ID: `black-forest-labs/flux-1.1-pro-ultra`.
-    /// Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro-ultra
-    pub const BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA: &str = "black-forest-labs/flux-1.1-pro-ultra";
     /// Model ID: `black-forest-labs/flux-2-dev`.
     /// Model page: https://phaseo.app/models/black-forest-labs/flux-2-dev
     pub const BLACK_FOREST_LABS_FLUX_2_DEV: &str = "black-forest-labs/flux-2-dev";
-    /// Model ID: `black-forest-labs/flux-2-flex`.
-    /// Model page: https://phaseo.app/models/black-forest-labs/flux-2-flex
-    pub const BLACK_FOREST_LABS_FLUX_2_FLEX: &str = "black-forest-labs/flux-2-flex";
     /// Model ID: `black-forest-labs/flux-2-klein-4b`.
     /// Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-4b
     pub const BLACK_FOREST_LABS_FLUX_2_KLEIN_4B: &str = "black-forest-labs/flux-2-klein-4b";
@@ -383,9 +371,9 @@ pub mod model_ids {
     /// Model ID: `deepseek/deepseek-v4-pro-0813`.
     /// Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
     pub const DEEPSEEK_DEEPSEEK_V4_PRO_0813: &str = "deepseek/deepseek-v4-pro-0813";
-    /// Model ID: `deepseek/deepseek-v4.1-flash-beta`.
-    /// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
-    pub const DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA: &str = "deepseek/deepseek-v4.1-flash-beta";
+    /// Model ID: `deepseek/deepseek-v4.1-flash`.
+    /// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash
+    pub const DEEPSEEK_DEEPSEEK_V4_1_FLASH: &str = "deepseek/deepseek-v4.1-flash";
     /// Model ID: `deepseek/deepseek-v4.1-flash-preview`.
     /// Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview
     pub const DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW: &str = "deepseek/deepseek-v4.1-flash-preview";
@@ -479,6 +467,12 @@ pub mod model_ids {
     /// Model ID: `google/gemini-3.8-flash`.
     /// Model page: https://phaseo.app/models/google/gemini-3.8-flash
     pub const GOOGLE_GEMINI_3_8_FLASH: &str = "google/gemini-3.8-flash";
+    /// Model ID: `google/gemini-3.8-live`.
+    /// Model page: https://phaseo.app/models/google/gemini-3.8-live
+    pub const GOOGLE_GEMINI_3_8_LIVE: &str = "google/gemini-3.8-live";
+    /// Model ID: `google/gemini-3.8-live-extended-thinking`.
+    /// Model page: https://phaseo.app/models/google/gemini-3.8-live-extended-thinking
+    pub const GOOGLE_GEMINI_3_8_LIVE_EXTENDED_THINKING: &str = "google/gemini-3.8-live-extended-thinking";
     /// Model ID: `google/gemini-embedding-001`.
     /// Model page: https://phaseo.app/models/google/gemini-embedding-001
     pub const GOOGLE_GEMINI_EMBEDDING_001: &str = "google/gemini-embedding-001";
@@ -581,12 +575,15 @@ pub mod model_ids {
     /// Model ID: `inclusionai/ling-3.0-flash-fin`.
     /// Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-fin
     pub const INCLUSIONAI_LING_3_0_FLASH_FIN: &str = "inclusionai/ling-3.0-flash-fin";
-    /// Model ID: `inclusionai/ling-3.0-flash-sante`.
-    /// Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-sante
-    pub const INCLUSIONAI_LING_3_0_FLASH_SANTE: &str = "inclusionai/ling-3.0-flash-sante";
+    /// Model ID: `inclusionai/ling-3.0-flash-sante:free`.
+    /// Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-sante%3Afree
+    pub const INCLUSIONAI_LING_3_0_FLASH_SANTE_FREE: &str = "inclusionai/ling-3.0-flash-sante:free";
     /// Model ID: `inclusionai/ling-3.0-flash-vl`.
     /// Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-vl
     pub const INCLUSIONAI_LING_3_0_FLASH_VL: &str = "inclusionai/ling-3.0-flash-vl";
+    /// Model ID: `inclusionai/ling-3.0-flash-vl:free`.
+    /// Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-vl%3Afree
+    pub const INCLUSIONAI_LING_3_0_FLASH_VL_FREE: &str = "inclusionai/ling-3.0-flash-vl:free";
     /// Model ID: `inclusionai/ling-flash-2.0`.
     /// Model page: https://phaseo.app/models/inclusionai/ling-flash-2.0
     pub const INCLUSIONAI_LING_FLASH_2_0: &str = "inclusionai/ling-flash-2.0";
@@ -695,15 +692,9 @@ pub mod model_ids {
     /// Model ID: `meta/muse-spark-1.2`.
     /// Model page: https://phaseo.app/models/meta/muse-spark-1.2
     pub const META_MUSE_SPARK_1_2: &str = "meta/muse-spark-1.2";
-    /// Model ID: `meta/muse-spark-1.2-contributor`.
-    /// Model page: https://phaseo.app/models/meta/muse-spark-1.2-contributor
-    pub const META_MUSE_SPARK_1_2_CONTRIBUTOR: &str = "meta/muse-spark-1.2-contributor";
     /// Model ID: `meta/muse-spark-1.3`.
     /// Model page: https://phaseo.app/models/meta/muse-spark-1.3
     pub const META_MUSE_SPARK_1_3: &str = "meta/muse-spark-1.3";
-    /// Model ID: `meta/muse-spark-1.3-contributor`.
-    /// Model page: https://phaseo.app/models/meta/muse-spark-1.3-contributor
-    pub const META_MUSE_SPARK_1_3_CONTRIBUTOR: &str = "meta/muse-spark-1.3-contributor";
     /// Model ID: `meta/muse-voice-transcribe-1.0`.
     /// Model page: https://phaseo.app/models/meta/muse-voice-transcribe-1.0
     pub const META_MUSE_VOICE_TRANSCRIBE_1_0: &str = "meta/muse-voice-transcribe-1.0";
@@ -779,9 +770,6 @@ pub mod model_ids {
     /// Model ID: `minimax/speech-2.8-turbo`.
     /// Model page: https://phaseo.app/models/minimax/speech-2.8-turbo
     pub const MINIMAX_SPEECH_2_8_TURBO: &str = "minimax/speech-2.8-turbo";
-    /// Model ID: `minimax/speech-2.8:free`.
-    /// Model page: https://phaseo.app/models/minimax/speech-2.8%3Afree
-    pub const MINIMAX_SPEECH_2_8_FREE: &str = "minimax/speech-2.8:free";
     /// Model ID: `mistral/codestral`.
     /// Model page: https://phaseo.app/models/mistral/codestral
     pub const MISTRAL_CODESTRAL: &str = "mistral/codestral";
@@ -998,9 +986,6 @@ pub mod model_ids {
     /// Model ID: `openai/chat-latest`.
     /// Model page: https://phaseo.app/models/openai/chat-latest
     pub const OPENAI_CHAT_LATEST: &str = "openai/chat-latest";
-    /// Model ID: `openai/chatgpt-4o`.
-    /// Model page: https://phaseo.app/models/openai/chatgpt-4o
-    pub const OPENAI_CHATGPT_4O: &str = "openai/chatgpt-4o";
     /// Model ID: `openai/davinci-002`.
     /// Model page: https://phaseo.app/models/openai/davinci-002
     pub const OPENAI_DAVINCI_002: &str = "openai/davinci-002";
@@ -1553,6 +1538,9 @@ pub mod model_ids {
     /// Model ID: `qwen/qwen3.5-397b-a17b`.
     /// Model page: https://phaseo.app/models/qwen/qwen3.5-397b-a17b
     pub const QWEN_QWEN3_5_397B_A17B: &str = "qwen/qwen3.5-397b-a17b";
+    /// Model ID: `qwen/qwen3.5-4b`.
+    /// Model page: https://phaseo.app/models/qwen/qwen3.5-4b
+    pub const QWEN_QWEN3_5_4B: &str = "qwen/qwen3.5-4b";
     /// Model ID: `qwen/qwen3.5-9b`.
     /// Model page: https://phaseo.app/models/qwen/qwen3.5-9b
     pub const QWEN_QWEN3_5_9B: &str = "qwen/qwen3.5-9b";
@@ -1655,21 +1643,12 @@ pub mod model_ids {
     /// Model ID: `reka/reka-flash`.
     /// Model page: https://phaseo.app/models/reka/reka-flash
     pub const REKA_REKA_FLASH: &str = "reka/reka-flash";
-    /// Model ID: `reka/reka-flash-research`.
-    /// Model page: https://phaseo.app/models/reka/reka-flash-research
-    pub const REKA_REKA_FLASH_RESEARCH: &str = "reka/reka-flash-research";
     /// Model ID: `relace/relace-rank`.
     /// Model page: https://phaseo.app/models/relace/relace-rank
     pub const RELACE_RELACE_RANK: &str = "relace/relace-rank";
     /// Model ID: `relace/relace-search`.
     /// Model page: https://phaseo.app/models/relace/relace-search
     pub const RELACE_RELACE_SEARCH: &str = "relace/relace-search";
-    /// Model ID: `sakana/fugu-ultra`.
-    /// Model page: https://phaseo.app/models/sakana/fugu-ultra
-    pub const SAKANA_FUGU_ULTRA: &str = "sakana/fugu-ultra";
-    /// Model ID: `sakana/namazu`.
-    /// Model page: https://phaseo.app/models/sakana/namazu
-    pub const SAKANA_NAMAZU: &str = "sakana/namazu";
     /// Model ID: `spacex-ai/grok-4.20`.
     /// Model page: https://phaseo.app/models/spacex-ai/grok-4.20
     pub const SPACEX_AI_GROK_4_20: &str = "spacex-ai/grok-4.20";
@@ -1712,6 +1691,9 @@ pub mod model_ids {
     /// Model ID: `spacex-ai/grok-voice-think-fast-2.0`.
     /// Model page: https://phaseo.app/models/spacex-ai/grok-voice-think-fast-2.0
     pub const SPACEX_AI_GROK_VOICE_THINK_FAST_2_0: &str = "spacex-ai/grok-voice-think-fast-2.0";
+    /// Model ID: `spacex-ai/grok-voice-transcribe-2.0`.
+    /// Model page: https://phaseo.app/models/spacex-ai/grok-voice-transcribe-2.0
+    pub const SPACEX_AI_GROK_VOICE_TRANSCRIBE_2_0: &str = "spacex-ai/grok-voice-transcribe-2.0";
     /// Model ID: `stability-ai/stable-diffusion-xl-base-1.0`.
     /// Model page: https://phaseo.app/models/stability-ai/stable-diffusion-xl-base-1.0
     pub const STABILITY_AI_STABLE_DIFFUSION_XL_BASE_1_0: &str = "stability-ai/stable-diffusion-xl-base-1.0";
@@ -1823,6 +1805,9 @@ pub mod model_ids {
     /// Model ID: `thinking-machines/inkling-small`.
     /// Model page: https://phaseo.app/models/thinking-machines/inkling-small
     pub const THINKING_MACHINES_INKLING_SMALL: &str = "thinking-machines/inkling-small";
+    /// Model ID: `typesafe/jev-1.13.0`.
+    /// Model page: https://phaseo.app/models/typesafe/jev-1.13.0
+    pub const TYPESAFE_JEV_1_13_0: &str = "typesafe/jev-1.13.0";
     /// Model ID: `upstage/document-ocr`.
     /// Model page: https://phaseo.app/models/upstage/document-ocr
     pub const UPSTAGE_DOCUMENT_OCR: &str = "upstage/document-ocr";
@@ -2098,13 +2083,9 @@ pub mod model_ids {
         BAIDU_ERNIE_5_1,
         BAIDU_ERNIE_X1_1,
         BLACK_FOREST_LABS_FLUX_1_DEV,
-        BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX,
-        BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO,
         BLACK_FOREST_LABS_FLUX_1_SCHNELL,
         BLACK_FOREST_LABS_FLUX_1_1_PRO,
-        BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA,
         BLACK_FOREST_LABS_FLUX_2_DEV,
-        BLACK_FOREST_LABS_FLUX_2_FLEX,
         BLACK_FOREST_LABS_FLUX_2_KLEIN_4B,
         BLACK_FOREST_LABS_FLUX_2_KLEIN_9B,
         BLACK_FOREST_LABS_FLUX_2_MAX,
@@ -2175,7 +2156,7 @@ pub mod model_ids {
         DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
         DEEPSEEK_DEEPSEEK_V4_PRO,
         DEEPSEEK_DEEPSEEK_V4_PRO_0813,
-        DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA,
+        DEEPSEEK_DEEPSEEK_V4_1_FLASH,
         DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW,
         EARLY_ACCESS_EA_29B_A4B,
         ELEVEN_LABS_ELEVEN_FLASH_V2,
@@ -2207,6 +2188,8 @@ pub mod model_ids {
         GOOGLE_GEMINI_3_6_FLASH,
         GOOGLE_GEMINI_3_7_FLASH,
         GOOGLE_GEMINI_3_8_FLASH,
+        GOOGLE_GEMINI_3_8_LIVE,
+        GOOGLE_GEMINI_3_8_LIVE_EXTENDED_THINKING,
         GOOGLE_GEMINI_EMBEDDING_001,
         GOOGLE_GEMINI_EMBEDDING_2,
         GOOGLE_GEMINI_ROBOTICS_ER_2_PREVIEW,
@@ -2241,8 +2224,9 @@ pub mod model_ids {
         INCLUSIONAI_LING_2_6_FLASH,
         INCLUSIONAI_LING_3_0_FLASH,
         INCLUSIONAI_LING_3_0_FLASH_FIN,
-        INCLUSIONAI_LING_3_0_FLASH_SANTE,
+        INCLUSIONAI_LING_3_0_FLASH_SANTE_FREE,
         INCLUSIONAI_LING_3_0_FLASH_VL,
+        INCLUSIONAI_LING_3_0_FLASH_VL_FREE,
         INCLUSIONAI_LING_FLASH_2_0,
         INCLUSIONAI_RING_2_6_1T,
         INCLUSIONAI_RING_FLASH_2_0,
@@ -2279,9 +2263,7 @@ pub mod model_ids {
         META_MUSE_GLIMMER_30B,
         META_MUSE_IMAGE_1_0,
         META_MUSE_SPARK_1_2,
-        META_MUSE_SPARK_1_2_CONTRIBUTOR,
         META_MUSE_SPARK_1_3,
-        META_MUSE_SPARK_1_3_CONTRIBUTOR,
         META_MUSE_VOICE_TRANSCRIBE_1_0,
         MICROSOFT_PHI_4,
         MICROSOFT_WIZARDLM_2_8X22B,
@@ -2307,7 +2289,6 @@ pub mod model_ids {
         MINIMAX_SPEECH_2_6_TURBO,
         MINIMAX_SPEECH_2_8_HD,
         MINIMAX_SPEECH_2_8_TURBO,
-        MINIMAX_SPEECH_2_8_FREE,
         MISTRAL_CODESTRAL,
         MISTRAL_CODESTRAL_EMBED,
         MISTRAL_DEVSTRAL_2,
@@ -2380,7 +2361,6 @@ pub mod model_ids {
         NVIDIA_RIVA_TTS_IT_IT,
         OPENAI_BABBAGE_002,
         OPENAI_CHAT_LATEST,
-        OPENAI_CHATGPT_4O,
         OPENAI_DAVINCI_002,
         OPENAI_GPT_3_5_TURBO_0613,
         OPENAI_GPT_3_5_TURBO_16K,
@@ -2565,6 +2545,7 @@ pub mod model_ids {
         QWEN_QWEN3_5_27B,
         QWEN_QWEN3_5_35B_A3B,
         QWEN_QWEN3_5_397B_A17B,
+        QWEN_QWEN3_5_4B,
         QWEN_QWEN3_5_9B,
         QWEN_QWEN3_5_FLASH,
         QWEN_QWEN3_5_LIVETRANSLATE_FLASH_REALTIME_2026_05_19,
@@ -2599,11 +2580,8 @@ pub mod model_ids {
         REKA_REKA_EDGE,
         REKA_REKA_EDGE_2603,
         REKA_REKA_FLASH,
-        REKA_REKA_FLASH_RESEARCH,
         RELACE_RELACE_RANK,
         RELACE_RELACE_SEARCH,
-        SAKANA_FUGU_ULTRA,
-        SAKANA_NAMAZU,
         SPACEX_AI_GROK_4_20,
         SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA,
         SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
@@ -2618,6 +2596,7 @@ pub mod model_ids {
         SPACEX_AI_GROK_TRANSCRIBE,
         SPACEX_AI_GROK_TTS,
         SPACEX_AI_GROK_VOICE_THINK_FAST_2_0,
+        SPACEX_AI_GROK_VOICE_TRANSCRIBE_2_0,
         STABILITY_AI_STABLE_DIFFUSION_XL_BASE_1_0,
         STEPFUN_STEP_1_32K,
         STEPFUN_STEP_1_8K,
@@ -2655,6 +2634,7 @@ pub mod model_ids {
         THEDRUMMER_SKYFALL_36B_V2,
         THINKING_MACHINES_INKLING,
         THINKING_MACHINES_INKLING_SMALL,
+        TYPESAFE_JEV_1_13_0,
         UPSTAGE_DOCUMENT_OCR,
         UPSTAGE_DOCUMENT_PARSE,
         UPSTAGE_SOLAR_EMBEDDING_1_LARGE_PASSAGE,

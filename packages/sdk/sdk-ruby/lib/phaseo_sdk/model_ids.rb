@@ -144,27 +144,15 @@ module PhaseoSdk
     # Model ID: black-forest-labs/flux-1-dev
     # Model page: https://phaseo.app/models/black-forest-labs/flux-1-dev
     BLACK_FOREST_LABS_FLUX_1_DEV = "black-forest-labs/flux-1-dev"
-    # Model ID: black-forest-labs/flux-1-kontext-max
-    # Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-max
-    BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX = "black-forest-labs/flux-1-kontext-max"
-    # Model ID: black-forest-labs/flux-1-kontext-pro
-    # Model page: https://phaseo.app/models/black-forest-labs/flux-1-kontext-pro
-    BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO = "black-forest-labs/flux-1-kontext-pro"
     # Model ID: black-forest-labs/flux-1-schnell
     # Model page: https://phaseo.app/models/black-forest-labs/flux-1-schnell
     BLACK_FOREST_LABS_FLUX_1_SCHNELL = "black-forest-labs/flux-1-schnell"
     # Model ID: black-forest-labs/flux-1.1-pro
     # Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro
     BLACK_FOREST_LABS_FLUX_1_1_PRO = "black-forest-labs/flux-1.1-pro"
-    # Model ID: black-forest-labs/flux-1.1-pro-ultra
-    # Model page: https://phaseo.app/models/black-forest-labs/flux-1.1-pro-ultra
-    BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA = "black-forest-labs/flux-1.1-pro-ultra"
     # Model ID: black-forest-labs/flux-2-dev
     # Model page: https://phaseo.app/models/black-forest-labs/flux-2-dev
     BLACK_FOREST_LABS_FLUX_2_DEV = "black-forest-labs/flux-2-dev"
-    # Model ID: black-forest-labs/flux-2-flex
-    # Model page: https://phaseo.app/models/black-forest-labs/flux-2-flex
-    BLACK_FOREST_LABS_FLUX_2_FLEX = "black-forest-labs/flux-2-flex"
     # Model ID: black-forest-labs/flux-2-klein-4b
     # Model page: https://phaseo.app/models/black-forest-labs/flux-2-klein-4b
     BLACK_FOREST_LABS_FLUX_2_KLEIN_4B = "black-forest-labs/flux-2-klein-4b"
@@ -379,9 +367,9 @@ module PhaseoSdk
     # Model ID: deepseek/deepseek-v4-pro-0813
     # Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-0813
     DEEPSEEK_DEEPSEEK_V4_PRO_0813 = "deepseek/deepseek-v4-pro-0813"
-    # Model ID: deepseek/deepseek-v4.1-flash-beta
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-beta
-    DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA = "deepseek/deepseek-v4.1-flash-beta"
+    # Model ID: deepseek/deepseek-v4.1-flash
+    # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash
+    DEEPSEEK_DEEPSEEK_V4_1_FLASH = "deepseek/deepseek-v4.1-flash"
     # Model ID: deepseek/deepseek-v4.1-flash-preview
     # Model page: https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview
     DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW = "deepseek/deepseek-v4.1-flash-preview"
@@ -475,6 +463,12 @@ module PhaseoSdk
     # Model ID: google/gemini-3.8-flash
     # Model page: https://phaseo.app/models/google/gemini-3.8-flash
     GOOGLE_GEMINI_3_8_FLASH = "google/gemini-3.8-flash"
+    # Model ID: google/gemini-3.8-live
+    # Model page: https://phaseo.app/models/google/gemini-3.8-live
+    GOOGLE_GEMINI_3_8_LIVE = "google/gemini-3.8-live"
+    # Model ID: google/gemini-3.8-live-extended-thinking
+    # Model page: https://phaseo.app/models/google/gemini-3.8-live-extended-thinking
+    GOOGLE_GEMINI_3_8_LIVE_EXTENDED_THINKING = "google/gemini-3.8-live-extended-thinking"
     # Model ID: google/gemini-embedding-001
     # Model page: https://phaseo.app/models/google/gemini-embedding-001
     GOOGLE_GEMINI_EMBEDDING_001 = "google/gemini-embedding-001"
@@ -577,12 +571,15 @@ module PhaseoSdk
     # Model ID: inclusionai/ling-3.0-flash-fin
     # Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-fin
     INCLUSIONAI_LING_3_0_FLASH_FIN = "inclusionai/ling-3.0-flash-fin"
-    # Model ID: inclusionai/ling-3.0-flash-sante
-    # Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-sante
-    INCLUSIONAI_LING_3_0_FLASH_SANTE = "inclusionai/ling-3.0-flash-sante"
+    # Model ID: inclusionai/ling-3.0-flash-sante:free
+    # Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-sante%3Afree
+    INCLUSIONAI_LING_3_0_FLASH_SANTE_FREE = "inclusionai/ling-3.0-flash-sante:free"
     # Model ID: inclusionai/ling-3.0-flash-vl
     # Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-vl
     INCLUSIONAI_LING_3_0_FLASH_VL = "inclusionai/ling-3.0-flash-vl"
+    # Model ID: inclusionai/ling-3.0-flash-vl:free
+    # Model page: https://phaseo.app/models/inclusionai/ling-3.0-flash-vl%3Afree
+    INCLUSIONAI_LING_3_0_FLASH_VL_FREE = "inclusionai/ling-3.0-flash-vl:free"
     # Model ID: inclusionai/ling-flash-2.0
     # Model page: https://phaseo.app/models/inclusionai/ling-flash-2.0
     INCLUSIONAI_LING_FLASH_2_0 = "inclusionai/ling-flash-2.0"
@@ -691,15 +688,9 @@ module PhaseoSdk
     # Model ID: meta/muse-spark-1.2
     # Model page: https://phaseo.app/models/meta/muse-spark-1.2
     META_MUSE_SPARK_1_2 = "meta/muse-spark-1.2"
-    # Model ID: meta/muse-spark-1.2-contributor
-    # Model page: https://phaseo.app/models/meta/muse-spark-1.2-contributor
-    META_MUSE_SPARK_1_2_CONTRIBUTOR = "meta/muse-spark-1.2-contributor"
     # Model ID: meta/muse-spark-1.3
     # Model page: https://phaseo.app/models/meta/muse-spark-1.3
     META_MUSE_SPARK_1_3 = "meta/muse-spark-1.3"
-    # Model ID: meta/muse-spark-1.3-contributor
-    # Model page: https://phaseo.app/models/meta/muse-spark-1.3-contributor
-    META_MUSE_SPARK_1_3_CONTRIBUTOR = "meta/muse-spark-1.3-contributor"
     # Model ID: meta/muse-voice-transcribe-1.0
     # Model page: https://phaseo.app/models/meta/muse-voice-transcribe-1.0
     META_MUSE_VOICE_TRANSCRIBE_1_0 = "meta/muse-voice-transcribe-1.0"
@@ -775,9 +766,6 @@ module PhaseoSdk
     # Model ID: minimax/speech-2.8-turbo
     # Model page: https://phaseo.app/models/minimax/speech-2.8-turbo
     MINIMAX_SPEECH_2_8_TURBO = "minimax/speech-2.8-turbo"
-    # Model ID: minimax/speech-2.8:free
-    # Model page: https://phaseo.app/models/minimax/speech-2.8%3Afree
-    MINIMAX_SPEECH_2_8_FREE = "minimax/speech-2.8:free"
     # Model ID: mistral/codestral
     # Model page: https://phaseo.app/models/mistral/codestral
     MISTRAL_CODESTRAL = "mistral/codestral"
@@ -994,9 +982,6 @@ module PhaseoSdk
     # Model ID: openai/chat-latest
     # Model page: https://phaseo.app/models/openai/chat-latest
     OPENAI_CHAT_LATEST = "openai/chat-latest"
-    # Model ID: openai/chatgpt-4o
-    # Model page: https://phaseo.app/models/openai/chatgpt-4o
-    OPENAI_CHATGPT_4O = "openai/chatgpt-4o"
     # Model ID: openai/davinci-002
     # Model page: https://phaseo.app/models/openai/davinci-002
     OPENAI_DAVINCI_002 = "openai/davinci-002"
@@ -1549,6 +1534,9 @@ module PhaseoSdk
     # Model ID: qwen/qwen3.5-397b-a17b
     # Model page: https://phaseo.app/models/qwen/qwen3.5-397b-a17b
     QWEN_QWEN3_5_397B_A17B = "qwen/qwen3.5-397b-a17b"
+    # Model ID: qwen/qwen3.5-4b
+    # Model page: https://phaseo.app/models/qwen/qwen3.5-4b
+    QWEN_QWEN3_5_4B = "qwen/qwen3.5-4b"
     # Model ID: qwen/qwen3.5-9b
     # Model page: https://phaseo.app/models/qwen/qwen3.5-9b
     QWEN_QWEN3_5_9B = "qwen/qwen3.5-9b"
@@ -1651,21 +1639,12 @@ module PhaseoSdk
     # Model ID: reka/reka-flash
     # Model page: https://phaseo.app/models/reka/reka-flash
     REKA_REKA_FLASH = "reka/reka-flash"
-    # Model ID: reka/reka-flash-research
-    # Model page: https://phaseo.app/models/reka/reka-flash-research
-    REKA_REKA_FLASH_RESEARCH = "reka/reka-flash-research"
     # Model ID: relace/relace-rank
     # Model page: https://phaseo.app/models/relace/relace-rank
     RELACE_RELACE_RANK = "relace/relace-rank"
     # Model ID: relace/relace-search
     # Model page: https://phaseo.app/models/relace/relace-search
     RELACE_RELACE_SEARCH = "relace/relace-search"
-    # Model ID: sakana/fugu-ultra
-    # Model page: https://phaseo.app/models/sakana/fugu-ultra
-    SAKANA_FUGU_ULTRA = "sakana/fugu-ultra"
-    # Model ID: sakana/namazu
-    # Model page: https://phaseo.app/models/sakana/namazu
-    SAKANA_NAMAZU = "sakana/namazu"
     # Model ID: spacex-ai/grok-4.20
     # Model page: https://phaseo.app/models/spacex-ai/grok-4.20
     SPACEX_AI_GROK_4_20 = "spacex-ai/grok-4.20"
@@ -1708,6 +1687,9 @@ module PhaseoSdk
     # Model ID: spacex-ai/grok-voice-think-fast-2.0
     # Model page: https://phaseo.app/models/spacex-ai/grok-voice-think-fast-2.0
     SPACEX_AI_GROK_VOICE_THINK_FAST_2_0 = "spacex-ai/grok-voice-think-fast-2.0"
+    # Model ID: spacex-ai/grok-voice-transcribe-2.0
+    # Model page: https://phaseo.app/models/spacex-ai/grok-voice-transcribe-2.0
+    SPACEX_AI_GROK_VOICE_TRANSCRIBE_2_0 = "spacex-ai/grok-voice-transcribe-2.0"
     # Model ID: stability-ai/stable-diffusion-xl-base-1.0
     # Model page: https://phaseo.app/models/stability-ai/stable-diffusion-xl-base-1.0
     STABILITY_AI_STABLE_DIFFUSION_XL_BASE_1_0 = "stability-ai/stable-diffusion-xl-base-1.0"
@@ -1819,6 +1801,9 @@ module PhaseoSdk
     # Model ID: thinking-machines/inkling-small
     # Model page: https://phaseo.app/models/thinking-machines/inkling-small
     THINKING_MACHINES_INKLING_SMALL = "thinking-machines/inkling-small"
+    # Model ID: typesafe/jev-1.13.0
+    # Model page: https://phaseo.app/models/typesafe/jev-1.13.0
+    TYPESAFE_JEV_1_13_0 = "typesafe/jev-1.13.0"
     # Model ID: upstage/document-ocr
     # Model page: https://phaseo.app/models/upstage/document-ocr
     UPSTAGE_DOCUMENT_OCR = "upstage/document-ocr"
@@ -2093,13 +2078,9 @@ module PhaseoSdk
     ModelIds::BAIDU_ERNIE_5_1,
     ModelIds::BAIDU_ERNIE_X1_1,
     ModelIds::BLACK_FOREST_LABS_FLUX_1_DEV,
-    ModelIds::BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX,
-    ModelIds::BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO,
     ModelIds::BLACK_FOREST_LABS_FLUX_1_SCHNELL,
     ModelIds::BLACK_FOREST_LABS_FLUX_1_1_PRO,
-    ModelIds::BLACK_FOREST_LABS_FLUX_1_1_PRO_ULTRA,
     ModelIds::BLACK_FOREST_LABS_FLUX_2_DEV,
-    ModelIds::BLACK_FOREST_LABS_FLUX_2_FLEX,
     ModelIds::BLACK_FOREST_LABS_FLUX_2_KLEIN_4B,
     ModelIds::BLACK_FOREST_LABS_FLUX_2_KLEIN_9B,
     ModelIds::BLACK_FOREST_LABS_FLUX_2_MAX,
@@ -2170,7 +2151,7 @@ module PhaseoSdk
     ModelIds::DEEPSEEK_DEEPSEEK_V4_FLASH_VISION_EXP,
     ModelIds::DEEPSEEK_DEEPSEEK_V4_PRO,
     ModelIds::DEEPSEEK_DEEPSEEK_V4_PRO_0813,
-    ModelIds::DEEPSEEK_DEEPSEEK_V4_1_FLASH_BETA,
+    ModelIds::DEEPSEEK_DEEPSEEK_V4_1_FLASH,
     ModelIds::DEEPSEEK_DEEPSEEK_V4_1_FLASH_PREVIEW,
     ModelIds::EARLY_ACCESS_EA_29B_A4B,
     ModelIds::ELEVEN_LABS_ELEVEN_FLASH_V2,
@@ -2202,6 +2183,8 @@ module PhaseoSdk
     ModelIds::GOOGLE_GEMINI_3_6_FLASH,
     ModelIds::GOOGLE_GEMINI_3_7_FLASH,
     ModelIds::GOOGLE_GEMINI_3_8_FLASH,
+    ModelIds::GOOGLE_GEMINI_3_8_LIVE,
+    ModelIds::GOOGLE_GEMINI_3_8_LIVE_EXTENDED_THINKING,
     ModelIds::GOOGLE_GEMINI_EMBEDDING_001,
     ModelIds::GOOGLE_GEMINI_EMBEDDING_2,
     ModelIds::GOOGLE_GEMINI_ROBOTICS_ER_2_PREVIEW,
@@ -2236,8 +2219,9 @@ module PhaseoSdk
     ModelIds::INCLUSIONAI_LING_2_6_FLASH,
     ModelIds::INCLUSIONAI_LING_3_0_FLASH,
     ModelIds::INCLUSIONAI_LING_3_0_FLASH_FIN,
-    ModelIds::INCLUSIONAI_LING_3_0_FLASH_SANTE,
+    ModelIds::INCLUSIONAI_LING_3_0_FLASH_SANTE_FREE,
     ModelIds::INCLUSIONAI_LING_3_0_FLASH_VL,
+    ModelIds::INCLUSIONAI_LING_3_0_FLASH_VL_FREE,
     ModelIds::INCLUSIONAI_LING_FLASH_2_0,
     ModelIds::INCLUSIONAI_RING_2_6_1T,
     ModelIds::INCLUSIONAI_RING_FLASH_2_0,
@@ -2274,9 +2258,7 @@ module PhaseoSdk
     ModelIds::META_MUSE_GLIMMER_30B,
     ModelIds::META_MUSE_IMAGE_1_0,
     ModelIds::META_MUSE_SPARK_1_2,
-    ModelIds::META_MUSE_SPARK_1_2_CONTRIBUTOR,
     ModelIds::META_MUSE_SPARK_1_3,
-    ModelIds::META_MUSE_SPARK_1_3_CONTRIBUTOR,
     ModelIds::META_MUSE_VOICE_TRANSCRIBE_1_0,
     ModelIds::MICROSOFT_PHI_4,
     ModelIds::MICROSOFT_WIZARDLM_2_8X22B,
@@ -2302,7 +2284,6 @@ module PhaseoSdk
     ModelIds::MINIMAX_SPEECH_2_6_TURBO,
     ModelIds::MINIMAX_SPEECH_2_8_HD,
     ModelIds::MINIMAX_SPEECH_2_8_TURBO,
-    ModelIds::MINIMAX_SPEECH_2_8_FREE,
     ModelIds::MISTRAL_CODESTRAL,
     ModelIds::MISTRAL_CODESTRAL_EMBED,
     ModelIds::MISTRAL_DEVSTRAL_2,
@@ -2375,7 +2356,6 @@ module PhaseoSdk
     ModelIds::NVIDIA_RIVA_TTS_IT_IT,
     ModelIds::OPENAI_BABBAGE_002,
     ModelIds::OPENAI_CHAT_LATEST,
-    ModelIds::OPENAI_CHATGPT_4O,
     ModelIds::OPENAI_DAVINCI_002,
     ModelIds::OPENAI_GPT_3_5_TURBO_0613,
     ModelIds::OPENAI_GPT_3_5_TURBO_16K,
@@ -2560,6 +2540,7 @@ module PhaseoSdk
     ModelIds::QWEN_QWEN3_5_27B,
     ModelIds::QWEN_QWEN3_5_35B_A3B,
     ModelIds::QWEN_QWEN3_5_397B_A17B,
+    ModelIds::QWEN_QWEN3_5_4B,
     ModelIds::QWEN_QWEN3_5_9B,
     ModelIds::QWEN_QWEN3_5_FLASH,
     ModelIds::QWEN_QWEN3_5_LIVETRANSLATE_FLASH_REALTIME_2026_05_19,
@@ -2594,11 +2575,8 @@ module PhaseoSdk
     ModelIds::REKA_REKA_EDGE,
     ModelIds::REKA_REKA_EDGE_2603,
     ModelIds::REKA_REKA_FLASH,
-    ModelIds::REKA_REKA_FLASH_RESEARCH,
     ModelIds::RELACE_RELACE_RANK,
     ModelIds::RELACE_RELACE_SEARCH,
-    ModelIds::SAKANA_FUGU_ULTRA,
-    ModelIds::SAKANA_NAMAZU,
     ModelIds::SPACEX_AI_GROK_4_20,
     ModelIds::SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA,
     ModelIds::SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
@@ -2613,6 +2591,7 @@ module PhaseoSdk
     ModelIds::SPACEX_AI_GROK_TRANSCRIBE,
     ModelIds::SPACEX_AI_GROK_TTS,
     ModelIds::SPACEX_AI_GROK_VOICE_THINK_FAST_2_0,
+    ModelIds::SPACEX_AI_GROK_VOICE_TRANSCRIBE_2_0,
     ModelIds::STABILITY_AI_STABLE_DIFFUSION_XL_BASE_1_0,
     ModelIds::STEPFUN_STEP_1_32K,
     ModelIds::STEPFUN_STEP_1_8K,
@@ -2650,6 +2629,7 @@ module PhaseoSdk
     ModelIds::THEDRUMMER_SKYFALL_36B_V2,
     ModelIds::THINKING_MACHINES_INKLING,
     ModelIds::THINKING_MACHINES_INKLING_SMALL,
+    ModelIds::TYPESAFE_JEV_1_13_0,
     ModelIds::UPSTAGE_DOCUMENT_OCR,
     ModelIds::UPSTAGE_DOCUMENT_PARSE,
     ModelIds::UPSTAGE_SOLAR_EMBEDDING_1_LARGE_PASSAGE,
