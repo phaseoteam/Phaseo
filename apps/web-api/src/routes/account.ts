@@ -8,8 +8,10 @@ import { accountSettingsRouter } from "@/routes/account/settings";
 import { accountModelsRouter } from "@/routes/account/models";
 import { accountChatIssuesRouter } from "@/routes/account/chat-issues";
 import { accountPrivateModelsRouter } from "@/routes/account/private-models";
+import { fenceRequestStateMutation } from "@/routes/account/request-state-mutations";
 
 export const accountRouter = new Hono<{ Bindings: Env }>();
+accountRouter.use("*", fenceRequestStateMutation);
 
 accountRouter.route("/credits", creditsRouter);
 accountRouter.route("/auth", accountAuthRouter);

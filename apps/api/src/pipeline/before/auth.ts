@@ -412,8 +412,8 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     }
     if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
 
-    if (requestStateEnabled(bindings) && isSyntheticKey(parsed.kid)) {
-        if (!isInternalRequestAuthorized(req, bindings)) return { ok: false, reason: "synthetic_key_requires_internal_token" };
+    if (requestStateEnabled(bindings) && (isSyntheticKey(parsed.kid) || bindings.GATEWAY_REQUEST_STATE_MODE === "escrow")) {
+        if (isSyntheticKey(parsed.kid) && !isInternalRequestAuthorized(req, bindings)) return { ok: false, reason: "synthetic_key_requires_internal_token" };
         try {
             const key = await readPublishedKey(parsed.kid);
             if (!key || key.status !== "active" || key.soft_blocked || isExpiredKey(key.expires_at)) {

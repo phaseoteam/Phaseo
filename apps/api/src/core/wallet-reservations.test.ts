@@ -5,6 +5,7 @@ const invalidateGatewayCreditCacheMock = vi.fn();
 const setKeyVersionMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
+	getBindingsIfConfigured: () => null,
 	getSupabaseAdmin: () => ({
 		rpc: (...args: any[]) => rpcMock(...args),
 	}),

@@ -58,6 +58,9 @@ export class RequestLedger {
         identifier(input.workspaceId);
         identifier(input.allocationId);
         nanos(input.balanceNanos);
+        if (input.mode === "escrow" && (input.balanceNanos < 1 || input.balanceNanos > 1_000_000_000)) {
+            throw new Error("invalid_test_cap");
+        }
         const existing = this.store.get<WalletState>("wallet");
         if (existing) {
             if (existing.workspaceId !== input.workspaceId || existing.allocationId !== input.allocationId ||
@@ -158,6 +161,11 @@ export class RequestLedger {
         nanos(actualNanos);
         const before = this.wallet();
         const prior = this.reservation(id);
+        // A real allocation requires maximum-liability admission before dispatch.
+        if (before.mode === "escrow") {
+            if (!prior || prior.kind !== "inference") throw new Error("inference_admission_required");
+            return this.settle(id, actualNanos);
+        }
         if (prior) {
             if (prior.kind !== "inference" || prior.status !== "captured" || prior.actualNanos !== actualNanos) {
                 throw new Error("charge_idempotency_conflict");

@@ -8,6 +8,7 @@ const { fromMock, rpcMock, updateMock, eqMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/runtime/env", () => ({
+	getBindingsIfConfigured: () => null,
 	getSupabaseAdmin: () => ({
 		from: fromMock,
 		rpc: rpcMock,

@@ -4,6 +4,7 @@ import type { GatewayBindings } from "./env.types";
 
 export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "GATEWAY_REQUEST_STATE_MODE",
+    "GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID",
     "GATEWAY_REQUEST_STATE_ENCRYPTION_KEY",
     "GATEWAY_REQUEST_STATE_KV",
     "WORKSPACE_REQUEST_STATE",

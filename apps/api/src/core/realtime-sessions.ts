@@ -3,6 +3,7 @@
 // How: Creates session rows, reserves $5 increments, prices final usage, and settles atomically.
 
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { escrowWorkspace, isRequestStateWorkspace, workspaceState } from "./request-state/client";
 import { refreshRealtimeBillingReviews, syncRealtimeBillingReviewSummaries } from "./realtime-billing-review";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 import { loadPriceCard } from "@pipeline/pricing/loader";
@@ -719,7 +720,21 @@ export function assertRealtimeBillingMetersPresent(args: {
 	throw new Error(`${args.provider}_realtime_usage_missing_token_meters`);
 }
 
-async function requireRealtimePriceCard(provider: RealtimeProvider, modelId: string) {
+async function requireRealtimePriceCard(provider: RealtimeProvider, modelId: string, state?: RealtimeAuthContext | RealtimeSessionRow) {
+	if (state) {
+		const workspaceId = "workspaceId" in state ? state.workspaceId : state.workspace_id;
+		if (isRequestStateWorkspace(workspaceId)) {
+			if ("workspace_id" in state) {
+				const card = state.metadata?.request_state_price_card as Awaited<ReturnType<typeof loadPriceCard>> | undefined;
+				if (!card?.rules?.length) throw new Error("realtime_price_card_missing");
+				return card;
+			}
+			const context = await fetchGatewayContext({ workspaceId, apiKeyId: state.apiKeyId, model: modelId, endpoint: "audio.realtime" });
+			const card = buildProviderCandidatesWithDiagnostics(context).candidates.find(candidate => candidate.providerId === provider)?.pricingCard;
+			if (!card?.rules?.length) throw new Error("realtime_price_card_missing");
+			return card;
+		}
+	}
 	const card = await loadPriceCard(provider, modelId, "audio.realtime");
 	if (!card || !Array.isArray(card.rules) || card.rules.length === 0) {
 		throw new Error("realtime_price_card_missing");
@@ -805,14 +820,16 @@ export async function createRealtimeSession(args: {
 			: null;
 	const voice = defaultVoice(provider, args.voice);
 	const live = isLiveModel(modelId);
+	const requestState = isRequestStateWorkspace(args.auth.workspaceId);
+	if (requestState && (live || args.relay === false)) throw new Error("request_state_realtime_requires_metered_relay");
 	if (live && (!args.liveBackendModel || args.source !== "chat" || !args.auth.userId || args.relay === false)) {
 		throw new Error("live_playground_only");
 	}
 	if (live && !LIVE_VOICES.includes(voice as typeof LIVE_VOICES[number])) throw new Error("live_voice_not_supported");
 	const liveSettings = live ? await createLiveConfig(args.liveBackendModel!, args.liveBackendSettings) : null;
-	if (!live) await requireRealtimePriceCard(provider, modelId);
+	const initialPriceCard = !live ? await requireRealtimePriceCard(provider, modelId, args.auth) : null;
 
-	const supabase = getSupabaseAdmin();
+	const supabase = requestState ? null : getSupabaseAdmin();
 	const sessionId = `rt_${ulid().toLowerCase()}`;
 	const reservationPrefix = `rt:${sessionId}:`;
 	const expiresAt = new Date(Date.now() + realtimeMaxDurationSeconds(provider) * 1000).toISOString();
@@ -831,6 +848,7 @@ export async function createRealtimeSession(args: {
 	};
 	const sessionMetadata = {
 		...(args.metadata ?? {}),
+		...(requestState ? { request_state_price_card: initialPriceCard } : {}),
 		live: liveSettings,
 		...(useRelay
 			? {
@@ -842,7 +860,16 @@ export async function createRealtimeSession(args: {
 		phaseo_otel_parent_context: args.otelTraceContext ?? null,
 		phaseo_otel_submission_context: submissionContext,
 	};
-	const createRpc = await supabase.rpc("gateway_realtime_create_with_hold", {
+	const createRpc = requestState ? { error: null, data: await workspaceState(args.auth.workspaceId).realtimeCreate({
+		row: { id: crypto.randomUUID(), session_id: sessionId, workspace_id: args.auth.workspaceId, key_id: args.auth.apiKeyId,
+			user_id: args.auth.userId ?? null, source: args.source ?? "api", provider, model_id: modelId, provider_model_id: providerModelId,
+			voice, status: "created", started_at: new Date().toISOString(), connected_at: null, ended_at: null, expires_at: expiresAt,
+			reservation_prefix: reservationPrefix, reservation_count: 0, reserved_nanos: 0, captured_nanos: 0, released_nanos: 0,
+			estimated_cost_nanos: 0, final_cost_nanos: null, currency: "USD", usage: {}, pricing_lines: [],
+			provider_client_secret_hash: secretHash, metadata: sessionMetadata },
+		holdNanos: REALTIME_INITIAL_HOLD_NANOS, maxWorkspaceSessions: REALTIME_MAX_WORKSPACE_SESSIONS,
+		maxKeySessions: REALTIME_MAX_KEY_SESSIONS, maxUserSessions: REALTIME_MAX_USER_SESSIONS, maxCreationsPerMinute: REALTIME_MAX_CREATIONS_PER_MINUTE,
+	}) } : await supabase!.rpc("gateway_realtime_create_with_hold", {
 		p_workspace_id: args.auth.workspaceId,
 		p_session_id: sessionId,
 		p_key_id: args.auth.apiKeyId,
@@ -924,7 +951,7 @@ export async function createRealtimeSession(args: {
 						})
 					: await createXAIProviderSession({ model: providerModelId });
 		const secretHash = await sha256Hex(providerSession.clientSecret);
-		const { data: updated, error: updateError } = await supabase
+		const { data: updated, error: updateError } = await supabase!
 			.from("gateway_realtime_sessions")
 			.update({
 				provider_client_secret_hash: secretHash,
@@ -961,6 +988,8 @@ export async function claimRealtimeSessionForRelay(args: {
 	sessionId: string;
 	token: string;
 }): Promise<RealtimeSessionRow> {
+	const enrolled = escrowWorkspace();
+	if (enrolled) return workspaceState(enrolled).realtimeClaim(args.sessionId, await sha256Hex(args.token));
 	const supabase = getSupabaseAdmin();
 	const rpc = await supabase.rpc("gateway_realtime_claim_connection", {
 		p_session_id: args.sessionId,
@@ -973,6 +1002,8 @@ export async function claimRealtimeSessionForRelay(args: {
 }
 
 export async function getRealtimeSessionForInternal(sessionId: string): Promise<RealtimeSessionRow> {
+	const enrolled = escrowWorkspace();
+	if (enrolled) return workspaceState(enrolled).realtimeGet(sessionId);
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_realtime_sessions")
 		.select("*")
@@ -989,8 +1020,9 @@ export async function extendRealtimeSessionHold(args: {
 	targetReservedNanos?: number | null;
 	estimatedCostNanos?: number | null;
 }): Promise<RealtimeSessionRow> {
-	const supabase = getSupabaseAdmin();
-	const { data: row, error } = await supabase
+	const edge = isRequestStateWorkspace(args.auth.workspaceId) ? workspaceState(args.auth.workspaceId) : null;
+	const supabase = edge ? null : getSupabaseAdmin();
+	const { data: row, error } = edge ? { data: await edge.realtimeGet(args.sessionId), error: null } : await supabase!
 		.from("gateway_realtime_sessions")
 		.select("*")
 		.eq("workspace_id", args.auth.workspaceId)
@@ -1015,7 +1047,8 @@ export async function extendRealtimeSessionHold(args: {
 	);
 	const policy = await evaluateActiveRealtimePolicy(session, estimatedCostNanos);
 	if ("reason" in policy) throw new Error(policy.reason);
-	const rpc = await supabase.rpc("gateway_realtime_extend_hold_once", {
+	if (edge) return edge.realtimeExtend(args.sessionId, `${session.reservation_prefix}${ulid().toLowerCase()}`, targetReserved, estimatedCostNanos);
+	const rpc = await supabase!.rpc("gateway_realtime_extend_hold_once", {
 		p_workspace_id: args.auth.workspaceId,
 		p_session_id: args.sessionId,
 		p_reservation_id: `${session.reservation_prefix}${ulid().toLowerCase()}`,
@@ -1034,6 +1067,14 @@ export async function markRealtimeSessionConnected(args: {
 	providerSessionId?: string;
 }): Promise<RealtimeSessionRow> {
 	const now = new Date().toISOString();
+	if (isRequestStateWorkspace(args.auth.workspaceId)) {
+		const stub = workspaceState(args.auth.workspaceId);
+		const current = await stub.rowGet("gateway_realtime_sessions", { session_id: args.sessionId });
+		if (!current || current.row.status !== "connecting" || current.row.key_id !== args.auth.apiKeyId) throw new Error("realtime_session_mark_connected_conflict");
+		const result = await stub.rowPatch("gateway_realtime_sessions", current.row, { status: "connected", connected_at: now, last_event_at: now,
+			...(args.providerSessionId ? { provider_session_id: args.providerSessionId } : {}) }, current.revision);
+		return result!.row as RealtimeSessionRow;
+	}
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_realtime_sessions")
 		.update({
@@ -1060,8 +1101,9 @@ export async function updateRealtimeSessionUsage(args: {
 	usage?: Record<string, unknown>;
 	estimatedCostNanos?: number | null;
 }): Promise<RealtimeSessionRow> {
-	const supabase = getSupabaseAdmin();
-	const { data: row, error } = await supabase
+	const edge = isRequestStateWorkspace(args.auth.workspaceId) ? workspaceState(args.auth.workspaceId) : null;
+	const supabase = edge ? null : getSupabaseAdmin();
+	const { data: row, error } = edge ? { data: await edge.realtimeGet(args.sessionId), error: null } : await supabase!
 		.from("gateway_realtime_sessions")
 		.select("*")
 		.eq("workspace_id", args.auth.workspaceId)
@@ -1081,7 +1123,7 @@ export async function updateRealtimeSessionUsage(args: {
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? session.usage ?? {});
 	const pricedUsage = isLiveModel(session.model_id)
 		? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
-		: computeBill(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id), { endpoint: "audio.realtime" });
+		: computeBill(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id, session), { endpoint: "audio.realtime" });
 	const pricedNanos = pricedTotalNanos(pricedUsage);
 	const estimatedCostNanos = Math.max(
 		Math.max(0, Number(session.estimated_cost_nanos ?? 0) || 0),
@@ -1089,7 +1131,15 @@ export async function updateRealtimeSessionUsage(args: {
 		pricedNanos,
 	);
 	const policy = await evaluateActiveRealtimePolicy(session, estimatedCostNanos);
-	const { data: updated, error: updateError } = await supabase
+	if (edge) {
+		const current = await edge.rowGet("gateway_realtime_sessions", { session_id: args.sessionId });
+		if (!current || !["connecting", "connected", "ending"].includes(String(current.row.status))) return edge.realtimeGet(args.sessionId);
+		const updated = await edge.rowPatch("gateway_realtime_sessions", current.row, { usage: normalizedUsage, pricing_lines: pricingLines(pricedUsage),
+			estimated_cost_nanos: Math.max(estimatedCostNanos, Number(current.row.estimated_cost_nanos ?? 0)), last_event_at: new Date().toISOString(),
+			...("reason" in policy ? { status: "ending", disconnect_reason: policy.reason, error_code: policy.reason } : {}) }, current.revision);
+		return updated!.row as RealtimeSessionRow;
+	}
+	const { data: updated, error: updateError } = await supabase!
 		.from("gateway_realtime_sessions")
 		.update({
 			...("reason" in policy
@@ -1112,7 +1162,7 @@ export async function updateRealtimeSessionUsage(args: {
 		.maybeSingle();
 	if (updateError) throw updateError;
 	if (!updated) {
-		const { data: current, error: currentError } = await supabase
+		const { data: current, error: currentError } = await supabase!
 			.from("gateway_realtime_sessions")
 			.select("*")
 			.eq("workspace_id", args.auth.workspaceId)
@@ -1132,6 +1182,15 @@ export async function markRealtimeSessionBillingUnresolved(args: {
 	usage: Record<string, unknown>;
 	reason: string;
 }): Promise<RealtimeSessionRow> {
+	if (isRequestStateWorkspace(args.auth.workspaceId)) {
+		const edge = workspaceState(args.auth.workspaceId);
+		const row = await edge.realtimeGet(args.sessionId);
+		if (row.key_id !== args.auth.apiKeyId && !args.auth.internal) throw new Error("realtime_session_forbidden");
+		assertRealtimeSettlementAuthority(args.auth);
+		if (["completed", "failed", "cancelled", "expired"].includes(row.status)) return row;
+		const updated = await edge.rowPatch("gateway_realtime_sessions", { session_id: args.sessionId }, { status: "billing_unresolved", usage: normalizeRealtimeUsage(args.usage), error_code: args.reason });
+		return updated!.row as RealtimeSessionRow;
+	}
 	const rpc = await getSupabaseAdmin().rpc("gateway_realtime_mark_billing_unresolved", {
 		p_workspace_id: args.auth.workspaceId,
 		p_session_id: args.sessionId,
@@ -1154,8 +1213,9 @@ export async function settleRealtimeSession(args: {
 	errorCode?: string | null;
 	errorMessage?: string | null;
 }): Promise<{ session: RealtimeSessionRow; settlement: WalletSettlementResult; pricedUsage: Record<string, unknown> }> {
-	const supabase = getSupabaseAdmin();
-	const { data: row, error } = await supabase
+	const edge = isRequestStateWorkspace(args.auth.workspaceId) ? workspaceState(args.auth.workspaceId) : null;
+	const supabase = edge ? null : getSupabaseAdmin();
+	const { data: row, error } = edge ? { data: await edge.realtimeGet(args.sessionId), error: null } : await supabase!
 		.from("gateway_realtime_sessions")
 		.select("*")
 		.eq("workspace_id", args.auth.workspaceId)
@@ -1194,7 +1254,7 @@ export async function settleRealtimeSession(args: {
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? {});
 	const live = isLiveModel(session.model_id);
 	const pricedUsage = live ? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
-		: computeBill(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id), { endpoint: "audio.realtime" });
+		: computeBill(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id, session), { endpoint: "audio.realtime" });
 	const costNanos = live ? pricedTotalNanos(pricedUsage) : resolveRealtimeFinalCostNanos({
 		auth: args.auth,
 		finalCostNanos: args.finalCostNanos,
@@ -1203,7 +1263,15 @@ export async function settleRealtimeSession(args: {
 	const lines = pricingLines(pricedUsage);
 	if (live) assertLiveFinalUsage(normalizedUsage);
 	else assertRealtimeBillingMetersPresent({ provider, usage: normalizedUsage, costNanos });
-	const rpc = await supabase.rpc("gateway_realtime_settle_once", {
+	if (edge) {
+		const result = await edge.realtimeSettle(args.sessionId, costNanos, { usage: normalizedUsage, pricing_lines: lines, status: args.status ?? "completed",
+			disconnect_reason: args.disconnectReason ?? null, error_code: args.errorCode ?? null, error_message: args.errorMessage ?? null });
+		return { session: result.session, pricedUsage, settlement: { applied: !result.alreadyApplied, already_applied: result.alreadyApplied,
+			status: result.session.status, final_cost_nanos: costNanos, reserved_nanos: result.session.reserved_nanos,
+			captured_nanos: result.session.captured_nanos, released_nanos: result.session.released_nanos,
+			before_balance_nanos: null, after_balance_nanos: null, before_reserved_nanos: null, after_reserved_nanos: null } };
+	}
+	const rpc = await supabase!.rpc("gateway_realtime_settle_once", {
 		p_workspace_id: args.auth.workspaceId,
 		p_session_id: args.sessionId,
 		p_final_cost_nanos: costNanos,
@@ -1220,7 +1288,7 @@ export async function settleRealtimeSession(args: {
 	if (settlement.status !== "completed" && settlement.status !== "failed" && settlement.status !== "cancelled" && settlement.status !== "expired") {
 		throw new Error(`realtime_settlement_${settlement.status}`);
 	}
-	const { data: updated, error: readError } = await supabase
+	const { data: updated, error: readError } = await supabase!
 		.from("gateway_realtime_sessions")
 		.select("*")
 		.eq("workspace_id", args.auth.workspaceId)
@@ -1268,6 +1336,9 @@ async function emitRealtimeFinalizationTelemetry(completed: RealtimeSessionRow) 
 }
 
 async function syncRealtimeGatewayRequestSummary(session: RealtimeSessionRow) {
+	// Escrow sessions project through their durable journal, never through the
+	// production reconciliation tables while the staging rollout is isolated.
+	if (isRequestStateWorkspace(session.workspace_id)) return;
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
 		.from("gateway_requests")

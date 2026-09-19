@@ -1,5 +1,32 @@
 # Cloudflare request state
 
+## Continuation brief: production-backed test workspace
+
+The operator authorized continuing the complete migration using a dedicated
+workspace in the production database, with no more than USD 1 cumulative usage.
+This does not authorize production Worker rollout or spending from other
+workspaces. Existing normal traffic remains on its existing path.
+
+Required acceptance gates before a confidence claim:
+
+- One non-replenishing escrow allocation, at most 1,000,000,000 nanos. Concurrent
+  admissions and unresolved provider outcomes retain their holds. Retries cannot
+  create another allocation or dispatch twice. Paid probes use bounded provider
+  requests; expensive lifecycle tests use deterministic provider fixtures.
+- Website key/configuration mutations have durable retryable publication and
+  acknowledged security fencing; missing state fails closed.
+- Durable accounting events project idempotently to Supabase. Projection lag,
+  duplicates, gaps, restart and rollback cannot double-charge or replenish funds.
+- Batch/file/realtime lifecycle reads and writes use Cloudflare-owned state for
+  enrolled workspaces, preserving ownership, claims, cancellation, recovery,
+  settlement and webhook semantics.
+- The staging Worker executes complete representative requests, not just
+  preflight probes, with measured database attempts and cumulative test spend.
+
+No UI redesign or public wire-contract changes are intended. The affected
+surfaces are gateway shared preflight/execution/accounting, async lifecycle
+repositories, website control-plane mutations, and additive Supabase contracts.
+
 ## Change brief
 
 Build a gateway data plane that can authenticate, load routing/pricing/policy,
@@ -43,7 +70,7 @@ acknowledge the durable outbox only after persistence succeeds.
 
 ## Rollout checklist
 
-### Implemented in this staging prototype
+### Deployed synthetic prototype (before continuation)
 
 - Dedicated staging KV namespace `2438099f3dd54c589da837f519acf9c6` and SQLite
   `WorkspaceRequestState` Durable Object. Production has no binding or mode flag.
@@ -149,33 +176,78 @@ revokes its synthetic key in a `finally` block. It never calls a paid model.
 
 ### Required before real traffic cutover
 
-This is a first vertical slice, not the completed API-wide migration.
+The operator selected a production-backed test workspace with a cumulative USD 1
+cap. This continuation is local/draft only; it has not replaced the measured
+staging deployment above. No live migration, enrollment, wallet transfer or paid
+request has been executed. The migration requires separate explicit approval
+under the database-change workflow.
 
-1. Decide the financial ownership boundary. Either provide an isolated staging
-   database or reserve an explicit escrow allocation for a dedicated test
-   workspace. A copied production wallet balance is not valid authorization to
-   spend. Implement ownership fencing, allocation/top-up/refund handling and
-   recovery before activating any real key.
-2. Deliver key, membership/OAuth, guardrail, routing, provider and pricing changes
-   from all control-plane mutations through a versioned, retryable publication
-   outbox. Website create/delete is not wired to this prototype. Security
-   changes must not wait for periodic cron reconciliation.
-3. Replace snapshot key-limit/budget counters with atomic live enforcement,
+Implemented and locally verified in the continuation:
+
+- An additive SQL escrow allocation locks at most one dollar out of the existing
+  wallet's spendable balance. Enrollment requires that exact unreserved balance
+  and disabled automatic top-up. Retrying initialization never replenishes it.
+  SQL projection verifies ordered events, reservation transitions and balances;
+  a lost acknowledgement cannot charge twice. Durable alarms retry the outbox.
+- Encrypted snapshot rebuilding from current configuration, a scoped SQL change
+  journal, and website-account mutation fencing before writes and acknowledgement
+  before success. Monotonic publication revisions and short validity leases fail
+  closed. Completed mutation tokens cannot be resurrected by delayed retries.
+- A workspace-owned SQLite lifecycle repository behind the existing async/batch
+  repository interfaces, durable webhook delivery claims, file quota claims, and
+  atomic realtime create/claim/extend/settle transitions. Lifecycle projection
+  uses a separate shadow table so production reconcilers cannot claim staging jobs.
+  It does **not** yet feed the ordinary website lifecycle/request-log queries.
+- Explicit staging/test-workspace enrollment only. Escrow-mode public `/v1`
+  dispatch is blocked with `request_state_cutover_not_ready` until its financial
+  admission and remaining path migration are complete. The deployed configuration
+  remains synthetic; the website middleware flag is unset by default.
+
+Validation for this continuation:
+
+- 89 targeted gateway tests plus 65 existing auth/policy/charge regression tests
+  pass. These include SQLite restart/rollback, the cumulative allocation cap,
+  uncertain accounting acknowledgements, publication fences, lifecycle transitions
+  and existing async/batch repository calls with Supabase forbidden.
+- 12 website API tests pass, including four new mutation-fencing cases.
+- `node supabase/tests/request-state-escrow.test.mjs` passes using PGlite: role
+  permissions, allocation non-replenishment, accounting gaps/replay/rollback,
+  lifecycle revision ordering and source-mutation triggers for both old/new owners.
+- API and website API lint/typecheck pass, with existing max-lines warnings.
+  The staging dry-run bundle passes. These are not live Cloudflare recovery tests.
+
+Still required; none of these are implied by the passing component tests:
+
+1. Approve/apply the additive SQL migration, fund/enroll a dedicated test workspace
+   through an auditable process, and add safe allocation closure/refund recovery.
+   Never initialize from a copied personal-workspace balance. The USD 1 cap is
+   cumulative, not per request, and excludes other workspaces from testing.
+2. Finish publication coverage for all control-plane paths, including gateway
+   management mutations and OAuth/membership semantics. Recover abandoned website
+   fences without allowing an in-flight database mutation to commit after un-fencing.
+   Preserve newly created key response/recovery semantics when synchronization fails.
+   Current OAuth-derived keys fail closed. Only a bounded explicit model-target
+   set is published; this is not yet an across-the-board catalog warmer.
+3. Add bounded spend admission **before** ordinary inference dispatch. Replace
+   snapshot key-limit/budget counters with atomic live enforcement,
    including rolling windows and concurrent admissions. Publish dynamic security
    decisions independently of static pricing. No frozen counter may enforce a
    production budget.
-4. Add a Queue consumer and idempotent Supabase projection, acknowledge durable
-   outbox events only after confirmed persistence, and cover retries, ordering,
-   backpressure, low-balance alerts and automatic top-up behavior. Define event
-   retention and safe snapshot/idempotency cleanup.
+4. Verify projection end to end against Cloudflare and production-backed escrow,
+   add reporting integration, backlog/lag visibility and operational recovery,
+   and define event/snapshot/idempotency retention. Automatic top-up stays disabled
+   for the test. Current refresh polling/rebuild cadence is test-scoped, not an
+   established production cost or freshness budget.
 5. Migrate remaining pre-dispatch reads: provider-rate-limit configuration,
    health fallback, service-tier sibling resolution, auto/free routing, optional
    webhook validation and other specialized paths. Shared preflight coverage
    does not establish that these paths are database-free.
-6. Migrate separate batch/file/realtime ownership and lifecycle handlers. The
-   common wallet helper supports long-lived holds, but provider submission,
-   polling, webhook completion and reconciliation are not yet migrated or
-   tested end to end on the new state.
+6. Complete provider-facing batch/file/realtime execution, callback and recovery
+   wiring. Credentials/pricing, finalization/key counters, background reconciliation
+   and some telemetry still contain legacy paths. Stored lifecycle transitions
+   are tested, but whole lifecycles are not yet database-free or end-to-end proven.
+   Realtime currently requires a USD 5 initial hold, so paid realtime cannot run
+   within the USD 1 test cap; use deterministic provider/relay fixtures.
 7. Benchmark complete dispatch, large snapshots, multiple Cloudflare locations,
    concurrent load, eviction, outage, and recovery. Reduce repeated DO reads
    only after state freshness and accounting semantics remain proven.
