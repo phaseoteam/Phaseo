@@ -54,6 +54,35 @@ Regional endpoints currently accept text-only requests. This is regional
 provider routing, not an end-to-end data residency guarantee. `region` cannot be
 combined with a custom `base_url`.
 
+## Waiting for music, video, and batches
+
+Submit once and wait for completion using the synchronous Python client:
+
+```python
+import os
+
+music = client.music.generate_and_wait(
+    {"model": os.environ["PHASEO_MUSIC_MODEL"], "prompt": "Gentle instrumental piano"},
+    timeout=600,
+    interval=5,
+    on_poll=lambda job: print(job["id"], job["status"]),
+)
+```
+
+| Resource | Submit and wait for success | Wait for an existing job |
+| --- | --- | --- |
+| Music | `music.generate_and_wait(request, **options)` | `music.wait(id, **options)` |
+| Video | `videos.generate_and_wait(request, **options)` | `videos.wait(id, **options)` |
+| Batch | `batches.create_and_wait(request, **options)` | `batches.wait(id, **options)` |
+
+Top-level equivalents are `generate_music_and_wait`, `generate_video_and_wait`, `create_batch_and_wait`, `wait_for_music`, `wait_for_video`, and `wait_for_batch`. Music also has direct `music.create(request)` and `music.retrieve(id)` methods.
+
+All helpers return the full response. Submit-and-wait raises `JobFailedError` for failed, cancelled, or expired jobs, retaining the payload in `error.response`. Wait-by-ID returns any terminal response for inspection. Completed batches may include failed individual requests; inspect `request_counts` and the output/error files.
+
+Options are `interval` (seconds; default 5, minimum 0.25), `timeout` (seconds; default 1800), `on_poll`, and `cancel_event` (a `threading.Event`). Callbacks receive the initial response and every retrieved snapshot. The waiting timeout begins after submission returns. The synchronous client checks timeout and cancellation between HTTP calls and callbacks; these options do not interrupt an HTTP call already in progress or impose a transport timeout.
+
+`JobTimeoutError` and `JobCancelledError` expose `job_id` and `last_response`; resume with `.wait(error.job_id)`. Setting the cancellation event stops local waiting without cancelling the remote job. Submissions are never automatically retried. These helpers consume the existing gateway API; they do not make synchronous provider submission durable in the background.
+
 ## Streaming example
 
 ```python

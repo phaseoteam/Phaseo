@@ -52,6 +52,8 @@ import {
 import type { DevToolsConfig } from "./devtools/core.js";
 import type { KnownModelId as GeneratedKnownModelId } from "./modelIds.js";
 import { verifyAsyncWebhookSignature as verifyWebhookSignatureValue } from "./webhooks.js";
+import { createAndWaitForJob, waitForJob, type JobWaitOptions } from "./jobs.js";
+export { JobFailedError, JobTimeoutError, JobCancelledError, type JobWaitOptions, type JobKind } from "./jobs.js";
 
 export type KnownModelId = GeneratedKnownModelId;
 export type ModelIdLiteral = KnownModelId;
@@ -440,6 +442,8 @@ export class Phaseo {
 
   readonly batches = {
     create: async (req: BatchCreateRequest): Promise<BatchResponse> => this.createBatch(req),
+    createAndWait: (req: BatchCreateRequest, options: JobWaitOptions<BatchResponse> = {}) =>
+      this.createBatchAndWait(req, options),
     list: async (params: Record<string, unknown> = {}): Promise<BatchListResponse> => this.listBatches(params),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
     streamResults: (batchId: string, options: { signal?: AbortSignal } = {}): Promise<ReadableStream<Uint8Array>> =>
@@ -462,6 +466,9 @@ export class Phaseo {
 
   readonly videos = {
     create: async (req: VideoCreateRequest): Promise<VideoStatusResponse> => this.generateVideo(req),
+    generateAndWait: (req: VideoCreateRequest, options: JobWaitOptions<VideoStatusResponse> = {}) =>
+      this.generateVideoAndWait(req, options),
+    wait: (videoId: string, options: JobWaitOptions<VideoStatusResponse> = {}) => this.waitForVideo(videoId, options),
     get: async (videoId: string): Promise<VideoStatusResponse> => this.getVideo(videoId),
     content: async (videoId: string): Promise<Uint8Array> => this.getVideoContent(videoId),
     downloadUrl: async (
@@ -477,6 +484,9 @@ export class Phaseo {
 
   readonly music = {
     create: async (req: MusicGenerateRequest): Promise<MusicGenerateResponse> => this.generateMusic(req),
+    generateAndWait: (req: MusicGenerateRequest, options: JobWaitOptions<MusicGenerateResponse> = {}) =>
+      this.generateMusicAndWait(req, options),
+    wait: (musicId: string, options: JobWaitOptions<MusicGenerateResponse> = {}) => this.waitForMusic(musicId, options),
     get: async (musicId: string): Promise<MusicGenerateResponse> => this.getMusicGeneration(musicId),
   };
 
@@ -1116,27 +1126,32 @@ export class Phaseo {
     );
   }
 
-  async waitForBatch(batchId: string, options: BatchWaitOptions = {}): Promise<BatchResponse> {
-    const normalizedId = asTrimmedString(batchId);
-    if (!normalizedId) throw new Error("batchId is required");
-    const intervalMs = Math.max(250, Math.trunc(options.intervalMs ?? 5_000));
-    const timeoutMs = Math.max(1, Math.trunc(options.timeoutMs ?? 30 * 60_000));
-    const terminalStatuses = new Set(
+  waitForBatch(batchId: string, options: BatchWaitOptions = {}): Promise<BatchResponse> {
+    const terminalStatuses =
       (options.terminalStatuses ?? ["completed", "failed", "cancelled", "expired"])
         .map((status) => normalizeBatchStatus(status))
-        .filter((status): status is BatchTerminalStatus => Boolean(status))
-    );
-    if (terminalStatuses.size === 0) throw new Error("At least one terminal batch status is required");
-    const startedAt = Date.now();
-    while (true) {
-      throwIfAborted(options.signal);
-      const batch = await this.getBatch(normalizedId);
-      await options.onPoll?.(batch);
-      const status = normalizeBatchStatus(batch.status);
-      if (status && terminalStatuses.has(status)) return batch;
-      if (Date.now() - startedAt >= timeoutMs) throw new Error(`Timed out waiting for batch ${normalizedId}`);
-      await sleep(Math.min(intervalMs, Math.max(1, timeoutMs - (Date.now() - startedAt))), options.signal);
-    }
+        .filter((status): status is BatchTerminalStatus => Boolean(status));
+    return waitForJob("batch", batchId, (id) => this.getBatch(id), options, undefined, terminalStatuses);
+  }
+
+  createBatchAndWait(req: BatchCreateRequest, options: JobWaitOptions<BatchResponse> = {}): Promise<BatchResponse> {
+    return createAndWaitForJob("batch", () => this.createBatch(req), (id) => this.getBatch(id), options);
+  }
+
+  waitForVideo(videoId: string, options: JobWaitOptions<VideoStatusResponse> = {}): Promise<VideoStatusResponse> {
+    return waitForJob("video", videoId, (id) => this.getVideo(id), options);
+  }
+
+  generateVideoAndWait(req: VideoCreateRequest, options: JobWaitOptions<VideoStatusResponse> = {}): Promise<VideoStatusResponse> {
+    return createAndWaitForJob("video", () => this.generateVideo(req), (id) => this.getVideo(id), options);
+  }
+
+  waitForMusic(musicId: string, options: JobWaitOptions<MusicGenerateResponse> = {}): Promise<MusicGenerateResponse> {
+    return waitForJob("music", musicId, (id) => this.getMusicGeneration(id), options);
+  }
+
+  generateMusicAndWait(req: MusicGenerateRequest, options: JobWaitOptions<MusicGenerateResponse> = {}): Promise<MusicGenerateResponse> {
+    return createAndWaitForJob("music", () => this.generateMusic(req), (id) => this.getMusicGeneration(id), options);
   }
 
   static async verifyWebhookSignature(input: WebhookVerificationInput): Promise<boolean> {
@@ -1929,22 +1944,6 @@ function normalizeBatchStatus(value: unknown): BatchTerminalStatus | null {
     return normalized;
   }
   return null;
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (!signal?.aborted) return;
-  throw signal.reason instanceof Error ? signal.reason : new Error("Operation aborted");
-}
-
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    throwIfAborted(signal);
-    const timeout = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => {
-      clearTimeout(timeout);
-      reject(signal.reason instanceof Error ? signal.reason : new Error("Operation aborted"));
-    }, { once: true });
-  });
 }
 
 function asTrimmedString(value: unknown): string | null {
