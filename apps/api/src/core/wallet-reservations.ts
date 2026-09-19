@@ -5,6 +5,7 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { invalidateGatewayCreditCache } from "@core/gateway-credit-cache";
 import { setKeyVersion } from "@core/kv";
+import { isRequestStateWorkspace, workspaceState } from "@core/request-state/client";
 
 export type WalletReservationStatus =
 	| "held"
@@ -185,6 +186,11 @@ export async function reserveWalletCredits(args: {
 	keyId?: string | null;
 	requestCount?: number | null;
 }): Promise<WalletReservationResult> {
+	if (isRequestStateWorkspace(args.workspaceId)) {
+		if (!args.keyId) throw new Error("request_state_reservation_key_required");
+		return workspaceState(args.workspaceId).reserve({ id: args.reservationId, keyId: args.keyId,
+			kind: "hold", amountNanos: args.amountNanos, requestCount: args.requestCount ?? 1 });
+	}
 	const data = await callReservationRpc("gateway_wallet_reserve_once", {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
@@ -213,6 +219,7 @@ export async function captureWalletReservation(args: {
 	captureRefId?: string | null;
 	keyId?: string | null;
 }): Promise<WalletReservationResult> {
+	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).capture(args.reservationId);
 	const data = await callReservationRpc("gateway_wallet_capture_once", {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
@@ -238,6 +245,7 @@ export async function releaseWalletReservation(args: {
 	releaseRefId?: string | null;
 	keyId?: string | null;
 }): Promise<WalletReservationResult> {
+	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).release(args.reservationId);
 	const data = await callReservationRpc("gateway_wallet_release_once", {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
@@ -264,6 +272,7 @@ export async function settleWalletReservation(args: {
 	settleRefId?: string | null;
 	keyId?: string | null;
 }): Promise<WalletReservationResult> {
+	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).settle(args.reservationId, args.actualNanos);
 	const supabase = getSupabaseAdmin();
 	const result = await supabase.rpc("gateway_wallet_settle_once", {
 		p_workspace_id: args.workspaceId,

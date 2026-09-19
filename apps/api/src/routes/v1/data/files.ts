@@ -10,6 +10,7 @@ import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
 import { generatePublicId } from "@pipeline/before/genId";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { isRequestStateWorkspace, workspaceState } from "@core/request-state/client";
 import { getBatchFileMeta, saveBatchFileMeta } from "@core/batch-jobs";
 import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
 import {
@@ -163,6 +164,10 @@ async function finishUploadClaim(args: {
 	status: "completed" | "failed";
 	providerFileId?: string | null;
 }): Promise<void> {
+	if (isRequestStateWorkspace(args.workspaceId)) {
+		await workspaceState(args.workspaceId).rowPatch("gateway_batch_file_uploads", { upload_id: args.uploadId }, { status: args.status, provider_file_id: args.providerFileId ?? null });
+		return;
+	}
 	try {
 		const { error } = await getSupabaseAdmin().rpc("gateway_finish_batch_file_upload", {
 			p_workspace_id: args.workspaceId,
@@ -259,7 +264,9 @@ async function handleUpload(req: Request) {
 			return jsonPayload({ error: { type: "validation_error", reason: "moonshot_batch_file_invalid" } }, 400);
 		}
 	}
-	const claim = await getSupabaseAdmin().rpc("gateway_claim_batch_file_upload", {
+	const claim = isRequestStateWorkspace(auth.workspaceId)
+		? { data: await workspaceState(auth.workspaceId).fileClaim(requestId, uploadBody.byteLength), error: null }
+		: await getSupabaseAdmin().rpc("gateway_claim_batch_file_upload", {
 		p_workspace_id: auth.workspaceId,
 		p_upload_id: requestId,
 		p_bytes: uploadBody.byteLength,

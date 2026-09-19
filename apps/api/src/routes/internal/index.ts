@@ -11,8 +11,10 @@ import { internalCacheRoutes } from "./cache";
 import { internalIoLogRoutes } from "./io-logs";
 import { internalNotificationTestRoutes } from "./notification-tests";
 import { internalObservabilityIncidentRoutes } from "./observability-incidents";
+import { internalRequestStateRoutes } from "./request-state";
 
 export const internalRouter = new Hono<Env>();
+internalRouter.route("/request-state", internalRequestStateRoutes);
 
 internalRouter.route("/batch-webhooks", internalBatchWebhookRoutes);
 internalRouter.route("/cache", internalCacheRoutes);

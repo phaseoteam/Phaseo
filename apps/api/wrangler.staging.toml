@@ -1,13 +1,15 @@
 name = "phaseo-gateway-staging"
 main = "src/index.ts"
 compatibility_date = "2025-10-01"
-compatibility_flags = ["global_fetch_strictly_public"]
+compatibility_flags = ["global_fetch_strictly_public", "nodejs_als"]
 workers_dev = true
 preview_urls = false
 routes = [{ pattern = "api-staging.phaseo.app", custom_domain = true }]
 
 [vars]
 ENV = "staging"
+GATEWAY_REQUEST_STATE_MODE = "synthetic"
+GATEWAY_PUBLIC_BASE_URL = "https://api-staging.phaseo.app"
 NODE_ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 AMAZON_BEDROCK_REGION = "us-west-2"
@@ -59,6 +61,10 @@ invocation_logs = true
 binding = "GATEWAY_CACHE"
 id = "4ffdeda1a87c45b38c697f78232526be"
 
+[[kv_namespaces]]
+binding = "GATEWAY_REQUEST_STATE_KV"
+id = "2438099f3dd54c589da837f519acf9c6"
+
 [[r2_buckets]]
 binding = "GATEWAY_IO_LOGS_BUCKET"
 bucket_name = "phaseo-gateway-io-logs-preview"
@@ -98,3 +104,11 @@ namespace_id = "41003"
 [ratelimits.simple]
 limit = 60
 period = 60
+
+[[durable_objects.bindings]]
+name = "WORKSPACE_REQUEST_STATE"
+class_name = "WorkspaceRequestState"
+
+[[migrations]]
+tag = "v2-workspace-request-state"
+new_sqlite_classes = ["WorkspaceRequestState"]
