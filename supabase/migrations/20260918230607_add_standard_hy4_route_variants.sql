@@ -1,5 +1,6 @@
 -- phaseo:allow-production-history-backfill reason: Restore migration 20260918230607 already applied in production; SQL recovered from supabase_migrations.schema_migrations.
 -- This records existing production history so deployment can resume without replaying the repair.
+-- Guard parent routes for environments without the production catalogue seed.
 
     insert into public.v2_route_variants (
       provider_model_id,
@@ -10,7 +11,8 @@
       endpoint_label,
       metadata
     )
-    values
+    select seed.*
+    from (values
       (
         'novita:tencent/hy4-preview',
         'global:standard',
@@ -35,6 +37,14 @@
           'source', 'admin_repair'
         )
       )
+    ) as seed (
+      provider_model_id, variant_key, service_tier_slug, status,
+      routing_enabled, endpoint_label, metadata
+    )
+    where exists (
+      select 1 from public.v2_model_provider_routes route
+      where route.provider_model_id = seed.provider_model_id
+    )
     on conflict (provider_model_id, variant_key) do update
       set service_tier_slug = excluded.service_tier_slug,
           status = excluded.status,
