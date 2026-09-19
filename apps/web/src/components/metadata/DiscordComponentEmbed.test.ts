@@ -28,6 +28,7 @@ describe("Discord component embed", () => {
 				accent_color: number;
 				components: Array<{
 					type: number;
+					content?: string;
 					components?: Array<{ type: number; style?: number; url?: string }>;
 					accessory?: { type: number; media?: { url?: string } };
 				}>;
@@ -47,25 +48,24 @@ describe("Discord component embed", () => {
 		const sections = payload.component.components.filter(
 			(component) => component.type === 9,
 		);
-		expect(sections).toHaveLength(2);
+		expect(sections).toHaveLength(1);
 		expect(sections[0]?.accessory?.type).toBe(11);
 		expect(sections[0]?.accessory?.media?.url).toContain(
 			"/logos/discord/zai.png",
 		);
-		expect(sections[1]?.components?.[0]).toEqual(
+		const poweredByLine = payload.component.components.find(
+			(component) =>
+				component.type === 10 &&
+				component.content?.includes("Powered by [Phaseo]"),
+		);
+		expect(poweredByLine).toEqual(
 			expect.objectContaining({
 				type: 10,
 				content: expect.stringContaining("Powered by [Phaseo]"),
 			}),
 		);
-		expect(sections[1]).toEqual(
-			expect.objectContaining({
-				accessory: expect.objectContaining({
-					media: expect.objectContaining({
-						url: expect.stringContaining("png_logo_discord.png"),
-					}),
-				}),
-			}),
+		expect(serializeDiscordComponentEmbed(options)).not.toContain(
+			"png_logo_discord.png",
 		);
 
 		const actionRow = payload.component.components.find(
@@ -121,7 +121,7 @@ describe("Discord component embed", () => {
 			(component) => component.type === 9,
 		);
 
-		expect(sections).toHaveLength(2);
+		expect(sections).toHaveLength(1);
 		expect(sections[0]).toEqual(
 			expect.objectContaining({
 				accessory: expect.objectContaining({
@@ -131,18 +131,17 @@ describe("Discord component embed", () => {
 				}),
 			}),
 		);
-		expect(sections[1]).toEqual(
-			expect.objectContaining({
-				accessory: expect.objectContaining({
-					media: expect.objectContaining({
-						url: expect.stringContaining("png_logo_discord.png"),
-					}),
+		expect(payload.component.components).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					type: 10,
+					content: expect.stringContaining("Powered by [Phaseo]"),
 				}),
-			}),
+			]),
 		);
 	});
 
-	it("uses the Phaseo logo once when no lab logo is available", () => {
+	it("does not show a Phaseo logo when no lab logo is available", () => {
 		const payload = buildDiscordModelComponentEmbed({
 			...options,
 			organisationId: null,
@@ -152,16 +151,8 @@ describe("Discord component embed", () => {
 			(component) => component.type === 9,
 		);
 
-		expect(sections).toHaveLength(1);
-		expect(sections[0]).toEqual(
-			expect.objectContaining({
-				accessory: expect.objectContaining({
-					media: expect.objectContaining({
-						url: expect.stringContaining("png_logo_light.png"),
-					}),
-				}),
-			}),
-		);
+		expect(sections).toHaveLength(0);
+		expect(JSON.stringify(payload)).not.toContain("png_logo_light.png");
 	});
 
 	it("keeps an uploaded PNG when there is no bundled lab logo", () => {
@@ -210,15 +201,6 @@ describe("Discord component embed", () => {
 		expect(missingPngs).toEqual([]);
 	});
 
-	it("ships a Discord-sized Phaseo logo", () => {
-		const phaseoLogoPath = path.resolve(
-			__dirname,
-			"../../../public/png_logo_discord.png",
-		);
-
-		expect(existsSync(phaseoLogoPath)).toBe(true);
-	});
-
 	it("adds the Vercel bypass to preview-hosted lab logos", () => {
 		const previousEnvironment = {
 			VERCEL_ENV: process.env.VERCEL_ENV,
@@ -239,22 +221,12 @@ describe("Discord component embed", () => {
 				(component) => component.type === 9,
 			);
 			const labSection = sections[0];
-			const phaseoSection = sections[1];
 
 			expect(labSection).toEqual(
 				expect.objectContaining({
 					accessory: expect.objectContaining({
 						media: expect.objectContaining({
 						url: "https://phaseo-preview.vercel.app/logos/discord/zai.png?x-vercel-protection-bypass=preview-test-secret",
-						}),
-					}),
-				}),
-			);
-			expect(phaseoSection).toEqual(
-				expect.objectContaining({
-					accessory: expect.objectContaining({
-						media: expect.objectContaining({
-							url: "https://phaseo-preview.vercel.app/png_logo_discord.png?x-vercel-protection-bypass=preview-test-secret",
 						}),
 					}),
 				}),

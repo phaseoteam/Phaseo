@@ -83,8 +83,6 @@ export function buildDiscordModelComponentEmbed(
 	const description = normalizeText(options.description);
 	const context = formatContextLength(options.contextLength);
 	const modelUrl = absoluteUrl(options.modelPath);
-	const phaseoLogoUrl = absoluteUrl("/png_logo_light.png");
-	const phaseoDiscordLogoUrl = absoluteMediaUrl("/png_logo_discord.png");
 	const knownOrganisationLogoUrl = discordLogoUrlForOrganisation(
 		options.organisationId,
 	);
@@ -102,32 +100,23 @@ export function buildDiscordModelComponentEmbed(
 		.join("\n");
 
 	const components = [
-		{
-			type: 9,
-			components: [{ type: 10, content: text }],
-			accessory: {
-				type: 11,
-				media: { url: organisationLogoUrl ?? phaseoLogoUrl },
-			},
-		},
 		...(organisationLogoUrl
 			? [
-					{ type: 14, spacing: 1 },
 					{
 						type: 9,
-						components: [
-							{
-								type: 10,
-								content: `Powered by [Phaseo](${absoluteUrl("/")})`,
-							},
-						],
+						components: [{ type: 10, content: text }],
 						accessory: {
 							type: 11,
-							media: { url: phaseoDiscordLogoUrl ?? phaseoLogoUrl },
+							media: { url: organisationLogoUrl },
 						},
 					},
+					{ type: 14, spacing: 1 },
+					{
+						type: 10,
+						content: `Powered by [Phaseo](${absoluteUrl("/")})`,
+					},
 				]
-			: []),
+			: [{ type: 10, content: text }]),
 		{ type: 14, spacing: 1 },
 		{
 			type: 1,
