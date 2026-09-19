@@ -1,11 +1,8 @@
 import { absoluteUrl } from "@/lib/seo";
-import { resolveLogo, type KnownLogoId } from "@/lib/logos";
+import { resolveLogo } from "@/lib/logos";
 
 const DEFAULT_ACCENT_COLOR = 0x2563eb;
 const MAX_DESCRIPTION_LENGTH = 360;
-const DISCORD_LOGO_OVERRIDES: Partial<Record<KnownLogoId, string>> = {
-	zai: "/logos/zai_discord.png",
-};
 
 export interface DiscordModelComponentEmbedOptions {
 	modelId: string;
@@ -59,10 +56,8 @@ function discordLogoUrlForOrganisation(
 ): string | null {
 	if (!organisationId) return null;
 	const logo = resolveLogo(organisationId, { variant: "dark" });
-	const source = logo.id
-		? (DISCORD_LOGO_OVERRIDES[logo.id] ?? logo.src)
-		: logo.src;
-	return absoluteMediaUrl(source);
+	if (!logo.id || !logo.src) return null;
+	return absoluteMediaUrl(`/logos/discord/${logo.id}.png`);
 }
 
 function formatContextLength(contextLength: number | null | undefined): string | null {
@@ -98,7 +93,7 @@ export function buildDiscordModelComponentEmbed(
 		options.organisationId,
 	);
 	const organisationLogoUrl =
-		absoluteMediaUrl(options.organisationLogoUrl) ?? knownOrganisationLogoUrl;
+		knownOrganisationLogoUrl ?? absoluteMediaUrl(options.organisationLogoUrl);
 	const queryModelId = encodeURIComponent(options.modelId);
 	const summary = [organisationName, context ? `${context} context` : "Model profile"]
 		.join(" · ");

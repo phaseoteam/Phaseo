@@ -1,3 +1,6 @@
+import { existsSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { resolveLogo } from "@/lib/logos";
 import {
 	buildDiscordModelComponentEmbed,
 	discordAccentColor,
@@ -46,8 +49,8 @@ describe("Discord component embed", () => {
 		);
 		expect(sections).toHaveLength(2);
 		expect(sections[0]?.accessory?.type).toBe(11);
-		expect(sections[0]?.accessory?.media?.url).toBe(
-			"https://cdn.example.com/z-ai.png",
+		expect(sections[0]?.accessory?.media?.url).toContain(
+			"/logos/discord/zai.png",
 		);
 		expect(sections[1]?.components?.[0]).toEqual(
 			expect.objectContaining({
@@ -108,7 +111,7 @@ describe("Discord component embed", () => {
 			expect.objectContaining({
 				accessory: expect.objectContaining({
 					media: expect.objectContaining({
-						url: expect.stringContaining("/logos/zai_discord.png"),
+						url: expect.stringContaining("/logos/discord/zai.png"),
 					}),
 				}),
 			}),
@@ -146,6 +149,52 @@ describe("Discord component embed", () => {
 		);
 	});
 
+	it("keeps an uploaded PNG when there is no bundled lab logo", () => {
+		const payload = buildDiscordModelComponentEmbed({
+			...options,
+			organisationId: null,
+			organisationLogoUrl: "https://cdn.example.com/custom-lab.png",
+		});
+		const labSection = payload.component.components.find(
+			(component) => component.type === 9,
+		);
+
+		expect(labSection).toEqual(
+			expect.objectContaining({
+				accessory: expect.objectContaining({
+					media: expect.objectContaining({
+						url: "https://cdn.example.com/custom-lab.png",
+					}),
+				}),
+			}),
+		);
+	});
+
+	it("ships PNGs for every catalog lab with a known logo", () => {
+		const modelCatalogPath = path.resolve(
+			__dirname,
+			"../../../../../packages/data/catalog/src/data/models",
+		);
+		const discordLogoPath = path.resolve(
+			__dirname,
+			"../../../public/logos/discord",
+		);
+		const organisationIds = readdirSync(modelCatalogPath, {
+			withFileTypes: true,
+		})
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => entry.name);
+		const knownLogos = organisationIds
+			.map((organisationId) => resolveLogo(organisationId, { variant: "dark" }))
+			.filter((logo) => logo.id && logo.src);
+		const missingPngs = knownLogos
+			.map((logo) => `${logo.id}.png`)
+			.filter((fileName) => !existsSync(path.join(discordLogoPath, fileName)));
+
+		expect(knownLogos.length).toBeGreaterThan(0);
+		expect(missingPngs).toEqual([]);
+	});
+
 	it("adds the Vercel bypass to preview-hosted lab logos", () => {
 		const previousEnvironment = {
 			VERCEL_ENV: process.env.VERCEL_ENV,
@@ -170,7 +219,7 @@ describe("Discord component embed", () => {
 				expect.objectContaining({
 					accessory: expect.objectContaining({
 						media: expect.objectContaining({
-							url: "https://phaseo-preview.vercel.app/logos/zai_discord.png?x-vercel-protection-bypass=preview-test-secret",
+						url: "https://phaseo-preview.vercel.app/logos/discord/zai.png?x-vercel-protection-bypass=preview-test-secret",
 						}),
 					}),
 				}),
