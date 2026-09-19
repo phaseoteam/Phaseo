@@ -1,4 +1,5 @@
 import { normalizeProviderList } from "@/lib/config/providerAliases";
+import { isSyntheticWorkspace, readPublishedPolicy } from "@core/request-state/client";
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
 import type { PriceCard } from "../pricing";
@@ -505,6 +506,7 @@ export async function fetchWorkspacePolicy(args: {
 	workspaceId: string;
 	apiKeyId: string;
 }): Promise<WorkspacePolicy> {
+	if (isSyntheticWorkspace(args.workspaceId)) return readPublishedPolicy(args);
 	const [workspaceVersionToken, apiKeyVersionToken] = await Promise.all([
 		getWorkspacePolicyVersionToken(args.workspaceId),
 		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: 5_000 }),

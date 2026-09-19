@@ -3,6 +3,10 @@
 import type { GatewayBindings } from "./env.types";
 
 export const BINDING_KEYS: Array<keyof GatewayBindings> = [
+    "GATEWAY_REQUEST_STATE_MODE",
+    "GATEWAY_REQUEST_STATE_ENCRYPTION_KEY",
+    "GATEWAY_REQUEST_STATE_KV",
+    "WORKSPACE_REQUEST_STATE",
     "GATEWAY_CONTEXT_BUNDLE_ENABLED",
     "GATEWAY_PUBLIC_CATALOG_TARGETS",
     "SUPABASE_URL",

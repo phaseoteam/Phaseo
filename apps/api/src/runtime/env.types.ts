@@ -1,6 +1,10 @@
 // Purpose: Runtime environment type definitions.
 
 export type GatewayBindings = {
+    GATEWAY_REQUEST_STATE_MODE?: "synthetic";
+    GATEWAY_REQUEST_STATE_ENCRYPTION_KEY?: string;
+    GATEWAY_REQUEST_STATE_KV?: KVNamespace;
+    WORKSPACE_REQUEST_STATE?: DurableObjectNamespace<import("@core/request-state/durable-object").WorkspaceRequestState>;
     GATEWAY_CONTEXT_BUNDLE_ENABLED?: string;
     GATEWAY_PUBLIC_CATALOG_TARGETS?: string;
     SUPABASE_URL: string;

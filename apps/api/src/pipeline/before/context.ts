@@ -4,6 +4,7 @@
 // How: Calls RPC/SQL to fetch provider, pricing, and gating context.
 
 import { dispatchBackground, getSupabaseAdmin, getCache } from "@/runtime/env";
+import { isSyntheticWorkspace, readPublishedContext } from "@core/request-state/client";
 import { getProviderResidencyMetadata } from "@/lib/config/providerResidency";
 import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { getTextMany, keyVersionToken } from "@/core/kv";
@@ -1049,6 +1050,7 @@ export async function fetchGatewayContext(args: {
     disableCache?: boolean;
     onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GatewayContextData> {
+	if (isSyntheticWorkspace(args.workspaceId)) return readPublishedContext(args);
 	const fetchStartedAt = performance.now();
 	await assertPresetAccess(args);
 	const presetAccessMs = round3(performance.now() - fetchStartedAt);

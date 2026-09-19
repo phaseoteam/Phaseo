@@ -10,6 +10,7 @@ import {
 	type KeyPepperCandidate,
 } from "@/lib/security/keyPepper";
 import { GATEWAY_ACCESS_SCOPE, parseStoredScopeList } from "@/lib/authz/capabilities";
+import { isSyntheticKey, readPublishedKey, requestStateEnabled } from "@core/request-state/client";
 
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
@@ -69,6 +70,9 @@ async function hmacHexWithKeyBytes(message: string, keyBytes: Uint8Array): Promi
 function hmacUtf8(message: string, pepperUtf8: string) {
     return hmacHexWithKeyBytes(message, enc.encode(pepperUtf8));
 }
+
+// Publication uses the same hash representation as inference authentication.
+export const hashRequestStateSecret = hmacUtf8;
 
 // Optional decoders: allow peppers stored as hex or base64url.
 // Not used by default (UTF-8 pepper is the standard path).
@@ -407,6 +411,25 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         return { ok: false, reason: "management_key_not_valid_for_gateway" };
     }
     if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
+
+    if (requestStateEnabled(bindings) && isSyntheticKey(parsed.kid)) {
+        if (!isInternalRequestAuthorized(req, bindings)) return { ok: false, reason: "synthetic_key_requires_internal_token" };
+        try {
+            const key = await readPublishedKey(parsed.kid);
+            if (!key || key.status !== "active" || key.soft_blocked || isExpiredKey(key.expires_at)) {
+                return { ok: false, reason: "key_not_found_or_revoked" };
+            }
+            const match = await findMatchingPepperCandidate({ secret: parsed.secret, storedHash: key.hash,
+                pepperCandidates: resolveKeyPepperCandidates(bindings) });
+            if (!match) return { ok: false, reason: "invalid_secret" };
+            return { ok: true, workspaceId: key.workspace_id, apiKeyId: key.id,
+                // Internal endpoint authorization permits running the probe;
+                // it must not bypass ordinary credit, key or policy gates.
+                apiKeyKid: key.kid, apiKeyRef: `kid_${key.kid}`, internal: false, authMethod: "api_key" };
+        } catch {
+            return { ok: false, reason: "request_state_unavailable" };
+        }
+    }
 
     // 3. Look up key in Supabase.
     const supabase = getSupabaseAdmin();

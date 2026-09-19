@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { isSyntheticWorkspace, workspaceState } from "@core/request-state/client";
 // Purpose: Pricing rules, billing, and persistence helpers.
 // Why: Centralizes all cost calculations.
 // How: Persists pricing/usage data into storage.
@@ -186,6 +187,13 @@ export async function recordUsageAndCharge(args: {
     cost_nanos: number;
     creditSnapshotBalanceNanos?: number | null;
 }): Promise<ChargeRpcResult> {
+    if (isSyntheticWorkspace(args.workspaceId)) {
+        const charged = await workspaceState(args.workspaceId).charge(args.requestId, args.cost_nanos);
+        if (!charged.applied && !charged.alreadyApplied) throw new Error(`request_state_charge_failed:${charged.status}`);
+        return { status: "charged", applied: charged.applied, already_applied: charged.alreadyApplied,
+            auto_top_up_amount_nanos: 0, auto_top_up_account_id: null, stripe_customer_id: null,
+            invalidate_credit_cache: false };
+    }
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         const supabase = getSupabaseAdmin();
@@ -351,7 +359,6 @@ export async function recordUsageAndCharge(args: {
         releaseRuntime();
     }
 }
-
 
 
 
