@@ -2156,7 +2156,7 @@ def makeDecision(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> SystemOneResponse:
+) -> DecisionsResponse:
 	path = path or {}
 	resolved_path = "/decisions"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)

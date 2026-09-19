@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { SystemOneSchema } from "../schemas";
+import { DecisionsSchema } from "../schemas";
 
-describe("SystemOneSchema", () => {
+describe("DecisionsSchema", () => {
 	it("accepts TypeSafe's keyed Noul, Choice, and Score question map", () => {
-		const parsed = SystemOneSchema.safeParse({
+		const parsed = DecisionsSchema.safeParse({
 			state: { account_type: "startup" },
 			questions: {
 				is_startup: {
@@ -25,17 +25,17 @@ describe("SystemOneSchema", () => {
 
 		expect(parsed.success).toBe(true);
 		if (parsed.success) {
-			expect(parsed.data.model).toBe("typesafe/jev");
+			expect(parsed.data.model).toBe("typesafe/jev-1.13.0");
 			expect(Array.isArray(parsed.data.questions)).toBe(false);
 		}
 	});
 
 	it("rejects array questions and malformed typed question criteria", () => {
-		expect(SystemOneSchema.safeParse({
+		expect(DecisionsSchema.safeParse({
 			state: "account",
 			questions: [],
 		}).success).toBe(false);
-		expect(SystemOneSchema.safeParse({
+		expect(DecisionsSchema.safeParse({
 			state: "account",
 			questions: {
 				segment: {

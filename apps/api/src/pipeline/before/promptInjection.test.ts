@@ -50,7 +50,7 @@ describe("prompt injection guardrails", () => {
 		expect(detections).toEqual([]);
 	});
 
-	it("inspects nested System One state and question text", async () => {
+	it("inspects nested Decisions state and question text", async () => {
 		const body = {
 			state: {
 				case: {
@@ -67,7 +67,7 @@ describe("prompt injection guardrails", () => {
 		const result = applyPromptInjectionGuardrails({
 			body,
 			rawBody: structuredClone(body),
-			endpoint: "systemone",
+			endpoint: "decisions",
 			workspacePolicy: {
 				providerAllowlist: null,
 				providerBlocklist: null,
@@ -79,7 +79,7 @@ describe("prompt injection guardrails", () => {
 				enforceAllowed: false,
 				activeGuardrailIds: ["gr_prompt"],
 			},
-			requestId: "req_systemone",
+			requestId: "req_decisions",
 			workspaceId: "ws_123",
 		});
 

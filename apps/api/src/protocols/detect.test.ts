@@ -42,15 +42,15 @@ describe("detectProtocol", () => {
 		expect(detectProtocol("rerank", "/v1/rerank")).toBe(
 			"openai.rerank",
 		);
-		expect(detectProtocol("systemone", "/v1/decisions")).toBe(
-			"typesafe.systemone",
+		expect(detectProtocol("decisions", "/v1/decisions")).toBe(
+			"phaseo.decisions",
 		);
 	});
 
 	it("keeps structured decision protocol capabilities explicit", () => {
-		expect(protocolSupportsFeature("typesafe.systemone", "streaming")).toBe(false);
-		expect(protocolSupportsFeature("typesafe.systemone", "tools")).toBe(false);
-		expect(protocolSupportsFeature("typesafe.systemone", "multimodal")).toBe(false);
-		expect(protocolSupportsFeature("typesafe.systemone", "reasoning")).toBe(false);
+		expect(protocolSupportsFeature("phaseo.decisions", "streaming")).toBe(false);
+		expect(protocolSupportsFeature("phaseo.decisions", "tools")).toBe(false);
+		expect(protocolSupportsFeature("phaseo.decisions", "multimodal")).toBe(false);
+		expect(protocolSupportsFeature("phaseo.decisions", "reasoning")).toBe(false);
 	});
 });

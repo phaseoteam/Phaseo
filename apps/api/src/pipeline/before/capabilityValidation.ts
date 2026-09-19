@@ -215,6 +215,7 @@ function validateParameterSupport(args: {
 	workspaceId: string;
 	providers: ProviderCandidate[];
 	model: string;
+	requiredParams?: string[];
 }): ParameterSupportResult {
 	const unknownParams = getUnknownTopLevelParams(args.endpoint, args.rawBody);
 	if (unknownParams.length > 0) {
@@ -234,7 +235,10 @@ function validateParameterSupport(args: {
 		};
 	}
 
-	const requested = extractRequestedParams(args.endpoint, args.rawBody);
+	const requested = Array.from(new Set([
+		...extractRequestedParams(args.endpoint, args.rawBody),
+		...(args.requiredParams ?? []),
+	]));
 	if (!requested.length) {
 		return {
 			ok: true,
@@ -402,6 +406,7 @@ export function validateCapabilities(args: {
 	workspaceId: string;
 	providers: ProviderCandidate[];
 	model: string;
+	requiredParams?: string[];
 }): ValidationResult {
 	const filteringStages: ParamRoutingDiagnostics["filteringStages"] = [];
 	const initialProviders = args.providers;
@@ -415,6 +420,7 @@ export function validateCapabilities(args: {
 		workspaceId: args.workspaceId,
 		providers: args.providers,
 		model: args.model,
+		requiredParams: args.requiredParams,
 	});
 	if ("response" in paramResult) return { ok: false, response: paramResult.response };
 	pushFilteringStage(filteringStages, "param_support", initialProviders, paramResult.providers);

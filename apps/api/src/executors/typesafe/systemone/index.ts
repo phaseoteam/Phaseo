@@ -1,7 +1,7 @@
 // Purpose: TypeSafe Jev executor for the native System One API.
 // Why: Jev is a structured evaluator, not an OpenAI-compatible text model.
 
-import type { IRSystemOneRequest, IRSystemOneResponse } from "@core/ir";
+import type { IRDecisionsRequest, IRDecisionsResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { resolveProviderKey } from "@providers/keys";
@@ -34,7 +34,7 @@ function malformedResponse(args: ExecutorExecuteArgs, upstream: Response): Execu
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	const ir = args.ir as IRSystemOneRequest;
+	const ir = args.ir as IRDecisionsRequest;
 	const bindings = getBindings();
 	const keyInfo = resolveProviderKey(
 		{
@@ -86,7 +86,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		return malformedResponse(args, upstream);
 	}
 
-	const responseIr = decodeTypeSafeSystemOneResponse(payload, ir.model) as IRSystemOneResponse;
+	const responseIr = decodeTypeSafeSystemOneResponse(payload, ir.model) as IRDecisionsResponse;
 	// Keep Phaseo's canonical model ID in the client-facing payload while the
 	// provider alias/version remains available in rawResponse for diagnostics.
 	responseIr.model = ir.model;

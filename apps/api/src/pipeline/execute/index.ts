@@ -82,8 +82,8 @@ import type {
 	IRModerationsResponse,
 	IRRerankRequest,
 	IRRerankResponse,
-	IRSystemOneRequest,
-	IRSystemOneResponse,
+	IRDecisionsRequest,
+	IRDecisionsResponse,
 	IROcrRequest,
 	IROcrResponse,
 	IRParseRequest,
@@ -391,7 +391,7 @@ export type IRRequestResult = {
 		| IREmbeddingsResponse
 		| IRModerationsResponse
 		| IRRerankResponse
-		| IRSystemOneResponse
+		| IRDecisionsResponse
 		| IRImageGenerationResponse
 		| IRAudioSpeechResponse
 		| IRAudioTranscriptionResponse
@@ -433,7 +433,7 @@ export async function doRequestWithIR(
 		| IREmbeddingsRequest
 		| IRModerationsRequest
 		| IRRerankRequest
-		| IRSystemOneRequest
+		| IRDecisionsRequest
 		| IRImageGenerationRequest
 		| IRAudioSpeechRequest
 		| IRAudioTranscriptionRequest
@@ -602,7 +602,7 @@ async function attemptProviderWithIR(
 		| IREmbeddingsRequest
 		| IRModerationsRequest
 		| IRRerankRequest
-		| IRSystemOneRequest
+		| IRDecisionsRequest
 		| IRImageGenerationRequest
 		| IRAudioSpeechRequest
 		| IRAudioTranscriptionRequest
@@ -1014,6 +1014,14 @@ async function attemptProviderWithIR(
 			? Math.max(0, Date.now() - selectedUpstreamTiming.dispatchAtMs)
 			: generationTimeMs;
 		ctx.meta.provider_duration_ms = selectedProviderDurationMs;
+		if (normalizedCapability === "decisions.make" && executorResult.upstream.ok) {
+			// Decisions are non-streaming, so generation ends once the selected
+			// provider response has been fully received and parsed.
+			ctx.meta.generation_ms = Math.max(
+				selectedProviderDurationMs,
+				typeof ctx.meta.latency_ms === "number" ? ctx.meta.latency_ms : 0,
+			);
+		}
 		const attemptDurationMs = Math.round(performance.now() - attemptStartedAt);
 
 		const usageForMetrics = executorResult.kind === "completed"
@@ -1043,9 +1051,10 @@ async function attemptProviderWithIR(
 			const recordsSynchronousGeneration =
 				normalizedCapability === "image.generate" ||
 				normalizedCapability === "audio.speech";
-			const preservesModerationTiming =
-				normalizedCapability === "moderations" && executorResult.upstream.ok;
-			if (!isTextGenerate && !preservesModerationTiming) {
+			const preservesStructuredProviderTiming =
+				(normalizedCapability === "moderations" || normalizedCapability === "decisions.make") &&
+				executorResult.upstream.ok;
+			if (!isTextGenerate && !preservesStructuredProviderTiming) {
 				delete (ctx.meta as Record<string, unknown>).latency_ms;
 				if (recordsSynchronousGeneration && executorResult.upstream.ok) {
 					ctx.meta.generation_ms ??= selectedProviderDurationMs;

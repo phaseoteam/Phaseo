@@ -1247,6 +1247,84 @@ class DebugOptions
 	public $trace_level;
 }
 
+class DecisionChoiceQuestion
+{
+	/** @var array<string, mixed> */
+	public $criteria;
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class DecisionInstructions { }
+
+class DecisionNoulQuestion
+{
+	/** @var array<string, mixed>|null */
+	public $criteria;
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class DecisionScoreQuestion
+{
+	/** @var array */
+	public $criteria;
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class DecisionsRequest
+{
+	/** @var array<string, mixed>|null */
+	public $debug;
+	/** @var bool|null */
+	public $echo_upstream_request;
+	/** @var bool|null */
+	public $meta;
+	/** @var array<string, mixed>|null */
+	public $metadata;
+	/** @var string */
+	public $model;
+	/** @var array<string, mixed>|null */
+	public $provider;
+	/** @var array<string, mixed> */
+	public $questions;
+	/** @var array<string, mixed>|null */
+	public $routing;
+	/** @var string|array<string, mixed>|array */
+	public $state;
+}
+
+class DecisionsResponse
+{
+	/** @var array<string, mixed>|null */
+	public $answers;
+	/** @var array<string, mixed>|null */
+	public $meta;
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $request_id;
+	/** @var array<string, mixed>|null */
+	public $usage;
+}
+
+class DecisionsUsage
+{
+	/** @var int|null */
+	public $input_tokens;
+	/** @var int|null */
+	public $output_tokens;
+	/** @var int|null */
+	public $total_tokens;
+}
+
 class DeletedResponse
 {
 	/** @var string */

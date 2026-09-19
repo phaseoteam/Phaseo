@@ -174,7 +174,7 @@ export function genAiOperation(endpoint: Endpoint): string {
 			return "embeddings";
 		case "rerank":
 			return "retrieval";
-		case "systemone":
+		case "decisions":
 			return "generate_content";
 		case "responses":
 		case "images.generations":
@@ -204,7 +204,7 @@ function outputType(endpoint: Endpoint, request: unknown): string | null {
 	if (object(request).response_format?.type === "json_schema" || object(request).response_format?.type === "json_object") {
 		return "json";
 	}
-	return ["chat.completions", "messages", "responses", "audio.transcription", "audio.translations", "ocr", "parse", "systemone"].includes(endpoint)
+	return ["chat.completions", "messages", "responses", "audio.transcription", "audio.translations", "ocr", "parse", "decisions"].includes(endpoint)
 		? "text"
 		: null;
 }

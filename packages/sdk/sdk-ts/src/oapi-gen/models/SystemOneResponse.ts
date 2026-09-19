@@ -1,3 +1,6 @@
+/**
+ * Deprecated compatibility alias. Use DecisionsResponse.
+ */
 export interface SystemOneResponse {
   answers?: {
     [key: string]: unknown;

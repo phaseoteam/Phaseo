@@ -1034,6 +1034,65 @@ module Phaseo
     # @!attribute [rw] trace_level
     #   @return [String, nil]
     DebugOptions = Struct.new(:enabled, :return_upstream_request, :return_upstream_response, :trace, :trace_level, keyword_init: true)
+    # @!attribute [rw] criteria
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionChoiceQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    DecisionInstructions = Object
+    # @!attribute [rw] criteria
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionNoulQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] criteria
+    #   @return [Array<String>]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionScoreQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] debug
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] echo_upstream_request
+    #   @return [Boolean, nil]
+    # @!attribute [rw] meta
+    #   @return [Boolean, nil]
+    # @!attribute [rw] metadata
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] provider
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] questions
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] routing
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] state
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :meta, :metadata, :model, :provider, :questions, :routing, :state, keyword_init: true)
+    # @!attribute [rw] answers
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] meta
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] request_id
+    #   @return [String, nil]
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}, nil]
+    DecisionsResponse = Struct.new(:answers, :meta, :model, :request_id, :usage, keyword_init: true)
+    # @!attribute [rw] input_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] total_tokens
+    #   @return [Integer, nil]
+    DecisionsUsage = Struct.new(:input_tokens, :output_tokens, :total_tokens, keyword_init: true)
     # @!attribute [rw] deleted
     #   @return [String]
     DeletedResponse = Struct.new(:deleted, keyword_init: true)

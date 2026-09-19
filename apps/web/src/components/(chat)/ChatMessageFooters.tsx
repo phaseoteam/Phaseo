@@ -215,6 +215,7 @@ type AssistantMessageFooterProps = {
 	metadataProviderId: string | null;
 	metadataProviderLabel: string | null;
 	metadataServiceTier: string | null;
+	inputTokens?: number | string | null;
 	outputSpeedTps: number | null;
 	sentAtLabel: string | null;
 	onBranch: () => void;
@@ -222,6 +223,7 @@ type AssistantMessageFooterProps = {
 	onMetadataOpenChange: (open: boolean) => void;
 	onRetry: () => void;
 	onSelectVariant: (variantIndex: number) => void;
+	totalTokens?: number | string | null;
 	throughputTps: number | null;
 	outputTokens: number | string | null;
 	variantCount: number;
@@ -232,7 +234,7 @@ export function AssistantMessageFooter({
 	assistantCopied,
 	costLabel,
 	endToEndDisplay,
-	endToEndMs,
+	endToEndMs: _endToEndMs,
 	generationMs,
 	isPendingAssistant,
 	latencyMs,
@@ -240,6 +242,7 @@ export function AssistantMessageFooter({
 	metadataProviderId,
 	metadataProviderLabel,
 	metadataServiceTier,
+	inputTokens,
 	outputSpeedTps,
 	sentAtLabel,
 	onBranch,
@@ -247,6 +250,7 @@ export function AssistantMessageFooter({
 	onMetadataOpenChange,
 	onRetry,
 	onSelectVariant,
+	totalTokens,
 	throughputTps,
 	outputTokens,
 	variantCount,
@@ -377,11 +381,21 @@ export function AssistantMessageFooter({
 								</div>
 								<div className="h-px bg-border" />
 								<MetadataSection title="Usage">
+									{inputTokens !== null && inputTokens !== undefined ? (
+										<MetadataRow label="Input tokens">
+											<NumericValue>{formatMetric(inputTokens)}</NumericValue>
+										</MetadataRow>
+									) : null}
 									<MetadataRow label="Output tokens">
 										<NumericValue>
 											{formatMetric(outputTokens)}
 										</NumericValue>
 									</MetadataRow>
+									{totalTokens !== null && totalTokens !== undefined ? (
+										<MetadataRow label="Total tokens">
+											<NumericValue>{formatMetric(totalTokens)}</NumericValue>
+										</MetadataRow>
+									) : null}
 									<MetadataRow label="Total cost">
 										<NumericValue>{costLabel ?? "-"}</NumericValue>
 									</MetadataRow>

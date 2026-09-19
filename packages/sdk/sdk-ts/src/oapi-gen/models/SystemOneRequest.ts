@@ -1,3 +1,6 @@
+/**
+ * Deprecated compatibility alias. Use DecisionsRequest.
+ */
 export interface SystemOneRequest {
   debug?: {
     enabled?: boolean;

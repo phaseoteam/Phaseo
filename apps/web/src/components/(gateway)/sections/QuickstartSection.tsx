@@ -244,7 +244,7 @@ const FALLBACK_MODELS: Record<EndpointId, string[]> = {
 		"deepseek/deepseek-v4.1-flash",
 		"minimax/minimax-m3",
 	],
-	decisions: ["typesafe/jev"],
+	decisions: ["typesafe/jev-1.13.0"],
 	images: [
 		"openai/gpt-image-2",
 		"openai/gpt-image-1.5",
@@ -278,7 +278,7 @@ const PROMOTED_MODELS: Record<EndpointId, string[]> = {
 		"deepseek/deepseek-v4.1-flash",
 		"minimax/minimax-m3",
 	],
-	decisions: ["typesafe/jev"],
+	decisions: ["typesafe/jev-1.13.0"],
 	images: [
 		"openai/gpt-image-2",
 		"openai/gpt-image-1.5",

@@ -70,6 +70,13 @@ export type { DataContributionOverviewResponse } from "./DataContributionOvervie
 export type { DataModel } from "./DataModel.js";
 export type { DataModelOrganisation } from "./DataModelOrganisation.js";
 export type { DebugOptions } from "./DebugOptions.js";
+export type { DecisionChoiceQuestion } from "./DecisionChoiceQuestion.js";
+export type { DecisionInstructions } from "./DecisionInstructions.js";
+export type { DecisionNoulQuestion } from "./DecisionNoulQuestion.js";
+export type { DecisionScoreQuestion } from "./DecisionScoreQuestion.js";
+export type { DecisionsRequest } from "./DecisionsRequest.js";
+export type { DecisionsResponse } from "./DecisionsResponse.js";
+export type { DecisionsUsage } from "./DecisionsUsage.js";
 export type { DeletedResponse } from "./DeletedResponse.js";
 export type { DynamicRoute } from "./DynamicRoute.js";
 export type { DynamicRouteAction } from "./DynamicRouteAction.js";

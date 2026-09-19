@@ -123,7 +123,7 @@ import { executor as upstageText } from "./upstage/text-generate";
 import { executor as waferText } from "./wafer/text-generate";
 import { executor as tencentCloudText } from "./tencent-cloud/text-generate";
 import { executor as privateModelText } from "./private-model/text-generate";
-import { executor as typesafeSystemOne } from "./typesafe/systemone";
+import { executor as typesafeDecisions } from "./typesafe/systemone";
 
 // Embeddings executors (migrated providers only)
 import { executor as openaiEmbeddings } from "./openai/embeddings";
@@ -345,7 +345,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	openrouter: { "text.generate": openrouterText },
 	typesafe: {
-		"decisions.make": typesafeSystemOne,
+		"decisions.make": typesafeDecisions,
 	},
 	cohere: {
 		"text.generate": cohereText,

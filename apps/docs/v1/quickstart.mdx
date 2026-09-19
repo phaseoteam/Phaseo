@@ -286,7 +286,7 @@ If you use the Vercel AI SDK, read the reply from `result.text`.
 
 ## 3. Make a structured decision
 
-Use `POST /v1/decisions` when your application needs typed answers instead of generated text. Phaseo exposes TypeSafe's Jev 1.13 with the model ID `typesafe/jev`. Send a `state` value and one or more named questions; each answer is returned under the same name.
+Use `POST /v1/decisions` when your application needs typed answers instead of generated text. Phaseo exposes TypeSafe's Jev 1.13 with the model ID `typesafe/jev-1.13.0`. Send a `state` value and one or more named questions; each answer is returned under the same name.
 
 <Note>
 Decisions is a beta capability and may require workspace enablement. Jev 1.13 is billed at $0.042 per 1M input tokens; output tokens are free.
@@ -310,7 +310,7 @@ curl https://api.phaseo.app/v1/decisions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "typesafe/jev",
+    "model": "typesafe/jev-1.13.0",
     "state": {
       "customer_message": "I was charged twice and need help with a refund.",
       "account_tier": "pro",
@@ -356,7 +356,7 @@ const response = await fetch("https://api.phaseo.app/v1/decisions", {
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    model: "typesafe/jev",
+    model: "typesafe/jev-1.13.0",
     state: {
       customer_message: "I was charged twice and need help with a refund.",
       account_tier: "pro",
@@ -405,7 +405,7 @@ import Phaseo from "@phaseo/sdk";
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const decision = await client.decisions.make({
-  model: "typesafe/jev",
+  model: "typesafe/jev-1.13.0",
   state: {
     customer_message: "I was charged twice and need help with a refund.",
     account_tier: "pro",
@@ -452,7 +452,7 @@ client = Phaseo()  # Uses PHASEO_API_KEY from the environment
 
 decision = client.decisions.make(
     {
-        "model": "typesafe/jev",
+        "model": "typesafe/jev-1.13.0",
         "state": {
             "customer_message": "I was charged twice and need help with a refund.",
             "account_tier": "pro",
@@ -498,7 +498,7 @@ print(decision["answers"])
 
 ```json
 {
-  "model": "typesafe/jev",
+  "model": "typesafe/jev-1.13.0",
   "answers": {
     "department": {
       "type": "choice",

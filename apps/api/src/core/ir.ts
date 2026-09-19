@@ -471,24 +471,24 @@ export type IRRerankResponse = {
 };
 
 // ============================================================================
-// TYPESAFE SYSTEM ONE
+// DECISIONS
 // ============================================================================
 
-export type IRSystemOneQuestion = {
+export type IRDecisionQuestion = {
 	type: "noul" | "choice" | "score";
 	instructions: string | Record<string, any> | any[];
 	criteria?: Record<string, string | null> | string[] | { true?: string; false?: string };
 	[key: string]: any;
 };
 
-export type IRSystemOneRequest = {
+export type IRDecisionsRequest = {
 	model: string;
 	state: string | Record<string, any> | any[];
-	questions: Record<string, IRSystemOneQuestion>;
+	questions: Record<string, IRDecisionQuestion>;
 	rawRequest?: any;
 };
 
-export type IRSystemOneResponse = {
+export type IRDecisionsResponse = {
 	model: string;
 	answers: Record<string, any>;
 	usage?: IRUsage;

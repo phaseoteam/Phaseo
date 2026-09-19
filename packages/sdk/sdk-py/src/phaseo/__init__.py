@@ -116,7 +116,7 @@ class _DecisionsResource:
     def __init__(self, parent: "Phaseo"):
         self._parent = parent
 
-    def make(self, params: models.SystemOneRequest) -> dict[str, Any]:
+    def make(self, params: models.DecisionsRequest) -> models.DecisionsResponse:
         return self._parent.make_decision(params)
 
 
@@ -728,7 +728,7 @@ class Phaseo:
             )
             raise
 
-    def make_decision(self, request: models.SystemOneRequest) -> dict[str, Any]:
+    def make_decision(self, request: models.DecisionsRequest) -> models.DecisionsResponse:
         payload = dict(request)
         self._maybe_warn_for_payload(payload)
         started = time.time()

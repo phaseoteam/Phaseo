@@ -94,7 +94,7 @@ describe("Phaseo endpoints discovery helper", () => {
       documents: ["a", "b"],
     });
     await client.decisions.make({
-      model: "typesafe/jev",
+      model: "typesafe/jev-1.13.0",
       state: { plan: "pro" },
       questions: {
         segment: {
@@ -116,7 +116,7 @@ describe("Phaseo endpoints discovery helper", () => {
       "POST https://example.test/parse",
       "GET https://example.test/models?model_id=voyage%2Frerank-2&limit=1",
       "POST https://example.test/rerank",
-      "GET https://example.test/models?model_id=typesafe%2Fjev&limit=1",
+      "GET https://example.test/models?model_id=typesafe%2Fjev-1.13.0&limit=1",
       "POST https://example.test/decisions",
       "GET https://example.test/models?model_id=minimax%2Fmusic-2.6&limit=1",
       "POST https://example.test/music/generate",

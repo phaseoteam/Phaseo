@@ -50,10 +50,25 @@ interface ModelDetailShellProps {
 	showUnreleased?: boolean;
 }
 
-function isTypeSafeSystemOneModel(modelId: string, organisationId?: string | null): boolean {
+const DECISIONS_CAPABILITY_IDS = new Set([
+	"decisions.make",
+	"decision.make",
+	"typed.decisions",
+	"systemone",
+	"system.one",
+]);
+
+function matchesDecisionsModel(modelId: string, modelOverview?: ModelOverviewPage | null): boolean {
 	const normalizedModelId = modelId.trim().toLowerCase();
-	return organisationId?.trim().toLowerCase() === "typesafe" ||
-		normalizedModelId === "typesafe/jev" ||
+	const outputTypes = String(modelOverview?.output_types ?? "")
+		.toLowerCase()
+		.split(/[\s,;|/]+/)
+		.filter(Boolean);
+	return modelOverview?.pricing?.some((rule) =>
+			DECISIONS_CAPABILITY_IDS.has(rule.capability_id.trim().toLowerCase()),
+		) === true ||
+		outputTypes.some((value) => value === "decision" || value === "decisions" || value === "decision_output") ||
+		normalizedModelId === "typesafe/jev-latest" ||
 		normalizedModelId.startsWith("typesafe/jev-");
 }
 
@@ -88,11 +103,11 @@ async function ModelNotice({ modelId, includeHidden, status }: { modelId: string
 	return notice ? <div className="mb-6"><ModelPageNotice notice={notice} /></div> : <ModelStatusBanner status={status} className="mb-6" />;
 }
 
-async function ModelStickyHeaderContent({ modelId, chatModelId, organisationId, organisationName, modelName, canChat, canCompare, organisationHref, gatewayMetadataPromise, showUnreleased, isSystemOneModel }: {
-	modelId: string; chatModelId?: string; organisationId: string; organisationName: string; modelName: string; canChat: boolean; canCompare: boolean; organisationHref?: string; gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null>; showUnreleased: boolean; isSystemOneModel: boolean;
+async function ModelStickyHeaderContent({ modelId, chatModelId, organisationId, organisationName, modelName, canChat, canCompare, organisationHref, gatewayMetadataPromise, showUnreleased, isDecisionsModel }: {
+	modelId: string; chatModelId?: string; organisationId: string; organisationName: string; modelName: string; canChat: boolean; canCompare: boolean; organisationHref?: string; gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null>; showUnreleased: boolean; isDecisionsModel: boolean;
 }) {
 	const gatewayMetadata = await gatewayMetadataPromise;
-	return <ModelStickyHeader modelId={modelId} chatModelId={chatModelId} organisationId={organisationId} organisationName={organisationName} modelName={modelName} observeId="model-detail-primary-header" canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadata={gatewayMetadata} showUnreleased={showUnreleased} isSystemOneModel={isSystemOneModel} />;
+	return <ModelStickyHeader modelId={modelId} chatModelId={chatModelId} organisationId={organisationId} organisationName={organisationName} modelName={modelName} observeId="model-detail-primary-header" canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadata={gatewayMetadata} showUnreleased={showUnreleased} isDecisionsModel={isDecisionsModel} />;
 }
 
 async function ModelQuickstartAction({ modelId, chatModelId, modelName, gatewayMetadataPromise }: { modelId: string; chatModelId?: string; modelName: string; gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null> }) {
@@ -159,7 +174,7 @@ export default async function ModelDetailShell({
 		? ["overview"]
 		: visibleTabKeys;
 	const canChat = canChatOverride ?? header.status !== "Retired";
-	const isSystemOneModel = !isFreeRouter && isTypeSafeSystemOneModel(modelId, header.organisation_id);
+	const isDecisionsModel = !isFreeRouter && matchesDecisionsModel(modelId, modelOverview);
 	if (tab && !scopedVisibleTabKeys.includes(tab)) {
 		redirect(`/models/${modelId}`);
 	}
@@ -167,7 +182,7 @@ export default async function ModelDetailShell({
 	return (
 		<main className="flex flex-col">
 			<Suspense fallback={null}>
-				<ModelStickyHeaderContent modelId={modelId} chatModelId={chatModelId} organisationId={header.organisation_id} organisationName={header.organisation.name} modelName={header.name} canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadataPromise={gatewayMetadataPromise} showUnreleased={showUnreleased} isSystemOneModel={isSystemOneModel} />
+				<ModelStickyHeaderContent modelId={modelId} chatModelId={chatModelId} organisationId={header.organisation_id} organisationName={header.organisation.name} modelName={header.name} canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadataPromise={gatewayMetadataPromise} showUnreleased={showUnreleased} isDecisionsModel={isDecisionsModel} />
 			</Suspense>
 
 			<div className="container mx-auto px-4 py-8">
@@ -233,9 +248,9 @@ export default async function ModelDetailShell({
 						) : null}
 						{canChat ? (
 							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
-								<Link href={`${isSystemOneModel ? "/chat/systemone" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
+								<Link href={`${isDecisionsModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
 									<MessageSquare className="h-4 w-4" />
-									{isSystemOneModel ? "Open Decisions" : "Chat"}
+									{isDecisionsModel ? "Open Decisions" : "Chat"}
 								</Link>
 							</Button>
 						) : null}
@@ -245,9 +260,9 @@ export default async function ModelDetailShell({
 								Compare
 							</Link>
 						</Button> : null}
-						{canChat ? isSystemOneModel ? (
+						{canChat ? isDecisionsModel ? (
 							<Button asChild variant="default" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
-								<Link href={`/chat/systemone?model=${encodeURIComponent(chatModelId ?? modelId)}`}>Try Jev in Decisions</Link>
+								<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}>Try Jev in Decisions</Link>
 							</Button>
 						) : <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadataPromise={gatewayMetadataPromise} /></Suspense> : null}
 					</div>

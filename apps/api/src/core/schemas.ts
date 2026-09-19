@@ -1520,25 +1520,24 @@ export const RerankSchema = z.object({
 });
 export type RerankRequest = z.infer<typeof RerankSchema>;
 
-// TypeSafe System One schema. Unlike text-generation requests, System One
-// evaluates typed questions against arbitrary state and returns structured
-// answers with calibrated probabilities/confidence.
-const SystemOneStateSchema = z.union([
+// Decisions evaluate typed questions against arbitrary state and return
+// structured answers with calibrated probabilities/confidence.
+const DecisionsStateSchema = z.union([
     z.string().min(1).max(1_000_000),
     z.record(z.string(), z.any()),
     z.array(z.any()),
 ]);
 
-const SystemOneInstructionsSchema = z.union([
+const DecisionInstructionsSchema = z.union([
     z.string().min(1).max(50_000),
     z.record(z.string(), z.any()),
     z.array(z.any()),
 ]);
 
-const SystemOneQuestionSchema = z.discriminatedUnion("type", [
+const DecisionQuestionSchema = z.discriminatedUnion("type", [
     z.object({
         type: z.literal("noul"),
-        instructions: SystemOneInstructionsSchema,
+        instructions: DecisionInstructionsSchema,
         criteria: z.object({
             true: z.string().optional(),
             false: z.string().optional(),
@@ -1546,7 +1545,7 @@ const SystemOneQuestionSchema = z.discriminatedUnion("type", [
     }).passthrough(),
     z.object({
         type: z.literal("choice"),
-        instructions: SystemOneInstructionsSchema,
+        instructions: DecisionInstructionsSchema,
         criteria: z.record(z.string(), z.string().nullable()).refine(
             (criteria) => Object.keys(criteria).length > 0,
             { message: "Choice questions require at least one criterion." },
@@ -1554,20 +1553,20 @@ const SystemOneQuestionSchema = z.discriminatedUnion("type", [
     }).passthrough(),
     z.object({
         type: z.literal("score"),
-        instructions: SystemOneInstructionsSchema,
+        instructions: DecisionInstructionsSchema,
         criteria: z.array(z.string().min(1)).min(2),
     }).passthrough(),
 ]);
 
-export const SystemOneSchema = z.object({
-    model: z.string().min(1).default("typesafe/jev"),
-    state: SystemOneStateSchema,
-    questions: z.record(z.string().min(1).max(128), SystemOneQuestionSchema)
+export const DecisionsSchema = z.object({
+    model: z.string().min(1).default("typesafe/jev-1.13.0"),
+    state: DecisionsStateSchema,
+    questions: z.record(z.string().min(1).max(128), DecisionQuestionSchema)
         .refine((questions) => Object.keys(questions).length > 0, {
-            message: "At least one System One question is required.",
+            message: "At least one decision question is required.",
         })
         .refine((questions) => Object.keys(questions).length <= 128, {
-            message: "System One requests support at most 128 questions.",
+            message: "Decision requests support at most 128 questions.",
         }),
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
@@ -1577,7 +1576,7 @@ export const SystemOneSchema = z.object({
     routing: ProviderRoutingSchema,
     metadata: z.record(z.string(), z.any()).nullable().optional(),
 }).passthrough();
-export type SystemOneRequest = z.infer<typeof SystemOneSchema>;
+export type DecisionsRequest = z.infer<typeof DecisionsSchema>;
 
 // Audio Speech schema
 const ElevenLabsSpeechConfigSchema = z.object({
@@ -2223,7 +2222,7 @@ export function schemaFor(endpoint: Endpoint): z.ZodTypeAny | null {
         case "messages": return AnthropicMessagesSchema;
         case "moderations": return ModerationsSchema;
         case "rerank": return RerankSchema;
-        case "systemone": return SystemOneSchema;
+        case "decisions": return DecisionsSchema;
         case "audio.speech": return AudioSpeechSchema;
         case "audio.transcription": return AudioTranscriptionSchema;
         case "audio.translations": return AudioTranslationSchema;

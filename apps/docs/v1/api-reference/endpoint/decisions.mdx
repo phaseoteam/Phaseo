@@ -6,13 +6,13 @@ openapi: "POST /decisions"
 description: "Evaluate typed questions against application state with a decision model such as Jev 1.13."
 ---
 
-Use `POST /v1/decisions` when your application needs structured answers that code can consume directly. Phaseo exposes TypeSafe's Jev 1.13 as `typesafe/jev`.
+Use `POST /v1/decisions` when your application needs structured answers that code can consume directly. Phaseo exposes TypeSafe's Jev 1.13 as `typesafe/jev-1.13.0`.
 
 The request contains:
 
 - `state`: a string, object, or array containing the information to evaluate.
 - `questions`: a map of named questions. Each question is `noul`, `choice`, or `score` and must include `instructions`.
-- `model`: the Phaseo model ID. Use `typesafe/jev` for Jev 1.13.
+- `model`: the Phaseo model ID. Use `typesafe/jev-1.13.0` for Jev 1.13, or `typesafe/jev-latest` to follow the latest Jev release.
 
 Answers use the same keys as `questions`. `choice` answers include the selected option, probabilities, and confidence; `noul` answers include a 0–1 probability; and `score` answers include a probability-weighted score, legend, probabilities, and confidence.
 

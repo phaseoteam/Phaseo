@@ -15,7 +15,7 @@ import { getDataClient } from "@/data/supabase";
 
 type AudioAction = "speech" | "transcription" | "translation" | "music";
 const AUDIO_PATHS: Record<AudioAction, string> = { speech: "/audio/speech", transcription: "/audio/transcriptions", translation: "/audio/translations", music: "/music/generations" };
-const POST_PATHS = { text: "/responses", playground: "/responses", "chat-completions": "/chat/completions", messages: "/messages", embeddings: "/embeddings", image: "/images/generations", moderation: "/moderations", systemone: "/decisions" } as const;
+const POST_PATHS = { text: "/responses", playground: "/responses", "chat-completions": "/chat/completions", messages: "/messages", embeddings: "/embeddings", image: "/images/generations", moderation: "/moderations", decisions: "/decisions" } as const;
 export const chatRouter = new Hono<{ Bindings: Env }>();
 
 const waitUntil = (c: any) => (promise: Promise<unknown>) => c.executionCtx.waitUntil(promise);

@@ -32,6 +32,8 @@ import type {
   RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
+  DecisionsRequest,
+  DecisionsResponse,
   SystemOneRequest,
   SystemOneResponse,
   VideoGenerationRequest,
@@ -355,6 +357,8 @@ export type {
   RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
+  DecisionsRequest,
+  DecisionsResponse,
   SystemOneRequest,
   SystemOneResponse,
   VideoBillingSummary,
@@ -385,9 +389,6 @@ export {
 } from "./webhooks.js";
 export type PhaseoOptions = Options;
 export type PhaseoRequestOptions = { signal?: AbortSignal };
-export type DecisionsRequest = SystemOneRequest;
-export type DecisionsResponse = SystemOneResponse;
-
 export class Phaseo {
   private readonly client: Client;
   private readonly basePath: string;

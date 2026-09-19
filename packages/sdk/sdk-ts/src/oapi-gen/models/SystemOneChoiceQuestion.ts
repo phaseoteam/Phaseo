@@ -1,3 +1,6 @@
+/**
+ * Deprecated compatibility alias. Use DecisionChoiceQuestion.
+ */
 export interface SystemOneChoiceQuestion {
   criteria: {
     [key: string]: string | null;

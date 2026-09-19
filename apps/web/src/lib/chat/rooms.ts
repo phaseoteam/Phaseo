@@ -12,7 +12,7 @@ export type ChatRoomId =
 	| "embeddings"
 	| "ocr"
 	| "rerank"
-	| "systemone";
+	| "decisions";
 
 export type ChatRoomConfig = {
 	id: ChatRoomId;
@@ -160,9 +160,9 @@ export const CHAT_ROOMS: ChatRoomConfig[] = [
 		capabilityHints: RERANK_CAPABILITY_HINTS,
 	},
 	{
-		id: "systemone",
+		id: "decisions",
 		label: "Decisions",
-		route: "/chat/systemone",
+		route: "/chat/decisions",
 		description: "Generate typed decisions from structured state.",
 		capabilityHints: DECISIONS_CAPABILITY_HINTS,
 		beta: true,
@@ -196,7 +196,7 @@ export const CHAT_ROOM_BY_ID: Record<ChatRoomId, ChatRoomConfig> = {
 	embeddings: CHAT_ROOMS[8],
 	ocr: CHAT_ROOMS[9],
 	rerank: CHAT_ROOMS[10],
-	systemone: CHAT_ROOMS[11],
+	decisions: CHAT_ROOMS[11],
 	fusion: CHAT_ROOMS[12],
 };
 
@@ -225,7 +225,13 @@ const REALTIME_MODEL_HINTS = ["realtime", "real-time", "gpt-4o-realtime"];
 const MODERATION_MODEL_HINTS = ["moderation"];
 const EMBEDDING_MODEL_HINTS = ["embedding", "embed"];
 const MUSIC_MODEL_HINTS = ["music", "suno", "udio", "melody", "song"];
-const SYSTEM_ONE_MODEL_HINTS = ["typesafe/jev", "system-one", "systemone", "decisions"];
+const DECISIONS_MODEL_HINTS = [
+	"typesafe/jev-1.13.0",
+	"typesafe/jev-latest",
+	"system-one",
+	"systemone",
+	"decisions",
+];
 
 function normalizeCapability(capabilityId: string): string {
 	return capabilityId.trim().toLowerCase();
@@ -258,7 +264,7 @@ export function capabilityIdToRoomId(
 ): ChatRoomId | null {
 	const normalized = normalizeChatCapabilityId(capabilityId);
 	if (matchesCapability(normalized, DECISIONS_CAPABILITY_HINTS)) {
-		return "systemone";
+		return "decisions";
 	}
 	if (matchesCapability(normalized, TEXT_CAPABILITY_HINTS)) {
 		return "text";
@@ -314,7 +320,7 @@ export function roomIdsFromCapabilities(
 
 export function inferModelRoomFromId(modelId: string): ChatRoomId {
 	const normalized = modelId.toLowerCase();
-	if (includesHint(normalized, SYSTEM_ONE_MODEL_HINTS)) return "systemone";
+	if (includesHint(normalized, DECISIONS_MODEL_HINTS)) return "decisions";
 	if (includesHint(normalized, REALTIME_MODEL_HINTS)) return "realtime";
 	if (includesHint(normalized, VIDEO_MODEL_HINTS)) return "video";
 	if (includesHint(normalized, IMAGE_MODEL_HINTS)) return "image";
@@ -360,7 +366,7 @@ function roomIdsFromOutputModalities(
 			modality === "decision_make" ||
 			modality === "decision_output" ||
 			modality === "decision_outputs"
-		) rooms.add("systemone");
+		) rooms.add("decisions");
 	}
 	return Array.from(rooms);
 }

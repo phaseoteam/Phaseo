@@ -1,3 +1,6 @@
+/**
+ * Deprecated compatibility alias. Use DecisionNoulQuestion.
+ */
 export interface SystemOneNoulQuestion {
   criteria?: {
     false?: string;

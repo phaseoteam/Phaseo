@@ -871,7 +871,7 @@ export function formatClientPayload(args: {
         return attachTopLevelPricing(body, usage);
     }
 
-	if (ctx.endpoint === "systemone") {
+	if (ctx.endpoint === "decisions") {
 		const {
 			provider,
 			provider_id: _providerId,
@@ -959,6 +959,5 @@ export function formatClientPayload(args: {
     if (meta) fallback.meta = meta;
     return attachTopLevelPricing(fallback, usage);
 }
-
 
 

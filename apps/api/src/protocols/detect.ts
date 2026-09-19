@@ -20,7 +20,7 @@ export type Protocol =
 	| "openai.embeddings"
 	| "openai.moderations"
 	| "openai.rerank"
-	| "typesafe.systemone"
+	| "phaseo.decisions"
 	| "anthropic.messages";
 
 export type TextProtocol =
@@ -56,8 +56,8 @@ export function detectProtocol(endpoint: Endpoint, requestPath?: string): Protoc
 			return "openai.moderations";
 		case "rerank":
 			return "openai.rerank";
-		case "systemone":
-			return "typesafe.systemone";
+		case "decisions":
+			return "phaseo.decisions";
 
 		case "chat.completions":
 			return "openai.chat.completions";
@@ -107,7 +107,7 @@ export function getProtocolPath(protocol: Protocol): string {
 			return "/v1/moderations";
 		case "openai.rerank":
 			return "/v1/rerank";
-		case "typesafe.systemone":
+		case "phaseo.decisions":
 			return "/v1/decisions";
 		case "anthropic.messages":
 			return "/v1/messages";
@@ -124,11 +124,11 @@ export function protocolSupportsFeature(
 	switch (feature) {
 		case "tools":
 			// Structured decision evaluation is not a tool-calling protocol.
-			return protocol !== "typesafe.systemone";
+			return protocol !== "phaseo.decisions";
 
 		case "streaming":
 			// All protocols support streaming
-			return protocol !== "openai.embeddings" && protocol !== "openai.moderations" && protocol !== "openai.rerank" && protocol !== "typesafe.systemone";
+			return protocol !== "openai.embeddings" && protocol !== "openai.moderations" && protocol !== "openai.rerank" && protocol !== "phaseo.decisions";
 
 		case "reasoning":
 			// OpenAI Responses API has native reasoning support
@@ -138,7 +138,7 @@ export function protocolSupportsFeature(
 
 		case "multimodal":
 			// TypeSafe receives structured state, not multimodal message content.
-			return protocol !== "typesafe.systemone";
+			return protocol !== "phaseo.decisions";
 
 		default:
 			return false;
@@ -160,8 +160,8 @@ export function getProtocolDisplayName(protocol: Protocol): string {
 			return "OpenAI Moderations";
 		case "openai.rerank":
 			return "OpenAI Rerank";
-		case "typesafe.systemone":
-			return "TypeSafe System One";
+		case "phaseo.decisions":
+			return "Phaseo Decisions";
 		case "anthropic.messages":
 			return "Anthropic Messages";
 	}

@@ -34,7 +34,7 @@ describe("sensitive info guardrails", () => {
 		if (!result.ok) return;
 		expect(result.body.contents[0].parts[0].text).toContain("[EMAIL]");
 	});
-	it("redacts sensitive text nested in System One state and questions", () => {
+	it("redacts sensitive text nested in Decisions state and questions", () => {
 		const body = {
 			state: { customer: { email: "state@example.com" } },
 			questions: {
@@ -47,12 +47,12 @@ describe("sensitive info guardrails", () => {
 		const result = applySensitiveInfoGuardrails({
 			body,
 			rawBody: structuredClone(body),
-			endpoint: "systemone",
+			endpoint: "decisions",
 			workspacePolicy: {
 				...workspacePolicy,
 				sensitiveInfoRules: [{ id: "email_address", kind: "builtin", action: "redact" }],
 			},
-			requestId: "req_systemone",
+			requestId: "req_decisions",
 			workspaceId: "ws_123",
 		});
 

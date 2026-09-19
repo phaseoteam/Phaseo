@@ -19,7 +19,7 @@ def test_decisions_resource_calls_structured_endpoint(monkeypatch):
 
     response = client.decisions.make(
         {
-            "model": "typesafe/jev",
+            "model": "typesafe/jev-1.13.0",
             "state": {"plan": "pro"},
             "questions": {
                 "segment": {
@@ -34,7 +34,7 @@ def test_decisions_resource_calls_structured_endpoint(monkeypatch):
     assert response["answers"] == {"segment": "startup"}
     assert captured == [
         {
-            "model": "typesafe/jev",
+            "model": "typesafe/jev-1.13.0",
             "state": {"plan": "pro"},
             "questions": {
                 "segment": {

@@ -1,3 +1,6 @@
+/**
+ * Deprecated compatibility alias. Use DecisionScoreQuestion.
+ */
 export interface SystemOneScoreQuestion {
   criteria: string[];
   instructions:

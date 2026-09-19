@@ -701,6 +701,52 @@ pub struct DebugOptions {
 	pub trace_level: Option<String>,
 }
 
+pub struct DecisionChoiceQuestion {
+	pub criteria: HashMap<String, String>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub type DecisionInstructions = JsonValue;
+
+pub struct DecisionNoulQuestion {
+	pub criteria: Option<HashMap<String, String>>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub struct DecisionScoreQuestion {
+	pub criteria: Vec<String>,
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub struct DecisionsRequest {
+	pub debug: Option<HashMap<String, String>>,
+	pub echo_upstream_request: Option<bool>,
+	pub meta: Option<bool>,
+	pub metadata: Option<HashMap<String, String>>,
+	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
+	pub questions: HashMap<String, String>,
+	pub routing: Option<HashMap<String, String>>,
+	pub state: String,
+}
+
+pub struct DecisionsResponse {
+	pub answers: Option<HashMap<String, String>>,
+	pub meta: Option<HashMap<String, String>>,
+	pub model: Option<String>,
+	pub request_id: Option<Option<String>>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct DecisionsUsage {
+	pub input_tokens: Option<i64>,
+	pub output_tokens: Option<i64>,
+	pub total_tokens: Option<i64>,
+}
+
 pub struct DeletedResponse {
 	pub deleted: bool,
 }

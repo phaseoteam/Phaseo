@@ -1372,6 +1372,52 @@ type DebugOptions struct {
 	TraceLevel *string `json:"trace_level,omitempty"`
 }
 
+type DecisionChoiceQuestion struct {
+	Criteria map[string]interface{} `json:"criteria"`
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
+type DecisionInstructions = interface{}
+
+type DecisionNoulQuestion struct {
+	Criteria *map[string]interface{} `json:"criteria,omitempty"`
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
+type DecisionScoreQuestion struct {
+	Criteria []string `json:"criteria"`
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
+type DecisionsRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
+	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Meta *bool `json:"meta,omitempty"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Questions map[string]interface{} `json:"questions"`
+	Routing *map[string]interface{} `json:"routing,omitempty"`
+	State interface{} `json:"state"`
+}
+
+type DecisionsResponse struct {
+	Answers *map[string]interface{} `json:"answers,omitempty"`
+	Meta *map[string]interface{} `json:"meta,omitempty"`
+	Model *string `json:"model,omitempty"`
+	RequestId *string `json:"request_id,omitempty"`
+	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type DecisionsUsage struct {
+	InputTokens *int `json:"input_tokens,omitempty"`
+	OutputTokens *int `json:"output_tokens,omitempty"`
+	TotalTokens *int `json:"total_tokens,omitempty"`
+}
+
 type DeletedResponse struct {
 	Deleted bool `json:"deleted"`
 }

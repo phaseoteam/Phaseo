@@ -95,6 +95,12 @@ function objectOrEmpty(value: unknown): Record<string, unknown> {
         : {};
 }
 
+function requiredExecutionParams(endpoint: Endpoint): string[] {
+	return endpoint === "chat.completions" || endpoint === "responses" || endpoint === "messages"
+		? ["stream"]
+		: [];
+}
+
 function applyWorkspacePrivacyRoutingDefaults(
     body: any,
     teamSettings: PipelineContext["teamSettings"] | null | undefined,
@@ -585,6 +591,7 @@ export async function beforeRequest(
 					workspaceId,
 					providers: executableProviders,
 					model: candidateResolvedModel,
+					requiredParams: requiredExecutionParams(endpoint),
 				});
 				if (!capabilityResult.ok || !capabilityResult.providers.length) {
 					return { ok: false as const, reason: "request_capabilities_unsupported" };
@@ -1116,6 +1123,7 @@ export async function beforeRequest(
             workspaceId,
             providers: presetFilteredProviders,
             model: resolvedModel || model,
+			requiredParams: requiredExecutionParams(endpoint),
         })
     );
     if (!capabilityValidation.ok) return capabilityValidation as { ok: false; response: Response };

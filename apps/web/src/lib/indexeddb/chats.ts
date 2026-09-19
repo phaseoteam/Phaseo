@@ -187,7 +187,7 @@ const ROOM_STORE_NAMES: Record<ChatRoomId, string> = {
     embeddings: "chats-embeddings",
     ocr: "chats-ocr",
     rerank: "chats-rerank",
-    systemone: "chats-systemone",
+    decisions: "chats-decisions",
 };
 
 function getStoreName(roomId: ChatRoomId): string {

@@ -52,7 +52,7 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	embeddings: Sparkles,
 	ocr: ScanText,
 	rerank: ArrowUpDown,
-	systemone: Scale,
+	decisions: Scale,
 };
 
 const DISABLED_ROOMS = new Set<ChatRoomId>(["ocr", "rerank"]);
