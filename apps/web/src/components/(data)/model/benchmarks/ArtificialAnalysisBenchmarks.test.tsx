@@ -18,6 +18,40 @@ const highlight = (benchmarkId: string, score: number): ModelBenchmarkHighlight 
 });
 
 describe("Artificial Analysis benchmark panel", () => {
+	it("includes the current model when the shared leaderboard is stale and ranks configurations", () => {
+		const benchmarkId = "aa-intelligence-index-v4";
+		const ranking: PublicBenchmarkRanking = {
+			benchmark_id: benchmarkId, name: "Intelligence", category: "general", benchmark_type: "numerical", lower_is_better: false, total_models: 1,
+			entries: [{ model_id: "test/leader", model_name: "Leader", organisation_id: "test", organisation_name: "Test", score: 50, rank: 1,
+				other_info: "Intelligence Index v4.3",
+				configurations: [50, 48].map((score) => ({ score, variant: String(score), result_key: String(score), other_info: "Intelligence Index v4.3", source_link: null, updated_at: null })) }],
+		};
+		const html = renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[highlight(benchmarkId, 43.6)]} rankings={[ranking]} modelId="stepfun/step-5" modelName="Step 5 Preview" initialExpandedMetric={benchmarkId} />);
+		expect(html).toContain('aria-label="Step 5 Preview"');
+		expect(html).toContain('href="/models/stepfun/step-5"');
+		expect(html).toContain("#3 of 3 configurations");
+		expect(html).toContain("Other models dimmed");
+		expect(html).toContain("ranked across evaluated configurations");
+	});
+	it("does not duplicate an existing model or compare different index versions", () => {
+		const benchmarkId = "aa-intelligence-index-v4";
+		const ranking: PublicBenchmarkRanking = {
+			benchmark_id: benchmarkId, name: "Intelligence", category: "general", benchmark_type: "numerical", lower_is_better: false, total_models: 2,
+			entries: [
+				{ model_id: "stepfun/step-5", model_name: "Step 5 Preview", organisation_id: "stepfun", organisation_name: "StepFun", score: 43.6, rank: 2, other_info: "Intelligence Index v4.3." },
+				{ model_id: "test/older", model_name: "Old index result", organisation_id: "test", organisation_name: "Test", score: 90, rank: 1, other_info: "Intelligence Index v4.1.1" },
+			],
+		};
+		const html = renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[highlight(benchmarkId, 43.6)]} rankings={[ranking]} modelId="stepfun/step-5" initialExpandedMetric={benchmarkId} />);
+		expect(html.match(/aria-label="Step 5 Preview"/g)).toHaveLength(1);
+		expect(html).not.toContain("Old index result");
+		expect(html).not.toContain("#1 of");
+	});
+	it("does not invent a first-place rank when the comparison dataset is unavailable", () => {
+		const html = renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[highlight("aa-intelligence-index-v4", 43.6)]} modelId="stepfun/step-5" modelName="Step 5 Preview" initialExpandedMetric="aa-intelligence-index-v4" />);
+		expect(html).toContain('aria-label="Step 5 Preview"');
+		expect(html).not.toContain("#1 of");
+	});
 	it("shows indices as numbers, exact currency, missing values and provenance", () => {
 		const html = renderToStaticMarkup(<ArtificialAnalysisBenchmarks highlights={[
 			highlight("aa-intelligence-index-v4", 42.5),

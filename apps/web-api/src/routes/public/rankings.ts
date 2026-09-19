@@ -212,7 +212,7 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 			.sort((left, right) => (order.get(left.benchmark_id) ?? 99) - (order.get(right.benchmark_id) ?? 99))
 			.map((benchmark) => {
 				const lowerIsBetter = benchmark.ascending_order === false;
-				const versionOf = (info: string | null) => info?.match(/Intelligence Index v([\d.]+)/)?.[1] ?? null;
+				const versionOf = (info: string | null) => info?.match(/Intelligence Index v(\d+(?:\.\d+)*)/)?.[1] ?? null;
 				const benchmarkScores = scores.filter((row) => row.benchmark_id === benchmark.benchmark_id && models.has(row.model_slug));
 				const latestVersion = benchmarkScores.map((row) => versionOf(row.other_info)).filter((version): version is string => Boolean(version)).sort((a, b) => b.localeCompare(a, "en", { numeric: true }))[0];
 				const bestByModel = new Map<string, { score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>();

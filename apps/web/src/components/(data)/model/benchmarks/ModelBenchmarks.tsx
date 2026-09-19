@@ -18,6 +18,7 @@ type Props = {
 	benchmarkResults?: ModelBenchmarkResult[];
 	benchmarkRankings?: PublicBenchmarkRanking[];
 	modelId?: string;
+	modelName?: string;
 	mode?: "summary" | "full";
 };
 
@@ -27,6 +28,7 @@ export default function ModelBenchmarks({
 	benchmarkResults = [],
 	benchmarkRankings = [],
 	modelId,
+	modelName,
 	mode = "full",
 }: Props) {
 	const showFull = mode === "full";
@@ -46,7 +48,7 @@ export default function ModelBenchmarks({
 
 	return (
 		<div className="space-y-8">
-			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankings={benchmarkRankings} modelId={modelId} />
+			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankings={benchmarkRankings} modelId={modelId} modelName={modelName} />
 			<EpochCapabilitiesIndex highlights={highlightCards} ranking={benchmarkRankings.find((item) => isEpochCapabilitiesIndex(item.benchmark_id))} modelId={modelId} />
 			{otherHighlights.length > 0 || !hasKeyBenchmark ? (
 				hasKeyBenchmark ? (

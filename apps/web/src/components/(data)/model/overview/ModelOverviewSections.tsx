@@ -627,7 +627,7 @@ export async function ModelBenchmarksSection({
 	includeHidden,
 	hideWhenEmpty = false,
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
-	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, organisations, pendingApiRelease, epochBenchmark, epochConfidenceIntervals] = await Promise.all([
+	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, organisations, pendingApiRelease, epochBenchmark, epochConfidenceIntervals, modelHeader] = await Promise.all([
 		withOptionalSectionTimeout(
 			fetchFrontendModelBenchmarkHighlights(modelId),
 			[],
@@ -655,6 +655,7 @@ export async function ModelBenchmarksSection({
 		),
 		withOptionalSectionTimeout(fetchFrontendBenchmark("epoch-capabilities-index"), null, "Epoch benchmark leaderboard"),
 		withOptionalSectionTimeout(fetchEpochConfidenceIntervals(), {}, "Epoch confidence intervals"),
+		withOptionalSectionTimeout(fetchFrontendModelHeader(modelId), null, "benchmark model identity"),
 	]);
 	const organisationColours = new Map(organisations.map((organisation) => [organisation.organisation_id, organisation.colour]));
 	const epochRanking = epochBenchmark ? {
@@ -702,6 +703,7 @@ export async function ModelBenchmarksSection({
 					benchmarkResults={benchmarkResults}
 					benchmarkRankings={enrichedBenchmarkRankings}
 					modelId={modelId}
+					modelName={modelHeader?.name}
 					mode="summary"
 				/>
 			) : (

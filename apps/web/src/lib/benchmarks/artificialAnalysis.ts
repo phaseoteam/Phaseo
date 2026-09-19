@@ -52,7 +52,16 @@ export function formatArtificialAnalysisScore(id: string, score: number) {
     : { maximumFractionDigits: 2 }).format(score);
 }
 export function artificialAnalysisVersion(info?: string | null) {
-	return info?.match(/Intelligence Index v([\d.]+)/)?.[1] ?? null;
+	return info?.match(/Intelligence Index v(\d+(?:\.\d+)*)/)?.[1] ?? null;
+}
+
+/** Rank the evaluated configurations, including ties, rather than one best score per model. */
+export function artificialAnalysisConfigurationRank(entries: PublicBenchmarkRankingEntry[], score: number, lowerIsBetter: boolean) {
+	const scores = entries.flatMap((entry) => entry.configurations?.length ? entry.configurations.map((configuration) => configuration.score) : [entry.score]);
+	return {
+		rank: 1 + scores.filter((value) => lowerIsBetter ? value < score : value > score).length,
+		total: scores.length,
+	};
 }
 
 export function applyArtificialAnalysisOrganisationColours(
