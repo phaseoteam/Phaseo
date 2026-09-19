@@ -70,6 +70,13 @@ export type { DataContributionOverviewResponse } from "./DataContributionOvervie
 export type { DataModel } from "./DataModel.js";
 export type { DataModelOrganisation } from "./DataModelOrganisation.js";
 export type { DebugOptions } from "./DebugOptions.js";
+export type { DecisionChoiceQuestion } from "./DecisionChoiceQuestion.js";
+export type { DecisionInstructions } from "./DecisionInstructions.js";
+export type { DecisionNoulQuestion } from "./DecisionNoulQuestion.js";
+export type { DecisionScoreQuestion } from "./DecisionScoreQuestion.js";
+export type { DecisionsRequest } from "./DecisionsRequest.js";
+export type { DecisionsResponse } from "./DecisionsResponse.js";
+export type { DecisionsUsage } from "./DecisionsUsage.js";
 export type { DeletedResponse } from "./DeletedResponse.js";
 export type { DynamicRoute } from "./DynamicRoute.js";
 export type { DynamicRouteAction } from "./DynamicRouteAction.js";
@@ -290,13 +297,6 @@ export type { SearchModelsToolDefinition } from "./SearchModelsToolDefinition.js
 export type { ServerToolUsage } from "./ServerToolUsage.js";
 export type { SubagentToolDefinition } from "./SubagentToolDefinition.js";
 export type { SupportedParameterDetails } from "./SupportedParameterDetails.js";
-export type { SystemOneChoiceQuestion } from "./SystemOneChoiceQuestion.js";
-export type { SystemOneInstructions } from "./SystemOneInstructions.js";
-export type { SystemOneNoulQuestion } from "./SystemOneNoulQuestion.js";
-export type { SystemOneRequest } from "./SystemOneRequest.js";
-export type { SystemOneResponse } from "./SystemOneResponse.js";
-export type { SystemOneScoreQuestion } from "./SystemOneScoreQuestion.js";
-export type { SystemOneUsage } from "./SystemOneUsage.js";
 export type { TextContentPart } from "./TextContentPart.js";
 export type { TextGenerateTool } from "./TextGenerateTool.js";
 export type { TextModerationInput } from "./TextModerationInput.js";

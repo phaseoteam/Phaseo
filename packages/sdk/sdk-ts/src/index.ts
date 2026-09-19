@@ -32,8 +32,8 @@ import type {
   RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
-  SystemOneRequest,
-  SystemOneResponse,
+  DecisionsRequest,
+  DecisionsResponse,
   VideoGenerationRequest,
   VideoGenerationResponse
 } from "./oapi-gen/models/index.js";
@@ -355,8 +355,8 @@ export type {
   RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
-  SystemOneRequest,
-  SystemOneResponse,
+  DecisionsRequest,
+  DecisionsResponse,
   VideoBillingSummary,
   VideoGenerationRequest,
   VideoGenerationResponse
@@ -385,9 +385,6 @@ export {
 } from "./webhooks.js";
 export type PhaseoOptions = Options;
 export type PhaseoRequestOptions = { signal?: AbortSignal };
-export type DecisionsRequest = SystemOneRequest;
-export type DecisionsResponse = SystemOneResponse;
-
 export class Phaseo {
   private readonly client: Client;
   private readonly basePath: string;

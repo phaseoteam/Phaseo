@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { buildMetadata } from "@/lib/seo";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
-import { SystemOneRoom } from "@/components/(chat)/rooms/SystemOneRoom";
+import { DecisionsRoom } from "@/components/(chat)/rooms/DecisionsRoom";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Decisions",
@@ -24,7 +24,7 @@ async function ChatDecisionsContent() {
 	const models = await fetchFrontendGatewayModels();
 	return (
 		<RoomScaffold>
-			<SystemOneRoom models={models} />
+			<DecisionsRoom models={models} />
 		</RoomScaffold>
 	);
 }

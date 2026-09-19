@@ -339,7 +339,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			pricingCard: {
 				provider: "typesafe",
 				model: "typesafe/jev-1.13.0",
-				endpoint: "systemone",
+				endpoint: "decisions",
 				currency: "USD",
 				rules: [],
 			},
@@ -361,7 +361,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			timing: { latencyMs: 41, generationMs: 41 },
 		}));
 		const ctx = createCtx({
-			endpoint: "systemone",
+			endpoint: "decisions",
 			capability: "decisions.make",
 			model: "typesafe/jev-1.13.0",
 		});

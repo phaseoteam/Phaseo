@@ -1,4 +1,4 @@
-export interface SystemOneNoulQuestion {
+export interface DecisionNoulQuestion {
   criteria?: {
     false?: string;
     true?: string;

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { SystemOneSchema } from "../schemas";
+import { DecisionsSchema } from "../schemas";
 
-describe("SystemOneSchema", () => {
+describe("DecisionsSchema", () => {
 	it("accepts TypeSafe's keyed Noul, Choice, and Score question map", () => {
-		const parsed = SystemOneSchema.safeParse({
+		const parsed = DecisionsSchema.safeParse({
 			state: { account_type: "startup" },
 			questions: {
 				is_startup: {
@@ -31,11 +31,11 @@ describe("SystemOneSchema", () => {
 	});
 
 	it("rejects array questions and malformed typed question criteria", () => {
-		expect(SystemOneSchema.safeParse({
+		expect(DecisionsSchema.safeParse({
 			state: "account",
 			questions: [],
 		}).success).toBe(false);
-		expect(SystemOneSchema.safeParse({
+		expect(DecisionsSchema.safeParse({
 			state: "account",
 			questions: {
 				segment: {

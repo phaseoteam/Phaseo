@@ -14,7 +14,7 @@ export type Endpoint =
     | "audio.realtime"
     | "moderations"
     | "rerank"
-    | "systemone"
+    | "decisions"
     | "video.generation"
     | "embeddings"
     | "batch"

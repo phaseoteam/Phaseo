@@ -1,4 +1,4 @@
-export interface SystemOneResponse {
+export interface DecisionsResponse {
   answers?: {
     [key: string]: unknown;
   };

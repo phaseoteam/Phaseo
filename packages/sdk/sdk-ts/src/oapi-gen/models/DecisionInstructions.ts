@@ -1,4 +1,4 @@
-export type SystemOneInstructions =
+export type DecisionInstructions =
   | string
   | {
       [key: string]: unknown;

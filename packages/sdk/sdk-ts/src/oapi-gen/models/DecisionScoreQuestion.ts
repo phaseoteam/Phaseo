@@ -1,4 +1,4 @@
-export interface SystemOneScoreQuestion {
+export interface DecisionScoreQuestion {
   criteria: string[];
   instructions:
     | string

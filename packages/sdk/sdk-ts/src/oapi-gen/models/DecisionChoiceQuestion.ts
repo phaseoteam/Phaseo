@@ -1,4 +1,4 @@
-export interface SystemOneChoiceQuestion {
+export interface DecisionChoiceQuestion {
   criteria: {
     [key: string]: string | null;
   };

@@ -1,8 +1,8 @@
-// Purpose: Encode the normalized System One response for Phaseo clients.
+// Purpose: Encode a provider-neutral Decisions response for Phaseo clients.
 
-import type { IRSystemOneResponse } from "@core/ir";
+import type { IRDecisionsResponse } from "@core/ir";
 
-export function encodeTypeSafeSystemOneResponse(ir: IRSystemOneResponse): any {
+export function encodeDecisionsResponse(ir: IRDecisionsResponse): any {
 	return {
 		model: ir.model,
 		answers: ir.answers,

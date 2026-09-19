@@ -206,12 +206,12 @@ function getDefaultDecisionModelParams(): Record<string, never> {
 	return {};
 }
 
-export function SystemOneRoom({ models }: { models: GatewaySupportedModel[] }) {
+export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const searchParams = useSearchParams();
 	const { state: sidebarState, toggleSidebar, isMobile } = useSidebar();
 	const sidebarCollapsed = sidebarState === "collapsed" && !isMobile;
 	const roomModels = useMemo(
-		() => filterModelsForRoom(models, "systemone"),
+		() => filterModelsForRoom(models, "decisions"),
 		[models],
 	);
 	const requestedModel = searchParams.get("model")?.trim() || DEFAULT_MODEL_ID;
@@ -227,7 +227,7 @@ export function SystemOneRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const modelSettings = useRoomModelSettings<Record<string, never>>({
-		roomId: "systemone",
+		roomId: "decisions",
 		models: roomModels,
 		selectedModelId: model,
 		onModelChange: setModel,
@@ -269,7 +269,7 @@ export function SystemOneRoom({ models }: { models: GatewaySupportedModel[] }) {
 
 	useEffect(() => {
 		let mounted = true;
-		void listRoomHistory<DecisionHistoryPayload>("systemone").then((records) => {
+		void listRoomHistory<DecisionHistoryPayload>("decisions").then((records) => {
 			if (!mounted) return;
 			const storedRuns = records.map((record) => fromStoredDecisionRun(record.payload));
 			const storedConversations = buildDecisionConversations(storedRuns);
@@ -296,7 +296,7 @@ export function SystemOneRoom({ models }: { models: GatewaySupportedModel[] }) {
 	async function persistRun(run: DecisionRun) {
 		await upsertRoomHistory<DecisionHistoryPayload>({
 			id: run.id,
-			roomId: "systemone",
+			roomId: "decisions",
 			createdAt: run.createdAt,
 			updatedAt: run.completedAt ?? run.createdAt,
 			payload: toStoredDecisionRun(run),
@@ -394,7 +394,7 @@ export function SystemOneRoom({ models }: { models: GatewaySupportedModel[] }) {
 		);
 		setIsSubmitting(true);
 		try {
-			const response = await fetchChatWebApi("/api/chat/systemone", {
+			const response = await fetchChatWebApi("/api/chat/decisions", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({

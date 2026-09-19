@@ -1,9 +1,9 @@
-// Purpose: TypeSafe System One pipeline surface.
+// Purpose: Provider-neutral Decisions pipeline surface.
 // Why: Runs structured evaluations through the same routing, billing, and audit lifecycle.
 
 import { handleError } from "@core/error-handler";
-import { decodeTypeSafeSystemOneRequest } from "@protocols/typesafe-systemone/decode";
-import { encodeTypeSafeSystemOneResponse } from "@protocols/typesafe-systemone/encode";
+import { decodeDecisionsRequest } from "@protocols/decisions/decode";
+import { encodeDecisionsResponse } from "@protocols/decisions/encode";
 import { doRequestWithIR } from "../execute";
 import { finalizeRequest } from "../after";
 import { auditFailure } from "../audit";
@@ -13,14 +13,14 @@ import {
 } from "../error-response";
 import type { PipelineRunnerArgs } from "./types";
 
-export async function runSystemOnePipeline(args: PipelineRunnerArgs): Promise<Response> {
+export async function runDecisionsPipeline(args: PipelineRunnerArgs): Promise<Response> {
 	const { pre, req, endpoint, timing } = args;
 
 	try {
-		(pre.ctx as any).protocol = "typesafe.systemone";
+		(pre.ctx as any).protocol = "phaseo.decisions";
 
 		timing.timer.mark("ir_decode");
-		const ir = decodeTypeSafeSystemOneRequest(pre.ctx.body as any);
+		const ir = decodeDecisionsRequest(pre.ctx.body as any);
 		ir.rawRequest = pre.ctx.rawBody;
 		timing.timer.end("ir_decode");
 
@@ -43,7 +43,7 @@ export async function runSystemOnePipeline(args: PipelineRunnerArgs): Promise<Re
 
 		timing.timer.mark("ir_encode");
 		if (exec.result.kind === "completed" && exec.result.ir) {
-			exec.result.normalized = encodeTypeSafeSystemOneResponse(exec.result.ir as any);
+			exec.result.normalized = encodeDecisionsResponse(exec.result.ir as any);
 		}
 		timing.timer.end("ir_encode");
 
@@ -58,7 +58,7 @@ export async function runSystemOnePipeline(args: PipelineRunnerArgs): Promise<Re
 			timingHeader: header || undefined,
 		});
 	} catch (err) {
-		logPipelineExecutionError("systemone", err);
+		logPipelineExecutionError("decisions", err);
 		const header = timing.timer.header();
 		pre.ctx.timing = timing.timer.snapshot();
 		return await handleError({

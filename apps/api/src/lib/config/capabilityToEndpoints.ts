@@ -61,7 +61,7 @@ const ENDPOINT_TO_PATH: Record<string, string> = {
     moderations: "/moderations",
     rerank: "/rerank",
     "decisions.make": "/decisions",
-    systemone: "/decisions",
+    decisions: "/decisions",
     "images.generations": "/images/generations",
     "images.edits": "/images/edits",
     "audio.speech": "/audio/speech",

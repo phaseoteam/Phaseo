@@ -57,7 +57,7 @@ export default function ModelStickyHeader({
 	organisationHref,
 	gatewayMetadata,
 	showUnreleased = false,
-	isSystemOneModel = false,
+	isDecisionsModel = false,
 }: {
 	modelId: string;
 	chatModelId?: string;
@@ -70,7 +70,7 @@ export default function ModelStickyHeader({
 	organisationHref?: string;
 	gatewayMetadata?: ModelGatewayMetadata | null;
 	showUnreleased?: boolean;
-	isSystemOneModel?: boolean;
+	isDecisionsModel?: boolean;
 }) {
 	const visible = useStickyHeaderVisibility(observeId);
 	const organisationUrl = organisationHref ?? `/organisations/${organisationId}`;
@@ -116,9 +116,9 @@ export default function ModelStickyHeader({
 						<div className="flex shrink-0 items-center gap-2">
 							{canChat ? (
 								<Button asChild variant="outline" size="sm" className="hidden h-8 rounded-lg px-2.5 text-[13px] sm:inline-flex">
-									<Link href={`${isSystemOneModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
+									<Link href={`${isDecisionsModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
 										<MessageSquare className="h-4 w-4" />
-										{isSystemOneModel ? "Decisions" : "Chat"}
+										{isDecisionsModel ? "Decisions" : "Chat"}
 									</Link>
 								</Button>
 							) : null}
@@ -130,7 +130,7 @@ export default function ModelStickyHeader({
 							</Button> : null}
 							{canChat ? (
 								<Button asChild variant="outline" size="icon-sm" className="rounded-lg sm:hidden">
-									<Link href={`${isSystemOneModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`} aria-label={isSystemOneModel ? "Open Decisions playground" : "Chat about this model"}>
+									<Link href={`${isDecisionsModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`} aria-label={isDecisionsModel ? "Open Decisions playground" : "Chat about this model"}>
 										<MessageSquare className="h-4 w-4" />
 									</Link>
 								</Button>
@@ -140,8 +140,8 @@ export default function ModelStickyHeader({
 									<Scale className="h-4 w-4" />
 								</Link>
 							</Button> : null}
-							{canChat && !isSystemOneModel ? <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} className="hidden h-8 px-2.5 text-[13px] sm:inline-flex" /> : null}
-							{canChat && !isSystemOneModel ? (
+							{canChat && !isDecisionsModel ? <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} className="hidden h-8 px-2.5 text-[13px] sm:inline-flex" /> : null}
+							{canChat && !isDecisionsModel ? (
 								<UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} compact className="sm:hidden" />
 							) : null}
 						</div>

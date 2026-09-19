@@ -700,6 +700,53 @@ public final class Models {
 		public Object trace_level;
 	}
 
+	public static class DecisionChoiceQuestion {
+		public Object criteria;
+		public Object instructions;
+		public Object type;
+	}
+
+	public static class DecisionInstructions {
+	}
+
+	public static class DecisionNoulQuestion {
+		public Object criteria;
+		public Object instructions;
+		public Object type;
+	}
+
+	public static class DecisionScoreQuestion {
+		public java.util.List<String> criteria;
+		public Object instructions;
+		public Object type;
+	}
+
+	public static class DecisionsRequest {
+		public Object debug;
+		public Boolean echo_upstream_request;
+		public Boolean meta;
+		public Object metadata;
+		public String model;
+		public Object provider;
+		public Object questions;
+		public Object routing;
+		public Object state;
+	}
+
+	public static class DecisionsResponse {
+		public Object answers;
+		public Object meta;
+		public String model;
+		public String request_id;
+		public Object usage;
+	}
+
+	public static class DecisionsUsage {
+		public Integer input_tokens;
+		public Integer output_tokens;
+		public Integer total_tokens;
+	}
+
 	public static class DeletedResponse {
 		public Object deleted;
 	}
@@ -2601,53 +2648,6 @@ public final class Models {
 	}
 
 	public static class SupportedParameterDetails {
-	}
-
-	public static class SystemOneChoiceQuestion {
-		public Object criteria;
-		public Object instructions;
-		public Object type;
-	}
-
-	public static class SystemOneInstructions {
-	}
-
-	public static class SystemOneNoulQuestion {
-		public Object criteria;
-		public Object instructions;
-		public Object type;
-	}
-
-	public static class SystemOneRequest {
-		public Object debug;
-		public Boolean echo_upstream_request;
-		public Boolean meta;
-		public Object metadata;
-		public String model;
-		public Object provider;
-		public Object questions;
-		public Object routing;
-		public Object state;
-	}
-
-	public static class SystemOneResponse {
-		public Object answers;
-		public Object meta;
-		public String model;
-		public String request_id;
-		public Object usage;
-	}
-
-	public static class SystemOneScoreQuestion {
-		public java.util.List<String> criteria;
-		public Object instructions;
-		public Object type;
-	}
-
-	public static class SystemOneUsage {
-		public Integer input_tokens;
-		public Integer output_tokens;
-		public Integer total_tokens;
 	}
 
 	public static class TextContentPart {

@@ -914,14 +914,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SystemOneRequest'
+              $ref: '#/components/schemas/DecisionsRequest'
       responses:
         '200':
           description: Structured decisions response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SystemOneResponse'
+                $ref: '#/components/schemas/DecisionsResponse'
   /audio/speech:
     post:
       x-beta: true
@@ -10884,7 +10884,7 @@ components:
         - type: string
         - type: object
           additionalProperties: true
-    SystemOneRequest:
+    DecisionsRequest:
       type: object
       required:
         - model
@@ -10909,9 +10909,9 @@ components:
           maxProperties: 128
           additionalProperties:
             oneOf:
-              - $ref: '#/components/schemas/SystemOneNoulQuestion'
-              - $ref: '#/components/schemas/SystemOneChoiceQuestion'
-              - $ref: '#/components/schemas/SystemOneScoreQuestion'
+              - $ref: '#/components/schemas/DecisionNoulQuestion'
+              - $ref: '#/components/schemas/DecisionChoiceQuestion'
+              - $ref: '#/components/schemas/DecisionScoreQuestion'
         meta:
           type: boolean
           default: false
@@ -10926,7 +10926,7 @@ components:
         metadata:
           type: object
           additionalProperties: true
-    SystemOneNoulQuestion:
+    DecisionNoulQuestion:
       type: object
       required:
         - type
@@ -10937,7 +10937,7 @@ components:
           enum:
             - noul
         instructions:
-          $ref: '#/components/schemas/SystemOneInstructions'
+          $ref: '#/components/schemas/DecisionInstructions'
         criteria:
           type: object
           properties:
@@ -10946,7 +10946,7 @@ components:
             'false':
               type: string
           additionalProperties: true
-    SystemOneChoiceQuestion:
+    DecisionChoiceQuestion:
       type: object
       required:
         - type
@@ -10958,14 +10958,14 @@ components:
           enum:
             - choice
         instructions:
-          $ref: '#/components/schemas/SystemOneInstructions'
+          $ref: '#/components/schemas/DecisionInstructions'
         criteria:
           type: object
           minProperties: 1
           additionalProperties:
             type: string
             nullable: true
-    SystemOneScoreQuestion:
+    DecisionScoreQuestion:
       type: object
       required:
         - type
@@ -10977,13 +10977,13 @@ components:
           enum:
             - score
         instructions:
-          $ref: '#/components/schemas/SystemOneInstructions'
+          $ref: '#/components/schemas/DecisionInstructions'
         criteria:
           type: array
           minItems: 2
           items:
             type: string
-    SystemOneResponse:
+    DecisionsResponse:
       type: object
       properties:
         model:
@@ -10992,14 +10992,14 @@ components:
           type: object
           additionalProperties: true
         usage:
-          $ref: '#/components/schemas/SystemOneUsage'
+          $ref: '#/components/schemas/DecisionsUsage'
         request_id:
           type: string
           nullable: true
         meta:
           type: object
           additionalProperties: true
-    SystemOneUsage:
+    DecisionsUsage:
       type: object
       properties:
         input_tokens:
@@ -11011,7 +11011,7 @@ components:
         total_tokens:
           type: integer
           minimum: 0
-    SystemOneInstructions:
+    DecisionInstructions:
       oneOf:
         - type: string
         - type: object

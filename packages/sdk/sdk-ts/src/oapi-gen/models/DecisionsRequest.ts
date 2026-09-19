@@ -1,4 +1,4 @@
-export interface SystemOneRequest {
+export interface DecisionsRequest {
   debug?: {
     enabled?: boolean;
     return_upstream_request?: boolean;
