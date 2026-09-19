@@ -1,4 +1,5 @@
 import { absoluteUrl } from "@/lib/seo";
+import { resolveLogo } from "@/lib/logos";
 
 const DEFAULT_ACCENT_COLOR = 0x2563eb;
 const MAX_DESCRIPTION_LENGTH = 360;
@@ -8,6 +9,7 @@ export interface DiscordModelComponentEmbedOptions {
 	modelName: string;
 	organisationName: string;
 	modelPath: string;
+	organisationId?: string | null;
 	description?: string | null;
 	contextLength?: number | null;
 	organisationColour?: string | null;
@@ -69,7 +71,13 @@ export function buildDiscordModelComponentEmbed(
 	const context = formatContextLength(options.contextLength);
 	const modelUrl = absoluteUrl(options.modelPath);
 	const phaseoLogoUrl = absoluteUrl("/png_logo_light.png");
-	const organisationLogoUrl = absoluteMediaUrl(options.organisationLogoUrl);
+	const knownOrganisationLogoUrl = absoluteMediaUrl(
+		options.organisationId
+			? resolveLogo(options.organisationId, { variant: "light" }).src
+			: null,
+	);
+	const organisationLogoUrl =
+		absoluteMediaUrl(options.organisationLogoUrl) ?? knownOrganisationLogoUrl;
 	const queryModelId = encodeURIComponent(options.modelId);
 	const summary = [organisationName, context ? `${context} context` : "Model profile"]
 		.join(" · ");

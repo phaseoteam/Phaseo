@@ -10,6 +10,7 @@ describe("Discord component embed", () => {
 		modelName: "GLM 5.3 FlashX",
 		organisationName: "Z.ai",
 		modelPath: "/models/z-ai/glm-5.3-flashx",
+		organisationId: "z-ai",
 		description:
 			"A fast native multimodal model with a long context window.</script>",
 		contextLength: 1_000_000,
@@ -54,7 +55,15 @@ describe("Discord component embed", () => {
 				content: expect.stringContaining("Powered by [Phaseo]"),
 			}),
 		);
-		expect(sections[1]?.accessory?.media?.url).toContain("png_logo_light.png");
+		expect(sections[1]).toEqual(
+			expect.objectContaining({
+				accessory: expect.objectContaining({
+					media: expect.objectContaining({
+						url: expect.stringContaining("png_logo_light.png"),
+					}),
+				}),
+			}),
+		);
 
 		const actionRow = payload.component.components.find(
 			(component) => component.type === 1,
@@ -85,9 +94,40 @@ describe("Discord component embed", () => {
 		).toBe(0x2563eb);
 	});
 
-	it("uses the Phaseo logo once when a lab logo is unavailable", () => {
+	it("uses the known lab logo when an external logo is unavailable", () => {
 		const payload = buildDiscordModelComponentEmbed({
 			...options,
+			organisationLogoUrl: null,
+		});
+		const sections = payload.component.components.filter(
+			(component) => component.type === 9,
+		);
+
+		expect(sections).toHaveLength(2);
+		expect(sections[0]).toEqual(
+			expect.objectContaining({
+				accessory: expect.objectContaining({
+					media: expect.objectContaining({
+						url: expect.stringContaining("/logos/zai_light.svg"),
+					}),
+				}),
+			}),
+		);
+		expect(sections[1]).toEqual(
+			expect.objectContaining({
+				accessory: expect.objectContaining({
+					media: expect.objectContaining({
+						url: expect.stringContaining("png_logo_light.png"),
+					}),
+				}),
+			}),
+		);
+	});
+
+	it("uses the Phaseo logo once when no lab logo is available", () => {
+		const payload = buildDiscordModelComponentEmbed({
+			...options,
+			organisationId: null,
 			organisationLogoUrl: null,
 		});
 		const sections = payload.component.components.filter(

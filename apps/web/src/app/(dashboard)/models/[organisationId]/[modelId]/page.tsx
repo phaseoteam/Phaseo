@@ -455,6 +455,7 @@ async function ModelDetailPageBody({
 				modelName={modelName}
 				organisationName={organisationName}
 				modelPath={getModelPath(modelId)}
+				organisationId={modelOverview.organisation_id}
 				description={discordDescription}
 				contextLength={contextLength}
 				organisationColour={
