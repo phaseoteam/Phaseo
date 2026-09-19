@@ -528,6 +528,8 @@ async function handleNonStreamResponse(
     const outputPerformance = calculateOutputPerformanceMetrics({
         outputTokens,
         providerDurationMs: generationMs,
+		// Non-stream providers do not expose observed TTFT, so post-first-token
+		// output speed is unavailable; full-response throughput remains available.
         providerTtftMs: null,
         gatewayE2eMs: endToEndMs,
     });
@@ -632,5 +634,4 @@ async function handleNonStreamResponse(
     const responseStatus = result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
 }
-
 

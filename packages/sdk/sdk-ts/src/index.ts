@@ -34,6 +34,8 @@ import type {
   ResponsesResponse,
   DecisionsRequest,
   DecisionsResponse,
+  SystemOneRequest,
+  SystemOneResponse,
   VideoGenerationRequest,
   VideoGenerationResponse
 } from "./oapi-gen/models/index.js";
@@ -357,6 +359,8 @@ export type {
   ResponsesResponse,
   DecisionsRequest,
   DecisionsResponse,
+  SystemOneRequest,
+  SystemOneResponse,
   VideoBillingSummary,
   VideoGenerationRequest,
   VideoGenerationResponse

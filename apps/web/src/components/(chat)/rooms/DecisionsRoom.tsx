@@ -269,16 +269,25 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 
 	useEffect(() => {
 		let mounted = true;
-		void listRoomHistory<DecisionHistoryPayload>("decisions").then((records) => {
-			if (!mounted) return;
-			const storedRuns = records.map((record) => fromStoredDecisionRun(record.payload));
-			const storedConversations = buildDecisionConversations(storedRuns);
-			setRuns(storedRuns);
-			setActiveConversationId(
-				storedConversations[0]?.id ?? createConversationId(),
-			);
-			setHistoryLoaded(true);
-		});
+		void listRoomHistory<DecisionHistoryPayload>("decisions")
+			.then((records) => {
+				if (!mounted) return;
+				const storedRuns = records.map((record) =>
+					fromStoredDecisionRun(record.payload),
+				);
+				const storedConversations = buildDecisionConversations(storedRuns);
+				setRuns(storedRuns);
+				setActiveConversationId(
+					storedConversations[0]?.id ?? createConversationId(),
+				);
+				setHistoryLoaded(true);
+			})
+			.catch(() => {
+				if (!mounted) return;
+				setActiveConversationId(createConversationId());
+				setHistoryLoaded(true);
+				setError("Local chat history could not be loaded.");
+			});
 		return () => {
 			mounted = false;
 		};
@@ -433,6 +442,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			setError(message);
 			const failedRun: DecisionRun = {
 				...baseRun,
+				result: null,
 				completedAt: new Date().toISOString(),
 				isPending: false,
 				error: message,
@@ -467,6 +477,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	}
 
 	function branchRun(run: DecisionRun) {
+		setActiveConversationId(createConversationId());
 		editRun(run);
 	}
 

@@ -223,6 +223,11 @@ type ModelTypeResolver = (schema: IRSchema, excludeModelName?: string) => string
 function createModelTypeResolver(models: IRModel[]): ModelTypeResolver {
 	const namesBySchema = new Map<string, string[]>();
 	const modelSchemas = new Map(models.map((model) => [model.name, model.schema]));
+	const deprecatedCompatibilityModels = new Set(
+		models
+			.filter((model) => model.doc?.startsWith("Deprecated compatibility alias."))
+			.map((model) => model.name),
+	);
 	for (const model of models) {
 		if (model.schema.kind !== "object") continue;
 		const signature = schemaSignature(model.schema, modelSchemas);
@@ -237,10 +242,14 @@ function createModelTypeResolver(models: IRModel[]): ModelTypeResolver {
 			(name) => name !== excludeModelName
 		);
 		if (candidates.length === 1) return candidates[0];
+		const canonicalCandidates = candidates.filter(
+			(name) => !deprecatedCompatibilityModels.has(name),
+		);
+		if (canonicalCandidates.length === 1) return canonicalCandidates[0];
 		if (!excludeModelName || candidates.length === 0) return undefined;
 
 		const contextTokens = modelNameTokens(excludeModelName);
-		const ranked = candidates
+		const ranked = (canonicalCandidates.length > 0 ? canonicalCandidates : candidates)
 			.map((name) => ({
 				name,
 				score: Array.from(modelNameTokens(name)).filter((token) => contextTokens.has(token)).length

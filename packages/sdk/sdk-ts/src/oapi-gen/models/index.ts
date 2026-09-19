@@ -297,6 +297,13 @@ export type { SearchModelsToolDefinition } from "./SearchModelsToolDefinition.js
 export type { ServerToolUsage } from "./ServerToolUsage.js";
 export type { SubagentToolDefinition } from "./SubagentToolDefinition.js";
 export type { SupportedParameterDetails } from "./SupportedParameterDetails.js";
+export type { SystemOneChoiceQuestion } from "./SystemOneChoiceQuestion.js";
+export type { SystemOneInstructions } from "./SystemOneInstructions.js";
+export type { SystemOneNoulQuestion } from "./SystemOneNoulQuestion.js";
+export type { SystemOneRequest } from "./SystemOneRequest.js";
+export type { SystemOneResponse } from "./SystemOneResponse.js";
+export type { SystemOneScoreQuestion } from "./SystemOneScoreQuestion.js";
+export type { SystemOneUsage } from "./SystemOneUsage.js";
 export type { TextContentPart } from "./TextContentPart.js";
 export type { TextGenerateTool } from "./TextGenerateTool.js";
 export type { TextModerationInput } from "./TextModerationInput.js";

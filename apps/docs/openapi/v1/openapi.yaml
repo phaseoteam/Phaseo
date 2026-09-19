@@ -11018,6 +11018,154 @@ components:
           additionalProperties: true
         - type: array
           items: {}
+    SystemOneRequest:
+      deprecated: true
+      description: Deprecated compatibility alias. Use DecisionsRequest.
+      type: object
+      required:
+        - model
+        - state
+        - questions
+      properties:
+        model:
+          type: string
+          description: Canonical Phaseo model id or provider model alias.
+          default: typesafe/jev-1.13.0
+        state:
+          description: Structured state evaluated by the model.
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+            - type: array
+              items: {}
+        questions:
+          type: object
+          minProperties: 1
+          maxProperties: 128
+          additionalProperties:
+            oneOf:
+              - $ref: '#/components/schemas/SystemOneNoulQuestion'
+              - $ref: '#/components/schemas/SystemOneChoiceQuestion'
+              - $ref: '#/components/schemas/SystemOneScoreQuestion'
+        meta:
+          type: boolean
+          default: false
+        echo_upstream_request:
+          type: boolean
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
+        provider:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+        routing:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+        metadata:
+          type: object
+          additionalProperties: true
+    SystemOneNoulQuestion:
+      deprecated: true
+      description: Deprecated compatibility alias. Use DecisionNoulQuestion.
+      type: object
+      required:
+        - type
+        - instructions
+      properties:
+        type:
+          type: string
+          enum:
+            - noul
+        instructions:
+          $ref: '#/components/schemas/SystemOneInstructions'
+        criteria:
+          type: object
+          properties:
+            'true':
+              type: string
+            'false':
+              type: string
+          additionalProperties: true
+    SystemOneChoiceQuestion:
+      deprecated: true
+      description: Deprecated compatibility alias. Use DecisionChoiceQuestion.
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      properties:
+        type:
+          type: string
+          enum:
+            - choice
+        instructions:
+          $ref: '#/components/schemas/SystemOneInstructions'
+        criteria:
+          type: object
+          minProperties: 1
+          additionalProperties:
+            type: string
+            nullable: true
+    SystemOneScoreQuestion:
+      deprecated: true
+      description: Deprecated compatibility alias. Use DecisionScoreQuestion.
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      properties:
+        type:
+          type: string
+          enum:
+            - score
+        instructions:
+          $ref: '#/components/schemas/SystemOneInstructions'
+        criteria:
+          type: array
+          minItems: 2
+          items:
+            type: string
+    SystemOneResponse:
+      deprecated: true
+      description: Deprecated compatibility alias. Use DecisionsResponse.
+      type: object
+      properties:
+        model:
+          type: string
+        answers:
+          type: object
+          additionalProperties: true
+        usage:
+          $ref: '#/components/schemas/SystemOneUsage'
+        request_id:
+          type: string
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+    SystemOneUsage:
+      deprecated: true
+      description: Deprecated compatibility alias. Use DecisionsUsage.
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+        output_tokens:
+          type: integer
+          minimum: 0
+        total_tokens:
+          type: integer
+          minimum: 0
+    SystemOneInstructions:
+      deprecated: true
+      description: Deprecated compatibility alias. Use DecisionInstructions.
+      oneOf:
+        - type: string
+        - type: object
+          additionalProperties: true
+        - type: array
+          items: {}
     ModerationResult:
       type: object
       properties:

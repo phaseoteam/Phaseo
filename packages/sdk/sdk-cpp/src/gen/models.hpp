@@ -2631,6 +2631,52 @@ struct SubagentToolDefinition {
 struct SupportedParameterDetails {
 };
 
+struct SystemOneChoiceQuestion {
+	std::map<std::string, std::any> criteria;
+	std::any instructions;
+	std::any type;
+};
+
+using SystemOneInstructions = std::any;
+
+struct SystemOneNoulQuestion {
+	std::map<std::string, std::any> criteria;
+	std::any instructions;
+	std::any type;
+};
+
+struct SystemOneRequest {
+	std::map<std::string, std::any> debug;
+	std::optional<bool> echo_upstream_request;
+	std::optional<bool> meta;
+	std::map<std::string, std::any> metadata;
+	std::string model;
+	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> questions;
+	std::map<std::string, std::any> routing;
+	std::any state;
+};
+
+struct SystemOneResponse {
+	std::map<std::string, std::any> answers;
+	std::map<std::string, std::any> meta;
+	std::string model;
+	std::optional<std::string> request_id;
+	std::map<std::string, std::any> usage;
+};
+
+struct SystemOneScoreQuestion {
+	std::vector<std::string> criteria;
+	std::any instructions;
+	std::any type;
+};
+
+struct SystemOneUsage {
+	std::optional<int> input_tokens;
+	std::optional<int> output_tokens;
+	std::optional<int> total_tokens;
+};
+
 struct TextContentPart {
 	std::string text;
 	std::any type;
