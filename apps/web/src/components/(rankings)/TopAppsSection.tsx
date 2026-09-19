@@ -1,12 +1,14 @@
 import { AppsUsageList } from "@/components/(rankings)/AppsUsageList";
 import { fetchFrontendRankingTopApps } from "@/lib/fetchers/frontend/fetchRankingSections";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 
 export async function TopAppsSection() {
 	const [today, week, month] = await Promise.all([
-		fetchFrontendRankingTopApps("today", 20).catch(() => ({ data: [] })),
-		fetchFrontendRankingTopApps("week", 20).catch(() => ({ data: [] })),
-		fetchFrontendRankingTopApps("month", 20).catch(() => ({ data: [] })),
+		fetchFrontendRankingTopApps("today", 20).catch(() => null),
+		fetchFrontendRankingTopApps("week", 20).catch(() => null),
+		fetchFrontendRankingTopApps("month", 20).catch(() => null),
 	]);
+	if (!today || !week || !month) return <RankingUnavailable id="top-apps" title="Top Apps" />;
 	const byTokens = <T extends { tokens: number }>(rows: T[]) =>
 		[...rows].sort((left, right) => Number(right.tokens ?? 0) - Number(left.tokens ?? 0));
 

@@ -74,7 +74,11 @@ publicRankingsRouter.get("/rankings/multimodal", async (c) => {
 });
 
 publicRankingsRouter.get("/rankings/modality-timeseries", async (c) => {
-	try { const { data, error } = await getDataClient(c.env).rpc("get_public_modality_usage_timeseries", { p_metric: c.req.query("metric") || "tokens", p_time_range: c.req.query("time_range") || "year", p_top_n: 20 }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
+	const metric = c.req.query("metric") || "text_tokens";
+	if (!["text_tokens", "image_inputs", "image_outputs", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_tokens", "video_seconds", "cached_tokens", "embedding_tokens", "rerank_quad_tokens"].includes(metric)) {
+		return c.json({ error: "invalid_ranking_metric" }, 400);
+	}
+	try { const { data, error } = await getDataClient(c.env).rpc("get_public_modality_usage_timeseries", { p_metric: metric, p_time_range: c.req.query("time_range") || "year", p_top_n: 20 }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
 	catch (error) { console.error("[web-api/rankings] modality series failed", error); return c.json({ error: "modality_timeseries_unavailable" }, 503); }
 });
 

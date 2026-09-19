@@ -1,12 +1,14 @@
 import { fetchFrontendRankingContextLengths } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { VerticalRankingChart } from "@/components/(rankings)/VerticalRankingChart";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 
 function formatRequests(value: number) {
 	return new Intl.NumberFormat("en-GB", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 export async function ContextLengthSection() {
-	const result = await fetchFrontendRankingContextLengths(30).catch(() => ({ data: [], days: 30 }));
+	const result = await fetchFrontendRankingContextLengths(30).catch(() => null);
+	if (!result) return <RankingUnavailable id="context-length" title="Context Length" />;
 	const rows = result.data
 		.map((row) => ({
 			key: row.bucket_key,

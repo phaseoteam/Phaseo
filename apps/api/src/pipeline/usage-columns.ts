@@ -334,6 +334,18 @@ function endpointQuadBreakdown(endpoint: Endpoint | undefined, totalQuadTokens: 
 	};
 }
 
+// Count observed content parts, never modality tokens (a single image can use
+// thousands of tokens). Walk only protocol content containers, not tool data.
+function countInputParts(payload: unknown, types: string[]): number {
+	if (!payload || typeof payload !== "object") return 0;
+	if (Array.isArray(payload)) return payload.reduce((sum, part) => sum + countInputParts(part, types), 0);
+	const node = payload as Record<string, unknown>;
+	if (typeof node.type === "string" && types.includes(node.type)) return 1;
+	return ["messages", "input", "input_items", "content"].reduce(
+		(sum, key) => sum + countInputParts(node[key], types), 0,
+	);
+}
+
 export function buildGatewayRequestUsageColumns(args: {
 	usage: unknown;
 	endpoint?: Endpoint;
@@ -422,8 +434,12 @@ export function buildGatewayRequestUsageColumns(args: {
 		usage_output_audio_tokens: outputAudioTokens,
 		usage_input_video_tokens: inputVideoTokens,
 		usage_output_video_tokens: outputVideoTokens,
-		usage_image_inputs: firstNumber(shaped, ["input_image_count", "input_images", "input_tokens_details.input_images"]),
-		usage_image_outputs: firstNumber(shaped, ["output_image_count", "output_images", "output_tokens_details.output_images"]),
+		usage_image_inputs: firstNumber(rawUsage, ["input_image_count", "input_images"]) ||
+			countInputParts(args.requestPayload, ["image_url", "input_image", "image"]),
+		usage_image_outputs: firstNumber(rawUsage, ["output_image_count", "output_images", "output_image"]) ||
+			(args.endpoint === "images.generations" || args.endpoint === "images.edits"
+				? (Array.isArray((args.gatewayResponse as any)?.data) ? (args.gatewayResponse as any).data.length : 0)
+				: 0),
 		usage_audio_inputs: firstNumber(shaped, ["input_audio_count", "input_audio", "input_tokens_details.input_audio"]),
 		usage_audio_outputs: firstNumber(shaped, ["output_audio_count", "output_audio", "output_tokens_details.output_audio"]),
 		usage_video_inputs: firstNumber(shaped, ["input_video_count", "input_videos", "input_tokens_details.input_videos"]),
@@ -525,7 +541,7 @@ export function buildV2RequestUsageMeters(args: {
 	gatewayResponse?: unknown;
 }): V2RequestUsageMeter[] {
 	const columns = buildGatewayRequestUsageColumns(args);
-	return V2_USAGE_METER_COLUMNS.flatMap((definition, sequence) => {
+	const meters: V2RequestUsageMeter[] = V2_USAGE_METER_COLUMNS.flatMap((definition, sequence) => {
 		const raw = columns[definition.column];
 		const quantity = typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, raw) : 0;
 		if (quantity <= 0) return [];
@@ -539,4 +555,23 @@ export function buildV2RequestUsageMeters(args: {
 			sequence,
 		}];
 	});
+	// Public rollups have no endpoint dimension. Persist endpoint-specific
+	// workload meters here so rankings can distinguish speech from transcription.
+	const addWorkload = (meterKey: string, quantity: number, modality: V2RequestUsageMeter["modality"], unit: V2RequestUsageMeter["unit"]) => {
+		if (!Number.isFinite(quantity) || quantity <= 0) return;
+		meters.push({ meter_key: meterKey, quantity, modality, unit, source: "gateway", billable: false, sequence: V2_USAGE_METER_COLUMNS.length + meters.length });
+	};
+	if (args.endpoint === "embeddings") {
+		addWorkload("embedding_tokens", firstNumber(args.usage, ["embedding_tokens"]) || columns.usage_input_tokens, "text", "tokens");
+	}
+	if (args.endpoint === "rerank") {
+		addWorkload("rerank_quad_tokens", firstNumber(args.usage, ["rerank_quad_tokens"]) || columns.usage_rerank_quad_tokens, "text", "tokens");
+	}
+	if (args.endpoint === "audio.speech") {
+		addWorkload("speech_seconds", columns.usage_audio_seconds, "audio", "seconds");
+	}
+	if (args.endpoint === "audio.transcription" || args.endpoint === "audio.translations") {
+		addWorkload("transcription_seconds", columns.usage_audio_seconds, "audio", "seconds");
+	}
+	return meters;
 }
