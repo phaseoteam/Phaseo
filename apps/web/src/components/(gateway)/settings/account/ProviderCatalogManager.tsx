@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateAccountQueries } from "@/lib/query/invalidation";
 import { AlertCircle, ChevronDown, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -96,6 +98,7 @@ function Section({ title, description, children }: { title: string; description?
 }
 
 export default function ProviderCatalogManager({ providers }: { providers: ProviderLink[] }) {
+	const queryClient = useQueryClient();
 	const availableProviders = providers.filter((provider) => provider.status === "active" || provider.status === "pending");
 	const [providerSlug, setProviderSlug] = React.useState(availableProviders[0]?.provider_slug ?? "");
 	const [models, setModels] = React.useState<EditableModel[]>([]);
@@ -223,6 +226,7 @@ export default function ProviderCatalogManager({ providers }: { providers: Provi
 				output_modalities: outputDraft === undefined ? model.output_modalities : outputDraft.split(",").map((value) => value.trim()).filter(Boolean),
 			}));
 			const result = await updateProviderCatalogAction(providerSlug, { data: documentModels }, source.catalog_version);
+			await invalidateAccountQueries(queryClient);
 			setModels(result.models ?? []);
 			setSource(result.source);
 			setLatestRun(result.latest_run);
@@ -240,6 +244,7 @@ export default function ProviderCatalogManager({ providers }: { providers: Provi
 		setSaving(true);
 		try {
 			const result = await updateProviderCatalogAction(providerSlug, { mode: "remote" }, source.catalog_version);
+			await invalidateAccountQueries(queryClient);
 			setModels(result.models ?? []);
 			setSource(result.source);
 			setLatestRun(result.latest_run);

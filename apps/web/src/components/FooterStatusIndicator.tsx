@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { publicSWRKeys } from "@/lib/swr/keys";
+import { publicQueryFetcher } from "@/lib/query/fetchers";
+import { webQueryKeys } from "@/lib/query/queryKeys";
 
 type StatusState =
 	| "operational"
@@ -109,7 +110,10 @@ function componentPriority(component: StatusComponent) {
 
 export function FooterStatusIndicator() {
 	const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const { data, error } = useSWR<StatusSummary>(publicSWRKeys.status);
+	const { data, error } = useQuery<StatusSummary>({
+		queryKey: webQueryKeys.public.status(),
+		queryFn: publicQueryFetcher<StatusSummary>("/api/_web/status"),
+	});
 	const status: StatusSummary = data
 		? {
 				ok: Boolean(data.ok),

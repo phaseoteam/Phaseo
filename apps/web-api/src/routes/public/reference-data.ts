@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
@@ -253,7 +254,7 @@ publicReferenceDataRouter.get("/api-providers/:providerId/header", async (c) => 
 			api_provider_name: data.name,
 			country_code: data.country_code,
 			subdivision_code: data.subdivision_code,
-		} }), policy(`web-api-provider-${encodeURIComponent(providerId).replace(/%/g, "")}`));
+		} }), { ...policy(`web-api-provider-${encodeURIComponent(providerId).replace(/%/g, "")}`), ...PUBLIC_LIVE_DATA_CACHE });
 	} catch (error) {
 		console.error("[web-api/reference] provider header failed", { providerId, error });
 		return c.json({ error: "provider_unavailable" }, 503);
@@ -275,7 +276,7 @@ publicReferenceDataRouter.get("/sources", async (c) => {
 				subdivision_code: row.subdivision_code ?? null,
 			}))
 			.filter((source) => Boolean(source.api_provider_id));
-		return withPublicCache(c.json({ sources }), policy("web-api-sources"));
+		return withPublicCache(c.json({ sources }), { ...policy("web-api-sources"), ...PUBLIC_LIVE_DATA_CACHE });
 	} catch (error) {
 		console.error("[web-api/reference] sources failed", error);
 		return c.json({ error: "sources_unavailable" }, 503);

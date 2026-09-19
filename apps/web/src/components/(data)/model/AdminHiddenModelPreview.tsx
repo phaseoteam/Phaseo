@@ -1,21 +1,48 @@
 "use client";
 
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import type { AdminModelPreview } from "@/lib/models/adminModelPreview";
+import { fetchInternalWebApi, WebApiError } from "@/lib/web-api/client";
+import CatalogNotFoundState from "@/components/(data)/CatalogNotFoundState";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import {
+	ANONYMOUS_ACCOUNT_QUERY_SCOPE,
+	hasAuthenticatedAccountQueryScope,
+	webQueryKeys,
+	type AccountQueryScope,
+} from "@/lib/query/queryKeys";
 
-async function fetchPreview(url: string): Promise<AdminModelPreview> {
-	const response = await fetch(url, { cache: "no-store", credentials: "same-origin" });
-	if (!response.ok) throw new Error("Unable to refresh hidden model preview");
-	return response.json() as Promise<AdminModelPreview>;
-}
 
-export default function AdminHiddenModelPreview({ initial }: { initial: AdminModelPreview }) {
-	const { data } = useSWR(
-		`/api/internal/model-preview/${encodeURIComponent(initial.modelId)}`,
-		fetchPreview,
-		{ fallbackData: initial },
-	);
-	const model = data ?? initial;
+export default function AdminHiddenModelPreview({
+	initial,
+	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
+}: {
+	initial: AdminModelPreview;
+	accountQueryScope?: AccountQueryScope | null;
+}) {
+	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
+	const path = `/api/internal/model-preview/${encodeURIComponent(initial.modelId)}` as const;
+	const { data } = useQuery<AdminModelPreview | null>({
+		queryKey: webQueryKeys.account.adminModelPreview({
+			scope,
+			modelId: initial.modelId,
+		}),
+		queryFn: async ({ signal }) => {
+			try {
+				return await fetchInternalWebApi<AdminModelPreview>(path, null, { signal });
+			} catch (error) {
+				if (error instanceof WebApiError && [401, 403, 404].includes(error.status)) return null;
+				throw error;
+			}
+		},
+		...WEB_QUERY_POLICIES.private,
+		enabled: hasAuthenticatedAccountQueryScope(scope),
+		initialData: initial,
+	});
+	if (!hasAuthenticatedAccountQueryScope(scope) || !data) {
+		return <CatalogNotFoundState resourceType="model" resourceId={initial.modelId} />;
+	}
+	const model = data;
 	return (
 		<div className="container mx-auto space-y-8 px-4 py-8">
 			<div>

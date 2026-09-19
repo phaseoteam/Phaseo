@@ -43,7 +43,7 @@ Run the narrowest relevant checks while iterating. Run a production build when a
 - Start with existing `src/components/ui` primitives and the configured ShadCN registries before adding a primitive or dependency.
 - Use Tailwind utilities and established tokens; keep `src/app/globals.css` for tokens, resets, and truly global behavior.
 - Keep product copy concise. Add helper text only when it prevents a likely misunderstanding.
-- Prefer URL state for shareable filters, searches, tabs, and pagination, using existing `nuqs` patterns. Use SWR for client revalidation and request deduplication.
+- Prefer URL state for shareable filters, searches, tabs, and pagination, using existing `nuqs` patterns. Use TanStack Query for client revalidation and request deduplication.
 - Keep transient state local, derive values during render where possible, and avoid effects that merely synchronize duplicate state.
 
 ## Web Testing and Safety

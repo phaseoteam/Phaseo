@@ -2,14 +2,20 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
-import useSWR from "swr";
-import { publicSWRKeys } from "@/lib/swr/keys";
+import { useQuery } from "@tanstack/react-query";
 import {
 	fetchModelsTableData,
 	fetchModelsTableDataV2,
-} from "@/lib/swr/modelsTable";
-import { useRevalidateOnResume } from "@/lib/swr/useRevalidateOnResume";
+} from "@/lib/query/modelsTable";
+import { useRefetchOnResume } from "@/lib/query/refetchOnResume";
 import { ModelsTablePageSkeleton } from "@/components/(data)/models/Models/ModelsTablePageSkeleton";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import {
+	ANONYMOUS_ACCOUNT_QUERY_SCOPE,
+	hasAuthenticatedAccountQueryScope,
+	webQueryKeys,
+	type AccountQueryScope,
+} from "@/lib/query/queryKeys";
 
 const ModelsTableDisplay = dynamic(() => import("./ModelsTableDisplay"), {
 	loading: () => <ModelsTablePageSkeleton />,
@@ -17,40 +23,53 @@ const ModelsTableDisplay = dynamic(() => import("./ModelsTableDisplay"), {
 
 type ModelsTablePageClientProps = {
 	catalogueVersion?: "v1" | "v2";
+	accountQueryScope?: AccountQueryScope | null;
 };
 
 export default function ModelsTablePageClient({
 	catalogueVersion = "v1",
+	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: ModelsTablePageClientProps) {
-	const swrKey =
+	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
+	const path =
 		catalogueVersion === "v2"
-			? publicSWRKeys.modelsTableV2
-			: publicSWRKeys.modelsTable;
-	const fetcher =
-		catalogueVersion === "v2"
-			? fetchModelsTableDataV2
-			: fetchModelsTableData;
-	const { data, error, mutate } = useSWR(swrKey, fetcher, {
-		// The resume listener covers focus, restored tabs, and reconnects.
-		revalidateOnFocus: false,
-		revalidateOnReconnect: false,
-		refreshInterval: 5 * 60_000,
+			? "/api/_web/models?limit=10000&offset=0&shape=table&projection=2&catalogue_version=v2"
+			: "/api/_web/models?limit=10000&offset=0&shape=table&projection=2";
+	const query = useQuery({
+		queryKey: webQueryKeys.account.catalogue({
+			scope,
+			catalogueVersion,
+			previewCacheScope: "table",
+		}),
+		queryFn: ({ signal }) =>
+			catalogueVersion === "v2"
+				? fetchModelsTableDataV2(path, {
+						signal,
+						accountQueryScope: scope,
+					})
+				: fetchModelsTableData(path, {
+						signal,
+						accountQueryScope: scope,
+					}),
+		...(hasAuthenticatedAccountQueryScope(scope) ? WEB_QUERY_POLICIES.private : WEB_QUERY_POLICIES.public),
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 	});
-	useRevalidateOnResume(mutate, error);
+	useRefetchOnResume(query.refetch, query.isStale, query.error);
 	useEffect(() => {
 		void import("./ModelsTableDisplay");
 	}, []);
 
-	if (error && !data) throw error;
-	if (!data) return <ModelsTablePageSkeleton />;
+	if (query.error && !query.data) throw query.error;
+	if (!query.data) return <ModelsTablePageSkeleton />;
 
 	return (
 		<ModelsTableDisplay
-			initialModelData={data.models}
-			allEndpoints={data.allEndpoints}
-			allModalities={data.allModalities}
-			allFeatures={data.allFeatures}
-			allStatuses={data.allStatuses}
+			initialModelData={query.data.models}
+			allEndpoints={query.data.allEndpoints}
+			allModalities={query.data.allModalities}
+			allFeatures={query.data.allFeatures}
+			allStatuses={query.data.allStatuses}
 		/>
 	);
 }

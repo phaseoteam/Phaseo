@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import ModelsTablePageClient from "@/components/(data)/models/Models/ModelsTablePageClient";
 import { resolveModelsCatalogueVersion } from "@/lib/models/catalogueVersion";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { toAccountQueryScope } from "@/lib/query/queryKeys";
 
 export const metadata: Metadata = {
 	title: "Models table view",
@@ -13,9 +15,14 @@ export const metadata: Metadata = {
 };
 
 export default async function ModelsTablePage() {
+	const [catalogueVersion, accountContext] = await Promise.all([
+		resolveModelsCatalogueVersion(),
+		getServerAccountContext(),
+	]);
 	return (
 		<ModelsTablePageClient
-			catalogueVersion={await resolveModelsCatalogueVersion()}
+			catalogueVersion={catalogueVersion}
+			accountQueryScope={toAccountQueryScope(accountContext)}
 		/>
 	);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import {
 	AudioLines,
 	ArrowUpDown,
@@ -39,8 +39,15 @@ import type {
 	APIProviderModelListItem,
 	APIProviderModelPricingMeter,
 } from "@/lib/fetchers/api-providers/providerDataTypes";
-import type { AuthenticatedProviderCatalogPreview } from "@/lib/swr/providerCatalogPreviews";
-import { fetchAuthenticatedProviderCatalogPreviews } from "@/lib/swr/providerCatalogPreviews";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
+import { fetchAuthenticatedProviderCatalogPreviews } from "@/lib/query/providerCatalogPreviews";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import {
+	ANONYMOUS_ACCOUNT_QUERY_SCOPE,
+	hasAuthenticatedAccountQueryScope,
+	webQueryKeys,
+	type AccountQueryScope,
+} from "@/lib/query/queryKeys";
 import UnreleasedBadge from "@/components/(data)/model/UnreleasedBadge";
 
 type ProviderModelsClientProps = {
@@ -48,6 +55,7 @@ type ProviderModelsClientProps = {
 	providerLabel: string;
 	models: APIProviderModelListItem[];
 	initialProviderPreviews?: AuthenticatedProviderCatalogPreview[];
+	accountQueryScope?: AccountQueryScope | null;
 };
 
 type IconMeta = {
@@ -237,17 +245,21 @@ export default function ProviderModelsClient({
 	providerLabel,
 	models,
 	initialProviderPreviews,
+	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: ProviderModelsClientProps) {
-	const previewKey = `/api/account/settings/provider-onboarding/catalogue-previews?providerSlug=${encodeURIComponent(apiProvider)}`;
-	const { data: providerPreviews = [] } = useSWR<AuthenticatedProviderCatalogPreview[]>(
-		previewKey,
-		() => fetchAuthenticatedProviderCatalogPreviews(apiProvider),
-		{
-			fallbackData: initialProviderPreviews,
-			revalidateOnMount: initialProviderPreviews === undefined || initialProviderPreviews.length === 0,
-			revalidateOnFocus: false,
-		},
-	);
+	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
+	const { data: providerPreviews = [] } = useQuery<AuthenticatedProviderCatalogPreview[]>({
+		queryKey: webQueryKeys.account.providerPreviews({
+			scope,
+			providerSlug: apiProvider,
+		}),
+		queryFn: ({ signal }) =>
+			fetchAuthenticatedProviderCatalogPreviews(apiProvider, false, { signal }),
+		...WEB_QUERY_POLICIES.private,
+		enabled: hasAuthenticatedAccountQueryScope(scope),
+		initialData: initialProviderPreviews,
+		refetchOnMount: true,
+	});
 	const displayModels = useMemo(
 		() => mergeCatalogPreviewModels(models, providerPreviews),
 		[models, providerPreviews],

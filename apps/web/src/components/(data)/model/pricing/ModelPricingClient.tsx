@@ -9,8 +9,10 @@ import React, {
     useState,
 } from "react";
 import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
-import useSWR from "swr";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -800,14 +802,19 @@ export default function ModelPricingClient({
     emptyState?: React.ReactNode;
 }) {
     const pricingTimeMs = usePricingClock(initialPricingTimeMs);
-	const { data: providers = initialProviders } = useSWR<ProviderPricing[]>(
-		refreshPricing ? `/api/_web/models/${encodeURIComponent(modelId)}/pricing` : null,
-		async (path: `/api/_web/${string}`) => {
+	const pricingPath = `/api/_web/models/${encodeURIComponent(modelId)}/pricing` as const;
+	const pricingQuery = useQuery<ProviderPricing[]>({
+		queryKey: webQueryKeys.public.modelPricing(modelId),
+		queryFn: async ({ signal }) => {
 			const [pricing, gateway] = await Promise.all([
-				fetchPublicWebApi<{ providers: ProviderPricing[] }>(path),
+				fetchPublicWebApi<{ providers: ProviderPricing[] }>(pricingPath, { signal }),
 				fetchPublicWebApi<{ metadata: ModelGatewayMetadata }>(
 					`/api/_web/models/${encodeURIComponent(modelId)}/gateway-metadata`,
-				).catch(() => null),
+					{ signal },
+				).catch((error) => {
+					if (error instanceof Error && error.name === "AbortError") throw error;
+					return null;
+				}),
 			]);
 			const modesByProvider = new Map<string, boolean[]>();
 			for (const provider of gateway?.metadata.activeProviders ?? []) {
@@ -832,18 +839,13 @@ export default function ModelPricingClient({
 				},
 			}));
 		},
-		{
-			fallbackData: initialProviders,
-			revalidateOnMount: initialProviders.length === 0,
-			revalidateOnFocus: true,
-			revalidateOnReconnect: true,
-			focusThrottleInterval: 60_000,
-			refreshInterval: 5 * 60_000,
-			refreshWhenHidden: false,
-			refreshWhenOffline: false,
-			keepPreviousData: true,
-		},
-	);
+		...WEB_QUERY_POLICIES.public,
+		enabled: refreshPricing,
+		initialData: initialProviders.length > 0 ? initialProviders : undefined,
+		refetchIntervalInBackground: false,
+		placeholderData: keepPreviousData,
+	});
+	const providers = pricingQuery.data ?? initialProviders;
     const pathname = usePathname() ?? "/";
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -894,66 +896,73 @@ export default function ModelPricingClient({
             ),
         [displayProviders],
     );
-	const runtimeStatsKey = useMemo(
-		() =>
-			[
-				"model-provider-runtime-stats",
-				modelId,
-				providerIds,
-				modelAliases,
-				selectedPercentile,
-			] as const,
-		[modelAliases, modelId, providerIds, selectedPercentile],
-	);
 	const successfulPercentileRef = useRef<ModelPercentile>(
 		DEFAULT_MODEL_PERCENTILE,
 	);
-	const {
-		data: liveRuntimeStats = runtimeStats,
-		isValidating: isLoadingPercentile,
-	} = useSWR<ProviderRuntimeStatsMap>(
-		runtimeStatsKey,
-		() =>
+	const runtimeStatsQuery = useQuery<ProviderRuntimeStatsMap>({
+		queryKey: webQueryKeys.public.modelRuntimeStats({
+			modelId,
+			providerIds,
+			modelAliases,
+			percentile: selectedPercentile,
+		}),
+		queryFn: ({ signal }) =>
 			getModelProviderRuntimeStats({
 				modelId,
 				providerIds,
 				modelAliases,
 				percentile: selectedPercentile,
+				signal,
 			}),
-		{
-			dedupingInterval: 30_000,
-			refreshInterval: 5 * 60_000,
-			errorRetryCount: RUNTIME_STATS_ERROR_RETRY_COUNT,
-			fallbackData:
-				selectedPercentile === DEFAULT_MODEL_PERCENTILE
-					? runtimeStats
-					: undefined,
-			focusThrottleInterval: 60_000,
-			keepPreviousData: true,
-			onErrorRetry: (_error, _key, config, revalidate, retryOptions) => {
-				if (isTerminalRuntimeStatsRetry(retryOptions.retryCount)) {
-					setSelectedPercentile(
-						resolveRuntimeStatsPercentileAfterError(
-							selectedPercentile,
-							successfulPercentileRef.current,
-							retryOptions.retryCount,
-						),
-					);
-					return;
-				}
-				const retryDelay =
-					(Math.random() + 0.5) *
-					2 ** Math.min(retryOptions.retryCount, 8) *
-					(config.errorRetryInterval ?? 5_000);
-				window.setTimeout(() => revalidate(retryOptions), retryDelay);
-			},
-			onSuccess: () => {
-				successfulPercentileRef.current = selectedPercentile;
-			},
-			revalidateOnFocus: true,
-			revalidateOnReconnect: true,
-		},
-	);
+		...WEB_QUERY_POLICIES.public,
+		refetchIntervalInBackground: false,
+		initialData:
+			selectedPercentile === DEFAULT_MODEL_PERCENTILE
+				? runtimeStats
+				: undefined,
+		initialDataUpdatedAt:
+			selectedPercentile === DEFAULT_MODEL_PERCENTILE ? 0 : undefined,
+		placeholderData: keepPreviousData,
+		retry: (failureCount) => failureCount < RUNTIME_STATS_ERROR_RETRY_COUNT,
+		retryDelay: (attemptIndex) =>
+			(Math.random() + 0.5) *
+			2 ** Math.min(attemptIndex, 8) *
+			5_000,
+	});
+	const liveRuntimeStats = runtimeStatsQuery.data ?? runtimeStats;
+	const isLoadingPercentile = runtimeStatsQuery.isFetching;
+	useEffect(() => {
+		if (
+			runtimeStatsQuery.status === "success" &&
+			!runtimeStatsQuery.isPlaceholderData
+		) {
+			successfulPercentileRef.current = selectedPercentile;
+		}
+	}, [
+		runtimeStatsQuery.dataUpdatedAt,
+		runtimeStatsQuery.isPlaceholderData,
+		runtimeStatsQuery.status,
+		selectedPercentile,
+	]);
+	useEffect(() => {
+		if (
+			!runtimeStatsQuery.error ||
+			runtimeStatsQuery.failureCount < RUNTIME_STATS_ERROR_RETRY_COUNT
+		) {
+			return;
+		}
+		setSelectedPercentile((current) =>
+			resolveRuntimeStatsPercentileAfterError(
+				current,
+				successfulPercentileRef.current,
+				RUNTIME_STATS_ERROR_RETRY_COUNT + 1,
+			),
+		);
+	}, [
+		runtimeStatsQuery.error,
+		runtimeStatsQuery.failureCount,
+		selectedPercentile,
+	]);
 
     const handlePercentileChange = (nextPercentile: ModelPercentile) => {
         if (nextPercentile === selectedPercentile || isLoadingPercentile) return;

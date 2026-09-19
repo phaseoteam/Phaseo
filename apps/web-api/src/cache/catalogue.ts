@@ -1,4 +1,5 @@
 import type { PublicCachePolicy } from "@/http/cache";
+import { PUBLIC_LIVE_DATA_CACHE } from "./publicLiveData";
 
 /**
  * The main public catalogue and the gateway selector are different payloads,
@@ -11,10 +12,6 @@ export const PUBLIC_MODEL_CATALOGUE_CACHE_TAGS = [
 ] as const;
 
 export const PUBLIC_MODEL_CATALOGUE_CACHE: PublicCachePolicy = {
-	edgeTtlSeconds: 5 * 60,
-	staleWhileRevalidateSeconds: 5 * 60,
-	staleIfErrorSeconds: 60 * 60,
-	browserTtlSeconds: 0,
-	browserStaleWhileRevalidateSeconds: 0,
+	...PUBLIC_LIVE_DATA_CACHE,
 	cacheTags: PUBLIC_MODEL_CATALOGUE_CACHE_TAGS,
 };

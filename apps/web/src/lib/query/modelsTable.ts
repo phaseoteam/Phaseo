@@ -3,10 +3,20 @@ import type {
 	ModelsTableData,
 	MonitorModelTableRow,
 } from "@/lib/fetchers/models/table-view/types";
-import { publicSWRFetcher } from "@/lib/swr/publicFetcher";
-import { fetchAuthenticatedPrivateModels } from "@/lib/swr/privateModels";
+import { publicFetcher } from "@/lib/query/publicFetcher";
+import { fetchAuthenticatedPrivateModels } from "@/lib/query/privateModels";
+import {
+	hasAuthenticatedAccountQueryScope,
+	type AccountQueryScope,
+} from "@/lib/query/queryKeys";
 
 type ModelsCatalogueVersion = "v1" | "v2";
+
+export type ModelsTableQueryOptions = {
+	signal?: AbortSignal;
+	accountQueryScope?: AccountQueryScope | null;
+	accessToken?: string | null;
+};
 
 type ModelsTableResponse = {
 	models: MonitorModelTableRow[];
@@ -56,10 +66,13 @@ function assertTablePage(
 }
 
 async function fetchModelsTableDataForVersion(
-	path: string,
+	path: `/api/_web/${string}`,
 	expectedVersion: ModelsCatalogueVersion,
+	options: ModelsTableQueryOptions = {},
 ): Promise<ModelsTableData> {
-	const firstPage = await publicSWRFetcher<ModelsTableResponse>(path);
+	const firstPage = await publicFetcher<ModelsTableResponse>(path, {
+		signal: options.signal,
+	});
 	assertTablePage(firstPage, expectedVersion, true);
 
 	const pageSize = Math.max(1, firstPage.limit || 10_000);
@@ -71,15 +84,24 @@ async function fetchModelsTableDataForVersion(
 		offsets.map((offset) => {
 			const url = new URL(path, "https://phaseo.local");
 			url.searchParams.set("offset", String(offset));
-			return publicSWRFetcher<ModelsTableResponse>(
-				`${url.pathname}${url.search}`,
+			return publicFetcher<ModelsTableResponse>(
+				`${url.pathname}${url.search}` as `/api/_web/${string}`,
+				{ signal: options.signal },
 			);
 		}),
 	);
 	for (const page of laterPages) assertTablePage(page, expectedVersion);
 
 	let models = [firstPage, ...laterPages].flatMap((page) => page.models);
-	const privateModels = await fetchAuthenticatedPrivateModels<MonitorModelTableRow>("table");
+	const privateModels = hasAuthenticatedAccountQueryScope(
+		options.accountQueryScope,
+	)
+		? await fetchAuthenticatedPrivateModels<MonitorModelTableRow>("table", {
+				signal: options.signal,
+				accessToken: options.accessToken,
+				workspaceId: options.accountQueryScope?.workspaceId,
+			})
+		: [];
 	if (privateModels.length > 0) {
 		const privateIds = new Set(privateModels.map((model) => model.modelId));
 		models = [...privateModels, ...models.filter((model) => !privateIds.has(model.modelId))];
@@ -93,10 +115,16 @@ async function fetchModelsTableDataForVersion(
 	};
 }
 
-export function fetchModelsTableData(path: string): Promise<ModelsTableData> {
-	return fetchModelsTableDataForVersion(path, "v1");
+export function fetchModelsTableData(
+	path: `/api/_web/${string}`,
+	options: ModelsTableQueryOptions = {},
+): Promise<ModelsTableData> {
+	return fetchModelsTableDataForVersion(path, "v1", options);
 }
 
-export function fetchModelsTableDataV2(path: string): Promise<ModelsTableData> {
-	return fetchModelsTableDataForVersion(path, "v2");
+export function fetchModelsTableDataV2(
+	path: `/api/_web/${string}`,
+	options: ModelsTableQueryOptions = {},
+): Promise<ModelsTableData> {
+	return fetchModelsTableDataForVersion(path, "v2", options);
 }

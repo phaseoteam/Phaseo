@@ -756,6 +756,7 @@ export async function getModelProviderRuntimeStats(args: {
 	providerIds: string[];
 	modelAliases: string[];
 	percentile?: number;
+	signal?: AbortSignal;
 }): Promise<ProviderRuntimeStatsMap> {
 	const providerIds = [...new Set(args.providerIds.filter(Boolean))].sort();
 	if (!providerIds.length) return {};
@@ -768,6 +769,7 @@ export async function getModelProviderRuntimeStats(args: {
 	});
 	const payload = await fetchPublicWebApi<{ rows: RpcProviderHealthMetricsRow[] }>(
 		`/api/_web/models/${encodeURIComponent(args.modelId)}/provider-health?${query.toString()}`,
+		{ signal: args.signal },
 	);
 	return mapRpcRuntimeStatsRows({ rows: payload.rows, providerIds });
 }

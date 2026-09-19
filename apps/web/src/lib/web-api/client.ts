@@ -50,12 +50,13 @@ async function readJsonPayload<T>(
  */
 export async function fetchPublicWebApi<T>(
 	path: `/api/_web/${string}`,
-	options: { signal?: AbortSignal } = {},
+	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
 ): Promise<T> {
 	const response = await fetch(`${getWebApiOrigin()}${path}`, {
 		headers: { Accept: "application/json" },
 		cache: "no-store",
 		signal: options.signal,
+		credentials: options.credentials ?? "omit",
 	});
 
 	if (!response.ok) {

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import useSWR from "swr";
+import type { ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Logo } from "@/components/Logo";
 import CatalogNotFoundState from "@/components/(data)/CatalogNotFoundState";
 import ModelDescriptionPanel from "./ModelDescriptionPanel";
@@ -14,9 +15,16 @@ import ProviderCatalogPreviewContent, {
 import {
 	fetchAuthenticatedProviderCatalogPreviews,
 	type AuthenticatedProviderCatalogPreview,
-} from "@/lib/swr/providerCatalogPreviews";
+} from "@/lib/query/providerCatalogPreviews";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import {
+	ANONYMOUS_ACCOUNT_QUERY_SCOPE,
+	hasAuthenticatedAccountQueryScope,
+	webQueryKeys,
+	type AccountQueryScope,
+} from "@/lib/query/queryKeys";
 
-function PreviewClientFrame({ preview }: { preview: AuthenticatedProviderCatalogPreview }) {
+function PreviewClientFrame({ preview, policyNotice }: { preview: AuthenticatedProviderCatalogPreview; policyNotice?: ReactNode }) {
 	return (
 		<main className="flex flex-col">
 			<ModelStickyHeader
@@ -31,6 +39,8 @@ function PreviewClientFrame({ preview }: { preview: AuthenticatedProviderCatalog
 				showUnreleased
 			/>
 			<div className="container mx-auto px-4 py-8">
+				{policyNotice}
+				<PreviewStatusBanner preview={preview} />
 				<div
 					id="model-detail-primary-header"
 					className="mb-5 flex w-full flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"
@@ -67,7 +77,6 @@ function PreviewClientFrame({ preview }: { preview: AuthenticatedProviderCatalog
 				{preview.description ? <ModelDescriptionPanel description={preview.description} /> : null}
 
 				<div className="mt-6">
-					<PreviewStatusBanner preview={preview} />
 					<ProviderCatalogPreviewContent preview={preview} />
 				</div>
 			</div>
@@ -78,27 +87,37 @@ function PreviewClientFrame({ preview }: { preview: AuthenticatedProviderCatalog
 export default function ProviderCatalogPreviewDetailClient({
 	modelId,
 	initialPreview,
+	policyNotice,
+	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: {
 	modelId: string;
 	initialPreview?: AuthenticatedProviderCatalogPreview | null;
+	policyNotice?: ReactNode;
+	accountQueryScope?: AccountQueryScope | null;
 }) {
-	const { data, error } = useSWR<AuthenticatedProviderCatalogPreview[]>(
-		initialPreview ? null : "/api/account/settings/provider-onboarding/catalogue-previews",
-		() => fetchAuthenticatedProviderCatalogPreviews(undefined, true),
-	);
-	const preview = initialPreview ?? data?.find(
+	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
+	const query = useQuery<AuthenticatedProviderCatalogPreview[]>({
+		queryKey: webQueryKeys.account.providerPreviews({ scope }),
+		queryFn: ({ signal }) =>
+			fetchAuthenticatedProviderCatalogPreviews(undefined, true, { signal }),
+		...WEB_QUERY_POLICIES.private,
+		enabled: hasAuthenticatedAccountQueryScope(scope),
+		// A detail seed is not the complete provider-preview list.
+		placeholderData: initialPreview ? [initialPreview] : undefined,
+	});
+	const preview = hasAuthenticatedAccountQueryScope(scope) && query.data?.find(
 		(item) => item.model_id === modelId || item.canonical_model_slug === modelId,
 	);
 
-	if (preview) return <PreviewClientFrame preview={preview} />;
-	if (error) {
+	if (preview) return <PreviewClientFrame preview={preview} policyNotice={policyNotice} />;
+	if (query.error) {
 		return (
 			<main className="flex flex-1 items-center justify-center px-4 py-24">
 				<p className="text-sm text-muted-foreground">Model details could not be loaded. We’ll retry automatically.</p>
 			</main>
 		);
 	}
-	if (data === undefined && !initialPreview) {
+	if (query.isPending && query.isFetching && !initialPreview) {
 		return (
 			<main className="flex flex-1 items-center justify-center px-4 py-24">
 				<p className="text-sm text-muted-foreground">Loading model details…</p>

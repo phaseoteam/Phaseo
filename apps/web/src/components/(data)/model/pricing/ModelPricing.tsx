@@ -15,7 +15,7 @@ import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWork
 import type { WorkspacePrivacySettings } from "@/lib/fetchers/internal/settingsTypes";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
-import type { AuthenticatedProviderCatalogPreview } from "@/lib/swr/providerCatalogPreviews";
+import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 import {
 	Empty,
 	EmptyContent,

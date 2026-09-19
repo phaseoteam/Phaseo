@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -38,6 +39,8 @@ import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
 import { isPublicDataPathname } from "@/lib/publicDataRoutes";
+import { clearAccountQueryScope } from "@/lib/query/invalidation";
+import { toAccountQueryScope } from "@/lib/query/queryKeys";
 
 interface TeamSwitcherProps {
 	user?: any;
@@ -57,6 +60,7 @@ export default function TeamSwitcher({
 	providerMode = false,
 }: TeamSwitcherProps) {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const pathname = usePathname();
 	const isPublicDataPage = isPublicDataPathname(pathname);
 	const { theme, setTheme } = useTheme();
@@ -182,16 +186,18 @@ export default function TeamSwitcher({
 											loading: "Switching workspace...",
 											success: (res) => {
 												if (res?.ok) {
+													clearAccountQueryScope(
+														queryClient,
+														toAccountQueryScope({
+															userId: user?.id,
+															workspaceId: previous,
+														}),
+													);
 													router.refresh();
 													return `Switched to ${t.name} workspace`;
-												} else {
-													setActiveTeamId(
-														previous
-													);
-													throw new Error(
-														"Failed to switch workspace"
-													);
 												}
+												setActiveTeamId(previous);
+												throw new Error("Failed to switch workspace");
 											},
 											error: () => {
 												setActiveTeamId(previous);

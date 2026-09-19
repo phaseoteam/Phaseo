@@ -22,7 +22,7 @@ describe("public gateway catalogue", () => {
 		}));
 		const response = await app.request("https://phaseo.app/api/_web/gateway/models", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300, stale-if-error=3600");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900");
 		expect(response.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(response.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models");
 		await expect(response.json()).resolves.toMatchObject({ models: [{ modelId: "gpt-test", internalModelId: "openai/gpt-test", providerId: "openai", capabilities: ["responses", "rerank"], capabilityParamsById: { responses: { response_format: true }, rerank: { top_n: true } }, inputModalities: ["text", "image"], outputModalities: ["text"], organisationId: "openai", organisationName: "OpenAI", inputPricePerMillion: 2, outputPricePerMillion: 8, isAvailable: true }] });

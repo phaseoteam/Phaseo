@@ -2,7 +2,7 @@ import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/type
 import {
 	fetchModelsTableData,
 	fetchModelsTableDataV2,
-} from "@/lib/swr/modelsTable";
+} from "@/lib/query/modelsTable";
 
 function row(id: string): MonitorModelTableRow {
 	return {

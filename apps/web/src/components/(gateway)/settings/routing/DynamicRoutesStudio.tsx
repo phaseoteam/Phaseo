@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition, type DragEvent as ReactDragEvent } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Background,
 	Handle,
@@ -63,8 +63,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { branchLabel, orderedRouteNodes } from "./dynamicRouteGraph";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
-import { publicSWRFetcher } from "@/lib/swr/publicFetcher";
-import { publicSWRKeys } from "@/lib/swr/keys";
+import { fetchJsonQuery } from "@/lib/query/fetchers";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import { webQueryKeys } from "@/lib/query/queryKeys";
 import type {
 	DynamicRouteAction,
 	DynamicRouteConfig,
@@ -362,7 +363,11 @@ function conditionTriggerExample(node: DynamicRouteNode): string {
 function NodeInspector({ node, providers, update, remove }: { node: DynamicRouteNode; providers: Provider[]; update: (data: Record<string, any>) => void; remove: () => void }) {
 	const copy = NODE_COPY[node.type];
 	const [copied, setCopied] = useState(false);
-	const { data: modelCatalog, error: modelCatalogRequestError, isLoading: modelCatalogLoading } = useSWR<{ models: GatewaySupportedModel[] }>(publicSWRKeys.gatewayModels, publicSWRFetcher);
+	const { data: modelCatalog, error: modelCatalogRequestError, isLoading: modelCatalogLoading } = useQuery<{ models: GatewaySupportedModel[] }>({
+		queryKey: webQueryKeys.public.gatewayModels(),
+		queryFn: ({ signal }) => fetchJsonQuery<{ models: GatewaySupportedModel[] }>("/api/gateway/models", { signal }),
+		...WEB_QUERY_POLICIES.public,
+	});
 	const modelOptions = useMemo(() => buildRoutingModelOptions(modelCatalog?.models ?? []), [modelCatalog?.models]);
 	const modelCatalogError = Boolean(modelCatalogRequestError);
 	const example = node.type === "condition" ? conditionTriggerExample(node) : "";

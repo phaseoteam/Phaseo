@@ -23,8 +23,9 @@ import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import SiteNoticeSlot from "@/components/site-notice/SiteNoticeSlot";
 import ThemeAwareFavicon from "@/components/ThemeAwareFavicon";
 import { Suspense } from "react";
-import { PublicSWRProvider } from "@/components/providers/PublicSWRProvider";
+import { WebQueryProvider } from "@/components/providers/WebQueryProvider";
 import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
+import { HISTORY_PRIVACY_SCRIPT } from "@/lib/query/historyPrivacyScript";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -77,6 +78,7 @@ export default function RootLayout({
 	return (
 		<html lang="en" className="h-full" suppressHydrationWarning>
 			<head>
+				<script id="history-privacy" dangerouslySetInnerHTML={{ __html: HISTORY_PRIVACY_SCRIPT }} />
 				{/* Use the black/white brand mark for search; the theme client mutates this exact link. */}
 				<link
 					id="phaseo-favicon"
@@ -107,9 +109,9 @@ export default function RootLayout({
 							<SiteNoticeSlot />
 						</Suspense>
 						<Suspense fallback={null}>
-							<PublicSWRProvider>
+							<WebQueryProvider>
 								<NuqsAdapter>{children}</NuqsAdapter>
-							</PublicSWRProvider>
+							</WebQueryProvider>
 						</Suspense>
 						<AdminDeveloperMenuLauncher />
 						<TailwindIndicator />

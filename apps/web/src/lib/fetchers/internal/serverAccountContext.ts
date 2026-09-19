@@ -5,6 +5,7 @@ import { OBFUSCATE_INFO_COOKIE, parseObfuscateInfo } from "@/lib/obfuscation";
 
 export async function getServerAccountContext(): Promise<{
 	accessToken: string | null;
+	userId?: string | null;
 	obfuscateInfo: boolean | null;
 	workspaceId: string | null;
 }> {
@@ -16,6 +17,7 @@ export async function getServerAccountContext(): Promise<{
 	const { data } = await supabase.auth.getSession();
 	return {
 		accessToken: data.session?.access_token ?? null,
+		userId: data.session?.user.id ?? null,
 		obfuscateInfo: parseObfuscateInfo(
 			cookieStore.get(OBFUSCATE_INFO_COOKIE)?.value ?? null,
 		),

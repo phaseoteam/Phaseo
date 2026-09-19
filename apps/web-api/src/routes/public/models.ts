@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
+import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { buildModelsPageFacets, fetchModelsPageCatalogue } from "@/models/page-catalogue";
@@ -70,74 +71,58 @@ const CACHE_PROFILES = {
 		cacheTags: ["web-api-model-timelines"],
 	},
 	subscriptions: {
-		edgeTtlSeconds: 15 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
-		staleIfErrorSeconds: 7 * 24 * 60 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-model-subscriptions"],
 	},
 	pricing: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
-		staleIfErrorSeconds: 60 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-model-pricing"],
 	},
 	performance: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-model-performance"],
 	},
 	pricingHistory: {
-		edgeTtlSeconds: 15 * 60,
-		staleWhileRevalidateSeconds: 15 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-model-pricing-history"],
 	},
 	usageDaily: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-model-usage-daily"],
 	},
 	effectivePricing: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-model-effective-pricing"],
 	},
 	catalogPricing: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-catalog-pricing"],
 	},
 	freeRouter: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-free-router-overview"],
 	},
 	realtime: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-model-realtime"],
 	},
 	trajectory: {
-		edgeTtlSeconds: 60 * 60,
-		staleWhileRevalidateSeconds: 6 * 60 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-model-token-trajectories"],
 	},
 	routingHealth: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-provider-routing-health"],
 	},
 	providerHealth: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-model-provider-health"],
 	},
 	notice: {
-		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
-		staleIfErrorSeconds: 60 * 60,
+		...PUBLIC_LIVE_DATA_CACHE,
 		cacheTags: ["web-api-model-notices"],
 	},
-	apps: { edgeTtlSeconds: 5 * 60, staleWhileRevalidateSeconds: 5 * 60, cacheTags: ["web-api-model-apps"] },
+	apps: { ...PUBLIC_LIVE_DATA_CACHE, cacheTags: ["web-api-model-apps"] },
 } as const satisfies Record<string, PublicCachePolicy>;
 
 function parseBoundedInt(value: string | null, fallback: number, maximum: number) {

@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import useSWR from "swr";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import { webQueryKeys } from "@/lib/query/queryKeys";
 import { useQueryState } from "nuqs";
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import {
@@ -169,22 +171,16 @@ export default function ModelActivityChart({
 	showHeading = false,
 	description = "Daily gateway activity over the last 30 days, with current UTC-day pace projection.",
 }: ModelActivityChartProps) {
-	const { data: rows = initialRows } = useSWR<ModelUsageDailyBreakdownRow[]>(
-		`/api/_web/models/${encodeURIComponent(modelId)}/usage-daily?days=30`,
-		async (path: `/api/_web/${string}`) =>
-			(await fetchPublicWebApi<{ rows: ModelUsageDailyBreakdownRow[] }>(path)).rows,
-		{
-			fallbackData: initialRows,
-			revalidateOnMount: initialRows.length === 0,
-			revalidateOnFocus: true,
-			revalidateOnReconnect: true,
-			focusThrottleInterval: 60_000,
-			refreshInterval: 5 * 60_000,
-			refreshWhenHidden: false,
-			refreshWhenOffline: false,
-			keepPreviousData: true,
-		},
-	);
+	const path = `/api/_web/models/${encodeURIComponent(modelId)}/usage-daily?days=30` as const;
+	const { data: rows = initialRows } = useQuery<ModelUsageDailyBreakdownRow[]>({
+		queryKey: webQueryKeys.public.modelUsageDaily(modelId),
+		queryFn: async ({ signal }) =>
+			(await fetchPublicWebApi<{ rows: ModelUsageDailyBreakdownRow[] }>(path, { signal })).rows,
+		...WEB_QUERY_POLICIES.public,
+		initialData: initialRows.length > 0 ? initialRows : undefined,
+		refetchIntervalInBackground: false,
+		placeholderData: keepPreviousData,
+	});
 	const [modeParam, setModeParam] = useQueryState("activityMetric", {
 		defaultValue: "tokens",
 	});
