@@ -1,8 +1,11 @@
 import { absoluteUrl } from "@/lib/seo";
-import { resolveLogo } from "@/lib/logos";
+import { resolveLogo, type KnownLogoId } from "@/lib/logos";
 
 const DEFAULT_ACCENT_COLOR = 0x2563eb;
 const MAX_DESCRIPTION_LENGTH = 360;
+const DISCORD_LOGO_OVERRIDES: Partial<Record<KnownLogoId, string>> = {
+	zai: "/logos/zai_discord.png",
+};
 
 export interface DiscordModelComponentEmbedOptions {
 	modelId: string;
@@ -39,7 +42,27 @@ function absoluteMediaUrl(value: string | null | undefined): string | null {
 	const trimmed = value?.trim();
 	if (!trimmed) return null;
 	if (/^https?:\/\//i.test(trimmed)) return trimmed;
-	return absoluteUrl(trimmed.startsWith("/") ? trimmed : `/${trimmed}`);
+	const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+	if (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL) {
+		const previewUrl = new URL(path, `https://${process.env.VERCEL_URL}`);
+		const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim();
+		if (bypassSecret) {
+			previewUrl.searchParams.set("x-vercel-protection-bypass", bypassSecret);
+		}
+		return previewUrl.toString();
+	}
+	return absoluteUrl(path);
+}
+
+function discordLogoUrlForOrganisation(
+	organisationId: string | null | undefined,
+): string | null {
+	if (!organisationId) return null;
+	const logo = resolveLogo(organisationId, { variant: "dark" });
+	const source = logo.id
+		? (DISCORD_LOGO_OVERRIDES[logo.id] ?? logo.src)
+		: logo.src;
+	return absoluteMediaUrl(source);
 }
 
 function formatContextLength(contextLength: number | null | undefined): string | null {
@@ -71,10 +94,8 @@ export function buildDiscordModelComponentEmbed(
 	const context = formatContextLength(options.contextLength);
 	const modelUrl = absoluteUrl(options.modelPath);
 	const phaseoLogoUrl = absoluteUrl("/png_logo_light.png");
-	const knownOrganisationLogoUrl = absoluteMediaUrl(
-		options.organisationId
-			? resolveLogo(options.organisationId, { variant: "light" }).src
-			: null,
+	const knownOrganisationLogoUrl = discordLogoUrlForOrganisation(
+		options.organisationId,
 	);
 	const organisationLogoUrl =
 		absoluteMediaUrl(options.organisationLogoUrl) ?? knownOrganisationLogoUrl;

@@ -94,7 +94,7 @@ describe("Discord component embed", () => {
 		).toBe(0x2563eb);
 	});
 
-	it("uses the known lab logo when an external logo is unavailable", () => {
+	it("uses the Discord-safe known lab logo when an external logo is unavailable", () => {
 		const payload = buildDiscordModelComponentEmbed({
 			...options,
 			organisationLogoUrl: null,
@@ -108,7 +108,7 @@ describe("Discord component embed", () => {
 			expect.objectContaining({
 				accessory: expect.objectContaining({
 					media: expect.objectContaining({
-						url: expect.stringContaining("/logos/zai_light.svg"),
+						url: expect.stringContaining("/logos/zai_discord.png"),
 					}),
 				}),
 			}),
@@ -144,5 +144,45 @@ describe("Discord component embed", () => {
 				}),
 			}),
 		);
+	});
+
+	it("adds the Vercel bypass to preview-hosted lab logos", () => {
+		const previousEnvironment = {
+			VERCEL_ENV: process.env.VERCEL_ENV,
+			VERCEL_URL: process.env.VERCEL_URL,
+			VERCEL_AUTOMATION_BYPASS_SECRET:
+				process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+		};
+		process.env.VERCEL_ENV = "preview";
+		process.env.VERCEL_URL = "phaseo-preview.vercel.app";
+		process.env.VERCEL_AUTOMATION_BYPASS_SECRET = "preview-test-secret";
+
+		try {
+			const payload = buildDiscordModelComponentEmbed({
+				...options,
+				organisationLogoUrl: null,
+			});
+			const labSection = payload.component.components.find(
+				(component) => component.type === 9,
+			);
+
+			expect(labSection).toEqual(
+				expect.objectContaining({
+					accessory: expect.objectContaining({
+						media: expect.objectContaining({
+							url: "https://phaseo-preview.vercel.app/logos/zai_discord.png?x-vercel-protection-bypass=preview-test-secret",
+						}),
+					}),
+				}),
+			);
+		} finally {
+			for (const [name, value] of Object.entries(previousEnvironment)) {
+				if (value === undefined) {
+					delete process.env[name];
+				} else {
+					process.env[name] = value;
+				}
+			}
+		}
 	});
 });
