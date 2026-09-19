@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import { Phaseo, JobFailedError, JobTimeoutError, JobCancelledError } from "../src/index.js";
 
 afterEach(() => vi.useRealTimers());
@@ -14,6 +14,21 @@ function setup(responses: unknown[]) {
 }
 
 describe("generation lifecycle conveniences", () => {
+  test("failure errors preserve concrete response types after kind narrowing", async () => {
+    const response = { id: "batch_1", status: "failed", billing: { state: "void" }, request_counts: { failed: 2 } };
+    const { client } = setup([response]);
+    try {
+      await client.batches.createAndWait({ model: "test" } as any);
+      expect.fail("Expected a failed batch");
+    } catch (error: unknown) {
+      expect(error).toBeInstanceOf(JobFailedError);
+      if (!(error instanceof JobFailedError) || !error.isKind("batch")) throw error;
+      expectTypeOf(error.response.request_counts?.failed).toEqualTypeOf<number | undefined>();
+      expect(error.response.billing?.state).toBe("void");
+      expect(error.response.request_counts?.failed).toBe(2);
+      expect(error.isKind("music")).toBe(false);
+    }
+  });
   test.each(["music", "video", "batch"] as const)("%s returns inline completion without polling", async (kind) => {
     const output = { id: "job_1", status: "completed", output: [{ audio_url: "https://asset.test/song" }], billing: { state: "settled" } };
     const { client, fetchImpl } = setup([output]);

@@ -38,6 +38,22 @@ for (const subpath of Object.keys(metadata.exports)) {
   run(process.execPath, ["--input-type=module", "-e", `await import(${JSON.stringify(specifier)})`], consumer);
   run(process.execPath, ["-e", `require(${JSON.stringify(specifier)})`], consumer);
 }
-for (const extension of ["mts", "cts"]) await writeFile(path.join(consumer, `consumer.${extension}`), imports.join("\n"));
+const failureTypes = `
+import { JobFailedError } from "@phaseo/sdk";
+declare const error: unknown;
+if (error instanceof JobFailedError) {
+  if (error.isKind("batch")) {
+    const failed: number | undefined = error.response.request_counts?.failed;
+    const state: "pending" | "estimated" | "settled" | "void" | undefined = error.response.billing?.state;
+  }
+  if (error.isKind("video")) {
+    const response: import("@phaseo/sdk").VideoStatusResponse = error.response;
+  }
+  if (error.isKind("music")) {
+    const url: string | undefined = error.response.audio_url;
+  }
+}
+`;
+for (const extension of ["mts", "cts"]) await writeFile(path.join(consumer, `consumer.${extension}`), imports.join("\n") + failureTypes);
 run(process.execPath, [require.resolve("typescript/bin/tsc"), "--noEmit", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--strict", "--skipLibCheck", "--types", "node", "--typeRoots", path.join(root, "node_modules/@types"), "consumer.mts", "consumer.cts"], consumer);
 console.log("Packed SDK: all four ESM and CommonJS entrypoints load and typecheck from an offline consumer install.");

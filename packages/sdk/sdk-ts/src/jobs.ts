@@ -1,4 +1,7 @@
+import type { BatchResponse, MusicGenerateResponse, VideoStatusResponse } from "./index.js";
+
 export type JobKind = "music" | "video" | "batch";
+type JobResponses = { music: MusicGenerateResponse; video: VideoStatusResponse; batch: BatchResponse };
 export type JobSnapshot = { id?: string; status?: string; lifecycle_status?: string };
 export type JobWaitOptions<T> = {
   intervalMs?: number;
@@ -14,12 +17,15 @@ export class JobTimeoutError extends Error {
   }
 }
 
-export class JobFailedError extends Error {
-  constructor(readonly kind: JobKind, readonly response: JobSnapshot) {
+export class JobFailedError<K extends JobKind = JobKind> extends Error {
+  constructor(readonly kind: K, readonly response: JobResponses[K]) {
     super(`${kind} ${response.id ?? ""} finished with status ${jobStatus(response)}`);
     this.name = "JobFailedError";
   }
   get jobId(): string | undefined { return this.response.id; }
+  isKind<T extends JobKind>(kind: T): this is this & JobFailedError<T> {
+    return (this.kind as JobKind) === kind;
+  }
 }
 
 export class JobCancelledError extends Error {
@@ -99,12 +105,12 @@ export async function waitForJob<T extends JobSnapshot>(
 }
 
 /** Submit exactly once; timeoutMs applies to waiting after submission returns. */
-export async function createAndWaitForJob<T extends JobSnapshot>(
-  kind: JobKind,
-  create: () => Promise<T>,
-  retrieve: (id: string) => Promise<T>,
-  options: JobWaitOptions<T> = {},
-): Promise<T> {
+export async function createAndWaitForJob<K extends JobKind>(
+  kind: K,
+  create: () => Promise<JobResponses[K]>,
+  retrieve: (id: string) => Promise<JobResponses[K]>,
+  options: JobWaitOptions<JobResponses[K]> = {},
+): Promise<JobResponses[K]> {
   validateWaitOptions(options);
   options.signal?.throwIfAborted();
   const initial = await create();
