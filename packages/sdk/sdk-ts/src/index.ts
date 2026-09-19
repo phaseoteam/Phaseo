@@ -540,7 +540,7 @@ export class Phaseo {
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
     this.logger = opts.logger;
 
-    this.telemetry = new TelemetryCapture(opts.devtools, "3.0.0");
+    this.telemetry = new TelemetryCapture(opts.devtools, "3.1.0");
 
   }
 

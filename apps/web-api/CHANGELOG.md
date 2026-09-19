@@ -1,5 +1,35 @@
 # @phaseo/web-api
 
+## 0.4.0
+
+### Minor Changes
+
+- [#2440](https://github.com/phaseoteam/Phaseo/pull/2440) [`a12756e`](https://github.com/phaseoteam/Phaseo/commit/a12756ea04b50d8b10bac309908e2b3d71e7de4e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Make Video and Realtime rooms generally available in Chat, and add OCR and Rerank rooms with model selection, authenticated requests, readable results, and JSON downloads.
+
+### Patch Changes
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev structured Decisions support through the `/v1/decisions` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev 1.13 to the Decisions capability with the public `/v1/decisions` route, per-million-token pricing, a dedicated Decisions playground, and provider model discovery.
+
+- [#2437](https://github.com/phaseoteam/Phaseo/pull/2437) [`0b61259`](https://github.com/phaseoteam/Phaseo/commit/0b61259027ba52417bbe15d48280b078d6ca6c70) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Keep a model's own benchmark result visible when the comparison leaderboard is stale, rank individual configurations consistently with the chart, and ignore sentence punctuation when matching Artificial Analysis index versions.
+
+- [#2420](https://github.com/phaseoteam/Phaseo/pull/2420) [`96cd1e5`](https://github.com/phaseoteam/Phaseo/commit/96cd1e559c1eb895488f393d6e820bb6db71332e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Make public OG cards resolve only canonical, publicly visible catalog records, fail fast when the data service is unavailable, and retain successful payloads and rendered images through shared-cache revalidation.
+
+- [#2439](https://github.com/phaseoteam/Phaseo/pull/2439) [`6750211`](https://github.com/phaseoteam/Phaseo/commit/675021141b68dc7d47b8218a6b58ca92d664c4fc) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Connect modality rankings to recorded usage, persist missing workload meters, repair public meter aliases and backend retention access, and show retryable errors when ranking data cannot be loaded.
+
+- [#2436](https://github.com/phaseoteam/Phaseo/pull/2436) [`25ab069`](https://github.com/phaseoteam/Phaseo/commit/25ab06929842957896ade97487811db61dbedd98) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Migrate client data refresh to TanStack Query with account-scoped caches, credential-free public requests, and private-data invalidation on session changes. Reauthorize provider previews, preserve private model endpoint rows, and restore repeated focus refreshes without background polling.
+  
+  Keep private query data fresh for five minutes, refresh visible private queries every five minutes, and invalidate account queries after private-model and provider-catalogue mutations. Manual refresh and sign-out bypass the freshness window.
+  
+  Prevent old private content flashing after account changes by masking saved documents and revalidating full-document history restores before cached HTML can paint.
+  
+  Use fifteen-minute public query freshness and visible polling for catalogue, pricing, performance and search views. Align public provider information, model/provider telemetry and pricing at the edge to fifteen minutes without an additional stale-serving window. Preserve five-minute private queries, explicit client invalidation/refetch, and server cache purge tags.
+
+- [#2429](https://github.com/phaseoteam/Phaseo/pull/2429) [`2b78b13`](https://github.com/phaseoteam/Phaseo/commit/2b78b13e7225b6ccb54c9c4a615b73455cdb26b6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Refine the Decisions chat experience with typed question controls, local conversation history, structured result rendering, canonical Jev model identity, and complete request timing metadata. Expose provider-neutral Decisions naming across the gateway, web proxy, OpenAPI contract, and generated SDKs while keeping TypeSafe's System One terminology inside its provider adapter. Keep text generation internally streamed while preserving non-streaming client responses.
+- Updated dependencies [[`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3), [`2b78b13`](https://github.com/phaseoteam/Phaseo/commit/2b78b13e7225b6ccb54c9c4a615b73455cdb26b6), [`2a980af`](https://github.com/phaseoteam/Phaseo/commit/2a980af08a30469407228b8d80915a5a10e67e04)]:
+  - @phaseo/sdk@3.1.0
+
 ## 0.3.0
 
 ### Minor Changes
