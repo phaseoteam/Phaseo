@@ -1,5 +1,17 @@
 # @phaseo/py-sdk
 
+## 3.1.0
+
+### Minor Changes
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev structured Decisions support through the `/v1/decisions` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
+
+- [#2434](https://github.com/phaseoteam/Phaseo/pull/2434) [`2a980af`](https://github.com/phaseoteam/Phaseo/commit/2a980af08a30469407228b8d80915a5a10e67e04) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add handwritten music, video, and batch submit-and-wait and wait-by-ID helpers with progress callbacks, configurable polling, local cancellation, and structured timeout and job-failure errors. Add Python music resource methods. Preserve direct HTTP operations and full terminal responses, including usage, billing, and per-request batch failures.
+
+### Patch Changes
+
+- [#2429](https://github.com/phaseoteam/Phaseo/pull/2429) [`2b78b13`](https://github.com/phaseoteam/Phaseo/commit/2b78b13e7225b6ccb54c9c4a615b73455cdb26b6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Refine the Decisions chat experience with typed question controls, local conversation history, structured result rendering, canonical Jev model identity, and complete request timing metadata. Expose provider-neutral Decisions naming across the gateway, web proxy, OpenAPI contract, and generated SDKs while keeping TypeSafe's System One terminology inside its provider adapter. Keep text generation internally streamed while preserving non-streaming client responses.
+
 ## 3.0.0
 
 ### Major Changes

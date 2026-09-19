@@ -1,5 +1,25 @@
 # @phaseo/gateway-api
 
+## 2.1.0
+
+### Minor Changes
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev structured Decisions support through the `/v1/decisions` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
+
+### Patch Changes
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev 1.13 to the Decisions capability with the public `/v1/decisions` route, per-million-token pricing, a dedicated Decisions playground, and provider model discovery.
+
+- [#2420](https://github.com/phaseoteam/Phaseo/pull/2420) [`96cd1e5`](https://github.com/phaseoteam/Phaseo/commit/96cd1e559c1eb895488f393d6e820bb6db71332e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Keep private model-discovery alerts text-only and separate their operator workflow from public model-catalog announcement embeds. Add a no-mention smoke-test path for public announcement webhook delivery.
+
+- [#2439](https://github.com/phaseoteam/Phaseo/pull/2439) [`6750211`](https://github.com/phaseoteam/Phaseo/commit/675021141b68dc7d47b8218a6b58ca92d664c4fc) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Connect modality rankings to recorded usage, persist missing workload meters, repair public meter aliases and backend retention access, and show retryable errors when ranking data cannot be loaded.
+
+- [#2435](https://github.com/phaseoteam/Phaseo/pull/2435) [`80824f1`](https://github.com/phaseoteam/Phaseo/commit/80824f1ed859d603140cf43e60ddab6c612c7870) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Preserve the provider's finish reason when buffering streams that end with a separate usage frame, including reasoning-only responses that reach the output token limit.
+
+- [#2429](https://github.com/phaseoteam/Phaseo/pull/2429) [`2b78b13`](https://github.com/phaseoteam/Phaseo/commit/2b78b13e7225b6ccb54c9c4a615b73455cdb26b6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Refine the Decisions chat experience with typed question controls, local conversation history, structured result rendering, canonical Jev model identity, and complete request timing metadata. Expose provider-neutral Decisions naming across the gateway, web proxy, OpenAPI contract, and generated SDKs while keeping TypeSafe's System One terminology inside its provider adapter. Keep text generation internally streamed while preserving non-streaming client responses.
+
+- [#2432](https://github.com/phaseoteam/Phaseo/pull/2432) [`43575fb`](https://github.com/phaseoteam/Phaseo/commit/43575fb31fac9f0f93c24723509290ea88ed5d95) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Return successful reasoning-only text responses instead of an empty-response error. Preserve reasoning, token usage, and the provider's finish reason, including output-limit termination.
+
 ## 2.0.0
 
 ### Major Changes
