@@ -6,9 +6,11 @@ import {
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { fetchFrontendRankingImageInputs } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { formatModelDisplayName } from "@/lib/models/displayName";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 
 export async function ImageInputsSection() {
-	const result = await fetchFrontendRankingImageInputs("year", 20).catch(() => ({ data: [] }));
+	const result = await fetchFrontendRankingImageInputs("year", 20).catch(() => null);
+	if (!result) return <RankingUnavailable id="image-inputs" title="Image Inputs" />;
 	const modelIds = [...new Set(result.data.map((row) => row.model_id).filter(Boolean))];
 	const metaMap = await fetchFrontendModelLeaderboardMetaByIds(modelIds).catch(
 		(): Awaited<ReturnType<typeof fetchFrontendModelLeaderboardMetaByIds>> => ({}),

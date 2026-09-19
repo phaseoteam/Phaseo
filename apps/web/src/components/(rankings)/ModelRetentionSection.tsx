@@ -6,6 +6,7 @@ import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { Logo } from "@/components/Logo";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { fetchFrontendModelRetentionRankings } from "@/lib/fetchers/frontend/fetchRankingSections";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 
 function numeric(value: number | string) {
 	const parsed = Number(value);
@@ -17,15 +18,8 @@ function percent(value: number | string) {
 }
 
 export async function ModelRetentionSection() {
-	const result = await fetchFrontendModelRetentionRankings(20).catch(() => ({
-		data: [],
-		methodology: {
-			cohortWeeks: 10,
-			minimumWorkspaceWeeks: 25,
-			minimumWorkspaces: 5,
-			minimumWeeks: 2,
-		},
-	}));
+	const result = await fetchFrontendModelRetentionRankings(20).catch(() => null);
+	if (!result) return <RankingUnavailable id="retention" title="Return Rate" />;
 	const rows = result.data;
 	if (!rows.length) {
 		return (

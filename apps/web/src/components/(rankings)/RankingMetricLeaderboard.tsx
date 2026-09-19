@@ -16,7 +16,12 @@ export function RankingMetricLeaderboard({
 }: RankingMetricLeaderboardProps) {
 	const visibleEntries = entries.slice(0, 5);
 
-	if (!visibleEntries.length) return null;
+	if (!visibleEntries.length) return (
+		<div className="space-y-2">
+			<h3 className="text-lg font-semibold">{title}</h3>
+			<p className="text-sm text-muted-foreground">No measured usage in the last 30 days.</p>
+		</div>
+	);
 
 	return (
 		<div className="min-w-0">

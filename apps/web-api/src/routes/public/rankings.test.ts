@@ -4,6 +4,31 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("public rankings routes", () => {
+	it.each(["text_tokens", "image_outputs", "image_inputs", "embedding_tokens", "rerank_quad_tokens", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_seconds", "video_tokens", "cached_tokens"])("reads %s from modality rollups", async (metric) => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify([{ model_id: "test", tokens: 2.75 }])));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request(`https://phaseo.app/api/_web/rankings/modality-timeseries?metric=${metric}`, {}, env);
+		expect(response.status).toBe(200);
+		expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain(`"p_metric":"${metric}"`);
+		await expect(response.json()).resolves.toMatchObject({ data: [{ tokens: 2.75 }] });
+	});
+
+	it("defaults to a supported metric and rejects unknown metrics before querying", async () => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		expect((await app.request("https://phaseo.app/api/_web/rankings/modality-timeseries", {}, env)).status).toBe(200);
+		expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain('"p_metric":"text_tokens"');
+		expect((await app.request("https://phaseo.app/api/_web/rankings/modality-timeseries?metric=unknown", {}, env)).status).toBe(400);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("keeps failed RPCs distinct from empty successful aggregates", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "unavailable" }), { status: 400 })));
+		const response = await app.request("https://phaseo.app/api/_web/rankings/modality-timeseries?metric=speech_seconds", {}, env);
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
+	});
+
 	it("passes URL parameters to the aggregate RPC and applies volatile caching", async () => {
 		const fetchMock = vi.fn(async () => new Response(JSON.stringify([{ model_id: "openai/gpt-test", tokens: 10 }]), { status: 200 }));
 		vi.stubGlobal("fetch", fetchMock);
