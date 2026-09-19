@@ -990,6 +990,9 @@ export async function consumeTextProtocolStreamToIR(args: {
 		if (streamProtocol) {
 			const fallbackEvents = buildUnifiedEventsFromPayload(streamProtocol, rawResponse);
 			for (const event of fallbackEvents) {
+				if (event.type === "stop" && globalFinishReason !== null) {
+					continue;
+				}
 				if (
 					event.type === "delta_text" &&
 					((event.channel === "output_text" && accumulationState.sawOutputTextDelta) ||

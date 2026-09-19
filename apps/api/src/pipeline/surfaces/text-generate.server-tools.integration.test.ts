@@ -145,6 +145,7 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 				? { input: "hello" }
 				: { messages: [{ role: "user", content: "hello" }] }),
 			stream: false,
+			max_tokens: 6500,
 		};
 		args.pre.ctx.body = body;
 		args.pre.ctx.rawBody = body;
@@ -186,6 +187,11 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 					id: rawResponse.id,
 					object: "chat.completion.chunk",
 					choices: [{ index: 0, delta: {}, finish_reason: finishReason }],
+				})}\n\n`,
+				`data: ${JSON.stringify({
+					id: rawResponse.id,
+					object: "chat.completion.chunk",
+					choices: [],
 					usage: rawResponse.usage,
 				})}\n\n`,
 				"data: [DONE]\n\n",
