@@ -23,6 +23,7 @@ import { applyDataContributionDiscount } from "../pricing/data-contribution-disc
 import { getBaseModel } from "../execute/utils";
 import { dispatchBackground, ensureRuntimeForBackground, getResponseCache } from "@/runtime/env";
 import { resolveNonStreamLatencyMs } from "./timing";
+import { calculateOutputPerformanceMetrics } from "./performance-metrics";
 import {
     maybeWriteStickyRoutingFromUsage,
     resolveCacheAwareRoutingPreference,
@@ -513,23 +514,23 @@ async function handleNonStreamResponse(
 				? Math.max(0, ctx.meta.completedAtMs - ctx.meta.startedAtMs)
 				: null;
     const outputTokens = shapedUsageFinal?.output_tokens ?? shapedUsageFinal?.output_text_tokens ?? 0;
-    const throughputTps = generationMs && generationMs > 0
-        ? outputTokens / (generationMs / 1000)
-        : null;
+    const outputPerformance = calculateOutputPerformanceMetrics({
+        outputTokens,
+        providerDurationMs: generationMs,
+        providerTtftMs: null,
+        gatewayE2eMs: endToEndMs,
+    });
     payload.meta = {
         ...payload.meta,
-        throughput_tps: throughputTps,
-        output_speed_tps: null,
+        throughput_tps: outputPerformance.effectiveThroughputTps,
+        output_speed_tps: outputPerformance.outputSpeedTps,
         generation_ms: generationMs,
         latency_ms: latencyMs,
         provider_ttft_ms: null,
         gateway_ttft_ms: null,
         tpot_ms: null,
         itl_ms: null,
-        phaseo_overhead_ms:
-            endToEndMs != null && generationMs != null
-                ? Math.max(0, endToEndMs - generationMs)
-                : null,
+        phaseo_overhead_ms: outputPerformance.phaseoOverheadMs,
         end_to_end_ms: endToEndMs,
     };
     // Update result billing
@@ -620,9 +621,6 @@ async function handleNonStreamResponse(
     const responseStatus = result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
 }
-
-
-
 
 
 

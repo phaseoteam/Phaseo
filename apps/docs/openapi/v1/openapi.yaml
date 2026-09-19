@@ -10894,7 +10894,7 @@ components:
         model:
           type: string
           description: Canonical Phaseo model id or provider model alias.
-          default: typesafe/jev
+          default: typesafe/jev-1.13.0
         state:
           description: Structured state evaluated by the model.
           oneOf:

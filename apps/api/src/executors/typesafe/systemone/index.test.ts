@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ExecutorExecuteArgs } from "@executors/types";
+import { createUpstreamTimingTracker } from "@executors/_shared/timing/upstream";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 import { executor } from "./index";
@@ -7,7 +8,7 @@ import { executor } from "./index";
 function buildArgs(overrides: Partial<ExecutorExecuteArgs> = {}): ExecutorExecuteArgs {
 	return {
 		ir: {
-			model: "typesafe/jev",
+			model: "typesafe/jev-1.13.0",
 			state: { plan: "pro", active_users: 42 },
 			questions: {
 				segment: {
@@ -37,6 +38,7 @@ afterEach(teardownTestRuntime);
 
 describe("TypeSafe System One executor", () => {
 	it("posts the keyed question map and normalizes usage", async () => {
+		const upstreamTracker = createUpstreamTimingTracker();
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.typesafe.ai/v1/systemone",
 			response: jsonResponse({
@@ -47,7 +49,7 @@ describe("TypeSafe System One executor", () => {
 		}]);
 
 		try {
-			const result = await executor(buildArgs());
+			const result = await executor(buildArgs({ upstreamTiming: upstreamTracker.timing }));
 			expect(mock.calls[0]?.method).toBe("POST");
 			expect(mock.calls[0]?.headers.Authorization).toBe("Bearer typesafe-test-key");
 			expect(mock.calls[0]?.bodyJson).toEqual({
@@ -63,7 +65,7 @@ describe("TypeSafe System One executor", () => {
 			});
 			expect(result.kind).toBe("completed");
 			expect(result.ir).toMatchObject({
-				model: "typesafe/jev",
+				model: "typesafe/jev-1.13.0",
 				answers: { segment: { choice: "startup", confidence: 0.94 } },
 				usage: { inputTokens: 120, outputTokens: 0, totalTokens: 120 },
 			});
@@ -73,6 +75,12 @@ describe("TypeSafe System One executor", () => {
 				output_tokens: 0,
 				total_tokens: 120,
 			});
+			expect(result.timing).toEqual({
+				latencyMs: expect.any(Number),
+				generationMs: expect.any(Number),
+			});
+			expect(result.timing?.latencyMs).toBe(result.timing?.generationMs);
+			expect(upstreamTracker.snapshot().upstreamRequestCount).toBe(1);
 		} finally {
 			mock.restore();
 		}

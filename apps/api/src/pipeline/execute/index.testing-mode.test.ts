@@ -333,6 +333,51 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(ctx.meta.generation_ms).toBe(17);
 	});
 
+	it("retains executor timing for a successful decisions response", async () => {
+		const candidate = {
+			providerId: "typesafe",
+			pricingCard: {
+				provider: "typesafe",
+				model: "typesafe/jev-1.13.0",
+				endpoint: "systemone",
+				currency: "USD",
+				rules: [],
+			},
+			byokMeta: [],
+			providerModelSlug: "jev-1.13.0",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+		resolveProviderExecutorMock.mockReturnValue(vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: { model: "typesafe/jev-1.13.0", answers: {} },
+			upstream: new Response(JSON.stringify({ answers: {} }), { status: 200 }),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: "gateway",
+			byokKeyId: null,
+			timing: { latencyMs: 41, generationMs: 41 },
+		}));
+		const ctx = createCtx({
+			endpoint: "systemone",
+			capability: "decisions.make",
+			model: "typesafe/jev-1.13.0",
+		});
+
+		const result = await doRequestWithIR(
+			ctx,
+			{ model: "typesafe/jev-1.13.0", state: {}, questions: {} } as any,
+			createTiming(),
+		);
+
+		expect((result as any).ok).toBe(true);
+		expect(ctx.meta.latency_ms).toBe(41);
+		expect(ctx.meta.generation_ms).toBeGreaterThanOrEqual(41);
+		expect(ctx.meta.end_to_end_ms).toBe(ctx.meta.generation_ms);
+	});
+
 	it("still returns pricing guard failure on non-testing traffic when no pricing is preloaded", async () => {
 		const candidate = {
 			providerId: "openai",

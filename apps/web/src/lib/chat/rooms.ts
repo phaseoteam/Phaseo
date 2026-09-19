@@ -162,7 +162,7 @@ export const CHAT_ROOMS: ChatRoomConfig[] = [
 	{
 		id: "systemone",
 		label: "Decisions",
-		route: "/chat/systemone",
+		route: "/chat/decisions",
 		description: "Generate typed decisions from structured state.",
 		capabilityHints: DECISIONS_CAPABILITY_HINTS,
 		beta: true,
@@ -225,7 +225,13 @@ const REALTIME_MODEL_HINTS = ["realtime", "real-time", "gpt-4o-realtime"];
 const MODERATION_MODEL_HINTS = ["moderation"];
 const EMBEDDING_MODEL_HINTS = ["embedding", "embed"];
 const MUSIC_MODEL_HINTS = ["music", "suno", "udio", "melody", "song"];
-const SYSTEM_ONE_MODEL_HINTS = ["typesafe/jev", "system-one", "systemone", "decisions"];
+const SYSTEM_ONE_MODEL_HINTS = [
+	"typesafe/jev-1.13.0",
+	"typesafe/jev-latest",
+	"system-one",
+	"systemone",
+	"decisions",
+];
 
 function normalizeCapability(capabilityId: string): string {
 	return capabilityId.trim().toLowerCase();

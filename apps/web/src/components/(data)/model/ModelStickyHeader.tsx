@@ -116,7 +116,7 @@ export default function ModelStickyHeader({
 						<div className="flex shrink-0 items-center gap-2">
 							{canChat ? (
 								<Button asChild variant="outline" size="sm" className="hidden h-8 rounded-lg px-2.5 text-[13px] sm:inline-flex">
-									<Link href={`${isSystemOneModel ? "/chat/systemone" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
+									<Link href={`${isSystemOneModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
 										<MessageSquare className="h-4 w-4" />
 										{isSystemOneModel ? "Decisions" : "Chat"}
 									</Link>
@@ -130,7 +130,7 @@ export default function ModelStickyHeader({
 							</Button> : null}
 							{canChat ? (
 								<Button asChild variant="outline" size="icon-sm" className="rounded-lg sm:hidden">
-									<Link href={`${isSystemOneModel ? "/chat/systemone" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`} aria-label={isSystemOneModel ? "Open Decisions playground" : "Chat about this model"}>
+									<Link href={`${isSystemOneModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`} aria-label={isSystemOneModel ? "Open Decisions playground" : "Chat about this model"}>
 										<MessageSquare className="h-4 w-4" />
 									</Link>
 								</Button>

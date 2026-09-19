@@ -25,7 +25,7 @@ describe("SystemOneSchema", () => {
 
 		expect(parsed.success).toBe(true);
 		if (parsed.success) {
-			expect(parsed.data.model).toBe("typesafe/jev");
+			expect(parsed.data.model).toBe("typesafe/jev-1.13.0");
 			expect(Array.isArray(parsed.data.questions)).toBe(false);
 		}
 	});

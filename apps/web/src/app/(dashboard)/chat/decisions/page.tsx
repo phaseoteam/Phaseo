@@ -8,15 +8,19 @@ import { SystemOneRoom } from "@/components/(chat)/rooms/SystemOneRoom";
 export const metadata: Metadata = buildMetadata({
 	title: "Decisions",
 	description: "Generate typed decisions from structured state with TypeSafe Jev.",
-	path: "/chat/systemone",
-	keywords: ["Decisions", "System One", "TypeSafe", "Jev"],
+	path: "/chat/decisions",
+	keywords: ["Decisions", "TypeSafe", "Jev"],
 });
 
-export default function ChatSystemOnePage() {
-	return <Suspense fallback={null}><ChatSystemOneContent /></Suspense>;
+export default function ChatDecisionsPage() {
+	return (
+		<Suspense fallback={null}>
+			<ChatDecisionsContent />
+		</Suspense>
+	);
 }
 
-async function ChatSystemOneContent() {
+async function ChatDecisionsContent() {
 	const models = await fetchFrontendGatewayModels();
 	return (
 		<RoomScaffold>

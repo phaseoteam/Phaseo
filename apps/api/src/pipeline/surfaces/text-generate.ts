@@ -658,10 +658,11 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 		ir.rawRequest = pre.ctx.rawBody;
 		timing.timer.end("ir_decode");
 		const requestedStream = ir.stream === true;
-		const shouldForceStreamExecution = requestedStream || preparedServerTools.config.enabled;
 		const irForExecution: IRChatRequest = {
 			...ir,
-			stream: shouldForceStreamExecution,
+			// Always use the provider's streaming transport for text generation.
+			// Buffered clients are materialized back into their requested JSON shape below.
+			stream: true,
 		};
 		const responseCacheEligibility = isResponseCacheEligible({
 			endpoint,

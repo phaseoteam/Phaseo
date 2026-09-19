@@ -49,8 +49,8 @@ describe("Decisions quickstart", () => {
 			}),
 		]);
 
-		expect(buildExamplePayload("decisions", "typesafe/jev")).toMatchObject({
-			model: "typesafe/jev",
+		expect(buildExamplePayload("decisions", "typesafe/jev-1.13.0")).toMatchObject({
+			model: "typesafe/jev-1.13.0",
 			state: expect.objectContaining({ account_tier: "pro" }),
 			questions: expect.objectContaining({
 				department: expect.objectContaining({ type: "choice" }),
@@ -67,7 +67,7 @@ describe("Decisions quickstart", () => {
 	});
 
 	test("preserves string criteria keys in Python examples", () => {
-		const payload = buildExamplePayload("decisions", "typesafe/jev");
+		const payload = buildExamplePayload("decisions", "typesafe/jev-1.13.0");
 		const python = jsonToPythonLiteral(JSON.stringify(payload, null, 2));
 
 		expect(python).toContain('"true": "The customer is blocked');

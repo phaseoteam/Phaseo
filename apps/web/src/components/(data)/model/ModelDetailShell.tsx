@@ -53,7 +53,7 @@ interface ModelDetailShellProps {
 function isTypeSafeSystemOneModel(modelId: string, organisationId?: string | null): boolean {
 	const normalizedModelId = modelId.trim().toLowerCase();
 	return organisationId?.trim().toLowerCase() === "typesafe" ||
-		normalizedModelId === "typesafe/jev" ||
+		normalizedModelId === "typesafe/jev-latest" ||
 		normalizedModelId.startsWith("typesafe/jev-");
 }
 
@@ -233,7 +233,7 @@ export default async function ModelDetailShell({
 						) : null}
 						{canChat ? (
 							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
-								<Link href={`${isSystemOneModel ? "/chat/systemone" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
+								<Link href={`${isSystemOneModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
 									<MessageSquare className="h-4 w-4" />
 									{isSystemOneModel ? "Open Decisions" : "Chat"}
 								</Link>
@@ -247,7 +247,7 @@ export default async function ModelDetailShell({
 						</Button> : null}
 						{canChat ? isSystemOneModel ? (
 							<Button asChild variant="default" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
-								<Link href={`/chat/systemone?model=${encodeURIComponent(chatModelId ?? modelId)}`}>Try Jev in Decisions</Link>
+								<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}>Try Jev in Decisions</Link>
 							</Button>
 						) : <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadataPromise={gatewayMetadataPromise} /></Suspense> : null}
 					</div>

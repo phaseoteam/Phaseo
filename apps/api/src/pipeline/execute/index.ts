@@ -1014,6 +1014,16 @@ async function attemptProviderWithIR(
 			? Math.max(0, Date.now() - selectedUpstreamTiming.dispatchAtMs)
 			: generationTimeMs;
 		ctx.meta.provider_duration_ms = selectedProviderDurationMs;
+		if (normalizedCapability === "decisions.make" && executorResult.upstream.ok) {
+			// Decisions are non-streaming: E2E is the upstream dispatch through the
+			// fully received and parsed TypeSafe response, excluding gateway work.
+			const providerEndToEndMs = Math.max(
+				selectedProviderDurationMs,
+				typeof ctx.meta.latency_ms === "number" ? ctx.meta.latency_ms : 0,
+			);
+			ctx.meta.generation_ms = providerEndToEndMs;
+			ctx.meta.end_to_end_ms = providerEndToEndMs;
+		}
 		const attemptDurationMs = Math.round(performance.now() - attemptStartedAt);
 
 		const usageForMetrics = executorResult.kind === "completed"
@@ -1043,9 +1053,10 @@ async function attemptProviderWithIR(
 			const recordsSynchronousGeneration =
 				normalizedCapability === "image.generate" ||
 				normalizedCapability === "audio.speech";
-			const preservesModerationTiming =
-				normalizedCapability === "moderations" && executorResult.upstream.ok;
-			if (!isTextGenerate && !preservesModerationTiming) {
+			const preservesStructuredProviderTiming =
+				(normalizedCapability === "moderations" || normalizedCapability === "decisions.make") &&
+				executorResult.upstream.ok;
+			if (!isTextGenerate && !preservesStructuredProviderTiming) {
 				delete (ctx.meta as Record<string, unknown>).latency_ms;
 				if (recordsSynchronousGeneration && executorResult.upstream.ok) {
 					ctx.meta.generation_ms ??= selectedProviderDurationMs;

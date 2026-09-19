@@ -1560,7 +1560,7 @@ const SystemOneQuestionSchema = z.discriminatedUnion("type", [
 ]);
 
 export const SystemOneSchema = z.object({
-    model: z.string().min(1).default("typesafe/jev"),
+    model: z.string().min(1).default("typesafe/jev-1.13.0"),
     state: SystemOneStateSchema,
     questions: z.record(z.string().min(1).max(128), SystemOneQuestionSchema)
         .refine((questions) => Object.keys(questions).length > 0, {

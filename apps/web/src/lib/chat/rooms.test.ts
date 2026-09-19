@@ -28,6 +28,7 @@ describe("chat room capability mapping", () => {
 		expect(capabilityIdToRoomId("decisions.make")).toBe("systemone");
 		expect(capabilityIdToRoomId("decision.outputs")).toBe("systemone");
 		expect(CHAT_ROOM_BY_ID.systemone.label).toBe("Decisions");
+		expect(CHAT_ROOM_BY_ID.systemone.route).toBe("/chat/decisions");
 	});
 
 	it("maps normalized capabilities to their dedicated rooms", () => {
@@ -73,7 +74,7 @@ describe("chat room capability mapping", () => {
 				capabilities: ["audio.realtime"],
 			},
 			{
-				modelId: "typesafe/jev",
+				modelId: "typesafe/jev-1.13.0",
 				capabilities: ["decisions.make"],
 			},
 		];
@@ -105,7 +106,7 @@ describe("chat room capability mapping", () => {
 
 		 expect(filterModelsForRoom(models, "text")).toEqual([models[0]]);
 		expect(filterModelsForRoom(models, "image")).toEqual([models[1]]);
-		expect(filterModelsForRoom([{ modelId: "typesafe/jev", outputModalities: ["decisions"] }], "systemone")).toHaveLength(1);
+		expect(filterModelsForRoom([{ modelId: "typesafe/jev-1.13.0", outputModalities: ["decisions"] }], "systemone")).toHaveLength(1);
 	});
 
 	it("uses output modalities before model id inference", () => {
