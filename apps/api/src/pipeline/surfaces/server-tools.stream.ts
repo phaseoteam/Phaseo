@@ -641,7 +641,11 @@ function applyUnifiedEventToAccumulators(args: {
 	}
 
 	if (event.type === "stop") {
-		setGlobalFinishReason(mapStopReasonToIr(event.finishReason));
+		const finishReason = mapStopReasonToIr(event.finishReason);
+		if (Number.isFinite(event.choiceIndex)) {
+			getChoiceAccumulator(choices, Number(event.choiceIndex)).finishReason = finishReason;
+		}
+		setGlobalFinishReason(finishReason);
 	}
 }
 
@@ -990,9 +994,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 		if (streamProtocol) {
 			const fallbackEvents = buildUnifiedEventsFromPayload(streamProtocol, rawResponse);
 			for (const event of fallbackEvents) {
-				if (event.type === "stop" && globalFinishReason !== null) {
-					continue;
-				}
+				if (event.type === "stop" && globalFinishReason !== null) continue;
 				if (
 					event.type === "delta_text" &&
 					((event.channel === "output_text" && accumulationState.sawOutputTextDelta) ||
