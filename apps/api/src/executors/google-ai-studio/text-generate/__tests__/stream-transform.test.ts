@@ -44,6 +44,28 @@ function baseArgs(overrides?: Record<string, any>): any {
 }
 
 describe("google-ai-studio stream transform", () => {
+	it.each([
+		["MAX_TOKENS", "length"],
+		["STOP", "stop"],
+	])("preserves reasoning-only streams ending with %s", async (providerFinishReason, finishReason) => {
+		const upstream = makeGoogleSseStream([{
+			candidates: [{
+				index: 0,
+				content: { role: "model", parts: [{ text: "Partial reasoning.", thought: true }] },
+				finishReason: providerFinishReason,
+			}],
+			usageMetadata: { promptTokenCount: 5, thoughtsTokenCount: 10, totalTokenCount: 15 },
+		}]);
+		const output = await readStreamText(transformStream(upstream, baseArgs()));
+		const chunks = output.split("\n").filter((line) => line.startsWith("data: {")).map((line) => JSON.parse(line.slice(6)));
+		const choices = chunks.flatMap((chunk) => chunk.choices);
+		expect(choices.some((choice) => choice.delta?.reasoning_content === "Partial reasoning.")).toBe(true);
+		expect(choices.some((choice) => choice.finish_reason === finishReason)).toBe(true);
+		expect(choices.some((choice) => Boolean(choice.delta?.content))).toBe(false);
+		expect(output).not.toContain("response.failed");
+		expect(output.match(/data: \[DONE\]/g)).toHaveLength(1);
+	});
+
 	it("emits a structured error instead of a blank successful stream", async () => {
 		const upstream = makeGoogleSseStream([
 			{
