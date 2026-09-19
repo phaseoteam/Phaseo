@@ -375,7 +375,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect((result as any).ok).toBe(true);
 		expect(ctx.meta.latency_ms).toBe(41);
 		expect(ctx.meta.generation_ms).toBeGreaterThanOrEqual(41);
-		expect(ctx.meta.end_to_end_ms).toBe(ctx.meta.generation_ms);
+		expect(ctx.meta.end_to_end_ms).toBeUndefined();
 	});
 
 	it("still returns pricing guard failure on non-testing traffic when no pricing is preloaded", async () => {

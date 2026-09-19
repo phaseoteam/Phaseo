@@ -316,6 +316,22 @@ export function attachRoutingDiagnosticsToPayload(args: {
 	return args.payload;
 }
 
+export function markNonStreamResponseReady(
+	ctx: PipelineContext,
+	responseReadyAtMs = Date.now(),
+): number | null {
+	ctx.meta.completedAtMs = responseReadyAtMs;
+	const endToEndMs = typeof ctx.meta.startedAtMs === "number"
+		? Math.max(0, responseReadyAtMs - ctx.meta.startedAtMs)
+		: typeof ctx.meta.end_to_end_ms === "number"
+			? ctx.meta.end_to_end_ms
+			: null;
+	if (endToEndMs !== null) {
+		ctx.meta.end_to_end_ms = endToEndMs;
+	}
+	return endToEndMs;
+}
+
 export async function finalizeRequest(args: {
     pre: { ok: true; ctx: PipelineContext };
     exec: { ok: true; result: RequestResult };
@@ -507,12 +523,7 @@ async function handleNonStreamResponse(
     payload.usage = shapedUsageFinal;
     const generationMs = ctx.meta.generation_ms ?? null;
     const latencyMs = resolveNonStreamLatencyMs(ctx, generationMs);
-    const endToEndMs =
-        typeof ctx.meta.end_to_end_ms === "number"
-            ? ctx.meta.end_to_end_ms
-			: typeof ctx.meta.completedAtMs === "number" && typeof ctx.meta.startedAtMs === "number"
-				? Math.max(0, ctx.meta.completedAtMs - ctx.meta.startedAtMs)
-				: null;
+	const endToEndMs = markNonStreamResponseReady(ctx);
     const outputTokens = shapedUsageFinal?.output_tokens ?? shapedUsageFinal?.output_text_tokens ?? 0;
     const outputPerformance = calculateOutputPerformanceMetrics({
         outputTokens,
@@ -621,6 +632,5 @@ async function handleNonStreamResponse(
     const responseStatus = result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
 }
-
 
 

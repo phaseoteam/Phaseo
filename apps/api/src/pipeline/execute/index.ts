@@ -1015,14 +1015,12 @@ async function attemptProviderWithIR(
 			: generationTimeMs;
 		ctx.meta.provider_duration_ms = selectedProviderDurationMs;
 		if (normalizedCapability === "decisions.make" && executorResult.upstream.ok) {
-			// Decisions are non-streaming: E2E is the upstream dispatch through the
-			// fully received and parsed TypeSafe response, excluding gateway work.
-			const providerEndToEndMs = Math.max(
+			// Decisions are non-streaming, so generation ends once the selected
+			// provider response has been fully received and parsed.
+			ctx.meta.generation_ms = Math.max(
 				selectedProviderDurationMs,
 				typeof ctx.meta.latency_ms === "number" ? ctx.meta.latency_ms : 0,
 			);
-			ctx.meta.generation_ms = providerEndToEndMs;
-			ctx.meta.end_to_end_ms = providerEndToEndMs;
 		}
 		const attemptDurationMs = Math.round(performance.now() - attemptStartedAt);
 

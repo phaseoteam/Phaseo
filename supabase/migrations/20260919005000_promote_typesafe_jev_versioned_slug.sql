@@ -1,6 +1,7 @@
 -- Promote Jev 1.13's versioned slug to the canonical model identity.
 -- Catalogue rows are append-only, so the former canonical row and aliases are
 -- retired/end-dated instead of deleted.
+-- phaseo:allow-destructive-migration reason: obsolete Jev model notices must be removed after the canonical slug promotion
 
 insert into public.v2_models (
   model_slug,

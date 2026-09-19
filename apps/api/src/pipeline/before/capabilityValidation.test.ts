@@ -10,6 +10,36 @@ function provider(providerId: string, capabilityParams: Record<string, any>, max
 }
 
 describe("validateCapabilities", () => {
+	it("includes internally required streaming in provider selection", () => {
+		const result = validateCapabilities({
+			endpoint: "chat.completions",
+			rawBody: {
+				model: "openai/gpt-5-nano",
+				messages: [{ role: "user", content: "hello" }],
+			},
+			body: {
+				model: "openai/gpt-5-nano",
+				messages: [{ role: "user", content: "hello" }],
+			},
+			requestId: "req_internal_stream",
+			workspaceId: "team_test",
+			providers: [provider("openai", { stream: {} }, 4096)],
+			model: "openai/gpt-5-nano",
+			requiredParams: ["stream"],
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toEqual(["stream"]);
+			expect(result.paramRoutingDiagnostics.perParamSupport).toEqual([{
+				param: "stream",
+				supportedProviders: ["openai"],
+				unsupportedProviders: [],
+				unknownProviders: [],
+			}]);
+		}
+	});
+
 	it("allows stream+tools and prefers providers that support both params", () => {
 		const result = validateCapabilities({
 			endpoint: "chat.completions",
