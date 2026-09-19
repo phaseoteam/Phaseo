@@ -25,6 +25,11 @@ function request(url: string, init?: RequestInit): Promise<Response> {
 }
 
 describe("inferenceRouter staged feature mounts", () => {
+	it.each(["ocr", "rerank", "embeddings", "moderations", "images/generations", "audio/speech", "audio/transcriptions", "audio/translations"])("mounts authenticated /%s inference", async (path) => {
+		const response = await request(`https://example.com/${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+		expect(response.status).toBe(401);
+	});
+
 	it("mounts the authenticated video router instead of the permanent shim", async () => {
 		const response = await request("https://example.com/videos");
 

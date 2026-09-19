@@ -119,27 +119,16 @@ export const samlSsoFlag = statsigAdapter
 			decide: () => false,
 		});
 
-export const videoApiFlag = statsigAdapter
-	? flag<boolean, StatsigUser>({
-			key: VIDEO_API_GATE,
-			identify,
-			adapter: statsigAdapter.featureGate((gate) => gate.value),
-		})
-	: flag<boolean>({
-			key: VIDEO_API_GATE,
-			decide: () => false,
-		});
+// These rooms are generally available; backend operational controls still apply.
+export const videoApiFlag = flag<boolean>({
+	key: VIDEO_API_GATE,
+	decide: () => true,
+});
 
-export const realtimeVoiceFlag = statsigAdapter
-	? flag<boolean, StatsigUser>({
-			key: REALTIME_VOICE_GATE,
-			identify,
-			adapter: statsigAdapter.featureGate((gate) => gate.value),
-		})
-	: flag<boolean>({
-			key: REALTIME_VOICE_GATE,
-			decide: () => false,
-		});
+export const realtimeVoiceFlag = flag<boolean>({
+	key: REALTIME_VOICE_GATE,
+	decide: () => true,
+});
 
 export const catalogueGamesPreviewFlag = statsigAdapter
 	? flag<boolean, StatsigUser>({
