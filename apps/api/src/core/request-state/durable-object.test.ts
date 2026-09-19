@@ -8,6 +8,7 @@ import { configureRuntime, clearRuntime } from "@/runtime/env";
 import { withoutSupabase } from "@/runtime/request-state-scope";
 import { upsertAsyncOperation, getAsyncOperation, patchAsyncOperationMeta, setAsyncOperationStatus, markAsyncOperationBilled, listTeamAsyncOperations } from "../async-operations";
 import { saveBatchRequestRows, listBatchRequestRows } from "../batch-requests";
+import { recoverPublishedWorkspace } from "./recovery";
 
 vi.mock("cloudflare:workers", () => ({ DurableObject: class {
     constructor(protected ctx: DurableObjectState, protected env: GatewayBindings) {}
@@ -94,52 +95,57 @@ describe("workspace durable state", () => {
         const staging = new WorkspaceRequestState(ctx, { ENV: "staging" } as GatewayBindings);
         expect(() => staging.initializeSynthetic("real-workspace", "allocation", 1000)).toThrow("synthetic_state_staging_only");
     });
-    it("keeps a cumulative one-dollar allocation capped across admissions, restart and retries", async () => {
+    it("uses the normal wallet balance without a one-dollar product cap or inference hold", async () => {
         const { ctx, db } = harness();
         // Separate empty object storage; no synthetic balance is converted.
         db.exec("DELETE FROM request_state");
         const workspaceId = "00000000-0000-4000-8000-000000000001";
-        const env = { ENV: "staging", GATEWAY_REQUEST_STATE_MODE: "escrow", GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID: workspaceId } as GatewayBindings;
+        const env = { ENV: "staging", GATEWAY_REQUEST_STATE_MODE: "published", GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID: workspaceId } as GatewayBindings;
         const object = new WorkspaceRequestState(ctx, env);
-        const allocation = { workspaceId, allocationId: "allocation", capNanos: 1_000_000_000 };
-        await expect(object.initializeEscrow({ ...allocation, capNanos: 1_000_000_001 })).rejects.toThrow("invalid_test_cap");
-        await object.initializeEscrow(allocation);
+        const wallet = { workspaceId, balanceNanos: 10_000_000_000, reservedNanos: 0 };
+        await object.initializePublished(wallet);
         object.commitPublication(object.beginPublication(), Date.now() + 60_000);
         object.publishKey({ id: "key", kid: "normal123456", workspace_id: workspaceId, hash: "a".repeat(64), status: "active", soft_blocked: false, revision: 1, expires_at: null });
-        expect(() => object.charge("not-admitted", 1)).toThrow("inference_admission_required");
-        object.reserve({ id: "one", keyId: "key", kind: "inference", amountNanos: 700_000_000 });
-        expect(object.reserve({ id: "two", keyId: "key", kind: "hold", amountNanos: 400_000_000 }).status).toBe("insufficient_funds");
-        object.charge("one", 600_000_000);
+        expect(object.charge("ordinary", 2_000_000_000).applied).toBe(true);
+        object.reserve({ id: "video", keyId: "key", kind: "hold", amountNanos: 3_000_000_000 });
         const restarted = new WorkspaceRequestState(ctx, env);
-        await restarted.initializeEscrow(allocation);
-        expect(restarted.wallet().balanceNanos).toBe(400_000_000);
-        expect(restarted.charge("one", 600_000_000).alreadyApplied).toBe(true);
-        expect(restarted.reserve({ id: "one", keyId: "key", kind: "inference", amountNanos: 700_000_000 }).status).toBe("captured");
+        await restarted.initializePublished({ ...wallet, balanceNanos: 50_000_000_000 });
+        expect(restarted.wallet()).toMatchObject({ balanceNanos: 8_000_000_000, reservedNanos: 3_000_000_000 });
+        expect(restarted.charge("ordinary", 2_000_000_000).alreadyApplied).toBe(true);
+        expect(restarted.refreshWallet({ sequence: 2, balanceNanos: 50_000_000_000, reservedNanos: 0 })).toBe(false);
+        expect(() => restarted.acknowledgeAccounting(2)).toThrow("sync_ack_sequence_gap");
+        restarted.acknowledgeAccounting(1); restarted.acknowledgeAccounting(2);
+        expect(restarted.refreshWallet({ sequence: 2, balanceNanos: 50_000_000_000, reservedNanos: 3_000_000_000 })).toBe(true);
+        expect(restarted.wallet().balanceNanos).toBe(50_000_000_000);
+        restarted.charge("raced", 1);
+        expect(restarted.refreshWallet({ sequence: 2, balanceNanos: 50_000_000_000, reservedNanos: 0 })).toBe(false);
     });
-    it("retries an uncertain projection without acknowledging or losing the durable event", async () => {
+    it("retries uncertain background billing without losing the durable event", async () => {
         const { ctx, db } = harness(); db.exec("DELETE FROM request_state");
         const workspaceId = "00000000-0000-4000-8000-000000000001";
-        const env = { ENV: "staging", GATEWAY_REQUEST_STATE_MODE: "escrow", GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID: workspaceId,
-            SUPABASE_URL: "https://test.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "test-only" } as GatewayBindings;
+        const env = { ENV: "staging", GATEWAY_REQUEST_STATE_MODE: "published", GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID: workspaceId,
+            GATEWAY_PUBLIC_BASE_URL: "https://api-staging.phaseo.app", GATEWAY_INTERNAL_TEST_TOKEN: "fixture" } as GatewayBindings;
         const object = new WorkspaceRequestState(ctx, env);
-        await object.initializeEscrow({ workspaceId, allocationId: "allocation", capNanos: 1000 });
+        await object.initializePublished({ workspaceId, balanceNanos: 1000, reservedNanos: 0 });
         object.commitPublication(object.beginPublication(), Date.now() + 60_000);
         object.publishKey({ id: "key", kid: "normal123456", workspace_id: workspaceId, hash: "a".repeat(64), status: "active", soft_blocked: false, revision: 1, expires_at: null });
-        object.reserve({ id: "one", keyId: "key", kind: "inference", amountNanos: 700 });
+        object.charge("one", 700);
         const remote = new Set<number>(); let loseAck = true;
-        vi.stubGlobal("fetch", vi.fn(async (_url, init) => {
-            const { p_event } = JSON.parse(init.body); remote.add(p_event.sequence);
+        vi.stubGlobal("fetch", vi.fn(async url => {
+            if (!String(url).endsWith("/sync")) return Response.json({ ok: true });
+            for (const event of object.pendingEvents()) remote.add(event.sequence);
             if (loseAck) { loseAck = false; throw new Error("lost_ack"); }
-            return Response.json(p_event.sequence);
+            for (const event of object.pendingEvents()) object.acknowledgeAccounting(event.sequence);
+            return Response.json({ ok: true });
         }));
         await expect(object.alarm()).rejects.toThrow("lost_ack");
         expect(object.pendingEvents()).toHaveLength(1);
-        expect(object.projectionStatus().acknowledged).toBe(0);
+        expect(object.syncStatus().acknowledged).toBe(0);
         const restarted = new WorkspaceRequestState(ctx, env);
         await restarted.alarm();
         expect(remote.size).toBe(1);
         expect(restarted.pendingEvents()).toHaveLength(0);
-        expect(restarted.projectionStatus()).toEqual({ sequence: 1, acknowledged: 1 });
+        expect(restarted.syncStatus()).toEqual({ sequence: 1, acknowledged: 1 });
         expect(ctx.storage.setAlarm).toHaveBeenCalledTimes(3);
     });
     it("preserves async ownership, monotonic status, atomic metadata and webhook lease fencing", () => {
@@ -161,26 +167,28 @@ describe("workspace durable state", () => {
         expect(restarted.rowMarkBilled("batch", "job")).toBe(true);
         expect(restarted.rowMarkBilled("batch", "job")).toBe(false);
     });
-    it("continues accounting projection when configuration refresh is unavailable", async () => {
+    it("continues background billing when configuration refresh is unavailable", async () => {
         const { ctx, db } = harness(); db.exec("DELETE FROM request_state");
         const workspaceId = "00000000-0000-4000-8000-000000000001";
-        const env = { ENV: "staging", GATEWAY_REQUEST_STATE_MODE: "escrow", GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID: workspaceId,
+        const env = { ENV: "staging", GATEWAY_REQUEST_STATE_MODE: "published", GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID: workspaceId,
             SUPABASE_URL: "https://test.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "test-only",
             GATEWAY_PUBLIC_BASE_URL: "https://api-staging.phaseo.app", GATEWAY_INTERNAL_TEST_TOKEN: "fixture" } as GatewayBindings;
         const object = new WorkspaceRequestState(ctx, env);
-        await object.initializeEscrow({ workspaceId, allocationId: "allocation", capNanos: 1000 });
+        await object.initializePublished({ workspaceId, balanceNanos: 1000, reservedNanos: 0 });
         object.commitPublication(object.beginPublication(), Date.now() + 60_000);
         object.publishKey({ id: "key", kid: "normal123456", workspace_id: workspaceId, hash: "a".repeat(64), status: "active", soft_blocked: false, revision: 1, expires_at: null });
-        object.reserve({ id: "one", keyId: "key", kind: "inference", amountNanos: 700 });
+        object.charge("one", 700);
         const refreshLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
-        vi.stubGlobal("fetch", vi.fn(async (url, init) => {
+        vi.stubGlobal("fetch", vi.fn(async url => {
             if (String(url).endsWith("/refresh")) throw new Error("offline");
-            return Response.json(JSON.parse(init.body).p_event.sequence);
+            if (String(url).endsWith("/recover")) return Response.json({ ok: true });
+            for (const event of object.pendingEvents()) object.acknowledgeAccounting(event.sequence);
+            return Response.json({ ok: true });
         }));
         try {
             await object.alarm();
             expect(object.pendingEvents()).toHaveLength(0);
-            expect(object.projectionStatus()).toEqual({ sequence: 1, acknowledged: 1 });
+            expect(object.syncStatus()).toEqual({ sequence: 1, acknowledged: 1 });
             expect(refreshLog).toHaveBeenCalledWith("request_state_refresh_failed", { reason: "unavailable" });
         } finally { refreshLog.mockRestore(); }
     });
@@ -223,9 +231,9 @@ describe("workspace durable state", () => {
     it("fences mutations durably and cannot commit an obsolete publication", async () => {
         const { ctx, db } = harness(); db.exec("DELETE FROM request_state");
         const workspaceId = "00000000-0000-4000-8000-000000000001";
-        const env = { ENV: "staging", GATEWAY_REQUEST_STATE_MODE: "escrow", GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID: workspaceId } as GatewayBindings;
+        const env = { ENV: "staging", GATEWAY_REQUEST_STATE_MODE: "published", GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID: workspaceId } as GatewayBindings;
         const object = new WorkspaceRequestState(ctx, env);
-        await object.initializeEscrow({ workspaceId, allocationId: "allocation", capNanos: 1000 });
+        await object.initializePublished({ workspaceId, balanceNanos: 1000, reservedNanos: 0 });
         object.publishKey({ id: "key", kid: "normal123456", workspace_id: workspaceId, hash: "a".repeat(64), status: "active", soft_blocked: false, revision: 1, expires_at: null });
         object.commitPublication(object.beginPublication(), Date.now() + 60_000);
         object.beginMutation("mutation-token-123456");
@@ -259,6 +267,19 @@ describe("workspace durable state", () => {
             await saveBatchRequestRows({ workspaceId: identity.workspaceId, batchId: identity.internalId, rows: [{ provider: "openai", customId: "row_1", requestIndex: 0, status: "completed", costNanos: 12 }] });
             expect((await listBatchRequestRows({ workspaceId: identity.workspaceId, batchId: identity.internalId }))[0]).toMatchObject({ customId: "row_1", status: "completed", costNanos: 12 });
         });
+        expect(checked.attempts).toBe(0);
+    });
+    it("runs workspace-scoped recovery without scanning production jobs or billing reviews", async () => {
+        const { ctx, db } = harness(); db.exec("DELETE FROM request_state");
+        const workspaceId = "00000000-0000-4000-8000-000000000001";
+        const env = { ENV: "staging", GATEWAY_REQUEST_STATE_MODE: "published", GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID: workspaceId,
+            SUPABASE_URL: "https://test.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "test-only" } as GatewayBindings;
+        const object = new WorkspaceRequestState(ctx, env);
+        await object.initializePublished({ workspaceId, balanceNanos: 10_000_000_000, reservedNanos: 0 });
+        configureRuntime({ ...env, WORKSPACE_REQUEST_STATE: { getByName: () => object } } as unknown as GatewayBindings);
+        vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("unexpected_network"); }));
+        const checked = await withoutSupabase(() => recoverPublishedWorkspace(workspaceId));
+        expect(checked.value).toEqual({ ok: true });
         expect(checked.attempts).toBe(0);
     });
 });

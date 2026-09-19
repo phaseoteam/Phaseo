@@ -3,7 +3,7 @@
 // How: Store operation records in Supabase with team+kind+internalId identity.
 
 import { getSupabaseAdmin } from "@/runtime/env";
-import { escrowWorkspace, isRequestStateWorkspace, workspaceState } from "./request-state/client";
+import { publishedWorkspace, isRequestStateWorkspace, workspaceState } from "./request-state/client";
 
 export type AsyncOperationKind = "video" | "batch" | "music";
 const ASYNC_OPERATION_L1_TTL_MS = 1_000;
@@ -214,7 +214,7 @@ export async function listAsyncOperations(args: {
 	statuses?: Array<string | null>;
 	unbilledOnly?: boolean;
 }): Promise<AsyncOperationRecord[]> {
-	const enrolled = escrowWorkspace();
+	const enrolled = publishedWorkspace();
 	if (enrolled) {
 		const rows = await workspaceState(enrolled).rowList("gateway_async_operations", {
 			equals: { kind: args.kind, ...(args.unbilledOnly ? { billed_at: null } : {}) }, statuses: args.statuses,
@@ -336,7 +336,7 @@ export function releaseAsyncWebhookDeliveryClaim(args: {
 }
 
 export async function listPendingAsyncWebhookDeliveries(limit = 100): Promise<PendingAsyncWebhookDelivery[]> {
-	const enrolled = escrowWorkspace();
+	const enrolled = publishedWorkspace();
 	if (enrolled) {
 		const rows = await workspaceState(enrolled).rowList("gateway_async_webhook_deliveries", { statuses: ["pending", "claimed"], order: "next_attempt_at", ascending: true, limit: 1000 });
 		return rows.filter(({ row }) => (row.kind === "video" || row.kind === "batch") && row.event_type && row.phase &&
@@ -467,7 +467,7 @@ export async function claimAsyncOperationsForReconciliation(args: {
 	shardCount?: number;
 	shardIndex?: number;
 }): Promise<AsyncOperationRecord[]> {
-	const enrolled = escrowWorkspace();
+	const enrolled = publishedWorkspace();
 	if (enrolled) {
 		// A workspace is the coordination unit; the staging alarm has one owner.
 		if ((args.shardIndex ?? 0) !== 0) return [];
@@ -643,7 +643,7 @@ export async function findAsyncOperationByNativeId(
 	const provider = normalizeText(providerRaw);
 	const nativeId = normalizeText(nativeIdRaw);
 	if (!provider || !nativeId) return null;
-	const enrolled = escrowWorkspace();
+	const enrolled = publishedWorkspace();
 	if (enrolled) {
 		const rows = await workspaceState(enrolled).rowList("gateway_async_operations", { equals: { kind, provider, native_id: nativeId }, limit: 2 });
 		return rows.length === 1 ? mapRow(rows[0].row as AsyncOperationRow) : null;

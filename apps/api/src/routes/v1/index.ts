@@ -16,10 +16,10 @@ export const v1Router = new Hono<Env>();
 // Synthetic allocations can exercise internal preflight and accounting only.
 // Block all public surfaces, including routes that bypass the shared executor.
 v1Router.use("*", async (c, next) => {
-    // Escrow enrollment/projection can be exercised independently of paid
-    // dispatch. Keep this rollout closed until every dispatch path has bounded
-    // admission and recovery; a post-usage charge is not a spend-cap guarantee.
-    if (requestStateEnabled(c.env) && c.env.GATEWAY_REQUEST_STATE_MODE === "escrow") {
+    // Publication and background synchronization can be tested independently.
+    // Open dispatch only after the remaining lifecycle and policy integration
+    // is verified; this is a rollout gate, not a test-spending rule.
+    if (requestStateEnabled(c.env) && c.env.GATEWAY_REQUEST_STATE_MODE === "published") {
         return c.json({ error: "request_state_cutover_not_ready" }, 503);
     }
     const token = c.req.header("authorization")?.replace(/^Bearer /, "") ?? "";
@@ -71,4 +71,3 @@ v1Router.all("*", lazyRouter(null, async () => {
     ]);
     return new Hono<Env>().route("/", platformRouter).route("/", experimentsRoutes);
 }));
-

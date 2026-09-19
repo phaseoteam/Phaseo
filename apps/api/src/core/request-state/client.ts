@@ -4,12 +4,12 @@ import { validateSnapshot, type CompiledRequestSnapshot, type SnapshotReference 
 import { loadSnapshot } from "./snapshots";
 
 export function requestStateEnabled(bindings = getBindingsIfConfigured()): boolean {
-    return bindings?.ENV === "staging" && (bindings.GATEWAY_REQUEST_STATE_MODE === "synthetic" || bindings.GATEWAY_REQUEST_STATE_MODE === "escrow");
+    return bindings?.ENV === "staging" && (bindings.GATEWAY_REQUEST_STATE_MODE === "synthetic" || bindings.GATEWAY_REQUEST_STATE_MODE === "published");
 }
 
 export function workspaceState(workspaceId: string, bindings: GatewayBindings = getBindings()) {
     if (!requestStateEnabled(bindings) || !bindings.WORKSPACE_REQUEST_STATE ||
-        !(workspaceId.startsWith("staging:") || (bindings.GATEWAY_REQUEST_STATE_MODE === "escrow" && workspaceId === bindings.GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID))) {
+        !(workspaceId.startsWith("staging:") || (bindings.GATEWAY_REQUEST_STATE_MODE === "published" && workspaceId === bindings.GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID))) {
         throw new Error("request_state_not_enabled");
     }
     return bindings.WORKSPACE_REQUEST_STATE.getByName(workspaceId);
@@ -18,12 +18,12 @@ export function workspaceState(workspaceId: string, bindings: GatewayBindings = 
 export function isSyntheticWorkspace(workspaceId: string): boolean { return workspaceId.startsWith("staging:"); }
 export function isRequestStateWorkspace(workspaceId: string): boolean {
     const env = getBindingsIfConfigured();
-    return isSyntheticWorkspace(workspaceId) || Boolean(requestStateEnabled(env) && env?.GATEWAY_REQUEST_STATE_MODE === "escrow" && workspaceId === env.GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID);
+    return isSyntheticWorkspace(workspaceId) || Boolean(requestStateEnabled(env) && env?.GATEWAY_REQUEST_STATE_MODE === "published" && workspaceId === env.GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID);
 }
 export function isSyntheticKey(kid: string): boolean { return /^edge[A-Za-z0-9]{12,60}$/.test(kid); }
-export function escrowWorkspace(): string | null {
+export function publishedWorkspace(): string | null {
     const env = getBindingsIfConfigured();
-    return requestStateEnabled(env) && env?.GATEWAY_REQUEST_STATE_MODE === "escrow" ? env.GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID ?? null : null;
+    return requestStateEnabled(env) && env?.GATEWAY_REQUEST_STATE_MODE === "published" ? env.GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID ?? null : null;
 }
 
 export async function readPublishedKey(kid: string) {
@@ -53,7 +53,7 @@ export async function readPublishedContext(args: {
     const compiled = await snapshot(reference, args.workspaceId);
     validateSnapshot(compiled, identity);
     const available = wallet.balanceNanos - wallet.reservedNanos;
-    const enoughCredit = wallet.mode === "escrow" ? available > 0 : available >= 1_000_000_000;
+    const enoughCredit = available >= 1_000_000_000;
     return { ...compiled.context,
         credit: { ...compiled.context.credit, ok: enoughCredit,
             reason: enoughCredit ? null : "insufficient_funds", balanceNanos: available },

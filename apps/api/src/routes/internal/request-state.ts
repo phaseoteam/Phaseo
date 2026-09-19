@@ -3,8 +3,10 @@ import { z } from "zod";
 import type { Env } from "@/runtime/types";
 import { configureRuntime, clearRuntime, setWaitUntil, getSupabaseAdmin } from "@/runtime/env";
 import { withoutSupabase } from "@/runtime/request-state-scope";
-import { escrowWorkspace, workspaceState, requestStateEnabled } from "@core/request-state/client";
-import { publishEscrowWorkspace } from "@core/request-state/publisher";
+import { publishedWorkspace, workspaceState, requestStateEnabled } from "@core/request-state/client";
+import { publishWorkspace } from "@core/request-state/publisher";
+import { syncWorkspaceAccounting } from "@core/request-state/sync";
+import { recoverPublishedWorkspace } from "@core/request-state/recovery";
 import { digest, sealSnapshot } from "@core/request-state/snapshots";
 import type { CompiledRequestSnapshot, PublishedKey, SnapshotReference } from "@core/request-state/contracts";
 import { hashRequestStateSecret } from "@/pipeline/before/auth";
@@ -46,44 +48,49 @@ internalRequestStateRoutes.use("*", bodyLimit({ maxSize: 64_000 }));
 const targetSchema = z.object({ model: z.string().min(1).max(256), endpoint: z.string().min(1).max(64) }).strict();
 
 internalRequestStateRoutes.post("/enroll", async c => {
-    const input = z.object({ allocationId: z.uuid(), capNanos: z.number().int().min(1).max(1_000_000_000),
-        targets: z.array(targetSchema).min(1).max(32) }).strict().parse(await c.req.json());
-    const workspaceId = escrowWorkspace();
-    if (!workspaceId) return c.json({ error: "escrow_disabled" }, 403);
+    const input = z.object({ targets: z.array(targetSchema).min(1).max(32) }).strict().parse(await c.req.json());
+    const workspaceId = publishedWorkspace();
+    if (!workspaceId) return c.json({ error: "published_state_disabled" }, 403);
     const db = getSupabaseAdmin();
-    const allocation = await db.rpc("gateway_request_state_allocate", { p_workspace_id: workspaceId, p_allocation_id: input.allocationId, p_cap_nanos: input.capNanos });
-    if (allocation.error) throw new Error("escrow_allocation_failed");
-    const row = Array.isArray(allocation.data) ? allocation.data[0] : allocation.data;
-    if (!row || row.status !== "active" || row.allocation_id !== input.allocationId || Number(row.cap_nanos) !== input.capNanos) throw new Error("escrow_allocation_mismatch");
-    const changes = await db.from("gateway_request_state_changes").upsert({ workspace_id: workspaceId }, { onConflict: "workspace_id", ignoreDuplicates: true });
-    if (changes.error) throw new Error("publication_outbox_unavailable");
+    const wallet = await db.from("wallets").select("balance_nanos,reserved_nanos").eq("workspace_id", workspaceId).single();
+    if (wallet.error || !wallet.data) throw new Error("wallet_unavailable");
     const stub = workspaceState(workspaceId);
-    await stub.initializeEscrow({ workspaceId, allocationId: input.allocationId, capNanos: input.capNanos });
+    await stub.initializePublished({ workspaceId, balanceNanos: Number(wallet.data.balance_nanos), reservedNanos: Number(wallet.data.reserved_nanos ?? 0) });
     await stub.setPublicationTargets(input.targets.map(target => ({ ...target, endpoint: normalizeCapability(resolveCapabilityFromEndpoint(target.endpoint as Endpoint)) })));
-    await publishEscrowWorkspace((await stub.publicationStatus()).targets);
-    return c.json({ ok: true, workspaceId, capNanos: input.capNanos });
+    await publishWorkspace((await stub.publicationStatus()).targets);
+    return c.json({ ok: true, workspaceId });
 });
 
 internalRequestStateRoutes.post("/refresh", async c => {
-    const workspaceId = escrowWorkspace();
-    if (!workspaceId) return c.json({ error: "escrow_disabled" }, 403);
+    const workspaceId = publishedWorkspace();
+    if (!workspaceId) return c.json({ error: "published_state_disabled" }, 403);
     const status = await workspaceState(workspaceId).publicationStatus();
     if (status.pendingMutations > 0) return c.json({ ok: true, fenced: true });
-    const changed = await getSupabaseAdmin().from("gateway_request_state_changes").select("revision,acknowledged_revision").eq("workspace_id", workspaceId).single();
-    if (changed.error) throw new Error("publication_outbox_unavailable");
-    if (!status.dirty && status.validUntil > Date.now() + 45_000 && changed.data.revision === changed.data.acknowledged_revision) return c.json({ ok: true, refreshed: false });
-    await publishEscrowWorkspace(status.targets);
+    if (!status.dirty && status.validUntil > Date.now() + 45_000) return c.json({ ok: true, refreshed: false });
+    await publishWorkspace(status.targets);
     return c.json({ ok: true, refreshed: true });
+});
+
+internalRequestStateRoutes.post("/sync", async c => {
+    const workspaceId = publishedWorkspace();
+    if (!workspaceId) return c.json({ error: "published_state_disabled" }, 403);
+    return c.json(await syncWorkspaceAccounting(workspaceId));
+});
+
+internalRequestStateRoutes.post("/recover", async c => {
+    const workspaceId = publishedWorkspace();
+    if (!workspaceId) return c.json({ error: "published_state_disabled" }, 403);
+    return c.json(await recoverPublishedWorkspace(workspaceId));
 });
 
 internalRequestStateRoutes.post("/mutation", async c => {
     const input = z.object({ workspaceId: z.uuid(), token: z.string().regex(/^[a-zA-Z0-9-]{16,80}$/), phase: z.enum(["begin", "finish"]) }).strict().parse(await c.req.json());
-    if (input.workspaceId !== escrowWorkspace()) return c.json({ error: "workspace_not_enrolled" }, 403);
+    if (input.workspaceId !== publishedWorkspace()) return c.json({ error: "workspace_not_enrolled" }, 403);
     const stub = workspaceState(input.workspaceId);
     if (input.phase === "begin") await stub.beginMutation(input.token);
     else {
         await stub.finishMutation(input.token);
-        if ((await stub.publicationStatus()).pendingMutations === 0) await publishEscrowWorkspace((await stub.publicationStatus()).targets);
+        if ((await stub.publicationStatus()).pendingMutations === 0) await publishWorkspace((await stub.publicationStatus()).targets);
     }
     return c.json({ ok: true });
 });

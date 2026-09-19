@@ -8,7 +8,7 @@ export interface StateStore {
 export type WalletState = {
     workspaceId: string;
     allocationId: string;
-    mode: "synthetic" | "escrow";
+    mode: "synthetic" | "published";
     balanceNanos: number;
     reservedNanos: number;
     sequence: number;
@@ -31,6 +31,8 @@ export type LedgerEvent = {
     reservation: Reservation;
     balanceNanos: number;
     reservedNanos: number;
+    operation?: "charge" | "reserve" | "capture" | "settle" | "release";
+    referenceId?: string | null;
 };
 export type TransitionResult = {
     applied: boolean;
@@ -54,23 +56,22 @@ function identifier(value: string): void {
 export class RequestLedger {
     constructor(private readonly store: StateStore) {}
 
-    initialize(input: Omit<WalletState, "reservedNanos" | "sequence">): WalletState {
+    initialize(input: Omit<WalletState, "reservedNanos" | "sequence"> & { reservedNanos?: number }): WalletState {
         identifier(input.workspaceId);
         identifier(input.allocationId);
         nanos(input.balanceNanos);
-        if (input.mode === "escrow" && (input.balanceNanos < 1 || input.balanceNanos > 1_000_000_000)) {
-            throw new Error("invalid_test_cap");
-        }
+        nanos(input.reservedNanos ?? 0);
+        if ((input.reservedNanos ?? 0) > input.balanceNanos) throw new Error("wallet_invariant_violation");
         const existing = this.store.get<WalletState>("wallet");
         if (existing) {
             if (existing.workspaceId !== input.workspaceId || existing.allocationId !== input.allocationId ||
                 existing.mode !== input.mode) throw new Error("wallet_already_initialized");
-            // An allocation retry must not replenish already spent credit.
+            // Initialization retries must not overwrite pending local usage.
             const opening = this.store.get<number>("opening");
-            if (opening !== input.balanceNanos) throw new Error("allocation_idempotency_conflict");
+            if (input.mode === "synthetic" && opening !== input.balanceNanos) throw new Error("allocation_idempotency_conflict");
             return existing;
         }
-        const wallet = { ...input, reservedNanos: 0, sequence: 0 };
+        const wallet = { ...input, reservedNanos: input.reservedNanos ?? 0, sequence: 0 };
         this.store.put("wallet", wallet);
         this.store.put("opening", input.balanceNanos);
         return wallet;
@@ -79,6 +80,16 @@ export class RequestLedger {
     wallet(): WalletState {
         const wallet = this.store.get<WalletState>("wallet");
         if (!wallet) throw new Error("workspace_not_published");
+        return wallet;
+    }
+
+    // Called only after the durable writer has acknowledged every local event.
+    // This imports ordinary top-ups/adjustments; it creates no separate funds.
+    refreshBalance(balanceNanos: number, reservedNanos: number): WalletState {
+        nanos(balanceNanos); nanos(reservedNanos);
+        if (reservedNanos > balanceNanos) throw new Error("wallet_invariant_violation");
+        const wallet = { ...this.wallet(), balanceNanos, reservedNanos };
+        this.store.put("wallet", wallet);
         return wallet;
     }
 
@@ -94,7 +105,7 @@ export class RequestLedger {
             beforeReservedNanos: before.reservedNanos, afterReservedNanos: after.reservedNanos };
     }
 
-    private commit(wallet: WalletState, reservation: Reservation): void {
+    private commit(wallet: WalletState, reservation: Reservation, operation: NonNullable<LedgerEvent["operation"]>, referenceId?: string | null): void {
         nanos(wallet.balanceNanos);
         nanos(wallet.reservedNanos);
         if (wallet.reservedNanos > wallet.balanceNanos) throw new Error("wallet_invariant_violation");
@@ -103,11 +114,12 @@ export class RequestLedger {
         this.store.put(`reservation:${reservation.id}`, reservation);
         const event: LedgerEvent = { version: 1, workspaceId: wallet.workspaceId,
             allocationId: wallet.allocationId, sequence: wallet.sequence, reservation,
-            balanceNanos: wallet.balanceNanos, reservedNanos: wallet.reservedNanos };
+            balanceNanos: wallet.balanceNanos, reservedNanos: wallet.reservedNanos, operation,
+            ...(referenceId !== undefined ? { referenceId } : {}) };
         this.store.put(`outbox:${String(wallet.sequence).padStart(16, "0")}`, event);
     }
 
-    reserve(input: { id: string; keyId: string; kind: Reservation["kind"]; amountNanos: number; requestCount?: number }, now = Date.now()): TransitionResult {
+    reserve(input: { id: string; keyId: string; kind: Reservation["kind"]; amountNanos: number; requestCount?: number; referenceId?: string | null }, now = Date.now()): TransitionResult {
         identifier(input.id);
         identifier(input.keyId);
         if (input.kind !== "inference" && input.kind !== "hold") throw new Error("invalid_reservation_kind");
@@ -126,11 +138,16 @@ export class RequestLedger {
             return this.result(before, before, "insufficient_funds", input.amountNanos);
         }
         const after = { ...before, reservedNanos: nanos(before.reservedNanos + input.amountNanos) };
-        this.commit(after, { ...input, requestCount, actualNanos: null, status: "held", createdAt: now });
+        const { referenceId, ...reservation } = input;
+        this.commit(after, { ...reservation, requestCount, actualNanos: null, status: "held", createdAt: now }, "reserve", referenceId);
         return this.result(before, after, "held", input.amountNanos, true);
     }
 
-    settle(id: string, actualNanos: number): TransitionResult {
+    settle(id: string, actualNanos: number, referenceId?: string | null): TransitionResult {
+        return this.finishHold(id, actualNanos, "settle", referenceId);
+    }
+
+    private finishHold(id: string, actualNanos: number, operation: "capture" | "settle", referenceId?: string | null): TransitionResult {
         nanos(actualNanos);
         const before = this.wallet();
         const prior = this.reservation(id);
@@ -145,13 +162,13 @@ export class RequestLedger {
         if (actualNanos > prior.amountNanos) return this.result(before, before, "reservation_exceeded", actualNanos);
         const after = { ...before, balanceNanos: before.balanceNanos - actualNanos,
             reservedNanos: before.reservedNanos - prior.amountNanos };
-        this.commit(after, { ...prior, actualNanos, status: "captured" });
+        this.commit(after, { ...prior, actualNanos, status: "captured" }, operation, referenceId);
         return this.result(before, after, "captured", actualNanos, true);
     }
 
-    capture(id: string): TransitionResult {
+    capture(id: string, referenceId?: string | null): TransitionResult {
         const prior = this.reservation(id);
-        return this.settle(id, prior?.amountNanos ?? 0);
+        return this.finishHold(id, prior?.amountNanos ?? 0, "capture", referenceId);
     }
 
     // Existing synchronous inference bills observed usage after completion;
@@ -161,11 +178,6 @@ export class RequestLedger {
         nanos(actualNanos);
         const before = this.wallet();
         const prior = this.reservation(id);
-        // A real allocation requires maximum-liability admission before dispatch.
-        if (before.mode === "escrow") {
-            if (!prior || prior.kind !== "inference") throw new Error("inference_admission_required");
-            return this.settle(id, actualNanos);
-        }
         if (prior) {
             if (prior.kind !== "inference" || prior.status !== "captured" || prior.actualNanos !== actualNanos) {
                 throw new Error("charge_idempotency_conflict");
@@ -175,18 +187,18 @@ export class RequestLedger {
         if (before.balanceNanos - before.reservedNanos < actualNanos) return this.result(before, before, "insufficient_funds", actualNanos);
         const after = { ...before, balanceNanos: before.balanceNanos - actualNanos };
         this.commit(after, { id, keyId: "ordinary-inference", kind: "inference", amountNanos: actualNanos,
-            actualNanos, status: "captured", requestCount: 1, createdAt: Date.now() });
+            actualNanos, status: "captured", requestCount: 1, createdAt: Date.now() }, "charge");
         return this.result(before, after, "captured", actualNanos, true);
     }
 
-    release(id: string): TransitionResult {
+    release(id: string, referenceId?: string | null): TransitionResult {
         const before = this.wallet();
         const prior = this.reservation(id);
         if (!prior) return this.result(before, before, "not_found", 0);
         if (prior.status === "released") return this.result(before, before, "released", prior.amountNanos, false, true);
         if (prior.status !== "held") throw new Error("reservation_already_captured");
         const after = { ...before, reservedNanos: before.reservedNanos - prior.amountNanos };
-        this.commit(after, { ...prior, status: "released", actualNanos: 0 });
+        this.commit(after, { ...prior, status: "released", actualNanos: 0 }, "release", referenceId);
         return this.result(before, after, "released", prior.amountNanos, true);
     }
 }

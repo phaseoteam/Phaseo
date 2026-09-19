@@ -194,6 +194,14 @@ export async function recordUsageAndCharge(args: {
             auto_top_up_amount_nanos: 0, auto_top_up_account_id: null, stripe_customer_id: null,
             invalidate_credit_cache: false };
     }
+    return recordUsageAndChargeInDatabase(args);
+}
+
+// Shared by the ordinary path and the durable background writer. Keep the
+// established debit, idempotency, alerts and auto-top-up implementation intact.
+export async function recordUsageAndChargeInDatabase(args: {
+    requestId: string; workspaceId: string; cost_nanos: number; creditSnapshotBalanceNanos?: number | null;
+}): Promise<ChargeRpcResult> {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         const supabase = getSupabaseAdmin();
@@ -359,7 +367,6 @@ export async function recordUsageAndCharge(args: {
         releaseRuntime();
     }
 }
-
 
 
 

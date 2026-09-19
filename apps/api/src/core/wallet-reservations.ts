@@ -5,7 +5,7 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { invalidateGatewayCreditCache } from "@core/gateway-credit-cache";
 import { setKeyVersion } from "@core/kv";
-import { isRequestStateWorkspace, workspaceState } from "@core/request-state/client";
+import { isRequestStateWorkspace, publishedWorkspace, workspaceState } from "@core/request-state/client";
 
 export type WalletReservationStatus =
 	| "held"
@@ -189,8 +189,13 @@ export async function reserveWalletCredits(args: {
 	if (isRequestStateWorkspace(args.workspaceId)) {
 		if (!args.keyId) throw new Error("request_state_reservation_key_required");
 		return workspaceState(args.workspaceId).reserve({ id: args.reservationId, keyId: args.keyId,
-			kind: "hold", amountNanos: args.amountNanos, requestCount: args.requestCount ?? 1 });
+			kind: "hold", amountNanos: args.amountNanos, requestCount: args.requestCount ?? 1,
+			...(args.holdRefId !== undefined ? { referenceId: args.holdRefId } : {}) });
 	}
+	return reserveWalletCreditsInDatabase(args);
+}
+
+export async function reserveWalletCreditsInDatabase(args: Parameters<typeof reserveWalletCredits>[0]): Promise<WalletReservationResult> {
 	const data = await callReservationRpc("gateway_wallet_reserve_once", {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
@@ -219,7 +224,11 @@ export async function captureWalletReservation(args: {
 	captureRefId?: string | null;
 	keyId?: string | null;
 }): Promise<WalletReservationResult> {
-	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).capture(args.reservationId);
+	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).capture(args.reservationId, args.captureRefId);
+	return captureWalletReservationInDatabase(args);
+}
+
+export async function captureWalletReservationInDatabase(args: Parameters<typeof captureWalletReservation>[0]): Promise<WalletReservationResult> {
 	const data = await callReservationRpc("gateway_wallet_capture_once", {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
@@ -245,7 +254,11 @@ export async function releaseWalletReservation(args: {
 	releaseRefId?: string | null;
 	keyId?: string | null;
 }): Promise<WalletReservationResult> {
-	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).release(args.reservationId);
+	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).release(args.reservationId, args.releaseRefId);
+	return releaseWalletReservationInDatabase(args);
+}
+
+export async function releaseWalletReservationInDatabase(args: Parameters<typeof releaseWalletReservation>[0]): Promise<WalletReservationResult> {
 	const data = await callReservationRpc("gateway_wallet_release_once", {
 		p_workspace_id: args.workspaceId,
 		p_reservation_id: args.reservationId,
@@ -272,7 +285,11 @@ export async function settleWalletReservation(args: {
 	settleRefId?: string | null;
 	keyId?: string | null;
 }): Promise<WalletReservationResult> {
-	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).settle(args.reservationId, args.actualNanos);
+	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).settle(args.reservationId, args.actualNanos, args.settleRefId);
+	return settleWalletReservationInDatabase(args);
+}
+
+export async function settleWalletReservationInDatabase(args: Parameters<typeof settleWalletReservation>[0]): Promise<WalletReservationResult> {
 	const supabase = getSupabaseAdmin();
 	const result = await supabase.rpc("gateway_wallet_settle_once", {
 		p_workspace_id: args.workspaceId,
@@ -299,6 +316,10 @@ export async function releaseStaleOrphanBatchReservations(args?: {
 	olderThanSeconds?: number;
 	limit?: number;
 }): Promise<number> {
+	// The legacy reaper scans the shared database. A staging workspace recovery
+	// run must never release reservations belonging to production jobs. Unknown
+	// durable submissions retain their holds for provider-side reconciliation.
+	if (publishedWorkspace()) return 0;
 	const result = await getSupabaseAdmin().rpc("gateway_wallet_release_stale_orphan_batch_reservations", {
 		p_older_than_seconds: Math.max(300, Math.trunc(args?.olderThanSeconds ?? 1_800)),
 		p_limit: Math.max(1, Math.min(1_000, Math.trunc(args?.limit ?? 100))),

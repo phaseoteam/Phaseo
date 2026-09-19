@@ -1,7 +1,7 @@
 // Purpose: Runtime environment type definitions.
 
 export type GatewayBindings = {
-    GATEWAY_REQUEST_STATE_MODE?: "synthetic" | "escrow";
+    GATEWAY_REQUEST_STATE_MODE?: "synthetic" | "published";
     GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID?: string;
     GATEWAY_REQUEST_STATE_ENCRYPTION_KEY?: string;
     GATEWAY_REQUEST_STATE_KV?: KVNamespace;

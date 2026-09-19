@@ -3,20 +3,21 @@
 ## Continuation brief: production-backed test workspace
 
 The operator authorized continuing the complete migration using a dedicated
-workspace in the production database, with no more than USD 1 cumulative usage.
+workspace in the production database. USD 1 is the agent's cumulative live-test
+spending budget, not a product limit, wallet allocation or new billing rule.
 This does not authorize production Worker rollout or spending from other
 workspaces. Existing normal traffic remains on its existing path.
 
 Required acceptance gates before a confidence claim:
 
-- One non-replenishing escrow allocation, at most 1,000,000,000 nanos. Concurrent
-  admissions and unresolved provider outcomes retain their holds. Retries cannot
-  create another allocation or dispatch twice. Paid probes use bounded provider
-  requests; expensive lifecycle tests use deterministic provider fixtures.
+- Keep existing billing semantics: observed usage for ordinary inference and
+  explicit holds for long-running work. Paid probes have conservative bounds and
+  cumulative spend tracking; expensive tests use deterministic provider fixtures.
 - Website key/configuration mutations have durable retryable publication and
   acknowledged security fencing; missing state fails closed.
-- Durable accounting events project idempotently to Supabase. Projection lag,
-  duplicates, gaps, restart and rollback cannot double-charge or replenish funds.
+- Durable accounting events call the existing idempotent billing functions.
+  Retries cannot double-charge, and refreshing a cached balance cannot overwrite
+  pending usage. No separate escrow or shadow accounting tables are needed.
 - Batch/file/realtime lifecycle reads and writes use Cloudflare-owned state for
   enrolled workspaces, preserving ownership, claims, cancellation, recovery,
   settlement and webhook semantics.
@@ -25,7 +26,7 @@ Required acceptance gates before a confidence claim:
 
 No UI redesign or public wire-contract changes are intended. The affected
 surfaces are gateway shared preflight/execution/accounting, async lifecycle
-repositories, website control-plane mutations, and additive Supabase contracts.
+repositories, website control-plane mutations, and existing Supabase contracts.
 
 ## Change brief
 
@@ -51,15 +52,16 @@ Acceptance criteria:
 ## Staging boundary
 
 The staging Wrangler configuration points at the production Supabase project.
-An independent Cloudflare copy of that wallet must never be used as spendable
-credit. Live cutover requires either an exclusive wallet owner or a separately
-reserved escrow allocation. Synthetic benchmarks use a distinct namespace and
-cannot dispatch a paid provider request or write production accounting rows.
+Cloudflare's wallet state is a working copy of the same wallet, never a second
+source of funds. Normal idempotent billing functions update the existing ledger.
+Workspace cutover still needs consistent routing of all spenders and correct
+handling of top-ups/adjustments. Synthetic benchmarks use a distinct namespace
+and cannot dispatch paid requests or write production accounting rows.
 Existing staging cron consumers remain disabled.
 
 ## State ownership
 
-Supabase owns configuration authoring and the long-term accounting projection.
+Supabase owns configuration authoring and the existing wallet/accounting records.
 Immutable context snapshots contain the existing normalized pipeline contract;
 private configuration is encrypted before it enters shared KV/Workers Cache.
 A workspace Durable Object owns publication revisions, active keys, available
@@ -176,67 +178,68 @@ revokes its synthetic key in a `finally` block. It never calls a paid model.
 
 ### Required before real traffic cutover
 
-The operator selected a production-backed test workspace with a cumulative USD 1
-cap. This continuation is local/draft only; it has not replaced the measured
-staging deployment above. No live migration, enrollment, wallet transfer or paid
-request has been executed. The migration requires separate explicit approval
-under the database-change workflow.
+The USD 1 allowance applies only to the agent's actual test calls. The earlier
+escrow design misunderstood this and has been removed, including its unapplied
+migration and shadow projection tables. There is no escrow-migration approval
+gate. This continuation has not replaced the measured staging deployment above.
+No enrollment, wallet transfer or paid request has been executed.
 
 Implemented and locally verified in the continuation:
 
-- An additive SQL escrow allocation locks at most one dollar out of the existing
-  wallet's spendable balance. Enrollment requires that exact unreserved balance
-  and disabled automatic top-up. Retrying initialization never replenishes it.
-  SQL projection verifies ordered events, reservation transitions and balances;
-  a lost acknowledgement cannot charge twice. Durable alarms retry the outbox.
-- Encrypted snapshot rebuilding from current configuration, a scoped SQL change
-  journal, and website-account mutation fencing before writes and acknowledgement
+- Background synchronization reuses ordinary charge/reserve/capture/release/settle
+  functions, preserving billing references, normal top-up/alert behavior and RPC
+  idempotency. No dollar cap or inference hold was added. An acknowledged writer
+  refreshes the working wallet only if no concurrent unacknowledged event exists.
+- Encrypted snapshot rebuilding from current configuration and website-account
+  mutation fencing before writes and acknowledgement
   before success. Monotonic publication revisions and short validity leases fail
   closed. Completed mutation tokens cannot be resurrected by delayed retries.
 - A workspace-owned SQLite lifecycle repository behind the existing async/batch
   repository interfaces, durable webhook delivery claims, file quota claims, and
-  atomic realtime create/claim/extend/settle transitions. Lifecycle projection
-  uses a separate shadow table so production reconcilers cannot claim staging jobs.
-  It does **not** yet feed the ordinary website lifecycle/request-log queries.
-- Explicit staging/test-workspace enrollment only. Escrow-mode public `/v1`
-  dispatch is blocked with `request_state_cutover_not_ready` until its financial
-  admission and remaining path migration are complete. The deployed configuration
+  atomic realtime create/claim/extend/settle transitions. The ordinary website
+  lifecycle/request-log queries still need integration; no shadow table is created.
+- Durable alarms now invoke bounded workspace-scoped batch/video/realtime/webhook
+  recovery. Staging recovery skips the global reservation reaper and production
+  realtime billing-review scans. Configuration/recovery failures do not prevent
+  the accounting writer from running. The production-wide scheduler stays disabled.
+- Explicit staging/test-workspace publication only. Published-mode public `/v1`
+  dispatch is blocked with `request_state_cutover_not_ready` until policy and
+  lifecycle integration are verified. This is not a test-spending gate. Deployed configuration
   remains synthetic; the website middleware flag is unset by default.
 
 Validation for this continuation:
 
-- 89 targeted gateway tests plus 65 existing auth/policy/charge regression tests
-  pass. These include SQLite restart/rollback, the cumulative allocation cap,
-  uncertain accounting acknowledgements, publication fences, lifecycle transitions
-  and existing async/batch repository calls with Supabase forbidden.
+- 101 targeted gateway tests pass, covering SQLite restart/rollback, normal wallet
+  amounts above USD 1, existing billing-function reuse, uncertain acknowledgements,
+  stale-refresh protection, publication fences and lifecycle transitions. Existing
+  async/batch repositories and empty-workspace recovery run with Supabase forbidden.
+- A further 65 auth/policy/charge regression tests and 31 batch/video/webhook
+  reconciliation tests pass (197 gateway tests across these focused runs).
 - 12 website API tests pass, including four new mutation-fencing cases.
-- `node supabase/tests/request-state-escrow.test.mjs` passes using PGlite: role
-  permissions, allocation non-replenishment, accounting gaps/replay/rollback,
-  lifecycle revision ordering and source-mutation triggers for both old/new owners.
+- No new SQL migration is included in this continuation.
 - API and website API lint/typecheck pass, with existing max-lines warnings.
   The staging dry-run bundle passes. These are not live Cloudflare recovery tests.
 
 Still required; none of these are implied by the passing component tests:
 
-1. Approve/apply the additive SQL migration, fund/enroll a dedicated test workspace
-   through an auditable process, and add safe allocation closure/refund recovery.
-   Never initialize from a copied personal-workspace balance. The USD 1 cap is
-   cumulative, not per request, and excludes other workspaces from testing.
+1. Verify workspace cutover/synchronization against the existing wallet, including
+   external top-ups, debits and pre-existing holds. Do not let two uncoordinated
+   gateway paths authorize spending against independent working balances.
 2. Finish publication coverage for all control-plane paths, including gateway
    management mutations and OAuth/membership semantics. Recover abandoned website
    fences without allowing an in-flight database mutation to commit after un-fencing.
    Preserve newly created key response/recovery semantics when synchronization fails.
    Current OAuth-derived keys fail closed. Only a bounded explicit model-target
    set is published; this is not yet an across-the-board catalog warmer.
-3. Add bounded spend admission **before** ordinary inference dispatch. Replace
+3. Preserve ordinary inference's existing observed-usage charging. Replace
    snapshot key-limit/budget counters with atomic live enforcement,
    including rolling windows and concurrent admissions. Publish dynamic security
    decisions independently of static pricing. No frozen counter may enforce a
    production budget.
-4. Verify projection end to end against Cloudflare and production-backed escrow,
-   add reporting integration, backlog/lag visibility and operational recovery,
-   and define event/snapshot/idempotency retention. Automatic top-up stays disabled
-   for the test. Current refresh polling/rebuild cadence is test-scoped, not an
+4. Verify background billing end to end against Cloudflare and the existing
+   production database, add reporting integration, backlog/lag visibility and
+   lifecycle row synchronization, and define event/snapshot/idempotency retention.
+   Current refresh polling/rebuild cadence is test-scoped, not an
    established production cost or freshness budget.
 5. Migrate remaining pre-dispatch reads: provider-rate-limit configuration,
    health fallback, service-tier sibling resolution, auto/free routing, optional
@@ -246,8 +249,8 @@ Still required; none of these are implied by the passing component tests:
    wiring. Credentials/pricing, finalization/key counters, background reconciliation
    and some telemetry still contain legacy paths. Stored lifecycle transitions
    are tested, but whole lifecycles are not yet database-free or end-to-end proven.
-   Realtime currently requires a USD 5 initial hold, so paid realtime cannot run
-   within the USD 1 test cap; use deterministic provider/relay fixtures.
+   Realtime's existing USD 5 reservation is a hold, not USD 5 of usage. Any live
+   test must still keep actual billed usage within the agent's remaining allowance.
 7. Benchmark complete dispatch, large snapshots, multiple Cloudflare locations,
    concurrent load, eviction, outage, and recovery. Reduce repeated DO reads
    only after state freshness and accounting semantics remain proven.

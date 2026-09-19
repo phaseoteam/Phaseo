@@ -3,7 +3,7 @@
 // How: Creates session rows, reserves $5 increments, prices final usage, and settles atomically.
 
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
-import { escrowWorkspace, isRequestStateWorkspace, workspaceState } from "./request-state/client";
+import { publishedWorkspace, isRequestStateWorkspace, workspaceState } from "./request-state/client";
 import { refreshRealtimeBillingReviews, syncRealtimeBillingReviewSummaries } from "./realtime-billing-review";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 import { loadPriceCard } from "@pipeline/pricing/loader";
@@ -988,7 +988,7 @@ export async function claimRealtimeSessionForRelay(args: {
 	sessionId: string;
 	token: string;
 }): Promise<RealtimeSessionRow> {
-	const enrolled = escrowWorkspace();
+	const enrolled = publishedWorkspace();
 	if (enrolled) return workspaceState(enrolled).realtimeClaim(args.sessionId, await sha256Hex(args.token));
 	const supabase = getSupabaseAdmin();
 	const rpc = await supabase.rpc("gateway_realtime_claim_connection", {
@@ -1002,7 +1002,7 @@ export async function claimRealtimeSessionForRelay(args: {
 }
 
 export async function getRealtimeSessionForInternal(sessionId: string): Promise<RealtimeSessionRow> {
-	const enrolled = escrowWorkspace();
+	const enrolled = publishedWorkspace();
 	if (enrolled) return workspaceState(enrolled).realtimeGet(sessionId);
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_realtime_sessions")
@@ -1376,16 +1376,23 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 	relay?: DurableObjectNamespace;
 }): Promise<RealtimeSessionReconciliationSummary> {
 	const startedAt = new Date().toISOString();
-	const supabase = getSupabaseAdmin();
+	const enrolled = publishedWorkspace();
+	const edge = enrolled ? workspaceState(enrolled) : null;
+	const supabase = edge ? null : getSupabaseAdmin();
 	const now = new Date().toISOString();
 	const idleCutoff = new Date(Date.now() - REALTIME_IDLE_TIMEOUT_SECONDS * 1000).toISOString();
-	const { data: sessions, error } = await supabase
+	const limit = Math.max(1, Math.min(500, Math.trunc(args?.limit ?? 100)));
+	const { data: sessions, error } = edge ? {
+		data: (await edge.rowList("gateway_realtime_sessions", { statuses: ["created", "connecting", "connected", "ending"],
+			ascending: true, limit: 1000 })).map(value => value.row as RealtimeSessionRow)
+			.filter(row => (row.expires_at && row.expires_at <= now) || (row.last_event_at && row.last_event_at <= idleCutoff)).slice(0, limit), error: null,
+	} : await supabase!
 		.from("gateway_realtime_sessions")
 		.select("*")
 		.in("status", ["created", "connecting", "connected", "ending"])
 		.or(`expires_at.lte.${now},last_event_at.lte.${idleCutoff}`)
 		.order("updated_at", { ascending: true })
-		.limit(Math.max(1, Math.min(500, Math.trunc(args?.limit ?? 100))));
+		.limit(limit);
 	if (error) throw error;
 
 	let sessionsExpired = 0;
@@ -1452,14 +1459,19 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 		}
 	}
 
-	await refreshRealtimeBillingReviews().catch((error) => {
+	// These existing review refreshers scan production tables. The staged owner
+	// reports its unresolved records locally instead of claiming production work.
+	if (!edge) await refreshRealtimeBillingReviews().catch((error) => {
 		console.error("realtime_billing_review_refresh_failed", { error });
 	});
-	await syncRealtimeBillingReviewSummaries().catch((error) => {
+	if (!edge) await syncRealtimeBillingReviewSummaries().catch((error) => {
 		console.error("realtime_billing_review_summary_sync_failed", { error });
 	});
 	const unresolvedCutoff = new Date(Date.now() - 60_000).toISOString();
-	const { count: unresolvedCount, error: unresolvedError } = await supabase
+	const { count: unresolvedCount, error: unresolvedError } = edge ? {
+		count: (await edge.rowList("gateway_realtime_sessions", { statuses: ["billing_unresolved"], limit: 1000 }))
+			.filter(value => String(value.row.updated_at) <= unresolvedCutoff).length, error: null,
+	} : await supabase!
 		.from("gateway_realtime_sessions")
 		.select("id", { count: "exact", head: true })
 		.eq("status", "billing_unresolved")

@@ -3,7 +3,6 @@ import type { GatewayBindings } from "@/runtime/env.types";
 import { RequestLedger, type StateStore, type WalletState, type LedgerEvent } from "./ledger";
 import { snapshotSlot, validatePublishedKey, type PublishedKey, type SnapshotReference } from "./contracts";
 import { digest } from "./snapshots";
-import { projectAccountingEvent, projectLifecycleRow } from "./projection";
 import { LifecycleRows, type LifecycleRow, type RowFilter, type RowTable } from "./rows";
 import { WebhookState } from "./webhook-state";
 import type { PublicationTarget } from "./publisher";
@@ -43,22 +42,23 @@ export class WorkspaceRequestState extends DurableObject<GatewayBindings> {
         return this.transaction(() => this.ledger.initialize({ workspaceId, allocationId, balanceNanos, mode: "synthetic" }));
     }
 
-    async initializeEscrow(input: { workspaceId: string; allocationId: string; capNanos: number }): Promise<WalletState> {
-        if (this.env.ENV !== "staging" || this.env.GATEWAY_REQUEST_STATE_MODE !== "escrow" ||
+    async initializePublished(input: { workspaceId: string; balanceNanos: number; reservedNanos: number }): Promise<WalletState> {
+        if (this.env.ENV !== "staging" || this.env.GATEWAY_REQUEST_STATE_MODE !== "published" ||
             input.workspaceId !== this.env.GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID ||
-            !/^[0-9a-f-]{36}$/.test(input.workspaceId)) throw new Error("escrow_workspace_not_allowed");
+            !/^[0-9a-f-]{36}$/.test(input.workspaceId)) throw new Error("published_workspace_not_allowed");
         const wallet = this.transaction(() => this.ledger.initialize({ workspaceId: input.workspaceId,
-            allocationId: input.allocationId, balanceNanos: input.capNanos, mode: "escrow" }));
-        // The initializer is called only after the SQL allocation succeeds. The
-        // recurring alarm is persisted before any admission may succeed.
+            allocationId: `workspace:${input.workspaceId}`, balanceNanos: input.balanceNanos,
+            reservedNanos: input.reservedNanos, mode: "published" }));
+        // This is the working copy of the existing wallet, not an allocation or
+        // transfer. The background writer uses the existing idempotent billing RPCs.
         await this.ctx.storage.setAlarm(Date.now() + 5_000);
-        this.store.put("projection:enabled", true);
+        this.store.put("sync:enabled", true);
         return wallet;
     }
 
     async alarm(): Promise<void> {
         const wallet = this.ledger.wallet();
-        if (wallet.mode !== "escrow" || this.env.ENV !== "staging" ||
+        if (wallet.mode !== "published" || this.env.ENV !== "staging" ||
             wallet.workspaceId !== this.env.GATEWAY_REQUEST_STATE_TEST_WORKSPACE_ID) return;
         // Schedule first: a long outage must not exhaust automatic alarm retries
         // and leave a durable outbox stranded forever.
@@ -75,23 +75,45 @@ export class WorkspaceRequestState extends DurableObject<GatewayBindings> {
                 console.error("request_state_refresh_failed", { reason: "unavailable" });
             }
         }
-        for (const event of this.pendingEvents()) {
-            const sequence = await projectAccountingEvent(this.env, event);
-            this.transaction(() => {
-                const previous = this.store.get<number>("projection:ack") ?? 0;
-                if (sequence !== previous + 1) throw new Error("projection_ack_sequence_gap");
-                this.store.put("projection:ack", sequence);
-                this.ctx.storage.sql.exec("DELETE FROM request_state WHERE key = ?", `outbox:${String(sequence).padStart(16, "0")}`);
-            });
+        if (!origin || !this.env.GATEWAY_INTERNAL_TEST_TOKEN) throw new Error("request_state_sync_unconfigured");
+        if ((this.store.get<number>("recovery:next") ?? 0) <= Date.now()) {
+            this.store.put("recovery:next", Date.now() + 30_000);
+            try {
+                const recovered = await fetch(`${origin}/internal/request-state/recover`, { method: "POST",
+                    headers: { "x-internal-token": this.env.GATEWAY_INTERNAL_TEST_TOKEN }, signal: AbortSignal.timeout(60_000) });
+                if (!recovered.ok) console.error("request_state_recovery_failed", { status: recovered.status });
+            } catch {
+                console.error("request_state_recovery_failed", { reason: "unavailable" });
+            }
         }
-        for (const event of this.rows.pending()) {
-            await projectLifecycleRow(this.env, event);
-            this.rows.acknowledge(event);
-        }
+        const synced = await fetch(`${origin}/internal/request-state/sync`, { method: "POST",
+            headers: { "x-internal-token": this.env.GATEWAY_INTERNAL_TEST_TOKEN }, signal: AbortSignal.timeout(60_000) });
+        if (!synced.ok) throw new Error(`request_state_sync_http_${synced.status}`);
     }
 
-    projectionStatus() {
-        return { sequence: this.ledger.wallet().sequence, acknowledged: this.store.get<number>("projection:ack") ?? 0 };
+    syncStatus() {
+        return { sequence: this.ledger.wallet().sequence, acknowledged: this.store.get<number>("sync:ack") ?? 0 };
+    }
+    acknowledgeAccounting(sequence: number): void {
+        this.transaction(() => {
+            const previous = this.store.get<number>("sync:ack") ?? 0;
+            if (sequence === previous) return;
+            if (!Number.isSafeInteger(sequence) || sequence !== previous + 1 ||
+                !this.store.get(`outbox:${String(sequence).padStart(16, "0")}`)) throw new Error("sync_ack_sequence_gap");
+            this.store.put("sync:ack", sequence);
+            this.ctx.storage.sql.exec("DELETE FROM request_state WHERE key = ?", `outbox:${String(sequence).padStart(16, "0")}`);
+        });
+    }
+    refreshWallet(input: { sequence: number; balanceNanos: number; reservedNanos: number }): boolean {
+        return this.transaction(() => {
+            const status = this.syncStatus();
+            // A top-up refresh may race another local request. Never overwrite
+            // that request's unacknowledged debit/hold with the database snapshot.
+            if (input.sequence !== status.sequence || status.acknowledged !== status.sequence) return false;
+            if (this.ledger.wallet().mode !== "published") throw new Error("wallet_refresh_not_allowed");
+            this.ledger.refreshBalance(input.balanceNanos, input.reservedNanos);
+            return true;
+        });
     }
     publicationStatus() {
         return { dirty: this.store.get<boolean>("publication:dirty") ?? true,
@@ -205,7 +227,7 @@ export class WorkspaceRequestState extends DurableObject<GatewayBindings> {
     }
 
     private assertPublicationReady(): void {
-        if (this.ledger.wallet().mode !== "escrow") return;
+        if (this.ledger.wallet().mode !== "published") return;
         if ((this.store.get<string[]>("publication:mutations") ?? []).length || this.store.get<boolean>("publication:dirty") ||
             (this.store.get<number>("publication:validUntil") ?? 0) <= Date.now()) throw new Error("request_state_publication_pending");
     }
@@ -219,6 +241,7 @@ export class WorkspaceRequestState extends DurableObject<GatewayBindings> {
             if (!tokens.includes(token)) {
                 if (tokens.length >= 16) throw new Error("too_many_pending_mutations");
                 this.store.put("publication:mutations", [...tokens, token]);
+                this.store.put("publication:revision", (this.store.get<number>("publication:revision") ?? 0) + 1);
             }
             this.store.put("publication:dirty", true);
         });
@@ -295,16 +318,16 @@ export class WorkspaceRequestState extends DurableObject<GatewayBindings> {
     reserve(input: Parameters<RequestLedger["reserve"]>[0]) {
         return this.transaction(() => {
             this.assertKey(input.keyId);
-            if (this.ledger.wallet().mode === "escrow" && !this.store.get("projection:enabled")) throw new Error("allocation_not_ready");
+            if (this.ledger.wallet().mode === "published" && !this.store.get("sync:enabled")) throw new Error("wallet_sync_not_ready");
             return this.ledger.reserve(input);
         });
     }
     // Completion remains possible after a key is revoked: revocation blocks new
     // spend, but cannot strand an existing hold or erase the payment obligation.
-    settle(id: string, amountNanos: number) { return this.transaction(() => this.ledger.settle(id, amountNanos)); }
-    capture(id: string) { return this.transaction(() => this.ledger.capture(id)); }
+    settle(id: string, amountNanos: number, referenceId?: string | null) { return this.transaction(() => this.ledger.settle(id, amountNanos, referenceId)); }
+    capture(id: string, referenceId?: string | null) { return this.transaction(() => this.ledger.capture(id, referenceId)); }
     charge(id: string, amountNanos: number) { return this.transaction(() => this.ledger.charge(id, amountNanos)); }
-    release(id: string) { return this.transaction(() => this.ledger.release(id)); }
+    release(id: string, referenceId?: string | null) { return this.transaction(() => this.ledger.release(id, referenceId)); }
     wallet() { return this.ledger.wallet(); }
 
     pendingEvents(limit = 100): LedgerEvent[] {

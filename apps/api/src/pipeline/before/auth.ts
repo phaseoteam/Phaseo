@@ -412,7 +412,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     }
     if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
 
-    if (requestStateEnabled(bindings) && (isSyntheticKey(parsed.kid) || bindings.GATEWAY_REQUEST_STATE_MODE === "escrow")) {
+    if (requestStateEnabled(bindings) && (isSyntheticKey(parsed.kid) || bindings.GATEWAY_REQUEST_STATE_MODE === "published")) {
         if (isSyntheticKey(parsed.kid) && !isInternalRequestAuthorized(req, bindings)) return { ok: false, reason: "synthetic_key_requires_internal_token" };
         try {
             const key = await readPublishedKey(parsed.kid);

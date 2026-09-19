@@ -6,6 +6,7 @@
 Add an isolated staging prototype for published Cloudflare request context,
 durable key revocation, and transactional inference/hold accounting, with
 database-free preflight diagnostics. Add opt-in website mutation fencing,
-non-replenishing test escrow projection, and durable lifecycle repositories.
-Production behavior remains unchanged; paid escrow dispatch is gated pending
-completion of admission and lifecycle recovery.
+background synchronization through existing billing functions, and durable
+lifecycle repositories with workspace-scoped recovery. Production behavior
+remains unchanged; published-workspace dispatch remains gated pending full
+policy and lifecycle integration.
