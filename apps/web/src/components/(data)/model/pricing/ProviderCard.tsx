@@ -3018,6 +3018,7 @@ export default function ProviderCard({
 	const pricingAdditionalContent =
 		!isFreePlan &&
 		(additionalTokenMetricTiles.length > 0 ||
+			upcomingFor("decisionTokens").length > 0 ||
 			(sec.requests?.length ?? 0) > 0 ||
 			upcomingFor("requests").length > 0 ||
 			imageInputs.length > 0 ||
@@ -3100,6 +3101,13 @@ export default function ProviderCard({
 						</div>
 					) : null}
 				<div className="space-y-2.5">
+					{upcomingFor("decisionTokens").length > 0 ? (
+						<UpcomingPricingSection
+							rows={upcomingFor("decisionTokens")}
+							title="Upcoming Decisions Pricing"
+							compact
+						/>
+					) : null}
 					{upcomingFor("requests").length > 0 ? (
 						<UpcomingPricingSection rows={upcomingFor("requests")} title="Upcoming" compact />
 					) : null}
