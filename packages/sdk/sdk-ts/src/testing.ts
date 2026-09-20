@@ -10,7 +10,7 @@ export type Fixture = {
 /** Strict, ordered fixtures. Unexpected calls fail locally and never reach a provider. */
 export function createMockTransport(fixtures: readonly Fixture[]) {
   let position = 0;
-  const requests: Array<{ method: string; url: string; body: unknown }> = [];
+  const requests: Array<{ method: string; url: string; headers: Headers; body: unknown }> = [];
   const fetchImpl: typeof fetch = async (input, init) => {
     const request = new Request(input, init);
     request.signal.throwIfAborted();
@@ -20,7 +20,7 @@ export function createMockTransport(fixtures: readonly Fixture[]) {
     const raw = await request.text();
     let body: unknown = raw;
     try { body = JSON.parse(raw); } catch { /* Binary/plain text requests stay strings. */ }
-    requests.push({ method: request.method, url: request.url, body });
+    requests.push({ method: request.method, url: request.url, headers: request.headers, body });
     return new Response(fixture.body ?? (fixture.json === undefined ? null : JSON.stringify(fixture.json)), {
       status: fixture.status ?? 200,
       headers: { ...(fixture.json === undefined ? {} : { "content-type": "application/json" }), ...fixture.headers },

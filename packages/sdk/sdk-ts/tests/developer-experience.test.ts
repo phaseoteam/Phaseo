@@ -33,6 +33,26 @@ test("paid POST is never retried and preserves error context", async () => {
   expect(mock.requests).toHaveLength(1);
 });
 
+test("raw responses, idempotency headers, and transport hooks share one request pipeline", async () => {
+  const events: string[] = [];
+  const { client, mock } = setup([
+    { method: "GET", path: "/v1/health", status: 503, headers: { "retry-after": "0" } },
+    { method: "GET", path: "/v1/health", json: { ok: true }, headers: { "x-request-id": "req_raw" } },
+    { method: "POST", path: "/v1/responses", json: { id: "resp_1" } },
+  ]);
+  const raw = await client.requestWithResponse("GET", "/health", {
+    maxRetries: 1,
+    onRequest: event => events.push(`request:${event.attempt}`),
+    onRetry: event => events.push(`retry:${event.attempt}`),
+    onResponse: event => events.push(`response:${event.status}`),
+  });
+  expect(raw).toMatchObject({ data: { ok: true }, status: 200, requestId: "req_raw" });
+  expect(events).toEqual(["request:0", "retry:1", "request:1", "response:200"]);
+  await client.request("POST", "/responses", { body: { model: "test" }, idempotencyKey: "idem-1" });
+  expect(new Headers(mock.requests[2]?.headers).get("idempotency-key")).toBe("idem-1");
+  mock.assertDone();
+});
+
 test("cancellation interrupts a pending response body and releases it", async () => {
   const abort = new AbortController();
   const cancel = vi.fn();

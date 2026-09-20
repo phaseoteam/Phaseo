@@ -82,6 +82,34 @@ module PhaseoSdk
       @async_jobs = AsyncJobsResource.new(self)
     end
 
+    def set_timeout(seconds)
+      @raw_client.timeout = seconds
+      self
+    end
+
+    def set_max_retries(max_retries)
+      @raw_client.max_retries = max_retries
+      self
+    end
+
+    def set_request_hooks(on_request: nil, on_response: nil, on_retry: nil)
+      @raw_client.on_request = on_request
+      @raw_client.on_response = on_response
+      @raw_client.on_retry = on_retry
+      self
+    end
+
+    def request_with_response(method:, path:, query: nil, headers: nil, body: nil, options: nil)
+      @raw_client.request_with_response(
+        method: method,
+        path: path,
+        query: query,
+        headers: headers,
+        body: body,
+        options: options
+      )
+    end
+
     def get_model_deprecation_info(model_id)
       normalized = as_trimmed_string(model_id)
       return nil unless normalized

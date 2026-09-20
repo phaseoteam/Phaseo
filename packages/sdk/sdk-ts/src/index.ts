@@ -41,8 +41,8 @@ import type {
   VideoGenerationResponse
 } from "./oapi-gen/models/index.js";
 import * as ops from "./oapi-gen/client/index.js";
-import { PhaseoHttpError, Client } from "./runtime/client.js";
-import { createTransport, trackResponse, type RequestControls } from "./runtime/transport.js";
+import { PhaseoHttpError, Client, type RawResponse } from "./runtime/client.js";
+import { createTransport, type RequestControls } from "./runtime/transport.js";
 import { JobHandle } from "./jobHandle.js";
 import {
   parseOutput,
@@ -56,7 +56,8 @@ import {
   type ParameterSupportReport,
 } from "./helpers.js";
 export { JobHandle } from "./jobHandle.js";
-export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type ResponseMetadata } from "./runtime/transport.js";
+export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
+export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type RequestEvent, type ResponseEvent, type RetryEvent, type ResponseMetadata } from "./runtime/transport.js";
 import {
   TelemetryCapture,
   extractBatchMetadata,
@@ -662,44 +663,34 @@ export class Phaseo {
     return checkParameterSupport(capabilities, parameterValues, options);
   }
 
-  async request(method: string, path: string, options: {
+  async request(method: string, path: string, options: RequestControls & {
     query?: Record<string, QueryParamValue>;
     headers?: Record<string, string>;
     body?: unknown;
   } = {}): Promise<unknown> {
-    const url = new URL(path.replace(/^\/+/, ""), `${this.basePath}/`);
-    if (options.query) {
-      for (const [key, value] of Object.entries(options.query)) {
-        if (Array.isArray(value)) {
-          for (const item of value) {
-            url.searchParams.append(key, String(item));
-          }
-        } else {
-          url.searchParams.set(key, String(value));
-        }
-      }
-    }
-    const res = await this.fetchImpl(url.toString(), {
+    return (await this.requestWithResponse(method, path, options)).data;
+  }
+
+  async requestWithResponse(method: string, path: string, options: RequestControls & {
+    query?: Record<string, QueryParamValue>;
+    headers?: Record<string, string>;
+    body?: unknown;
+  } = {}): Promise<RawResponse<unknown>> {
+    const normalizedPath = `/${path.replace(/^\/+/, "")}`;
+    return this.client.requestWithResponse({
       method,
-      headers: {
-        ...this.headers,
-        ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
-        ...(options.headers ?? {})
-      },
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined
+      path: normalizedPath,
+      query: options.query as Record<string, string | number | boolean | Array<string | number | boolean>> | undefined,
+      headers: options.headers,
+      body: options.body,
+      signal: options.signal,
+      timeoutMs: options.timeoutMs,
+      maxRetries: options.maxRetries,
+      idempotencyKey: options.idempotencyKey,
+      onRequest: options.onRequest,
+      onResponse: options.onResponse,
+      onRetry: options.onRetry,
     });
-    if (!res.ok) {
-      const text = await res.text();
-      throw createHttpError(res, text);
-    }
-    if (res.status === 204) return null;
-    const text = await res.text();
-    if (!text) return null;
-    try {
-      return trackResponse(JSON.parse(text), res);
-    } catch {
-      return text;
-    }
   }
 
   getAsyncJobWebSocketUrl(kind: AsyncJobKind, jobId: string, options: AsyncJobWebSocketOptions = {}): string {

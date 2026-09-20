@@ -15,10 +15,22 @@ job orchestration. Preserve existing resource methods and generated contracts.
 - Explicit catalogue capability validation with useful incompatibility reports.
 - Public deterministic test transports and examples; no paid providers in CI.
 
+## Shared core contract
+
+Every gateway SDK exposes the same transport concepts in the idioms of its
+language: request-scoped timeouts and headers, safe retries for GET and HEAD,
+idempotency keys, request/response/retry hooks, raw response metadata, and
+structured HTTP errors. POST and other write requests are not retried
+automatically, even when an idempotency key is supplied.
+
+Generated operations and public escape hatches must use the same transport
+pipeline. The machine-readable contract lives in `core-contract.json`; run
+`pnpm validate:sdk-contract` after changing a generator or SDK transport.
+
 Use existing room controls/dialogs as the visual source; preserve keyboard and
 mobile behavior. No database changes, new provider protocols, or public Realtime
-expansion. Tests use local fixtures. Keep generated sources unchanged unless the
-public HTTP contract changes; these improvements belong in handwritten layers.
+expansion. Tests use local fixtures. Change generated sources through their
+OpenAPI backend and regenerate them; never patch generated output directly.
 
 ## Validation
 

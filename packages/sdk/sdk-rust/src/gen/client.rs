@@ -3,7 +3,26 @@ use std::collections::HashMap;
 #[derive(Debug)]
 pub struct Response {
 	pub status: u16,
+	pub headers: HashMap<String, String>,
 	pub body: String,
+}
+
+impl Response {
+	pub fn request_id(&self) -> Option<&str> {
+		self.headers.get("x-request-id").or_else(|| self.headers.get("request-id")).map(String::as_str)
+	}
+
+	pub fn trace_url(&self) -> Option<&str> {
+		self.headers.get("x-phaseo-trace-url").map(String::as_str)
+	}
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct RequestOptions {
+	pub headers: HashMap<String, String>,
+	pub timeout_ms: Option<u64>,
+	pub max_retries: Option<u32>,
+	pub idempotency_key: Option<String>,
 }
 
 pub trait Transport {
@@ -14,6 +33,22 @@ pub trait Transport {
 		body: Option<&str>,
 		headers: &HashMap<String, String>,
 	) -> Result<Response, String>;
+
+	fn request_with_options(
+		&self,
+		method: &str,
+		url: &str,
+		body: Option<&str>,
+		headers: &HashMap<String, String>,
+		options: &RequestOptions,
+	) -> Result<Response, String> {
+		let mut merged_headers = headers.clone();
+		merged_headers.extend(options.headers.clone());
+		if let Some(key) = &options.idempotency_key {
+			merged_headers.insert("Idempotency-Key".to_string(), key.clone());
+		}
+		self.request(method, url, body, &merged_headers)
+	}
 }
 
 pub struct Client<T: Transport> {
@@ -34,5 +69,10 @@ impl<T: Transport> Client<T> {
 	pub fn request(&self, method: &str, path: &str, body: Option<&str>) -> Result<Response, String> {
 		let url = format!("{}{}", self.base_url, path);
 		self.transport.request(method, &url, body, &self.headers)
+	}
+
+	pub fn request_with_options(&self, method: &str, path: &str, body: Option<&str>, options: &RequestOptions) -> Result<Response, String> {
+		let url = format!("{}{}", self.base_url, path);
+		self.transport.request_with_options(method, &url, body, &self.headers, options)
 	}
 }

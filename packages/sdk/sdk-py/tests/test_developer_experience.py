@@ -27,6 +27,46 @@ def test_sync_transport_metadata_retries_and_post_safety():
     fixtures.assert_done()
 
 
+def test_raw_response_idempotency_and_transport_hooks():
+    events = []
+    fixtures = MockTransport([
+        {"method": "GET", "path": "/health", "status": 503, "headers": {"retry-after": "0"}},
+        {"method": "GET", "path": "/health", "json": {"ok": True}, "headers": {"x-request-id": "req_raw"}},
+        {"method": "POST", "path": "/responses", "json": {"id": "resp_1"}},
+    ])
+    with httpx.Client(transport=fixtures) as http:
+        with Phaseo(
+            api_key="test",
+            base_url="https://example.test",
+            http_client=http,
+            on_request=lambda event: events.append(("request", event["attempt"])),
+            on_retry=lambda event: events.append(("retry", event["attempt"])),
+            on_response=lambda event: events.append(("response", event["status_code"])),
+        ) as client:
+            raw = client.request_with_response("GET", "/health", max_retries=1)
+            assert raw.data == {"ok": True}
+            assert raw.request_id == "req_raw"
+            assert events == [("request", 0), ("retry", 1), ("request", 1), ("response", 200)]
+            client.request("POST", "/responses", body={"model": "test"}, idempotency_key="idem-1")
+    assert fixtures.requests[2].headers["idempotency-key"] == "idem-1"
+    fixtures.assert_done()
+
+
+def test_async_raw_response_and_idempotency():
+    async def run():
+        fixtures = MockTransport([
+            {"method": "POST", "path": "/responses", "json": {"id": "resp_1"}, "headers": {"x-request-id": "req_async"}},
+        ])
+        async with httpx.AsyncClient(transport=fixtures) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                raw = await client.request_with_response("POST", "/responses", body={"model": "test"}, idempotency_key="idem-async")
+                assert raw.request_id == "req_async"
+                assert raw.data["id"] == "resp_1"
+        assert fixtures.requests[0].headers["idempotency-key"] == "idem-async"
+        fixtures.assert_done()
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize("kind,path", [("music", "/music/generate"), ("videos", "/videos"), ("batches", "/batches")])
 def test_async_jobs_submit_once_and_resume(kind, path):
     async def run():

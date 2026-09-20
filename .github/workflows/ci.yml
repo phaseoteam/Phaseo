@@ -596,6 +596,9 @@ jobs:
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
+            - name: Validate shared SDK core contract
+              run: pnpm run validate:sdk-contract
+
             - name: Build SDKs
               run: pnpm run validate:packages
 
@@ -639,7 +642,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                sdk: [go, csharp, java, php, ruby, rust]
+                sdk: [go, csharp, java, php, ruby, rust, cpp]
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
