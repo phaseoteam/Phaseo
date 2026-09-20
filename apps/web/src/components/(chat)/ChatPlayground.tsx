@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	Sidebar,
@@ -490,7 +491,7 @@ function ChatPlaygroundContent({
 	} = useChatAuth();
 	const [debugEnabled, setDebugEnabled] = useState(() => {
 		if (typeof window === "undefined") return false;
-		return window.localStorage.getItem(STORAGE_KEYS.debugMode) === "true";
+		return chatLocalStorage.getItem(STORAGE_KEYS.debugMode) === "true";
 	});
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [modelSettingsOpen, setModelSettingsOpen] = useState(false);
@@ -522,7 +523,7 @@ function ChatPlaygroundContent({
 		useState(false);
 	const [responseLayout, setResponseLayout] = useState<ChatResponseLayout>(() => {
 		if (typeof window === "undefined") return "sequential";
-		return window.localStorage.getItem(STORAGE_KEYS.responseLayout) ===
+		return chatLocalStorage.getItem(STORAGE_KEYS.responseLayout) ===
 			"side-by-side"
 			? "side-by-side"
 			: "sequential";
@@ -574,7 +575,7 @@ function ChatPlaygroundContent({
 	const handleDebugChange = useCallback((value: boolean) => {
 		setDebugEnabled(value);
 		if (typeof window !== "undefined") {
-			window.localStorage.setItem(
+			chatLocalStorage.setItem(
 				STORAGE_KEYS.debugMode,
 				value ? "true" : "false",
 			);
@@ -585,7 +586,7 @@ function ChatPlaygroundContent({
 		(value: ChatResponseLayout) => {
 			setResponseLayout(value);
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(STORAGE_KEYS.responseLayout, value);
+				chatLocalStorage.setItem(STORAGE_KEYS.responseLayout, value);
 			}
 		},
 		[],
@@ -663,7 +664,7 @@ function ChatPlaygroundContent({
 			setTemporaryThread(null);
 			setActiveId(thread.id);
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					STORAGE_KEYS.activeChatId,
 					thread.id,
 				);
@@ -699,33 +700,35 @@ function ChatPlaygroundContent({
 	useEffect(() => {
 		let mounted = true;
 		(async () => {
-			const storedBase = window.localStorage.getItem(STORAGE_KEYS.baseUrl);
+			const storedBase = chatLocalStorage.getItem(STORAGE_KEYS.baseUrl);
 			const storedApiTarget = inferChatApiTarget(
-				window.localStorage.getItem(STORAGE_KEYS.apiTarget),
+				chatLocalStorage.getItem(STORAGE_KEYS.apiTarget),
 				storedBase,
 			);
-			const storedActive = window.localStorage.getItem(
+			const storedActive = chatLocalStorage.getItem(
 				STORAGE_KEYS.activeChatId,
 			);
 			const storedPersonalName =
-				window.localStorage.getItem(STORAGE_KEYS.personalizationName) ??
+				chatLocalStorage.getItem(STORAGE_KEYS.personalizationName) ??
 				"";
 			const storedPersonalRole =
-				window.localStorage.getItem(STORAGE_KEYS.personalizationRole) ??
+				chatLocalStorage.getItem(STORAGE_KEYS.personalizationRole) ??
 				"";
 			const storedPersonalNotes =
-				window.localStorage.getItem(
+				chatLocalStorage.getItem(
 					STORAGE_KEYS.personalizationNotes,
 				) ?? "";
 			const storedAccent =
-				window.localStorage.getItem(
+				chatLocalStorage.getItem(
 					STORAGE_KEYS.personalizationAccent,
 				) ?? "#111111";
-			const storedNewChatModelPreference = window.localStorage.getItem(
+			const storedNewChatModelPreference = chatLocalStorage.getItem(
 				STORAGE_KEYS.newChatModelPreference,
 			);
 			if (!mounted) return;
+			// Remove the obsolete, unscoped credential too; never import it.
 			window.localStorage.removeItem(STORAGE_KEYS.apiKey);
+			chatLocalStorage.removeItem(STORAGE_KEYS.apiKey);
 			setApiTarget(storedApiTarget);
 			setBaseUrl(
 				storedApiTarget === "custom"
@@ -773,7 +776,7 @@ function ChatPlaygroundContent({
 	useEffect(() => {
 		if (!activeThread?.modelId) return;
 		if (typeof window !== "undefined") {
-			window.localStorage.setItem(
+			chatLocalStorage.setItem(
 				STORAGE_KEYS.lastModelId,
 				activeThread.modelId,
 			);
@@ -782,19 +785,19 @@ function ChatPlaygroundContent({
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			STORAGE_KEYS.personalizationName,
 			personalization.name,
 		);
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			STORAGE_KEYS.personalizationRole,
 			personalization.role,
 		);
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			STORAGE_KEYS.personalizationNotes,
 			personalization.notes,
 		);
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			STORAGE_KEYS.personalizationAccent,
 			personalization.accentColor,
 		);
@@ -850,15 +853,15 @@ function ChatPlaygroundContent({
 				);
 				if (
 					typeof window !== "undefined" &&
-					window.localStorage.getItem(STORAGE_KEYS.activeChatId) === id
+					chatLocalStorage.getItem(STORAGE_KEYS.activeChatId) === id
 				) {
 					if (previousActiveId) {
-						window.localStorage.setItem(
+						chatLocalStorage.setItem(
 							STORAGE_KEYS.activeChatId,
 							previousActiveId,
 						);
 					} else {
-						window.localStorage.removeItem(STORAGE_KEYS.activeChatId);
+						chatLocalStorage.removeItem(STORAGE_KEYS.activeChatId);
 					}
 				}
 				throw error;
@@ -949,7 +952,7 @@ function ChatPlaygroundContent({
 		(value: NewChatModelPreference) => {
 			setNewChatModelPreference(value);
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					STORAGE_KEYS.newChatModelPreference,
 					value,
 				);
@@ -1128,16 +1131,16 @@ function ChatPlaygroundContent({
 	);
 
 	const handleSaveSettings = useCallback(() => {
-		window.localStorage.setItem(STORAGE_KEYS.apiTarget, apiTarget);
+		chatLocalStorage.setItem(STORAGE_KEYS.apiTarget, apiTarget);
 		if (apiTarget === "custom") {
 			const customBaseUrl = normalizeStoredBaseUrl(baseUrl);
 			if (customBaseUrl) {
-				window.localStorage.setItem(STORAGE_KEYS.baseUrl, customBaseUrl);
+				chatLocalStorage.setItem(STORAGE_KEYS.baseUrl, customBaseUrl);
 			} else {
-				window.localStorage.removeItem(STORAGE_KEYS.baseUrl);
+				chatLocalStorage.removeItem(STORAGE_KEYS.baseUrl);
 			}
 		} else {
-			window.localStorage.removeItem(STORAGE_KEYS.baseUrl);
+			chatLocalStorage.removeItem(STORAGE_KEYS.baseUrl);
 		}
 		setSettingsOpen(false);
 	}, [apiTarget, baseUrl]);
@@ -3361,7 +3364,7 @@ function ChatPlaygroundContent({
 				void createThreadWithSettings(modelId, defaults)
 					.then(() => {
 						if (typeof window !== "undefined") {
-							window.localStorage.setItem(
+							chatLocalStorage.setItem(
 								STORAGE_KEYS.lastModelId,
 								modelId,
 							);
@@ -3440,7 +3443,7 @@ function ChatPlaygroundContent({
 				};
 			}
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
+				chatLocalStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
 			}
 			updateThreadState(nextThread, !temporaryMode);
 		},
@@ -3495,7 +3498,7 @@ function ChatPlaygroundContent({
 				updatedAt: nowIso(),
 			};
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					STORAGE_KEYS.lastModelId,
 					nextPrimary,
 				);
@@ -3622,7 +3625,7 @@ function ChatPlaygroundContent({
 				updatedAt: nowIso(),
 			};
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					STORAGE_KEYS.lastModelId,
 					nextPrimaryModelId,
 				);
@@ -3700,7 +3703,7 @@ function ChatPlaygroundContent({
 				updatedAt: nowIso(),
 			};
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					STORAGE_KEYS.lastModelId,
 					nextPrimaryModelId,
 				);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { Copy, ExternalLink, RefreshCw, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import { reauthorizeCliScopesAction } from "@/app/(dashboard)/settings/authorized-apps/actions";

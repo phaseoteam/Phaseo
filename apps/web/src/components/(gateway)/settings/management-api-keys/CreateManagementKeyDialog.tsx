@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import React, { useState } from "react";
 import {
 	Dialog,
@@ -73,6 +74,7 @@ export default function CreateManagementKeyDialog({
 	const [expiresAtLocal, setExpiresAtLocal] = useState("");
 	const [template, setTemplate] = useState<(typeof KEY_TEMPLATES)[number]["value"]>("read-only");
 	const [loading, setLoading] = useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [plainKey, setPlainKey] = useState<string | null>(null);
 	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
 		resolveInitialWorkspaceId()
@@ -122,6 +124,7 @@ export default function CreateManagementKeyDialog({
 				expiresAt,
 			});
 			setPlainKey(res?.plaintext ?? null);
+			void invalidateSettings();
 		} catch (err: any) {
 			const message =
 				err?.message ??

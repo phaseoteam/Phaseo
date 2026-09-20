@@ -12,6 +12,8 @@ import ConfigurableLogTable from "./ConfigurableLogTable";
 import { REALTIME_COLUMNS } from "./logColumns";
 import { ProviderInspectorSheet, ProviderInspectorSheetContent, ProviderInspectorSheetDescription, ProviderInspectorSheetHeader, ProviderInspectorSheetTitle } from "@/components/(data)/model/pricing/ProviderInspectorSheet";
 import { DetailKeyValueGrid, DetailSection } from "./DetailDialogPrimitives";
+import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
+import { toast } from "sonner";
 
 export type RealtimeSession = {
 	session_id: string; provider: string; model_id: string; voice: string | null; status: string;
@@ -42,6 +44,7 @@ function Status({ session }: { session: RealtimeSession }) {
 
 export default function RealtimeSessionsPanel({ sessions, page, pageSize, hasMore }: { sessions: RealtimeSession[]; page: number; pageSize: number; hasMore: boolean }) {
 	const router = useRouter();
+	const privateQuery = usePrivateUsageRefresh();
 	const searchParams = useSearchParams();
 	const [refreshing, startTransition] = useTransition();
 	const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -55,7 +58,7 @@ export default function RealtimeSessionsPanel({ sessions, page, pageSize, hasMor
 	return <div className="min-w-0 space-y-4" aria-busy={refreshing}>
 		<div className="flex min-w-0 flex-wrap items-center justify-end gap-3">
 			<div className="flex items-center gap-2">
-				<Button variant="ghost" size="icon" aria-label="Refresh current view" title="Refresh" disabled={refreshing} onClick={() => startTransition(() => router.refresh())}><RefreshCw className={refreshing ? "size-4 animate-spin motion-reduce:animate-none" : "size-4"} /></Button>
+				<Button variant="ghost" size="icon" aria-label="Refresh current view" title="Refresh" disabled={refreshing || privateQuery?.refreshing} onClick={() => { if (privateQuery) void privateQuery.refresh().catch(() => toast.error("Unable to refresh sessions.")); else startTransition(() => router.refresh()); }}><RefreshCw className={refreshing || privateQuery?.refreshing ? "size-4 animate-spin motion-reduce:animate-none" : "size-4"} /></Button>
 				<div id="realtime-column-settings" className="flex shrink-0 items-center empty:hidden" />
 			</div>
 		</div>

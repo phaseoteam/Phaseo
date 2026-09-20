@@ -13,7 +13,9 @@ function resolveStorage(storage?: Storage): Storage | null {
 	if (storage) return storage;
 	if (typeof window === "undefined") return null;
 	try {
-		return window.localStorage;
+		// Only the explicit sign-in draft crosses anonymous -> signed-in state,
+		// and only within this tab. Never consume old browser-wide drafts.
+		return window.sessionStorage;
 	} catch {
 		return null;
 	}

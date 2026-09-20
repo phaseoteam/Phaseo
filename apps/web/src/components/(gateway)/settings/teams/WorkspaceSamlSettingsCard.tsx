@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { CheckCircle2, Copy, Loader2 } from "lucide-react";
@@ -31,6 +32,7 @@ export default function WorkspaceSamlSettingsCard({
 	canEdit,
 	preview = false,
 }: Props) {
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [enabled, setEnabled] = React.useState(Boolean(initialSettings?.sso_enabled));
 	const [providerId, setProviderId] = React.useState(
 		String(initialSettings?.sso_provider_identifier ?? (preview ? "sp_example_provider" : "")),
@@ -75,6 +77,7 @@ export default function WorkspaceSamlSettingsCard({
 				ssoDomains: domainList,
 			});
 			await updateTeamSsoSettingsAction(workspaceId, normalized);
+			void invalidateSettings();
 			toast.success("SAML settings saved");
 		} catch (error) {
 			toast.error(

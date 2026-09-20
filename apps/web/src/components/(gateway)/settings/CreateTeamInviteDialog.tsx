@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "./PrivateSettingsQuery";
 import {
 	Dialog,
 	DialogTrigger,

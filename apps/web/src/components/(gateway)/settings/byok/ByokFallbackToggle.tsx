@@ -4,24 +4,31 @@ import React from "react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { updateByokFallbackAction } from "@/app/(dashboard)/settings/byok/actions";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 export default function ByokFallbackToggle({
 	initialEnabled,
 }: {
 	initialEnabled: boolean;
 }) {
+	const write = useSettingsWrite();
 	const [enabled, setEnabled] = React.useState(initialEnabled);
 	const [saving, setSaving] = React.useState(false);
 
 	async function handleChange(next: boolean) {
 		setEnabled(next);
 		setSaving(true);
+		const previous = enabled;
+		const operation = write(updateByokFallbackAction(next));
 		try {
-			await toast.promise(updateByokFallbackAction(next), {
+			toast.promise(operation, {
 				loading: "Saving fallback setting...",
 				success: "Fallback setting updated",
 				error: (err) => err?.message ?? "Failed to update setting",
 			});
+			await operation;
+		} catch {
+			setEnabled(previous);
 		} finally {
 			setSaving(false);
 		}

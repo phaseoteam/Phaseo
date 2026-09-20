@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export default function MergeAppDialog({
 	hideTrigger,
 	trigger,
 }: MergeAppDialogProps) {
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [internalOpen, setInternalOpen] = useState(false);
 	const [targetId, setTargetId] = useState<string>("");
 	const [loading, setLoading] = useState(false);
@@ -72,13 +74,18 @@ export default function MergeAppDialog({
 		if (!targetId) return;
 		setLoading(true);
 		try {
-			await toast.promise(mergeAppsAction(app.id, targetId), {
+			const promise = mergeAppsAction(app.id, targetId);
+			toast.promise(promise, {
 				loading: "Merging apps...",
 				success: "Apps merged",
 				error: (err) => err?.message ?? "Failed to merge apps",
 			});
+			await promise;
 			onMerged();
+			void invalidateSettings();
 			setOpen(false);
+		} catch {
+			// The toast reports the mutation error; keep the dialog open.
 		} finally {
 			setLoading(false);
 		}

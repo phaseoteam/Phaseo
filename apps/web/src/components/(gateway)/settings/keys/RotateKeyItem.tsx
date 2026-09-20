@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useMemo, useState } from "react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -63,6 +64,7 @@ export default function RotateKeyItem({
 	onOpenChange?: (open: boolean) => void;
 }) {
 	const [internalOpen, setInternalOpen] = useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const open = controlledOpen ?? internalOpen;
 	const setOpen = onOpenChange ?? setInternalOpen;
 	const [loading, setLoading] = useState(false);
@@ -109,6 +111,7 @@ export default function RotateKeyItem({
 				previousKeyExpiresAt: expiresAtIso,
 			});
 			setNewPlaintext(result?.plaintext ?? null);
+			void invalidateSettings();
 			setOldExpiryApplied(result?.previousKeyExpiresAt ?? expiresAtIso);
 			toast.success("Key rotated", { id: toastId });
 		} catch (error) {

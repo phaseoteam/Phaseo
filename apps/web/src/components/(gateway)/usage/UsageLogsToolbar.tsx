@@ -36,6 +36,7 @@ import {
 	type UsageRangePreset,
 } from "@/lib/gateway/usage/timeRange";
 import { runUsageViewRefresh } from "@/lib/gateway/usage/refreshBus";
+import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
 import { cn } from "@/lib/utils";
 
 function parseDateInput(value: string | null | undefined): Date | undefined {
@@ -162,6 +163,7 @@ export default function UsageLogsToolbar({
 	showLivePreset?: boolean;
 }) {
 	const router = useRouter();
+	const privateQuery = usePrivateUsageRefresh();
 	const pathname = usePathname() ?? "/settings/usage/logs";
 	const searchParams = useSearchParams() ?? new URLSearchParams();
 	const [isRefreshing, startRefreshing] = React.useTransition();
@@ -193,7 +195,7 @@ export default function UsageLogsToolbar({
 	const effectivePreset = optimisticRange?.preset ?? preset;
 	const effectiveCustomFrom = optimisticRange?.customFrom ?? customFrom;
 	const effectiveCustomTo = optimisticRange?.customTo ?? customTo;
-	const refreshActive = isRefreshing || isRevalidating || isPending;
+	const refreshActive = isRefreshing || isRevalidating || isPending || privateQuery?.refreshing;
 
 	React.useEffect(() => {
 		if (!pendingTargetQuery) return;
@@ -390,10 +392,15 @@ export default function UsageLogsToolbar({
 
 	const runRefresh = React.useCallback(
 		async (showToast: boolean) => {
-			if (isRefreshing || isRevalidating) return;
+			if (isRefreshing || isRevalidating || privateQuery?.refreshing) return;
 			setIsRevalidating(true);
 			try {
 				const refreshPromise = (async () => {
+					if (privateQuery) {
+						await privateQuery.refresh();
+						setSecondsUntilRefresh(15);
+						return;
+					}
 					if (showToast) {
 						const result = await revalidateUsage("logs");
 						if (!result.ok) {
@@ -419,7 +426,7 @@ export default function UsageLogsToolbar({
 				setIsRevalidating(false);
 			}
 		},
-		[isRefreshing, isRevalidating, view],
+		[isRefreshing, isRevalidating, view, privateQuery],
 	);
 
 	const handleRefresh = React.useCallback(async () => {
@@ -430,19 +437,25 @@ export default function UsageLogsToolbar({
 		if (!showLivePreset) return;
 		if (effectivePreset !== "live") return;
 		const interval = window.setInterval(() => {
+			if (document.visibilityState === "hidden" || !navigator.onLine) return;
+			if (privateQuery) {
+				// Query polling owns the network request; only display its countdown here.
+				setSecondsUntilRefresh(Math.max(0, 15 - Math.floor((Date.now() - privateQuery.updatedAt) / 1_000)));
+				return;
+			}
 			setSecondsUntilRefresh((current) => {
 				if (isRefreshing || isRevalidating) {
 					return current;
 				}
 				if (current <= 1) {
-					void runRefresh(false);
+					void runRefresh(false).catch(() => { /* Retry next tick. */ });
 					return 15;
 				}
 				return current - 1;
 			});
 		}, 1_000);
 		return () => window.clearInterval(interval);
-	}, [effectivePreset, isRefreshing, isRevalidating, runRefresh, showLivePreset]);
+	}, [effectivePreset, isRefreshing, isRevalidating, runRefresh, showLivePreset, privateQuery]);
 
 	const rollingOptions: Array<{ preset: UsageRangePreset; badge: string }> = [
 		{ preset: "past_15m", badge: "15m" },

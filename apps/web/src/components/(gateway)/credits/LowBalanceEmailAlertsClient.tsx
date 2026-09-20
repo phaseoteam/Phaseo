@@ -1,4 +1,5 @@
 "use client";
+import { useSettingsWrite } from "../settings/PrivateSettingsQuery";
 
 import * as React from "react";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ export default function LowBalanceEmailAlertsClient(props: {
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 }) {
 	const [autoTopUpFailureEnabled, setAutoTopUpFailureEnabled] = React.useState(props.autoTopUpFailureEmailEnabled);
+	const write = useSettingsWrite();
 	const [enabled, setEnabled] = React.useState(Boolean(props.enabled));
 	const [paymentMethodExpiringEnabled, setPaymentMethodExpiringEnabled] = React.useState(props.paymentMethodExpiringEmailEnabled);
 	const [threshold, setThreshold] = React.useState<string>(
@@ -52,26 +54,26 @@ export default function LowBalanceEmailAlertsClient(props: {
 		(next: { enabled: boolean; thresholdUsd: number | null }) => {
 			if (debounceRef.current != null) window.clearTimeout(debounceRef.current);
 			debounceRef.current = window.setTimeout(() => {
-				toast.promise(setLowBalanceEmailAlert(next), {
+				toast.promise(write(setLowBalanceEmailAlert(next)), {
 					loading: "Saving low balance alert...",
 					success: "Saved",
 					error: (e: any) => e?.message ?? "Failed to save alert",
 				});
 			}, 500);
 		},
-		[],
+		[write],
 	);
 	const schedulePreferenceSave = React.useCallback((preference: "autoTopUpFailure" | "paymentMethodExpiring", nextEnabled: boolean) => {
 		const existing = preferenceDebounceRef.current[preference];
 		if (existing != null) window.clearTimeout(existing);
 		preferenceDebounceRef.current[preference] = window.setTimeout(() => {
-			toast.promise(setBillingNotificationPreference({ preference, enabled: nextEnabled }), {
+			toast.promise(write(setBillingNotificationPreference({ preference, enabled: nextEnabled })), {
 				loading: "Saving notification preference...",
 				success: "Saved",
 				error: (error: any) => error?.message ?? "Failed to save notification preference",
 			});
 		}, 500);
-	}, []);
+	}, [write]);
 
 	const parsedThresholdUsd = React.useMemo(() => parseThreshold(threshold), [threshold]);
 	const thresholdInvalid = enabled && parsedThresholdUsd == null;

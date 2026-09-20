@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import Link from "next/link";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
@@ -56,6 +57,7 @@ export default function AccountPrivacySettingsClient({
 	workspaceId = null,
 	workspaceLogStorage = null,
 }: Props) {
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [policy, setPolicy] = useState<AccountPrivacyPolicy>(() => {
 		const legacy = initialPolicy as AccountPrivacyPolicy & { blockedProviderIds?: string[]; blockedApiModelIds?: string[] };
 		const legacyProviders = legacy.blockedProviderIds ?? [];
@@ -85,6 +87,7 @@ export default function AccountPrivacySettingsClient({
 		const timer = window.setTimeout(async () => {
 			try {
 				await updateGlobalGuardrailsSettings(policy, workspaceId);
+				void invalidateSettings();
 				if (cancelled) return;
 				lastSavedPolicy.current = serialized;
 				setAutosaveStatus("saved");
@@ -95,7 +98,7 @@ export default function AccountPrivacySettingsClient({
 			}
 		}, 650);
 		return () => { cancelled = true; window.clearTimeout(timer); };
-	}, [policy, workspaceId]);
+	}, [policy, workspaceId, invalidateSettings]);
 	useEffect(() => {
 		if (!logStorage || !workspaceId) return;
 		const serialized = JSON.stringify(logStorage);
@@ -109,6 +112,7 @@ export default function AccountPrivacySettingsClient({
 					ioLoggingRetentionDays: logStorage.retentionDays,
 					ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
 				}, workspaceId);
+				void invalidateSettings();
 				if (cancelled) return;
 				lastSavedLogStorage.current = serialized;
 				setAutosaveStatus("saved");
@@ -119,7 +123,7 @@ export default function AccountPrivacySettingsClient({
 			}
 		}, 650);
 		return () => { cancelled = true; window.clearTimeout(timer); };
-	}, [logStorage, workspaceId]);
+	}, [logStorage, workspaceId, invalidateSettings]);
 	const normalized = query.trim().toLowerCase();
 	const visibleProviders = useMemo(() => providers
 		.filter((item) => `${item.name} ${item.id} ${item.offer_label ?? ""}`.toLowerCase().includes(normalized))

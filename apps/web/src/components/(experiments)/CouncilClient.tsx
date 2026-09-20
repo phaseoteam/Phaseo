@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -832,7 +833,7 @@ export default function CouncilClient({
 
 	useEffect(() => {
 		try {
-			const stored = window.localStorage.getItem(MODEL_SELECTOR_FAVORITES_STORAGE_KEY);
+			const stored = chatLocalStorage.getItem(MODEL_SELECTOR_FAVORITES_STORAGE_KEY);
 			if (!stored) return;
 			const parsed = JSON.parse(stored);
 			if (!Array.isArray(parsed)) return;

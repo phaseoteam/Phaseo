@@ -1,4 +1,5 @@
 "use client";
+import { PrivateSettingsQuery, useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { BarChart3, Briefcase, Code2, FlaskConical, Globe2, GraduationCap, Handshake, Headphones, HeartPulse, Landmark, Megaphone, Palette, Scale, ShieldCheck, ShoppingBag, Truck, Users, Wrench } from "lucide-react";
@@ -64,7 +65,13 @@ function DepartmentSelect({ value, departments, onChange, disabled }: { value: s
 	return <Select value={value} onValueChange={onChange} disabled={disabled}><SelectTrigger className={`h-8 w-fit min-w-36 rounded-md px-3 ${department ? colorStyles[department.color] : colorStyles.slate}`}><Icon className="size-3.5" /><SelectValue /></SelectTrigger><SelectContent className="min-w-48"><SelectItem value="Follow directory"><span className="inline-flex size-5 items-center justify-center rounded-md border border-border bg-muted/45"><Users className="size-3" /></span>Follow directory</SelectItem>{departments.map((item) => { const ItemIcon = icons[item.icon]; return <SelectItem key={item.name} value={item.name}><span className={`inline-flex size-5 items-center justify-center rounded-md border ${colorStyles[item.color]}`}><ItemIcon className="size-3" /></span>{item.name}</SelectItem>; })}<SelectItem value="No department"><span className="inline-flex size-5 rounded-md border border-dashed border-border" />No department</SelectItem></SelectContent></Select>;
 }
 
-export default function WorkspaceEnterpriseDirectory({ mode, workspaceId, members, currentUserId, canEdit }: { mode: "directory" | "departments"; workspaceId: string; members: Member[]; currentUserId: string | null; canEdit: boolean }) {
+type DirectoryProps = { mode: "directory" | "departments"; workspaceId: string; members: Member[]; currentUserId: string | null; canEdit: boolean };
+export default function WorkspaceEnterpriseDirectory(props: DirectoryProps) {
+	return <PrivateSettingsQuery<DirectoryPayload> path="/api/enterprise/directory" workspaceId={props.workspaceId}>{(initialDirectory) => <DirectoryContent {...props} initialDirectory={initialDirectory} />}</PrivateSettingsQuery>;
+}
+
+function DirectoryContent({ mode, workspaceId, members, currentUserId, canEdit, initialDirectory }: DirectoryProps & { initialDirectory: DirectoryPayload }) {
+	const loadDirectory = useInvalidatePrivateSettings();
 	const [directoryMembers, setDirectoryMembers] = React.useState<DemoMember[]>(members.map((member) => ({ ...member, department: "No department", source: "Workspace", status: "Active" })));
 	const [departments, setDepartments] = React.useState<Department[]>([]);
 	const [createOpen, setCreateOpen] = React.useState(false);
@@ -72,17 +79,13 @@ export default function WorkspaceEnterpriseDirectory({ mode, workspaceId, member
 	const [isSaving, setIsSaving] = React.useState(false);
 	const visibleMembers = directoryMembers;
 
-	const loadDirectory = React.useCallback(async () => {
-		const response = await fetch(`/api/enterprise/directory?workspaceId=${encodeURIComponent(workspaceId)}`, { cache: "no-store" });
-		if (!response.ok) throw new Error("Directory unavailable");
-		const payload = await response.json() as DirectoryPayload;
+	React.useEffect(() => {
+		const payload = initialDirectory;
 		const counts = new Map<string, number>();
 		for (const member of payload.members) if (member.department?.id) counts.set(member.department.id, (counts.get(member.department.id) ?? 0) + 1);
 		setDepartments(payload.departments.map((department) => ({ id: department.id, name: department.name, icon: department.icon, color: department.color, source: department.source_type === "scim_group" ? `SCIM · ${department.directory_name ?? department.name}` : "Manual", members: counts.get(department.id) ?? 0, lead: "—" })));
 		setDirectoryMembers(payload.members.map((member) => ({ user_id: member.userId, display_name: member.displayName, role: member.effectiveRole, department: member.department?.name ?? "No department", source: member.departmentSource === "manual_override" || member.accessSource === "manual_override" ? "Manual override" : member.accessSource === "scim" || member.departmentSource === "scim_group" ? "SCIM" : "Workspace", status: member.status === "suspended" ? "Suspended" : "Active", directoryDepartment: member.directoryDepartment, roleOverride: member.roleOverride, departmentOverrideEnabled: member.departmentOverrideEnabled })));
-	}, [workspaceId]);
-
-	React.useEffect(() => { void loadDirectory().catch(() => undefined); }, [loadDirectory]);
+	}, [initialDirectory]);
 
 	async function postDirectory(body: Record<string, unknown>) {
 		const response = await fetch(`/api/enterprise/directory?workspaceId=${encodeURIComponent(workspaceId)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });

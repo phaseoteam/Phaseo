@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useMemo, useState, useTransition } from "react";
 import { MoreHorizontal, Plus, SendHorizontal, Webhook } from "lucide-react";
 import { toast } from "sonner";

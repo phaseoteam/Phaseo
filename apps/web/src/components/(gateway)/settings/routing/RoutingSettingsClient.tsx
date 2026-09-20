@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -128,6 +129,7 @@ export default function RoutingSettingsClient({
 	initialResponseHealingMode,
 	teamName,
 }: Props) {
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const defaultMode = initialMode ?? "balanced";
 	const defaultBeta = Boolean(initialBetaChannelEnabled);
 	const defaultAlpha = defaultBeta && Boolean(initialAlphaChannelEnabled);
@@ -208,10 +210,12 @@ export default function RoutingSettingsClient({
 					responseHealingMode,
 				});
 				if (!result.ok) throw new Error(result.error);
+				void invalidateSettings();
 				return result;
 			};
-			await toast.promise(
-				save(),
+			const promise = save();
+			toast.promise(
+				promise,
 				{
 					loading: "Updating routing policy...",
 					success: (result) =>
@@ -224,6 +228,7 @@ export default function RoutingSettingsClient({
 								: "Failed to update routing policy",
 					},
 				);
+				await promise;
 				if (saveSequence === saveSequenceRef.current) {
 					setSavedMode(mode);
 					setSavedBeta(betaChannelEnabled);
@@ -232,6 +237,8 @@ export default function RoutingSettingsClient({
 					setSavedResponseHealingLocked(responseHealingLocked);
 					setSavedResponseHealingMode(responseHealingMode);
 				}
+			} catch {
+				// Keep unsaved state; the toast reports the failure.
 			} finally {
 				if (saveSequence === saveSequenceRef.current) {
 					setSaving(false);
@@ -246,6 +253,7 @@ export default function RoutingSettingsClient({
 			}
 		};
 	}, [
+		invalidateSettings,
 		mode,
 		betaChannelEnabled,
 		alphaChannelEnabled,

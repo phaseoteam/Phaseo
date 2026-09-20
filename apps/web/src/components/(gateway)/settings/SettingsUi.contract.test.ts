@@ -41,7 +41,7 @@ describe("settings UI contracts", () => {
 		const pageHeaderSource = readSource(
 			"src/components/(gateway)/settings/SettingsPageHeader.tsx",
 		);
-		const keysPageSource = readSource("src/app/(dashboard)/settings/keys/page.tsx");
+		const keysPageSource = readSource("src/app/(dashboard)/settings/keys/KeysContent.tsx");
 
 		expect(headerSource).toContain("<SettingsSidebarTrigger");
 		expect(headerSource.indexOf("<SettingsSidebarTrigger")).toBeLessThan(
@@ -94,7 +94,7 @@ describe("settings UI contracts", () => {
 			"src/components/(gateway)/settings/teams/TeamSettingsPanel.tsx",
 		);
 		const accountWorkspacesSource = readSource(
-			"src/app/(dashboard)/settings/account/workspaces/page.tsx",
+			"src/app/(dashboard)/settings/account/workspaces/WorkspacesContent.tsx",
 		);
 
 		expect(containerSource).not.toContain('settings/CreateTeamDialog');

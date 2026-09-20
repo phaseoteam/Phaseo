@@ -1,4 +1,5 @@
 "use client";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { BellRing, ChevronDown } from "lucide-react";
@@ -26,6 +27,7 @@ function NotificationRouteSelectorState({ destinations, eventKind, initialDestin
 	initialDestinationIds: string[];
 }) {
 	const availableIds = React.useMemo(() => new Set(destinations.map((destination) => destination.id)), [destinations]);
+	const write = useSettingsWrite();
 	const [selectedIds, setSelectedIds] = React.useState(() => initialDestinationIds.filter((id) => availableIds.has(id)));
 	const [saving, startSaving] = React.useTransition();
 	const effectiveSelectedIds = selectedIds.filter((id) => availableIds.has(id));
@@ -36,7 +38,7 @@ function NotificationRouteSelectorState({ destinations, eventKind, initialDestin
 		const next = checked ? [...previous.filter((id) => id !== destinationId), destinationId] : previous.filter((id) => id !== destinationId);
 		setSelectedIds(next);
 		startSaving(async () => {
-			try { await setNotificationRoute(eventKind, next); }
+			try { await write(setNotificationRoute(eventKind, next)); }
 			catch (error) { setSelectedIds(previous); toast.error(error instanceof Error ? error.message : "Could not update destinations"); }
 		});
 	}

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import type { InternalAuthHeaderData } from "@/lib/fetchers/internal/authTypes";
+import { ChatStorageBoundary } from "./ChatStorageBoundary";
 
 const ChatAuthContext = createContext<InternalAuthHeaderData | null>(null);
 
@@ -14,7 +15,7 @@ export function ChatAuthProvider({
 }) {
 	return (
 		<ChatAuthContext.Provider value={initialAuth}>
-			{children}
+			<ChatStorageBoundary>{children}</ChatStorageBoundary>
 		</ChatAuthContext.Provider>
 	);
 }

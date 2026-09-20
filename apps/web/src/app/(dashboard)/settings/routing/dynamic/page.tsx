@@ -1,9 +1,8 @@
 import { Suspense } from "react";
-import DynamicRoutesStudio from "@/components/(gateway)/settings/routing/DynamicRoutesStudio";
+import DynamicRoutesContent from "./DynamicRoutesContent";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
-import { fetchSettingsDynamicRoutesInitialData } from "@/lib/fetchers/internal/fetchSettingsDynamicRoutesInitialData";
 
 export const metadata = {
 	title: "Dynamic Routing - Settings",
@@ -26,9 +25,4 @@ export default function DynamicRoutingSettingsPage() {
 			</Suspense>
 		</div>
 	);
-}
-
-async function DynamicRoutesContent() {
-	const initialData = await fetchSettingsDynamicRoutesInitialData();
-	return <DynamicRoutesStudio initialData={initialData} />;
 }

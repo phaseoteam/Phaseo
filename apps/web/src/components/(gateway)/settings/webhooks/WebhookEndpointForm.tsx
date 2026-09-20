@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { FormEvent, useState, useTransition } from "react";
 import { ArrowLeft, Globe2, Save, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ export default function WebhookEndpointForm({
 	initialEndpoint?: WebhookEndpoint;
 }) {
 	const router = useRouter();
+	const write = useSettingsWrite();
 	const [name, setName] = useState(initialEndpoint?.name ?? "Async job updates");
 	const [url, setUrl] = useState(initialEndpoint?.url ?? "");
 	const [selectedEvents, setSelectedEvents] = useState<string[]>(() => {
@@ -62,16 +64,16 @@ export default function WebhookEndpointForm({
 		startTransition(async () => {
 			try {
 				if (mode === "create") {
-					const result = await createWebhookEndpointAction({ name, url, events: selectedEvents });
+					const result = await write(createWebhookEndpointAction({ name, url, events: selectedEvents }));
 					setRevealedSecret({ id: result.id, secret: result.signingSecret });
 					toast.success("Webhook endpoint created");
 				} else if (initialEndpoint) {
 					const eventUpdate = getWebhookEventsForUpdate(mode, selectedEvents, eventsChanged);
-					await updateWebhookEndpointAction(initialEndpoint.id, {
+					await write(updateWebhookEndpointAction(initialEndpoint.id, {
 						name,
 						url,
 						...(eventUpdate ? { events: eventUpdate } : {}),
-					});
+					}));
 					toast.success("Webhook endpoint updated");
 					router.push("/settings/webhooks");
 				}
@@ -85,7 +87,7 @@ export default function WebhookEndpointForm({
 		if (!initialEndpoint) return;
 		setIsTesting(true);
 		try {
-			const result = await sendWebhookEndpointTestAction(initialEndpoint.id);
+			const result = await write(sendWebhookEndpointTestAction(initialEndpoint.id));
 			toast.success(`Test delivered${result.status_code ? ` (HTTP ${result.status_code})` : ""}`);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : "Test delivery failed");

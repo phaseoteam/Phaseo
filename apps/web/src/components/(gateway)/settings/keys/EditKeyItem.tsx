@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useMemo, useState } from "react";
 import { Edit2 } from "lucide-react";
@@ -153,6 +154,7 @@ export default function EditKeyItem({
 	onOpenChange?: (open: boolean) => void;
 }) {
 	const [internalOpen, setInternalOpen] = useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const open = controlledOpen ?? internalOpen;
 	const setOpen = onOpenChange ?? setInternalOpen;
 	const [name, setName] = useState(String(k?.name ?? ""));
@@ -182,20 +184,27 @@ export default function EditKeyItem({
 		if (!limitPayload) return;
 
 		setSaving(true);
+		const updates = [
+			updateApiKeyAction(k.id, { name: trimmedName, paused: !enabled }),
+			updateKeyLimitsAction(k.id, limitPayload),
+		];
+		const promise = Promise.all(updates);
 		try {
 			await toast.promise(
-				Promise.all([
-					updateApiKeyAction(k.id, { name: trimmedName, paused: !enabled }),
-					updateKeyLimitsAction(k.id, limitPayload),
-				]),
+				promise,
 				{
 					loading: "Saving key...",
 					success: "Key updated",
 					error: (error) => error instanceof Error ? error.message : "Failed to update key",
 				},
 			);
+			await promise;
 			setOpen(false);
+		} catch {
+			// The toast reports the mutation error; keep the dialog open.
 		} finally {
+			await Promise.allSettled(updates);
+			void invalidateSettings();
 			setSaving(false);
 		}
 	}

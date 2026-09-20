@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { toast } from "sonner";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { rotateProviderCatalogWebhookAction } from "@/app/(dashboard)/settings/account/providers/actions";
 
 export default function ProviderWebhookSettings({ providerSlug, webhookUrl, configured }: { providerSlug: string; webhookUrl: string; configured: boolean }) {
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [secret, setSecret] = React.useState<string | null>(null);
 	const [saving, setSaving] = React.useState(false);
 	const [hasSecret, setHasSecret] = React.useState(configured);
@@ -16,6 +18,7 @@ export default function ProviderWebhookSettings({ providerSlug, webhookUrl, conf
 		try {
 			const result = await rotateProviderCatalogWebhookAction(providerSlug);
 			setSecret(result.webhookSecret);
+			void invalidateSettings();
 			setHasSecret(true);
 			toast.success("Webhook signing secret ready");
 		} catch (error) {

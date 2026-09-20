@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
 	Dialog,
 	DialogContent,
@@ -34,7 +34,7 @@ export default function CreateOAuthAppDialog({
 	const [error, setError] = useState<string | null>(null);
 	const [createdApp, setCreatedApp] = useState<any>(null);
 	const [copiedSecret, setCopiedSecret] = useState(false);
-	const router = useRouter();
+	const write = useSettingsWrite();
 
 	const [formData, setFormData] = useState({
 		name: "",
@@ -56,14 +56,14 @@ export default function CreateOAuthAppDialog({
 			// Import the action dynamically to avoid bundling issues
 			const { createOAuthAppAction } = await import("@/app/(dashboard)/settings/oauth-apps/actions");
 
-			const result = await createOAuthAppAction({
+			const result = await write(createOAuthAppAction({
 				name: formData.name,
 				description: formData.description || undefined,
 				homepage_url: formData.homepageUrl || undefined,
 				redirect_uris: formData.redirectUris.split("\n").filter(uri => uri.trim()),
 				workspace_id: currentTeamId!,
 				allowed_scopes: formData.allowedScopes,
-			});
+			}));
 
 			if (result.error) {
 				setError(result.error);
@@ -75,8 +75,6 @@ export default function CreateOAuthAppDialog({
 
 			toast.success(`OAuth app "${formData.name}" created successfully`);
 
-			// Refresh the page data
-			router.refresh();
 		} catch (err: any) {
 			setError(err.message || "Failed to create OAuth app");
 		} finally {

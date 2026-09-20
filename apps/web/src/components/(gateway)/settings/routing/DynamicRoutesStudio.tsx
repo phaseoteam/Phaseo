@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition, type DragEvent as ReactDragEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useQuery } from "@tanstack/react-query";
 import {
 	Background,

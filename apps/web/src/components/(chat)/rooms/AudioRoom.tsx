@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -1188,13 +1189,13 @@ export function AudioRoom({
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		const stored = window.localStorage.getItem(pinnedStorageKey);
+		const stored = chatLocalStorage.getItem(pinnedStorageKey);
 		setPinnedConversationIds(safeParsePinned(stored));
 	}, [pinnedStorageKey]);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			pinnedStorageKey,
 			JSON.stringify(pinnedConversationIds),
 		);

@@ -1,4 +1,5 @@
 "use client";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { BellRing, ChevronDown, Plus, Trash2, X } from "lucide-react";
@@ -28,6 +29,7 @@ type DestinationType = NotificationDestination["type"];
 type NotificationTestKind = "notification_test" | "model_deprecation";
 
 export default function NotificationDestinationsClient({ initialDestinations, initialModelDeprecationEnabled, initialNotificationRoutes }: { initialDestinations: NotificationDestination[]; initialModelDeprecationEnabled: boolean; initialNotificationRoutes: Partial<Record<NotificationEventKind, string[]>> }) {
+	const write = useSettingsWrite();
 	const [destinations, setDestinations] = React.useState(initialDestinations ?? []);
 	const [modelDeprecationEnabled, setModelDeprecationEnabled] = React.useState(initialModelDeprecationEnabled);
 	const [open, setOpen] = React.useState(false);
@@ -80,7 +82,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 	}
 	async function removeDestination(destinationId: string) {
 		setSaving(true);
-		try { await deleteNotificationDestination(destinationId); setDestinations((current) => current.filter((entry) => entry.id !== destinationId)); toast.success("Destination removed"); }
+		try { await write(deleteNotificationDestination(destinationId)); setDestinations((current) => current.filter((entry) => entry.id !== destinationId)); toast.success("Destination removed"); }
 		catch (error) { toast.error(error instanceof Error ? error.message : "Could not remove destination"); }
 		finally { setSaving(false); }
 	}
@@ -88,7 +90,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 		if (!name.trim()) return;
 		setSaving(true);
 		try {
-			const created = await Promise.all(selectedTypes.map((type) => createNotificationDestination({ name: name.trim(), type, target: targetForType(type) })));
+			const created = await Promise.all(selectedTypes.map((type) => write(createNotificationDestination({ name: name.trim(), type, target: targetForType(type) }))));
 			setDestinations((current) => [...created, ...current]); setOpen(false); resetSheet(); toast.success(created.length === 1 ? "Destination created" : `${created.length} destinations created`);
 		} catch (error) { toast.error(error instanceof Error ? error.message : "Could not create destination"); }
 		finally { setSaving(false); }
@@ -103,7 +105,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						<div><h3 className="text-sm font-medium">Model Deprecation Alerts</h3><p className="mt-0.5 text-sm text-muted-foreground">Get notice before a model your workspace uses is retired.</p></div>
 						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="model_deprecation" initialDestinationIds={initialNotificationRoutes.model_deprecation ?? []} /><Switch checked={modelDeprecationEnabled} aria-label="Enable model deprecation alerts" onCheckedChange={(checked) => {
 							const next = Boolean(checked); setModelDeprecationEnabled(next);
-							toast.promise(setBillingNotificationPreference({ preference: "modelDeprecationAlerts", enabled: next }), { loading: "Saving alert…", success: "Model deprecation alerts updated", error: "Could not save alert" });
+							toast.promise(write(setBillingNotificationPreference({ preference: "modelDeprecationAlerts", enabled: next })), { loading: "Saving alert…", success: "Model deprecation alerts updated", error: "Could not save alert" });
 						}} /></div>
 					</div>
 				</div>

@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,7 @@ export default function EditManagementKeyItem({
 	onOpenChange?: (open: boolean) => void;
 }) {
 	const [open, setOpen] = useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const dialogOpen = controlledOpen ?? open;
 	const setDialogOpen = onOpenChange ?? setOpen;
 	const [name, setName] = useState(k.name || "");
@@ -115,8 +117,13 @@ export default function EditManagementKeyItem({
 					return message;
 				},
 			});
+			await promise;
 			setDialogOpen(false);
+		} catch {
+			// The toast reports the mutation error; keep the dialog open.
 		} finally {
+			await Promise.allSettled(updates);
+			void invalidateSettings();
 			setLoading(false);
 		}
 	}
@@ -208,4 +215,3 @@ export default function EditManagementKeyItem({
 		</Dialog>
 	);
 }
-

@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import NumberFlow from "@number-flow/react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -247,7 +248,7 @@ function isGoogleThinkingLevel(value: unknown): value is GoogleThinkingLevel {
 function readRealtimeDisplaySettings(): RealtimeDisplaySettings {
 	if (typeof window === "undefined") return DEFAULT_REALTIME_DISPLAY_SETTINGS;
 	try {
-		const raw = window.localStorage.getItem(REALTIME_DISPLAY_SETTINGS_STORAGE_KEY);
+		const raw = chatLocalStorage.getItem(REALTIME_DISPLAY_SETTINGS_STORAGE_KEY);
 		if (!raw) return DEFAULT_REALTIME_DISPLAY_SETTINGS;
 		const parsed = JSON.parse(raw) as Partial<RealtimeDisplaySettings> & {
 			showPersonaOrb?: boolean;
@@ -1482,7 +1483,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 	useEffect(() => {
 		try {
-			window.localStorage.setItem(
+			chatLocalStorage.setItem(
 				REALTIME_DISPLAY_SETTINGS_STORAGE_KEY,
 				JSON.stringify(displaySettings),
 			);

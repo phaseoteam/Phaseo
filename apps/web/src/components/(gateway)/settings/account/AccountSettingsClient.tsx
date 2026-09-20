@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { toast } from "sonner";
@@ -162,6 +163,7 @@ export default function AccountSettingsClient({
 	teams,
 	hasPassword = true,
 }: Props) {
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [displayName, setDisplayName] = React.useState<string | null>(
 		user.displayName ?? null
 	);
@@ -271,11 +273,14 @@ export default function AccountSettingsClient({
 
 		setSaving(true);
 		try {
-			await toast.promise(updateAccount(updatePayload), {
+			const promise = updateAccount(updatePayload);
+			toast.promise(promise, {
 				loading: "Saving your settings...",
 				success: "Account settings updated",
 				error: (err: any) => err?.message || "Could not save settings",
 			});
+			await promise;
+			void invalidateSettings();
 			applyObfuscationMode(Boolean(parsed.data.obfuscate_info));
 		} catch (e) {
 			void e;

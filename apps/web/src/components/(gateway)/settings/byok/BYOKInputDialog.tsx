@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { cn } from "@/lib/utils";
 import {
 	getProviderCredentialFormKind,
@@ -106,6 +107,7 @@ export default function BYOKInputDialog({
 	onSaved,
 	initial = null,
 }: Props) {
+	const write = useSettingsWrite();
 	const activeProviderId = providerId ?? initial?.providerId ?? null;
 	const credentialFormKind = useMemo(
 		() => getProviderCredentialFormKind(activeProviderId),
@@ -283,17 +285,17 @@ export default function BYOKInputDialog({
 		try {
 			setLoading(true);
 			if (initial && initial.id) {
-				await updateByokKeyAction(initial.id, {
+				await write(updateByokKeyAction(initial.id, {
 					name: normalizedName,
 					value: submission.value ?? undefined,
 					enabled,
 					always_use: alwaysUse,
 					allowedModelSlugs,
 					allowedApiKeyIds,
-				});
+				}));
 				toast.success(submission.value ? "Key updated and replaced" : "Key updated");
 			} else {
-				await createByokKeyAction(
+				await write(createByokKeyAction(
 					normalizedName,
 					providerId as string,
 					submission.value as string,
@@ -301,7 +303,7 @@ export default function BYOKInputDialog({
 					alwaysUse,
 					allowedModelSlugs,
 					allowedApiKeyIds,
-				);
+				));
 				toast.success("Key saved");
 			}
 			setOpen(false);

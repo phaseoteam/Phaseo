@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useState, useTransition } from "react";
 import { CheckCircle2, Copy, MoreHorizontal, RotateCw, Send, Trash2, Webhook } from "lucide-react";
 import { toast } from "sonner";
@@ -64,7 +64,7 @@ async function copyToClipboard(value: string, label: string) {
 }
 
 export default function WebhooksSettingsClient({ endpoints }: Props) {
-	const router = useRouter();
+	const write = useSettingsWrite();
 	const [revealedSecret, setRevealedSecret] = useState<RevealedSecret | null>(null);
 	const [deleteEndpoint, setDeleteEndpoint] = useState<WebhookEndpoint | null>(null);
 	const [pendingEndpointId, setPendingEndpointId] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 		setPendingEndpointId(id);
 		startTransition(async () => {
 			try {
-				const result = await action();
+				const result = await write(action());
 				if (
 					result &&
 					typeof result === "object" &&
@@ -88,7 +88,6 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 					setRevealedSecret({ id, secret: result.signingSecret });
 				}
 				toast.success(successMessage);
-				router.refresh();
 			} catch (error) {
 				toast.error(error instanceof Error ? error.message : "Action failed");
 			} finally {

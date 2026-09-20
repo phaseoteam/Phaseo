@@ -15,15 +15,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { deleteByokKeyAction } from "@/app/(dashboard)/settings/byok/actions";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 export default function DeleteKeyButton({ id }: { id: string }) {
+	const write = useSettingsWrite();
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
 
 	async function onConfirmDelete() {
 		try {
 			setLoading(true);
-			await deleteByokKeyAction(id);
+			await write(deleteByokKeyAction(id));
 			toast.success("Key deleted");
 			setOpen(false);
 		} catch (err: any) {

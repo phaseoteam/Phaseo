@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { z } from "zod";
@@ -98,6 +99,7 @@ export default function TeamSettingsPanel({
 	const initialLogoUrl = teams.find((entry) => entry.id === fallbackTeamId)?.logoUrl ?? null;
 
 	const [saving, setSaving] = React.useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [deleting, setDeleting] = React.useState(false);
 	const [logoUploading, setLogoUploading] = React.useState(false);
 	const [logoUrl, setLogoUrl] = React.useState(initialLogoUrl);
@@ -142,10 +144,12 @@ export default function TeamSettingsPanel({
 
 					if (!isPersonalTeam && normalizedName !== initialName) {
 						await updateTeamAction(workspaceId, normalizedName);
+						void invalidateSettings();
 					}
 					const normalizedPublisherHandle = settings.publisherHandle.trim().toLowerCase();
 					if (normalizedPublisherHandle !== initial.publisherHandle.trim()) {
 						await updateWorkspacePublisherHandleAction(workspaceId, normalizedPublisherHandle);
+						void invalidateSettings();
 					}
 					const normalized = { teamName: normalizedName, publisherHandle: normalizedPublisherHandle };
 					setSettings(normalized);
@@ -175,6 +179,7 @@ export default function TeamSettingsPanel({
 			const payload = await response.json() as { logoUrl?: string; error?: string };
 			if (!response.ok || !payload.logoUrl) throw new Error(payload.error ?? "Could not upload the workspace logo.");
 			setLogoUrl(payload.logoUrl);
+			void invalidateSettings();
 			toast.success("Workspace logo updated.");
 		} catch (error) { toast.error(error instanceof Error ? error.message : "Could not upload the workspace logo."); }
 		finally { setLogoUploading(false); if (logoInputRef.current) logoInputRef.current.value = ""; }
@@ -188,6 +193,7 @@ export default function TeamSettingsPanel({
 			const payload = await response.json() as { error?: string };
 			if (!response.ok) throw new Error(payload.error ?? "Could not remove the workspace logo.");
 			setLogoUrl(null);
+			void invalidateSettings();
 			toast.success("Workspace logo removed.");
 		} catch (error) { toast.error(error instanceof Error ? error.message : "Could not remove the workspace logo."); }
 		finally { setLogoUploading(false); }
@@ -201,7 +207,7 @@ export default function TeamSettingsPanel({
 		}
 		setDeleting(true);
 		try {
-			await toast.promise(deleteTeamAction(workspaceId), {
+			await toast.promise(deleteTeamAction(workspaceId).then((result) => { void invalidateSettings(); return result; }), {
 				loading: "Deleting workspace...",
 				success: "Workspace deleted",
 				error: (error: any) => error?.message || "Could not delete workspace",

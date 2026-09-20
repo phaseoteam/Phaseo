@@ -1,9 +1,8 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
 import Link from "next/link";
 import { AppWindow, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import OAuthAppDetailPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppDetailPanel";
+import OAuthAppDetailContent from "./OAuthAppDetailContent";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import {
 	Empty,
@@ -16,7 +15,6 @@ import {
 	THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE,
 	isThirdPartyOAuthEnabled,
 } from "@/lib/oauth/thirdPartyOAuth";
-import { fetchSettingsOAuthAppDetailInitialData } from "@/lib/fetchers/internal/fetchSettingsOAuthAppDetailInitialData";
 
 export const metadata = {
 	title: "OAuth App Details - Settings",
@@ -48,7 +46,7 @@ export default function OAuthAppDetailPage({ params }: OAuthAppDetailPageProps) 
 			</div>
 			{thirdPartyOAuthEnabled ? (
 				<Suspense fallback={<SettingsSectionFallback />}>
-					<OAuthAppDetailContent params={params} />
+					<OAuthAppDetailLoader params={params} />
 				</Suspense>
 			) : (
 				<Empty className="rounded-xl border border-dashed border-border/80 p-8">
@@ -67,26 +65,7 @@ export default function OAuthAppDetailPage({ params }: OAuthAppDetailPageProps) 
 	);
 }
 
-async function OAuthAppDetailContent({ params }: OAuthAppDetailPageProps) {
+async function OAuthAppDetailLoader({ params }: OAuthAppDetailPageProps) {
 	const { clientId } = await params;
-	const initialData = await fetchSettingsOAuthAppDetailInitialData(clientId);
-
-	if (!initialData.signedIn || !initialData.currentUserId) {
-		return notFound();
-	}
-
-	if (!initialData.oauthApp) {
-		return notFound();
-	}
-
-	return (
-		<OAuthAppDetailPanel
-			oauthApp={initialData.oauthApp}
-			authorizations={initialData.authorizations}
-			usageStats={initialData.usageStats}
-			recentRequests={initialData.recentRequests}
-			userDirectory={initialData.userDirectory}
-			currentUserId={initialData.currentUserId}
-		/>
-	);
+	return <OAuthAppDetailContent clientId={clientId} />;
 }
