@@ -1,6 +1,7 @@
 "use client";
 
 import { ProviderRouteName } from "./ProviderRouteName";
+import { ProviderRoutingHelp } from "./ProviderRoutingHelp";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
 import Link from "next/link";
@@ -111,8 +112,6 @@ const PROVIDER_SHEET_DOCS = {
 	pricing: "https://phaseo.app/docs/v1/exploring/pricing-performance",
 	performance: "https://phaseo.app/docs/v1/exploring/pricing-performance",
 	routing: "https://phaseo.app/docs/v1/guides/routing-and-fallbacks",
-	providerQualifiedRouting:
-		"https://phaseo.app/docs/v1/guides/provider-qualified-models",
 	dataRetention:
 		"https://phaseo.app/docs/v1/cookbook/route-only-to-eu-or-zdr-providers",
 } as const;
@@ -2657,13 +2656,14 @@ export default function ProviderCard({
 		openInspectorForProvider(inspectorProviderId, { serviceTier });
 	};
 	const toggleExpanded = () => {
-		if (expanded) {
+		if (expanded && selectedPlan === tablePlan) {
 			window[PROVIDER_INSPECTOR_STATE_KEY] = null;
 			clearProviderInspector(inspectorProviderId);
 			setExpanded(false);
 			return;
 		}
 		openInspectorForProvider(inspectorProviderId, {
+			serviceTier: tablePlan,
 			navigationProviderIds: navigationProviders.map(
 				(candidate) => candidate.provider.api_provider_id,
 			),
@@ -3262,11 +3262,10 @@ export default function ProviderCard({
 						) : null}
 						<div>
 						<div className="flex items-center gap-2.5">
-							<Link
-								href={`/api-providers/${sec.providerId}`}
-								className="group/provider inline-flex items-center gap-2.5 whitespace-nowrap text-foreground hover:text-foreground"
+							<div
+								className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground"
 							>
-								<div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover/provider:border-zinc-300 dark:border-zinc-800 dark:group-hover/provider:border-zinc-700">
+								<div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 dark:border-zinc-800 dark:group-hover:border-zinc-700">
 									<div className="relative h-3.5 w-3.5">
 										<Logo
 											id={logoProviderId}
@@ -3278,11 +3277,11 @@ export default function ProviderCard({
 									</div>
 								</div>
 								<span className="inline-flex items-baseline gap-1 whitespace-nowrap">
-									<span className="font-semibold text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] group-hover/provider:text-foreground group-hover/provider:decoration-current">
+									<span className="font-semibold text-foreground">
 										<ProviderRouteName provider={provider.provider} plan={tablePlan} nameOverride={formattedDisplayName} />
 									</span>
 								</span>
-							</Link>
+							</div>
 							<div className="flex shrink-0 items-center gap-1">
 								{provider.provider.credential_mode === "byok_only" ? (
 									<HoverCard openDelay={120} closeDelay={80}>
@@ -3523,7 +3522,7 @@ export default function ProviderCard({
 									<ProviderInspectorSheetTitle className="truncate pr-2 text-base">
 										<Link
 											href={`/api-providers/${sec.providerId}`}
-											className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+											className="text-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:underline"
 										>
 											{displayName}
 										</Link>
@@ -3582,33 +3581,8 @@ export default function ProviderCard({
 											? "Copied"
 											: providerQualifiedModelId ?? sec.providerId}
 									</button>
-									{providerQualifiedModelId ? (
-										<HoverCard openDelay={120} closeDelay={80}>
-											<HoverCardTrigger asChild>
-												<button
-													type="button"
-													aria-label="About provider-qualified routing"
-													className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-												>
-													<Info aria-hidden="true" className="size-3" />
-												</button>
-											</HoverCardTrigger>
-											<HoverCardContent align="start" className="w-72 p-3 font-sans">
-												<p className="text-xs font-semibold text-foreground">
-													Provider-qualified routing
-												</p>
-												<p className="mt-1 text-xs leading-5 text-muted-foreground">
-													Use this slug as the model ID to route only to {displayName} for this
-													model. Phaseo will fail instead of falling back to another provider.
-												</p>
-												<ProviderSheetSectionLink
-													href={PROVIDER_SHEET_DOCS.providerQualifiedRouting}
-													className="mt-2 text-xs font-medium"
-												>
-													Read the routing docs
-												</ProviderSheetSectionLink>
-											</HoverCardContent>
-										</HoverCard>
+									{canonicalModelId ? (
+										<ProviderRoutingHelp />
 									) : null}
 									{inlineProviderLabels.map((item) => (
 										<React.Fragment key={item}>
