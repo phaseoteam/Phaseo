@@ -184,6 +184,7 @@ describe("buildProviderSections", () => {
 		expect(buildProviderTablePriceSummary(sections, "output").primary).toMatchObject({
 			label: "decisions",
 			price: 0,
+			formattedPrice: "Free",
 		});
 	});
 

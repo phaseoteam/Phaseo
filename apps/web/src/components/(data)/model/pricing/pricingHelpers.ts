@@ -1310,7 +1310,7 @@ function createTablePriceCandidate(args: {
         key: args.key,
         label: args.label,
         price: args.price,
-        formattedPrice: fmtUSD(args.price),
+        formattedPrice: args.price === 0 ? "Free" : fmtUSD(args.price),
         unitLabel: args.unitLabel,
         unitShortLabel: formatTableUnitShortLabel(args.unitLabel),
     };
