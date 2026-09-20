@@ -5,6 +5,7 @@ import { markdownToPlainText } from "@/lib/models/modelDescription";
 import { absoluteUrl } from "@/lib/seo";
 import {
 	buildDiscordModelComponentEmbed,
+	DiscordComponentEmbed,
 	discordAccentColor,
 	serializeDiscordComponentEmbed,
 } from "./DiscordComponentEmbed";
@@ -303,36 +304,53 @@ describe("Discord component embed", () => {
 		expect(missingPngs).toEqual([]);
 	});
 
-	it("adds the Vercel bypass to preview-hosted lab logos", () => {
+	it.each(["preview", "production", "development", undefined])("never publishes deployment credentials (%s)", (environment) => {
 		const previousEnvironment = {
 			VERCEL_ENV: process.env.VERCEL_ENV,
 			VERCEL_URL: process.env.VERCEL_URL,
 			VERCEL_AUTOMATION_BYPASS_SECRET:
 				process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
 		};
-		process.env.VERCEL_ENV = "preview";
+		if (environment === undefined) {
+			delete process.env.VERCEL_ENV;
+		} else {
+			process.env.VERCEL_ENV = environment;
+		}
 		process.env.VERCEL_URL = "phaseo-preview.vercel.app";
-		process.env.VERCEL_AUTOMATION_BYPASS_SECRET = "preview-test-secret";
+		const secret = "preview-test-secret/+?&=sensitive";
+		process.env.VERCEL_AUTOMATION_BYPASS_SECRET = secret;
 
 		try {
-			const payload = buildDiscordModelComponentEmbed({
-				...options,
-				organisationLogoUrl: null,
-			});
-			const sections = payload.component.components.filter(
-				(component) => component.type === 9,
-			);
-			const labSection = sections[0];
-
-			expect(labSection).toEqual(
-				expect.objectContaining({
-					accessory: expect.objectContaining({
-						media: expect.objectContaining({
-						url: "https://phaseo-preview.vercel.app/logos/discord/zai.png?x-vercel-protection-bypass=preview-test-secret",
-						}),
-					}),
-				}),
-			);
+			const logoCases = [
+				{ organisationId: "z-ai", organisationLogoUrl: null, expected: "https://phaseo.app/logos/discord/zai.png" },
+				{ organisationId: null, organisationLogoUrl: "/logos/custom.png", expected: "https://phaseo.app/logos/custom.png" },
+				{ organisationId: null, organisationLogoUrl: "logos/custom.png", expected: "https://phaseo.app/logos/custom.png" },
+				{ organisationId: null, organisationLogoUrl: "https://cdn.example.com/custom.png", expected: "https://cdn.example.com/custom.png" },
+				{ organisationId: null, organisationLogoUrl: "//other.example/logo.png", expected: null },
+				{ organisationId: null, organisationLogoUrl: String.raw`/\other.example/logo.png`, expected: null },
+				{ organisationId: null, organisationLogoUrl: "//[invalid", expected: null },
+				{ organisationId: null, organisationLogoUrl: null, expected: null },
+			];
+			for (const { expected, ...logoOptions } of logoCases) {
+				const embedOptions = { ...options, ...logoOptions };
+				const serialized = serializeDiscordComponentEmbed(embedOptions);
+				const script = DiscordComponentEmbed(embedOptions);
+				for (const output of [
+					JSON.stringify(buildDiscordModelComponentEmbed(embedOptions)),
+					serialized,
+					script.props.dangerouslySetInnerHTML.__html,
+				]) {
+					expect(output).not.toContain(secret);
+					expect(output).not.toContain(encodeURIComponent(secret));
+					expect(output).not.toContain("x-vercel-protection-bypass");
+					expect(output).not.toContain("phaseo-preview.vercel.app");
+				}
+				const payload = JSON.parse(serialized);
+				const labSection = payload.component.components.find(
+					(component: { type: number }) => component.type === 9,
+				);
+				expect(labSection?.accessory.media.url ?? null).toBe(expected);
+			}
 		} finally {
 			for (const [name, value] of Object.entries(previousEnvironment)) {
 				if (value === undefined) {
