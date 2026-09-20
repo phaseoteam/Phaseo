@@ -8,7 +8,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
 
 import type { ProfileSnapshot } from "@/lib/fetchers/profile/types"
-import { formatCompactNumber, formatUsdFromNanos } from "@/lib/profile"
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider"
 import { buildProfileShareCardPayload } from "@/lib/profileShare"
 import { getModelDetailsHref } from "@/lib/models/modelHref"
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient"
@@ -68,31 +68,6 @@ function getInitials(name: string): string {
 		.slice(0, 2)
 		.map((part) => part[0]?.toUpperCase() ?? "")
 		.join("")
-}
-
-function formatShortDate(date: string): string {
-	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en", {
-		month: "numeric",
-		day: "numeric",
-		timeZone: "UTC",
-	})
-}
-
-function formatLongDate(date: string): string {
-	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en", {
-		weekday: "short",
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-		timeZone: "UTC",
-	})
-}
-
-function formatWeekday(date: string): string {
-	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en", {
-		weekday: "long",
-		timeZone: "UTC",
-	})
 }
 
 function getSeriesForRange(
@@ -158,22 +133,37 @@ function getLongestStreak(points: ProfileSnapshot["activitySeries30"]): number {
 	return longest
 }
 
-function formatMetricValue(metric: Metric, value: number, compact = true): string {
-	if (metric === "spend") {
-		return new Intl.NumberFormat("en-US", {
-			style: "currency",
-			currency: "USD",
-			notation: value >= 1000 && compact ? "compact" : "standard",
-			maximumFractionDigits: value >= 100 ? 0 : value >= 1 ? 2 : 4,
-		}).format(value)
-	}
-
-	return compact ? formatCompactNumber(value) : value.toLocaleString()
-}
-
 function getProviderFromModelId(id: string): string {
 	const provider = id.includes("/") ? id.split("/")[0] : ""
 	return provider || "phaseo"
+}
+
+function useProfileFormatters() {
+	const format = useDisplayFormatters()
+	const calendarValue = (date: string) => `${date}T00:00:00.000Z`
+	return {
+		formatShortDate: (date: string) => format.calendarDate(calendarValue(date)),
+		formatLongDate: (date: string) => format.calendarDate(calendarValue(date)),
+		formatWeekday: (date: string) => format.dateParts(calendarValue(date), {
+			weekday: "long",
+			timeZone: "UTC",
+		}),
+		formatMonth: (date: string) => format.dateParts(calendarValue(date), {
+			month: "short",
+			timeZone: "UTC",
+		}),
+		formatMetricValue: (metric: Metric, value: number, compact = true) => {
+			if (metric === "spend") {
+				return format.number(value, {
+					style: "currency",
+					currency: "USD",
+					notation: compact ? undefined : "standard",
+					maximumFractionDigits: value >= 100 ? 0 : value >= 1 ? 2 : 4,
+				})
+			}
+			return format.number(value, compact ? undefined : { notation: "standard" })
+		},
+	}
 }
 
 function formatProviderName(provider: string): string {
@@ -237,6 +227,7 @@ function ActivityHeatmap({
 	profile: ProfileSnapshot
 	metric: Metric
 }) {
+	const { formatLongDate, formatMetricValue, formatMonth, formatWeekday } = useProfileFormatters()
 	const days = profile.heatmapDays
 	const activeDays = days.filter((day) => day.inTrailingWindow && !day.isFuture)
 	const values = activeDays.map((day) => getMetricValue(day, metric))
@@ -272,7 +263,7 @@ function ActivityHeatmap({
 	const topModelShare = total > 0 ? Math.round((topModelValue / total) * 100) : 0
 
 	const monthLabels = days
-		.map((day, index) => (day.monthLabel ? { index, label: day.monthLabel } : null))
+		.map((day, index) => (day.monthLabel ? { index, label: formatMonth(day.date) } : null))
 		.filter(Boolean) as Array<{ index: number; label: string }>
 
 	return (
@@ -293,10 +284,10 @@ function ActivityHeatmap({
 						<span>Streak</span>
 					</div>
 					<div className="mt-1 text-base font-semibold text-foreground">
-						{profile.currentStreak.toLocaleString()} days
+						{formatMetricValue("requests", profile.currentStreak, false)} days
 					</div>
 					<div className="mt-0.5 text-xs text-muted-foreground">
-						Best {profile.longestStreak.toLocaleString()}
+						Best {formatMetricValue("requests", profile.longestStreak, false)}
 					</div>
 				</div>
 				<div className="pl-4 sm:px-6">
@@ -413,13 +404,13 @@ function ActivityHeatmap({
 						<div className="flex items-center justify-between gap-6">
 							<span className="text-muted-foreground">Active days</span>
 							<span className="font-medium text-foreground">
-								{nonZeroDays.length.toLocaleString()} of {activeDays.length.toLocaleString()}
+								{formatMetricValue("requests", nonZeroDays.length, false)} of {formatMetricValue("requests", activeDays.length, false)}
 							</span>
 						</div>
 						<div className="flex items-center justify-between gap-6">
 							<span className="text-muted-foreground">Quiet days</span>
 							<span className="font-medium text-foreground">
-								{Math.max(0, activeDays.length - nonZeroDays.length).toLocaleString()}
+								{formatMetricValue("requests", Math.max(0, activeDays.length - nonZeroDays.length), false)}
 							</span>
 						</div>
 					</div>
@@ -443,7 +434,7 @@ function ActivityHeatmap({
 						<div className="flex items-center justify-between gap-6">
 							<span className="text-muted-foreground">Models used</span>
 							<span className="font-medium text-foreground">
-								{profile.topModels.length.toLocaleString()}
+								{formatMetricValue("requests", profile.topModels.length, false)}
 							</span>
 						</div>
 					</div>
@@ -458,6 +449,7 @@ export default function ProfileDashboard({
 	publicView = false,
 	actions,
 }: Props) {
+	const { formatLongDate, formatMetricValue, formatShortDate } = useProfileFormatters()
 	const router = useRouter()
 	const avatarInputRef = useRef<HTMLInputElement>(null)
 	const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl)
@@ -764,8 +756,8 @@ export default function ProfileDashboard({
 										</div>
 										<div className="text-sm font-semibold tabular-nums text-foreground">
 											{metric === "spend"
-												? formatUsdFromNanos(model.spendNanos)
-												: formatCompactNumber(value)}
+												? formatMetricValue("spend", model.spendNanos / 1_000_000_000, false)
+												: formatMetricValue(metric, value)}
 										</div>
 									</div>
 								)

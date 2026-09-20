@@ -949,7 +949,6 @@ function toFeedbackDetail(
 		requestId: row.request_id,
 		sessionId: row.session_id,
 		endUserId: row.end_user_id,
-		createdAtLabel: formatDate(row.created_at),
 		createdAt: row.created_at,
 		metadataDimensions: getDimensions(row.metadata_dimensions),
 	};

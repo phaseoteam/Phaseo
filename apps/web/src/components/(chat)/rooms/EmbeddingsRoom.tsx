@@ -4,6 +4,7 @@ import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
@@ -425,6 +426,7 @@ function safeParsePinned(value: string | null): Record<string, boolean> {
 }
 
 export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) {
+	const format = useDisplayFormatters();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const filteredModels = useMemo(
@@ -801,7 +803,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 				? truncateTitle(textLines[0])
 				: imageUrl.trim() || audioUrl.trim() || videoUrl.trim()
 					? truncateTitle(imageUrl.trim() || audioUrl.trim() || videoUrl.trim())
-					: `Embedding ${new Date().toLocaleDateString()}`;
+					: `Embedding ${format.date(new Date())}`;
 			const conversationTitle =
 				overrides?.forcedConversationTitle ||
 				(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);

@@ -28,6 +28,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Logo } from "@/components/Logo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { cn } from "@/lib/utils";
 import { CircleCheck, Plus, Star, X } from "lucide-react";
@@ -276,6 +277,7 @@ export function RoomModelSelector({
 	modelEnabledById,
 	onOpenModelSettingsForModel,
 }: RoomModelSelectorProps) {
+	const format = useDisplayFormatters();
 	const modelOptions = useMemo(() => buildModelOptions(models), [models]);
 	const [open, setOpen] = useState(false);
 	const [searchValue, setSearchValue] = useState("");
@@ -534,12 +536,16 @@ export function RoomModelSelector({
 					(option) =>
 						!favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId)),
 				),
+				(date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
 			),
-		[filteredActive, favoriteModelIdSet],
+		[filteredActive, favoriteModelIdSet, format],
 	);
 	const groupedComingSoonOptions = useMemo(
-		() => groupModelsByReleaseMonth(filteredComingSoonEntries),
-		[filteredComingSoonEntries],
+		() => groupModelsByReleaseMonth(
+			filteredComingSoonEntries,
+			(date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
+		),
+		[filteredComingSoonEntries, format],
 	);
 	const allModelOptions = useMemo(
 		() => [

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 interface ModelDetail {
 	detail_name: string;
@@ -54,7 +55,7 @@ export default function OtherInfo({
 		if (value === "" || value == null || value === 0) return null;
 		const num = Number(value);
 		if (!Number.isFinite(num)) return null;
-		return num.toLocaleString();
+		return <DisplayNumber value={num} />;
 	};
 
 	const parameterCount = resolve("parameter_count");

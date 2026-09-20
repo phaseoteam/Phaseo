@@ -1,4 +1,7 @@
+"use client";
+
 import type { ExtendedModel } from "@/data/types";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Card,
 	CardContent,
@@ -18,19 +21,6 @@ import Link from "next/link";
 import { ProviderLogo } from "../ProviderLogo";
 import type { CompareGatewayUsageByModel } from "../types";
 
-function formatInteger(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
-}
-
-function formatCompact(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return Intl.NumberFormat("en-US", {
-		notation: "compact",
-		maximumFractionDigits: 2,
-	}).format(value);
-}
-
 function formatLatency(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "-";
 	return `${value.toFixed(value < 10 ? 2 : 0)}ms`;
@@ -39,17 +29,6 @@ function formatLatency(value: number | null | undefined): string {
 function formatThroughput(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "-";
 	return `${value.toFixed(value < 10 ? 2 : 1)} tok/s`;
-}
-
-function formatDate(value: string | null | undefined): string {
-	if (!value) return "";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleDateString("en-GB", {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-	});
 }
 
 function MiniSeries({
@@ -63,6 +42,11 @@ function MiniSeries({
 	unit: string;
 	tone?: "sky" | "emerald";
 }) {
+	const format = useDisplayFormatters();
+	const formatDate = (value: string | null | undefined) => format.calendarDate(value, "");
+	const formatInteger = (value: number | null | undefined) => value == null || !Number.isFinite(value)
+		? "-"
+		: format.number(value, { maximumFractionDigits: 0 });
 	const maxValue = points.length
 		? Math.max(...points.map((point) => point.value), 1)
 		: 1;
@@ -114,6 +98,12 @@ export default function GatewayUsageComparison({
 	selectedModels: ExtendedModel[];
 	usageByModel: CompareGatewayUsageByModel;
 }) {
+	const format = useDisplayFormatters();
+	const formatCompact = (value: number | null | undefined) => value == null || !Number.isFinite(value)
+		? "-"
+		: format.number(value, { maximumFractionDigits: 2 });
+	const formatDate = (value: string | null | undefined) =>
+		format.calendarDate(value, "");
 	const hasAnyUsage = selectedModels.some((model) => usageByModel[model.id]);
 	if (!hasAnyUsage) return null;
 
@@ -234,4 +224,3 @@ export default function GatewayUsageComparison({
 		</section>
 	);
 }
-

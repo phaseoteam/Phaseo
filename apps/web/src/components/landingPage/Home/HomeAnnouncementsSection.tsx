@@ -8,10 +8,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import {
-	formatAnnouncementDate,
-	getAnnouncementPosts,
-} from "@/lib/content/announcements";
+import { getAnnouncementPosts } from "@/lib/content/announcements";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 const ANNOUNCEMENT_LIMIT = 4;
 
@@ -69,7 +67,7 @@ export default async function HomeAnnouncementsSection() {
 									</div>
 									<CardHeader className="space-y-1.5 p-3 sm:max-xl:min-w-0 sm:max-xl:flex-1 sm:max-xl:space-y-1 sm:max-xl:p-2.5">
 										<div className="text-xs font-medium text-zinc-500 sm:max-xl:text-[11px] dark:text-zinc-400">
-											{formatAnnouncementDate(post.publishedAt)}
+											<DisplayCalendarDate value={post.publishedAt} />
 										</div>
 										<CardTitle className="text-base leading-snug sm:max-xl:text-sm">
 											{post.shortTitle ?? post.title}

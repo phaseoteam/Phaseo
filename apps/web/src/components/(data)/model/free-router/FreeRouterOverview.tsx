@@ -1,4 +1,6 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { DisplayNumber, DisplayTimestamp } from "@/components/display/DisplayValue";
 import { fetchFrontendFreeRouterOverview } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { FREE_ROUTER_MODEL_ID } from "@/lib/models/freeRouter";
 import { Badge } from "@/components/ui/badge";
@@ -17,28 +19,19 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 
-function formatCostNanos(value: number): string {
-	if (!Number.isFinite(value) || value <= 0) return "$0.00";
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency: "USD",
-		maximumFractionDigits: value / 1e9 >= 1 ? 2 : 5,
-	}).format(value / 1e9);
-}
-
-function formatNumber(value: number): string {
-	return new Intl.NumberFormat("en-US").format(Math.round(value));
-}
-
-function formatDate(value: string | null): string {
-	if (!value) return "Never";
-	const parsed = new Date(value);
-	if (Number.isNaN(parsed.getTime())) return "Never";
-	return parsed.toLocaleDateString("en-GB", {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-	});
+function CostNanos({ value }: { value: number }) {
+	const dollars = Number.isFinite(value) && value > 0 ? value / 1e9 : 0;
+	return (
+		<DisplayNumber
+			value={dollars}
+			options={{
+				style: "currency",
+				currency: "USD",
+				maximumFractionDigits: dollars >= 1 ? 2 : 5,
+				notation: "standard",
+			}}
+		/>
+	);
 }
 
 function formatModality(value: string): string {
@@ -66,7 +59,7 @@ function SummaryMetric({
 	description,
 }: {
 	label: string;
-	value: string;
+	value: ReactNode;
 	description: string;
 }) {
 	return (
@@ -97,22 +90,22 @@ export default async function FreeRouterOverview() {
 				<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 					<SummaryMetric
 						label="Eligible models"
-						value={formatNumber(overview.summary.eligibleModels)}
+						value={<DisplayNumber value={overview.summary.eligibleModels} />}
 						description="Canonical models currently reachable via the free router."
 					/>
 					<SummaryMetric
 						label="Eligible providers"
-						value={formatNumber(overview.summary.eligibleProviders)}
+						value={<DisplayNumber value={overview.summary.eligibleProviders} />}
 						description="Active provider/model routes contributing to the free pool."
 					/>
 					<SummaryMetric
 						label="Requests (30d)"
-						value={formatNumber(overview.summary.routedRequests30d)}
+						value={<DisplayNumber value={overview.summary.routedRequests30d} />}
 						description="Requests that entered through the router in the last 30 days."
 					/>
 					<SummaryMetric
 						label="Spend (30d)"
-						value={formatCostNanos(overview.summary.totalCostNanos30d)}
+						value={<CostNanos value={overview.summary.totalCostNanos30d} />}
 						description="Billed spend on router traffic over the last 30 days."
 					/>
 				</div>
@@ -162,13 +155,13 @@ export default async function FreeRouterOverview() {
 										<ModelModalityBadges values={model.outputModalities} />
 									</TableCell>
 									<TableCell className="text-right font-mono">
-										{formatNumber(model.usage.requests30d)}
+										<DisplayNumber value={model.usage.requests30d} />
 									</TableCell>
 									<TableCell className="text-right font-mono">
-										{formatCostNanos(model.usage.totalCostNanos30d)}
+										<CostNanos value={model.usage.totalCostNanos30d} />
 									</TableCell>
 									<TableCell className="text-right text-sm text-muted-foreground">
-										{formatDate(model.usage.lastRoutedAt)}
+										<DisplayTimestamp value={model.usage.lastRoutedAt} fallback="Never" />
 									</TableCell>
 								</TableRow>
 							))}

@@ -37,6 +37,7 @@ import {
 	getPricingContextTiers,
 	type PricingContextTier,
 } from "./pricingMeterConditions";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface PricingReferenceProps {
 	meters: PricingMeter[];
@@ -55,14 +56,18 @@ function isTokenMeter(meter: PricingMeter): boolean {
 	return parseMeter(meter.meter).unit === "token" || meter.unit.toLowerCase().includes("token");
 }
 
-function formatUnitPrice(meter: PricingMeter, pricingTimeUtc: string) {
+function formatUnitPrice(
+	meter: PricingMeter,
+	pricingTimeUtc: string,
+	formatNumber: (value: number) => string,
+) {
 	const derivedUnit = parseMeter(meter.meter).unit;
 	const unitLabel = derivedUnit !== "unknown" ? derivedUnit : meter.unit;
 	const { pricePerUnit, pricePerUnitRaw } = resolvePricingMeterPrice(meter, pricingTimeUtc);
 	if (unitLabel.toLowerCase().includes("token")) {
 		return `${fmtUSD((pricePerUnit / (meter.unit_size || 1)) * 1_000_000)} per 1M tokens`;
 	}
-	return `${pricePerUnitRaw} ${meter.currency} per ${meter.unit_size.toLocaleString()} ${unitLabel}`;
+	return `${pricePerUnitRaw} ${meter.currency} per ${formatNumber(meter.unit_size)} ${unitLabel}`;
 }
 
 function meterSortPriority(meterName: string) {
@@ -86,6 +91,7 @@ function ContextRateStack({
 	meterName: string;
 	pricingTimeUtc: string;
 }) {
+	const format = useDisplayFormatters();
 	return (
 		<div className={tiers.length > 1 ? "grid gap-2 sm:grid-cols-2" : "grid gap-2"}>
 			{tiers.map((tier) => {
@@ -94,7 +100,7 @@ function ContextRateStack({
 				return (
 					<div key={tier.key} className="min-h-[74px] rounded-lg border bg-muted/20 px-3 py-2.5">
 						<p className="text-[10px] font-medium text-muted-foreground">{tier.label}</p>
-						<p className="mt-0.5 text-sm font-semibold tabular-nums">{formatUnitPrice(meter, pricingTimeUtc)}</p>
+						<p className="mt-0.5 text-sm font-semibold tabular-nums">{formatUnitPrice(meter, pricingTimeUtc, format.number)}</p>
 						<p className="mt-0.5 text-[10px] text-muted-foreground">{tier.detail}</p>
 					</div>
 				);
@@ -112,6 +118,7 @@ export function PricingReference({
 	pricingTimeUtc,
 	comparisonModels,
 }: PricingReferenceProps) {
+	const format = useDisplayFormatters();
 	if (meters.length === 0) return null;
 	const activeModels: ComparisonPricingModel[] =
 		comparisonModels && comparisonModels.length > 0
@@ -270,7 +277,7 @@ export function PricingReference({
 															<div className="grid grid-cols-4 gap-2">
 																{BUDGET_PRESETS.map((budget) => (
 																	<div key={budget} className="min-w-0">
-																		<p className="text-[10px] text-muted-foreground">${budget.toLocaleString()}</p>
+																		<p className="text-[10px] text-muted-foreground">${format.number(budget, { notation: "standard" })}</p>
 																		<p className="truncate text-xs font-semibold tabular-nums">{formatQuantity(calculateUnits(budget, meter, pricingTimeUtc))}</p>
 																	</div>
 																))}

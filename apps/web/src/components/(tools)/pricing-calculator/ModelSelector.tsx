@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { comparePricingEndpoints } from "./calculatorState";
 import type { CalculatorCatalogModel, CalculatorModelSelection } from "./calculatorState";
@@ -76,21 +77,6 @@ function releaseTimestamp(
 	return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
 }
 
-function formatReleaseDate(
-	releaseDate?: string | null,
-	announcementDate?: string | null
-): string {
-	const value = releaseDate || announcementDate;
-	if (!value) return "Release unknown";
-	const parsed = new Date(value);
-	if (Number.isNaN(parsed.getTime())) return "Release unknown";
-	return new Intl.DateTimeFormat("en", {
-		day: "numeric",
-		month: "short",
-		year: "numeric",
-	}).format(parsed);
-}
-
 type PricingModel = {
 	provider: string;
 	model: string;
@@ -142,6 +128,7 @@ export function ModelSelector({
 	onRemoveModel,
 	onUpdateModelConfig,
 }: ModelSelectorProps) {
+	const format = useDisplayFormatters();
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const [activeModelId, setActiveModelId] = useState<string | null>(null);
@@ -327,7 +314,7 @@ export function ModelSelector({
 								<span className="min-w-0">
 									<span className="block truncate text-sm font-medium">Search models</span>
 									<span className="block truncate text-xs text-muted-foreground">
-										{modelOptions.length.toLocaleString()} models in the catalogue
+										{format.number(modelOptions.length)} models in the catalogue
 									</span>
 								</span>
 							</span>
@@ -366,7 +353,7 @@ export function ModelSelector({
 							}}
 						/>
 						<div className="flex items-center justify-between border-b px-4 py-2 text-xs text-muted-foreground">
-							<span>{filteredModels.length.toLocaleString()} models</span>
+							<span>{format.number(filteredModels.length)} models</span>
 							<span>Models can be added more than once</span>
 						</div>
 						<VirtualizedModelCatalog
@@ -521,7 +508,7 @@ export function ModelSelector({
 								</div>
 
 								<div className="mt-3 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
-									<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1"><CalendarDays className="size-3" />{formatReleaseDate(option?.releaseDate, option?.announcementDate)}</span>
+									<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1"><CalendarDays className="size-3" />{option?.releaseDate || option?.announcementDate ? format.calendarDate(option?.releaseDate || option?.announcementDate) : "Release unknown"}</span>
 									<span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1"><DatabaseZap className="size-3" />{option?.meterCount ?? 0} priced meters</span>
 								</div>
 							</div>

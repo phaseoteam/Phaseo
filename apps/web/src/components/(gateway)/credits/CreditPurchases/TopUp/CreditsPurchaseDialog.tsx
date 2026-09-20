@@ -28,14 +28,9 @@ import { COUNTRY_OPTIONS } from "@/lib/countryCodes";
 import { PurchaseLocationStep, type LocationPreview } from "./PurchaseLocationStep";
 import { cn } from "@/lib/utils";
 import { formatCardBrand } from "./cardBrand";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 /* Helpers */
-const formatUSD = (v: number) =>
-	new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency: "USD",
-	}).format(v);
-
 function clamp(n: number, min: number, max: number) {
 	return Math.max(min, Math.min(max, n));
 }
@@ -87,6 +82,13 @@ export default function CreditsPurchaseDialog({
 	stripeInfo?: any;
 	tierInfo?: any;
 }) {
+	const format = useDisplayFormatters();
+	const formatUSD = (value: number) =>
+		format.number(value, {
+			style: "currency",
+			currency: "USD",
+			notation: "standard",
+		});
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const shouldReduceMotion = useReducedMotion();
@@ -597,7 +599,12 @@ export default function CreditsPurchaseDialog({
 										setRawAmount(String(v));
 									}}
 								>
-									${v.toLocaleString("en-US")}
+									{format.number(v, {
+										style: "currency",
+										currency: "USD",
+										maximumFractionDigits: 0,
+										notation: "standard",
+									})}
 								</Button>
 							))}
 						</div>

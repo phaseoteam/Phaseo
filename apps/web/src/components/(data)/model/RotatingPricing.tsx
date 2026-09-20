@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface RotatingPricingProps {
 	prices?: {
@@ -12,6 +13,7 @@ interface RotatingPricingProps {
 }
 
 export default function RotatingPricing({ prices = [] }: RotatingPricingProps) {
+	const format = useDisplayFormatters();
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const priceCount = prices.length;
 
@@ -30,11 +32,12 @@ export default function RotatingPricing({ prices = [] }: RotatingPricingProps) {
 		currency: string,
 		frequency: string
 	) => {
-		const formatter = new Intl.NumberFormat("en-US", {
+		const formattedPrice = format.number(price, {
 			style: "currency",
 			currency: currency,
 			minimumFractionDigits: 0,
 			maximumFractionDigits: 2,
+			notation: "standard",
 		});
 
 		const period =
@@ -46,7 +49,7 @@ export default function RotatingPricing({ prices = [] }: RotatingPricingProps) {
 				? "/day"
 				: "";
 
-		return `${formatter.format(price)}${period}`;
+		return `${formattedPrice}${period}`;
 	};
 
 	if (!prices || prices.length === 0) {

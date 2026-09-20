@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { GatewayHeroVariant } from "@/lib/statsig/shared";
 import { WordRotate } from "@/components/ui/word-rotate";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const SALES_HREF = "/sign-up";
 const DOCS_HREF = "https://phaseo.app/docs/v1/quickstart";
@@ -28,7 +29,7 @@ type GatewayHeroStats = {
 
 type HeroStatItem = {
 	label: string;
-	value: string;
+	value: React.ReactNode;
 	icon: React.ElementType;
 	accent: string;
 };
@@ -249,27 +250,18 @@ export function Hero({
 	tokensWindowHours?: number;
 	heroVariant?: GatewayHeroVariant;
 }) {
+	const format = useDisplayFormatters();
 	const roundTo = (value: number | null, step: number) => {
 		if (value == null) return null;
 		return Math.max(0, Math.round(value / step) * step);
 	};
 	const formatWithPlus = (value: number | null, fallback = "--") => {
 		if (value == null) return fallback;
-		return `${new Intl.NumberFormat().format(value)}+`;
+		return <>{format.number(value)}+</>;
 	};
 	const formatTokens = (value: number | null, fallback = "0+") => {
 		if (value == null) return fallback;
-		const abs = Math.abs(value);
-		if (abs < 1000) return `${Math.floor(value)}+`;
-		const units = [
-			{ threshold: 1e12, suffix: "T" },
-			{ threshold: 1e9, suffix: "B" },
-			{ threshold: 1e6, suffix: "M" },
-			{ threshold: 1e3, suffix: "K" },
-		];
-		const unit = units.find((u) => abs >= u.threshold) ?? units[3];
-		const scaled = Math.floor(value / unit.threshold);
-		return `${scaled}${unit.suffix}+`;
+		return <>{format.number(value, { maximumFractionDigits: 0 })}+</>;
 	};
 	const formatWindow = (hours: number) => {
 		if (!Number.isFinite(hours) || hours <= 0) return "24h";
@@ -315,4 +307,3 @@ export function Hero({
 		</section>
 	);
 }
-

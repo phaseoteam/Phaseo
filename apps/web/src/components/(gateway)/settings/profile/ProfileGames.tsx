@@ -1,24 +1,21 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, Gamepad2, Trophy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { ProfileGameSummary } from "@/lib/fetchers/profile/types";
 import { GAME_INFO, GAME_KEYS } from "@/lib/games/types";
-
-function formatLastPlayed(value: string | null): string {
-	if (!value) return "Not played yet";
-	return `Last played ${new Date(value).toLocaleDateString("en", {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	})}`;
-}
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 export function ProfileGames({ summary }: { summary: ProfileGameSummary | null }) {
+	const format = useDisplayFormatters();
+	const formatLastPlayed = (value: string | null) =>
+		value ? `Last played ${format.date(value)}` : "Not played yet";
 	const gameResults = new Map((summary?.games ?? []).map((game) => [game.game, game]));
 	const metrics = [
-		["Played", summary?.totalPlayed ?? 0],
-		["Wins", summary?.totalWins ?? 0],
+		["Played", format.number(summary?.totalPlayed ?? 0)],
+		["Wins", format.number(summary?.totalWins ?? 0)],
 		["Streak", `${summary?.currentStreak ?? 0}d`],
 		["Average Score", `${summary?.averageScore ?? 0}%`],
 	] as const;

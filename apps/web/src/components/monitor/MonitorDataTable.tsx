@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
 	Table,
@@ -495,6 +496,7 @@ export function MonitorDataTable({
 	effectiveStatuses,
 	stickyHeaderOffset = 60,
 }: MonitorDataTableProps) {
+	const format = useDisplayFormatters();
 	const [searchQuery] = useQueryState("search", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -1222,7 +1224,7 @@ export function MonitorDataTable({
 	};
 
 	const formatDate = (dateStr: string) => {
-		return new Date(dateStr).toLocaleDateString();
+		return format.calendarDate(dateStr);
 	};
 
 	const formatEndpoint = (endpoint?: string) => {
@@ -1260,7 +1262,7 @@ export function MonitorDataTable({
 		if (value >= 1_000) {
 			return `${Math.round(value / 1_000)}K`;
 		}
-		return value.toLocaleString();
+		return format.number(value);
 	};
 
 	const renderLoadingRows = () =>
@@ -1535,11 +1537,11 @@ export function MonitorDataTable({
 												{renderFeatures(item.provider.features)}
 											</TableCell>
 											<TableCell className="font-mono text-center">
-												{item.context > 0 ? item.context.toLocaleString() : "-"}
+												{item.context > 0 ? format.number(item.context) : "-"}
 											</TableCell>
 											<TableCell className="font-mono text-center">
 												{item.maxOutput > 0
-													? item.maxOutput.toLocaleString()
+													? format.number(item.maxOutput)
 													: "-"}
 											</TableCell>
 											<TableCell className="font-mono text-center">
@@ -1577,7 +1579,7 @@ export function MonitorDataTable({
 			) : (
 				<div className="flex items-center gap-2 text-xs text-muted-foreground">
 					<span className="tabular-nums">
-						{totalItems.toLocaleString()} {totalItems === 1 ? "row" : "rows"}
+						{format.number(totalItems)} {totalItems === 1 ? "row" : "rows"}
 					</span>
 					<span aria-hidden>·</span>
 					<span>Visible rows render on demand</span>

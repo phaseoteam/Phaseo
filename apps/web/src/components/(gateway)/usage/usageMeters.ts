@@ -242,9 +242,23 @@ export function buildUsageFromNormalizedRequestFields(
 	return usage;
 }
 
-export function formatUsageNumber(value: number): string {
+type UsageNumberFormatter = (
+	value: number,
+	options?: Intl.NumberFormatOptions,
+) => string;
+
+export function formatUsageNumber(
+	value: number,
+	formatNumber?: UsageNumberFormatter,
+): string {
 	if (!Number.isFinite(value)) return "0";
 	const rounded = Math.round(value * 1000) / 1000;
+	if (formatNumber) {
+		return formatNumber(rounded, {
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 3,
+		});
+	}
 	const isInt = Math.abs(rounded - Math.trunc(rounded)) < 1e-9;
 	if (isInt) return Math.trunc(rounded).toLocaleString();
 	return rounded
@@ -348,7 +362,10 @@ export function extractUsageMeters(usage: any): UsageMeter[] {
 	return [...tokenMeters, ...extraMeters];
 }
 
-export function buildUsageDisplay(usage: any): UsageDisplaySummary {
+export function buildUsageDisplay(
+	usage: any,
+	formatNumber?: UsageNumberFormatter,
+): UsageDisplaySummary {
 	const meters = extractUsageMeters(usage);
 	const input = meters.find((m) => m.key === "input_tokens")?.value ?? 0;
 	const output = meters.find((m) => m.key === "output_tokens")?.value ?? 0;
@@ -357,13 +374,13 @@ export function buildUsageDisplay(usage: any): UsageDisplaySummary {
 
 	if (input > 0 || output > 0) {
 		const tooltipLines = [
-			`${formatUsageNumber(input)} input tokens`,
-			`${formatUsageNumber(output)} output tokens`,
-			`${formatUsageNumber(total)} total tokens`,
-			...nonToken.map((m) => `${formatUsageNumber(m.value)} ${m.label.toLowerCase()}`),
+			`${formatUsageNumber(input, formatNumber)} input tokens`,
+			`${formatUsageNumber(output, formatNumber)} output tokens`,
+			`${formatUsageNumber(total, formatNumber)} total tokens`,
+			...nonToken.map((m) => `${formatUsageNumber(m.value, formatNumber)} ${m.label.toLowerCase()}`),
 		];
 		return {
-			primary: `${formatUsageNumber(input)} | ${formatUsageNumber(output)}`,
+			primary: `${formatUsageNumber(input, formatNumber)} | ${formatUsageNumber(output, formatNumber)}`,
 			tooltipLines,
 			sortValue: total > 0 ? total : input + output,
 		};
@@ -373,9 +390,9 @@ export function buildUsageDisplay(usage: any): UsageDisplaySummary {
 		const [first, ...rest] = nonToken;
 		return {
 			primary:
-				`${formatUsageNumber(first.value)} ${first.shortLabel}` +
+				`${formatUsageNumber(first.value, formatNumber)} ${first.shortLabel}` +
 				(rest.length > 0 ? ` +${rest.length}` : ""),
-			tooltipLines: nonToken.map((m) => `${formatUsageNumber(m.value)} ${m.label.toLowerCase()}`),
+			tooltipLines: nonToken.map((m) => `${formatUsageNumber(m.value, formatNumber)} ${m.label.toLowerCase()}`),
 			sortValue: nonToken.reduce((sum, meter) => sum + meter.value, 0),
 		};
 	}

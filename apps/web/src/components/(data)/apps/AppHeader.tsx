@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Activity, Zap } from "lucide-react";
 import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { DisplayDate, DisplayNumber } from "@/components/display/DisplayValue";
 
 export default async function AppHeader({ appId }: { appId: string }) {
 	const app = await fetchFrontendAppDetails(appId);
@@ -45,7 +46,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 							</Badge>
 						</div>
 						<div className="text-xs text-muted-foreground">
-							Last seen: {new Date(app.last_seen).toLocaleDateString()}
+							Last seen: <DisplayDate value={app.last_seen} />
 						</div>
 					</div>
 				</CardContent>
@@ -61,7 +62,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 				</CardHeader>
 				<CardContent>
 					<div className="text-2xl font-bold">
-						{app.total_requests.toLocaleString()}
+						<DisplayNumber value={app.total_requests} />
 					</div>
 					<p className="text-xs text-muted-foreground mt-1">
 						All time successful requests
@@ -79,7 +80,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 				</CardHeader>
 				<CardContent>
 					<div className="text-2xl font-bold">
-						{app.total_tokens.toLocaleString()}
+						<DisplayNumber value={app.total_tokens} />
 					</div>
 					<p className="text-xs text-muted-foreground mt-1">
 						Tokens consumed across all requests

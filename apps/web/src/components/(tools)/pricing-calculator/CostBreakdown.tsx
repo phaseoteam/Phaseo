@@ -26,6 +26,7 @@ import {
 	formatSentenceLabel,
 	type ComparisonPricingModel,
 } from "./PricingTableVisuals";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface CostBreakdownProps {
 	meters: PricingMeter[];
@@ -56,6 +57,7 @@ export function CostBreakdown({
 	pricingTimeUtc,
 	comparisonModels,
 }: CostBreakdownProps) {
+	const format = useDisplayFormatters();
 	const safeRequestMultiplier = sanitizeRequestMultiplier(requestMultiplier);
 	const activeModels = useMemo<ComparisonPricingModel[]>(
 		() =>
@@ -141,7 +143,7 @@ export function CostBreakdown({
 												<TableCell key={`estimate-${model.key}-${meterName}`}>
 													<p className="font-semibold tabular-nums">{fmtUSD(lineCost)}</p>
 													<p className="mt-1 text-xs text-muted-foreground">
-														{fmtUSD(resolvedPrice.pricePerUnit)} per {meter.unit_size.toLocaleString()} {meter.unit}
+												{fmtUSD(resolvedPrice.pricePerUnit)} per {format.number(meter.unit_size)} {meter.unit}
 													</p>
 													{resolvedPrice.timeWindow ? <p className="mt-1 text-xs text-muted-foreground">{formatPricingTimeWindow(resolvedPrice.timeWindow)}</p> : null}
 												</TableCell>
@@ -154,7 +156,7 @@ export function CostBreakdown({
 					</Table>
 				</ScrollArea>
 				<p className="text-xs text-muted-foreground">
-					Inputs are multiplied by {safeRequestMultiplier.toLocaleString()} request{safeRequestMultiplier === 1 ? "" : "s"} before costs are calculated.
+					Inputs are multiplied by {format.number(safeRequestMultiplier)} request{safeRequestMultiplier === 1 ? "" : "s"} before costs are calculated.
 				</p>
 			</CardContent>
 		</Card>

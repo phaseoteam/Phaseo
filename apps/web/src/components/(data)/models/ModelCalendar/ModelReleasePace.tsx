@@ -15,6 +15,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const CONFIG = {
 	releases: { label: "Monthly releases", color: "#22c55e" },
@@ -22,9 +23,6 @@ const CONFIG = {
 };
 
 // Predictions removed per request; only actuals and 3-mo avg
-
-const MONTH_LABELS = (date: Date) =>
-	date.toLocaleString("en-US", { month: "short", year: "2-digit" });
 
 const isRelease = (event: ModelEvent) => event.types.includes("Released");
 
@@ -62,10 +60,11 @@ const ReleaseTooltip = ({
 	payload,
 	label,
 }: RechartsTooltipContentProps) => {
+	const format = useDisplayFormatters();
 	if (!active || !payload?.length) return null;
 
 	const rows = payload.filter((item) => item.value !== undefined);
-	const currentLabel = MONTH_LABELS(new Date());
+	const currentLabel = format.dateParts(new Date(), { month: "short", year: "2-digit" });
 
 	return (
 		<div className="rounded-2xl border border-zinc-200 bg-white p-3 text-xs text-zinc-900 shadow-lg dark:border-zinc-800 dark:bg-zinc-950 dark:text-white">
@@ -87,7 +86,7 @@ const ReleaseTooltip = ({
 								{isPred ? " (predicted)" : ""}
 							</span>
 							<span className="font-mono">
-								{Number(entry.value ?? 0).toLocaleString()}
+								{format.number(Number(entry.value ?? 0))}
 							</span>
 						</div>
 					);
@@ -102,6 +101,7 @@ export default function ModelReleasePace({
 	events,
 	monthsWindow = 24,
 }: ModelReleasePaceProps) {
+	const format = useDisplayFormatters();
 	const now = useMemo(() => new Date(), []);
 
 	const data = useMemo<ReleasePaceData[]>(() => {
@@ -125,7 +125,7 @@ export default function ModelReleasePace({
 			point.setMonth(windowStart.getMonth() + index);
 			return {
 				key: `${point.getFullYear()}-${padTwo(point.getMonth() + 1)}`,
-				label: MONTH_LABELS(point),
+				label: format.dateParts(point, { month: "short", year: "2-digit" }),
 			};
 		});
 
@@ -147,7 +147,7 @@ export default function ModelReleasePace({
 				trendActual: Math.round(trend * 100) / 100,
 			};
 		});
-	}, [events, monthsWindow, now]);
+	}, [events, format, monthsWindow, now]);
 
 	const maxRelease = Math.max(...data.map((entry) => entry.releases), 0);
 	const thresholds = [0, Math.round(maxRelease / 2), maxRelease].filter(

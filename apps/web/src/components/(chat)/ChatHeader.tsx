@@ -66,6 +66,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
 import { ChatShortcutReference } from "@/components/(chat)/ChatShortcutReference";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	getVirtualizedModelCatalogItemId,
 	VirtualizedModelCatalog,
@@ -373,6 +374,7 @@ export function ChatHeader({
 	requiredCapability = null,
 	requireAudioInput = false,
 }: ChatHeaderProps) {
+	const format = useDisplayFormatters();
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const [settingsTab, setSettingsTab] = useState<ChatSettingsTab>(
 		"personalization",
@@ -567,12 +569,16 @@ export function ChatHeader({
 					(option) =>
 						!favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId)),
 				),
+				(date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
 			),
-		[filteredActive, favoriteModelIdSet],
+		[filteredActive, favoriteModelIdSet, format],
 	);
 	const groupedComingSoonOptions = useMemo(
-		() => groupModelsByReleaseMonth(filteredComingSoonEntries),
-		[filteredComingSoonEntries],
+		() => groupModelsByReleaseMonth(
+			filteredComingSoonEntries,
+			(date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
+		),
+		[filteredComingSoonEntries, format],
 	);
 	const virtualizedModelSections = useMemo<
 		VirtualizedModelCatalogSection<ModelOption>[]

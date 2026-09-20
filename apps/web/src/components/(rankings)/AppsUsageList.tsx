@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,14 +34,6 @@ type AppsUsageListProps = {
 	maxExpanded?: number;
 };
 
-function formatTokens(value: number) {
-	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-	return value.toLocaleString();
-}
-
 function rangeLabel(value: AppRange) {
 	return RANGE_OPTIONS.find((option) => option.key === value)?.label ?? value;
 }
@@ -55,6 +48,10 @@ export function AppsUsageList({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: AppsUsageListProps) {
+	const format = useDisplayFormatters();
+	const formatTokens = (value: number) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const getInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "A";
 
 	const resolvedDataByRange = useMemo<Partial<Record<AppRange, TopAppData[]>>>(

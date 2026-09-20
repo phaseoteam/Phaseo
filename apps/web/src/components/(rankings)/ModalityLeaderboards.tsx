@@ -203,6 +203,7 @@ function ModalitySection({
 					{availableMetrics.map((metric) => (
 						metric.unavailable ? <RankingUnavailable key={metric.id} title={metric.title} /> : <RankingMetricLeaderboard
 							key={metric.id}
+							metricId={metric.id}
 							title={metric.title}
 							description={metric.description}
 							entries={metric.entries}

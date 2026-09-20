@@ -16,6 +16,7 @@ import {
 	DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Label } from "@/components/ui/label";
 import {
 	Infinity,
@@ -75,6 +76,7 @@ export default function TeamInviteDialog({
 	canManageInvite = false,
 	appBaseUrl,
 }: Props) {
+	const format = useDisplayFormatters();
 	const router = useRouter();
 	const isCreator = !!currentUserId && currentUserId === invite.creator_user_id;
 	const canManage = canManageInvite || isCreator;
@@ -99,13 +101,7 @@ export default function TeamInviteDialog({
 	);
 
 	function formatDate(d: Date | null) {
-		if (!d) return null;
-		const day = String(d.getDate()).padStart(2, "0");
-		const month = d.toLocaleString(undefined, { month: "short" });
-		const year = d.getFullYear();
-		const hours = String(d.getHours()).padStart(2, "0");
-		const minutes = String(d.getMinutes()).padStart(2, "0");
-		return `${day} ${month} ${year}, ${hours}:${minutes}`;
+		return d ? format.dateTime(d) : null;
 	}
 
 	const now = useMemo(() => new Date(), []);

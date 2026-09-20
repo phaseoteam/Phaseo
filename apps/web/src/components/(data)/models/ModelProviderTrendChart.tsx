@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table-sort-button";
 import { formatProviderDuration } from "@/components/(data)/models/modelPerformanceFormatting";
 import { ModelMetricInfo } from "./ModelMetricInfo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 export type MetricKey =
 	| "throughput"
@@ -160,8 +161,6 @@ type MetricConfig = {
 		| "avgTpotMs"
 		| "avgItlMs"
 		| "cachedInputPct";
-	formatValue: (value: number | null) => string;
-	formatAxisTick?: (value: number) => string;
 };
 
 const METRICS: Record<MetricKey, MetricConfig> = {
@@ -170,66 +169,54 @@ const METRICS: Record<MetricKey, MetricConfig> = {
 		description: "Output tokens per second across the full selected-provider request, including time to first token.",
 		axisLabel: "Tokens / second",
 		valueKey: "avgThroughput",
-		formatValue: (value) => (value != null ? `${value.toFixed(2)} t/s` : "-"),
 	},
 	outputSpeed: {
 		label: "Output Speed",
 		description: "Output tokens per second after the first token arrives, excluding time to first token.",
 		axisLabel: "Tokens / second",
 		valueKey: "avgOutputSpeed",
-		formatValue: (value) => (value != null ? `${value.toFixed(2)} t/s` : "-"),
 	},
 	latency: {
 		label: "Latency",
 		description: "Time from the request entering Phaseo until the first content-bearing generated output reaches the gateway.",
 		axisLabel: "Milliseconds",
 		valueKey: "avgLatencyMs",
-		formatValue: (value) => (value != null ? `${Math.round(value)} ms` : "-"),
 	},
 	endToEnd: {
 		label: "End-to-End Latency",
 		description: "Total time from the request entering Phaseo until the complete response is returned.",
 		axisLabel: "Duration",
 		valueKey: "avgEndToEndMs",
-		formatValue: formatProviderDuration,
-		formatAxisTick: (value) => formatProviderDuration(value),
 	},
 	generation: {
 		label: "Provider Duration",
 		description: "Time from sending the selected provider request until its final response completes.",
 		axisLabel: "Duration",
 		valueKey: "avgGenerationMs",
-		formatValue: formatProviderDuration,
-		formatAxisTick: (value) => formatProviderDuration(value),
 	},
 	overhead: {
 		label: "Phaseo Overhead",
 		description: "Gateway end-to-end duration minus the selected provider duration, including routing and response processing.",
 		axisLabel: "Milliseconds",
 		valueKey: "avgPhaseoOverheadMs",
-		formatValue: (value) => (value != null ? `${Math.round(value)} ms` : "-"),
 	},
 	tpot: {
 		label: "TPOT",
 		description: "Time per output token after the first token. Lower values indicate faster token generation.",
 		axisLabel: "Milliseconds",
 		valueKey: "avgTpotMs",
-		formatValue: (value) => (value != null ? `${value.toFixed(2)} ms` : "-"),
 	},
 	itl: {
 		label: "ITL",
 		description: "Mean observed interval between successive content-bearing provider stream frames. Providers may batch multiple tokens into one frame.",
 		axisLabel: "Milliseconds",
 		valueKey: "avgItlMs",
-		formatValue: (value) => (value != null ? `${value.toFixed(2)} ms` : "-"),
 	},
 	cachedInput: {
 		label: "Cached Input",
 		description: "Share of input tokens served from a provider cache. Only requests where the provider reports cache usage are included.",
 		axisLabel: "Cached input (%)",
 		valueKey: "cachedInputPct",
-		formatValue: (value) => (value != null ? `${value.toFixed(1)}%` : "-"),
-		formatAxisTick: (value) => `${Math.round(value)}%`,
 	},
 };
 
@@ -339,6 +326,7 @@ export default function ModelProviderTrendChart({
 	showHeader = true,
 	headerAction,
 }: ModelProviderTrendChartProps) {
+	const format = useDisplayFormatters();
 	const isPercentileData = data.some(
 		(point) => getPercentile(point.provider) != null,
 	);
@@ -354,6 +342,30 @@ export default function ModelProviderTrendChart({
 		setActiveTime(time);
 	};
 	const metricConfig = METRICS[metric];
+	const formatMetricValue = (value: number | null) => {
+		if (value == null || !Number.isFinite(value)) return "-";
+		if (metric === "throughput" || metric === "outputSpeed") {
+			return `${format.number(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} t/s`;
+		}
+		if (metric === "endToEnd" || metric === "generation") {
+			return formatProviderDuration(value, format.number);
+		}
+		if (metric === "cachedInput") {
+			return `${format.number(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+		}
+		return `${format.number(value, {
+			maximumFractionDigits: metric === "tpot" || metric === "itl" ? 2 : 0,
+		})} ms`;
+	};
+	const formatMetricAxisValue = (value: number) => {
+		if (metric === "cachedInput") {
+			return `${format.number(value, { maximumFractionDigits: 0 })}%`;
+		}
+		if (metric === "endToEnd" || metric === "generation") {
+			return formatProviderDuration(value, format.number);
+		}
+		return format.number(value, { maximumFractionDigits: 2 });
+	};
 	const observedData = data.filter(
 		(point) =>
 			point.requests > 0 &&
@@ -537,7 +549,7 @@ export default function ModelProviderTrendChart({
 							/>
 							<span className="truncate font-medium">{provider.name}</span>
 							<span className="pl-3 text-right font-medium tabular-nums">
-								{metricConfig.formatValue(value)}
+								{formatMetricValue(value)}
 							</span>
 						</div>
 					))}
@@ -672,7 +684,7 @@ export default function ModelProviderTrendChart({
 							tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
 							tickLine={false}
 							axisLine={false}
-							tickFormatter={metricConfig.formatAxisTick}
+							tickFormatter={formatMetricAxisValue}
 							label={detailed ? { value: metricConfig.axisLabel, angle: -90, position: "insideLeft", offset: -10, fill: "var(--muted-foreground)", fontSize: 11 } : undefined}
 						/>
 						{detailed ? (
@@ -813,9 +825,9 @@ export default function ModelProviderTrendChart({
 									/>
 								) : null}
 							</span>
-							<span role="cell" className="text-right tabular-nums text-muted-foreground">{metricConfig.formatValue(provider.minimum)}</span>
-							<span role="cell" className="text-right tabular-nums text-muted-foreground">{metricConfig.formatValue(provider.maximum)}</span>
-							<span role="cell" className="text-right font-medium tabular-nums">{metricConfig.formatValue(provider.average)}</span>
+							<span role="cell" className="text-right tabular-nums text-muted-foreground">{formatMetricValue(provider.minimum)}</span>
+							<span role="cell" className="text-right tabular-nums text-muted-foreground">{formatMetricValue(provider.maximum)}</span>
+							<span role="cell" className="text-right font-medium tabular-nums">{formatMetricValue(provider.average)}</span>
 						</div>;
 						})}
 					</div>
@@ -858,11 +870,11 @@ export default function ModelProviderTrendChart({
 							</span>
 							<span className="shrink-0 tabular-nums text-foreground">
 								{isHovering ? (
-									metricConfig.formatValue(provider.hoveredValue)
+									formatMetricValue(provider.hoveredValue)
 								) : (
 									<>
 										<span className="text-muted-foreground">Avg </span>
-										{metricConfig.formatValue(provider.average)}
+										{formatMetricValue(provider.average)}
 									</>
 								)}
 							</span>

@@ -15,6 +15,7 @@ import type {
 	UpcomingPricingChange,
 } from "./pricingHelpers";
 import { fmtUSD } from "./pricingHelpers";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type PricingComparisonAccent = "batch" | "flex" | "free" | "priority" | null;
 
@@ -71,19 +72,6 @@ function renderComparisonPrices(
 			</span>
 		</>
 	);
-}
-
-function formatEffectiveDate(iso?: string | null) {
-	if (!iso) return null;
-	const d = new Date(iso);
-	if (Number.isNaN(d.getTime())) return null;
-	const now = new Date();
-	const includeYear = d.getFullYear() !== now.getFullYear();
-	return d.toLocaleDateString("en-GB", {
-		day: "2-digit",
-		month: "short",
-		...(includeYear ? { year: "numeric" as const } : {}),
-	});
 }
 
 function resolutionSortValue(label: string): number {
@@ -960,6 +948,7 @@ export function UpcomingPricingSection({
 	compact?: boolean;
 	vertical?: boolean;
 }) {
+	const format = useDisplayFormatters();
 	if (!rows?.length) return null;
 
 	const orderedRows = [...rows].sort((a, b) => {
@@ -998,7 +987,9 @@ export function UpcomingPricingSection({
 			</div>
 			<div className={`grid gap-2 ${gridClass}`}>
 				{visibleRows.map((row, i) => {
-					const effectiveDate = formatEffectiveDate(row.effectiveFrom);
+					const effectiveDate = row.effectiveFrom
+						? format.calendarDate(row.effectiveFrom)
+						: null;
 					const deltaPct = formatPercentDelta(row.price, row.currentPrice);
 					const trendClass =
 						row.trend === "down"

@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 // Custom tooltip component
 type TooltipProps = {
@@ -28,6 +29,7 @@ type TooltipProps = {
 };
 
 function BenchmarkTooltip({ active, payload }: TooltipProps) {
+	const format = useDisplayFormatters();
 	if (!active || !payload || !payload.length) return null;
 	const model = payload[0].payload;
 	return (
@@ -42,7 +44,10 @@ function BenchmarkTooltip({ active, payload }: TooltipProps) {
 					{model.provider}
 				</div>
 				<div className="font-mono text-base">
-					{model.score.toFixed(1)}%
+					{format.number(model.score, {
+						minimumFractionDigits: 1,
+						maximumFractionDigits: 1,
+					})}%
 				</div>
 			</CardContent>
 		</Card>

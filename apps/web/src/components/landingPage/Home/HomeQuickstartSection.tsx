@@ -27,6 +27,10 @@ import NumberFlow from "@number-flow/react";
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import {
+	useDisplayFormatters,
+	useDisplayPreferences,
+} from "@/components/providers/DisplayPreferencesProvider";
+import {
 	BETA_OPEN_MODEL_INTEL,
 	type HomeModelPrices,
 } from "./homeModelIntel";
@@ -58,12 +62,24 @@ function HydratedNumberFlow({
 	format?: NumberFlowFormat;
 }) {
 	const isHydrated = useIsHydrated();
+	const display = useDisplayFormatters();
+	const { preferences } = useDisplayPreferences();
+	const resolvedFormat = {
+		...format,
+		notation: format?.notation ?? preferences.numberNotation,
+	} as NumberFlowFormat;
 
 	if (!isHydrated) {
-		return <>{new Intl.NumberFormat("en-US", format).format(value)}</>;
+		return <>{display.number(value, resolvedFormat)}</>;
 	}
 
-	return <NumberFlow value={value} format={format} />;
+	return (
+		<NumberFlow
+			value={value}
+			format={resolvedFormat}
+			locales={preferences.locale === "system" ? undefined : preferences.locale}
+		/>
+	);
 }
 
 const BENEFITS_DEFAULT: Benefit[] = [

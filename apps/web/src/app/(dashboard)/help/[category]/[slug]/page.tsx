@@ -12,6 +12,7 @@ import {
 	getHelpCategory,
 } from "@/lib/content/helpCenter";
 import { buildMetadata } from "@/lib/seo";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 type PageProps = {
 	params: Promise<{ category: string; slug: string }>;
@@ -57,21 +58,6 @@ const markdownComponents: Components = {
 	),
 };
 
-function formatUpdated(updated: string | null): string | null {
-	if (!updated) {
-		return null;
-	}
-	const parsed = new Date(updated);
-	if (Number.isNaN(parsed.getTime())) {
-		return updated;
-	}
-	return parsed.toLocaleDateString(undefined, {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
-}
-
 export async function generateStaticParams(): Promise<
 	Array<{ category: string; slug: string }>
 > {
@@ -115,8 +101,6 @@ export default async function HelpArticlePage({ params }: PageProps) {
 		notFound();
 	}
 
-	const updatedLabel = formatUpdated(article.updated);
-
 	return (
 		<div className="container mx-auto w-full max-w-6xl px-4 py-8 md:py-12">
 			<nav className="mb-4 flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-300">
@@ -142,9 +126,9 @@ export default async function HelpArticlePage({ params }: PageProps) {
 					<p className="mt-3 text-sm leading-7 text-zinc-700 dark:text-zinc-300">
 						{article.description}
 					</p>
-					{updatedLabel ? (
+					{article.updated ? (
 						<div className="mt-4">
-							<Badge variant="secondary">Updated {updatedLabel}</Badge>
+							<Badge variant="secondary">Updated <DisplayCalendarDate value={article.updated} /></Badge>
 						</div>
 					) : null}
 					<div className="mt-8">

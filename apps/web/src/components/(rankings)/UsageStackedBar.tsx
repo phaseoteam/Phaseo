@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Check, ChevronDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { TimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
@@ -68,24 +69,6 @@ const CLOSED_LICENSE_VALUES = new Set([
 	"none",
 ]);
 
-function formatBucketLabel(value: string) {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-		timeZone: "UTC",
-	});
-}
-
-function formatNumber(value: number) {
-	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-	return value.toLocaleString();
-}
-
 function timeseriesValue(
 	row: TimeseriesData,
 	metric: "requests" | "tokens" | "users",
@@ -94,14 +77,6 @@ function timeseriesValue(
 	return metric === "tokens"
 		? Number(row.tokens ?? 0)
 		: Number(row.requests ?? 0);
-}
-
-function formatPaceGain(value: number) {
-	const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
-	if (safeValue >= 1e9) return `+${(safeValue / 1e9).toFixed(2)}B`;
-	if (safeValue >= 1e6) return `+${(safeValue / 1e6).toFixed(2)}M`;
-	if (safeValue >= 1e3) return `+${(safeValue / 1e3).toFixed(2)}K`;
-	return `+${safeValue.toFixed(2)}`;
 }
 
 function formatChange(value: number | null) {
@@ -220,6 +195,15 @@ export function UsageStackedBar({
 	valueUnit,
 	showScaleToggle = false,
 }: UsageStackedBarProps) {
+	const format = useDisplayFormatters();
+	const formatBucketLabel = (value: string) => format.calendarDate(value, value);
+	const formatNumber = (value: number) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
+	const formatPaceGain = (value: number) => `+${format.number(
+		Number.isFinite(value) ? Math.max(0, value) : 0,
+		{ maximumFractionDigits: 2 },
+	)}`;
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 	const [nowMs] = useState(() => Date.now());
 	const [listExpanded, setListExpanded] = useState(false);

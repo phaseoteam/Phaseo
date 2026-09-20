@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Loader2, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -43,15 +44,6 @@ function formatExpiry(expMonth: number | null | undefined, expYear: number | nul
     return `${String(expMonth).padStart(2, "0")}/${String(expYear).slice(-2)}`;
 }
 
-function formatDate(unixSeconds: number | null | undefined) {
-    if (!unixSeconds) return "-";
-    try {
-        return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(unixSeconds * 1000));
-    } catch {
-        return "-";
-    }
-}
-
 async function readJsonSafe(response: Response) {
     try {
         return await response.json();
@@ -67,6 +59,9 @@ export function PaymentMethodsManager({
     initialData: PaymentMethodsPayload;
 	customerPortal?: ReactNode;
 }) {
+	const format = useDisplayFormatters();
+	const formatDate = (unixSeconds: number | null | undefined) =>
+		format.date(unixSeconds ? unixSeconds * 1000 : null);
     const [data, setData] = useState<PaymentMethodsPayload>(initialData);
     const [refreshing, setRefreshing] = useState(false);
     const [adding, setAdding] = useState(false);

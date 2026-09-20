@@ -119,6 +119,16 @@ describe("account auth routes", () => {
 					default_workspace_id: "workspace-1",
 					role: "admin",
 					display_name: "Test User",
+					display_locale: "en-GB",
+					display_date_style: "long",
+					display_time_zone: "Europe/London",
+					display_hour_cycle: "24h",
+					display_relative_time: "absolute",
+					display_number_notation: "compact",
+					display_light_palette: "paper",
+					display_dark_palette: "midnight",
+					display_light_accent: "#7c3aed",
+					display_dark_accent: "#a78bfa",
 				}]), { status: 200 });
 			}
 			if (url.includes("workspace_members")) {
@@ -155,6 +165,18 @@ describe("account auth routes", () => {
 				avatarUrl: "https://example.com/avatar.png",
 			},
 			teams: [{ id: "workspace-1", name: "Personal Workspace" }],
+			displayPreferences: {
+				locale: "en-GB",
+				dateStyle: "long",
+				timeZone: "Europe/London",
+				hourCycle: "24h",
+				relativeTime: "absolute",
+				numberNotation: "compact",
+				lightPalette: "paper",
+				darkPalette: "midnight",
+				lightAccent: "#7c3aed",
+				darkAccent: "#a78bfa",
+			},
 			currentTeamId: "workspace-1",
 			userRole: "admin",
 		});

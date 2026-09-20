@@ -32,6 +32,7 @@ import {
 	PaginationPrevious,
 } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type InvoiceStatus = "draft" | "open" | "paid" | "void" | "uncollectible";
 
@@ -50,49 +51,6 @@ type InvoiceRow = {
 	created_at?: string | null;
 	updated_at?: string | null;
 };
-
-function formatNanos(nanos: number, currency = "USD") {
-	const amount = Number(nanos ?? 0) / 1_000_000_000;
-	try {
-		return new Intl.NumberFormat("en-US", {
-			style: "currency",
-			currency,
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount);
-	} catch {
-		return `${amount.toFixed(2)} ${currency}`;
-	}
-}
-
-function shortDate(value?: string | null) {
-	if (!value) return "-";
-	const d = new Date(value);
-	if (!Number.isFinite(d.getTime())) return "-";
-	return d.toLocaleDateString(undefined, {
-		year: "numeric",
-		month: "short",
-		day: "2-digit",
-	});
-}
-
-function longDate(value?: string | null) {
-	if (!value) return "-";
-	const d = new Date(value);
-	if (!Number.isFinite(d.getTime())) return "-";
-	return d.toLocaleString(undefined, {
-		year: "numeric",
-		month: "short",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-		second: "2-digit",
-	});
-}
-
-function formatPeriod(start: string, end: string) {
-	return `${shortDate(start)} to ${shortDate(end)}`;
-}
 
 function statusMeta(status: InvoiceStatus) {
 	switch (status) {
@@ -129,6 +87,19 @@ export default function EnterpriseInvoices(props: {
 	pageSize?: number;
 }) {
 	const { invoices, pageSize = 10 } = props;
+	const format = useDisplayFormatters();
+	const formatNanos = (nanos: number, currency = "USD") => format.number(
+		Number(nanos ?? 0) / 1_000_000_000,
+		{
+			style: "currency",
+			currency,
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+			notation: "standard",
+		},
+	);
+	const formatPeriod = (start: string, end: string) =>
+		`${format.date(start)} to ${format.date(end)}`;
 	const [page, setPage] = React.useState(0);
 	const [selectedInvoice, setSelectedInvoice] = React.useState<InvoiceRow | null>(null);
 	const [busyInvoiceId, setBusyInvoiceId] = React.useState<string | null>(null);
@@ -228,8 +199,8 @@ export default function EnterpriseInvoices(props: {
 													{meta.label}
 												</span>
 											</td>
-											<td className="py-3 pr-4 text-muted-foreground">{shortDate(row.issued_at)}</td>
-											<td className="py-3 pr-4 text-muted-foreground">{shortDate(row.due_at)}</td>
+											<td className="py-3 pr-4 text-muted-foreground">{format.date(row.issued_at)}</td>
+											<td className="py-3 pr-4 text-muted-foreground">{format.date(row.due_at)}</td>
 											<td className="py-3 pr-4 text-right font-medium">
 												{formatNanos(row.amount_nanos, String(row.currency ?? "USD"))}
 											</td>
@@ -408,14 +379,14 @@ export default function EnterpriseInvoices(props: {
 									<div className="text-xs text-muted-foreground">Issued</div>
 									<div className="mt-1 flex items-center gap-2 font-medium">
 										<Calendar className="h-4 w-4 text-muted-foreground" />
-										{longDate(selectedInvoice.issued_at)}
+										{format.dateTime(selectedInvoice.issued_at)}
 									</div>
 								</div>
 								<div className="rounded-md border p-3">
 									<div className="text-xs text-muted-foreground">Due</div>
 									<div className="mt-1 flex items-center gap-2 font-medium">
 										<Calendar className="h-4 w-4 text-muted-foreground" />
-										{longDate(selectedInvoice.due_at)}
+										{format.dateTime(selectedInvoice.due_at)}
 									</div>
 								</div>
 								<div className="rounded-md border p-3 sm:col-span-2">

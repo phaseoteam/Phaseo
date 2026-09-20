@@ -60,6 +60,14 @@ import {
 import { cn } from "@/lib/utils";
 import { getCreditTransactionKindLabel } from "@/lib/credits/promoCodes";
 import { formatRelativeToNow } from "@/lib/formatRelative";
+import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
+import {
+	formatDisplayDateTime,
+	formatDisplayDateParts,
+	formatDisplayNumber,
+	formatDisplayTimestamp,
+	type DisplayPreferences,
+} from "@/lib/displayPreferences";
 import { toast } from "sonner";
 
 type Transaction = {
@@ -118,39 +126,50 @@ const TRANSACTION_CHIP_TONES = {
 	neutral: "border-border bg-muted/50 text-muted-foreground",
 } as const;
 
-function formatNanos(nanos?: number | null, currency = "USD") {
+function formatNanos(
+	nanos: number | null | undefined,
+	currency: string,
+	preferences: DisplayPreferences,
+) {
 	const val = (nanos ?? 0) / 1_000_000_000;
 	try {
-		return new Intl.NumberFormat("en-US", {
+		return formatDisplayNumber(val, preferences, {
 			style: "currency",
 			currency,
 			currencyDisplay: "symbol",
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
-		}).format(val);
+		});
 	} catch {
 		// fallback if unknown currency code
-		return `${val.toFixed(2)} ${currency}`;
+		return `${formatDisplayNumber(val, preferences, {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+			notation: "standard",
+		})} ${currency}`;
 	}
 }
 
-function formatDateTime(date: Date, timeZone: string): string {
-	return new Intl.DateTimeFormat("en-US", {
-		year: "numeric",
-		month: "short",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-		second: "2-digit",
-		hour12: false,
+function formatDateTime(
+	date: Date,
+	timeZone: string,
+	preferences: DisplayPreferences,
+): string {
+	return formatDisplayDateParts(date, preferences, {
+		dateStyle: preferences.dateStyle === "iso" ? "short" : preferences.dateStyle,
+		timeStyle: "medium",
 		timeZone,
-	}).format(date);
+	});
 }
 
-function formatSignedNanos(nanos?: number | null, currency = "USD") {
+function formatSignedNanos(
+	nanos: number | null | undefined,
+	currency: string,
+	preferences: DisplayPreferences,
+) {
 	const value = nanos ?? 0;
-	if (value === 0) return formatNanos(0, currency);
-	return `${value > 0 ? "+" : "-"}${formatNanos(Math.abs(value), currency)}`;
+	if (value === 0) return formatNanos(0, currency, preferences);
+	return `${value > 0 ? "+" : "-"}${formatNanos(Math.abs(value), currency, preferences)}`;
 }
 
 function statusChip(status?: string | null, kind?: string | null) {
@@ -319,13 +338,17 @@ function kindBadge(kind?: string | null) {
 }
 
 /** Credit is amount > 0, Debit is amount < 0 */
-function amountPill(nanos?: number | null, currency = "USD") {
+function amountPill(
+	nanos: number | null | undefined,
+	currency: string,
+	preferences: DisplayPreferences,
+) {
 	const n = nanos ?? 0;
 	const prefix = n > 0 ? "+" : n < 0 ? "-" : "";
 	return (
 		<span className="inline-flex items-center font-medium tabular-nums text-foreground">
 			{prefix}
-			{formatNanos(Math.abs(n), currency)}
+			{formatNanos(Math.abs(n), currency, preferences)}
 		</span>
 	);
 }
@@ -371,8 +394,11 @@ export default function RecentTransactions({
 	stripeCustomerId,
 	currency = "USD",
 }: Props) {
+	const { preferences } = useDisplayPreferences();
 	const userTimeZone =
-		typeof Intl !== "undefined"
+		preferences.timeZone !== "system"
+			? preferences.timeZone
+			: typeof Intl !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 			: "UTC";
 	const router = useRouter();
@@ -606,8 +632,10 @@ export default function RecentTransactions({
 												{createdAtDate && Number.isFinite(createdAtDate.getTime()) ? (
 													<HoverCard>
 														<HoverCardTrigger asChild>
-																	<span className="cursor-help underline decoration-dotted underline-offset-2">
-																{createdAtDate.toLocaleString()}
+															<span className="cursor-help underline decoration-dotted underline-offset-2">
+																{relativeNowMs
+																	? formatDisplayTimestamp(createdAtDate, preferences, new Date(relativeNowMs))
+																	: formatDisplayDateTime(createdAtDate, preferences)}
 															</span>
 														</HoverCardTrigger>
 														<HoverCardContent align="start" className="w-auto">
@@ -615,13 +643,13 @@ export default function RecentTransactions({
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">{userTimeZone}</div>
 																	<div className="font-mono">
-																		{formatDateTime(createdAtDate, userTimeZone)}
+															{formatDateTime(createdAtDate, userTimeZone, preferences)}
 																	</div>
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">UTC</div>
 																	<div className="font-mono">
-																		{formatDateTime(createdAtDate, "UTC")}
+															{formatDateTime(createdAtDate, "UTC", preferences)}
 																	</div>
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
@@ -640,7 +668,7 @@ export default function RecentTransactions({
 												)}
 											</TableCell>
 											<TableCell className="py-2 font-medium tabular-nums">
-												{amountPill(t.amount_nanos ?? 0, currency)}
+														{amountPill(t.amount_nanos ?? 0, currency, preferences)}
 											</TableCell>
 											<TableCell className="py-2">{kindBadge(t.kind)}</TableCell>
 											<TableCell className="py-2">
@@ -660,7 +688,7 @@ export default function RecentTransactions({
 													<HoverCard>
 														<HoverCardTrigger asChild>
 															<span className="cursor-default font-medium tabular-nums">
-																{formatNanos(after, currency)}
+																	{formatNanos(after, currency, preferences)}
 															</span>
 														</HoverCardTrigger>
 														<HoverCardContent align="start" className="w-64">
@@ -677,7 +705,7 @@ export default function RecentTransactions({
 																	<div className="flex items-center justify-between gap-4">
 																		<span className="text-muted-foreground">Before</span>
 																		<span className="font-mono font-medium tabular-nums">
-																			{before !== null ? formatNanos(before, currency) : "-"}
+																			{before !== null ? formatNanos(before, currency, preferences) : "-"}
 																		</span>
 																	</div>
 																	<div className="flex items-center justify-between gap-4">
@@ -692,13 +720,13 @@ export default function RecentTransactions({
 																						: "text-muted-foreground"
 																			)}
 																		>
-																			{formatSignedNanos(amountNanos, currency)}
+																			{formatSignedNanos(amountNanos, currency, preferences)}
 																		</span>
 																	</div>
 																	<div className="flex items-center justify-between gap-4 border-t pt-2">
 																		<span className="text-muted-foreground">After</span>
 																		<span className="font-mono font-semibold tabular-nums text-foreground">
-																			{formatNanos(after, currency)}
+																			{formatNanos(after, currency, preferences)}
 																		</span>
 																	</div>
 																</div>

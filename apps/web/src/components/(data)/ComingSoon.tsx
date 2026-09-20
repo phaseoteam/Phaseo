@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Sparkles, Hammer, Clock, Home, Info } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -42,19 +43,6 @@ function cn(...classes: Array<string | false | null | undefined>) {
 	return classes.filter(Boolean).join(" ");
 }
 
-function formatEta(eta?: Date | string) {
-	if (!eta) return null;
-	if (typeof eta === "string") return eta;
-	try {
-		return eta.toLocaleDateString(undefined, {
-			year: "numeric",
-			month: "short",
-		});
-	} catch {
-		return String(eta);
-	}
-}
-
 export default function ComingSoon({
 	title,
 	subtitle,
@@ -72,7 +60,8 @@ export default function ComingSoon({
 	className,
 	children,
 }: ComingSoonProps) {
-	const etaText = formatEta(eta);
+	const format = useDisplayFormatters();
+	const etaText = eta instanceof Date ? format.calendarDate(eta) : eta ?? null;
 
 	const alignment =
 		align === "center"
@@ -363,4 +352,3 @@ export default function ComingSoon({
 		</Section>
 	);
 }
-

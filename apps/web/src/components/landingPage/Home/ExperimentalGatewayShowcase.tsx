@@ -5,14 +5,7 @@ import { Button } from "@/components/ui/button";
 import { fetchFrontendGatewayShowcase } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { formatGatewayMetricWindow } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-
-function formatCompact(value: number) {
-	if (!Number.isFinite(value) || value <= 0) return "0";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-	return value.toLocaleString();
-}
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 export function ExperimentalGatewayShowcaseFallback() {
 	return (
@@ -61,17 +54,17 @@ export default async function ExperimentalGatewayShowcase() {
 	const stats = [
 		{
 			label: `Tokens routed (${formatGatewayMetricWindow(metrics.summary.windowHours)})`,
-			value: `${formatCompact(metrics.summary.tokensInWindow)}+`,
+			value: <><DisplayNumber value={metrics.summary.tokensInWindow} options={{ maximumFractionDigits: 1 }} />+</>,
 			icon: Coins,
 		},
 		{
 			label: "Active models",
-			value: `${formatCompact(metrics.summary.supportedModels ?? 0)}+`,
+			value: <><DisplayNumber value={metrics.summary.supportedModels ?? 0} />+</>,
 			icon: Boxes,
 		},
 		{
 			label: "Supported providers",
-			value: `${formatCompact(metrics.summary.supportedProviders ?? 0)}+`,
+			value: <><DisplayNumber value={metrics.summary.supportedProviders ?? 0} />+</>,
 			icon: Route,
 		},
 	] as const;
@@ -187,7 +180,7 @@ export default async function ExperimentalGatewayShowcase() {
 									</div>
 									<div className="text-right">
 										<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-											{formatCompact(model.tokens)}
+											<DisplayNumber value={model.tokens} options={{ maximumFractionDigits: 1 }} />
 										</p>
 										<p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
 											tokens

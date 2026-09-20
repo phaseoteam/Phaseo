@@ -19,6 +19,7 @@ import { redeemCreditCodeAction } from "@/app/(dashboard)/settings/credits/actio
 import { normalizePromoCodeInput } from "@/lib/credits/promoCodes";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type TeamOption = {
 	id: string;
@@ -44,6 +45,7 @@ type Props = {
 };
 
 export default function RedeemCreditCodeCard(props: Props) {
+	const format = useDisplayFormatters();
 	const {
 		teams,
 		invoiceTeamIds = [],
@@ -147,7 +149,13 @@ export default function RedeemCreditCodeCard(props: Props) {
 			const applied = Number(result.amountNanos ?? 0);
 			const appliedAmountText =
 				Number.isFinite(applied) && applied > 0
-					? `+$${(applied / 1_000_000_000).toFixed(2)}`
+					? `+${format.number(applied / 1_000_000_000, {
+							style: "currency",
+							currency: "USD",
+							minimumFractionDigits: 2,
+							maximumFractionDigits: 2,
+							notation: "standard",
+						})}`
 					: null;
 			const targetTeam =
 				teamOptions.find((team) => team.id === selectedTeamId)?.name ?? "selected team";
@@ -159,7 +167,13 @@ export default function RedeemCreditCodeCard(props: Props) {
 			setResultTone("success");
 			const appliedLabel =
 				Number.isFinite(applied) && applied > 0
-					? ` (+$${(applied / 1_000_000_000).toFixed(2)})`
+					? ` (+${format.number(applied / 1_000_000_000, {
+							style: "currency",
+							currency: "USD",
+							minimumFractionDigits: 2,
+							maximumFractionDigits: 2,
+							notation: "standard",
+						})})`
 					: "";
 			toast.success(`${result.message}${appliedLabel}`);
 		} finally {

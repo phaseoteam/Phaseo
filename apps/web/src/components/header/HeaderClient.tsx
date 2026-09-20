@@ -52,11 +52,15 @@ import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButt
 import { isPublicDataPathname } from "@/lib/publicDataRoutes";
 import { clearAccountQueryCache, clearAccountQueryScope } from "@/lib/query/invalidation";
 import { toAccountQueryScope } from "@/lib/query/queryKeys";
+import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
+import type { DisplayPreferences } from "@/lib/displayPreferences";
+import type { InternalAuthHeaderUser } from "@/lib/fetchers/internal/authTypes";
 
 interface HeaderProps {
 	isLoggedIn: boolean;
-	user?: any;
+	user?: InternalAuthHeaderUser;
 	teams?: { id: string; name: string }[];
+	displayPreferences?: DisplayPreferences;
 	currentTeamId?: string;
 	userRole?: string | undefined;
 	providerMode?: boolean;
@@ -67,6 +71,7 @@ export default function HeaderClient({
 	isLoggedIn,
 	user,
 	teams = [],
+	displayPreferences,
 	currentTeamId,
 	userRole,
 	providerMode = false,
@@ -77,6 +82,7 @@ export default function HeaderClient({
 	const pathname = usePathname() ?? "/";
 	const isPublicDataPage = isPublicDataPathname(pathname);
 	const { theme, setTheme } = useTheme();
+	const { isHydrated: displayPreferencesHydrated, setPreferences } = useDisplayPreferences();
 	const currentTheme =
 		theme === "light" || theme === "dark" || theme === "system"
 			? theme
@@ -105,6 +111,12 @@ export default function HeaderClient({
 	useEffect(() => {
 		setActiveTeamId(currentTeamId ?? teams[0]?.id);
 	}, [currentTeamId, teams]);
+
+	useEffect(() => {
+		if (displayPreferencesHydrated && isLoggedIn && displayPreferences) {
+			setPreferences(displayPreferences);
+		}
+	}, [displayPreferences, displayPreferencesHydrated, isLoggedIn, setPreferences]);
 
 	async function handleSignOut() {
 		try {

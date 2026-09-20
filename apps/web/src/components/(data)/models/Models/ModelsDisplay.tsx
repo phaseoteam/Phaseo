@@ -13,6 +13,7 @@ import {
 import { usePathname, useSearchParams } from "next/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
 import { Logo } from "@/components/Logo";
@@ -978,6 +979,7 @@ function ModelsDisplayContent({
 	modelsPageData: ModelsPageData;
 	showPrimaryHeader?: boolean;
 }) {
+	const format = useDisplayFormatters();
 	const { models, facets } = modelsPageData;
 	const [search, setSearch] = useQueryState("q", qParser);
 	const deferredSearch = useDeferredValue(search ?? "");
@@ -1671,7 +1673,10 @@ function ModelsDisplayContent({
 		setOpenFilterSections(sections);
 	};
 
-	const shownCountLabel = `${filteredModels.length.toLocaleString()} shown`;
+	const shownCountLabel = `${format.number(filteredModels.length, {
+		maximumFractionDigits: 0,
+		notation: "standard",
+	})} shown`;
 	const shownCountWithSearchLabel = search
 		? `${shownCountLabel} for "${search}"`
 		: shownCountLabel;

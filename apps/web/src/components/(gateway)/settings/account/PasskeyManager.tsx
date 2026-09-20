@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, LogIn, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	deletePasskeyAction,
 	startPasskeyRegistrationAction,
@@ -38,6 +39,7 @@ type PendingPasskeyAction =
 	| { passkeyId: string; type: "remove" };
 
 export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
+	const format = useDisplayFormatters();
 	const router = useRouter();
 	const [passkeys, setPasskeys] = React.useState<Passkey[]>([]);
 	const [loading, setLoading] = React.useState(true);
@@ -214,7 +216,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 											{passkey.friendly_name || "Passkey"}
 										</p>
 										<p className="mt-0.5 text-xs text-muted-foreground">
-											Added {new Date(passkey.created_at).toLocaleDateString()}
+											Added {format.date(passkey.created_at)}
 										</p>
 									</div>
 									<Button

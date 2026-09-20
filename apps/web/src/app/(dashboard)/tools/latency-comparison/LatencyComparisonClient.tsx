@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Play, Square, Zap, Server, Loader2, BarChart3, TrendingUp, Download, Save, Trash2, Plus, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type RequestState = "idle" | "running" | "completed" | "error";
 
@@ -54,10 +55,6 @@ function formatTime(ms: number | null): string {
 	if (ms < 1000) return `${ms.toFixed(0)}ms`;
 	if (ms < 60000) return `${(ms / 1000).toFixed(2)}s`;
 	return `${(ms / 1000).toFixed(2)}s`;
-}
-
-function formatNumber(n: number, decimals = 2): string {
-	return n.toFixed(decimals);
 }
 
 async function streamRequest(
@@ -400,6 +397,12 @@ function TimelineChart({ gatewayTimes, openaiTimes }: { gatewayTimes: number[]; 
 }
 
 export default function LatencyComparisonClient() {
+	const displayFormat = useDisplayFormatters();
+	const formatNumber = (value: number, decimals = 2) =>
+		displayFormat.number(value, {
+			minimumFractionDigits: decimals,
+			maximumFractionDigits: decimals,
+		});
 	const [gatewayUrl, setGatewayUrl] = useState("");
 	const [gatewayApiKey, setGatewayApiKey] = useState("");
 	const [openaiApiKey, setOpenaiApiKey] = useState("");

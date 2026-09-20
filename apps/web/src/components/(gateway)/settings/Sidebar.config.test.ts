@@ -18,6 +18,7 @@ describe("settings sidebar navigation", () => {
 			"Profile",
 			"Account",
 			"Workspaces",
+			"Preferences",
 			"Billing",
 			"Feature Preview",
 		]);

@@ -26,8 +26,11 @@ import { Suspense } from "react";
 import { WebQueryProvider } from "@/components/providers/WebQueryProvider";
 import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
 import { HISTORY_PRIVACY_SCRIPT } from "@/lib/query/historyPrivacyScript";
+import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
+
+const APPEARANCE_INITIALIZATION_SCRIPT = `(()=>{try{const p=JSON.parse(localStorage.getItem("phaseo-display-preferences-v1")||"null");if(!p||typeof p!=="object")return;const r=document.documentElement;const lp=["phaseo","paper","warm"],dp=["phaseo","slate","midnight"],hex=/^#[0-9a-f]{6}$/i;const fg=v=>{const c=[1,3,5].map(i=>parseInt(v.slice(i,i+2),16)/255).map(x=>x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4)),l=.2126*c[0]+.7152*c[1]+.0722*c[2];return 1.05/(l+.05)>=(l+.05)/.052?"#ffffff":"#0b0b0b"};if(lp.includes(p.lightPalette))r.dataset.lightPalette=p.lightPalette;if(dp.includes(p.darkPalette))r.dataset.darkPalette=p.darkPalette;if(hex.test(p.lightAccent)){r.style.setProperty("--light-user-accent",p.lightAccent);r.style.setProperty("--light-user-accent-foreground",fg(p.lightAccent))}if(hex.test(p.darkAccent)){r.style.setProperty("--dark-user-accent",p.darkAccent);r.style.setProperty("--dark-user-accent-foreground",fg(p.darkAccent))}}catch{}})();`;
 
 export const metadata: Metadata = {
 	title: {
@@ -79,6 +82,7 @@ export default function RootLayout({
 		<html lang="en" className="h-full" suppressHydrationWarning>
 			<head>
 				<script id="history-privacy" dangerouslySetInnerHTML={{ __html: HISTORY_PRIVACY_SCRIPT }} />
+				<script dangerouslySetInnerHTML={{ __html: APPEARANCE_INITIALIZATION_SCRIPT }} />
 				{/* Use the black/white brand mark for search; the theme client mutates this exact link. */}
 				<link
 					id="phaseo-favicon"
@@ -103,6 +107,7 @@ export default function RootLayout({
 					enableSystem
 					disableTransitionOnChange
 				>
+					<DisplayPreferencesProvider>
 					<TooltipProvider>
 						<ThemeAwareFavicon />
 						<Suspense fallback={null}>
@@ -117,6 +122,7 @@ export default function RootLayout({
 						<TailwindIndicator />
 						<Toaster richColors />
 					</TooltipProvider>
+					</DisplayPreferencesProvider>
 				</ThemeProvider></CatalogNavigationGuardProvider>
 				<DeferredVercelAnalytics />
 			</body>
