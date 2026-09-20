@@ -188,12 +188,12 @@ function PreferenceRow({
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="grid gap-4 border-t border-border/60 py-5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
-			<div className="max-w-xl md:pt-1.5">
+		<div className="grid gap-3 border-t border-border/60 py-3.5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
+			<div className="max-w-xl md:pt-1">
 				<p className="text-sm font-medium">{title}</p>
 				<p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
 			</div>
-			<div className="w-full space-y-2 md:justify-self-end">
+			<div className="w-full space-y-1.5 md:justify-self-end">
 				{children}
 				{preview ? (
 					<div className="flex items-baseline justify-between gap-4 px-1 text-xs">
@@ -218,8 +218,8 @@ function SettingsSection({
 	children: React.ReactNode;
 }) {
 	return (
-		<section aria-labelledby={id} className="border-t border-border/70 pt-7 first:border-t-0 first:pt-0">
-			<div className="pb-4">
+		<section aria-labelledby={id} className="border-t border-border/70 pt-6 first:border-t-0 first:pt-0">
+			<div className="pb-2">
 				<h2 id={id} className="text-base font-semibold tracking-tight">{title}</h2>
 				<p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
 			</div>
@@ -241,7 +241,7 @@ function PreferenceSelect<T extends string>({
 }) {
 	return (
 		<Select value={value} onValueChange={(next) => onChange(next as T)}>
-			<SelectTrigger aria-label={ariaLabel} className="h-11 w-full">
+			<SelectTrigger aria-label={ariaLabel} className="h-10 w-full">
 				<SelectValue>{options.find((option) => option.value === value)?.label}</SelectValue>
 			</SelectTrigger>
 			<SelectContent>
@@ -314,7 +314,7 @@ function AccentPicker({
 					type="button"
 					variant="outline"
 					aria-label={ariaLabel}
-					className="h-11 w-full justify-between px-3 font-normal"
+					className="h-10 w-full justify-between px-3 font-normal"
 				>
 					<span className="flex min-w-0 items-center gap-2.5">
 						<span
@@ -373,7 +373,7 @@ function ThemePresetPicker({
 	const activePreset = THEME_PRESETS.find((preset) => presetMatches(preferences, preset));
 
 	return (
-		<div className="border-t border-border/60 py-5">
+		<div className="border-t border-border/60 py-4">
 			<div className="flex items-start justify-between gap-4">
 				<div>
 					<p className="text-sm font-medium">Preset</p>
@@ -510,7 +510,7 @@ export default function DisplayPreferencesClient({
 	}
 
 	return (
-		<div className="space-y-12 pb-2">
+		<div className="space-y-9 pb-2">
 			<SettingsSection
 				id="date-time-heading"
 				title="Date and time"
@@ -561,6 +561,7 @@ export default function DisplayPreferencesClient({
 						options={timeZoneOptions}
 						placeholder="Choose a time zone"
 						showScrollbar
+						triggerClassName="h-10 min-h-10"
 					/>
 				</PreferenceRow>
 				<PreferenceRow
@@ -625,7 +626,7 @@ export default function DisplayPreferencesClient({
 				description="Build a coordinated light and dark theme. Palette and accent changes update this page immediately."
 			>
 				<PreferenceRow title="Mode" description="System, light, or dark mode stays specific to this browser.">
-					<div className="flex h-11 items-center justify-end rounded-md border border-border px-2">
+					<div className="flex h-10 items-center justify-end rounded-md border border-border px-2">
 						<ThemeSelector />
 					</div>
 				</PreferenceRow>
