@@ -379,6 +379,11 @@ export function AssistantMessageFooter({
 											</span>
 										)}
 									</MetadataRow>
+									<MetadataRow label="Service tier">
+										<NumericValue>
+											{formatServiceTierLabel(metadataServiceTier)}
+										</NumericValue>
+									</MetadataRow>
 									{requestLogHref && metadataRequestId ? (
 										<MetadataRow label="Req ID">
 											<Link
@@ -390,11 +395,6 @@ export function AssistantMessageFooter({
 											</Link>
 										</MetadataRow>
 									) : null}
-									<MetadataRow label="Service tier">
-										<NumericValue>
-											{formatServiceTierLabel(metadataServiceTier)}
-										</NumericValue>
-									</MetadataRow>
 								</div>
 								<div className="h-px bg-border" />
 								<MetadataSection title="Usage">
