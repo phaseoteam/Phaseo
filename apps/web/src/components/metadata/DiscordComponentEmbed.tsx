@@ -5,6 +5,7 @@ import { resolveLogo } from "@/lib/logos";
 
 const DEFAULT_ACCENT_COLOR = 0x2563eb;
 const MAX_DESCRIPTION_LENGTH = 360;
+const PUBLIC_MEDIA_ORIGIN = "https://phaseo.app";
 
 export interface DiscordModelComponentEmbedOptions {
 	modelId: string;
@@ -41,15 +42,13 @@ function absoluteMediaUrl(value: string | null | undefined): string | null {
 	if (!trimmed) return null;
 	if (/^https?:\/\//i.test(trimmed)) return trimmed;
 	const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-	if (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL) {
-		const previewUrl = new URL(path, `https://${process.env.VERCEL_URL}`);
-		const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim();
-		if (bypassSecret) {
-			previewUrl.searchParams.set("x-vercel-protection-bypass", bypassSecret);
-		}
-		return previewUrl.toString();
+	// Embeds are public: use public assets even on protected previews, never credentials.
+	try {
+		const url = new URL(path, PUBLIC_MEDIA_ORIGIN);
+		return url.origin === PUBLIC_MEDIA_ORIGIN ? url.toString() : null;
+	} catch {
+		return null;
 	}
-	return absoluteUrl(path);
 }
 
 function discordLogoUrlForOrganisation(
