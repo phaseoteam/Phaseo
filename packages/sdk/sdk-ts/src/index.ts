@@ -402,7 +402,7 @@ export class Phaseo {
   private readonly client: Client;
   private readonly basePath: string;
   private readonly headers: Record<string, string>;
-  private readonly telemetry: TelemetryCapture;
+  private telemetry: TelemetryCapture;
   private readonly fetchImpl: typeof fetch;
   private readonly enableDeprecationWarnings: boolean;
   private readonly warningsAsErrors: boolean;
@@ -571,7 +571,11 @@ export class Phaseo {
   /** Immutable request-scoped client; works with every resource, stream and media method. */
   withOptions(options: RequestControls & { headers?: Record<string, string> }): Phaseo {
     const signal = this.opts.signal && options.signal ? AbortSignal.any([this.opts.signal, options.signal]) : options.signal ?? this.opts.signal;
-    return new Phaseo({ ...this.opts, ...options, signal, headers: { ...this.opts.headers, ...options.headers } });
+    // Scoped clients belong to the same capture session; constructing another
+    // enabled capture would register timers and process listeners on every poll.
+    const scoped = new Phaseo({ ...this.opts, ...options, signal, headers: { ...this.opts.headers, ...options.headers }, devtools: { enabled: false } });
+    scoped.telemetry = this.telemetry;
+    return scoped;
   }
 
   private videoHandle(id: string, initial?: VideoStatusResponse): JobHandle<VideoStatusResponse> {

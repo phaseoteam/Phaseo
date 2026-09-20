@@ -13,9 +13,8 @@ export class JobHandle<T extends JobSnapshot> {
 
   toJSON(): { kind: JobKind; id: string } { return { kind: this.kind, id: this.id }; }
   async result(options: JobWaitOptions<T> = {}): Promise<T> {
-    const terminal = this.initial && ["completed", "failed", "cancelled", "expired"].includes(jobStatus(this.initial));
-    const response = terminal
-      ? await waitForJob(this.kind, this.id, async () => this.initial!, options, this.initial)
+    const response = this.initial
+      ? await waitForJob(this.kind, this.id, (_id, signal) => this.retrieve(signal), options, this.initial)
       : await this.wait(options);
     if (jobStatus(response) !== "completed") throw new JobFailedError(this.kind, response as never);
     return response;

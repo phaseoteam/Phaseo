@@ -95,19 +95,30 @@ export type BatchResult = { custom_id?: string; response?: unknown; error?: unkn
 export async function* batchResults(stream: ReadableStream<Uint8Array>, maxLineBytes = 10 * 1024 * 1024): AsyncGenerator<BatchResult> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
-  let pending = "";
+  const encoder = new TextEncoder();
+  let parts: string[] = [];
+  let pendingBytes = 0;
+  const append = (part: string) => {
+    pendingBytes += encoder.encode(part).length;
+    if (pendingBytes > maxLineBytes) throw new Error("Batch result line exceeds size limit");
+    if (part) parts.push(part);
+  };
   try {
     while (true) {
       const { done, value } = await reader.read();
-      pending += decoder.decode(value, { stream: !done });
+      const chunk = decoder.decode(value, { stream: !done });
+      let start = 0;
       let newline: number;
-      while ((newline = pending.indexOf("\n")) >= 0) {
-        const line = pending.slice(0, newline); pending = pending.slice(newline + 1);
-        if (new TextEncoder().encode(line).length > maxLineBytes) throw new Error("Batch result line exceeds size limit");
+      while ((newline = chunk.indexOf("\n", start)) >= 0) {
+        append(chunk.slice(start, newline));
+        const line = parts.join("");
         if (line.trim()) yield parseBatchLine(line);
+        parts = [];
+        pendingBytes = 0;
+        start = newline + 1;
       }
-      if (new TextEncoder().encode(pending).length > maxLineBytes) throw new Error("Batch result line exceeds size limit");
-      if (done) { if (pending.trim()) yield parseBatchLine(pending); break; }
+      append(chunk.slice(start));
+      if (done) { const line = parts.join(""); if (line.trim()) yield parseBatchLine(line); break; }
     }
   } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
 }

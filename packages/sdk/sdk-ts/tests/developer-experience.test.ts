@@ -3,6 +3,7 @@ import { Phaseo, responseMetadata, RequestTimeoutError, parseOutput, collectStre
 import { createMockTransport } from "../src/testing.js";
 import { PhaseoHttpError } from "../src/runtime/client.js";
 import { JobHandle } from "../src/jobHandle.js";
+import { DevToolsWriter } from "../src/devtools/core.js";
 
 afterEach(() => vi.useRealTimers());
 const setup = (fixtures: Parameters<typeof createMockTransport>[0], options = {}) => {
@@ -83,6 +84,49 @@ test("inline completion still bounds asynchronous progress callbacks", async () 
   expect(wait).not.toHaveBeenCalled();
 });
 
+test("handle polling publishes the submission before its first delayed GET", async () => {
+  vi.useFakeTimers();
+  const initial = { id: "music_1", status: "queued" };
+  const retrieve = vi.fn(async () => ({ ...initial, status: "completed" }));
+  const onPoll = vi.fn();
+  const handle = new JobHandle("music", initial.id, retrieve, vi.fn(), initial);
+  const pending = handle.result({ intervalMs: 250, onPoll });
+  expect(onPoll).toHaveBeenCalledWith(initial);
+  expect(retrieve).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(249);
+  expect(retrieve).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1);
+  await expect(pending).resolves.toMatchObject({ status: "completed" });
+  expect(onPoll.mock.calls.map(([job]) => job.status)).toEqual(["queued", "completed"]);
+});
+
+test("scoped polling shares one devtools session without accumulating listeners", async () => {
+  vi.useFakeTimers();
+  const events = ["exit", "SIGINT", "SIGTERM"] as const;
+  const previous = events.map(event => new Set(process.listeners(event)));
+  vi.spyOn(DevToolsWriter.prototype, "ensureDirectory").mockImplementation(() => {});
+  const sessions = vi.spyOn(DevToolsWriter.prototype, "writeSessionMetadata").mockImplementation(() => {});
+  vi.spyOn(DevToolsWriter.prototype, "writeEntries").mockImplementation(() => {});
+  try {
+    const { client, mock } = setup(["running", "running", "completed"].map(status => ({
+      method: "GET", path: "/v1/videos/v1", json: { id: "v1", status },
+    })), { devtools: { enabled: true } });
+    const counts = events.map(event => process.listenerCount(event));
+    const pending = client.withOptions({ timeoutMs: 2000 }).videos.wait("v1", { intervalMs: 250 });
+    await vi.advanceTimersByTimeAsync(500);
+    await pending;
+    expect(sessions).toHaveBeenCalledTimes(1);
+    expect(events.map(event => process.listenerCount(event))).toEqual(counts);
+    mock.assertDone();
+  } finally {
+    events.forEach((event, index) => {
+      for (const listener of process.listeners(event)) if (!previous[index].has(listener)) process.removeListener(event, listener);
+    });
+    vi.clearAllTimers();
+    vi.restoreAllMocks();
+  }
+});
+
 test("validated output and streamed usage preserve failures", async () => {
   const schema = { parse(value: unknown): { answer: number } {
     if (typeof (value as any)?.answer !== "number") throw new Error("answer must be numeric");
@@ -114,6 +158,18 @@ test("incremental batch parsing joins unicode chunks and retains per-row errors"
 
 test("HTTP errors remain backwards compatible", () => {
   expect(new PhaseoHttpError({ status: 400, statusText: "Bad request", body: "bad" }).status).toBe(400);
+});
+
+test("batch line limits count UTF-8 bytes across split code points and reset per row", async () => {
+  const row = JSON.stringify({ response: "🎵".repeat(100) });
+  const bytes = new TextEncoder().encode(row);
+  const source = () => new ReadableStream<Uint8Array>({ start(c) {
+    for (const byte of new TextEncoder().encode(row + "\n" + row)) c.enqueue(Uint8Array.of(byte));
+    c.close();
+  } });
+  const read = async (limit: number) => { const rows = []; for await (const value of batchResults(source(), limit)) rows.push(value); return rows; };
+  expect(await read(bytes.length)).toHaveLength(2);
+  await expect(read(bytes.length - 1)).rejects.toThrow("Batch result line exceeds size limit");
 });
 
 test("collecting Responses events does not duplicate completed text", async () => {

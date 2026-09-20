@@ -10,6 +10,11 @@ request. Timeouts cover response reading. GET/HEAD retries respect `Retry-After`
 POST requests are never automatically retried, including after ambiguous timeouts.
 `maxRetries` defaults to zero. Stopping a local request does not cancel remote work.
 
+TypeScript `timeoutMs` is a total HTTP deadline (60 seconds by default), including
+active streams and downloads; increase it for longer transfers. Python's HTTPX
+`timeout` bounds network inactivity instead. Job waiting timeouts in both SDKs
+bound the overall polling workflow, separately from HTTP timeouts.
+
 Use `responseMetadata(result)` from `@phaseo/sdk` for `requestId`, `traceUrl` and
 HTTP status. `PhaseoHttpError` retains the body and headers and exposes `code`,
 `requestId`, `traceUrl` and `retryAfterMs` where supplied by the gateway.

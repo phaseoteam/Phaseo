@@ -31,6 +31,10 @@ never retried. `PhaseoHTTPError` preserves the response, body, status, `code`,
 `request_id`, `trace_url` and `retry_after` in seconds. JSON objects remain
 dictionaries, with typed metadata and an `output_text` property.
 
+Python's HTTP timeout is not a total transfer deadline: an active stream can
+continue while chunks arrive. TypeScript's `timeoutMs` is a total HTTP deadline.
+Job waiting timeouts in both SDKs bound the overall polling workflow separately.
+
 Migration: synchronous JSON requests now use HTTPX. Replace catches of
 `urllib.error.HTTPError` with `PhaseoHTTPError` (or `httpx.HTTPStatusError`). Use
 `error.status` for the HTTP status and `error.code` for the API error code.

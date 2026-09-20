@@ -139,3 +139,42 @@ def test_advertised_parameter_ranges():
         "capabilities": {"parameters": ["duration"], "parameter_details": {"duration": {"minimum": 5, "maximum": 10, "step": 5}}}}]}
     assert check_capabilities(model, parameter_values={"duration": 10})["ok"]
     assert not check_capabilities(model, parameter_values={"duration": 7})["ok"]
+
+
+def test_async_image_edits_use_multipart_and_preserve_file_ownership(tmp_path):
+    from email.parser import BytesParser
+    from email.policy import default
+    import io
+    image = tmp_path / "image.png"
+    image.write_bytes(b"image-bytes")
+    mask = io.BytesIO(b"mask-bytes")
+
+    def handler(request):
+        assert request.method == "POST"
+        assert request.url.path == "/v1/images/edits"
+        content_type = request.headers["content-type"]
+        assert content_type.startswith("multipart/form-data;")
+        message = BytesParser(policy=default).parsebytes(
+            f"Content-Type: {content_type}\r\n\r\n".encode() + request.content)
+        parts = list(message.iter_parts())
+        images = [part for part in parts if part.get_param("name", header="content-disposition") == "image"]
+        assert [part.get_payload(decode=True) for part in images] == [b"image-bytes", b"other-bytes"]
+        fields = {part.get_param("name", header="content-disposition"): part.get_payload(decode=True) for part in parts}
+        assert fields["mask"] == b"mask-bytes"
+        assert fields["n"] == b"2"
+        assert fields["meta"] == b"false"
+        assert json.loads(fields["provider"]) == {"order": ["test"]}
+        return httpx.Response(200, json={"data": []})
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+            client = AsyncPhaseo(api_key="test", http_client=http)
+            result = await client.images.edit({"model": "test", "image": [image, b"other-bytes"],
+                "mask": mask, "prompt": "Edit", "n": 2, "meta": False, "provider": {"order": ["test"]}})
+            assert result == {"data": []}
+        assert not mask.closed
+        image.unlink()  # The SDK-owned path handle must be closed on Windows.
+    try:
+        asyncio.run(run())
+    finally:
+        mask.close()

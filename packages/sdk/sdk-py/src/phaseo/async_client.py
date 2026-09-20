@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import asyncio
-from contextlib import asynccontextmanager, aclosing
+from contextlib import asynccontextmanager, aclosing, ExitStack
 import inspect
+import json
 import os
 import time
 from typing import Any, AsyncIterator, Callable, TypeVar
@@ -67,7 +68,20 @@ class AsyncImages(AsyncResource):
         return await self.client.request("POST", "/images/generations", body=params)
 
     async def edit(self, params: dict[str, Any]) -> APIResponse:
-        return await self.client.request("POST", "/images/edits", body=params)
+        with ExitStack() as stack:
+            fields = []
+            for name, value in params.items():
+                if value is None:
+                    continue
+                if name in ("image", "mask"):
+                    for item in value if isinstance(value, list) else [value]:
+                        upload = (None, item) if isinstance(item, str) else stack.enter_context(upload_input(item, name))
+                        fields.append((name, upload))
+                else:
+                    fields.append((name, (None, value if isinstance(value, str) else json.dumps(value))))
+            async with self.client._stream("POST", "/images/edits", files=fields) as response:
+                await response.aread()
+                return decode_response(response)
 
 
 class AsyncAudio:
