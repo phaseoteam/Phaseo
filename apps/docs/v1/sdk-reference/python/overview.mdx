@@ -6,7 +6,58 @@ description: "Official Python client for the Phaseo Gateway API"
 
 Install the published [`phaseo`](https://pypi.org/project/phaseo/) package from PyPI.
 
-The Phaseo Python SDK currently provides a synchronous client for the Phaseo Gateway API.
+The Phaseo Python SDK provides synchronous `Phaseo` and native async `AsyncPhaseo` clients.
+
+## Native async requests
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo
+
+async def main():
+    async with AsyncPhaseo() as client:
+        response = await client.responses.create({"model": "openai/gpt-5-nano", "input": "Hello"})
+        print(response.output_text, response.request_id, response.trace_url)
+
+asyncio.run(main())
+```
+
+Use `async for event in client.responses.stream(request)` for parsed text events.
+Native asyncio cancellation stops HTTP and polling. Resource namespaces cover text,
+images, audio, music, video, batches, files, models, embeddings, OCR, rerank, parse,
+moderations and decisions; use `await client.request(...)` for other HTTP operations.
+Injected HTTPX clients remain caller-owned.
+
+Both clients support `with_options(timeout=30, max_retries=2)` without changing the
+original client. HTTPX timeouts bound network inactivity in seconds. Retries default
+to zero and apply only to GET/HEAD before response consumption, never submissions.
+`PhaseoHTTPError` exposes the body, code, request ID, dashboard trace URL and retry delay.
+
+When upgrading, replace synchronous JSON request catches of `urllib.error.HTTPError`
+with `PhaseoHTTPError` (or `httpx.HTTPStatusError`), and connection error catches
+with `httpx.TransportError`. `error.status` is the HTTP status; `error.code` is
+the API error code.
+
+## Additional conveniences
+
+Job resources expose `start` and `resume` handles with `result`, `events` and
+`to_dict`. Await async methods and iterate async events with `async for`.
+Only video and batch support remote cancellation. Stream media with
+`videos.stream_content(id)` and batches with `batches.results(id)`. The synchronous
+`download_to(chunks, binary_file)` helper writes without buffering the whole file.
+File uploads accept bytes, `Path` objects, file objects and HTTPX file tuples.
+
+`responses.parse(request, PydanticModel)` validates completed JSON output;
+configure the server response format explicitly. `collect_stream` and
+`collect_async_stream` accumulate parsed text events and usage.
+`check_model_capabilities(id, input_types=..., output_types=..., endpoints=...,
+parameters=..., parameter_values=...)` checks advertised capabilities and scalar
+constraints together on one available provider offer. Unknown facts fail preflight.
+
+For local tests, inject `phaseo.testing.MockTransport` using `httpx.Client` or
+`httpx.AsyncClient`. Unexpected requests fail locally; call `assert_done()` to
+verify all fixtures were used. These fixtures do not verify live provider behavior.
+Phaseo rooms export runnable code for the submitted request through **Get code**.
 
 ## Features
 

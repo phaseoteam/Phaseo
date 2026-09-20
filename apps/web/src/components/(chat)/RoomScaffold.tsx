@@ -2,6 +2,7 @@
 
 import { type ReactNode } from "react";
 import { ChatRoomSwitcher } from "@/components/(chat)/ChatRoomSwitcher";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import {
 	MobileChatSidebarBrand,
 	MobileChatSidebarTrigger,
@@ -47,6 +48,7 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 				<SidebarRail />
 			</Sidebar>
 			<SidebarInset className="flex h-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-background">
+				<RoomSdkExport />
 				{children}
 			</SidebarInset>
 		</SidebarProvider>

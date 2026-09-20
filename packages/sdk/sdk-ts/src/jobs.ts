@@ -54,7 +54,7 @@ export function validateWaitOptions<T>(options: JobWaitOptions<T>): void {
 export async function waitForJob<T extends JobSnapshot>(
   kind: JobKind,
   id: string,
-  retrieve: (id: string) => Promise<T>,
+  retrieve: (id: string, signal?: AbortSignal) => Promise<T>,
   options: JobWaitOptions<T> = {},
   initial?: T,
   terminalStatuses: readonly string[] = TERMINAL,
@@ -70,12 +70,17 @@ export async function waitForJob<T extends JobSnapshot>(
   const deadline = performance.now() + timeoutMs;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let abort: (() => void) | undefined;
+  const controller = new AbortController();
   const stopped = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
-      reject(new JobTimeoutError(kind, jobId, last));
+      const error = new JobTimeoutError(kind, jobId, last);
+      controller.abort(error);
+      reject(error);
     }, timeoutMs);
     abort = () => {
-      reject(new JobCancelledError(kind, jobId, last, options.signal?.reason));
+      const error = new JobCancelledError(kind, jobId, last, options.signal?.reason);
+      controller.abort(error);
+      reject(error);
     };
     options.signal?.addEventListener("abort", abort, { once: true });
   });
@@ -86,7 +91,7 @@ export async function waitForJob<T extends JobSnapshot>(
     while (true) {
       if (options.signal?.aborted) throw new JobCancelledError(kind, jobId, last, options.signal.reason);
       if (performance.now() >= deadline) throw new JobTimeoutError(kind, jobId, last);
-      last = initial ?? await Promise.race([retrieve(jobId), stopped]);
+      last = initial ?? await Promise.race([retrieve(jobId, controller.signal), stopped]);
       initial = undefined;
       if (options.onPoll) await Promise.race([Promise.resolve(options.onPoll(last)), stopped]);
       if (options.signal?.aborted) throw new JobCancelledError(kind, jobId, last, options.signal.reason);
@@ -108,7 +113,7 @@ export async function waitForJob<T extends JobSnapshot>(
 export async function createAndWaitForJob<K extends JobKind>(
   kind: K,
   create: () => Promise<JobResponses[K]>,
-  retrieve: (id: string) => Promise<JobResponses[K]>,
+  retrieve: (id: string, signal?: AbortSignal) => Promise<JobResponses[K]>,
   options: JobWaitOptions<JobResponses[K]> = {},
 ): Promise<JobResponses[K]> {
   validateWaitOptions(options);
