@@ -129,6 +129,65 @@ function makeProviderPricing(): ProviderPricing {
 }
 
 describe("buildProviderSections", () => {
+	test("classifies decisions endpoint token pricing as input and output", () => {
+		const provider = makeProviderPricing();
+		provider.provider.api_provider_id = "typesafe";
+		provider.provider.api_provider_name = "TypeSafe";
+		provider.provider.provider_family_id = "typesafe";
+		provider.provider_models = [
+			{
+				...provider.provider_models[0],
+				id: "typesafe:typesafe/jev-1.13.0:decisions.make",
+				api_provider_id: "typesafe",
+				model_id: "typesafe/jev-1.13.0",
+				endpoint: "decisions.make",
+				input_modalities: "text",
+				output_modalities: "decisions",
+			},
+		];
+		provider.pricing_rules = [
+			{
+				...provider.pricing_rules[0],
+				id: "typesafe-input",
+				model_key: "typesafe:typesafe/jev-1.13.0:decisions.make",
+				meter: "input_tokens",
+				price_per_unit: 0.042,
+				match: [],
+			},
+			{
+				...provider.pricing_rules[0],
+				id: "typesafe-output",
+				model_key: "typesafe:typesafe/jev-1.13.0:decisions.make",
+				meter: "output_tokens",
+				price_per_unit: 0,
+				match: [],
+			},
+		];
+
+		const sections = buildProviderSections(
+			provider,
+			"standard",
+			new Date("2026-09-20T12:00:00.000Z"),
+		);
+
+		expect(sections.decisionTokens?.in).toEqual([
+			expect.objectContaining({ per1M: 0.042 }),
+		]);
+		expect(sections.decisionTokens?.out).toEqual([
+			expect.objectContaining({ per1M: 0 }),
+		]);
+		expect(sections.otherRules).toHaveLength(0);
+		expect(buildProviderTablePriceSummary(sections, "input").primary).toMatchObject({
+			label: "decisions",
+			price: 0.042,
+		});
+		expect(buildProviderTablePriceSummary(sections, "output").primary).toMatchObject({
+			label: "decisions",
+			price: 0,
+			formattedPrice: "Free",
+		});
+	});
+
 	test("surfaces per-request web search pricing in provider sheet sections", () => {
 		const provider = makeProviderPricing();
 		provider.pricing_rules.push({

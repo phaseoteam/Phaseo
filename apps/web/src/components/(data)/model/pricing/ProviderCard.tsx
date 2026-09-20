@@ -740,7 +740,7 @@ function renderCompactTierSummary(
 								valueClassName,
 							)}
 						>
-							{fmtUSD(tier.per1M)}
+							{tier.per1M === 0 ? "Free" : fmtUSD(tier.per1M)}
 						</span>
 						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
 							{conditions[index]}
@@ -802,7 +802,7 @@ function renderSecondaryTierSummary(
 								valueClassName,
 							)}
 						>
-							{fmtUSD(tier.per1M)}
+							{tier.per1M === 0 ? "Free" : fmtUSD(tier.per1M)}
 						</span>
 						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
 							{conditions[index]}
@@ -1707,6 +1707,7 @@ function collectDiscountEntriesFromSections(
 		...collectDiscountEntriesFromTriple(sections.imageTokens),
 		...collectDiscountEntriesFromTriple(sections.videoTokens),
 		...collectDiscountEntriesFromTriple(sections.embeddingTokens),
+		...collectDiscountEntriesFromTriple(sections.decisionTokens),
 		...collectDiscountEntriesFromUsage(imageInputs),
 		...collectDiscountEntriesFromUsage(videoInputs),
 		...collectDiscountEntriesFromImage(sections.imageGen),
@@ -2162,6 +2163,7 @@ export default function ProviderCard({
 			| "audioTokens"
 			| "videoTokens"
 			| "embeddingTokens"
+			| "decisionTokens"
 			| "videoGen"
 			| "other"
 	) => sec.upcomingChanges?.filter((change) => change.sectionKey === sectionKey) ?? [];
@@ -2209,8 +2211,8 @@ export default function ProviderCard({
 		unitLabel?: string;
 	};
 	const createTokenTiles = (
-		modalityLabel: "Text" | "Audio" | "Image" | "Video",
-		modalityKey: "text" | "audio" | "image" | "video",
+		modalityLabel: "Text" | "Audio" | "Image" | "Video" | "Decisions",
+		modalityKey: "text" | "audio" | "image" | "video" | "decisions",
 		triple: TokenTriple | undefined,
 	): TokenMetricTile[] => {
 		if (!triple) return [];
@@ -2274,6 +2276,7 @@ export default function ProviderCard({
 	};
 	const tokenMetricTiles = [
 		...createTokenTiles("Text", "text", sec.textTokens),
+		...createTokenTiles("Decisions", "decisions", sec.decisionTokens),
 		...createEmbeddingTiles(sec.embeddingTokens),
 		...createTokenTiles("Audio", "audio", sec.audioTokens),
 		...createTokenTiles("Image", "image", sec.imageTokens),
@@ -2415,6 +2418,7 @@ export default function ProviderCard({
 		!sec.audioTokens &&
 		!sec.videoTokens &&
 		!sec.embeddingTokens &&
+		!sec.decisionTokens &&
 		!sec.imageGen &&
 		!sec.videoGen &&
 		!imageInputs.length &&
@@ -3014,6 +3018,7 @@ export default function ProviderCard({
 	const pricingAdditionalContent =
 		!isFreePlan &&
 		(additionalTokenMetricTiles.length > 0 ||
+			upcomingFor("decisionTokens").length > 0 ||
 			(sec.requests?.length ?? 0) > 0 ||
 			upcomingFor("requests").length > 0 ||
 			imageInputs.length > 0 ||
@@ -3096,6 +3101,13 @@ export default function ProviderCard({
 						</div>
 					) : null}
 				<div className="space-y-2.5">
+					{upcomingFor("decisionTokens").length > 0 ? (
+						<UpcomingPricingSection
+							rows={upcomingFor("decisionTokens")}
+							title="Upcoming Decisions Pricing"
+							compact
+						/>
+					) : null}
 					{upcomingFor("requests").length > 0 ? (
 						<UpcomingPricingSection rows={upcomingFor("requests")} title="Upcoming" compact />
 					) : null}

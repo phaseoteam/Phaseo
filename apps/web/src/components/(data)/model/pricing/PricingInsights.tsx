@@ -198,6 +198,7 @@ function formatTokenCount(value: number): string {
 
 function formatUsd(value: number | null): string {
 	if (value == null || !Number.isFinite(value)) return "--";
+	if (value === 0) return "Free";
 	return fmtUSD(value);
 }
 

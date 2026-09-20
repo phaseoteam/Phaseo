@@ -170,14 +170,14 @@ const MODALITY_TONES: Record<string, ModalityTone> = {
 	},
 	decisions: {
 		badgeClassName:
-			"border-[#F3C98B] bg-[#FFF8E8] text-[#A15C12] dark:border-[#8D641F] dark:bg-[#31240D] dark:text-[#FFD88A]",
-		iconClassName: "text-[#C47A1C] dark:text-[#F8C96B]",
+			"border-[#F2B8A0] bg-[#FFF3EE] text-[#A94728] dark:border-[#9B543C] dark:bg-[#341A12] dark:text-[#FFC4AE]",
+		iconClassName: "text-[#C45F39] dark:text-[#FFB49A]",
 		ghostIconHoverClassName:
-			"group-hover:text-[#C47A1C] dark:group-hover:text-[#F8C96B]",
+			"group-hover:text-[#C45F39] dark:group-hover:text-[#FFB49A]",
 		sidebarIconHoverClassName:
-			"group-hover:border-[#F3C98B] group-hover:bg-[#FFF8E8] group-hover:text-[#C47A1C] dark:group-hover:border-[#8D641F] dark:group-hover:bg-[#31240D] dark:group-hover:text-[#F8C96B]",
+			"group-hover:border-[#F2B8A0] group-hover:bg-[#FFF3EE] group-hover:text-[#C45F39] dark:group-hover:border-[#9B543C] dark:group-hover:bg-[#341A12] dark:group-hover:text-[#FFB49A]",
 		sidebarIconSelectedClassName:
-			"border-[#F3C98B] bg-[#FFF8E8] text-[#C47A1C] dark:border-[#8D641F] dark:bg-[#31240D] dark:text-[#F8C96B]",
+			"border-[#F2B8A0] bg-[#FFF3EE] text-[#C45F39] dark:border-[#9B543C] dark:bg-[#341A12] dark:text-[#FFB49A]",
 	},
 	rerank: {
 		badgeClassName:
