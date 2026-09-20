@@ -88,8 +88,7 @@ describe("generation lifecycle conveniences", () => {
 
   test("timeout also bounds a stuck status request", async () => {
     vi.useFakeTimers();
-    const { client } = setup([]);
-    vi.spyOn(client, "getVideo").mockReturnValue(new Promise(() => {}));
+    const client = new Phaseo({ apiKey: "test", fetchImpl: () => new Promise(() => {}) });
     const result = client.videos.wait("job_1", { timeoutMs: 100 }).catch((error) => error);
     await vi.advanceTimersByTimeAsync(100);
     expect(await result).toBeInstanceOf(JobTimeoutError);

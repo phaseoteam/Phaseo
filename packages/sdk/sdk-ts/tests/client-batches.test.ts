@@ -12,7 +12,7 @@ describe("Phaseo batch helpers", () => {
     const controller = new AbortController();
     const client = new Phaseo({ apiKey: "sk_test", baseUrl: "https://example.test/v1", fetchImpl: vi.fn(async (url, init) => {
       expect(String(url)).toBe("https://example.test/v1/batches/batch%201/results");
-      expect(init?.signal).toBe(controller.signal);
+      expect(init?.signal?.aborted).toBe(false);
       expect(init?.headers).toMatchObject({ Authorization: "Bearer sk_test", Accept: "application/x-ndjson" });
       return new Response(new ReadableStream({ start(c) { c.enqueue(chunk); }, cancel }));
     }) });

@@ -1,3 +1,5 @@
+import { sdkExportStore, sdkRequestFromChat } from "@/lib/chat/sdkExport";
+
 const DEFAULT_WEB_API_ORIGIN = "https://phaseo.app";
 
 export class WebApiError extends Error {
@@ -137,11 +139,15 @@ export async function fetchInternalWebApiResponse(
 
 /** Authenticated, private chat proxy request owned by the Cloudflare Worker. */
 export async function fetchChatWebApi(path: `/api/chat/${string}`, init: RequestInit = {}): Promise<Response> {
+	const sdkRequest = typeof window === "undefined" ? null : sdkRequestFromChat(path, init);
+	if (sdkRequest) sdkExportStore.set(sdkRequest);
 	const { getBrowserAccessToken } = await import("@/lib/fetchers/internal/accountAuthClient");
 	const accessToken = await getBrowserAccessToken();
-	return fetch(`${getWebApiOrigin()}${path}`, {
+	const response = await fetch(`${getWebApiOrigin()}${path}`, {
 		...init,
 		headers: { ...init.headers, ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
 		cache: "no-store",
 	});
+	if (sdkRequest && sdkExportStore.get() === sdkRequest) sdkExportStore.set({ ...sdkRequest, status: response.status, requestId: response.headers.get("x-request-id") ?? response.headers.get("x-phaseo-request-id") ?? undefined });
+	return response;
 }

@@ -2,6 +2,83 @@
 
 Official Python SDK for Phaseo Gateway.
 
+## Native async use
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo
+
+async def main():
+    async with AsyncPhaseo() as client:
+        response = await client.responses.create({"model": "openai/gpt-5-nano", "input": "Hello"})
+        print(response.output_text, response.request_id, response.trace_url)
+
+asyncio.run(main())
+```
+
+The async client includes responses, chat completions, messages, images, audio,
+embeddings, OCR, rerank, parse, moderations, decisions, models, files, music, video
+and batches. Use `request(method, path, ...)` for additional HTTP operations.
+`async for event in client.responses.stream(request)` streams parsed events.
+`collect_async_stream(events)` collects text and usage. Standard asyncio task
+cancellation interrupts HTTP and polling. Close clients with `async with` or
+`await close()`. Injected HTTPX clients remain caller-owned.
+
+Both clients expose immutable `with_options(timeout=30, max_retries=2)` controls.
+HTTPX timeouts are in seconds and bound network inactivity. Retries default to
+zero and apply only to GET/HEAD before response consumption; submissions are
+never retried. `PhaseoHTTPError` preserves the response, body, status, `code`,
+`request_id`, `trace_url` and `retry_after` in seconds. JSON objects remain
+dictionaries, with typed metadata and an `output_text` property.
+
+Python's HTTP timeout is not a total transfer deadline: an active stream can
+continue while chunks arrive. TypeScript's `timeoutMs` is a total HTTP deadline.
+Job waiting timeouts in both SDKs bound the overall polling workflow separately.
+
+Migration: synchronous JSON requests now use HTTPX. Replace catches of
+`urllib.error.HTTPError` with `PhaseoHTTPError` (or `httpx.HTTPStatusError`). Use
+`error.status` for the HTTP status and `error.code` for the API error code.
+Catch `httpx.TransportError` for connection failures.
+
+## Workflow helpers
+
+- Music, videos and batches support `start(request)` and `resume(id)`. A handle
+  exposes `id`, `result()`, `events()` and `to_dict()`. Persist its kind and ID to
+  resume later. Await async handle methods and use `async for` for events.
+  Remote cancellation is available only for video and batch.
+- `videos.stream_content(id)` streams bytes. The sync `download_to(chunks, file)`
+  helper writes to a caller-owned binary file. Uploads accept bytes, `Path`
+  objects, open files or HTTPX file tuples through `files.create`.
+- Sync `batches.results(id)` and async `batches.results(id)` incrementally parse
+  JSONL. Match by `custom_id`; a completed batch can contain failed rows.
+- `parse_output(response, PydanticModel)` or `responses.parse(request, model)`
+  validates completed output. Configure server structured output explicitly;
+  validation never resubmits. `check_model_capabilities(id, input_types=...,
+  output_types=..., endpoints=..., parameters=..., parameter_values=...)` checks
+  advertised metadata across a single available provider offer. Unknown facts
+  fail preflight; the helper never changes the request or guarantees execution.
+
+## Local application tests
+
+```python
+import httpx
+from phaseo import Phaseo
+from phaseo.testing import MockTransport
+
+mock = MockTransport([
+    {"method": "GET", "path": "/v1/videos/v1", "json": {"id": "v1", "status": "completed"}},
+])
+with httpx.Client(transport=mock) as http:
+    with Phaseo(api_key="test", http_client=http) as client:
+        assert client.videos.resume("v1").result()["status"] == "completed"
+mock.assert_done()
+```
+
+Use the same transport with `httpx.AsyncClient` and `AsyncPhaseo`. Unexpected
+requests fail locally with no network fallback. Include catalogue lookups when
+testing sync generation methods that perform lifecycle validation. Fixtures
+verify application behavior, not live provider compatibility.
+
 ## Installation
 
 ```bash

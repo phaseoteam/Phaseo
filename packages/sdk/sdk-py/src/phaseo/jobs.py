@@ -11,6 +11,45 @@ JobKind = Literal["music", "video", "batch"]
 JobResponse = dict[str, Any]
 
 
+class JobHandle:
+    def __init__(self, kind: JobKind, job_id: str, retrieve: Callable[[str], JobResponse],
+                 initial: JobResponse | None = None, cancel: Callable[[str], JobResponse] | None = None):
+        if not job_id.strip():
+            raise ValueError("Job ID is required")
+        self.kind, self.id, self._retrieve, self._initial, self._cancel = kind, job_id, retrieve, initial, cancel
+
+    def to_dict(self) -> dict[str, str]:
+        return {"kind": self.kind, "id": self.id}
+
+    def result(self, **options: Unpack[JobWaitOptions]) -> JobResponse:
+        response = wait_for_job(self.kind, self.id, self._retrieve, initial=self._initial, **options)
+        if job_status(response) != "completed":
+            raise JobFailedError(self.kind, response)
+        return response
+
+    def cancel(self) -> JobResponse:
+        if self._cancel is None:
+            raise NotImplementedError(f"Remote cancellation is not supported for {self.kind}")
+        return self._cancel(self.id)
+
+    def events(self, *, interval: float = 5, timeout: float = 1800):
+        _validate_options({"interval": interval, "timeout": timeout})
+        deadline = time.monotonic() + timeout
+        last = self._initial
+        initial = self._initial
+        while True:
+            if time.monotonic() >= deadline:
+                raise JobTimeoutError(self.kind, self.id, last)
+            last = initial if initial is not None else self._retrieve(self.id)
+            initial = None
+            if time.monotonic() >= deadline:
+                raise JobTimeoutError(self.kind, self.id, last)
+            yield last
+            if job_status(last) in ("completed", "failed", "cancelled", "expired"):
+                return
+            time.sleep(min(max(.25, interval), max(0, deadline - time.monotonic())))
+
+
 class JobWaitOptions(TypedDict, total=False):
     interval: float
     timeout: float

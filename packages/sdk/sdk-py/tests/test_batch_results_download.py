@@ -31,8 +31,7 @@ def test_stream_results_yields_before_completion_and_closes(monkeypatch):
         return httpx.Response(200, stream=chunks)
 
     with httpx.Client(transport=httpx.MockTransport(handle)) as transport:
-        monkeypatch.setattr(httpx, "stream", transport.stream)
-        client = Phaseo(api_key="sk_test", base_url="https://example.test/v1")
+        client = Phaseo(api_key="sk_test", base_url="https://example.test/v1", http_client=transport)
         result = client.batches.stream_results("batch 1")
         assert next(result) == b'{"custom_id":"one"}\n'
         assert chunks.reads == 1

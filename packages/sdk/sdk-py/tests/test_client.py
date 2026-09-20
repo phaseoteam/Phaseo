@@ -780,9 +780,8 @@ def test_get_file_content_downloads_bytes(monkeypatch):
         captured.append((url, headers or {}, timeout))
         return FakeResponse(b'{"ok":true}\n')
 
-    monkeypatch.setattr("phaseo.httpx.get", fake_get)
-
     client = Phaseo(api_key="sk_test_123", base_url="https://example.test", timeout=12.5)
+    monkeypatch.setattr(client._client, "get", fake_get)
     content = client.get_file_content("file_123")
 
     assert content == b'{"ok":true}\n'

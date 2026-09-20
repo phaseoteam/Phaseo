@@ -56,4 +56,4 @@ if (error instanceof JobFailedError) {
 `;
 for (const extension of ["mts", "cts"]) await writeFile(path.join(consumer, `consumer.${extension}`), imports.join("\n") + failureTypes);
 run(process.execPath, [require.resolve("typescript/bin/tsc"), "--noEmit", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--strict", "--skipLibCheck", "--types", "node", "--typeRoots", path.join(root, "node_modules/@types"), "consumer.mts", "consumer.cts"], consumer);
-console.log("Packed SDK: all four ESM and CommonJS entrypoints load and typecheck from an offline consumer install.");
+console.log("Packed SDK: all ESM and CommonJS entrypoints load and typecheck from an offline consumer install.");
