@@ -1706,6 +1706,7 @@ function collectDiscountEntriesFromSections(
 		...collectDiscountEntriesFromTriple(sections.imageTokens),
 		...collectDiscountEntriesFromTriple(sections.videoTokens),
 		...collectDiscountEntriesFromTriple(sections.embeddingTokens),
+		...collectDiscountEntriesFromTriple(sections.decisionTokens),
 		...collectDiscountEntriesFromUsage(imageInputs),
 		...collectDiscountEntriesFromUsage(videoInputs),
 		...collectDiscountEntriesFromImage(sections.imageGen),
@@ -2161,6 +2162,7 @@ export default function ProviderCard({
 			| "audioTokens"
 			| "videoTokens"
 			| "embeddingTokens"
+			| "decisionTokens"
 			| "videoGen"
 			| "other"
 	) => sec.upcomingChanges?.filter((change) => change.sectionKey === sectionKey) ?? [];
@@ -2208,8 +2210,8 @@ export default function ProviderCard({
 		unitLabel?: string;
 	};
 	const createTokenTiles = (
-		modalityLabel: "Text" | "Audio" | "Image" | "Video",
-		modalityKey: "text" | "audio" | "image" | "video",
+		modalityLabel: "Text" | "Audio" | "Image" | "Video" | "Decisions",
+		modalityKey: "text" | "audio" | "image" | "video" | "decisions",
 		triple: TokenTriple | undefined,
 	): TokenMetricTile[] => {
 		if (!triple) return [];
@@ -2273,6 +2275,7 @@ export default function ProviderCard({
 	};
 	const tokenMetricTiles = [
 		...createTokenTiles("Text", "text", sec.textTokens),
+		...createTokenTiles("Decisions", "decisions", sec.decisionTokens),
 		...createEmbeddingTiles(sec.embeddingTokens),
 		...createTokenTiles("Audio", "audio", sec.audioTokens),
 		...createTokenTiles("Image", "image", sec.imageTokens),
@@ -2414,6 +2417,7 @@ export default function ProviderCard({
 		!sec.audioTokens &&
 		!sec.videoTokens &&
 		!sec.embeddingTokens &&
+		!sec.decisionTokens &&
 		!sec.imageGen &&
 		!sec.videoGen &&
 		!imageInputs.length &&

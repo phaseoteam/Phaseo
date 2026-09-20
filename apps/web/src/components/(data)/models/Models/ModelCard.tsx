@@ -27,6 +27,7 @@ import {
 	BadgeAlert,
 	FileText,
 	CircleDot,
+	Scale,
 	type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ const MODALITY_DISPLAY_ORDER = [
 	"rerank",
 	"embedding",
 	"moderation",
+	"decisions",
 ] as const;
 const PROVIDER_STATUS_ORDER = [
 	"active",
@@ -417,6 +419,7 @@ function summarizeDuplicatePricingItems(
 
 function getModalityIcon(value: string): LucideIcon {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}

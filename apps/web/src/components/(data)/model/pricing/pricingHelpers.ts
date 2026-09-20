@@ -7,7 +7,7 @@ import { getProviderPricingRulesForPlan } from "@/components/(data)/model/pricin
 
 /* ---------- shared types ---------- */
 export type Direction = "input" | "output" | "cached" | "cachewrite" | "other";
-export type Modality = "text" | "image" | "audio" | "video" | "embeddings" | "multimodal" | "other";
+export type Modality = "text" | "image" | "audio" | "video" | "embeddings" | "decisions" | "multimodal" | "other";
 export type UnitClass = "token" | "pixel" | "image" | "video" | "minute" | "second" | "page" | "call" | "character" | "unknown";
 
 export type Condition = { op: string; path: string; value: any; or_group?: number; and_index?: number };
@@ -86,6 +86,7 @@ export type PricingSectionKey =
     | "videoTokens"
     | "videoGen"
     | "embeddingTokens"
+    | "decisionTokens"
     | "other";
 
 export type UpcomingPricingChange = {
@@ -109,6 +110,7 @@ export type ProviderSections = {
     audioTokens?: TokenTriple;
     videoTokens?: TokenTriple;
     embeddingTokens?: TokenTriple;
+    decisionTokens?: TokenTriple;
     imageGen?: QualityRow[];
     videoGen?: ResolutionRow[];
     mediaInputs?: UsageRow[];                // NEW: input_image, input_video_seconds
@@ -288,6 +290,15 @@ function endpointToModality(endpoint?: string | null): Modality | null {
     const normalized = String(endpoint ?? "").trim().toLowerCase();
     if (!normalized) return null;
 	if (normalized.includes("embed")) return "embeddings";
+    if (
+        normalized === "decisions" ||
+        normalized === "/decisions" ||
+        normalized.startsWith("decisions.") ||
+        normalized.startsWith("decisions/") ||
+        normalized === "typed.decisions"
+    ) {
+        return "decisions";
+    }
     if (normalized.startsWith("text.")) return "text";
     if (
         normalized.startsWith("chat.") ||
@@ -485,6 +496,7 @@ function modalityLabel(mod: Modality): string | null {
     if (mod === "audio") return "Audio";
 	if (mod === "video") return "Video";
 	if (mod === "embeddings") return "Embeddings";
+    if (mod === "decisions") return "Decisions";
     if (mod === "multimodal") return "Multimodal";
     return null;
 }
@@ -512,7 +524,7 @@ function buildUpcomingChangeLabels(
         }))
         : [];
 
-    if (unit === "token" && ["text", "image", "audio", "video", "embeddings"].includes(mod)) {
+    if (unit === "token" && ["text", "image", "audio", "video", "embeddings", "decisions"].includes(mod)) {
         const modLabel = modalityLabel(mod) ?? "Token";
         const scope =
             cacheWriteTtlLabelFromMeter(rule.meter) ??
@@ -530,6 +542,8 @@ function buildUpcomingChangeLabels(
                     ? "videoTokens"
                     : mod === "embeddings"
                     ? "embeddingTokens"
+                    : mod === "decisions"
+                    ? "decisionTokens"
                     : "other",
             title: `${modLabel} Tokens${directionLabel(dir) ? ` · ${directionLabel(dir)}` : ""}`,
             subtitle: scope === "All usage" ? null : scope,
@@ -1071,8 +1085,8 @@ export function buildProviderSections(
                 : null;
         const discountEndsAt = hasActiveDiscount && hasFutureEnd ? r.effective_to ?? null : null;
 
-        // 1) token tiles (text/image/audio/video/embeddings)
-        if (unit === "token" && ["text", "image", "audio", "video", "embeddings"].includes(mod)) {
+        // 1) token tiles (text/image/audio/video/embeddings/decisions)
+        if (unit === "token" && ["text", "image", "audio", "video", "embeddings", "decisions"].includes(mod)) {
             const range = tokenRangeFromConditions(conds);
 			const embeddingSourceLabel =
 				mod === "embeddings" ? modalityLabel(parsedMeter.mod) : null;
@@ -1127,6 +1141,11 @@ export function buildProviderSections(
                 else if (dir === "cached") out.embeddingTokens = push(out.embeddingTokens, "cached");
                 else if (dir === "output") out.embeddingTokens = push(out.embeddingTokens, "out");
                 else if (dir === "cachewrite") out.embeddingTokens = push(out.embeddingTokens, "write");
+            } else if (mod === "decisions") {
+                if (dir === "input") out.decisionTokens = push(out.decisionTokens, "in");
+                else if (dir === "cached") out.decisionTokens = push(out.decisionTokens, "cached");
+                else if (dir === "output") out.decisionTokens = push(out.decisionTokens, "out");
+                else if (dir === "cachewrite") out.decisionTokens = push(out.decisionTokens, "write");
             }
             continue;
         }
@@ -1265,6 +1284,7 @@ export function buildProviderSections(
     sortTiers(out.audioTokens);
     sortTiers(out.videoTokens);
     sortTiers(out.embeddingTokens);
+    sortTiers(out.decisionTokens);
     out.imageGen?.forEach((q) => q.items.sort((a, b) => a.label.localeCompare(b.label)));
     out.imageGen?.sort((a, b) => {
         const ra = qualityRank(a.quality), rb = qualityRank(b.quality);
@@ -1309,7 +1329,7 @@ function getTablePriceCandidates(
 ): ProviderTablePriceCandidate[] {
     const candidates: ProviderTablePriceCandidate[] = [];
     const pushTokenCandidate = (
-        modality: "text" | "audio" | "image" | "video" | "embeddings",
+        modality: "text" | "audio" | "image" | "video" | "embeddings" | "decisions",
         tiers?: TokenTier[] | null,
     ) => {
 		const tier = getBaseTokenTier(tiers);
@@ -1326,12 +1346,14 @@ function getTablePriceCandidates(
 
     if (direction === "cached") {
         pushTokenCandidate("text", sections.textTokens?.cached);
+        pushTokenCandidate("decisions", sections.decisionTokens?.cached);
         pushTokenCandidate("embeddings", sections.embeddingTokens?.cached);
         pushTokenCandidate("image", sections.imageTokens?.cached);
         pushTokenCandidate("audio", sections.audioTokens?.cached);
         pushTokenCandidate("video", sections.videoTokens?.cached);
     } else if (direction === "input") {
         pushTokenCandidate("text", sections.textTokens?.in);
+        pushTokenCandidate("decisions", sections.decisionTokens?.in);
         pushTokenCandidate("embeddings", sections.embeddingTokens?.in);
 
         const imageInput = sections.mediaInputs
@@ -1367,6 +1389,7 @@ function getTablePriceCandidates(
         pushTokenCandidate("video", sections.videoTokens?.in);
     } else {
         pushTokenCandidate("text", sections.textTokens?.out);
+        pushTokenCandidate("decisions", sections.decisionTokens?.out);
         pushTokenCandidate("embeddings", sections.embeddingTokens?.out);
 
         const imageOutput = sections.imageGen
