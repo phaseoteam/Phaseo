@@ -25,6 +25,7 @@
 		"catalog:export:database": "tsx scripts/catalogue/export-database-snapshot.ts",
 		"db-progress": "cd ../../packages/data/catalog/src/data && python -X utf8 progressCalc.py",
 		"oauth:e2e:playwright": "tsx scripts/oauth-e2e-playwright.ts",
+		"logos:discord": "tsx scripts/generate-discord-lab-logos.ts",
 		"perf:chat-send": "node scripts/run-chat-performance.mjs",
 		"resend:provision:onboarding": "tsx scripts/resend/provision-onboarding-automations.ts",
 		"resend:incident:outreach": "tsx scripts/resend/send-incident-outreach.ts",
