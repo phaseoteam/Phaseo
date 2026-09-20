@@ -739,7 +739,7 @@ function renderCompactTierSummary(
 								valueClassName,
 							)}
 						>
-							{fmtUSD(tier.per1M)}
+							{tier.per1M === 0 ? "Free" : fmtUSD(tier.per1M)}
 						</span>
 						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
 							{conditions[index]}
@@ -801,7 +801,7 @@ function renderSecondaryTierSummary(
 								valueClassName,
 							)}
 						>
-							{fmtUSD(tier.per1M)}
+							{tier.per1M === 0 ? "Free" : fmtUSD(tier.per1M)}
 						</span>
 						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
 							{conditions[index]}
