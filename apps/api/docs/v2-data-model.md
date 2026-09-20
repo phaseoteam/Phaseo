@@ -118,6 +118,32 @@ Benchmarks, subscriptions, and provider health now have v2 RPC paths and
 backfilled data; the fallback remains for deployments where those functions
 have not yet been rolled out.
 
+## Public rankings measurements
+
+Rankings read content-free V2 usage meters through public daily projections.
+Charts use UTC weekly buckets; detail tables cover the last 30 days. Each
+modality uses its native unit: text and embedding tokens, image counts, rerank
+quadtokens, audio tokens, and measured video, speech, or transcription seconds.
+Speech and transcription have separate endpoint-specific meters. These extra
+workload meters are nonbillable and do not affect pricing.
+
+Image counts use explicit provider counts or observed content parts, image-edit
+uploads, and generated output items. Masks, image tokens, and requested output
+counts do not imply additional images. Unknown audio durations remain absent;
+characters do not imply seconds. Tool-call rankings use the existing audited
+tool-call counts.
+
+`v2_rpc_gateway_model_usage_daily` reads canonical meter names and historical
+aliases without adding both, and excludes hidden models and unavailable routes.
+Video completion synchronization replaces the request's duration measurement
+idempotently and requeues its analytics outbox entry without changing billing.
+
+Weekly Return Rate uses workspace cohorts with minimum activity and privacy
+thresholds. Its table remains inaccessible to direct client roles. A successful
+empty response means there are no qualifying observations; failed requests show
+a retry state. Newly recorded measurements accumulate from traffic rather than
+fabricating historical values.
+
 ## V1 retirement boundary
 
 `gateway_requests` is not a V1 retirement candidate. The V2 request tables

@@ -55,8 +55,6 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	decisions: Scale,
 };
 
-const DISABLED_ROOMS = new Set<ChatRoomId>(["ocr", "rerank"]);
-
 function isRoomActive(pathname: string, route: string): boolean {
 	if (route === "/chat") {
 		return pathname === "/chat";
@@ -126,7 +124,6 @@ export function ChatRoomSwitcher({ className }: { className?: string } = {}) {
 						const Icon = ICONS[room.id];
 						const active = isRoomActive(pathname, room.route);
 						const disabled =
-							DISABLED_ROOMS.has(room.id) ||
 							(room.id === "video" && !videoEnabled) ||
 							(room.id === "realtime" && !realtimeEnabled);
 						if (disabled) {

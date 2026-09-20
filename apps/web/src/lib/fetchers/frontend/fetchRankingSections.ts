@@ -5,7 +5,7 @@ import type {
 	TopAppData,
 } from "@/lib/fetchers/rankings/getRankingsData";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { fetchOptionalPublicWebApi, fetchPublicWebApi } from "@/lib/web-api/client";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
 
 export async function fetchFrontendRankingBenchmarks() {
 	return fetchPublicWebApi<{ benchmarks: PublicBenchmarkRanking[] }>("/api/_web/rankings/benchmarks");
@@ -36,7 +36,7 @@ export async function fetchFrontendRankingIntelligenceIndex(limit = 20) {
 }
 
 export async function fetchFrontendModelRetentionRankings(limit = 20) {
-	const result = await fetchOptionalPublicWebApi<{ data: ModelRetentionRanking[]; methodology: {
+	return fetchPublicWebApi<{ data: ModelRetentionRanking[]; methodology: {
 		cohortWeeks: number;
 		minimumWorkspaceWeeks: number;
 		minimumWorkspaces: number;
@@ -44,10 +44,6 @@ export async function fetchFrontendModelRetentionRankings(limit = 20) {
 	} }>(
 		`/api/_web/rankings/model-retention?limit=${encodeURIComponent(String(limit))}`,
 	);
-	return result ?? {
-		data: [],
-		methodology: { cohortWeeks: 10, minimumWorkspaceWeeks: 25, minimumWorkspaces: 5, minimumWeeks: 2 },
-	};
 }
 
 export async function fetchFrontendRankingTopApps(timeRange = "week", limit = 20) {

@@ -135,6 +135,8 @@ const additionalPages: Array<[string, string]> = [
 	["/chat/realtime", "Realtime Chat"],
 	["/chat/embeddings", "Embeddings Playground"],
 	["/chat/moderation", "Moderation Playground"],
+	["/chat/ocr", "OCR"],
+	["/chat/rerank", "Rerank"],
 	["/chat/fusion", "Fusion"],
 	["/experiments", "Experiments"],
 	["/experiments/spawn", "Spawn"],

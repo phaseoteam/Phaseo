@@ -74,7 +74,11 @@ publicRankingsRouter.get("/rankings/multimodal", async (c) => {
 });
 
 publicRankingsRouter.get("/rankings/modality-timeseries", async (c) => {
-	try { const { data, error } = await getDataClient(c.env).rpc("get_public_modality_usage_timeseries", { p_metric: c.req.query("metric") || "tokens", p_time_range: c.req.query("time_range") || "year", p_top_n: 20 }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
+	const metric = c.req.query("metric") || "text_tokens";
+	if (!["text_tokens", "image_inputs", "image_outputs", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_tokens", "video_seconds", "cached_tokens", "embedding_tokens", "rerank_quad_tokens"].includes(metric)) {
+		return c.json({ error: "invalid_ranking_metric" }, 400);
+	}
+	try { const { data, error } = await getDataClient(c.env).rpc("get_public_modality_usage_timeseries", { p_metric: metric, p_time_range: c.req.query("time_range") || "year", p_top_n: 20 }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
 	catch (error) { console.error("[web-api/rankings] modality series failed", error); return c.json({ error: "modality_timeseries_unavailable" }, 503); }
 });
 
@@ -212,7 +216,7 @@ publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 			.sort((left, right) => (order.get(left.benchmark_id) ?? 99) - (order.get(right.benchmark_id) ?? 99))
 			.map((benchmark) => {
 				const lowerIsBetter = benchmark.ascending_order === false;
-				const versionOf = (info: string | null) => info?.match(/Intelligence Index v([\d.]+)/)?.[1] ?? null;
+				const versionOf = (info: string | null) => info?.match(/Intelligence Index v(\d+(?:\.\d+)*)(?=$|[\s;]|[.!?](?=$|\s))/)?.[1] ?? null;
 				const benchmarkScores = scores.filter((row) => row.benchmark_id === benchmark.benchmark_id && models.has(row.model_slug));
 				const latestVersion = benchmarkScores.map((row) => versionOf(row.other_info)).filter((version): version is string => Boolean(version)).sort((a, b) => b.localeCompare(a, "en", { numeric: true }))[0];
 				const bestByModel = new Map<string, { score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>();

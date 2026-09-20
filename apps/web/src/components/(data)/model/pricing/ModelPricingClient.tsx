@@ -15,7 +15,7 @@ import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { parseAsString, useQueryStates } from "nuqs";
 import {
     ArrowDown,
     ArrowUp,
@@ -83,6 +83,9 @@ import ProviderCard, {
 	PROVIDER_STATUS_META,
 } from "@/components/(data)/model/pricing/ProviderCard";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
+import { ProviderRouteName } from "./ProviderRouteName";
+import { ProviderRouteSeparator } from "./ProviderRouteSeparator";
+import { getProviderListingCategory, isProviderRouteVariant } from "./providerRoutePresentation";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
@@ -114,7 +117,6 @@ import {
     subscribeProviderInspectorSelection,
     type ProviderInspectorSelection,
 } from "@/components/(data)/model/pricing/providerInspectorSync";
-import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 const SORT_QUERY_KEY = "sort";
 const SORT_DIRECTION_QUERY_KEY = "dir";
 const PROVIDER_QUERY_KEY = "provider";
@@ -216,15 +218,7 @@ const DEFAULT_PROVIDER_STATUS_FILTERS: ProviderStatusFilter[] = [
     "routable",
     "preview",
     "inactive",
-    "external",
 ];
-
-function providerStatusFilterKey(status: CanonicalGatewayStatus): ProviderStatusFilter {
-    if (status === "external") return "external";
-    if (["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"].includes(status)) return "routable";
-    if (["coming_soon", "internal_testing"].includes(status)) return "preview";
-    return "inactive";
-}
 
 function toggleProviderStatusFilter(
     current: ProviderStatusFilter[],
@@ -396,6 +390,11 @@ function resolveProviderGatewayStatus(provider: ProviderPricing): CanonicalGatew
             }),
         ),
     );
+}
+
+function getProviderOfferingSectionRank({ provider, plan }: ProviderOffering): number {
+    if (getProviderListingCategory(provider.provider, resolveProviderGatewayStatus(provider)) === "external") return 2;
+    return isProviderRouteVariant(provider.provider, plan) ? 1 : 0;
 }
 
 function UptimeHeaderHoverContent() {
@@ -680,7 +679,6 @@ function ProviderServiceTierRow({
 	const cacheReadPrice = showCacheReadColumn
 		? buildProviderTablePriceSummary(sections, "cached")
 		: null;
-	const tierMeta = getTierFilterMeta(plan);
 	const providerName = getProviderServiceTierDisplayName(provider);
 	const logoProviderId = sections.logoProviderId;
 	const discountBadge = getProviderTableDiscountBadge(sections);
@@ -714,7 +712,7 @@ function ProviderServiceTierRow({
 				{isActive ? <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" /> : null}
 				<div className="flex items-center gap-1.5 whitespace-nowrap">
 					{showDisclosureGutter ? <span aria-hidden="true" className="size-5 shrink-0" /> : null}
-					<span className="inline-flex items-center gap-2.5 font-semibold text-foreground">
+					<span className="inline-flex w-max shrink-0 items-center gap-2.5 font-semibold text-foreground">
 						<span className="relative flex size-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 dark:border-zinc-800 dark:group-hover:border-zinc-700">
 							<span className="relative size-3.5">
 								<Logo
@@ -726,12 +724,7 @@ function ProviderServiceTierRow({
 								/>
 							</span>
 						</span>
-						<span>
-							{providerName}{" "}
-							<span className={cn("font-medium", tierMeta.iconClassName)}>
-								({formatServiceTierLabel(plan)})
-							</span>
-						</span>
+						<ProviderRouteName provider={provider.provider} plan={plan} showTierHelp />
 						<ProviderServiceTierInfoIcons provider={provider} plan={plan} />
 						{discountBadge ? (
 							<span className="whitespace-nowrap text-xs font-medium text-emerald-600 dark:text-emerald-400">
@@ -846,15 +839,18 @@ export default function ModelPricingClient({
 		placeholderData: keepPreviousData,
 	});
 	const providers = pricingQuery.data ?? initialProviders;
-    const pathname = usePathname() ?? "/";
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const effectiveSearchParams = useMemo(
-        () => searchParams ?? new URLSearchParams(),
-        [searchParams]
+    const [queryState, updateUrlState] = useQueryStates(
+        {
+            [PROVIDER_QUERY_KEY]: parseAsString,
+            [SORT_QUERY_KEY]: parseAsString,
+            [SORT_DIRECTION_QUERY_KEY]: parseAsString,
+            [LEGACY_PROVIDER_VIEW_QUERY_KEY]: parseAsString,
+        },
+        // These controls only affect client UI; a route navigation refetches the model page.
+        { shallow: true, history: "replace", scroll: false },
     );
 	const requestedProviderId =
-		effectiveSearchParams.get(PROVIDER_QUERY_KEY)?.trim() || null;
+		queryState.provider?.trim() || null;
     const [selectedPercentile, setSelectedPercentile] = useState<ModelPercentile>(
         DEFAULT_MODEL_PERCENTILE,
     );
@@ -970,10 +966,10 @@ export default function ModelPricingClient({
     };
 
     const [sort, setSort] = useState<SortOption>(() => {
-        return parseSortOption(effectiveSearchParams.get(SORT_QUERY_KEY));
+        return parseSortOption(queryState.sort);
     });
     const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
-        const fromUrl = effectiveSearchParams.get(SORT_DIRECTION_QUERY_KEY);
+        const fromUrl = queryState.dir;
         return isSortDirection(fromUrl) ? fromUrl : "desc";
     });
     const [providerStatusFilters, setProviderStatusFilters] = useState<ProviderStatusFilter[]>(
@@ -985,7 +981,7 @@ export default function ModelPricingClient({
 	const inspectorProviderIdRef = useRef<string | null>(null);
 	const lastAppliedUrlProviderIdRef = useRef<string | null | undefined>(undefined);
 	const urlProviderIdRef = useRef<string | null>(
-		effectiveSearchParams.get(PROVIDER_QUERY_KEY)?.trim() || null,
+		requestedProviderId,
 	);
 
     useEffect(
@@ -1004,7 +1000,7 @@ export default function ModelPricingClient({
 			) return false;
 			if (provider.provider.api_provider_id === requestedProviderId) return true;
 			return providerStatusFilters.includes(
-				providerStatusFilterKey(resolveProviderGatewayStatus(provider)),
+				getProviderListingCategory(provider.provider, resolveProviderGatewayStatus(provider)),
 			);
 		});
         const sectionCache = new Map<string, ReturnType<typeof buildProviderSections>>();
@@ -1286,6 +1282,7 @@ export default function ModelPricingClient({
         ignoredProviderCount > 0;
     const activeFilterCount =
         DEFAULT_PROVIDER_STATUS_FILTERS.filter((filter) => !providerStatusFilters.includes(filter)).length +
+        (providerStatusFilters.includes("external") ? 1 : 0) +
         (privacyFilter === "workspace" ? 0 : 1);
     const visibleProviders = filteredProviders;
     const visibleOfferings = useMemo(() => {
@@ -1376,18 +1373,28 @@ export default function ModelPricingClient({
 		});
 	}, [liveRuntimeStats, pricingTimeMs, privacyFilter, requestedProviderId, sort, sortDirection, visibleProviders, workspacePrivacySettings]);
 	const isGroupedProviderView = sort === "default";
-	const displayedOfferings = useMemo(
-		() => sort === "default"
-			? visibleOfferings.filter(
-				(offering) =>
-					offering.isPrimary ||
-					expandedServiceTierProviderIds.has(
-						offering.provider.provider.api_provider_id,
-					),
-			)
-			: visibleOfferings,
-		[expandedServiceTierProviderIds, sort, visibleOfferings],
-	);
+	const { displayedOfferings, firstVariantIndex, firstExternalIndex } = useMemo(() => {
+		const primaryOfferings = new Map(
+			visibleOfferings.filter((offering) => offering.isPrimary).map((offering) =>
+				[offering.provider.provider.api_provider_id, offering] as const,
+			),
+		);
+		// Expanded tiers stay with their provider in the compact default view.
+		const sectionRank = (offering: ProviderOffering) => getProviderOfferingSectionRank(
+			isGroupedProviderView
+				? primaryOfferings.get(offering.provider.provider.api_provider_id) ?? offering
+				: offering,
+		);
+		const displayedOfferings = visibleOfferings.filter((offering) =>
+			!isGroupedProviderView || offering.isPrimary ||
+			expandedServiceTierProviderIds.has(offering.provider.provider.api_provider_id),
+		).sort((a, b) => sectionRank(a) - sectionRank(b));
+		return {
+			displayedOfferings,
+			firstVariantIndex: displayedOfferings.findIndex((offering) => sectionRank(offering) === 1),
+			firstExternalIndex: displayedOfferings.findIndex((offering) => sectionRank(offering) === 2),
+		};
+	}, [expandedServiceTierProviderIds, isGroupedProviderView, visibleOfferings]);
 	const toggleServiceTiers = useCallback((providerId: string) => {
 		setExpandedServiceTierProviderIds((current) => {
 			const next = new Set(current);
@@ -1448,26 +1455,6 @@ export default function ModelPricingClient({
         };
     }, [showCacheReadColumn, visibleProviders.length]);
 
-    const updateUrlState = useCallback(
-        (updates: Record<string, string | null>) => {
-            const next = new URLSearchParams(effectiveSearchParams.toString());
-            for (const [key, value] of Object.entries(updates)) {
-                if (!value) {
-                    next.delete(key);
-                } else {
-                    next.set(key, value);
-                }
-            }
-            const nextQuery = next.toString();
-            const hash = window.location.hash;
-            const nextUrl = nextQuery ? `${pathname}?${nextQuery}${hash}` : `${pathname}${hash}`;
-            router.replace(nextUrl, {
-                scroll: false,
-            });
-        },
-        [effectiveSearchParams, pathname, router]
-    );
-
 	useEffect(() => {
 		return subscribeProviderInspectorSelection((selection) => {
 			const providerId = selection?.providerId ?? null;
@@ -1526,21 +1513,21 @@ export default function ModelPricingClient({
 	}, [activeFilterCount, filteredProviders, modelId]);
 
     useEffect(() => {
-        if (!effectiveSearchParams.has(LEGACY_PROVIDER_VIEW_QUERY_KEY)) return;
+        if (queryState.provider_view === null) return;
         updateUrlState({ [LEGACY_PROVIDER_VIEW_QUERY_KEY]: null });
-    }, [effectiveSearchParams, updateUrlState]);
+    }, [queryState.provider_view, updateUrlState]);
 
     useEffect(() => {
-        const nextSort = parseSortOption(effectiveSearchParams.get(SORT_QUERY_KEY));
+        const nextSort = parseSortOption(queryState.sort);
         setSort((current) => (current === nextSort ? current : nextSort));
-        const nextDirection = isSortDirection(effectiveSearchParams.get(SORT_DIRECTION_QUERY_KEY))
-            ? (effectiveSearchParams.get(SORT_DIRECTION_QUERY_KEY) as SortDirection)
+        const nextDirection = isSortDirection(queryState.dir)
+            ? queryState.dir
             : getDefaultSortDirection(nextSort);
         setSortDirection((current) =>
             current === nextDirection ? current : nextDirection
         );
 
-    }, [effectiveSearchParams]);
+    }, [queryState.sort, queryState.dir]);
 
     const onColumnSortChange = useCallback(
         (nextSort: Exclude<SortOption, "default">) => {
@@ -1884,8 +1871,7 @@ export default function ModelPricingClient({
                                                 activeInspectorSelection?.providerId === providerId &&
 											(activeInspectorSelection.serviceTier ?? getProviderDefaultPlan(prov)) === plan;
 
-                                            if (!isPrimary) {
-											return (
+                                            const row = !isPrimary ? (
 												<ProviderServiceTierRow
 													key={`${providerId}-${plan}`}
 													provider={prov}
@@ -1899,10 +1885,7 @@ export default function ModelPricingClient({
 													runtimeStats={runtimeStatsForTier ?? null}
 													showDisclosureGutter={isGroupedProviderView}
 												/>
-											);
-										}
-
-										return (
+										) : (
 											<ProviderCard
 												key={`${providerId}-${plan}`}
 												provider={prov}
@@ -1929,6 +1912,17 @@ export default function ModelPricingClient({
 													onToggleServiceTiers={isGroupedProviderView ? () => toggleServiceTiers(providerId) : undefined}
 												/>
 										);
+                                        return (
+                                            <React.Fragment key={providerId + "-" + plan}>
+                                                {index === firstVariantIndex ? (
+                                                    <ProviderRouteSeparator colSpan={showCacheReadColumn ? 7 : 6} />
+                                                ) : null}
+                                                {index === firstExternalIndex ? (
+                                                    <ProviderRouteSeparator colSpan={showCacheReadColumn ? 7 : 6} kind="external" />
+                                                ) : null}
+                                                {row}
+                                            </React.Fragment>
+                                        );
 									})}
                                     </TableBody>
                                 </Table>
@@ -1959,7 +1953,7 @@ export default function ModelPricingClient({
                             </Button>
                         </div>
                     </Empty>
-                ) : sortedProviders.length > 0 ? (
+                ) : hasApiProviders ? (
                     <Empty className="rounded-lg border p-8">
                         <EmptyHeader>
                             <EmptyMedia variant="icon">
@@ -1967,7 +1961,7 @@ export default function ModelPricingClient({
                             </EmptyMedia>
                             <EmptyTitle>No visible API providers</EmptyTitle>
                             <EmptyDescription>
-                                Provider availability exists for this model, but nothing is currently visible.
+                                No providers match your current filters. Open Filters to adjust provider statuses or include External Providers.
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>

@@ -2,6 +2,65 @@
 
 Official TypeScript and JavaScript SDK for Phaseo Gateway.
 
+## Request controls and debugging
+
+`client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 })` returns an
+independent client that applies those controls to every resource, stream and media
+request. Timeouts cover response reading. GET/HEAD retries respect `Retry-After`;
+POST requests are never automatically retried, including after ambiguous timeouts.
+`maxRetries` defaults to zero. Stopping a local request does not cancel remote work.
+
+TypeScript `timeoutMs` is a total HTTP deadline (60 seconds by default), including
+active streams and downloads; increase it for longer transfers. Python's HTTPX
+`timeout` bounds network inactivity instead. Job waiting timeouts in both SDKs
+bound the overall polling workflow, separately from HTTP timeouts.
+
+Use `responseMetadata(result)` from `@phaseo/sdk` for `requestId`, `traceUrl` and
+HTTP status. `PhaseoHttpError` retains the body and headers and exposes `code`,
+`requestId`, `traceUrl` and `retryAfterMs` where supplied by the gateway.
+
+## Complete workflows
+
+- `music.start(request)`, `videos.start(request)` and `batches.start(request)` return
+  handles with `id`, `result()`, `events()` and `toJSON()`. Persist `{ kind, id }`
+  and reconstruct with the matching resource's `resume(id)`. `result()` rejects
+  failed jobs; `events()` yields terminal failures for inspection. Only video and
+  batch handles support remote `cancel()`.
+- `videos.streamContent(id)` and `downloadTo(stream, writable)` avoid buffering an
+  entire video. File uploads accept `File`, `Blob`, bytes or text content;
+  `toFile(content, filename, contentType)` supplies explicit media metadata.
+- `batchResults(await client.batches.streamResults(id))` incrementally parses
+  JSONL, including failed rows. `matchBatchResult(row, inputsByCustomId)` matches
+  results to original inputs without relying on result order.
+- `responses.parse(request, schema)` validates the completed JSON output using a
+  Zod-compatible `.parse()` function and returns its inferred type. Configure
+  structured output in the request too; validation does not retry generation.
+  `collectStream(client.streamResponses(request))` collects text and final usage.
+- `checkModelCapabilities(id, { inputTypes, outputTypes, endpoints, parameters,
+  parameterValues })` checks current catalogue metadata. It requires one active
+  provider offer to support the combination and validates advertised values,
+  numeric ranges and steps. Unknown metadata is reported, not assumed supported.
+  This is a preflight check, not a provider execution guarantee.
+
+## Test without provider charges
+
+```ts
+import { Phaseo } from "@phaseo/sdk";
+import { createMockTransport } from "@phaseo/sdk/testing";
+
+const mock = createMockTransport([
+  { method: "GET", path: "/v1/videos/video_1", json: { id: "video_1", status: "completed" } },
+]);
+const client = new Phaseo({ apiKey: "test", fetchImpl: mock.fetchImpl });
+await client.videos.resume("video_1").result();
+mock.assertDone();
+```
+
+Fixtures are ordered and unexpected requests fail locally. `jobFixtures` creates
+queued/running/completed or failed job sequences. Include catalogue lookups in
+fixtures when using generation methods that perform lifecycle validation. Mock
+tests validate application behavior, not live provider compatibility.
+
 ## Installation
 
 ```bash
@@ -56,6 +115,31 @@ const client = new Phaseo({
 Regional endpoints currently accept text-only requests. This is regional
 provider routing, not an end-to-end data residency guarantee. `region` cannot be
 combined with a custom `baseUrl`.
+
+## Waiting for music, video, and batches
+
+Submit once and wait for completion, whether the model returns immediately or needs polling:
+
+```ts
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, intervalMs: 5_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+| Resource | Submit and wait for success | Wait for an existing job |
+| --- | --- | --- |
+| Music | `music.generateAndWait(request, options)` | `music.wait(id, options)` |
+| Video | `videos.generateAndWait(request, options)` | `videos.wait(id, options)` |
+| Batch | `batches.createAndWait(request, options)` | `batches.wait(id, options)` |
+
+The same helpers are available as `generateMusicAndWait`, `generateVideoAndWait`, `createBatchAndWait`, `waitForMusic`, `waitForVideo`, and `waitForBatch` on the client.
+
+All helpers return the full response. Submit-and-wait throws `JobFailedError` for failed, cancelled, or expired jobs; `error.response` preserves provider errors and other fields. Wait-by-ID returns any terminal response for inspection. A completed batch may still contain failed individual requests: inspect `request_counts`, `error_file_id`, or `batches.listRequests()`.
+
+Options are `intervalMs` (default 5 seconds, minimum 250 ms), `timeoutMs` (default 30 minutes), `signal`, and `onPoll`. Submit-and-wait's waiting timeout starts after creation returns; it does not extend the client's HTTP request timeout or turn the gateway's synchronous submission into a background job. Callbacks receive the initial response and each retrieved snapshot.
+
+`JobTimeoutError` and `JobCancelledError` expose `jobId` and `lastResponse`; resume with `.wait(error.jobId)`. An `AbortSignal` stops local waiting and the in-flight polling request, but does not cancel the remote generation. No submission is automatically retried. Existing `.create()` and `.get()` methods remain direct HTTP calls. Retain the ID yourself when using those methods.
 
 ## Streaming example
 

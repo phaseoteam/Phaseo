@@ -448,6 +448,7 @@ export default function UnifiedRequestsTable({
 	const [detailRequestId, setDetailRequestId] = useQueryState("request", {
 		history: "push",
 		shallow: true,
+		scroll: false,
 	});
 
 	// Local state
@@ -772,15 +773,21 @@ export default function UnifiedRequestsTable({
 	const data = pageCache.get(page) || [];
 
 	useEffect(() => {
-		if (!detailBasePath || !detailRequestId) return;
+		if (!detailBasePath) return;
+		if (!detailRequestId) {
+			setDialogOpen(false);
+			setSelectedRequest(null);
+			setSelectedDetail(null);
+			setDetailLoading(false);
+			return;
+		}
 		let cancelled = false;
+		setSelectedDetail(null);
 		const row =
 			data.find((item) => item.request_id === detailRequestId) ?? null;
-		if (row) {
-			setSelectedRequest(row);
-			setSelectedAppName(row.app_title ?? null);
-			setDialogOpen(true);
-		}
+		setSelectedRequest(row);
+		setSelectedAppName(row?.app_title ?? null);
+		setDialogOpen(Boolean(row));
 		setDetailLoading(true);
 		const detailPromise = scope ? queryClient.fetchQuery({
 			...privateUsageOptions(scope, "request-detail", { request: detailRequestId, snapshot: String(snapshotUpdatedAt) }, live),

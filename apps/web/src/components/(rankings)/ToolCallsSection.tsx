@@ -5,13 +5,15 @@ import {
 	fetchFrontendRankingToolCallTimeseries,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { formatModelDisplayName } from "@/lib/models/displayName";
+import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 
 export async function ToolCallsSection() {
 	const result = await fetchFrontendRankingToolCallTimeseries(
 		"year",
 		"week",
 		10,
-	).catch(() => ({ data: [] }));
+	).catch(() => null);
+	if (!result) return <RankingUnavailable id="tool-calls" title="Tool Calls" />;
 	const modelIds = Array.from(
 		new Set(
 			result.data

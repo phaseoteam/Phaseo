@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelBenchmarkHighlight, ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
-import { artificialAnalysisChartColour, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { artificialAnalysisChartColour, artificialAnalysisConfigurationRank, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 
 const configurationOrder = ["none", "low", "medium", "high", "xhigh", "max"];
 const metricIcons = {
@@ -25,7 +25,8 @@ const metricIcons = {
 };
 
 function configurationLabel(value: string | null) {
-	if (!value || value === "none") return "Non-reasoning";
+	if (!value) return "Default";
+	if (value === "none") return "Non-reasoning";
 	if (value === "xhigh") return "Extra high";
 	return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -93,7 +94,7 @@ function localConfigurations(results: ModelBenchmarkResult[], benchmarkId: strin
 	}));
 }
 
-function ModelHoverCard({ entry, configurations, metricLabel, total }: { entry: PublicBenchmarkRankingEntry; configurations: Configuration[]; metricLabel?: string; total: number }) {
+function ModelHoverCard({ entry, configurations, metricLabel, rank, total }: { entry: PublicBenchmarkRankingEntry; configurations: Configuration[]; metricLabel?: string; rank: number; total: number }) {
 	return <HoverCardContent side="top" align="center" className="w-72 rounded-xl p-3">
 		<div className="flex items-start gap-2.5">
 			<span className="relative size-8 shrink-0 overflow-hidden rounded-md bg-muted">
@@ -110,15 +111,16 @@ function ModelHoverCard({ entry, configurations, metricLabel, total }: { entry: 
 				<span className="font-medium tabular-nums">{metricLabel ? `${metricLabel}: ` : ""}{Number(item.score).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
 			</div>)}
 		</div>
-		<p className="mt-2 text-xs text-muted-foreground">Rank #{entry.rank} of {total}</p>
+		<p className="mt-2 text-xs text-muted-foreground">Rank #{rank} of {total} configurations</p>
 	</HoverCardContent>;
 }
 
-export function ArtificialAnalysisBenchmarks({ highlights, results = [], rankings = [], modelId, initialExpandedMetric = null }: {
+export function ArtificialAnalysisBenchmarks({ highlights, results = [], rankings = [], modelId, modelName, initialExpandedMetric = null }: {
 	highlights: ModelBenchmarkHighlight[];
 	results?: ModelBenchmarkResult[];
 	rankings?: PublicBenchmarkRanking[];
 	modelId?: string;
+	modelName?: string;
 	initialExpandedMetric?: string | null;
 }) {
 	const aaResults = useMemo(() => results.filter((item) => isArtificialAnalysisBenchmark(item.benchmark_id) && item.score !== null), [results]);
@@ -147,12 +149,34 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 
 	const versions = [...new Set(available.map((item) => artificialAnalysisVersion(item.otherInfo)).filter(Boolean))];
 	const activeRanking = rankings.find((ranking) => ranking.benchmark_id === expandedMetric);
+	const lowerIsBetter = activeRanking?.lower_is_better ?? isArtificialAnalysisCostBenchmark(expandedMetric ?? "");
 	const activeMetric = artificialAnalysisMetrics.find((metric) => metric.key === artificialAnalysisMetricKey(expandedMetric ?? ""));
-	const entries = activeRanking?.entries ?? [];
+	const comparisonEntries = (benchmarkId: string) => {
+		const ranking = rankings.find((item) => item.benchmark_id === benchmarkId);
+		const lowerIsBetter = ranking?.lower_is_better ?? isArtificialAnalysisCostBenchmark(benchmarkId);
+		const localResult = available.find((item) => item.benchmarkId === benchmarkId);
+		const version = artificialAnalysisVersion(localResult?.otherInfo);
+		const entries = (ranking?.entries ?? []).filter((entry) => !version || !entry.other_info || artificialAnalysisVersion(entry.other_info) === version);
+		if (!modelId || localResult?.score == null) return entries;
+		const existing = entries.find((entry) => entry.model_id === modelId);
+		const local = localConfigurations(aaResults, benchmarkId).filter((item) => !version || !artificialAnalysisVersion(item.other_info) || artificialAnalysisVersion(item.other_info) === version);
+		const configurations = local.length ? local : existing?.configurations?.length ? existing.configurations : [{ variant: null, result_key: null, score: localResult.score, other_info: localResult.otherInfo, source_link: localResult.sourceLink, updated_at: null }];
+		const current: PublicBenchmarkRankingEntry = {
+			...existing,
+			model_id: modelId,
+			model_name: modelName ?? existing?.model_name ?? modelId,
+			organisation_id: existing?.organisation_id ?? modelId.split("/")[0],
+			organisation_name: existing?.organisation_name ?? null,
+			score: (lowerIsBetter ? Math.min : Math.max)(...configurations.map((item) => item.score)),
+			rank: existing?.rank ?? 0,
+			configurations,
+		};
+		return [...entries.filter((entry) => entry.model_id !== modelId), current].sort((left, right) => (lowerIsBetter ? left.score - right.score : right.score - left.score) || left.model_name.localeCompare(right.model_name));
+	};
+	const entries = expandedMetric ? comparisonEntries(expandedMetric) : [];
 	const datedEntries = [...entries].sort(modelDateDescending);
-	const localConfigs = expandedMetric ? localConfigurations(aaResults, expandedMetric) : [];
 	const pickerRows = datedEntries.flatMap((entry) => {
-		const configurations = orderConfigurations(entry.model_id === modelId && localConfigs.length ? localConfigs : entry.configurations?.length ? entry.configurations : [{ variant: null, result_key: null, score: Number(entry.score), other_info: entry.other_info ?? null, source_link: entry.source_link ?? null, updated_at: entry.updated_at ?? null }]);
+		const configurations = orderConfigurations(entry.configurations?.length ? entry.configurations : [{ variant: null, result_key: null, score: Number(entry.score), other_info: entry.other_info ?? null, source_link: entry.source_link ?? null, updated_at: entry.updated_at ?? null }]);
 		return configurations.map((configuration) => ({ key: `${entry.model_id}:${configurationKey(configuration)}`, entry, configuration }));
 	});
 	const normalizedPickerQuery = pickerQuery.trim().toLocaleLowerCase();
@@ -173,7 +197,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	const selectedKeys = expandedMetric ? selectionByMetric[expandedMetric] ?? defaultSelectedKeys : [];
 	const chartRows = pickerRows.filter((row) => selectedKeys.includes(row.key)).sort((left, right) => {
 		const scoreDifference = Number(left.configuration.score) - Number(right.configuration.score);
-		return (activeRanking?.lower_is_better ? scoreDifference : -scoreDifference)
+		return (lowerIsBetter ? scoreDifference : -scoreDifference)
 			|| left.entry.rank - right.entry.rank
 			|| configurationRank(left.configuration.variant) - configurationRank(right.configuration.variant);
 	});
@@ -182,8 +206,9 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	const rankFor = (benchmarkId: string, score: number) => {
 		const ranking = rankings.find((item) => item.benchmark_id === benchmarkId);
 		if (!ranking) return null;
-		const betterModels = ranking.entries.filter((entry) => entry.model_id !== modelId && (ranking.lower_is_better ? entry.score < score : entry.score > score));
-		return betterModels.length + 1;
+		const comparisons = comparisonEntries(benchmarkId);
+		if (!comparisons.some((entry) => entry.model_id !== modelId)) return null;
+		return artificialAnalysisConfigurationRank(comparisons, score, ranking.lower_is_better);
 	};
 	const setSelectedKeys = (keys: string[]) => expandedMetric && setSelectionByMetric((current) => ({ ...current, [expandedMetric]: keys }));
 
@@ -202,14 +227,14 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 				const MetricIcon = metricIcons[key];
 				return <button key={id} type="button" aria-expanded={active} onClick={() => { setPickerOpen(false); setExpandedMetric(active ? null : id); }} className={`group min-w-0 py-3 text-left sm:py-4 ${index % 2 ? "border-l pl-4 sm:pl-5" : "pr-4 sm:pr-5"} ${index > 1 ? "border-t lg:border-t-0 lg:border-l lg:pl-5" : ""}`}>
 					<span className="flex items-center gap-2 text-sm font-medium"><MetricIcon className={`size-4 transition-colors ${active ? "text-[#8842FD]" : "text-muted-foreground group-hover:text-foreground"}`} />{label}</span>
-					<span className="mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl"><span>{result?.score == null ? "—" : <AnimatedScore benchmarkId={id} score={result.score} />}</span>{result?.score != null && rank ? <span className="flex items-baseline text-sm font-medium text-muted-foreground">(#<NumberFlow value={rank} />)</span> : null}</span>
+					<span className="mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl"><span>{result?.score == null ? "—" : <AnimatedScore benchmarkId={id} score={result.score} />}</span>{result?.score != null && rank ? <><span aria-hidden="true" className="flex items-baseline text-sm font-medium text-muted-foreground" title={`Rank ${rank.rank} of ${rank.total} evaluated configurations`}>(#<NumberFlow value={rank.rank} />)</span><span className="sr-only">Rank {rank.rank} of {rank.total} evaluated configurations</span></> : null}</span>
 				</button>;
 			})}
 		</div>
 
 		{expandedMetric ? <div className="border-b py-5" aria-live="polite">
 			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-				<div><h3 className="text-sm font-medium">{activeMetric?.label} comparison</h3><p className="text-xs text-muted-foreground">{activeRanking?.lower_is_better ? "Lower is better" : "Higher is better"} · selected configuration ranked against each model’s best</p></div>
+				<div><h3 className="text-sm font-medium">{activeMetric?.label} comparison</h3><p className="text-xs text-muted-foreground">{lowerIsBetter ? "Lower is better" : "Higher is better"} · ranked across evaluated configurations</p></div>
 				{entries.length ? <Popover open={pickerOpen} onOpenChange={setPickerOpen}><PopoverTrigger asChild><Button variant="outline" size="sm" className="w-full justify-between sm:w-64" onPointerDown={() => { pickerScrollY.current = window.scrollY; }} onKeyDown={() => { pickerScrollY.current = window.scrollY; }}><span>{selectedKeys.length} of {pickerRows.length} configurations</span><ChevronsUpDown className="size-3.5 text-muted-foreground" /></Button></PopoverTrigger><PopoverContent initialFocus={false} align="end" className="w-[min(28rem,calc(100vw-2rem))] gap-0 p-0">
 					<Command shouldFilter={false}><CommandInput value={pickerQuery} onValueChange={setPickerQuery} placeholder="Search models or configurations…" /><CommandList className="max-h-80"><CommandEmpty>No evaluated configuration found.</CommandEmpty>{pickerGroups.map((group) => <CommandGroup key={group.key} heading={group.label} className="overflow-visible [&_[cmdk-group-heading]]:sticky [&_[cmdk-group-heading]]:top-0 [&_[cmdk-group-heading]]:z-10 [&_[cmdk-group-heading]]:bg-popover [&_[cmdk-group-heading]]:shadow-[0_1px_0_hsl(var(--border))]">{group.rows.map(({ key, entry, configuration }) => { const selected = selectedKeys.includes(key); return <CommandItem key={key} value={key} data-checked={selected} onSelect={() => setSelectedKeys(selected ? selectedKeys.filter((item) => item !== key) : [...selectedKeys, key])} className="min-h-8 py-1"><span className="relative size-5 shrink-0 overflow-hidden rounded bg-muted"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain p-0.5" /></span><span className="min-w-0 flex-1 truncate">{entry.model_name} <span className="text-muted-foreground">({configurationLabel(configuration.variant)})</span></span></CommandItem>; })}</CommandGroup>)}</CommandList></Command>
 					<div className="grid grid-cols-2 gap-1.5 border-t bg-popover p-2"><Button type="button" variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelectedKeys([])}>Clear<ListX className="size-3.5" /></Button><Button type="button" variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelectedKeys(pickerRows.map((row) => row.key))}>Select all<ListChecks className="size-3.5" /></Button></div>
@@ -224,10 +249,9 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 									const compactBar = proportionalHeight < 30;
 									const colour = artificialAnalysisChartColour(entry.organisation_id, entry.organisation_colour);
 									const isOpenAI = entry.organisation_id === "openai";
-									return <HoverCard key={`${entry.model_id}:${configuration.result_key || configuration.variant || "default"}`}><HoverCardTrigger asChild delay={80} closeDelay={80}><div tabIndex={0} aria-label={entry.model_name} className="group flex h-full min-w-12 flex-1 basis-12 cursor-default flex-col items-center justify-end rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className={`relative flex w-8 items-end justify-center rounded-t-[3px] text-[10px] font-semibold tabular-nums sm:w-9 ${compactBar ? "" : `pb-2 ${hasSelectedModel && !isSelectedModel ? "text-foreground" : "text-white"}`}`} style={{ height }}><span aria-hidden="true" className={`absolute inset-0 rounded-t-[3px] transition-[filter,opacity] duration-300 group-hover:brightness-110 ${isOpenAI ? "bg-black" : "shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"} ${hasSelectedModel && !isSelectedModel ? "opacity-20" : ""}`} style={{ backgroundColor: isOpenAI ? undefined : colour }} /><span className={`relative z-10 ${compactBar ? "absolute bottom-full mb-1 text-foreground" : ""}`}>{barScore(expandedMetric, Number(configuration.score))}</span></span><span className="relative my-1 size-4 shrink-0"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain" /></span><div className="relative h-[112px] w-full"><Link href={`/models/${entry.model_id}`} className="absolute right-1/2 top-0 line-clamp-2 w-24 origin-top-right -rotate-[55deg] whitespace-normal break-words text-right text-[11px] leading-[1.15] decoration-transparent underline-offset-2 hover:underline hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{entry.model_name}{configuration.variant ? <span className="text-muted-foreground"> ({configurationLabel(configuration.variant)})</span> : null}</Link></div></div></HoverCardTrigger><ModelHoverCard entry={entry} configurations={[configuration]} metricLabel={activeMetric?.label} total={entries.length} /></HoverCard>;
+									return <HoverCard key={`${entry.model_id}:${configuration.result_key || configuration.variant || "default"}`}><HoverCardTrigger asChild delay={80} closeDelay={80}><div tabIndex={0} aria-label={entry.model_name} className="group flex h-full min-w-12 flex-1 basis-12 cursor-default flex-col items-center justify-end rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className={`relative flex w-8 items-end justify-center rounded-t-[3px] text-[10px] font-semibold tabular-nums sm:w-9 ${compactBar ? "" : `pb-2 ${hasSelectedModel && !isSelectedModel ? "text-foreground" : "text-white"}`}`} style={{ height }}><span aria-hidden="true" className={`absolute inset-0 rounded-t-[3px] transition-[filter,opacity] duration-300 group-hover:brightness-110 ${isOpenAI ? "bg-black" : "shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"} ${hasSelectedModel && !isSelectedModel ? "opacity-20" : ""}`} style={{ backgroundColor: isOpenAI ? undefined : colour }} /><span className={`relative z-10 ${compactBar ? "absolute bottom-full mb-1 text-foreground" : ""}`}>{barScore(expandedMetric, Number(configuration.score))}</span></span><span className="relative my-1 size-4 shrink-0"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain" /></span><div className="relative h-[112px] w-full"><Link href={`/models/${entry.model_id}`} className="absolute right-1/2 top-0 line-clamp-2 w-24 origin-top-right -rotate-[55deg] whitespace-normal break-words text-right text-[11px] leading-[1.15] decoration-transparent underline-offset-2 hover:underline hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{entry.model_name}{configuration.variant ? <span className="text-muted-foreground"> ({configurationLabel(configuration.variant)})</span> : null}</Link></div></div></HoverCardTrigger><ModelHoverCard entry={entry} configurations={[configuration]} metricLabel={activeMetric?.label} {...artificialAnalysisConfigurationRank(entries, configuration.score, lowerIsBetter)} /></HoverCard>;
 				})}</div>
 				</div></ScrollArea> : <p className="text-sm text-muted-foreground">Select models to compare.</p>}
-			{hasSelectedModel ? <p className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground"><span className="size-2.5 rounded-full bg-muted-foreground/50" />Other models dimmed</p> : null}
 		</div> : null}
 
 		<div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">

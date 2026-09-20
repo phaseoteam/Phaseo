@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Iterator, Literal, Optional, TypeAlias, Union
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import NotRequired, TypedDict, Unpack
 
 import httpx
 import json
@@ -16,6 +16,14 @@ from gen import models
 from gen import operations as ops
 from phaseo_devtools import TelemetryRecorder, create_phaseo_devtools
 from .model_ids import MODEL_IDS, ModelIds
+from .transport import HttpClient, APIResponse, PhaseoHTTPError, request_trace_url
+from .helpers import parse_output, output_text, collect_stream, check_capabilities, batch_results, match_batch_result, StructuredOutputError, StreamResponseError
+from .async_client import AsyncPhaseo, AsyncJobHandle, collect_async_stream, ParsedOutput
+from .media import upload_input, download_to
+from .jobs import (
+    JobWaitOptions, JobTimeoutError, JobCancelledError, JobFailedError, JobHandle,
+    wait_for_job, create_and_wait_for_job,
+)
 from .webhooks import compute_async_webhook_signature, verify_async_webhook_signature
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
@@ -44,6 +52,10 @@ class _ChatResource:
 
 
 class _ResponsesResource:
+    def parse(self, params: models.ResponsesRequest, schema: type[ParsedOutput]) -> ParsedOutput:
+        if params.get("stream"):
+            raise ValueError("parse requires a completed response")
+        return parse_output(self._parent.generate_response(params), schema)
     def __init__(self, parent: "Phaseo"):
         self._parent = parent
 
@@ -121,11 +133,26 @@ class _DecisionsResource:
 
 
 class _BatchesResource:
+    def start(self, params: dict[str, Any]) -> JobHandle:
+        job = self.create(params)
+        return JobHandle("batch", job["id"], self.retrieve, job, self.cancel)
+
+    def resume(self, job_id: str) -> JobHandle:
+        return JobHandle("batch", job_id, self.retrieve, cancel=self.cancel)
+
+    def results(self, job_id: str):
+        return batch_results(self.stream_results(job_id))
     def __init__(self, parent: "Phaseo"):
         self._parent = parent
 
     def create(self, params: models.BatchRequest | dict[str, Any]) -> dict[str, Any]:
         return self._parent.create_batch(params)
+
+    def create_and_wait(self, params: models.BatchRequest | dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.create_batch_and_wait(params, **options)
+
+    def wait(self, batch_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.wait_for_batch(batch_id, **options)
 
     def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._parent.list_batches(params)
@@ -189,11 +216,26 @@ class _ModelsResource:
 
 
 class _VideosResource:
+    def start(self, params: dict[str, Any]) -> JobHandle:
+        job = self.create(params)
+        return JobHandle("video", job["id"], self.retrieve, job, self.cancel)
+
+    def resume(self, job_id: str) -> JobHandle:
+        return JobHandle("video", job_id, self.retrieve, cancel=self.cancel)
+
+    def stream_content(self, job_id: str) -> Iterator[bytes]:
+        return self._parent.stream_content(f"/videos/{quote(job_id, safe='')}/content")
     def __init__(self, parent: "Phaseo"):
         self._parent = parent
 
     def create(self, params: dict[str, Any]) -> dict[str, Any]:
         return self._parent.generate_video(params)
+
+    def generate_and_wait(self, params: dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.generate_video_and_wait(params, **options)
+
+    def wait(self, video_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.wait_for_video(video_id, **options)
 
     def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._parent.list_videos(params)
@@ -346,6 +388,37 @@ class VideoCreateRequest(TypedDict, total=False):
     beta: dict[str, Any]
 
 
+class _MusicResource:
+    def start(self, params: dict[str, Any]) -> JobHandle:
+        job = self.create(params)
+        return JobHandle("music", job["id"], self.retrieve, job)
+
+    def resume(self, job_id: str) -> JobHandle:
+        return JobHandle("music", job_id, self.retrieve)
+    def __init__(self, parent: "Phaseo"):
+        self._parent = parent
+
+    def create(self, params: models.MusicGenerateRequest | dict[str, Any]) -> dict[str, Any]:
+        return self._parent.generate_music(params)
+
+    def retrieve(self, music_id: str) -> dict[str, Any]:
+        return self._parent.get_music_generation(music_id)
+
+    def generate_and_wait(self, params: models.MusicGenerateRequest | dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.generate_music_and_wait(params, **options)
+
+    def wait(self, music_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return self._parent.wait_for_music(music_id, **options)
+
+
+class _JsonResource:
+    def __init__(self, parent: "Phaseo", path: str):
+        self._parent, self._path = parent, path
+
+    def create(self, params: dict[str, Any]) -> APIResponse:
+        return self._parent.request("POST", self._path, body=params)
+
+
 class Phaseo:
     def __init__(
         self,
@@ -360,6 +433,8 @@ class Phaseo:
         client_source: Optional[str] = None,
         client_source_version: Optional[str] = None,
         region: Optional[Literal["global", "eu", "us"]] = None,
+        max_retries: int = 0,
+        http_client: httpx.Client | None = None,
     ):
         api_key = api_key or os.getenv("PHASEO_API_KEY")
         if not api_key:
@@ -388,7 +463,7 @@ class Phaseo:
                 for key, value in app_headers.items()
                 if isinstance(value, str) and value.strip()
             })
-        self._client = Client(base_url=host, headers=self._headers)
+        self._client = HttpClient(base_url=host, headers=self._headers, timeout=timeout, max_retries=max_retries, http_client=http_client)
         self._timeout = timeout
         self.chat = _ChatResource(self)
         self.responses = _ResponsesResource(self)
@@ -401,6 +476,11 @@ class Phaseo:
         self.files = _FilesResource(self)
         self.models = _ModelsResource(self)
         self.videos = _VideosResource(self)
+        self.music = _MusicResource(self)
+        self.ocr = _JsonResource(self, "/ocr")
+        self.rerank = _JsonResource(self, "/rerank")
+        self.parse = _JsonResource(self, "/parse")
+        self.embeddings = _JsonResource(self, "/embeddings")
         self.async_jobs = _AsyncJobsResource(self)
         self._coming_soon_message = "This endpoint is not yet supported in the SDK."
         self._devtools = TelemetryRecorder(devtools)
@@ -413,6 +493,37 @@ class Phaseo:
     @property
     def raw_client(self) -> Client:
         return self._client
+
+    def close(self) -> None:
+        self._client.close()
+
+    def stream_content(self, path: str) -> Iterator[bytes]:
+        if not path.startswith("/") or path.startswith("//"):
+            raise ValueError("Expected a relative API path")
+        with self._client.stream("GET", self._base_url + path) as response:
+            yield from response.iter_bytes()
+
+    def __enter__(self) -> "Phaseo":
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        self.close()
+
+    def with_options(self, *, timeout: float | None = None, max_retries: int | None = None, headers: dict[str, str] | None = None) -> "Phaseo":
+        scoped = Phaseo(api_key=self._headers["Authorization"].removeprefix("Bearer "), base_url=self._base_url,
+            timeout=self._timeout if timeout is None else timeout,
+            max_retries=self._client.max_retries if max_retries is None else max_retries,
+            http_client=self._client.http, enable_deprecation_warnings=self._enable_deprecation_warnings,
+            warnings_as_errors=self._warnings_as_errors, logger=self._logger)
+        scoped._headers.update(self._headers)
+        scoped._headers.update(headers or {})
+        scoped._devtools = self._devtools
+        return scoped
+
+    def check_model_capabilities(self, model_id: str, **requirements: Any) -> dict[str, Any]:
+        payload = self.get_models({"model_id": model_id, "limit": 1})
+        model = next((item for item in payload.get("models", []) if item.get("id", item.get("model_id")) == model_id), None)
+        return check_capabilities(model, **requirements) if model else {"ok": False, "issues": [f"Model {model_id} was not found in the catalogue"]}
 
     def request(
         self,
@@ -633,7 +744,7 @@ class Phaseo:
         chunk_count = 0
         status_code: Optional[int] = None
         try:
-            with httpx.stream(
+            with self._client.stream(
                 "POST",
                 f"{self._base_url}/chat/completions",
                 headers={**self._headers, "Content-Type": "application/json"},
@@ -772,6 +883,47 @@ class Phaseo:
             )
             raise
 
+    def generate_music(self, request: models.MusicGenerateRequest | dict[str, Any]) -> dict[str, Any]:
+        payload = dict(request)
+        self._maybe_warn_for_payload(payload)
+        started = time.time()
+        try:
+            response = ops.generateMusic(self._client, body=payload)
+            self._capture_success(endpoint="music.generations", request=payload, response=response, started_at=started)
+            return response
+        except Exception as exc:
+            self._capture_error(endpoint="music.generations", request=payload, error=exc, started_at=started)
+            raise
+
+    def get_music_generation(self, music_id: str) -> dict[str, Any]:
+        request = {"music_id": music_id}
+        started = time.time()
+        try:
+            response = ops.getMusicGeneration(self._client, path={"music_id": quote(music_id, safe="")})
+            self._capture_success(endpoint="music.retrieve", request=request, response=response, started_at=started)
+            return response
+        except Exception as exc:
+            self._capture_error(endpoint="music.retrieve", request=request, error=exc, started_at=started)
+            raise
+
+    def wait_for_music(self, music_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return wait_for_job("music", music_id, self.get_music_generation, **options)
+
+    def generate_music_and_wait(self, request: models.MusicGenerateRequest | dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return create_and_wait_for_job("music", lambda: self.generate_music(request), self.get_music_generation, **options)
+
+    def wait_for_video(self, video_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return wait_for_job("video", video_id, self.get_video, **options)
+
+    def generate_video_and_wait(self, request: VideoCreateRequest | dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return create_and_wait_for_job("video", lambda: self.generate_video(request), self.get_video, **options)
+
+    def wait_for_batch(self, batch_id: str, **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return wait_for_job("batch", batch_id, self.get_batch, **options)
+
+    def create_batch_and_wait(self, request: models.BatchRequest | dict[str, Any], **options: Unpack[JobWaitOptions]) -> dict[str, Any]:
+        return create_and_wait_for_job("batch", lambda: self.create_batch(request), self.get_batch, **options)
+
     def list_videos(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         query = dict(params or {})
         started = time.time()
@@ -816,7 +968,7 @@ class Phaseo:
 
     def get_video_content(self, video_id: str) -> bytes:
         url = f"{self._base_url}/videos/{video_id}/content"
-        response = httpx.get(url, headers=self._headers, timeout=self._timeout)
+        response = self._client.get(url, headers=self._headers, timeout=self._timeout)
         response.raise_for_status()
         return response.content
 
@@ -860,7 +1012,7 @@ class Phaseo:
         self._maybe_warn_for_payload(payload)
         return ops.createTranslation(self._client, body=payload)
 
-    def generate_speech(self, body: models.AudioSpeechRequest) -> dict[str, Any]:
+    def generate_speech(self, body: models.AudioSpeechRequest) -> bytes:
         payload = dict(body)
         self._maybe_warn_for_payload(payload)
         return ops.createSpeech(self._client, body=payload)
@@ -895,7 +1047,7 @@ class Phaseo:
         chunk_count = 0
         status_code: Optional[int] = None
         try:
-            with httpx.stream(
+            with self._client.stream(
                 "POST",
                 f"{self._base_url}/responses",
                 headers={**self._headers, "Content-Type": "application/json"},
@@ -966,7 +1118,7 @@ class Phaseo:
         chunk_count = 0
         status_code: Optional[int] = None
         try:
-            with httpx.stream(
+            with self._client.stream(
                 "POST",
                 f"{self._base_url}/messages",
                 headers={**self._headers, "Content-Type": "application/json"},
@@ -1056,7 +1208,7 @@ class Phaseo:
     def stream_batch_results(self, batch_id: str) -> Iterator[bytes]:
         """Stream batch JSONL. Close the iterator when stopping early."""
         url = f"{self._base_url}/batches/{quote(batch_id, safe='')}/results"
-        with httpx.stream("GET", url, headers={**self._headers, "Accept": "application/x-ndjson"}, timeout=self._timeout, follow_redirects=False) as response:
+        with self._client.stream("GET", url, headers={**self._headers, "Accept": "application/x-ndjson"}, timeout=self._timeout, follow_redirects=False) as response:
             response.raise_for_status()
             yield from response.iter_bytes()
 
@@ -1110,15 +1262,16 @@ class Phaseo:
 
     def get_file_content(self, file_id: str) -> bytes:
         url = f"{self._base_url}/files/{file_id}/content"
-        response = httpx.get(url, headers=self._headers, timeout=self._timeout)
+        response = self._client.get(url, headers=self._headers, timeout=self._timeout)
         response.raise_for_status()
         return response.content
 
-    def upload_file(self, *, purpose: Optional[str] = None, file: Any = None) -> dict[str, Any]:
-        payload: dict[str, Any] = {"file": file}
-        if purpose is not None:
-            payload["purpose"] = purpose
-        return ops.uploadFile(self._client, body=payload)
+    def upload_file(self, *, purpose: Optional[str] = None, file: Any = None, filename: str = "upload", content_type: str = "application/octet-stream") -> dict[str, Any]:
+        from .transport import decode_response
+        with upload_input(file, filename, content_type) as value:
+            with self._client.stream("POST", self._base_url + "/batches/files", files={"file": value}, data={"purpose": purpose} if purpose else {}) as response:
+                response.read()
+                return decode_response(response)
 
     def get_models(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         request = params or {}
@@ -1681,6 +1834,26 @@ def _as_trimmed_string(value: Any) -> Optional[str]:
 
 
 __all__ = [
+    "APIResponse",
+    "AsyncPhaseo",
+    "AsyncJobHandle",
+    "JobHandle",
+    "PhaseoHTTPError",
+    "StructuredOutputError",
+    "StreamResponseError",
+    "batch_results",
+    "check_capabilities",
+    "collect_async_stream",
+    "collect_stream",
+    "download_to",
+    "match_batch_result",
+    "output_text",
+    "parse_output",
+    "request_trace_url",
+    "JobWaitOptions",
+    "JobTimeoutError",
+    "JobCancelledError",
+    "JobFailedError",
     "Phaseo",
     "PhaseoLogLevel",
     "PhaseoLogger",

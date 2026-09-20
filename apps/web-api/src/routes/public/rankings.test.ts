@@ -4,6 +4,31 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("public rankings routes", () => {
+	it.each(["text_tokens", "image_outputs", "image_inputs", "embedding_tokens", "rerank_quad_tokens", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_seconds", "video_tokens", "cached_tokens"])("reads %s from modality rollups", async (metric) => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify([{ model_id: "test", tokens: 2.75 }])));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request(`https://phaseo.app/api/_web/rankings/modality-timeseries?metric=${metric}`, {}, env);
+		expect(response.status).toBe(200);
+		expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain(`"p_metric":"${metric}"`);
+		await expect(response.json()).resolves.toMatchObject({ data: [{ tokens: 2.75 }] });
+	});
+
+	it("defaults to a supported metric and rejects unknown metrics before querying", async () => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		expect((await app.request("https://phaseo.app/api/_web/rankings/modality-timeseries", {}, env)).status).toBe(200);
+		expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain('"p_metric":"text_tokens"');
+		expect((await app.request("https://phaseo.app/api/_web/rankings/modality-timeseries?metric=unknown", {}, env)).status).toBe(400);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("keeps failed RPCs distinct from empty successful aggregates", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "unavailable" }), { status: 400 })));
+		const response = await app.request("https://phaseo.app/api/_web/rankings/modality-timeseries?metric=speech_seconds", {}, env);
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
+	});
+
 	it("passes URL parameters to the aggregate RPC and applies volatile caching", async () => {
 		const fetchMock = vi.fn(async () => new Response(JSON.stringify([{ model_id: "openai/gpt-test", tokens: 10 }]), { status: 200 }));
 		vi.stubGlobal("fetch", fetchMock);
@@ -221,6 +246,8 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
 	{ benchmark_id: ids[0], model_slug: "test/last", score_numeric: 850, other_info: info, variant: "high", result_key: "last:high" },
     { benchmark_id: ids[0], model_slug: "test/hidden", score_numeric: 1000, other_info: info },
     { benchmark_id: ids[0], model_slug: "test/old", score_numeric: 1200, other_info: "Intelligence Index v4.1.1" },
+    { benchmark_id: ids[0], model_slug: "test/preview", score_numeric: 43.6, other_info: "Intelligence Index v4.3. Preview result." },
+    { benchmark_id: ids[0], model_slug: "test/malformed", score_numeric: 1300, other_info: "Intelligence Index v4.3..2" },
     { benchmark_id: ids[3], model_slug: "test/last", score_numeric: 10.25, other_info: info },
     { benchmark_id: ids[3], model_slug: "test/model-0", score_numeric: 0, other_info: info },
     { benchmark_id: ids[3], model_slug: "test/model-1", score_numeric: 0, other_info: info },
@@ -247,7 +274,8 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
   expect(benchmarks).toHaveLength(4);
   expect(benchmarks[0].entries[0]).toMatchObject({ model_id:'test/last', score:900, rank:1, other_info:info });
 	expect(benchmarks[0].entries[0]).toMatchObject({ organisation_colour:'#123456', release_date:'2026-09-01', configurations:[{variant:'max',score:900},{variant:'high',score:850}] });
-  expect(benchmarks[0].entries.some((entry:any)=>['test/old','test/hidden'].includes(entry.model_id))).toBe(false);
+  expect(benchmarks[0].entries.some((entry:any)=>['test/old','test/hidden','test/malformed'].includes(entry.model_id))).toBe(false);
+  expect(benchmarks[0].entries).toEqual(expect.arrayContaining([expect.objectContaining({ model_id: 'test/preview', score: 43.6 })]));
   expect(benchmarks[3].lower_is_better).toBe(true);
   expect(benchmarks[3].entries.map((entry:any)=>[entry.score,entry.rank])).toEqual([[0,1],[0,1],[10.25,3]]);
   expect(fetchMock.mock.calls.filter(([url])=>String(url).includes('/v2_benchmark_results'))).toHaveLength(2);

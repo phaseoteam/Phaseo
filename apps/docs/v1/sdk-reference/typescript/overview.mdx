@@ -30,6 +30,61 @@ const response = await client.generateText({
 console.log(response.choices[0].message.content);
 ```
 
+## Wait for music, video, or batches
+
+```typescript
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+Use `videos.generateAndWait(request, options)` for video and `batches.createAndWait(request, options)` for batches. These helpers submit once, return an immediate completed response without polling, or poll the same job until completion. They return the full response and throw `JobFailedError` with `response` for failed, cancelled, or expired jobs. Completed batches can still have failed individual requests.
+
+Each resource also has `wait(id, options)`, which returns any terminal response, including failures. Options include `intervalMs` (default 5,000; minimum 250), `timeoutMs` (default 1,800,000), `signal`, and `onPoll`. The waiting timeout starts after submission returns; the initial HTTP request keeps its own timeout. Progress callbacks receive the initial response and each poll.
+
+`JobTimeoutError` and `JobCancelledError` retain `jobId` and `lastResponse`, allowing `.wait(error.jobId)` to resume. Stopping a wait cancels its in-flight polling request but does not cancel remote work. HTTP failures propagate without automatically resubmitting. These SDK helpers do not add background execution to the gateway.
+
+## Request controls and diagnostics
+
+Use `client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 })` for an
+immutable client with controls applied to all resources, streams and media.
+Timeouts include reading the response body. Retries default to zero and apply
+only to GET/HEAD, with `Retry-After` respected. Paid submissions are never retried.
+
+`responseMetadata(result)` exposes the gateway request ID and dashboard trace URL.
+HTTP errors expose `code`, `requestId`, `traceUrl`, `retryAfterMs`, body and headers.
+
+## Workflow helpers
+
+`music.start`, `videos.start` and `batches.start` return handles with `result()`,
+`events()` and `toJSON()`. Persist kind and ID and reconstruct using `resume(id)`.
+`result()` rejects terminal failures. Only video and batch support remote cancellation.
+
+`videos.streamContent(id)` with `downloadTo(stream, writable)` streams large
+outputs. `toFile(bytes, filename, contentType)` prepares uploads.
+`batchResults(await client.batches.streamResults(id))` incrementally parses JSONL;
+`matchBatchResult(row, inputsByCustomId)` retains individual errors and input identity.
+
+`responses.parse(request, schema)` accepts a Zod-compatible parser and returns
+validated output. Set the server structured-output format in the request too.
+`collectStream(client.streamResponses(request))` accumulates text and usage.
+
+`checkModelCapabilities(id, { inputTypes, outputTypes, endpoints, parameters,
+parameterValues })` checks advertised capabilities and scalar constraints on one
+active provider offer. Missing metadata is reported as unknown. It never changes
+the model or drops parameters, and cannot guarantee a live provider will accept a request.
+
+## Local testing and website exports
+
+Import `createMockTransport` and `jobFixtures` from `@phaseo/sdk/testing` to inject
+strict, ordered fixtures through `fetchImpl`. Call `mock.assertDone()` to check all
+expected requests happened. Unexpected calls fail locally with no network fallback.
+
+After submitting a request in a Phaseo room, **Get code** exports its model and
+settings as TypeScript or Python. **View request** opens its dashboard trace when
+a request ID is available. Run exported code on your server with `PHASEO_API_KEY`.
+
 ## What's Included
 
 -   `Phaseo` client class for all API interactions
