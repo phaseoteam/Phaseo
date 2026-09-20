@@ -7,6 +7,17 @@ import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { getProviderTableDiscountBadge } from "./ProviderCard";
 import { buildProviderSections } from "./pricingHelpers";
 
+// These Node tests exercise exported helpers, not nuqs's ESM browser hooks.
+jest.mock("nuqs", () => ({
+	parseAsString: {},
+	useQueryStates: jest.fn(),
+}));
+
+jest.mock("@number-flow/react", () => ({
+	__esModule: true,
+	default: ({ value }: { value: number }) => String(value),
+}));
+
 describe("runtime pricing percentile retries", () => {
 	it("keeps the attempted percentile selected through transient failures", () => {
 		expect(isTerminalRuntimeStatsRetry(1)).toBe(false);
