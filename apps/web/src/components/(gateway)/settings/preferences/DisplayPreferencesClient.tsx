@@ -8,6 +8,16 @@ import { updateDisplayPreferences } from "@/app/(dashboard)/settings/preferences
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import { ThemeSelector } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { ColorPicker } from "@/components/ui/color-picker";
+import {
+	Popover,
+	PopoverContent,
+	PopoverDescription,
+	PopoverHeader,
+	PopoverTitle,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
 	Select,
 	SelectContent,
@@ -19,10 +29,13 @@ import {
 	DEFAULT_DISPLAY_PREFERENCES,
 	DISPLAY_DARK_PALETTES,
 	DISPLAY_LIGHT_PALETTES,
+	formatDisplayDate,
 	formatDisplayDateTime,
 	formatDisplayNumber,
+	formatDisplayTime,
 	formatDisplayTimestamp,
 	normalizeDisplayPreferences,
+	readableForegroundForAccent,
 	type DisplayPreferences,
 	type DisplayDarkPalette,
 	type DisplayLightPalette,
@@ -139,20 +152,52 @@ function supportedTimeZones() {
 function PreferenceRow({
 	title,
 	description,
+	preview,
 	children,
 }: {
+	title: string;
+	description: string;
+	preview?: React.ReactNode;
+	children: React.ReactNode;
+}) {
+	return (
+		<div className="grid gap-4 border-t border-border/60 py-5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
+			<div className="max-w-xl md:pt-1.5">
+				<p className="text-sm font-medium">{title}</p>
+				<p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
+			</div>
+			<div className="w-full space-y-2 md:justify-self-end">
+				{children}
+				{preview ? (
+					<div className="flex items-baseline justify-between gap-4 px-1 text-xs">
+						<span className="font-medium uppercase tracking-[0.12em] text-muted-foreground/70">Preview</span>
+						<span className="truncate text-right font-medium tabular-nums text-foreground/80">{preview}</span>
+					</div>
+				) : null}
+			</div>
+		</div>
+	);
+}
+
+function SettingsSection({
+	id,
+	title,
+	description,
+	children,
+}: {
+	id: string;
 	title: string;
 	description: string;
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="grid gap-3 border-b border-border/60 px-4 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,18rem)] sm:items-center sm:px-5">
-			<div>
-				<p className="text-sm font-medium">{title}</p>
-				<p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
+		<section aria-labelledby={id} className="border-t border-border/70 pt-7 first:border-t-0 first:pt-0">
+			<div className="pb-4">
+				<h2 id={id} className="text-base font-semibold tracking-tight">{title}</h2>
+				<p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
 			</div>
-			<div className="sm:justify-self-end">{children}</div>
-		</div>
+			<div>{children}</div>
+		</section>
 	);
 }
 
@@ -169,7 +214,7 @@ function PreferenceSelect<T extends string>({
 }) {
 	return (
 		<Select value={value} onValueChange={(next) => onChange(next as T)}>
-			<SelectTrigger aria-label={ariaLabel} className="w-full min-w-48 sm:w-64">
+			<SelectTrigger aria-label={ariaLabel} className="h-11 w-full">
 				<SelectValue>{options.find((option) => option.value === value)?.label}</SelectValue>
 			</SelectTrigger>
 			<SelectContent>
@@ -236,16 +281,35 @@ function AccentPicker({
 	onChange: (value: string) => void;
 }) {
 	return (
-		<label className="flex h-9 w-full items-center gap-3 rounded-md border border-border bg-background px-2 sm:w-64">
-			<input
-				type="color"
-				aria-label={ariaLabel}
-				value={value}
-				onChange={(event) => onChange(event.target.value.toLowerCase())}
-				className="h-6 w-8 cursor-pointer border-0 bg-transparent p-0"
-			/>
-			<span className="font-mono text-xs uppercase text-muted-foreground">{value}</span>
-		</label>
+		<Popover>
+			<PopoverTrigger asChild>
+				<Button
+					type="button"
+					variant="outline"
+					aria-label={ariaLabel}
+					className="h-11 w-full justify-between px-3 font-normal"
+				>
+					<span className="flex min-w-0 items-center gap-2.5">
+						<span
+							aria-hidden="true"
+							className="size-5 shrink-0 rounded-full border border-black/10 shadow-sm dark:border-white/15"
+							style={{ backgroundColor: value }}
+						/>
+						<span className="font-mono text-xs uppercase text-foreground">{value}</span>
+					</span>
+					<span className="text-xs text-muted-foreground">Edit</span>
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent align="end" className="w-72 gap-3 p-3">
+				<PopoverHeader>
+					<PopoverTitle className="text-sm">Accent colour</PopoverTitle>
+					<PopoverDescription className="text-xs">
+						Drag across the field or enter an exact value.
+					</PopoverDescription>
+				</PopoverHeader>
+				<ColorPicker value={value} onChange={(next) => onChange(next.toLowerCase())} />
+			</PopoverContent>
+		</Popover>
 	);
 }
 
@@ -254,6 +318,22 @@ function presetMatches(preferences: DisplayPreferences, preset: ThemePreset) {
 		preferences.darkPalette === preset.darkPalette &&
 		preferences.lightAccent === preset.lightAccent &&
 		preferences.darkAccent === preset.darkAccent;
+}
+
+function applyAppearanceToRoot(preferences: DisplayPreferences) {
+	const root = document.documentElement;
+	root.dataset.lightPalette = preferences.lightPalette;
+	root.dataset.darkPalette = preferences.darkPalette;
+	root.style.setProperty("--light-user-accent", preferences.lightAccent);
+	root.style.setProperty(
+		"--light-user-accent-foreground",
+		readableForegroundForAccent(preferences.lightAccent),
+	);
+	root.style.setProperty("--dark-user-accent", preferences.darkAccent);
+	root.style.setProperty(
+		"--dark-user-accent-foreground",
+		readableForegroundForAccent(preferences.darkAccent),
+	);
 }
 
 function ThemePresetPicker({
@@ -266,7 +346,7 @@ function ThemePresetPicker({
 	const activePreset = THEME_PRESETS.find((preset) => presetMatches(preferences, preset));
 
 	return (
-		<div className="border-b border-border/60 px-4 py-4 sm:px-5">
+		<div className="border-t border-border/60 py-5">
 			<div className="flex items-start justify-between gap-4">
 				<div>
 					<p className="text-sm font-medium">Preset</p>
@@ -332,11 +412,30 @@ export default function DisplayPreferencesClient({
 		() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
 		[],
 	);
+	const timeZoneOptions = React.useMemo(
+		() => [
+			{
+				value: "system",
+				label: `System default (${systemTimeZone.replaceAll("_", " ")})`,
+			},
+			...timeZones.map((timeZone) => ({
+				value: timeZone,
+				label: timeZone.replaceAll("_", " "),
+			})),
+		],
+		[systemTimeZone, timeZones],
+	);
 	const dirty = JSON.stringify(preferences) !== JSON.stringify(savedPreferences);
 
 	React.useEffect(() => {
 		if (displayPreferencesHydrated) applyPreferences(normalizedInitial);
 	}, [applyPreferences, displayPreferencesHydrated, normalizedInitial]);
+
+	React.useEffect(() => {
+		if (!displayPreferencesHydrated) return;
+		applyAppearanceToRoot(preferences);
+		return () => applyAppearanceToRoot(savedPreferences);
+	}, [displayPreferencesHydrated, preferences, savedPreferences]);
 
 	function update<K extends keyof DisplayPreferences>(key: K, value: DisplayPreferences[K]) {
 		setPreferences((current) => ({ ...current, [key]: value }));
@@ -367,12 +466,17 @@ export default function DisplayPreferencesClient({
 	}
 
 	return (
-		<div className="space-y-6">
-			<section aria-labelledby="date-time-heading" className="overflow-hidden rounded-2xl border border-border/60 bg-background">
-				<div className="border-b border-border/60 bg-muted/20 px-4 py-3 sm:px-5">
-					<h2 id="date-time-heading" className="text-sm font-semibold">Date and time</h2>
-				</div>
-				<PreferenceRow title="Locale" description="Controls month names, ordering, and punctuation.">
+		<div className="space-y-12 pb-2">
+			<SettingsSection
+				id="date-time-heading"
+				title="Date and time"
+				description="Control how dates and times are presented throughout the product. UTC-only diagnostics stay unchanged."
+			>
+				<PreferenceRow
+					title="Locale"
+					description="Controls month names, ordering, punctuation, and digit grouping."
+					preview={`${formatDisplayDate(PREVIEW_DATE, preferences)} · ${formatDisplayNumber(1_234_567.89, preferences, { maximumFractionDigits: 2 })}`}
+				>
 					<PreferenceSelect
 						ariaLabel="Display locale"
 						value={preferences.locale}
@@ -384,7 +488,11 @@ export default function DisplayPreferencesClient({
 						]}
 					/>
 				</PreferenceRow>
-				<PreferenceRow title="Date format" description="Use a familiar regional style or an unambiguous ISO date.">
+				<PreferenceRow
+					title="Date format"
+					description="Use a familiar regional style or an unambiguous ISO date."
+					preview={formatDisplayDate(PREVIEW_DATE, preferences)}
+				>
 					<PreferenceSelect
 						ariaLabel="Date format"
 						value={preferences.dateStyle}
@@ -397,18 +505,24 @@ export default function DisplayPreferencesClient({
 						]}
 					/>
 				</PreferenceRow>
-				<PreferenceRow title="Time zone" description={`System default currently uses ${systemTimeZone}.`}>
-					<select
-						aria-label="Time zone"
+				<PreferenceRow
+					title="Time zone"
+					description={`System default currently uses ${systemTimeZone.replaceAll("_", " ")}. Search by city or region.`}
+					preview={formatDisplayDateTime(PREVIEW_DATE, preferences)}
+				>
+					<SearchableSelect
+						label="Time zone"
 						value={preferences.timeZone}
-						onChange={(event) => update("timeZone", event.target.value)}
-						className="h-9 w-full min-w-48 rounded-md border border-border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 sm:w-64"
-					>
-						<option value="system">System default ({systemTimeZone})</option>
-						{timeZones.map((timeZone) => <option key={timeZone} value={timeZone}>{timeZone.replaceAll("_", " ")}</option>)}
-					</select>
+						onValueChange={(value) => update("timeZone", value)}
+						options={timeZoneOptions}
+						placeholder="Choose a time zone"
+					/>
 				</PreferenceRow>
-				<PreferenceRow title="Clock" description="Choose a 12-hour or 24-hour clock.">
+				<PreferenceRow
+					title="Clock"
+					description="Choose a 12-hour or 24-hour clock."
+					preview={formatDisplayTime(PREVIEW_DATE, preferences)}
+				>
 					<PreferenceSelect
 						ariaLabel="Clock format"
 						value={preferences.hourCycle}
@@ -420,7 +534,11 @@ export default function DisplayPreferencesClient({
 						]}
 					/>
 				</PreferenceRow>
-				<PreferenceRow title="Recent times" description="Contextual uses relative labels for events within the last day.">
+				<PreferenceRow
+					title="Recent times"
+					description="Contextual uses relative labels for events within the last day."
+					preview={formatDisplayTimestamp("2026-09-19T15:35:00.000Z", preferences, PREVIEW_DATE)}
+				>
 					<PreferenceSelect
 						ariaLabel="Recent timestamp style"
 						value={preferences.relativeTime}
@@ -432,13 +550,18 @@ export default function DisplayPreferencesClient({
 						]}
 					/>
 				</PreferenceRow>
-			</section>
+			</SettingsSection>
 
-			<section aria-labelledby="numbers-heading" className="overflow-hidden rounded-2xl border border-border/60 bg-background">
-				<div className="border-b border-border/60 bg-muted/20 px-4 py-3 sm:px-5">
-					<h2 id="numbers-heading" className="text-sm font-semibold">Numbers</h2>
-				</div>
-				<PreferenceRow title="Number format" description="Compact notation shortens large dashboard values, for example 1.2M.">
+			<SettingsSection
+				id="numbers-heading"
+				title="Numbers"
+				description="Choose the density used for large values in dashboards and summaries."
+			>
+				<PreferenceRow
+					title="Number format"
+					description="Compact notation shortens large dashboard values, for example 1.2M."
+					preview={formatDisplayNumber(1_234_567.89, preferences, { maximumFractionDigits: 2 })}
+				>
 					<PreferenceSelect
 						ariaLabel="Number format"
 						value={preferences.numberNotation}
@@ -449,14 +572,17 @@ export default function DisplayPreferencesClient({
 						]}
 					/>
 				</PreferenceRow>
-			</section>
+			</SettingsSection>
 
-			<section aria-labelledby="appearance-heading" className="overflow-hidden rounded-2xl border border-border/60 bg-background">
-				<div className="border-b border-border/60 bg-muted/20 px-4 py-3 sm:px-5">
-					<h2 id="appearance-heading" className="text-sm font-semibold">Appearance</h2>
-				</div>
+			<SettingsSection
+				id="appearance-heading"
+				title="Appearance"
+				description="Build a coordinated light and dark theme. Palette and accent changes update this page immediately."
+			>
 				<PreferenceRow title="Mode" description="System, light, or dark mode stays specific to this browser.">
-					<ThemeSelector />
+					<div className="flex h-11 items-center justify-end rounded-md border border-border px-2">
+						<ThemeSelector />
+					</div>
 				</PreferenceRow>
 				<ThemePresetPicker preferences={preferences} onChange={applyThemePreset} />
 				<PreferenceRow title="Light theme" description="Used whenever Phaseo is in light mode.">
@@ -491,27 +617,9 @@ export default function DisplayPreferencesClient({
 						onChange={(value) => update("darkAccent", value)}
 					/>
 				</PreferenceRow>
-			</section>
+			</SettingsSection>
 
-			<section aria-labelledby="preview-heading" className="rounded-2xl border border-border/60 bg-muted/20 p-4 sm:p-5">
-				<h2 id="preview-heading" className="text-sm font-semibold">Preview</h2>
-				<div className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
-					<div className="rounded-lg border border-border/60 bg-background p-3">
-						<p className="text-xs text-muted-foreground">Date and time</p>
-						<p className="mt-1 font-medium tabular-nums">{formatDisplayDateTime(PREVIEW_DATE, preferences)}</p>
-					</div>
-					<div className="rounded-lg border border-border/60 bg-background p-3">
-						<p className="text-xs text-muted-foreground">Recent time</p>
-						<p className="mt-1 font-medium tabular-nums">{formatDisplayTimestamp("2026-09-19T15:35:00.000Z", preferences, PREVIEW_DATE)}</p>
-					</div>
-					<div className="rounded-lg border border-border/60 bg-background p-3">
-						<p className="text-xs text-muted-foreground">Number</p>
-						<p className="mt-1 font-medium tabular-nums">{formatDisplayNumber(1_234_567.89, preferences, { maximumFractionDigits: 2 })}</p>
-					</div>
-				</div>
-			</section>
-
-			<div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+			<div className="flex flex-col-reverse gap-2 border-t border-border/70 pt-6 sm:flex-row sm:items-center sm:justify-end">
 				<Button
 					type="button"
 					variant="ghost"
