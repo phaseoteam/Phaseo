@@ -1,28 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import { Braces, Info, TerminalSquare } from "lucide-react";
-import { Logo } from "@/components/Logo";
+import { Info } from "lucide-react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { buildProviderRoutingExample, ROUTING_LANGUAGES, type RoutingLanguage } from "./providerRoutingExamples";
 
-const CodeBlock = dynamic(() => import("../quickstart/CodeBlock"));
-
-export function ProviderRoutingHelp({ providerId, modelId, serviceTier, endpoint }: {
-    providerId: string;
-    modelId: string;
-    serviceTier: string;
-    endpoint: string;
-}) {
+export function ProviderRoutingHelp() {
     const [open, setOpen] = useState(false);
-    const [language, setLanguage] = useState<RoutingLanguage>("json");
     const triggerRef = useRef<HTMLButtonElement>(null);
     const pinnedRef = useRef(false);
-    const selectedLanguage = ROUTING_LANGUAGES.find(option => option.id === language)!;
-    const code = buildProviderRoutingExample({ providerId, modelId, serviceTier, endpoint, language });
 
     return (
         <HoverCard open={open} onOpenChange={(nextOpen, details) => {
@@ -47,7 +32,7 @@ export function ProviderRoutingHelp({ providerId, modelId, serviceTier, endpoint
             </HoverCardTrigger>
             <HoverCardContent
                 align="end"
-                className="w-[min(28rem,calc(100vw-2rem))] max-h-[min(36rem,75vh)] overflow-y-auto rounded-xl p-3 font-sans"
+                className="w-[min(18rem,calc(100vw-2rem))] rounded-xl p-3 font-sans"
                 onKeyDown={event => {
                     if (event.key !== "Escape") return;
                     event.preventDefault();
@@ -59,32 +44,11 @@ export function ProviderRoutingHelp({ providerId, modelId, serviceTier, endpoint
             >
                 <p className="text-xs font-semibold text-foreground">Provider-specific routing</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Pass this slug directly in the <code>model</code> field of your API request to select this provider. You do not need <code>provider.only</code> as well.
+                    Pass this slug in the <code>model</code> field of your API request to pin it to this provider.
                 </p>
-                {serviceTier === "priority" || serviceTier === "flex" ? (
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Include <code>service_tier</code> to select this tier, as shown below.</p>
-                ) : null}
                 <a href="/docs/v1/guides/provider-qualified-models" className="mt-2 inline-block text-xs font-medium text-foreground underline underline-offset-4 hover:text-foreground">
                     Read the routing docs
                 </a>
-                <Separator className="my-3" />
-                {serviceTier === "batch" ? (
-                    <p className="mb-2 text-xs text-muted-foreground">For Batch API requests, use the <code>provider.only</code> examples below.</p>
-                ) : null}
-                <Tabs value={language} onValueChange={value => setLanguage(value as RoutingLanguage)}>
-                    <TabsList aria-label="Routing example language" className="h-auto! w-full flex-wrap justify-start">
-                        {ROUTING_LANGUAGES.map(option => (
-                            <TabsTrigger key={option.id} value={option.id} aria-label={option.label} title={option.label} className="h-8 w-9 flex-none">
-                                {option.id === "json" ? <Braces aria-hidden="true" className="size-4" />
-                                    : option.id === "curl" ? <TerminalSquare aria-hidden="true" className="size-4" />
-                                        : <Logo id={option.id} alt="" width={16} height={16} className="object-contain" />}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <TabsContent value={language}>
-                        <CodeBlock key={`${language}-${providerId}-${modelId}-${serviceTier}`} code={code} lang={selectedLanguage.lang} label={selectedLanguage.label} />
-                    </TabsContent>
-                </Tabs>
             </HoverCardContent>
         </HoverCard>
     );

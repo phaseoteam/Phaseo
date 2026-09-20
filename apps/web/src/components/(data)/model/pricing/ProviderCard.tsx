@@ -3570,12 +3570,7 @@ export default function ProviderCard({
 											: providerQualifiedModelId ?? sec.providerId}
 									</button>
 									{canonicalModelId ? (
-										<ProviderRoutingHelp
-											providerId={sec.providerId}
-											modelId={canonicalModelId}
-											serviceTier={selectedPlan}
-											endpoint={providerModelsInScope.find(model => model.model_id === canonicalModelId)?.endpoint ?? "chat.completions"}
-										/>
+										<ProviderRoutingHelp />
 									) : null}
 									{inlineProviderLabels.map((item) => (
 										<React.Fragment key={item}>
