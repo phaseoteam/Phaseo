@@ -7,13 +7,13 @@ function curlPayload(code: string) {
 }
 
 describe("provider routing examples", () => {
-    it("copies a provider-only routing object without confusing the qualified model ID with the provider", () => {
-        expect(JSON.parse(buildProviderRoutingExample({ ...route, language: "json" }))).toEqual({ provider: { only: ["openai-eu"] } });
+    it("passes the full slug directly as model without a separate provider constraint", () => {
+        expect(JSON.parse(buildProviderRoutingExample({ ...route, language: "json" }))).toEqual({ model: "openai-eu:openai/example" });
     });
 
     it.each(["priority", "flex"])("preserves the selected %s tier", serviceTier => {
         expect(JSON.parse(buildProviderRoutingExample({ ...route, serviceTier, language: "json" }))).toEqual({
-            provider: { only: ["openai-eu"] }, service_tier: serviceTier,
+            model: "openai-eu:openai/example", service_tier: serviceTier,
         });
     });
 
@@ -24,7 +24,8 @@ describe("provider routing examples", () => {
     it("uses the current model and endpoint for cURL", () => {
         const code = buildProviderRoutingExample({ ...route, language: "curl" });
         expect(code).toContain("https://api.phaseo.app/v1/responses");
-        expect(curlPayload(code)).toMatchObject({ model: route.modelId, input: expect.any(String), provider: { only: [route.providerId] } });
+        expect(curlPayload(code)).toMatchObject({ model: `${route.providerId}:${route.modelId}`, input: expect.any(String) });
+        expect(curlPayload(code)).not.toHaveProperty("provider");
     });
 
     it.each([
@@ -42,17 +43,19 @@ describe("provider routing examples", () => {
         expect(code).toContain("https://api.phaseo.app/v1/batches");
         expect(curlPayload(code)).toMatchObject({ provider: { only: [route.providerId] }, requests: [{ body: { model: route.modelId } }] });
         expect(code).not.toContain("service_tier");
+        expect(JSON.parse(buildProviderRoutingExample({ ...route, serviceTier: "batch", language: "json" }))).toEqual({ provider: { only: [route.providerId] } });
     });
 
     it.each(ROUTING_LANGUAGES)("includes the exact provider and tier in $label", ({ id }) => {
         const code = buildProviderRoutingExample({ ...route, serviceTier: "priority", language: id });
-        expect(code).toContain("openai-eu");
+        expect(code).toContain("openai-eu:openai/example");
+        expect(code).not.toContain("only");
         expect(code).toContain("priority");
     });
 
     it("escapes quotes in copied JSON and shell data", () => {
         const providerId = 'provider"with\'quotes';
-        expect(JSON.parse(buildProviderRoutingExample({ ...route, providerId, language: "json" })).provider.only).toEqual([providerId]);
+        expect(JSON.parse(buildProviderRoutingExample({ ...route, providerId, language: "json" })).model).toBe(`${providerId}:${route.modelId}`);
         expect(buildProviderRoutingExample({ ...route, providerId, language: "curl" })).toContain("'\\''");
     });
 });

@@ -59,14 +59,17 @@ export function ProviderRoutingHelp({ providerId, modelId, serviceTier, endpoint
             >
                 <p className="text-xs font-semibold text-foreground">Provider-specific routing</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Use this slug to route to this specific provider. You can also add <code>provider.only</code> to your request as shown below.
+                    Pass this slug directly in the <code>model</code> field of your API request to select this provider. You do not need <code>provider.only</code> as well.
                 </p>
+                {serviceTier === "priority" || serviceTier === "flex" ? (
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Include <code>service_tier</code> to select this tier, as shown below.</p>
+                ) : null}
                 <a href="/docs/v1/guides/provider-qualified-models" className="mt-2 inline-block text-xs font-medium text-foreground underline underline-offset-4 hover:text-foreground">
                     Read the routing docs
                 </a>
                 <Separator className="my-3" />
                 {serviceTier === "batch" ? (
-                    <p className="mb-2 text-xs text-muted-foreground">Use the Batch API for this tier.</p>
+                    <p className="mb-2 text-xs text-muted-foreground">For Batch API requests, use the <code>provider.only</code> examples below.</p>
                 ) : null}
                 <Tabs value={language} onValueChange={value => setLanguage(value as RoutingLanguage)}>
                     <TabsList aria-label="Routing example language" className="h-auto! w-full flex-wrap justify-start">

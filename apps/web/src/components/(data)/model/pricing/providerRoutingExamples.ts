@@ -27,31 +27,33 @@ export function buildProviderRoutingExample({
     language: RoutingLanguage;
 }): string {
     const tier = serviceTier === "priority" || serviceTier === "flex" ? serviceTier : null;
-    const routing = { provider: { only: [providerId] }, ...(tier ? { service_tier: tier } : {}) };
+    const isBatch = serviceTier === "batch";
+    const qualifiedModel = `${providerId}:${modelId}`;
+    const routing = { model: qualifiedModel, ...(tier ? { service_tier: tier } : {}) };
     const quotedProvider = JSON.stringify(providerId);
+    const quotedModel = JSON.stringify(qualifiedModel);
     const quotedTier = JSON.stringify(tier);
-    const singleQuotedProvider = `'${providerId.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
+    const singleQuotedValue = `'${(isBatch ? providerId : qualifiedModel).replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
 
     switch (language) {
         case "json":
-            return `{\n  "provider": { "only": [${quotedProvider}] }${tier ? `,\n  "service_tier": ${quotedTier}` : ""}\n}`;
+            return isBatch ? `{\n  "provider": { "only": [${quotedProvider}] }\n}` : JSON.stringify(routing, null, 2);
         case "typescript":
-            return `const routing = {\n  provider: { only: [${quotedProvider}] },${tier ? `\n  service_tier: ${quotedTier},` : ""}\n};`;
+            return `const routing = {\n  ${isBatch ? `provider: { only: [${quotedProvider}] }` : `model: ${quotedModel}`},${tier ? `\n  service_tier: ${quotedTier},` : ""}\n};`;
         case "python":
-            return `routing = {\n    "provider": {"only": [${quotedProvider}]},${tier ? `\n    "service_tier": ${quotedTier},` : ""}\n}`;
+            return `routing = {\n    ${isBatch ? `"provider": {"only": [${quotedProvider}]}` : `"model": ${quotedModel}`},${tier ? `\n    "service_tier": ${quotedTier},` : ""}\n}`;
         case "go":
-            return `routing := map[string]any{\n    "provider": map[string]any{\n        "only": []string{${quotedProvider}},\n    },${tier ? `\n    "service_tier": ${quotedTier},` : ""}\n}`;
+            return `routing := map[string]any{\n    ${isBatch ? `"provider": map[string]any{\n        "only": []string{${quotedProvider}},\n    }` : `"model": ${quotedModel}`},${tier ? `\n    "service_tier": ${quotedTier},` : ""}\n}`;
         case "csharp":
-            return `var routing = new {\n    provider = new { only = new[] { ${quotedProvider} } },${tier ? `\n    service_tier = ${quotedTier},` : ""}\n};`;
+            return `var routing = new {\n    ${isBatch ? `provider = new { only = new[] { ${quotedProvider} } }` : `model = ${quotedModel}`},${tier ? `\n    service_tier = ${quotedTier},` : ""}\n};`;
         case "php":
-            return `$routing = [\n    'provider' => ['only' => [${singleQuotedProvider}]],${tier ? `\n    'service_tier' => '${tier}',` : ""}\n];`;
+            return `$routing = [\n    ${isBatch ? `'provider' => ['only' => [${singleQuotedValue}]]` : `'model' => ${singleQuotedValue}`},${tier ? `\n    'service_tier' => '${tier}',` : ""}\n];`;
         case "ruby":
-            return `routing = {\n  provider: { only: [${singleQuotedProvider}] },${tier ? `\n  service_tier: '${tier}',` : ""}\n}`;
+            return `routing = {\n  ${isBatch ? `provider: { only: [${singleQuotedValue}] }` : `model: ${singleQuotedValue}`},${tier ? `\n  service_tier: '${tier}',` : ""}\n}`;
         case "curl": {
             const normalizedEndpoint = endpoint.toLowerCase().replace(/^\//, "").replace(/\//g, ".");
             const path = capabilityToEndpoints[normalizedEndpoint]?.[0] ?? resolveGatewayPath(normalizedEndpoint);
             const request = buildExamplePayload(path, modelId);
-            const isBatch = serviceTier === "batch";
             const payload = isBatch ? {
                 provider: { only: [providerId] },
                 model: modelId,
