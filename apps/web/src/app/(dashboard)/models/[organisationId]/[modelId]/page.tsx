@@ -399,7 +399,7 @@ async function ModelDetailPageBody({
 			organisationName,
 			providerCount: effectiveGatewayMetadata?.activeProviders.length ?? 0,
 			benchmarkCount: benchmarkHighlights.length,
-			hasPricing: subscriptionPlans.length > 0,
+			hasPricing: pricingProviders.length > 0,
 		});
 	const datasetSchema = {
 		"@context": "https://schema.org",

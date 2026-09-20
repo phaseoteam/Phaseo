@@ -29,7 +29,12 @@ describe("Discord component embed", () => {
 				components: Array<{
 					type: number;
 					content?: string;
-					components?: Array<{ type: number; style?: number; url?: string }>;
+					components?: Array<{
+						type: number;
+						style?: number;
+						url?: string;
+						content?: string;
+					}>;
 					accessory?: { type: number; media?: { url?: string } };
 				}>;
 			};
@@ -49,6 +54,9 @@ describe("Discord component embed", () => {
 			(component) => component.type === 9,
 		);
 		expect(sections).toHaveLength(1);
+		expect(sections[0]?.components?.[0]?.content).toContain(
+			"# [GLM 5.3 FlashX](",
+		);
 		expect(sections[0]?.accessory?.type).toBe(11);
 		expect(sections[0]?.accessory?.media?.url).toContain(
 			"/logos/discord/zai.png",
@@ -100,6 +108,35 @@ describe("Discord component embed", () => {
 		expect(serialized).toContain("\\u003c");
 		expect(text).toContain("1 < 2 > 0");
 		expect(text).toContain("<script>");
+	});
+
+	it("keeps Markdown in model names from creating an unintended link", () => {
+		const unsafeModelNames = [
+			"safe](https://attacker.example) [x",
+			"safe&#93;(https://attacker.example) [x",
+			"safe\\](https://attacker.example) [x",
+		];
+
+		for (const modelName of unsafeModelNames) {
+			const payload = JSON.parse(
+				serializeDiscordComponentEmbed({ ...options, modelName }),
+			) as {
+				component: {
+					components: Array<{
+						type: number;
+						components?: Array<{ type: number; content?: string }>;
+					}>;
+				};
+			};
+			const modelTitle = payload.component.components
+				.find((component) => component.type === 9)
+				?.components?.find((component) => component.type === 10)?.content;
+
+			expect(modelTitle).toContain("\\](");
+			expect(modelTitle).toContain("\\[x](");
+			expect(modelTitle).not.toContain("[safe](https://attacker.example)");
+			expect(modelTitle).toContain("/models/z-ai/glm-5.3-flashx)");
+		}
 	});
 
 	it("falls back to the Phaseo accent when a lab colour is unavailable", () => {

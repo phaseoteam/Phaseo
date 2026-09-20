@@ -23,6 +23,13 @@ function normalizeText(value: string | null | undefined): string | null {
 	return markdownToPlainText(load(value).root().text());
 }
 
+function escapeMarkdownLinkText(value: string): string {
+	return value
+		.replaceAll("\\", "\\\\")
+		.replaceAll("[", "\\[")
+		.replaceAll("]", "\\]");
+}
+
 function truncateText(value: string, maxLength: number): string {
 	if (value.length <= maxLength) return value;
 	const truncated = value.slice(0, maxLength - 1).trimEnd();
@@ -92,7 +99,7 @@ export function buildDiscordModelComponentEmbed(
 	const summary = [organisationName, context ? `${context} context` : "Model profile"]
 		.join(" · ");
 	const text = [
-		`# [${modelName}](${modelUrl})`,
+		`# [${escapeMarkdownLinkText(modelName)}](${modelUrl})`,
 		summary,
 		description ? truncateText(description, MAX_DESCRIPTION_LENGTH) : null,
 	]
