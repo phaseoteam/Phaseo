@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Check, Loader2, RotateCcw } from "lucide-react";
+import { Check, Loader2, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
 import { updateDisplayPreferences } from "@/app/(dashboard)/settings/preferences/actions";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
-import { ThemeSelector } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
 import {
@@ -123,6 +123,11 @@ const THEME_PRESETS: readonly ThemePreset[] = [
 ];
 
 const PREVIEW_DATE = new Date("2026-09-19T16:35:00.000Z");
+const APPEARANCE_MODES = [
+	{ value: "system", label: "System Default", icon: Monitor },
+	{ value: "light", label: "Light", icon: Sun },
+	{ value: "dark", label: "Dark", icon: Moon },
+] as const;
 const FALLBACK_TIME_ZONES = [
 	"UTC",
 	"Europe/London",
@@ -298,6 +303,33 @@ function PalettePicker<T extends string>({
 	);
 }
 
+function AppearanceModePicker() {
+	const { theme, setTheme } = useTheme();
+	const selected = APPEARANCE_MODES.find((mode) => mode.value === theme)?.value ?? "system";
+
+	return (
+		<div role="radiogroup" aria-label="Appearance mode" className="grid grid-cols-3 gap-2">
+			{APPEARANCE_MODES.map((mode) => {
+				const Icon = mode.icon;
+				const active = selected === mode.value;
+				return (
+					<button
+						key={mode.value}
+						type="button"
+						role="radio"
+						aria-checked={active}
+						onClick={() => setTheme(mode.value)}
+						className={`flex h-10 items-center justify-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "border-primary/70 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground"}`}
+					>
+						<Icon className="size-3.5 shrink-0" aria-hidden="true" />
+						<span className="truncate">{mode.label}</span>
+					</button>
+				);
+			})}
+		</div>
+	);
+}
+
 function AccentPicker({
 	ariaLabel,
 	value,
@@ -462,7 +494,7 @@ export default function DisplayPreferencesClient({
 			return [
 				{
 					value: "system",
-					label: `System default (${systemTimeZone.replaceAll("_", " ")}, ${systemOffset})`,
+					label: `System Default (${systemTimeZone.replaceAll("_", " ")}, ${systemOffset})`,
 				},
 				...options,
 			];
@@ -526,7 +558,7 @@ export default function DisplayPreferencesClient({
 						value={preferences.locale}
 						onChange={(value) => update("locale", value)}
 						options={[
-							{ value: "system", label: "System default" },
+							{ value: "system", label: "System Default" },
 							{ value: "en-GB", label: "English (United Kingdom)" },
 							{ value: "en-US", label: "English (United States)" },
 						]}
@@ -551,7 +583,7 @@ export default function DisplayPreferencesClient({
 				</PreferenceRow>
 				<PreferenceRow
 					title="Time zone"
-					description={`System default currently uses ${systemTimeZone.replaceAll("_", " ")}. Search by city or region.`}
+					description={`System Default currently uses ${systemTimeZone.replaceAll("_", " ")}. Search by city or region.`}
 					preview={formatDisplayDateTime(PREVIEW_DATE, preferences)}
 				>
 					<SearchableSelect
@@ -574,9 +606,9 @@ export default function DisplayPreferencesClient({
 						value={preferences.hourCycle}
 						onChange={(value) => update("hourCycle", value)}
 						options={[
-							{ value: "system", label: "System default" },
-							{ value: "12h", label: "12-hour" },
-							{ value: "24h", label: "24-hour" },
+							{ value: "system", label: "System Default" },
+							{ value: "12h", label: "12-Hour" },
+							{ value: "24h", label: "24-Hour" },
 						]}
 					/>
 				</PreferenceRow>
@@ -591,8 +623,8 @@ export default function DisplayPreferencesClient({
 						onChange={(value) => update("relativeTime", value)}
 						options={[
 							{ value: "contextual", label: "Contextual" },
-							{ value: "relative", label: "Always relative" },
-							{ value: "absolute", label: "Always absolute" },
+							{ value: "relative", label: "Always Relative" },
+							{ value: "absolute", label: "Always Absolute" },
 						]}
 					/>
 				</PreferenceRow>
@@ -625,10 +657,8 @@ export default function DisplayPreferencesClient({
 				title="Appearance"
 				description="Build a coordinated light and dark theme. Palette and accent changes update this page immediately."
 			>
-				<PreferenceRow title="Mode" description="System, light, or dark mode stays specific to this browser.">
-					<div className="flex h-10 items-center justify-end rounded-md border border-border px-2">
-						<ThemeSelector />
-					</div>
+				<PreferenceRow title="Mode" description="This browser keeps its own System Default, Light, or Dark selection.">
+					<AppearanceModePicker />
 				</PreferenceRow>
 				<ThemePresetPicker preferences={preferences} onChange={applyThemePreset} />
 				<PreferenceRow title="Light theme" description="Used whenever Phaseo is in light mode.">
@@ -640,7 +670,7 @@ export default function DisplayPreferencesClient({
 						palette="light"
 					/>
 				</PreferenceRow>
-				<PreferenceRow title="Light accent" description="Used for actions, focus, highlights, and charts in light mode.">
+				<PreferenceRow title="Light accent" description="Sets primary buttons, active controls, focus rings, sidebar highlights, and chart series in light mode.">
 					<AccentPicker
 						ariaLabel="Light mode accent colour"
 						value={preferences.lightAccent}
@@ -656,7 +686,7 @@ export default function DisplayPreferencesClient({
 						palette="dark"
 					/>
 				</PreferenceRow>
-				<PreferenceRow title="Dark accent" description="Used for actions, focus, highlights, and charts in dark mode.">
+				<PreferenceRow title="Dark accent" description="Sets primary buttons, active controls, focus rings, sidebar highlights, and chart series in dark mode.">
 					<AccentPicker
 						ariaLabel="Dark mode accent colour"
 						value={preferences.darkAccent}
