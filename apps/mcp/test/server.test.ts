@@ -195,7 +195,7 @@ describe("Phaseo MCP server metadata", () => {
 		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ok: true, models: [
 			model("lab/expensive", "5", true), model("lab/cheap", "1", false),
 		] })));
-		const server = createServer(env, {
+		const server = createServer({ ...env, PHASEO_WEB_BASE_URL: "https://preview.phaseo.test" }, {
 			accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"],
 		});
 		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
@@ -208,6 +208,7 @@ describe("Phaseo MCP server metadata", () => {
 		expect(result.structuredContent).toMatchObject({ models: [
 			{
 				id: "lab/cheap",
+				modelUrl: "https://preview.phaseo.test/models/lab/cheap",
 				gatewayAvailable: false,
 				gatewayModelId: null,
 				providerSupport: [{
@@ -221,6 +222,7 @@ describe("Phaseo MCP server metadata", () => {
 			},
 			{
 				id: "lab/expensive",
+				modelUrl: "https://preview.phaseo.test/models/lab/expensive",
 				gatewayAvailable: true,
 				gatewayModelId: "lab/expensive",
 				availableProviders: ["provider"],

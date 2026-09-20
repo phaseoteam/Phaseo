@@ -234,7 +234,12 @@ function tokenRateString(meter: GatewayMeter | null | undefined): string | null 
 	return rate === null ? null : String(rate);
 }
 
-function modelSummary(model: Awaited<ReturnType<typeof listModels>>[number]) {
+function modelUrl(env: PhaseoEnv, modelId: string): string {
+	const path = modelId.split("/").map(encodeURIComponent).join("/");
+	return new URL(`/models/${path}`, env.PHASEO_WEB_BASE_URL).toString();
+}
+
+function modelSummary(env: PhaseoEnv, model: Awaited<ReturnType<typeof listModels>>[number]) {
 	const gatewayAvailable = model.offers.some((offer) => offer.routable);
 	return {
 		id: model.id,
@@ -249,7 +254,7 @@ function modelSummary(model: Awaited<ReturnType<typeof listModels>>[number]) {
 		supportsTools: model.capabilities.parameters.includes("tools"),
 		gatewayAvailable,
 		gatewayModelId: gatewayAvailable ? model.id : null,
-		modelUrl: `https://phaseo.app/models/${model.id}`,
+		modelUrl: modelUrl(env, model.id),
 		availableProviders: model.offers.filter((offer) => offer.routable).map((offer) => offer.provider.id),
 		providerSupport: model.offers.map((offer) => ({
 			providerId: offer.provider.id,
@@ -621,7 +626,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 					);
 				});
 				const sortedModels = sortModels(models, sortBy, sortOrder).slice(0, limit);
-				const result = sortedModels.map(modelSummary);
+				const result = sortedModels.map((model) => modelSummary(env, model));
 				return {
 					content: [{ type: "text" as const, text: `Found ${result.length} matching Phaseo model${result.length === 1 ? "" : "s"}.` }],
 					structuredContent: { models: result },
@@ -647,7 +652,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 			try {
 				const model = await getModel(env, modelId, { accessToken: authenticatedUser.accessToken });
 				if (!model) return { isError: true as const, content: [{ type: "text" as const, text: `No Phaseo model exists with ID "${modelId}".` }] };
-				return { content: [{ type: "text" as const, text: `Retrieved ${model.name} from Phaseo.` }], structuredContent: { model: modelSummary(model) } };
+				return { content: [{ type: "text" as const, text: `Retrieved ${model.name} from Phaseo.` }], structuredContent: { model: modelSummary(env, model) } };
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -702,7 +707,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 						score: entry.score,
 						gatewayAvailable,
 						gatewayModelId: gatewayAvailable ? entry.model_id : null,
-						modelUrl: `https://phaseo.app/models/${entry.model_id}`,
+						modelUrl: modelUrl(env, entry.model_id),
 						sourceUrl: entry.source_link,
 						updatedAt: entry.updated_at,
 					}];
