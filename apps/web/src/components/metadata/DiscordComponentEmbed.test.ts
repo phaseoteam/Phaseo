@@ -1,6 +1,8 @@
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { resolveLogo } from "@/lib/logos";
+import { markdownToPlainText } from "@/lib/models/modelDescription";
+import { absoluteUrl } from "@/lib/seo";
 import {
 	buildDiscordModelComponentEmbed,
 	discordAccentColor,
@@ -106,8 +108,8 @@ describe("Discord component embed", () => {
 
 		expect(serialized).not.toContain("<");
 		expect(serialized).toContain("\\u003c");
-		expect(text).toContain("1 < 2 > 0");
-		expect(text).toContain("<script>");
+		expect(text).toContain(String.raw`1 \< 2 \> 0`);
+		expect(text).toContain(String.raw`\<script\>`);
 	});
 
 	it("keeps Markdown in model names from creating an unintended link", () => {
@@ -133,10 +135,73 @@ describe("Discord component embed", () => {
 				?.components?.find((component) => component.type === 10)?.content;
 
 			expect(modelTitle).toContain("\\](");
-			expect(modelTitle).toContain("\\[x](");
+			expect(modelTitle).toContain("\\[x");
+			expect(modelTitle).toMatch(/^# safe/);
 			expect(modelTitle).not.toContain("[safe](https://attacker.example)");
-			expect(modelTitle).toContain("/models/z-ai/glm-5.3-flashx)");
+			const actionRow = buildDiscordModelComponentEmbed({ ...options, modelName })
+				.component.components.find((component) => component.type === 1);
+			const openButton = actionRow && "components" in actionRow
+				? actionRow.components?.[0]
+				: undefined;
+			expect(openButton).toMatchObject({
+				label: "Open",
+				url: absoluteUrl(options.modelPath),
+			});
 		}
+	});
+
+	it.each([true, false])("escapes nested links in all text fields (lab logo: %s)", (withLogo) => {
+		const payload = JSON.parse(serializeDiscordComponentEmbed({
+			...options,
+			organisationId: withLogo ? options.organisationId : null,
+			organisationLogoUrl: null,
+			modelName: "safe\\&#93;(https://attacker.example) &#91;x",
+			organisationName: "[safe[x](https://inner.example)](https://attacker.example)",
+			// Match the route's first normalization before the component normalizes again.
+			description: markdownToPlainText(
+				"[safe[x[y](https://inner.example)](https://middle.example)](https://attacker.example)",
+			),
+		}));
+		const first = payload.component.components[0];
+		const text = withLogo ? first.components[0].content : first.content;
+
+		expect(text.split("\n")).toEqual([
+			String.raw`# safe\\\](https\://attacker.example) \[x`,
+			String.raw`safe\[x\](https\://attacker.example) · 1M context`,
+			String.raw`safex\[y\](https\://attacker.example)`,
+		]);
+	});
+
+	it("preserves literal punctuation and escapes a truncated description after slicing", () => {
+		const payload = JSON.parse(serializeDiscordComponentEmbed({
+			...options,
+			modelName: String.raw`Model [preview] (fast) C:\models`,
+			organisationName: "Lab | research",
+			description: "a".repeat(358) + "[" + "b".repeat(10),
+		}));
+		const lines = payload.component.components[0].components[0].content.split("\n");
+
+		expect(lines[0]).toBe(
+			String.raw`# Model \[preview\] (fast) C\:\\models`,
+		);
+		expect(lines[1]).toBe(String.raw`Lab \| research · 1M context`);
+		expect(lines[2]).toBe("a".repeat(358) + String.raw`\[` + "…");
+	});
+
+	it.each([true, false])("keeps decoded autolinks as text (lab logo: %s)", (withLogo) => {
+		const payload = JSON.parse(serializeDiscordComponentEmbed({
+			...options,
+			organisationId: withLogo ? options.organisationId : null,
+			organisationLogoUrl: null,
+			organisationName: "&lt;https://attacker.example&gt;",
+			description: markdownToPlainText("&lt;https://attacker.example&gt; https://attacker.example"),
+		}));
+		const first = payload.component.components[0];
+		const text = withLogo ? first.components[0].content : first.content;
+		expect(text.split("\n").slice(1)).toEqual([
+			String.raw`\<https\://attacker.example\> · 1M context`,
+			String.raw`\<https\://attacker.example\> https\://attacker.example`,
+		]);
 	});
 
 	it("falls back to the Phaseo accent when a lab colour is unavailable", () => {

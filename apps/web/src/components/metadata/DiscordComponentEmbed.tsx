@@ -23,11 +23,10 @@ function normalizeText(value: string | null | undefined): string | null {
 	return markdownToPlainText(load(value).root().text());
 }
 
-function escapeMarkdownLinkText(value: string): string {
-	return value
-		.replaceAll("\\", "\\\\")
-		.replaceAll("[", "\\[")
-		.replaceAll("]", "\\]");
+function escapeDiscordMarkdown(value: string): string {
+	// Plain-text normalization can leave delimiters behind; escape at the
+	// Markdown boundary, including backslashes, formatting markers and autolinks.
+	return value.replace(/[\\\[\]`*_~|<>:]/g, "\\$&");
 }
 
 function truncateText(value: string, maxLength: number): string {
@@ -96,12 +95,20 @@ export function buildDiscordModelComponentEmbed(
 	const organisationLogoUrl =
 		knownOrganisationLogoUrl ?? absoluteMediaUrl(options.organisationLogoUrl);
 	const queryModelId = encodeURIComponent(options.modelId);
-	const summary = [organisationName, context ? `${context} context` : "Model profile"]
+	const escapedModelName = escapeDiscordMarkdown(modelName);
+	// Discord's link-label parser can consume escaped brackets as delimiters.
+	// Keep those names as text; the Open button still links to the model page.
+	const title = /[\[\]]/.test(modelName)
+		? `# ${escapedModelName}`
+		: `# [${escapedModelName}](${modelUrl})`;
+	const summary = [escapeDiscordMarkdown(organisationName), context ? `${context} context` : "Model profile"]
 		.join(" · ");
 	const text = [
-		`# [${escapeMarkdownLinkText(modelName)}](${modelUrl})`,
+		title,
 		summary,
-		description ? truncateText(description, MAX_DESCRIPTION_LENGTH) : null,
+		description
+			? escapeDiscordMarkdown(truncateText(description, MAX_DESCRIPTION_LENGTH))
+			: null,
 	]
 		.filter(Boolean)
 		.join("\n");
