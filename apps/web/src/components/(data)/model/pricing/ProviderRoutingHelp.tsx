@@ -42,7 +42,7 @@ export function ProviderRoutingHelp() {
                     setOpen(false);
                 }}
             >
-                <p className="text-xs font-semibold text-foreground">Provider-specific routing</p>
+                <p className="text-xs font-semibold text-foreground">Provider-Specific Routing</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     Pass this slug in the <code>model</code> field of your API request to pin it to this provider.
                 </p>
