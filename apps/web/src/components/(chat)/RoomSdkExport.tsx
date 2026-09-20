@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Code, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { sdkCode, sdkExportStore } from "@/lib/chat/sdkExport";
 
 export function RoomSdkExport() {
@@ -15,9 +16,20 @@ export function RoomSdkExport() {
   useEffect(() => { sdkExportStore.set(null); }, [pathname]);
   if (!request) return null;
   const code = sdkCode(request, language);
-  return <div className="flex shrink-0 items-center justify-end gap-3 border-b border-border px-4 py-1.5">
-    {request.requestId && <a className="text-xs underline underline-offset-4" href={`/settings/usage/logs/requests/${encodeURIComponent(request.requestId)}`} target="_blank" rel="noreferrer">View request{request.status ? ` · ${request.status}` : ""}</a>}
-    <Dialog><DialogTrigger asChild><Button variant="ghost" size="sm"><Code className="size-4" />Get code</Button></DialogTrigger>
+  const trigger = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <DialogTrigger asChild>
+          <Button variant="ghost" size="icon" aria-label="Get code">
+            <Code className="size-4" />
+          </Button>
+        </DialogTrigger>
+      </TooltipTrigger>
+      <TooltipContent>Get code</TooltipContent>
+    </Tooltip>
+  );
+  return <Dialog>
+    {trigger}
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader><DialogTitle>Use this request in your app</DialogTitle><DialogDescription>Code for the last submitted request, including its model and settings. Run it on your server.</DialogDescription></DialogHeader>
         <div className="flex flex-wrap items-center gap-2">
@@ -28,6 +40,5 @@ export function RoomSdkExport() {
         </div>
         <pre tabIndex={0} className="max-h-[55vh] overflow-auto rounded-md bg-muted p-4 text-xs"><code>{code}</code></pre>
       </DialogContent>
-    </Dialog>
-  </div>;
+    </Dialog>;
 }
