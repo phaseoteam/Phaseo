@@ -141,6 +141,97 @@ def test_advertised_parameter_ranges():
     assert not check_capabilities(model, parameter_values={"duration": 7})["ok"]
 
 
+def test_live_model_parameter_checks_identify_partial_support_and_invalid_values():
+    capabilities = {
+        "ok": True,
+        "id": "openai/gpt-5",
+        "endpoints": [
+            {
+                "id": "openai:responses",
+                "endpoint": "responses",
+                "public_path": "/v1/responses",
+                "provider": {"id": "openai"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature", "top_p"],
+                    "parameter_details": {
+                        "temperature": {"minimum": 0, "maximum": 2},
+                        "top_p": {"minimum": 0, "maximum": 1},
+                    },
+                },
+            },
+            {
+                "id": "azure:responses",
+                "endpoint": "responses",
+                "public_path": "/v1/responses",
+                "provider": {"id": "azure"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature"],
+                    "parameter_details": {"temperature": {"minimum": 0, "maximum": 1}},
+                },
+            },
+        ],
+    }
+    mock = MockTransport([
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+    ])
+    with httpx.Client(transport=mock) as http:
+        with Phaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+            supported = client.models.check_parameters(
+                "openai/gpt-5",
+                {"temperature": 0.7, "top_p": 0.9},
+                endpoint="responses",
+            )
+            assert supported["ok"]
+            assert next(item for item in supported["parameters"] if item["name"] == "top_p")["status"] == "partial"
+            assert [route["provider"] for route in supported["matching_routes"]] == ["openai"]
+
+            invalid = client.models.check_parameters("openai/gpt-5", {"temperature": 3})
+            assert not invalid["ok"]
+            assert "temperature must be at most 2" in " ".join(invalid["issues"])
+
+            unsupported = client.models.check_parameters("openai/gpt-5", {"seed": 42})
+            assert unsupported["parameters"][0]["status"] == "unsupported"
+            assert "seed is not supported" in " ".join(unsupported["issues"])
+    mock.assert_done()
+
+
+def test_async_models_parameter_check_uses_the_same_live_report():
+    async def run():
+        capabilities = {
+            "ok": True,
+            "id": "openai/gpt-5",
+            "endpoints": [{
+                "id": "openai:responses",
+                "endpoint": "responses",
+                "public_path": "/v1/responses",
+                "provider": {"id": "openai"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature"],
+                    "parameter_details": {"temperature": {"minimum": 0, "maximum": 2}},
+                },
+            }],
+        }
+        mock = MockTransport([
+            {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        ])
+        async with httpx.AsyncClient(transport=mock) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                report = await client.models.check_parameters("openai/gpt-5", {"temperature": 0.7})
+                assert report["ok"]
+                assert report["parameters"][0]["status"] == "supported"
+        mock.assert_done()
+
+    asyncio.run(run())
+
+
 def test_async_image_edits_use_multipart_and_preserve_file_ownership(tmp_path):
     from email.parser import BytesParser
     from email.policy import default

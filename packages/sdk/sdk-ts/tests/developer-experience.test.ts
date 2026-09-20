@@ -188,3 +188,62 @@ test("advertised parameter values and ranges are checked on provider offers", ()
   expect(checkCapabilities(model, { parameterValues: { duration: 10 } }).ok).toBe(true);
   expect(checkCapabilities(model, { parameterValues: { duration: 7 } }).issues.join(" ")).toContain("steps of 5");
 });
+
+test("live model parameter checks identify partial support and invalid values", async () => {
+  const capabilities = {
+    ok: true,
+    id: "openai/gpt-5",
+    endpoints: [
+      {
+        id: "openai:responses",
+        endpoint: "responses",
+        public_path: "/v1/responses",
+        provider: { id: "openai" },
+        routable: true,
+        status: "active",
+        capabilities: {
+          parameters: ["temperature", "top_p"],
+          parameter_details: {
+            temperature: { minimum: 0, maximum: 2 },
+            top_p: { minimum: 0, maximum: 1 },
+          },
+        },
+      },
+      {
+        id: "azure:responses",
+        endpoint: "responses",
+        public_path: "/v1/responses",
+        provider: { id: "azure" },
+        routable: true,
+        status: "active",
+        capabilities: {
+          parameters: ["temperature"],
+          parameter_details: { temperature: { minimum: 0, maximum: 1 } },
+        },
+      },
+    ],
+  };
+  const { client, mock } = setup([
+    { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
+    { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
+    { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
+  ]);
+
+  const supported = await client.models.checkParameters(
+    "openai/gpt-5",
+    { temperature: 0.7, top_p: 0.9 },
+    { endpoint: "responses" },
+  );
+  expect(supported.ok).toBe(true);
+  expect(supported.parameters.find(parameter => parameter.name === "top_p")?.status).toBe("partial");
+  expect(supported.matchingRoutes.map(route => route.provider)).toEqual(["openai"]);
+
+  const invalid = await client.models.checkParameters("openai/gpt-5", { temperature: 3 });
+  expect(invalid.ok).toBe(false);
+  expect(invalid.issues.join(" ")).toContain("temperature must be at most 2");
+
+  const unsupported = await client.models.checkParameters("openai/gpt-5", { seed: 42 });
+  expect(unsupported.parameters[0]).toMatchObject({ name: "seed", status: "unsupported" });
+  expect(unsupported.issues.join(" ")).toContain("seed is not supported");
+  mock.assertDone();
+});

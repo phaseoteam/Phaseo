@@ -13,7 +13,7 @@ from urllib.parse import quote
 
 import httpx
 
-from .helpers import check_capabilities, parse_output, _batch_line, _accumulate_event
+from .helpers import check_capabilities, check_parameter_support, parse_output, _batch_line, _accumulate_event
 from .jobs import JobFailedError, JobTimeoutError, job_status, _validate_options
 from .transport import APIResponse, PhaseoHTTPError, decode_response, retry_after, validate_controls
 from .media import upload_input
@@ -61,6 +61,26 @@ class AsyncTextResource(AsyncResource):
 class AsyncChat:
     def __init__(self, client: "AsyncPhaseo"):
         self.completions = AsyncTextResource(client, "/chat/completions")
+
+
+class AsyncModels(AsyncResource):
+    async def capabilities(self, model_id: str, params: dict[str, Any] | None = None) -> APIResponse:
+        return await self.client.get_model_endpoint_capabilities(model_id, params)
+
+    async def check_parameters(
+        self,
+        model_id: str,
+        parameter_values: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        return await self.client.check_model_parameters(
+            model_id,
+            parameter_values,
+            endpoint=endpoint,
+            provider=provider,
+        )
 
 
 class AsyncImages(AsyncResource):
@@ -266,7 +286,7 @@ class AsyncPhaseo:
         self.rerank = AsyncResource(self, "/rerank")
         self.moderations = AsyncResource(self, "/moderations")
         self.decisions = AsyncDecisions(self, "/decisions")
-        self.models = AsyncResource(self, "/models")
+        self.models = AsyncModels(self, "/models")
         self.files = AsyncFiles(self, "/batches/files")
         self.music = AsyncJobs(self, "/music/generate", "music")
         self.videos = AsyncJobs(self, "/videos", "video")
@@ -320,6 +340,36 @@ class AsyncPhaseo:
         payload = await self.request("GET", "/models", query={"model_id": model_id, "limit": 1})
         model = next((item for item in payload.get("models", []) if item.get("id", item.get("model_id")) == model_id), None)
         return check_capabilities(model, **requirements) if model else {"ok": False, "issues": [f"Model {model_id} was not found in the catalogue"]}
+
+    async def get_model_endpoint_capabilities(
+        self,
+        model_id: str,
+        params: dict[str, Any] | None = None,
+    ) -> APIResponse:
+        author, separator, slug = model_id.partition("/")
+        if not separator or not author or not slug:
+            raise ValueError("model_id must use author/slug format")
+        return await self.request(
+            "GET",
+            f"/models/{quote(author, safe='')}/{quote(slug, safe='')}/endpoints",
+            query=params,
+        )
+
+    async def check_model_parameters(
+        self,
+        model_id: str,
+        parameter_values: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        capabilities = await self.get_model_endpoint_capabilities(model_id)
+        return check_parameter_support(
+            capabilities,
+            parameter_values,
+            endpoint=endpoint,
+            provider=provider,
+        )
 
     async def close(self) -> None:
         if self._owned:
