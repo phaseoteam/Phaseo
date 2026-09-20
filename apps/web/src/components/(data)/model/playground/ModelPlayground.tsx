@@ -30,6 +30,11 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { fetchChatWebApi } from "@/lib/web-api/client";
 import {
@@ -2943,15 +2948,16 @@ export default function ModelPlayground({
 
 	return (
 		<div className="w-full space-y-4">
-			<div className="space-y-2">
-				<h2 className="text-2xl font-semibold tracking-tight">Try {modelName}</h2>
-				<p className="text-base text-muted-foreground">
-					Test this model directly in the playground.
-				</p>
-			</div>
-
-			<div className="space-y-4 text-black dark:text-white">
-				<div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-3 dark:border-white/15">
+			<div className="flex flex-wrap items-center gap-3 border-b border-black/10 pb-3 dark:border-white/15">
+				<div className="mr-auto min-w-0">
+					<h2 className="truncate text-2xl font-semibold tracking-tight">
+						Try {modelName}
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						Test this model directly in the playground.
+					</p>
+				</div>
+				<div className="max-w-full overflow-x-auto">
 					<div className="inline-flex items-center rounded-md border border-black/20 p-1 dark:border-white/25">
 						{availableModeConfigs.map((config) => {
 							const isActive = mode === config.mode;
@@ -2973,49 +2979,56 @@ export default function ModelPlayground({
 							);
 						})}
 					</div>
-					<div className="ml-auto flex items-center gap-3">
-						{mode === "text"
-							? isGenerating ? (
-									<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
-										<Clock3 className="h-3.5 w-3.5" />
-										{formatDuration(elapsedMs)}
-									</div>
-								) : stats ? (
-									<div className="text-xs text-black/70 dark:text-white/70">
-										{`${formatDuration(stats.elapsedMs)} | ${formatTokens(
-											stats.totalTokens,
-										)} | ${formatThroughput(
-											stats.throughputTokensPerSecond,
-										)} | ${formatCost(stats.totalCostUsd)}`}
-									</div>
-								) : null
-							: isAudioGenerationMode
-								? audioIsGenerating ? (
-										<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
-											<Clock3 className="h-3.5 w-3.5" />
-											{formatDuration(audioElapsedMs)}
-										</div>
-									) : audioStats ? (
-										<div className="text-xs text-black/70 dark:text-white/70">
-											{`${formatDuration(audioStats.elapsedMs)} | ${formatTokens(
-												audioStats.totalTokens,
-											)} | ${formatThroughput(
-												audioStats.throughputTokensPerSecond,
-											)} | ${formatCost(audioStats.totalCostUsd)}`}
-										</div>
-									) : null
-								: null}
+				</div>
+				{mode === "text"
+					? isGenerating ? (
+							<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
+								<Clock3 className="h-3.5 w-3.5" />
+								{formatDuration(elapsedMs)}
+							</div>
+						) : stats ? (
+							<div className="text-xs text-black/70 dark:text-white/70">
+								{`${formatDuration(stats.elapsedMs)} | ${formatTokens(
+									stats.totalTokens,
+								)} | ${formatThroughput(
+									stats.throughputTokensPerSecond,
+								)} | ${formatCost(stats.totalCostUsd)}`}
+							</div>
+						) : null
+					: isAudioGenerationMode
+						? audioIsGenerating ? (
+								<div className="inline-flex items-center gap-1.5 text-xs text-black/70 dark:text-white/70">
+									<Clock3 className="h-3.5 w-3.5" />
+									{formatDuration(audioElapsedMs)}
+								</div>
+							) : audioStats ? (
+								<div className="text-xs text-black/70 dark:text-white/70">
+									{`${formatDuration(audioStats.elapsedMs)} | ${formatTokens(
+										audioStats.totalTokens,
+									)} | ${formatThroughput(
+										audioStats.throughputTokensPerSecond,
+									)} | ${formatCost(audioStats.totalCostUsd)}`}
+								</div>
+							) : null
+						: null}
+				<Tooltip>
+					<TooltipTrigger asChild>
 						<Button
 							type="button"
 							variant="outline"
+							size="icon"
 							onClick={() => setIsCodeDialogOpen(true)}
-							className="h-9 border-black/30 bg-white text-black hover:bg-zinc-100 dark:border-white/30 dark:bg-black dark:text-white dark:hover:bg-zinc-900"
+							aria-label="Get code"
+							className="h-9 w-9 shrink-0 border-black/30 bg-white text-black hover:bg-zinc-100 dark:border-white/30 dark:bg-black dark:text-white dark:hover:bg-zinc-900"
 						>
 							<Code2 className="h-4 w-4" />
-							Get Code
 						</Button>
-					</div>
-				</div>
+					</TooltipTrigger>
+					<TooltipContent side="top">Get code</TooltipContent>
+				</Tooltip>
+			</div>
+
+			<div className="space-y-4 text-black dark:text-white">
 
 				{mode === "text" ? (
 					<div className="grid gap-6 md:grid-cols-2">

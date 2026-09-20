@@ -115,6 +115,7 @@ import {
 	ChatSidebar,
 } from "@/components/(chat)/ChatSidebar";
 import { ChatShortcutHelpDialog } from "@/components/(chat)/ChatShortcutReference";
+import { getChatPayloadRequestId } from "@/components/(chat)/chatMessageMetadata";
 
 type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
@@ -1439,9 +1440,16 @@ function ChatPlaygroundContent({
 					payload?.response?.meta ??
 					payload?.response?.metadata ??
 					null;
-				return meta && typeof meta === "object" && !Array.isArray(meta)
-					? (meta as Record<string, unknown>)
-					: null;
+				const normalizedMeta =
+					meta && typeof meta === "object" && !Array.isArray(meta)
+						? (meta as Record<string, unknown>)
+						: null;
+				const requestId = getChatPayloadRequestId(payload, endpoint);
+				if (!normalizedMeta && !requestId) return null;
+				return {
+					...(normalizedMeta ?? {}),
+					...(requestId ? { request_id: requestId } : {}),
+				};
 			};
 
 			if (targetAssistantId) {
@@ -2055,7 +2063,10 @@ function ChatPlaygroundContent({
 								}
 								const parsedMeta = extractPayloadMeta(parsed);
 								if (parsedMeta) {
-									finalMeta = parsedMeta;
+									finalMeta = {
+										...(finalMeta ?? {}),
+										...parsedMeta,
+									};
 								}
 								finalServiceTier =
 									resolvePayloadServiceTier(parsed) ?? finalServiceTier;

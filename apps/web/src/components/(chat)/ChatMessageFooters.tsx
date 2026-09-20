@@ -25,6 +25,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
+import { buildChatRequestLogHref } from "@/components/(chat)/chatMessageMetadata";
 
 function formatMetric(
 	value: number | string | null | undefined,
@@ -214,6 +215,7 @@ type AssistantMessageFooterProps = {
 	metadataOpen: boolean;
 	metadataProviderId: string | null;
 	metadataProviderLabel: string | null;
+	metadataRequestId?: string | null;
 	metadataServiceTier: string | null;
 	inputTokens?: number | string | null;
 	outputSpeedTps: number | null;
@@ -241,6 +243,7 @@ export function AssistantMessageFooter({
 	metadataOpen,
 	metadataProviderId,
 	metadataProviderLabel,
+	metadataRequestId = null,
 	metadataServiceTier,
 	inputTokens,
 	outputSpeedTps,
@@ -260,6 +263,9 @@ export function AssistantMessageFooter({
 		: null;
 	const providerLabel =
 		metadataProviderLabel ?? metadataProviderId ?? "-";
+	const requestLogHref = metadataRequestId
+		? buildChatRequestLogHref(metadataRequestId)
+		: null;
 	const latencyMetricMs =
 		typeof latencyMs === "number" && Number.isFinite(latencyMs)
 			? Math.max(0, latencyMs)
@@ -373,6 +379,17 @@ export function AssistantMessageFooter({
 											</span>
 										)}
 									</MetadataRow>
+									{requestLogHref && metadataRequestId ? (
+										<MetadataRow label="Req ID">
+											<Link
+												href={requestLogHref}
+												title={`Open request log ${metadataRequestId}`}
+												className="block max-w-44 truncate font-mono text-xs underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
+											>
+												{metadataRequestId}
+											</Link>
+										</MetadataRow>
+									) : null}
 									<MetadataRow label="Service tier">
 										<NumericValue>
 											{formatServiceTierLabel(metadataServiceTier)}
