@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { ProviderInfo } from "@/lib/fetchers/models/getModelPricing";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { cn } from "@/lib/utils";
-import { getProviderRoutePresentation } from "./providerRoutePresentation";
+import { getProviderRoutePresentation, isSelectableServiceTier } from "./providerRoutePresentation";
 
 const tierBadgeBackgrounds: Record<string, string> = {
     priority: "bg-violet-100 dark:bg-violet-950",
@@ -33,7 +33,7 @@ export function ProviderRouteName({ provider, plan = "standard", nameOverride, s
     return (
         <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
             <span>{name}{region ? ` (${region.toUpperCase()})` : ""}</span>
-            {tier && showTierHelp ? (
+            {tier && showTierHelp && isSelectableServiceTier(plan) ? (
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span tabIndex={0} aria-label={`${tier} service tier information`} className="inline-flex cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

@@ -26,10 +26,14 @@ export function getProviderRoutePresentation(provider: ProviderInfo, plan = "sta
     return { name, region, tier };
 }
 
+export function isSelectableServiceTier(plan: string): boolean {
+    return ["priority", "flex", "batch"].includes(plan);
+}
+
 // These sections describe route variants, not live health or availability.
 export function isProviderRouteVariant(provider: ProviderInfo, plan: string) {
     return provider.offer_scope === "regional" ||
         provider.offer_scope === "specialized" ||
         getProviderRoutePresentation(provider).region !== null ||
-        (plan !== "standard" && plan !== "free");
+        isSelectableServiceTier(plan);
 }

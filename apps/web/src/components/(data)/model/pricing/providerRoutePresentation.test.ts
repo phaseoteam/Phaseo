@@ -1,4 +1,4 @@
-import { getProviderListingCategory, getProviderRoutePresentation, isProviderRouteVariant } from "./providerRoutePresentation";
+import { getProviderListingCategory, getProviderRoutePresentation, isProviderRouteVariant, isSelectableServiceTier } from "./providerRoutePresentation";
 import { resolveGatewayStatus } from "./providerGatewayStatus";
 
 const openai = { api_provider_id: "openai", api_provider_name: "OpenAI" };
@@ -48,6 +48,13 @@ describe("provider route presentation", () => {
 
     it.each(["flex", "priority", "batch"])("separates the %s tier", plan => {
         expect(isProviderRouteVariant(openai, plan)).toBe(true);
+        expect(isSelectableServiceTier(plan)).toBe(true);
+        expect(getProviderRoutePresentation(openai, plan).tier).toBeTruthy();
+    });
+
+    it.each(["on-demand", "llm-plus"])("keeps the %s pricing label in default routing without selection guidance", plan => {
+        expect(isProviderRouteVariant(openai, plan)).toBe(false);
+        expect(isSelectableServiceTier(plan)).toBe(false);
         expect(getProviderRoutePresentation(openai, plan).tier).toBeTruthy();
     });
 });
