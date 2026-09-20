@@ -56,14 +56,14 @@ import {
 } from "@/components/(data)/model/pricing/ProviderModelParameters";
 import {
 	buildProviderSections,
-	buildProviderTablePriceSummary,
+	buildProviderTablePriceSummaryForColumn,
 	fmtCompact,
 	fmtUSD,
 	ruleMatchCovers,
 	ruleComparisonMatchSignature,
 	type QualityRow,
 	type ResolutionRow,
-	type ProviderTablePriceDirection,
+	type ProviderTablePriceColumn,
 	type ProviderTablePriceSummary,
 	type TokenTier,
 	type TokenTriple,
@@ -1101,13 +1101,10 @@ function renderTablePriceSummary(
 	}
 
 	return (
-		<div className={cn("flex items-baseline justify-end gap-1 font-medium tabular-nums", accentClassName)}>
-			<span>{summary.primary.formattedPrice}</span>
-			{summary.primary.price !== 0 && summary.primary.unitShortLabel ? (
-				<span className="text-[10px] font-normal text-muted-foreground">
-					{summary.primary.unitShortLabel}
-				</span>
-			) : null}
+		<div className={cn("font-medium tabular-nums", accentClassName)}>
+			{summary.secondary
+				? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
+				: summary.primary.formattedPrice}
 		</div>
 	);
 }
@@ -1842,7 +1839,7 @@ export default function ProviderCard({
 	pricingTimeMs,
 	displayNameOverride,
 	variantLabels,
-	priceDirections,
+	priceColumns,
 	isLastVisible = false,
 	serviceTiersExpanded = false,
 	showServiceTierDisclosureGutter = false,
@@ -1862,7 +1859,7 @@ export default function ProviderCard({
 	pricingTimeMs: number;
 	displayNameOverride?: string | null;
 	variantLabels?: string[] | null;
-	priceDirections: ProviderTablePriceDirection[];
+	priceColumns: ProviderTablePriceColumn[];
 	isLastVisible?: boolean;
 	serviceTiersExpanded?: boolean;
 	showServiceTierDisclosureGutter?: boolean;
@@ -2519,11 +2516,11 @@ export default function ProviderCard({
 	})();
 	const logoProviderId = sec.logoProviderId;
 	const tablePriceSummaries = Object.fromEntries(
-		priceDirections.map((direction) => [
-			direction,
-			buildProviderTablePriceSummary(tableSec, direction),
+		priceColumns.map((column) => [
+			column.key,
+			buildProviderTablePriceSummaryForColumn(tableSec, column),
 		]),
-	) as Partial<Record<ProviderTablePriceDirection, ProviderTablePriceSummary>>;
+	) as Record<string, ProviderTablePriceSummary>;
 	const summaryQuantization =
 		typeof quantizationScheme === "string" && quantizationScheme.trim()
 			? quantizationScheme.trim()
@@ -3398,16 +3395,16 @@ export default function ProviderCard({
 						</div>
 					</div>
 				</TableCell>
-				{priceDirections.length > 0 ? (
+				{priceColumns.length > 0 ? (
 					isCustomerManagedPricing ? (
-						<TableCell colSpan={priceDirections.length} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">
+						<TableCell colSpan={priceColumns.length} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">
 							Customer managed
 						</TableCell>
 					) : (
-						priceDirections.map((direction) => (
-							<TableCell key={direction} className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+						priceColumns.map((column) => (
+							<TableCell key={column.key} className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
 								{renderTablePriceSummary(
-									tablePriceSummaries[direction] ?? buildProviderTablePriceSummary(tableSec, direction),
+									tablePriceSummaries[column.key] ?? buildProviderTablePriceSummaryForColumn(tableSec, column),
 									tablePlanPriceClass,
 								)}
 							</TableCell>
@@ -3434,7 +3431,7 @@ export default function ProviderCard({
 			</TableRow>
 			<TableRow className="h-0 border-0 hover:bg-transparent">
 				<TableCell
-					colSpan={priceDirections.length + 4}
+					colSpan={priceColumns.length + 4}
 					className="h-0 border-0 p-0"
 				>
 					<ProviderInspectorSheet open={expanded} onOpenChange={handleInspectorOpenChange}>

@@ -1524,6 +1524,14 @@ export type ProviderTablePriceDirection =
     | "cached"
     | "cachewrite";
 
+export type ProviderTablePriceColumn = {
+    key: string;
+    direction: ProviderTablePriceDirection;
+    label: string;
+    unitLabel: string;
+    headerUnitLabel: string;
+};
+
 const PROVIDER_TABLE_PRICE_DIRECTIONS: ProviderTablePriceDirection[] = [
     "input",
     "output",
@@ -1536,7 +1544,7 @@ function getBaseTokenTier(tiers?: TokenTier[] | null): TokenTier | null {
 	return activeTiers[0] ?? tiers?.[0] ?? null;
 }
 
-function getTablePriceCandidates(
+export function getProviderTablePriceCandidates(
     sections: ProviderSections,
     direction: ProviderTablePriceDirection,
 ): ProviderTablePriceCandidate[] {
@@ -1576,38 +1584,35 @@ function getTablePriceCandidates(
         pushTokenCandidate("decisions", sections.decisionTokens?.in);
         pushTokenCandidate("embeddings", sections.embeddingTokens?.in);
 
-        const imageInput = sections.mediaInputs
+        const imageInputs = sections.mediaInputs
             ?.filter((row) => row.mod === "image" && row.isCurrent)
-            .sort((a, b) => a.price - b.price)[0];
-        if (imageInput) {
-            candidates.push(
+            .map((row, index) =>
                 createTablePriceCandidate({
-                    key: "input-image",
+                    key: `input-image-${index}`,
                     label: "image",
-                    price: imageInput.price,
-                    unitLabel: imageInput.unitLabel,
-                    unit: imageInput.unit,
-                    unitQuantity: imageInput.unitQuantity,
+                    price: row.price,
+                    unitLabel: row.unitLabel,
+                    unit: row.unit,
+                    unitQuantity: row.unitQuantity,
                 }),
-            );
-        }
+            ) ?? [];
+        sortTablePriceCandidates(imageInputs);
+        candidates.push(...imageInputs);
 
-        const videoInput = sections.mediaInputs
+        const videoInputs = sections.mediaInputs
             ?.filter((row) => row.mod === "video" && row.isCurrent)
-            .map((row) =>
+            .map((row, index) =>
                 createTablePriceCandidate({
-                    key: "input-video",
+                    key: `input-video-${index}`,
                     label: "video",
                     price: row.price,
                     unitLabel: row.unitLabel,
                     unit: row.unit,
                     unitQuantity: row.unitQuantity,
                 }),
-            )
-            .sort((a, b) => a.price - b.price)[0];
-        if (videoInput) {
-            candidates.push(videoInput);
-        }
+            ) ?? [];
+        sortTablePriceCandidates(videoInputs);
+        candidates.push(...videoInputs);
 
         pushTokenCandidate("image", sections.imageTokens?.in);
         pushTokenCandidate("audio", sections.audioTokens?.in);
@@ -1617,99 +1622,181 @@ function getTablePriceCandidates(
         pushTokenCandidate("decisions", sections.decisionTokens?.out);
         pushTokenCandidate("embeddings", sections.embeddingTokens?.out);
 
-        const imageOutput = sections.imageGen
+        const imageOutputs = sections.imageGen
             ?.flatMap((row) =>
-                row.items.map((item) => ({
-                    price: item.price,
-                    unitQuantity: item.unitQuantity,
-                    unitLabel: "Per image",
-                })),
-            )
-            .sort((a, b) => a.price - b.price)[0];
-        if (imageOutput) {
-            candidates.push(
-                createTablePriceCandidate({
-                    key: "output-image",
-                    label: "image",
-                    price: imageOutput.price,
-                    unitLabel: imageOutput.unitLabel,
-                    unit: "image",
-                    unitQuantity: imageOutput.unitQuantity,
-                }),
-            );
-        }
+                row.items.map((item, index) =>
+                    createTablePriceCandidate({
+                        key: `output-image-${row.quality}-${index}`,
+                        label: "image",
+                        price: item.price,
+                        unitLabel: "Per image",
+                        unit: "image",
+                        unitQuantity: item.unitQuantity,
+                    }),
+                ),
+            ) ?? [];
+        sortTablePriceCandidates(imageOutputs);
+        candidates.push(...imageOutputs);
 
-        const videoOutput = sections.videoGen
-            ?.map((row) =>
+        const videoOutputs = sections.videoGen
+            ?.map((row, index) =>
                 createTablePriceCandidate({
-                    key: "output-video",
+                    key: `output-video-${index}`,
                     label: "video",
                     price: row.price,
                     unitLabel: row.unitLabel,
                     unit: row.unit,
                     unitQuantity: row.unitQuantity,
                 }),
-            )
-            .sort((a, b) => a.price - b.price)[0];
-        if (videoOutput) {
-            candidates.push(videoOutput);
-        }
+            ) ?? [];
+        sortTablePriceCandidates(videoOutputs);
+        candidates.push(...videoOutputs);
 
         pushTokenCandidate("image", sections.imageTokens?.out);
         pushTokenCandidate("audio", sections.audioTokens?.out);
         pushTokenCandidate("video", sections.videoTokens?.out);
     }
 
-    if (candidates.length === 0) {
-        const fallbackRules = (sections.otherRules ?? [])
-            .map((row, index) => ({
-                row,
-                index,
-                parsed: parseMeter(row.meter, row.unitLabel),
-            }))
-            .filter(({ parsed }) =>
-                parsed.dir === direction ||
-                (direction === "input" && parsed.dir === "other"),
-            )
-            .map(({ row, index, parsed }) =>
-                createTablePriceCandidate({
-                    key: `${direction}-usage-${index}`,
-                    label: parsed.mod === "other" ? "usage" : parsed.mod,
-                    price: row.price,
-                    unitLabel: row.unitLabel,
-                    unit: row.unit,
-                    unitQuantity: row.unitQuantity,
-                }),
-            )
-        sortTablePriceCandidates(fallbackRules);
-        candidates.push(...fallbackRules);
+    const fallbackRules = (sections.otherRules ?? [])
+        .map((row, index) => ({
+            row,
+            index,
+            parsed: parseMeter(row.meter, row.unitLabel),
+        }))
+        .filter(({ parsed }) =>
+            parsed.dir === direction ||
+            (direction === "input" && parsed.dir === "other"),
+        )
+        .map(({ row, index, parsed }) =>
+            createTablePriceCandidate({
+                key: `${direction}-usage-${index}`,
+                label: parsed.mod === "other" ? "usage" : parsed.mod,
+                price: row.price,
+                unitLabel: row.unitLabel,
+                unit: row.unit,
+                unitQuantity: row.unitQuantity,
+            }),
+        );
+    sortTablePriceCandidates(fallbackRules);
+    candidates.push(...fallbackRules);
 
-        if (candidates.length === 0 && direction === "input") {
-            const requestCandidates = (sections.requests ?? [])
-                .filter((tier) => tier.isCurrent)
-                .map((tier, index) =>
-                    createTablePriceCandidate({
-                        key: `input-request-${index}`,
-                        label: "request",
-                        price: tier.price,
-                        unitLabel: tier.unitLabel ?? "Per request",
-                        unit: "call",
-                        unitQuantity: tier.unitSize,
-                    }),
-                )
-            sortTablePriceCandidates(requestCandidates);
-            candidates.push(...requestCandidates);
-        }
+    if (direction === "input") {
+        const requestCandidates = (sections.requests ?? [])
+            .filter((tier) => tier.isCurrent)
+            .map((tier, index) =>
+                createTablePriceCandidate({
+                    key: `input-request-${index}`,
+                    label: "request",
+                    price: tier.price,
+                    unitLabel: tier.unitLabel ?? "Per request",
+                    unit: "call",
+                    unitQuantity: tier.unitSize,
+                }),
+            );
+        sortTablePriceCandidates(requestCandidates);
+        candidates.push(...requestCandidates);
     }
 
     return candidates;
+}
+
+const PROVIDER_TABLE_PRICE_DIRECTION_LABELS: Record<ProviderTablePriceDirection, string> = {
+    input: "Input",
+    output: "Output",
+    cached: "Cache Read",
+    cachewrite: "Cache Write",
+};
+
+const PROVIDER_TABLE_UNIT_ORDER = [
+    "Per 1M tokens",
+    "Per 1M characters",
+    "Per 1M bytes",
+    "Per 1M pixels",
+    "Per second",
+    "Per request",
+    "Per page",
+    "Per image",
+    "Per video",
+    "Per frame",
+    "Per message",
+    "Per credit",
+    "Provider-reported cost",
+];
+
+export function formatProviderTableHeaderUnit(unitLabelValue: string): string {
+    const labels: Record<string, string> = {
+        "Per 1M tokens": "$/1M",
+        "Per 1M characters": "$/1M chars",
+        "Per 1M bytes": "$/1M bytes",
+        "Per 1M pixels": "$/MP",
+        "Per second": "$/sec",
+        "Per request": "$/request",
+        "Per page": "$/page",
+        "Per image": "$/image",
+        "Per video": "$/video",
+        "Per frame": "$/frame",
+        "Per message": "$/message",
+        "Per credit": "$/credit",
+        "Provider-reported cost": "Pass-through",
+    };
+    return labels[unitLabelValue] ?? unitLabelValue;
+}
+
+export function buildProviderTablePriceColumns(
+    sectionsByOffering: ProviderSections[],
+): ProviderTablePriceColumn[] {
+    return PROVIDER_TABLE_PRICE_DIRECTIONS.flatMap((direction) => {
+        const unitLabels = new Set<string>();
+        for (const sections of sectionsByOffering) {
+            for (const candidate of getProviderTablePriceCandidates(sections, direction)) {
+                unitLabels.add(candidate.unitLabel);
+            }
+        }
+        return Array.from(unitLabels)
+            .sort((left, right) => {
+                const leftRank = PROVIDER_TABLE_UNIT_ORDER.indexOf(left);
+                const rightRank = PROVIDER_TABLE_UNIT_ORDER.indexOf(right);
+                if (leftRank !== rightRank) {
+                    return (leftRank < 0 ? 999 : leftRank) - (rightRank < 0 ? 999 : rightRank);
+                }
+                return left.localeCompare(right);
+            })
+            .map((unitLabelValue) => ({
+                key: `${direction}:${unitLabelValue}`,
+                direction,
+                label: PROVIDER_TABLE_PRICE_DIRECTION_LABELS[direction],
+                unitLabel: unitLabelValue,
+                headerUnitLabel: formatProviderTableHeaderUnit(unitLabelValue),
+            }));
+    });
+}
+
+export function buildProviderTablePriceSummaryForColumn(
+    sections: ProviderSections,
+    column: ProviderTablePriceColumn,
+): ProviderTablePriceSummary {
+    const candidates = sortTablePriceCandidates(
+        getProviderTablePriceCandidates(sections, column.direction)
+            .filter((candidate) => candidate.unitLabel === column.unitLabel),
+    );
+    const primary = candidates[0] ?? null;
+    const highest = candidates.at(-1) ?? null;
+    const secondary = primary && highest && primary.formattedPrice !== highest.formattedPrice
+        ? highest
+        : null;
+    return {
+        primary,
+        secondary,
+        extraCount: Math.max(candidates.length - (secondary ? 2 : primary ? 1 : 0), 0),
+        sortValue: primary?.sortValue ?? null,
+    };
 }
 
 export function buildProviderTablePriceSummary(
     sections: ProviderSections,
     direction: ProviderTablePriceDirection,
 ): ProviderTablePriceSummary {
-    const candidates = getTablePriceCandidates(sections, direction);
+    const candidates = getProviderTablePriceCandidates(sections, direction);
     const primary = candidates[0] ?? null;
     const secondary = candidates[1] ?? null;
     return {

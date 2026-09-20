@@ -1,7 +1,9 @@
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
 	buildProviderSections,
+	buildProviderTablePriceColumns,
 	buildProviderTablePriceSummary,
+	buildProviderTablePriceSummaryForColumn,
 	formatPricingHistoryUnitLabel,
 	normalizePricingHistoryPrice,
 	calculateDailyAveragePricingMeterPrice,
@@ -431,6 +433,46 @@ describe("buildProviderSections", () => {
 			sortValue: null,
 		});
 		expect(summary.sortValue).toBeNull();
+	});
+
+	test("groups mixed pricing units into separate metric columns", () => {
+		const provider = makeProviderPricing();
+		const baseRule = provider.pricing_rules[0]!;
+		provider.pricing_rules = [
+			{ ...baseRule, id: "input-token", meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 5, match: [] },
+			{ ...baseRule, id: "input-image", meter: "input_image", unit: "image", unit_size: 1, price_per_unit: 0.01, match: [] },
+			{ ...baseRule, id: "output-token", meter: "output_image_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 32, match: [] },
+			{ ...baseRule, id: "output-pixels", meter: "image_pixels", unit: "pixel", unit_size: 1_000_000, price_per_unit: 0.053, match: [] },
+		];
+
+		const columns = buildProviderTablePriceColumns([
+			buildProviderSections(provider, "standard"),
+		]);
+
+		expect(columns.map(({ label, headerUnitLabel }) => `${label} ${headerUnitLabel}`)).toEqual([
+			"Input $/1M",
+			"Input $/image",
+			"Output $/1M",
+			"Output $/MP",
+		]);
+	});
+
+	test("collapses resolution-dependent video prices into a column range", () => {
+		const provider = makeProviderPricing();
+		const baseRule = provider.pricing_rules[0]!;
+		provider.pricing_rules = [
+			{ ...baseRule, id: "video-720", meter: "output_video_seconds", unit: "second", unit_size: 10, price_per_unit: 0.6, match: [{ path: "request.resolution", op: "eq", value: "720p" }] },
+			{ ...baseRule, id: "video-1080", meter: "output_video_seconds", unit: "second", unit_size: 10, price_per_unit: 1.2, match: [{ path: "request.resolution", op: "eq", value: "1080p" }] },
+		];
+		const sections = buildProviderSections(provider, "standard");
+		const [column] = buildProviderTablePriceColumns([sections]);
+
+		expect(column).toMatchObject({ label: "Output", headerUnitLabel: "$/sec" });
+		expect(buildProviderTablePriceSummaryForColumn(sections, column!)).toMatchObject({
+			primary: { formattedPrice: "$0.06" },
+			secondary: { formattedPrice: "$0.12" },
+			sortValue: 0.06,
+		});
 	});
 
 	test.each([
