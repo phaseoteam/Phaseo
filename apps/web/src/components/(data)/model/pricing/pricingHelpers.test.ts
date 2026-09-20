@@ -180,11 +180,89 @@ describe("buildProviderSections", () => {
 		expect(buildProviderTablePriceSummary(sections, "input").primary).toMatchObject({
 			label: "decisions",
 			price: 0.042,
+			unitLabel: "Per 1M tokens",
+			unitShortLabel: "/M",
 		});
 		expect(buildProviderTablePriceSummary(sections, "output").primary).toMatchObject({
 			label: "decisions",
 			price: 0,
 			formattedPrice: "Free",
+		});
+	});
+
+	test("normalizes duration summaries to a per-second rate", () => {
+		const provider = makeProviderPricing();
+		provider.provider_models = [{
+			...provider.provider_models[0],
+			id: "openai:openai/video-example:video.generate",
+			model_id: "openai/video-example",
+			endpoint: "video.generate",
+			input_modalities: "video",
+			output_modalities: "video",
+		}];
+		provider.pricing_rules = [
+			{
+				...provider.pricing_rules[0],
+				id: "video-input-minute",
+				model_key: "openai:openai/video-example:video.generate",
+				meter: "input_video_minutes",
+				unit: "minute",
+				unit_size: 1,
+				price_per_unit: 0.6,
+				match: [],
+			},
+			{
+				...provider.pricing_rules[0],
+				id: "video-input-second",
+				model_key: "openai:openai/video-example:video.generate",
+				meter: "input_video_seconds",
+				unit: "second",
+				unit_size: 1,
+				price_per_unit: 0.02,
+				match: [],
+			},
+		];
+
+		const sections = buildProviderSections(provider, "standard");
+
+		expect(buildProviderTablePriceSummary(sections, "input").primary).toMatchObject({
+			label: "video",
+			price: 0.01,
+			formattedPrice: "$0.01",
+			unitLabel: "Per second",
+			unitShortLabel: "/sec",
+		});
+	});
+
+	test("uses duration pricing as the base summary for audio models", () => {
+		const provider = makeProviderPricing();
+		provider.provider_models = [{
+			...provider.provider_models[0],
+			id: "openai:openai/audio-example:audio.transcribe",
+			model_id: "openai/audio-example",
+			endpoint: "audio.transcribe",
+			input_modalities: "audio",
+			output_modalities: "text",
+		}];
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0],
+			id: "audio-input-minute",
+			model_key: "openai:openai/audio-example:audio.transcribe",
+			meter: "input_audio_minutes",
+			unit: "minute",
+			unit_size: 1,
+			price_per_unit: 0.6,
+			match: [],
+		}];
+
+		const sections = buildProviderSections(provider, "standard");
+
+		expect(sections.otherRules).toHaveLength(1);
+		expect(buildProviderTablePriceSummary(sections, "input").primary).toMatchObject({
+			label: "audio",
+			price: 0.01,
+			unitLabel: "Per second",
+			unitShortLabel: "/sec",
 		});
 	});
 

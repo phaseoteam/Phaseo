@@ -1082,7 +1082,7 @@ export function AdvancedTable({
 
 	return (
 		<div className="space-y-1.5">
-			<h4 className="text-xs font-semibold tracking-wide text-foreground">Other meters</h4>
+			<h4 className="text-xs font-semibold tracking-wide text-foreground">Additional pricing</h4>
 			<div className="space-y-2">
 				{rows.map((row, index) => {
 					const conditions = formatConditions(row.conditions);

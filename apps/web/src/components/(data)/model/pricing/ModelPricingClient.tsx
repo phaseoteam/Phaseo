@@ -1838,14 +1838,14 @@ export default function ModelPricingClient({
 												{renderTableSortHead("Provider", "provider", "left")}
 											</TableHead>
 											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
-												{renderTableSortHead("Input $/M", "input")}
+												{renderTableSortHead("Input", "input")}
 											</TableHead>
 											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
-												{renderTableSortHead("Output $/M", "output")}
+												{renderTableSortHead("Output", "output")}
 											</TableHead>
 											{showCacheReadColumn ? (
 												<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
-													{renderTableSortHead("Cache Read $/M", "cache_read")}
+													{renderTableSortHead("Cache Read", "cache_read")}
 												</TableHead>
 											) : null}
 											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">

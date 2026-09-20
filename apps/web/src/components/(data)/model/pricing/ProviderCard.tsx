@@ -1099,32 +1099,31 @@ function renderTablePriceSummary(
 		return <div className="font-medium tabular-nums text-foreground">--</div>;
 	}
 
-	const detailParts: string[] = [];
-	if (!summary.secondary && summary.primary.label !== "text") {
-		detailParts.push(summary.primary.label);
-	}
-	if (summary.secondary) {
-		detailParts.push(summary.secondary.label);
-	}
-	if (summary.extraCount > 0) {
-		detailParts.push(`+${summary.extraCount} more`);
-	}
-	const detailLabel = detailParts.join(" / ");
+	const renderPrice = (
+		candidate: NonNullable<ProviderTablePriceSummary["primary"]>,
+		unitClassName: string,
+	) => (
+		<>
+			<span>{candidate.formattedPrice}</span>
+			{candidate.price !== 0 && candidate.unitShortLabel ? (
+				<span className={unitClassName}>{candidate.unitShortLabel}</span>
+			) : null}
+		</>
+	);
 
 	return (
 		<div className="flex flex-col items-end gap-0.5">
-			<div className={cn("font-medium tabular-nums", accentClassName)}>
-				{summary.primary.formattedPrice}
+			<div className={cn("flex items-baseline justify-end gap-1 font-medium tabular-nums", accentClassName)}>
+				{renderPrice(summary.primary, "text-[10px] font-normal text-muted-foreground")}
 			</div>
 			{summary.secondary ? (
-				<div className="truncate text-[10px] text-muted-foreground">
+				<div className="flex items-baseline justify-end gap-1 truncate text-[10px] text-muted-foreground">
 					<span>{summary.secondary.label}</span>
-					{" "}
-					<span className="tabular-nums">{summary.secondary.formattedPrice}</span>
+					<span className="flex items-baseline gap-0.5 tabular-nums">
+						{renderPrice(summary.secondary, "")}
+					</span>
 					{summary.extraCount > 0 ? <span>{` +${summary.extraCount} more`}</span> : null}
 				</div>
-			) : detailLabel ? (
-				<div className="truncate text-[10px] text-muted-foreground">{detailLabel}</div>
 			) : null}
 		</div>
 	);

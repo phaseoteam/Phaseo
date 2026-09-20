@@ -1092,7 +1092,7 @@ function ProvidersSectionSkeleton() {
 			</div>
 			<div className="overflow-hidden rounded-sm border border-border/70 bg-background">
 				<div className="grid min-w-[780px] grid-cols-[27%_12%_12%_11%_11%_13%_1fr] border-b px-3 py-3">
-					{["Provider", "Input $/M", "Output $/M", "Latency", "Throughput", "Uptime"].map((label) => (
+					{["Provider", "Input", "Output", "Latency", "Throughput", "Uptime"].map((label) => (
 						<div key={label} className="px-2">
 							<Skeleton className="h-3 w-2/3" />
 						</div>

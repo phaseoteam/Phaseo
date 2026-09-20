@@ -1306,13 +1306,35 @@ function createTablePriceCandidate(args: {
     price: number;
     unitLabel: string;
 }): ProviderTablePriceCandidate {
+    const normalizedRate = normalizeTablePriceRate(args.price, args.unitLabel);
     return {
         key: args.key,
         label: args.label,
-        price: args.price,
-        formattedPrice: args.price === 0 ? "Free" : fmtUSD(args.price),
-        unitLabel: args.unitLabel,
-        unitShortLabel: formatTableUnitShortLabel(args.unitLabel),
+        price: normalizedRate.price,
+        formattedPrice: normalizedRate.price === 0 ? "Free" : fmtUSD(normalizedRate.price),
+        unitLabel: normalizedRate.unitLabel,
+        unitShortLabel: formatTableUnitShortLabel(normalizedRate.unitLabel),
+    };
+}
+
+function normalizeTablePriceRate(price: number, label: string) {
+    const durationMatch = label
+        .trim()
+        .toLowerCase()
+        .match(/^per(?:\s+([0-9.,]+))?\s+(seconds?|minutes?)$/);
+    if (!durationMatch) return { price, unitLabel: label };
+
+    const quantity = Number((durationMatch[1] ?? "1").replace(/,/g, ""));
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+        return { price, unitLabel: label };
+    }
+
+    const seconds = durationMatch[2]?.startsWith("minute")
+        ? quantity * 60
+        : quantity;
+    return {
+        price: price / seconds,
+        unitLabel: "Per second",
     };
 }
 
@@ -1372,16 +1394,17 @@ function getTablePriceCandidates(
 
         const videoInput = sections.mediaInputs
             ?.filter((row) => row.mod === "video" && row.isCurrent)
-            .sort((a, b) => a.price - b.price)[0];
-        if (videoInput) {
-            candidates.push(
+            .map((row) =>
                 createTablePriceCandidate({
                     key: "input-video",
                     label: "video",
-                    price: videoInput.price,
-                    unitLabel: videoInput.unitLabel,
+                    price: row.price,
+                    unitLabel: row.unitLabel,
                 }),
-            );
+            )
+            .sort((a, b) => a.price - b.price)[0];
+        if (videoInput) {
+            candidates.push(videoInput);
         }
 
         pushTokenCandidate("image", sections.imageTokens?.in);
@@ -1412,22 +1435,60 @@ function getTablePriceCandidates(
         }
 
         const videoOutput = sections.videoGen
-            ?.slice()
-            .sort((a, b) => a.price - b.price)[0];
-        if (videoOutput) {
-            candidates.push(
+            ?.map((row) =>
                 createTablePriceCandidate({
                     key: "output-video",
                     label: "video",
-                    price: videoOutput.price,
-                    unitLabel: videoOutput.unitLabel,
+                    price: row.price,
+                    unitLabel: row.unitLabel,
                 }),
-            );
+            )
+            .sort((a, b) => a.price - b.price)[0];
+        if (videoOutput) {
+            candidates.push(videoOutput);
         }
 
         pushTokenCandidate("image", sections.imageTokens?.out);
         pushTokenCandidate("audio", sections.audioTokens?.out);
         pushTokenCandidate("video", sections.videoTokens?.out);
+    }
+
+    if (candidates.length === 0) {
+        const fallbackRules = (sections.otherRules ?? [])
+            .map((row, index) => ({
+                row,
+                index,
+                parsed: parseMeter(row.meter, row.unitLabel),
+            }))
+            .filter(({ parsed }) =>
+                parsed.dir === direction ||
+                (direction === "input" && parsed.dir === "other"),
+            )
+            .map(({ row, index, parsed }) =>
+                createTablePriceCandidate({
+                    key: `${direction}-usage-${index}`,
+                    label: parsed.mod === "other" ? "usage" : parsed.mod,
+                    price: row.price,
+                    unitLabel: row.unitLabel,
+                }),
+            )
+            .sort((a, b) => a.price - b.price);
+        candidates.push(...fallbackRules);
+
+        if (candidates.length === 0 && direction === "input") {
+            const requestCandidates = (sections.requests ?? [])
+                .filter((tier) => tier.isCurrent)
+                .map((tier, index) =>
+                    createTablePriceCandidate({
+                        key: `input-request-${index}`,
+                        label: "request",
+                        price: tier.price,
+                        unitLabel: tier.unitLabel ?? "Per request",
+                    }),
+                )
+                .sort((a, b) => a.price - b.price);
+            candidates.push(...requestCandidates);
+        }
     }
 
     return candidates;
