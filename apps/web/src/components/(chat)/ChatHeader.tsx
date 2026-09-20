@@ -65,6 +65,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { ChatShortcutReference } from "@/components/(chat)/ChatShortcutReference";
 import {
 	getVirtualizedModelCatalogItemId,
@@ -1712,6 +1713,7 @@ export function ChatHeader({
 						</DropdownMenuContent>
 					</DropdownMenu>
 				) : null}
+				<RoomSdkExport />
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button

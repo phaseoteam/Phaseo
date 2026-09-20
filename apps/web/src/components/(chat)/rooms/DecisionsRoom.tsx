@@ -38,6 +38,7 @@ import {
 } from "@/components/(chat)/RoomComposer";
 import { RoomEmptyState } from "@/components/(chat)/RoomEmptyState";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomWorkingIndicator } from "@/components/(chat)/RoomWorkingIndicator";
 import { RoomErrorNotice } from "@/components/(chat)/rooms/RoomErrorNotice";
 import { DecisionsModelSettingsDialog } from "@/components/(chat)/rooms/settings/DecisionsModelSettingsDialog";
@@ -609,6 +610,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 					</div>
 
 					<div className="flex items-center gap-2">
+						<RoomSdkExport />
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button

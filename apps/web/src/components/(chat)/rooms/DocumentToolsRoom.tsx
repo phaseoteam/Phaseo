@@ -7,6 +7,7 @@ import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { ocrText, rankedDocuments, rerankDocuments } from "@/lib/chat/documentTools";
 import { fetchChatWebApi } from "@/lib/web-api/client";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomWorkingIndicator } from "@/components/(chat)/RoomWorkingIndicator";
 import { RoomErrorNotice } from "./RoomErrorNotice";
 import { Button } from "@/components/ui/button";
@@ -90,6 +91,9 @@ export function DocumentToolsRoom({ room, models }: { room: "ocr" | "rerank"; mo
 			<Button variant="ghost" size="icon" onClick={toggleSidebar} aria-label="Toggle sidebar"><PanelLeft className="size-4" /></Button>
 			<h1 className="text-sm font-medium">{title}</h1>
 			<RoomModelSelector models={available} selectedModelIds={modelId ? [modelId] : []} onSelectModel={setSelected} />
+			<div className="ml-auto flex items-center">
+				<RoomSdkExport />
+			</div>
 		</header>
 		<div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-6">
 			<div className="mx-auto grid w-full max-w-3xl gap-6">

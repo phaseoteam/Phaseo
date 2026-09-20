@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { ROOM_SIDEBAR_SLOT_ID } from "@/components/(chat)/RoomScaffold";
@@ -1313,6 +1314,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 						/>
 				</div>
 					<div className="flex items-center gap-2">
+						<RoomSdkExport />
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button

@@ -36,7 +36,6 @@ import {
 	type ChatSendPayload,
 } from "@/components/(chat)/ChatConversation";
 import { ChatHeader } from "@/components/(chat)/ChatHeader";
-import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { ModelSettingsDialog } from "@/components/(chat)/ModelSettingsDialog";
 import {
 	type ChatRequestErrorDetails,
@@ -115,6 +114,7 @@ import {
 	ChatSidebar,
 } from "@/components/(chat)/ChatSidebar";
 import { ChatShortcutHelpDialog } from "@/components/(chat)/ChatShortcutReference";
+import { getChatPayloadRequestId } from "@/components/(chat)/chatMessageMetadata";
 
 type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
@@ -1439,9 +1439,16 @@ function ChatPlaygroundContent({
 					payload?.response?.meta ??
 					payload?.response?.metadata ??
 					null;
-				return meta && typeof meta === "object" && !Array.isArray(meta)
-					? (meta as Record<string, unknown>)
-					: null;
+				const normalizedMeta =
+					meta && typeof meta === "object" && !Array.isArray(meta)
+						? (meta as Record<string, unknown>)
+						: null;
+				const requestId = getChatPayloadRequestId(payload, endpoint);
+				if (!normalizedMeta && !requestId) return null;
+				return {
+					...(normalizedMeta ?? {}),
+					...(requestId ? { request_id: requestId } : {}),
+				};
 			};
 
 			if (targetAssistantId) {
@@ -2055,7 +2062,10 @@ function ChatPlaygroundContent({
 								}
 								const parsedMeta = extractPayloadMeta(parsed);
 								if (parsedMeta) {
-									finalMeta = parsedMeta;
+									finalMeta = {
+										...(finalMeta ?? {}),
+										...parsedMeta,
+									};
 								}
 								finalServiceTier =
 									resolvePayloadServiceTier(parsed) ?? finalServiceTier;
@@ -2631,6 +2641,7 @@ function ChatPlaygroundContent({
 				if (latestThread) {
 					const errorMeta = {
 						...(compareMeta ?? {}),
+						...(finalMeta ?? {}),
 						client: buildClientMeta(performance.now()),
 						chat_request_error: nextRequestError,
 					};
@@ -4416,7 +4427,6 @@ function ChatPlaygroundContent({
 				<SidebarRail />
 			</Sidebar>
 			<SidebarInset className="flex h-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-background">
-				<RoomSdkExport />
 				<ChatHeader
 					activeThread={activeThread}
 					modelOptions={modelOptions}
