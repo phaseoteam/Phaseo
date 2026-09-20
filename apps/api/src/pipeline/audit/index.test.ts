@@ -71,6 +71,66 @@ describe("audit request detail persistence", () => {
 		persistGatewayIoLogMock.mockResolvedValue(undefined);
 	});
 
+	it.each([false, true])("retries analytics writes without duplicating the request log (stream=%s)", async (stream) => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row_retry", created_at: "2026-09-20T08:58:00Z", workspace_id: "ws_retry" },
+			error: null,
+		}) }) }));
+		const rpc = vi.fn()
+			.mockResolvedValueOnce({ error: { code: "40001", message: "could not serialize access" } })
+			.mockResolvedValue({ data: "event_retry", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+
+		await auditSuccess({
+			requestId: "req_retry", workspaceId: "ws_retry", provider: "google-ai-studio",
+			model: "google/gemini-2.5-flash-lite", endpoint: "chat.completions", stream, byok: false,
+			usagePriced: { input_tokens: 273, output_tokens: 20, total_tokens: 293 },
+			totalCents: 0, totalNanos: 35_300, currency: "USD", statusCode: 200, finishReason: "tool_calls",
+			requestPayload: { messages: [{ role: "user", content: [
+				{ type: "image_url", image_url: { url: "data:image/png;base64,fixture" } },
+			] }] },
+			gatewayResponse: { choices: [{ message: { tool_calls: [
+				{ id: "call_fixture", type: "function", function: { name: "echo", arguments: '{}' } },
+			] } }] },
+		});
+
+		expect(insert).toHaveBeenCalledTimes(1);
+		expect(rpc).toHaveBeenCalledTimes(2);
+		expect(rpc.mock.calls[1]).toEqual(rpc.mock.calls[0]);
+		const event = rpc.mock.calls[1][1].p_event;
+		expect(event).toMatchObject({ request_id: "req_retry", stream, tool_call_count: 1 });
+		expect(event.usage_meters).toContainEqual(expect.objectContaining({ meter_key: "input_images", quantity: 1 }));
+		expect(JSON.stringify(event)).not.toContain("data:image");
+	});
+
+	it("reports the database code and message when analytics retries are exhausted", async () => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row_rejected", created_at: "2026-09-20T08:58:00Z", workspace_id: "ws_rejected" },
+			error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ error: {
+			code: "23514", message: 'new row violates check constraint "example_check"',
+			details: "private row contents", hint: "private hint",
+		} });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			await expect(auditSuccess({
+				requestId: "req_rejected", workspaceId: "ws_rejected", provider: "google-ai-studio",
+				model: "google/gemini-2.5-flash-lite", endpoint: "chat.completions", stream: false, byok: false,
+				usagePriced: { input_tokens: 1, output_tokens: 1 },
+				totalCents: 0, totalNanos: 100, currency: "USD", statusCode: 200,
+			})).rejects.toThrow('supabase_v2_audit_success_rpc: [23514] new row violates check constraint "example_check"');
+			expect(insert).toHaveBeenCalledTimes(1);
+			expect(rpc).toHaveBeenCalledTimes(3);
+			expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(/private row contents|private hint/);
+		} finally {
+			consoleError.mockRestore();
+		}
+	});
+
 	it("stores replay-ready details for successful requests", async () => {
 		const gatewayRequestRows: any[] = [];
 		const detailRows: any[] = [];

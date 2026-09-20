@@ -124,7 +124,17 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, label: string, attempts
             }
         }
     }
-    const finalErr = lastErr instanceof Error ? lastErr : new Error(typeof lastErr === "string" ? lastErr : "unknown_error");
+    // PostgREST returns plain objects, not Error instances. Keep its message
+    // and SQLSTATE so a rejected analytics write can actually be diagnosed.
+    // Do not include details/hint: constraint details can contain row data.
+    const databaseError = lastErr && typeof lastErr === "object"
+        ? lastErr as { message?: unknown; code?: unknown }
+        : null;
+    const message = typeof databaseError?.message === "string"
+        ? databaseError.message
+        : typeof lastErr === "string" ? lastErr : "unknown_error";
+    const code = typeof databaseError?.code === "string" ? databaseError.code : null;
+    const finalErr = lastErr instanceof Error ? lastErr : new Error(code ? `[${code}] ${message}` : message);
     finalErr.message = `${label}: ${finalErr.message}`;
     throw finalErr;
 }
