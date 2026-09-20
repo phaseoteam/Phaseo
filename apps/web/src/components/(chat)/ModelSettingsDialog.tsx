@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Logo } from "@/components/Logo";
@@ -372,7 +373,7 @@ export function ModelSettingsDialog({
             setFavoriteModelIds(fallbackIds);
             return;
         }
-        const raw = window.localStorage.getItem(
+        const raw = chatLocalStorage.getItem(
             MODEL_SELECTOR_FAVORITES_STORAGE_KEY
         );
         if (!raw) {

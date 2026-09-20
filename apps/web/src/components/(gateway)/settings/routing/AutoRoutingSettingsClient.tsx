@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -100,6 +101,7 @@ function EligibleModelList({ models, loading, error }: { models: ModelOption[]; 
 }
 
 export default function AutoRoutingSettingsClient({ initialData }: { initialData: SettingsAutoRoutingInitialData }) {
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const initial = initialData.autoRouting;
 	const [objective, setObjective] = useState<AutoRoutingObjective>(initial.objective);
 	const [spendProfile, setSpendProfile] = useState<AutoRoutingSpendProfile>(initial.spendProfile);
@@ -145,6 +147,7 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 		startTransition(async () => {
 			const result = await updateAutoRoutingSettings(current);
 			if (!result.ok) { toast.error(result.error); return; }
+			void invalidateSettings();
 			const saved = result.autoRouting;
 			setAllowedPatterns(saved.allowedPatterns); setSpendProfile(saved.spendProfile); setMaxInputPricePerMillion(saved.maxInputPricePerMillion); setMaxOutputPricePerMillion(saved.maxOutputPricePerMillion); setObjective(saved.objective); setAllowFallbacks(saved.allowFallbacks); setRevision(saved.revision); setUpdatedAt(saved.updatedAt); setSavedFingerprint(configurationFingerprint(saved));
 			toast.success(result.gatewayCacheInvalidated ? "Auto Routing updated" : "Auto Routing updated; gateway cache refresh pending");

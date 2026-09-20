@@ -27,6 +27,7 @@ import { accountSettingsScimRouter } from "./settings-scim";
 import { accountSettingsProviderOnboardingRouter } from "./settings-provider-onboarding";
 import { accountSettingsProviderCatalogRouter } from "./settings-provider-catalog";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
+import { keyDisplayData } from "./settings-key-display";
 
 // Mirrors the first-party CLI allowlist enforced by the gateway OAuth service.
 const PHASEO_CLI_SCOPES = [
@@ -936,7 +937,7 @@ accountSettingsRouter.get("/management-api-keys", async (c) => {
 	};
 	return c.json({
 		currentUserId: context.user.id,
-		teamsWithKeys: [{ ...workspace, keys: keysResult.data ?? [] }],
+		teamsWithKeys: [{ ...workspace, keys: (keysResult.data ?? []).map(keyDisplayData) }],
 		workspace,
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
@@ -1082,7 +1083,7 @@ accountSettingsRouter.get("/keys", async (c) => {
 			const usageLastUsed = usage.usage_last_used_at;
 			const { usage_last_used_at: _ignored, ...usageFields } = usage;
 			return {
-				...key,
+				...keyDisplayData(key),
 				current_usage_daily: 0,
 				current_usage_weekly: 0,
 				current_usage_monthly: 0,

@@ -1,9 +1,7 @@
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import AuthorizedAppsPanel from "@/components/(gateway)/settings/authorized-apps/AuthorizedAppsPanel";
+import AuthorizedAppsContent from "./AuthorizedAppsContent";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
-import { fetchSettingsAuthorizedAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsAuthorizedAppsInitialData";
 
 export const metadata = {
 	title: "OAuth Integrations - Settings",
@@ -27,20 +25,5 @@ export default function AuthorizedAppsPage() {
 				<AuthorizedAppsContent />
 			</Suspense>
 		</div>
-	);
-}
-
-async function AuthorizedAppsContent() {
-	const initialData = await fetchSettingsAuthorizedAppsInitialData();
-
-	if (!initialData.signedIn || !initialData.userId) {
-		redirect("/sign-in");
-	}
-
-	return (
-		<AuthorizedAppsPanel
-			authorizedApps={initialData.authorizedApps}
-			userId={initialData.userId}
-		/>
 	);
 }

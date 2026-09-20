@@ -3,12 +3,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import PresetForm from "@/components/(gateway)/settings/presets/PresetForm";
+import PresetEditorContent from "../PresetEditorContent";
 import {
 	fetchFrontendAPIProviders,
 	fetchFrontendModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { fetchSettingsPresetsInitialData } from "@/lib/fetchers/internal/fetchSettingsPresetsInitialData";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 export const metadata = {
@@ -58,19 +57,15 @@ export default function NewPresetPage() {
 }
 
 async function NewPresetContent() {
-	const [initialData, models, providers] = await Promise.all([
-		fetchSettingsPresetsInitialData(),
+	const [models, providers] = await Promise.all([
 		fetchFrontendModels(),
 		fetchFrontendAPIProviders(),
 	]);
 
 	return (
-		<PresetForm
+		<PresetEditorContent
 			models={models}
 			providers={providers}
-			currentUserId={initialData.currentUserId}
-			currentTeamId={initialData.initialTeamId}
-			workspacePublisher={initialData.workspacePublisher}
 		/>
 	);
 }

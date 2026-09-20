@@ -30,7 +30,7 @@ import {
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 import { createPresetAction, updatePresetAction } from "@/app/(dashboard)/settings/presets/actions";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";

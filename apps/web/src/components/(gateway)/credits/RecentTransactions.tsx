@@ -12,6 +12,8 @@ import {
 	PaginationLink,
 } from "@/components/ui/pagination";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSettingsWrite } from "../settings/PrivateSettingsQuery";
+import { requestCreditRefund } from "./refundRequest";
 import {
 	ExternalLink,
 	ArrowUpCircle,
@@ -374,6 +376,7 @@ export default function RecentTransactions({
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 			: "UTC";
 	const router = useRouter();
+	const write = useSettingsWrite();
 	const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
 	const [refundDialogTx, setRefundDialogTx] = useState<Transaction | null>(null);
 	const [refundReason, setRefundReason] =
@@ -472,21 +475,8 @@ export default function RecentTransactions({
 		}
 		setBusy(tx.id, true);
 		try {
-			const result = await toast.promise(
-				(async () => {
-					const response = await fetch("/api/stripe/refunds/request", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ paymentIntentId, reason }),
-					});
-					const payload = await response.json().catch(() => ({}));
-					if (!response.ok) {
-						throw new Error(
-							payload?.error ?? "Refund request failed",
-						);
-					}
-					return payload;
-				})(),
+			const operation = write(requestCreditRefund(paymentIntentId, reason));
+			toast.promise(operation,
 				{
 					loading: "Submitting refund request...",
 					success: (result) =>
@@ -495,9 +485,10 @@ export default function RecentTransactions({
 						err?.message ?? "Failed to submit refund request",
 				},
 			);
+			const result = await operation;
 			const params = new URLSearchParams(Array.from(searchParams.entries()));
 			const nextStatus =
-				String((result as any)?.status ?? "").toLowerCase() === "succeeded"
+				String(result?.status ?? "").toLowerCase() === "succeeded"
 					? "succeeded"
 					: "processing";
 			params.set("refund", nextStatus);

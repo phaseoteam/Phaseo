@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { privateUsageOptions } from "@/lib/query/privateUsage";
+import { fetchPrivateUsageOperation, fetchPrivateUsageRequest } from "@/lib/query/fetchPrivateUsage";
+import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
 import dynamic from "next/dynamic";
 import { useQueryState } from "nuqs";
 import Link from "next/link";
@@ -321,6 +325,11 @@ export default function UnifiedRequestsTable({
 	detailBasePath,
 	onExportRef,
 }: UnifiedRequestsTableProps) {
+	const queryClient = useQueryClient();
+	const privateQuery = usePrivateUsageRefresh();
+	const scope = privateQuery?.scope;
+	const live = privateQuery?.live ?? false;
+	const snapshotUpdatedAt = privateQuery?.updatedAt ?? 0;
 	const visibleColumns = orderRequestColumns(columns).filter(
 		({ visible }) => visible,
 	);
@@ -512,10 +521,17 @@ export default function UnifiedRequestsTable({
 	]);
 
 	const [currentCacheKey, setCurrentCacheKey] = useState(getCacheKey());
+	const requestGeneration = React.useRef(0);
+	const requestDatasetKey = JSON.stringify([scope, getCacheKey(), snapshotUpdatedAt]);
+	useEffect(() => {
+		inFlightPages.current.clear();
+		return () => { requestGeneration.current += 1; };
+	}, [requestDatasetKey]);
 
 	// Fetch a specific page
 	const fetchPage = useCallback(
 		async (pageNum: number, background = false) => {
+			const generation = requestGeneration.current;
 			if (inFlightPages.current.has(pageNum)) return null;
 			const cursor = pageNum === 1 ? null : pageCursors.get(pageNum);
 			if (pageNum > 1 && !cursor) return null;
@@ -568,7 +584,11 @@ export default function UnifiedRequestsTable({
 					sortDirection: "desc",
 				};
 
-				const result = await fetchPaginatedRequests(params);
+				const result = scope ? await queryClient.fetchQuery({
+					...privateUsageOptions(scope, "request-page", { params: JSON.stringify(params), snapshot: String(snapshotUpdatedAt) }, live),
+					queryFn: ({ signal }) => fetchPrivateUsageOperation<Awaited<ReturnType<typeof fetchPaginatedRequests>>>("paginatedRequests", [params], scope, signal),
+				}) : await fetchPaginatedRequests(params);
+				if (generation !== requestGeneration.current) return null;
 				const pageModelIds = Array.from(
 					new Set(
 						(result.data ?? [])
@@ -587,6 +607,7 @@ export default function UnifiedRequestsTable({
 				);
 				if (missingModelIds.length > 0) {
 					const liveMetadata = await fetchModelMetadata(missingModelIds);
+					if (generation !== requestGeneration.current) return null;
 					setResolvedModelMetadata((prev) => {
 						const merged = new Map(prev);
 						for (const [key, value] of liveMetadata.entries()) {
@@ -613,6 +634,7 @@ export default function UnifiedRequestsTable({
 
 				return result;
 			} catch (error) {
+				if (generation !== requestGeneration.current) return null;
 				console.error("Error fetching requests:", error);
 				if (!background) {
 					setPageCache(new Map());
@@ -621,11 +643,10 @@ export default function UnifiedRequestsTable({
 				}
 				return null;
 			} finally {
-				inFlightPages.current.delete(pageNum);
-				if (!background) {
-					setLoading(false);
-				} else {
-					setIsBackgroundLoading(false);
+				if (generation === requestGeneration.current) {
+					inFlightPages.current.delete(pageNum);
+					if (!background) setLoading(false);
+					else setIsBackgroundLoading(false);
 				}
 			}
 		},
@@ -659,13 +680,18 @@ export default function UnifiedRequestsTable({
 			totalTokensMax,
 			totalTokensOperator,
 			resolvedModelMetadata,
+			queryClient,
+			scope,
+			live,
+			snapshotUpdatedAt,
 		],
 	);
 
 	const refreshCurrentView = useCallback(async () => {
+		if (privateQuery) return privateQuery.refresh();
 		setPageCache(new Map());
 		await fetchPage(page, false);
-	}, [fetchPage, page]);
+	}, [fetchPage, page, privateQuery]);
 
 	// Clear cache when filters change
 	useEffect(() => {
@@ -710,6 +736,7 @@ export default function UnifiedRequestsTable({
 		initialRows,
 		initialTotal,
 		initialTotalPages,
+		snapshotUpdatedAt,
 	]);
 
 	useEffect(
@@ -721,10 +748,14 @@ export default function UnifiedRequestsTable({
 	useEffect(() => {
 		// Check if current page is already cached
 		if (!pageCache.has(page)) {
-			fetchPage(page, false);
+			// Rebuild the cursor chain from cached pages after returning to page 3+.
+			const nextPage = Array.from(pageCursors.keys()).sort((a, b) => a - b)
+				.find((candidate) => candidate <= page && !pageCache.has(candidate));
+			fetchPage(nextPage ?? page, false);
 		}
 
 		// Prefetch next 2 pages in background
+		if (live) return;
 		for (let i = 1; i <= 2; i++) {
 			const nextPage = page + i;
 			if (
@@ -735,7 +766,7 @@ export default function UnifiedRequestsTable({
 				fetchPage(nextPage, true);
 			}
 		}
-	}, [page, totalPages, pageCache, fetchPage]);
+	}, [page, totalPages, pageCache, pageCursors, fetchPage, live]);
 
 	// Get current page data from cache
 	const data = pageCache.get(page) || [];
@@ -751,7 +782,11 @@ export default function UnifiedRequestsTable({
 			setDialogOpen(true);
 		}
 		setDetailLoading(true);
-		void fetchGenerationLog(detailRequestId)
+		const detailPromise = scope ? queryClient.fetchQuery({
+			...privateUsageOptions(scope, "request-detail", { request: detailRequestId, snapshot: String(snapshotUpdatedAt) }, live),
+			queryFn: ({ signal }) => fetchPrivateUsageRequest(detailRequestId, scope, signal),
+		}) : fetchGenerationLog(detailRequestId);
+		void detailPromise
 			.then((result) => {
 				if (cancelled || !result.success || !result.data) return;
 				setSelectedDetail(result.data);
@@ -759,13 +794,14 @@ export default function UnifiedRequestsTable({
 				setSelectedAppName(result.data.appName);
 				setDialogOpen(true);
 			})
+			.catch(() => { if (!cancelled) setSelectedDetail(null); })
 			.finally(() => {
 				if (!cancelled) setDetailLoading(false);
 			});
 		return () => {
 			cancelled = true;
 		};
-	}, [data, detailBasePath, detailRequestId]);
+	}, [data, detailBasePath, detailRequestId, scope, live, queryClient, snapshotUpdatedAt]);
 
 	const handleRowClick = useCallback(
 		(request: RequestRow) => {

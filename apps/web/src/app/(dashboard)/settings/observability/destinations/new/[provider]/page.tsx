@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import BroadcastDestinationCreateClient from "@/components/(gateway)/settings/observability/BroadcastDestinationCreateClient";
+import { Suspense } from "react";
+import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import BroadcastDestinationContent from "./BroadcastDestinationContent";
 import { getDestinationById } from "@/components/(gateway)/settings/observability/destinationCatalog";
-import { fetchSettingsObservabilityDestinationNewInitialData } from "@/lib/fetchers/internal/fetchSettingsObservabilityDestinationNewInitialData";
 
 export async function generateMetadata({
 	params,
@@ -26,28 +27,11 @@ export default async function NewBroadcastDestinationPage({
 	const destination = getDestinationById(provider);
 	if (!destination) notFound();
 
-	const initialData =
-		await fetchSettingsObservabilityDestinationNewInitialData(provider);
-	if (!initialData.destinationFound) notFound();
-
-	if (!initialData.workspaceId) {
-		return (
-			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a workspace to add a destination.
-			</div>
-		);
-	}
-
 	return (
 		<main className="space-y-6">
-			<BroadcastDestinationCreateClient
-				destination={destination}
-				teamName={initialData.teamName}
-				workspaceId={initialData.workspaceId}
-				providerOptions={initialData.providerOptions}
-				modelOptions={initialData.modelOptions}
-				keys={initialData.keys}
-			/>
+			<Suspense fallback={<SettingsSectionFallback />}>
+				<BroadcastDestinationContent destination={destination} />
+			</Suspense>
 		</main>
 	);
 }

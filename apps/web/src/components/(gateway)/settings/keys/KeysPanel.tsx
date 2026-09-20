@@ -2,7 +2,8 @@
 
 import React, { memo, useId, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
+import { settleWrites } from "@/lib/query/settleWrites";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -742,7 +743,7 @@ const getDesktopLayout = () => window.matchMedia(desktopQuery).matches;
 const getServerLayout = () => false;
 
 export default function KeysPanel({ teamsWithKeys }: any) {
-	const router = useRouter();
+	const write = useSettingsWrite();
  const desktop = useSyncExternalStore(subscribeToLayout, getDesktopLayout, getServerLayout);
 	const [filter, setFilter] = useQueryState("keyStatus", parseAsStringLiteral(["enabled", "disabled", "expired", "enabled-disabled", "enabled-expired", "disabled-expired", "all", "none"] as const).withDefault("enabled-disabled"));
 	const [search, setSearch] = useState("");
@@ -834,12 +835,12 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 		if (selectedKeys.length === 0) return;
 		setBulkBusy(true);
 		try {
-			await toast.promise(
-				Promise.all(
-					selectedKeys.map((key: any) =>
-						updateApiKeyAction(String(key.id), { paused })
-					)
-				),
+			const operation = write(settleWrites(
+				selectedKeys.map((key: any) =>
+					updateApiKeyAction(String(key.id), { paused })
+				)
+			));
+			toast.promise(operation,
 				{
 					loading: paused ? "Pausing selected keys..." : "Activating selected keys...",
 					success: paused ? "Selected keys paused" : "Selected keys activated",
@@ -847,8 +848,10 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 						(error && (error as any).message) || "Failed to update selected keys",
 				}
 			);
+			await operation;
 			setSelectedIds(new Set());
-			router.refresh();
+		} catch {
+			// The toast reports the error; retain selection for a retry.
 		} finally {
 			setBulkBusy(false);
 		}
@@ -858,12 +861,12 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 		if (selectedKeys.length === 0) return;
 		setBulkBusy(true);
 		try {
-			await toast.promise(
-				Promise.all(
-					selectedKeys.map((key: any) =>
-						deleteApiKeyAction(String(key.id), String(key.name ?? ""))
-					)
-				),
+			const operation = write(settleWrites(
+				selectedKeys.map((key: any) =>
+					deleteApiKeyAction(String(key.id), String(key.name ?? ""))
+				)
+			));
+			toast.promise(operation,
 				{
 					loading: "Deleting selected keys...",
 					success: "Selected keys deleted",
@@ -871,9 +874,11 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 						(error && (error as any).message) || "Failed to delete selected keys",
 				}
 			);
+			await operation;
 			setBulkDeleteOpen(false);
 			setSelectedIds(new Set());
-			router.refresh();
+		} catch {
+			// Keep the dialog open; successful siblings are still revalidated.
 		} finally {
 			setBulkBusy(false);
 		}

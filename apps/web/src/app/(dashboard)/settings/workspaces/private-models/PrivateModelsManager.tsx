@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateAccountQueries } from "@/lib/query/invalidation";
 import { useTransition } from "react";

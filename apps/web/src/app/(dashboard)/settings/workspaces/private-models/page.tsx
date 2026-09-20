@@ -3,8 +3,7 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
 import { Badge } from "@/components/ui/badge";
-import { fetchSettingsPrivateModels } from "@/lib/fetchers/internal/fetchSettingsPrivateModels";
-import { PrivateModelsManager } from "./PrivateModelsManager";
+import PrivateModelsSection from "./PrivateModelsContent";
 
 export const metadata = { title: "Private Models - Settings" };
 
@@ -18,9 +17,4 @@ export default async function PrivateModelsPage() {
 		/>
 		<Suspense fallback={<SettingsSectionFallback />}><PrivateModelsSection /></Suspense>
 	</div>;
-}
-
-async function PrivateModelsSection() {
-	const data = await fetchSettingsPrivateModels();
-	return <PrivateModelsManager initialModels={data.models} canManage={data.canManage} hasWorkspace={Boolean(data.workspaceId)} />;
 }

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery"
 import { Camera, ExternalLink, Flame, LoaderCircle } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"

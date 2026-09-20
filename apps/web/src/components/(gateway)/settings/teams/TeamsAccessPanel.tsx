@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Check, ExternalLink, Infinity, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { toast } from "sonner";
 
 import TeamInviteDialog from "./TeamInviteDialog";
@@ -126,19 +126,18 @@ export default function TeamsAccessPanel({
 		setBusyRequestId(requestId);
 		try {
 			if (action === "approve") {
-				await toast.promise(approveJoinRequest(requestId), {
+				await toast.promise(approveJoinRequest(requestId).then(() => router.refresh()), {
 					loading: "Approving request...",
 					success: "Request approved",
 					error: (error) => `Failed: ${error?.message || error}`,
 				});
 			} else {
-				await toast.promise(rejectJoinRequest(requestId), {
+				await toast.promise(rejectJoinRequest(requestId).then(() => router.refresh()), {
 					loading: "Rejecting request...",
 					success: "Request rejected",
 					error: (error) => `Failed: ${error?.message || error}`,
 				});
 			}
-			router.refresh();
 		} finally {
 			setBusyRequestId(null);
 		}

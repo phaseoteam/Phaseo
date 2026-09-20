@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import {
 	useCallback,
 	useEffect,
@@ -1491,7 +1492,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		const fallbackIds = getDefaultFavoriteModelIds().filter((id) =>
 			availableFavoriteIds.has(id),
 		);
-		const raw = window.localStorage.getItem(
+		const raw = chatLocalStorage.getItem(
 			MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
 		);
 		if (!raw) {

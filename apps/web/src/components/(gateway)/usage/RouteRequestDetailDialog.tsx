@@ -19,8 +19,10 @@ import RequestDetailDialog from "./RequestDetailDialog";
 
 export function RouteRequestDetailErrorDialog({
 	closeHref,
+	onRetry,
 }: {
 	closeHref: string;
+	onRetry?: () => void;
 }) {
 	const router = useRouter();
 
@@ -40,7 +42,7 @@ export function RouteRequestDetailErrorDialog({
 					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter>
-					<Button variant="outline" onClick={() => router.refresh()}>
+					<Button variant="outline" onClick={onRetry ?? (() => router.refresh())}>
 						Try again
 					</Button>
 					<Button asChild>

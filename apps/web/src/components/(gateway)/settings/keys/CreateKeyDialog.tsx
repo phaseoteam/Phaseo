@@ -1,4 +1,5 @@
 "use client";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import React, { useState } from "react";
 import {
 	Dialog,
@@ -48,6 +49,7 @@ export default function CreateKeyDialog({
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
+	const invalidateSettings = useInvalidatePrivateSettings();
 	const [plainKey, setPlainKey] = useState<string | null>(null);
 	const [selectedPresetId, setSelectedPresetId] =
 		useState<ApiKeyPresetId>("production");
@@ -81,6 +83,7 @@ export default function CreateKeyDialog({
 				getApiKeyPreset(selectedPresetId).limits
 			);
 			setPlainKey(res?.plaintext ?? null);
+			void invalidateSettings();
 			captureProductEvent("api_key_created", {
 				preset: selectedPresetId,
 				surface: "settings",

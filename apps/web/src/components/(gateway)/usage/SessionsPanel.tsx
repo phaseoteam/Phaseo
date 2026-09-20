@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/table";
 import { formatRelativeToNow } from "@/lib/formatRelative";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
+import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
 import { formatErrorListSummary } from "@/lib/gateway/usage/errorListSummary";
 import { cn } from "@/lib/utils";
 import {
@@ -887,6 +888,7 @@ export default function SessionsPanel({
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 			: "UTC";
 	const [sessions, setSessions] = React.useState(initialSessions);
+	const privateQuery = usePrivateUsageRefresh();
 	const [appMetadata, setAppMetadata] = React.useState(
 		() => new Map(initialAppMetadata),
 	);
@@ -911,6 +913,7 @@ export default function SessionsPanel({
 
 	React.useEffect(() => {
 		setSessions(initialSessions);
+		detailCacheRef.current.clear();
 	}, [initialSessions]);
 
 	React.useEffect(() => {
@@ -945,6 +948,7 @@ export default function SessionsPanel({
 	}, []);
 
 	const refresh = React.useCallback(() => {
+		if (privateQuery) return privateQuery.refresh();
 		return (async () => {
 			setIsRefreshing(true);
 			try {
@@ -1006,6 +1010,7 @@ export default function SessionsPanel({
 	}, [
 		appFilter,
 		appMetadata,
+		privateQuery,
 		modelFilter,
 		modelMetadata,
 		providerFilter,

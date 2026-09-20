@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
 	Dialog,
 	DialogContent,
@@ -32,6 +33,7 @@ export default function DeleteOAuthAppDialog({
 	const [error, setError] = useState<string | null>(null);
 	const [confirmation, setConfirmation] = useState("");
 	const router = useRouter();
+	const write = useSettingsWrite();
 
 	const handleDelete = async () => {
 		if (confirmation !== appName) {
@@ -47,7 +49,7 @@ export default function DeleteOAuthAppDialog({
 				"@/app/(dashboard)/settings/oauth-apps/actions"
 			);
 
-			const result = await deleteOAuthAppAction(clientId);
+			const result = await write(deleteOAuthAppAction(clientId));
 
 			if (result.error) {
 				setError(result.error);
@@ -58,7 +60,6 @@ export default function DeleteOAuthAppDialog({
 
 			// Navigate back to the list
 			router.push("/settings/oauth-apps");
-			router.refresh();
 		} catch (err: any) {
 			setError(err.message || "Failed to delete OAuth app");
 		} finally {

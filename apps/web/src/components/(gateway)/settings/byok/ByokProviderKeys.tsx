@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
 	DndContext,
 	DragOverlay,
@@ -184,7 +184,7 @@ export function reorderByokEntries(entries: ByokKeyEntry[], activeId: string, ov
 }
 
 export default function ByokProviderKeys({ provider, entries, modelOptions, apiKeyOptions }: { provider: { id: string; name: string }; entries: ByokKeyEntry[]; modelOptions: Option[]; apiKeyOptions: Option[] }) {
-	const router = useRouter();
+	const write = useSettingsWrite();
 	const [displayEntries, setDisplayEntries] = useState(() => [...entries].sort((a, b) => a.sortOrder - b.sortOrder));
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
@@ -209,15 +209,16 @@ export default function ByokProviderKeys({ provider, entries, modelOptions, apiK
 		if (!previous || !next || next.sample) return;
 		setSaving(true);
 		try {
-			if (previous.routingMode !== next.routingMode) await updateByokKeyAction(id, { always_use: next.routingMode === "priority" });
-			const targetModeEntries = after.filter((entry) => entry.routingMode === next.routingMode).sort((a, b) => a.sortOrder - b.sortOrder);
-			const targetIndex = targetModeEntries.findIndex((entry) => entry.id === id);
-			const startingIndex = previous.routingMode === next.routingMode
-				? before.filter((entry) => entry.routingMode === previous.routingMode).sort((a, b) => a.sortOrder - b.sortOrder).findIndex((entry) => entry.id === id)
-				: targetModeEntries.length - 1;
-			const direction = targetIndex < startingIndex ? "up" : "down";
-			for (let step = 0; step < Math.abs(targetIndex - startingIndex); step += 1) await reorderByokKeyAction(id, direction);
-			router.refresh();
+			await write((async () => {
+				if (previous.routingMode !== next.routingMode) await updateByokKeyAction(id, { always_use: next.routingMode === "priority" });
+				const targetModeEntries = after.filter((entry) => entry.routingMode === next.routingMode).sort((a, b) => a.sortOrder - b.sortOrder);
+				const targetIndex = targetModeEntries.findIndex((entry) => entry.id === id);
+				const startingIndex = previous.routingMode === next.routingMode
+					? before.filter((entry) => entry.routingMode === previous.routingMode).sort((a, b) => a.sortOrder - b.sortOrder).findIndex((entry) => entry.id === id)
+					: targetModeEntries.length - 1;
+				const direction = targetIndex < startingIndex ? "up" : "down";
+				for (let step = 0; step < Math.abs(targetIndex - startingIndex); step += 1) await reorderByokKeyAction(id, direction);
+			})());
 		} catch (error) {
 			setEntries(before);
 			toast.error(error instanceof Error ? error.message : "Failed to reorder key");

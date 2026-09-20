@@ -3,14 +3,11 @@ import { Suspense } from "react";
 import { ArrowUpRight, Plus, Webhook } from "lucide-react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import WebhooksSettingsClient, {
-	type WebhookEndpoint,
-} from "@/components/(gateway)/settings/webhooks/WebhooksSettingsClient";
+import CachedWebhooks from "@/components/(gateway)/settings/webhooks/CachedWebhooks";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { webhookSettingsEnabled } from "@/lib/flags";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { connection } from "next/server";
 
 export const metadata = { title: "Webhooks - Settings" };
@@ -49,10 +46,6 @@ async function WebhooksSettingsContent() {
 		return <div className="space-y-6">{header}<Alert><Webhook className="size-4" /><AlertTitle>Select a workspace</AlertTitle><AlertDescription>Choose a workspace to manage its webhook endpoints.</AlertDescription></Alert></div>;
 	}
 
-	const { endpoints } = await fetchAccountWebApi<{ endpoints: WebhookEndpoint[] }>(
-		`/api/account/settings/webhooks?workspaceId=${encodeURIComponent(workspaceId)}`,
-		accessToken,
-	);
 
 	return (
 		<div className="space-y-6">
@@ -64,7 +57,7 @@ async function WebhooksSettingsContent() {
 					Create an endpoint once, then attach its endpoint ID to video or batch requests. Every delivery is signed, includes a unique event ID, and retries after temporary failures. <a className="inline-flex items-center gap-1 underline underline-offset-4" href="https://phaseo.app/docs/v1/guides/async-video-and-batch" target="_blank" rel="noreferrer">Read the guide <ArrowUpRight className="size-3" /></a>
 				</AlertDescription>
 			</Alert>
-			<WebhooksSettingsClient endpoints={endpoints} />
+			<CachedWebhooks />
 		</div>
 	);
 }

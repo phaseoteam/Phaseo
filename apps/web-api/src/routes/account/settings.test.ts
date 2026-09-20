@@ -10,6 +10,14 @@ const env = {
 
 afterEach(() => vi.unstubAllGlobals());
 
+it.each(["keys", "management-api-keys"])("omits credential material from the %s response", async (path) => {
+	vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input)));
+	const response = await app.request(`https://phaseo.app/api/account/settings/${path}?workspaceId=workspace-1`, { headers: { authorization: "Bearer token" } }, env);
+	expect(response.status).toBe(200);
+	expect(response.headers.get("cache-control")).toContain("no-store");
+	expect(await response.text()).not.toContain("do-not-send");
+});
+
 function authenticatedFetch(input: RequestInfo | URL): Response {
 	const url = input instanceof Request ? input.url : String(input);
 	if (url.includes("/auth/v1/user")) {
@@ -172,12 +180,14 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 	if (url.includes("management_keys")) {
 		return new Response(JSON.stringify([{
 			id: "management-key-1", workspace_id: "workspace-1", name: "Automation",
+			hash: "do-not-send-credential-hash", encrypted_key: "do-not-send-ciphertext",
 			created_at: "2026-01-01T00:00:00Z",
 		}]), { status: 200 });
 	}
 	if (url.includes("/rest/v1/keys?")) {
 		return new Response(JSON.stringify([{
 			id: "key-1", workspace_id: "workspace-1", name: "Production",
+			hash: "do-not-send-credential-hash", encrypted_key: "do-not-send-ciphertext",
 			status: "active", last_used_at: null,
 		}]), { status: 200 });
 	}

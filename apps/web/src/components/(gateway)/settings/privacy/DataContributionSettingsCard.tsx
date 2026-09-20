@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { toast } from "sonner";
 import { BarChart3, Database, Percent, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

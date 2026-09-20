@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	formatModelLabel,
@@ -122,7 +123,7 @@ export function useRoomModelSettings<TParams extends Record<string, unknown>>({
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		const raw = window.localStorage.getItem(storageKey);
+		const raw = chatLocalStorage.getItem(storageKey);
 		if (!raw) {
 			setStoredProfilesById({});
 			setHasLoadedFromStorage(true);
@@ -138,14 +139,14 @@ export function useRoomModelSettings<TParams extends Record<string, unknown>>({
 
 	useEffect(() => {
 		if (typeof window === "undefined" || !hasLoadedFromStorage) return;
-		window.localStorage.setItem(storageKey, JSON.stringify(storedProfilesById));
+		chatLocalStorage.setItem(storageKey, JSON.stringify(storedProfilesById));
 	}, [hasLoadedFromStorage, storageKey, storedProfilesById]);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
 		const normalizedSelectedModelId = selectedModelId.trim();
 		if (!normalizedSelectedModelId) return;
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			selectedModelStorageKey,
 			normalizedSelectedModelId,
 		);
@@ -157,7 +158,7 @@ export function useRoomModelSettings<TParams extends Record<string, unknown>>({
 		if (models.length === 0) return;
 
 		const storedModelId = (
-			window.localStorage.getItem(selectedModelStorageKey) ?? ""
+			chatLocalStorage.getItem(selectedModelStorageKey) ?? ""
 		).trim();
 		if (!storedModelId) {
 			setHasAppliedStoredModelSelection(true);

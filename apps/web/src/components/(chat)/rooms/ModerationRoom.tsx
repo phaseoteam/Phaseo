@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -690,13 +691,13 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		const stored = window.localStorage.getItem(MODERATION_PINNED_STORAGE_KEY);
+		const stored = chatLocalStorage.getItem(MODERATION_PINNED_STORAGE_KEY);
 		setPinnedConversationIds(safeParsePinned(stored));
 	}, []);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		window.localStorage.setItem(
+		chatLocalStorage.setItem(
 			MODERATION_PINNED_STORAGE_KEY,
 			JSON.stringify(pinnedConversationIds),
 		);

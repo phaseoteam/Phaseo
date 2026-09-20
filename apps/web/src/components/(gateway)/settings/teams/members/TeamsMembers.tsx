@@ -14,7 +14,7 @@ import {
 	UserCog,
 	UserRoundX,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useSettingsRouter as useRouter } from "../../PrivateSettingsQuery";
 import Link from "next/link";
 import { toast } from "sonner";
 

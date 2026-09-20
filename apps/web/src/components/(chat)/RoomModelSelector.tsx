@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	compareByReleaseDateDesc,
@@ -297,7 +298,7 @@ export function RoomModelSelector({
 				normalizeFavoriteModelId(option.modelId),
 			),
 		);
-		const raw = window.localStorage.getItem(
+		const raw = chatLocalStorage.getItem(
 			MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
 		);
 		if (!raw) {
@@ -386,7 +387,7 @@ export function RoomModelSelector({
 				next.add(normalizedId);
 			}
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
 					JSON.stringify(Array.from(next)),
 				);

@@ -1,5 +1,6 @@
 "use client";
 
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
 
 import {
@@ -663,7 +664,7 @@ export function ChatHeader({
 		const availableFavoriteIds = new Set(
 			uniqueModelOptions.map((option) => normalizeFavoriteModelId(option.modelId)),
 		);
-		const raw = window.localStorage.getItem(
+		const raw = chatLocalStorage.getItem(
 			MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
 		);
 		if (!raw) {
@@ -1254,7 +1255,7 @@ export function ChatHeader({
 				next.add(normalizedId);
 			}
 			if (typeof window !== "undefined") {
-				window.localStorage.setItem(
+				chatLocalStorage.setItem(
 					MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
 					JSON.stringify(Array.from(next)),
 				);

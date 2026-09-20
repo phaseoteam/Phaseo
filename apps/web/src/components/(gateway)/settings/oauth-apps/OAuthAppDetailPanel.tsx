@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import RegenerateSecretDialog from "./RegenerateSecretDialog";
 import RedirectUriManager from "./RedirectUriManager";
 import DeleteOAuthAppDialog from "./DeleteOAuthAppDialog";
@@ -118,7 +118,7 @@ export default function OAuthAppDetailPanel({
 	userDirectory,
 	currentUserId,
 }: OAuthAppDetailPanelProps) {
-	const router = useRouter();
+	const write = useSettingsWrite();
 	const [copiedId, setCopiedId] = useState(false);
 	const [allowedScopes, setAllowedScopes] = useState(() => normalizeOAuthScopes(oauthApp.allowed_scopes));
 	const [savingScopes, setSavingScopes] = useState(false);
@@ -182,10 +182,9 @@ export default function OAuthAppDetailPanel({
 	const saveScopes = async () => {
 		setSavingScopes(true);
 		try {
-			const result = await updateOAuthAppScopesAction(oauthApp.client_id, allowedScopes);
+			const result = await write(updateOAuthAppScopesAction(oauthApp.client_id, allowedScopes));
 			if (result.error) throw new Error(result.error);
 			toast.success("OAuth scopes updated");
-			router.refresh();
 		} catch (error: any) {
 			toast.error(error?.message || "Failed to update OAuth scopes");
 		} finally {
@@ -653,5 +652,4 @@ export default function OAuthAppDetailPanel({
 		</div>
 	);
 }
-
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
 	ArrowLeft,
@@ -383,6 +384,7 @@ export default function BroadcastDestinationCreateClient(props: {
 }) {
 	const { destination, keys, providerOptions, modelOptions, workspaceId } = props;
 	const router = useRouter();
+	const write = useSettingsWrite();
 	const [destinationName, setDestinationName] = useState(destination.label);
 	const [excludePromptsAndOutputs, setExcludePromptsAndOutputs] = useState(
 		destination.id === "otel_collector",
@@ -425,7 +427,7 @@ export default function BroadcastDestinationCreateClient(props: {
 		if (!canSave || isSaving) return;
 		setIsSaving(true);
 		try {
-			await createBroadcastDestinationAction({
+			await write(createBroadcastDestinationAction({
 				destinationId: destination.id,
 				name: destinationName.trim(),
 				config,
@@ -446,7 +448,7 @@ export default function BroadcastDestinationCreateClient(props: {
 						value: rule.value,
 					})),
 				})),
-			});
+			}));
 			toast.success("Broadcast destination saved");
 			router.push("/settings/broadcast");
 			router.refresh();

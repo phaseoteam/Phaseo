@@ -234,6 +234,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 		try {
 			const result = await rotateProviderCatalogWebhookAction(submitted.providerSlug);
 			setSubmitted({ ...submitted, webhookUrl: result.webhookUrl, webhookSecret: result.webhookSecret });
+			void invalidateAccountQueries(queryClient);
 			toast.success("Webhook signing secret rotated");
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : "Could not rotate webhook secret");

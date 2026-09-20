@@ -62,6 +62,7 @@ import {
 import { Logo } from "@/components/Logo";
 import { formatRelativeToNow } from "@/lib/formatRelative";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
+import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
 import {
 	formatDateTime,
 	formatWordyDateTime,
@@ -1731,6 +1732,7 @@ export default function AsyncJobsPanel({
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 			: "UTC";
 	const [jobs, setJobs] = React.useState(initialJobs);
+	const privateQuery = usePrivateUsageRefresh();
 	const [resolvedProviderNames, setResolvedProviderNames] = React.useState(
 		() => new Map(providerNames ?? []),
 	);
@@ -1765,6 +1767,8 @@ export default function AsyncJobsPanel({
 
 	React.useEffect(() => {
 		setJobs(initialJobs);
+		detailCacheRef.current.clear();
+		requestDetailCacheRef.current.clear();
 	}, [initialJobs]);
 
 	React.useEffect(() => {
@@ -1787,6 +1791,7 @@ export default function AsyncJobsPanel({
 	}, []);
 
 	const refresh = React.useCallback(() => {
+		if (privateQuery) return privateQuery.refresh();
 		return (async () => {
 			setIsRefreshing(true);
 			try {
@@ -1839,6 +1844,7 @@ export default function AsyncJobsPanel({
 		})();
 	}, [
 		includeWithoutWebhook,
+		privateQuery,
 		kindFilter,
 		providerFilter,
 		refreshLimit,

@@ -1,8 +1,4 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import CreateOAuthAppDialog from "@/components/(gateway)/settings/oauth-apps/CreateOAuthAppDialog";
-import OAuthAppsPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppsPanel";
-import { Button } from "@/components/ui/button";
 import {
 	Empty,
 	EmptyDescription,
@@ -17,7 +13,7 @@ import {
 	THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE,
 	isThirdPartyOAuthEnabled,
 } from "@/lib/oauth/thirdPartyOAuth";
-import { fetchSettingsOAuthAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsOAuthAppsInitialData";
+import OAuthAppsContent from "./OAuthAppsContent";
 
 export const metadata = {
 	title: "OAuth Apps - Settings",
@@ -93,59 +89,6 @@ export default function OAuthAppsPage() {
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<OAuthAppsContent />
 			</Suspense>
-		</div>
-	);
-}
-
-async function OAuthAppsContent() {
-	const initialData = await fetchSettingsOAuthAppsInitialData();
-
-	if (!initialData.signedIn) {
-		return (
-			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
-				<EmptyHeader>
-					<EmptyMedia variant="icon">
-						<UserRoundX className="h-5 w-5" />
-					</EmptyMedia>
-					<EmptyTitle>Please sign in</EmptyTitle>
-					<EmptyDescription>
-						Sign in to create and manage OAuth apps.
-					</EmptyDescription>
-				</EmptyHeader>
-			</Empty>
-		);
-	}
-
-	return (
-		<div className="space-y-6">
-			<SettingsPageHeader
-				title="OAuth Apps"
-				meta={
-					<span className="inline-flex items-center rounded-md bg-yellow-100 dark:bg-yellow-900 px-2 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-200">
-						ALPHA
-					</span>
-				}
-				description="Create OAuth applications to enable third-party integrations with your Phaseo account."
-				actions={
-					<>
-						<Link
-							href="https://phaseo.app/docs/v1/guides/oauth-quickstart"
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							<Button variant="outline" size="sm">
-								View Docs
-							</Button>
-						</Link>
-						<CreateOAuthAppDialog
-							currentTeamId={initialData.initialTeamId}
-						/>
-					</>
-				}
-			/>
-			<OAuthAppsPanel
-				oauthApps={initialData.oauthApps}
-			/>
 		</div>
 	);
 }
