@@ -206,8 +206,33 @@ describe("Phaseo MCP server metadata", () => {
 
 		const result = await client.callTool({ name: "models_list", arguments: { sortBy: "input_price", limit: 2 } });
 		expect(result.structuredContent).toMatchObject({ models: [
-			{ id: "lab/cheap", gatewayAvailable: false, gatewayModelId: null },
-			{ id: "lab/expensive", gatewayAvailable: true, gatewayModelId: "lab/expensive" },
+			{
+				id: "lab/cheap",
+				gatewayAvailable: false,
+				gatewayModelId: null,
+				providerSupport: [{
+					providerId: "provider",
+					providerName: "Provider",
+					providerModelId: "lab/cheap",
+					status: "active",
+					routable: false,
+					supportedParameters: [],
+				}],
+			},
+			{
+				id: "lab/expensive",
+				gatewayAvailable: true,
+				gatewayModelId: "lab/expensive",
+				availableProviders: ["provider"],
+				providerSupport: [{
+					providerId: "provider",
+					providerName: "Provider",
+					providerModelId: "lab/expensive",
+					status: "active",
+					routable: true,
+					supportedParameters: [],
+				}],
+			},
 		] });
 	});
 

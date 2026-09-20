@@ -155,7 +155,7 @@
       "user_prompt": "Find the five cheapest text-input models by input-token price with at least 128,000 context tokens that are currently available through the Phaseo Gateway.",
       "file_attachment_urls": null,
       "tools_triggered": "models_list",
-      "expected_output": "Returns up to five matching models in ascending input-price order with current prices, context limits, Gateway identifiers, and informational model URLs.",
+      "expected_output": "Returns up to five matching models in ascending input-price order with current prices, context limits, structured provider support, Gateway identifiers, and informational model URLs.",
       "expected_output_url": null
     },
     {

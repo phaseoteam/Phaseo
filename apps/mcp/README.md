@@ -8,7 +8,7 @@ It reuses Phaseo OAuth permissions rather than creating a second identity system
 
 The MCP server supports:
 
-- model search, deterministic price sorting, and model details;
+- model search, deterministic price sorting, model details, and structured provider support;
 - named general, coding, agentic, and evaluation-cost benchmark rankings;
 - provider availability;
 - model cost estimates;

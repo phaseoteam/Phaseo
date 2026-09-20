@@ -171,6 +171,14 @@ const modelSummarySchema = {
 	gatewayModelId: z.string().nullable(),
 	modelUrl: z.string(),
 	availableProviders: z.array(z.string()),
+	providerSupport: z.array(z.object({
+		providerId: z.string(),
+		providerName: z.string().nullable(),
+		providerModelId: z.string().nullable(),
+		status: z.enum(["active", "coming_soon", "inactive"]),
+		routable: z.boolean(),
+		supportedParameters: z.array(z.string()),
+	})),
 };
 
 const benchmarkEntrySchema = {
@@ -243,6 +251,14 @@ function modelSummary(model: Awaited<ReturnType<typeof listModels>>[number]) {
 		gatewayModelId: gatewayAvailable ? model.id : null,
 		modelUrl: `https://phaseo.app/models/${model.id}`,
 		availableProviders: model.offers.filter((offer) => offer.routable).map((offer) => offer.provider.id),
+		providerSupport: model.offers.map((offer) => ({
+			providerId: offer.provider.id,
+			providerName: offer.provider.name,
+			providerModelId: offer.model,
+			status: offer.status,
+			routable: offer.routable,
+			supportedParameters: offer.capabilities.parameters,
+		})),
 	};
 }
 
@@ -573,7 +589,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		"models_list",
 		{
 			title: "Search Phaseo models",
-			description: "Use this when the user wants to find or compare current AI models, including the cheapest models by input or output token price. Filters and sorts the live Phaseo catalogue; it does not measure model quality. Read-only.",
+			description: "Use this when the user wants to find or compare current AI models, including the cheapest models by input or output token price and the providers supporting each model. Filters and sorts the live Phaseo catalogue; it does not measure model quality. Read-only.",
 			inputSchema: {
 				query: z.string().max(200).optional(),
 				provider: z.string().max(100).optional(),
@@ -621,7 +637,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		"model_get",
 		{
 			title: "Get a Phaseo model",
-			description: "Get live pricing, capabilities, and provider availability for one Phaseo model ID. Read-only.",
+			description: "Get live pricing, capabilities, and structured provider support for one Phaseo model ID. Read-only.",
 			inputSchema: { modelId: z.string().min(1).max(200) },
 			outputSchema: { model: z.object(modelSummarySchema) },
 			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
