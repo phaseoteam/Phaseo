@@ -83,6 +83,9 @@ import ProviderCard, {
 	PROVIDER_STATUS_META,
 } from "@/components/(data)/model/pricing/ProviderCard";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
+import { ProviderRouteName } from "./ProviderRouteName";
+import { ProviderRouteSeparator } from "./ProviderRouteSeparator";
+import { isProviderRouteVariant } from "./providerRoutePresentation";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
@@ -114,7 +117,6 @@ import {
     subscribeProviderInspectorSelection,
     type ProviderInspectorSelection,
 } from "@/components/(data)/model/pricing/providerInspectorSync";
-import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 const SORT_QUERY_KEY = "sort";
 const SORT_DIRECTION_QUERY_KEY = "dir";
 const PROVIDER_QUERY_KEY = "provider";
@@ -216,7 +218,6 @@ const DEFAULT_PROVIDER_STATUS_FILTERS: ProviderStatusFilter[] = [
     "routable",
     "preview",
     "inactive",
-    "external",
 ];
 
 function providerStatusFilterKey(status: CanonicalGatewayStatus): ProviderStatusFilter {
@@ -396,6 +397,11 @@ function resolveProviderGatewayStatus(provider: ProviderPricing): CanonicalGatew
             }),
         ),
     );
+}
+
+function getProviderOfferingSectionRank({ provider, plan }: ProviderOffering): number {
+    if (resolveProviderGatewayStatus(provider) === "external") return 2;
+    return isProviderRouteVariant(provider.provider, plan) ? 1 : 0;
 }
 
 function UptimeHeaderHoverContent() {
@@ -680,7 +686,6 @@ function ProviderServiceTierRow({
 	const cacheReadPrice = showCacheReadColumn
 		? buildProviderTablePriceSummary(sections, "cached")
 		: null;
-	const tierMeta = getTierFilterMeta(plan);
 	const providerName = getProviderServiceTierDisplayName(provider);
 	const logoProviderId = sections.logoProviderId;
 	const discountBadge = getProviderTableDiscountBadge(sections);
@@ -714,7 +719,7 @@ function ProviderServiceTierRow({
 				{isActive ? <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" /> : null}
 				<div className="flex items-center gap-1.5 whitespace-nowrap">
 					{showDisclosureGutter ? <span aria-hidden="true" className="size-5 shrink-0" /> : null}
-					<span className="inline-flex items-center gap-2.5 font-semibold text-foreground">
+					<span className="inline-flex w-max shrink-0 items-center gap-2.5 font-semibold text-foreground">
 						<span className="relative flex size-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 dark:border-zinc-800 dark:group-hover:border-zinc-700">
 							<span className="relative size-3.5">
 								<Logo
@@ -726,12 +731,7 @@ function ProviderServiceTierRow({
 								/>
 							</span>
 						</span>
-						<span>
-							{providerName}{" "}
-							<span className={cn("font-medium", tierMeta.iconClassName)}>
-								({formatServiceTierLabel(plan)})
-							</span>
-						</span>
+						<ProviderRouteName provider={provider.provider} plan={plan} showTierHelp />
 						<ProviderServiceTierInfoIcons provider={provider} plan={plan} />
 						{discountBadge ? (
 							<span className="whitespace-nowrap text-xs font-medium text-emerald-600 dark:text-emerald-400">
@@ -1286,6 +1286,7 @@ export default function ModelPricingClient({
         ignoredProviderCount > 0;
     const activeFilterCount =
         DEFAULT_PROVIDER_STATUS_FILTERS.filter((filter) => !providerStatusFilters.includes(filter)).length +
+        (providerStatusFilters.includes("external") ? 1 : 0) +
         (privacyFilter === "workspace" ? 0 : 1);
     const visibleProviders = filteredProviders;
     const visibleOfferings = useMemo(() => {
@@ -1376,18 +1377,28 @@ export default function ModelPricingClient({
 		});
 	}, [liveRuntimeStats, pricingTimeMs, privacyFilter, requestedProviderId, sort, sortDirection, visibleProviders, workspacePrivacySettings]);
 	const isGroupedProviderView = sort === "default";
-	const displayedOfferings = useMemo(
-		() => sort === "default"
-			? visibleOfferings.filter(
-				(offering) =>
-					offering.isPrimary ||
-					expandedServiceTierProviderIds.has(
-						offering.provider.provider.api_provider_id,
-					),
-			)
-			: visibleOfferings,
-		[expandedServiceTierProviderIds, sort, visibleOfferings],
-	);
+	const { displayedOfferings, firstVariantIndex, firstExternalIndex } = useMemo(() => {
+		const primaryOfferings = new Map(
+			visibleOfferings.filter((offering) => offering.isPrimary).map((offering) =>
+				[offering.provider.provider.api_provider_id, offering] as const,
+			),
+		);
+		// Expanded tiers stay with their provider in the compact default view.
+		const sectionRank = (offering: ProviderOffering) => getProviderOfferingSectionRank(
+			isGroupedProviderView
+				? primaryOfferings.get(offering.provider.provider.api_provider_id) ?? offering
+				: offering,
+		);
+		const displayedOfferings = visibleOfferings.filter((offering) =>
+			!isGroupedProviderView || offering.isPrimary ||
+			expandedServiceTierProviderIds.has(offering.provider.provider.api_provider_id),
+		).sort((a, b) => sectionRank(a) - sectionRank(b));
+		return {
+			displayedOfferings,
+			firstVariantIndex: displayedOfferings.findIndex((offering) => sectionRank(offering) === 1),
+			firstExternalIndex: displayedOfferings.findIndex((offering) => sectionRank(offering) === 2),
+		};
+	}, [expandedServiceTierProviderIds, isGroupedProviderView, visibleOfferings]);
 	const toggleServiceTiers = useCallback((providerId: string) => {
 		setExpandedServiceTierProviderIds((current) => {
 			const next = new Set(current);
@@ -1884,8 +1895,7 @@ export default function ModelPricingClient({
                                                 activeInspectorSelection?.providerId === providerId &&
 											(activeInspectorSelection.serviceTier ?? getProviderDefaultPlan(prov)) === plan;
 
-                                            if (!isPrimary) {
-											return (
+                                            const row = !isPrimary ? (
 												<ProviderServiceTierRow
 													key={`${providerId}-${plan}`}
 													provider={prov}
@@ -1899,10 +1909,7 @@ export default function ModelPricingClient({
 													runtimeStats={runtimeStatsForTier ?? null}
 													showDisclosureGutter={isGroupedProviderView}
 												/>
-											);
-										}
-
-										return (
+										) : (
 											<ProviderCard
 												key={`${providerId}-${plan}`}
 												provider={prov}
@@ -1929,6 +1936,17 @@ export default function ModelPricingClient({
 													onToggleServiceTiers={isGroupedProviderView ? () => toggleServiceTiers(providerId) : undefined}
 												/>
 										);
+                                        return (
+                                            <React.Fragment key={providerId + "-" + plan}>
+                                                {index === firstVariantIndex ? (
+                                                    <ProviderRouteSeparator colSpan={showCacheReadColumn ? 7 : 6} />
+                                                ) : null}
+                                                {index === firstExternalIndex ? (
+                                                    <ProviderRouteSeparator colSpan={showCacheReadColumn ? 7 : 6} kind="external" />
+                                                ) : null}
+                                                {row}
+                                            </React.Fragment>
+                                        );
 									})}
                                     </TableBody>
                                 </Table>

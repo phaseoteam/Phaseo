@@ -1,5 +1,6 @@
 "use client";
 
+import { ProviderRouteName } from "./ProviderRouteName";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
 import Link from "next/link";
@@ -2456,7 +2457,6 @@ export default function ProviderCard({
 			? formatDiscountTimeRemaining(soonestDiscountEnd)
 			: null;
 	const selectedPlanLabel = getPricingPlanLabel(selectedPlan);
-	const tablePlanLabel = getPricingPlanLabel(tablePlan);
 	const selectedPlanTheme = getPlanTheme(selectedPlan);
 	const tablePlanTheme = getPlanTheme(tablePlan);
 	const selectedPlanPriceClass = selectedPlan === "free" ? "text-foreground" : selectedPlanTheme.accent;
@@ -3205,7 +3205,6 @@ export default function ProviderCard({
 			value: provider.provider.default_data_regions?.join(", ") || "Unknown",
 		},
 	];
-	const canExpandServiceTiers = typeof onToggleServiceTiers === "function";
 
 	return (
 		<>
@@ -3268,13 +3267,8 @@ export default function ProviderCard({
 								</div>
 								<span className="inline-flex items-baseline gap-1 whitespace-nowrap">
 									<span className="font-semibold text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] group-hover/provider:text-foreground group-hover/provider:decoration-current">
-										{displayName}
+										<ProviderRouteName provider={provider.provider} plan={tablePlan} nameOverride={formattedDisplayName} />
 									</span>
-									{availablePlans.length > 1 ? (
-										<span className={cn("font-medium", tablePlanTheme.accent)}>
-											({tablePlanLabel})
-										</span>
-									) : null}
 								</span>
 							</Link>
 							<div className="flex shrink-0 items-center gap-1">
