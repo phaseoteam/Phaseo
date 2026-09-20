@@ -85,7 +85,7 @@ import ProviderCard, {
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import { ProviderRouteName } from "./ProviderRouteName";
 import { ProviderRouteSeparator } from "./ProviderRouteSeparator";
-import { isProviderRouteVariant } from "./providerRoutePresentation";
+import { getProviderListingCategory, isProviderRouteVariant } from "./providerRoutePresentation";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
@@ -219,13 +219,6 @@ const DEFAULT_PROVIDER_STATUS_FILTERS: ProviderStatusFilter[] = [
     "preview",
     "inactive",
 ];
-
-function providerStatusFilterKey(status: CanonicalGatewayStatus): ProviderStatusFilter {
-    if (status === "external") return "external";
-    if (["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"].includes(status)) return "routable";
-    if (["coming_soon", "internal_testing"].includes(status)) return "preview";
-    return "inactive";
-}
 
 function toggleProviderStatusFilter(
     current: ProviderStatusFilter[],
@@ -400,7 +393,7 @@ function resolveProviderGatewayStatus(provider: ProviderPricing): CanonicalGatew
 }
 
 function getProviderOfferingSectionRank({ provider, plan }: ProviderOffering): number {
-    if (resolveProviderGatewayStatus(provider) === "external") return 2;
+    if (getProviderListingCategory(provider.provider, resolveProviderGatewayStatus(provider)) === "external") return 2;
     return isProviderRouteVariant(provider.provider, plan) ? 1 : 0;
 }
 
@@ -1004,7 +997,7 @@ export default function ModelPricingClient({
 			) return false;
 			if (provider.provider.api_provider_id === requestedProviderId) return true;
 			return providerStatusFilters.includes(
-				providerStatusFilterKey(resolveProviderGatewayStatus(provider)),
+				getProviderListingCategory(provider.provider, resolveProviderGatewayStatus(provider)),
 			);
 		});
         const sectionCache = new Map<string, ReturnType<typeof buildProviderSections>>();
@@ -1977,7 +1970,7 @@ export default function ModelPricingClient({
                             </Button>
                         </div>
                     </Empty>
-                ) : sortedProviders.length > 0 ? (
+                ) : hasApiProviders ? (
                     <Empty className="rounded-lg border p-8">
                         <EmptyHeader>
                             <EmptyMedia variant="icon">
@@ -1985,7 +1978,7 @@ export default function ModelPricingClient({
                             </EmptyMedia>
                             <EmptyTitle>No visible API providers</EmptyTitle>
                             <EmptyDescription>
-                                Provider availability exists for this model, but nothing is currently visible.
+                                No providers match your current filters. Open Filters to adjust provider statuses or include External Providers.
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>

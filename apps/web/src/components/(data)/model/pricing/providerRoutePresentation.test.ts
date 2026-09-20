@@ -1,6 +1,26 @@
-import { getProviderRoutePresentation, isProviderRouteVariant } from "./providerRoutePresentation";
+import { getProviderListingCategory, getProviderRoutePresentation, isProviderRouteVariant } from "./providerRoutePresentation";
+import { resolveGatewayStatus } from "./providerGatewayStatus";
 
 const openai = { api_provider_id: "openai", api_provider_name: "OpenAI" };
+
+describe("provider listing categories", () => {
+    it.each(["planned", "implementing", "testing", "enabled"])("keeps external %s offers in the external category", phaseoStatus => {
+        const provider = { api_provider_id: "catalogue", api_provider_name: "Catalogue", status: "external" };
+        const lifecycleStatus = resolveGatewayStatus({
+            isActiveGateway: false,
+            providerStatus: provider.status,
+            phaseoStatus,
+        });
+        expect(getProviderListingCategory(provider, lifecycleStatus)).toBe("external");
+    });
+
+    it("preserves lifecycle categories for integrated providers", () => {
+        expect(getProviderListingCategory(openai, "coming_soon")).toBe("preview");
+        expect(getProviderListingCategory(openai, "internal_testing")).toBe("preview");
+        expect(getProviderListingCategory(openai, "deranked_lvl1")).toBe("routable");
+        expect(getProviderListingCategory(openai, "inactive")).toBe("inactive");
+    });
+});
 
 describe("provider route presentation", () => {
     it("does not use provider headquarters as a routing region", () => {
