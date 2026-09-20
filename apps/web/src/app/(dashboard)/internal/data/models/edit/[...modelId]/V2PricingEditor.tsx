@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { RegionSelection, ProviderResidencySummary } from "./RegionalRoutingFields";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { UnsavedChangesGuard } from "@/components/(data)/UnsavedChangesGuard";
@@ -227,8 +227,11 @@ export default function V2PricingEditor({ modelId, focusProviderId }: { modelId:
 	const [endDate, setEndDate] = useState(nowInput);
 	const [revisionStarts, setRevisionStarts] = useState(nowInput);
 	const [showHistory, setShowHistory] = useState(false);
-	const searchParams = useSearchParams();
-	const [routeSettingsOpen, setRouteSettingsOpen] = useState(searchParams.get("routing") === "1");
+	const [routing, setRouting] = useQueryState(
+		"routing",
+		parseAsStringLiteral(["1"]).withOptions({ shallow: true, history: "replace", scroll: false }),
+	);
+	const routeSettingsOpen = routing === "1";
 	const [loadError, setLoadError] = useState<string | null>(null);
 	const [skuQuery, setSkuQuery] = useState("");
 	const [showAllProviders, setShowAllProviders] = useState(false);
@@ -412,7 +415,7 @@ export default function V2PricingEditor({ modelId, focusProviderId }: { modelId:
 				options={visibleProviders.map((provider) => ({ value: provider.provider_slug, label: provider.name + " · " + routes.filter((route) => route.provider_slug === provider.provider_slug).length + " routes", icon: <Logo id={provider.provider_slug} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))} /></div>
 			<Button variant="outline" className="min-h-11" onClick={() => setShowAllProviders((value) => !value)}>{showAllProviders ? "Connected providers" : "Find another provider"}</Button>
 			<Button variant="outline" className="min-h-11" onClick={() => setAddingRoute((value) => !value)}><Plus className="size-4" />Add route</Button>
-			<Button variant="outline" className="min-h-11" disabled={!activeProviderRoutes.length} onClick={() => setRouteSettingsOpen(true)}><Settings2 className="size-4" />Routing & regions</Button>
+			<Button variant="outline" className="min-h-11" disabled={!activeProviderRoutes.length} onClick={() => void setRouting("1")}><Settings2 className="size-4" />Routing & regions</Button>
 		</div>
 		{(!activeProviderRoutes.length || addingRoute) ? <div className="space-y-4 rounded-xl border border-dashed p-5"><h3 className="font-medium">Connect {providerName || "a provider"}</h3><p className="text-sm text-muted-foreground">Enter the model ID used by this provider. The new route starts with gateway routing disabled.</p><Input aria-label="Provider model ID" value={providerModelSlug} onChange={(event) => setProviderModelSlug(event.target.value)} /><div className="space-y-2"><div className="flex items-center gap-2"><Checkbox id="new-stealth-provider" checked={stealthProvider} onCheckedChange={setStealthProvider} /><Label htmlFor="new-stealth-provider">Stealth provider</Label></div><p className="text-xs text-muted-foreground">Show the provider as Stealth publicly. The real provider and upstream model ID stay private.</p></div><Button disabled={!activeProviderSlug || !providerModelSlug.trim() || busyKey !== null} onClick={() => void connectProvider()}>Connect provider</Button></div> : null}
 		{activeProviderRoutes.length ? <>
@@ -498,7 +501,7 @@ export default function V2PricingEditor({ modelId, focusProviderId }: { modelId:
 			</SheetContent>
 		</Sheet>
 
-		<Sheet open={routeSettingsOpen} onOpenChange={setRouteSettingsOpen}>
+		<Sheet open={routeSettingsOpen} onOpenChange={(open) => void setRouting(open ? "1" : null)}>
 			<SheetContent inert={busyKey !== null} className="data-[side=right]:w-full data-[side=right]:sm:max-w-xl">
 				<SheetHeader><SheetTitle>{providerName} route settings</SheetTitle><SheetDescription>Regional routing, availability and token limits.</SheetDescription></SheetHeader>
 				<div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 pb-5">{source.providers.filter((provider) => provider.provider_slug === activeProviderSlug).map((provider) => <ProviderResidencySummary key={provider.provider_slug} provider={provider} />)}{activeProviderRoutes.map((route) => <fieldset disabled={busyKey !== null} key={route.provider_model_id} className="space-y-4 border-b pb-6">

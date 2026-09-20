@@ -44,6 +44,7 @@ Run the narrowest relevant checks while iterating. Run a production build when a
 - Use Tailwind utilities and established tokens; keep `src/app/globals.css` for tokens, resets, and truly global behavior.
 - Keep product copy concise. Add helper text only when it prevents a likely misunderstanding.
 - Prefer URL state for shareable filters, searches, tabs, and pagination, using existing `nuqs` patterns. Use TanStack Query for client revalidation and request deduplication.
+- Use `nuqs` for query-backed sheets and dialogs, with `shallow: true` and `scroll: false` for client-only state. Preserve the intended push/replace history behavior, deep-link hydration, Back/Forward synchronization, and unrelated query parameters. Do not use router navigation or hand-written History API updates for these controls; reserve route navigation for actual page changes and server-backed queries.
 - Keep transient state local, derive values during render where possible, and avoid effects that merely synchronize duplicate state.
 
 ## Web Testing and Safety
