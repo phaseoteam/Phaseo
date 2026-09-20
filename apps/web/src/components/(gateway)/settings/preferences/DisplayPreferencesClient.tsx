@@ -143,10 +143,37 @@ function supportedTimeZones() {
 		supportedValuesOf?: (key: "timeZone") => string[];
 	};
 	try {
-		return intl.supportedValuesOf?.("timeZone") ?? FALLBACK_TIME_ZONES;
+		return Array.from(new Set(["UTC", ...(intl.supportedValuesOf?.("timeZone") ?? FALLBACK_TIME_ZONES)]));
 	} catch {
 		return FALLBACK_TIME_ZONES;
 	}
+}
+
+function timeZoneOffsetMinutes(timeZone: string, date: Date) {
+	try {
+		const offset = new Intl.DateTimeFormat("en-US", {
+			timeZone,
+			timeZoneName: "shortOffset",
+			hour: "2-digit",
+		})
+			.formatToParts(date)
+			.find((part) => part.type === "timeZoneName")?.value;
+		if (!offset || offset === "GMT" || offset === "UTC") return 0;
+		const match = offset.match(/^(?:GMT|UTC)([+-])(\d{1,2})(?::?(\d{2}))?$/);
+		if (!match) return 0;
+		const sign = match[1] === "-" ? -1 : 1;
+		return sign * (Number(match[2]) * 60 + Number(match[3] ?? "0"));
+	} catch {
+		return 0;
+	}
+}
+
+function formatTimeZoneOffset(offsetMinutes: number) {
+	const sign = offsetMinutes < 0 ? "-" : "+";
+	const absoluteMinutes = Math.abs(offsetMinutes);
+	const hours = Math.floor(absoluteMinutes / 60).toString().padStart(2, "0");
+	const minutes = (absoluteMinutes % 60).toString().padStart(2, "0");
+	return `UTC${sign}${hours}:${minutes}`;
 }
 
 function PreferenceRow({
@@ -170,7 +197,7 @@ function PreferenceRow({
 				{children}
 				{preview ? (
 					<div className="flex items-baseline justify-between gap-4 px-1 text-xs">
-						<span className="font-medium uppercase tracking-[0.12em] text-muted-foreground/70">Preview</span>
+						<span className="font-medium text-muted-foreground/70">Preview</span>
 						<span className="truncate text-right font-medium tabular-nums text-foreground/80">{preview}</span>
 					</div>
 				) : null}
@@ -412,18 +439,35 @@ export default function DisplayPreferencesClient({
 		() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
 		[],
 	);
+	const timeZoneOffsetDate = React.useMemo(() => new Date(), []);
 	const timeZoneOptions = React.useMemo(
-		() => [
-			{
-				value: "system",
-				label: `System default (${systemTimeZone.replaceAll("_", " ")})`,
-			},
-			...timeZones.map((timeZone) => ({
-				value: timeZone,
-				label: timeZone.replaceAll("_", " "),
-			})),
-		],
-		[systemTimeZone, timeZones],
+		() => {
+			const options = timeZones
+				.map((timeZone) => {
+					const offsetMinutes = timeZoneOffsetMinutes(timeZone, timeZoneOffsetDate);
+					return {
+						value: timeZone,
+						label: `${timeZone.replaceAll("_", " ")} (${formatTimeZoneOffset(offsetMinutes)})`,
+						offsetMinutes,
+					};
+				})
+				.sort(
+					(first, second) =>
+						first.offsetMinutes - second.offsetMinutes ||
+						first.value.localeCompare(second.value),
+				);
+			const systemOffset = formatTimeZoneOffset(
+				timeZoneOffsetMinutes(systemTimeZone, timeZoneOffsetDate),
+			);
+			return [
+				{
+					value: "system",
+					label: `System default (${systemTimeZone.replaceAll("_", " ")}, ${systemOffset})`,
+				},
+				...options,
+			];
+		},
+		[systemTimeZone, timeZoneOffsetDate, timeZones],
 	);
 	const dirty = JSON.stringify(preferences) !== JSON.stringify(savedPreferences);
 
@@ -516,6 +560,7 @@ export default function DisplayPreferencesClient({
 						onValueChange={(value) => update("timeZone", value)}
 						options={timeZoneOptions}
 						placeholder="Choose a time zone"
+						showScrollbar
 					/>
 				</PreferenceRow>
 				<PreferenceRow

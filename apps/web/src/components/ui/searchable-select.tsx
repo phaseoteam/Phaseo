@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 
-export function SearchableSelect({ id, label, value, options, onValueChange, disabled = false, placeholder = "Select…", allowCustom = false }: {
+export function SearchableSelect({ id, label, value, options, onValueChange, disabled = false, placeholder = "Select…", allowCustom = false, showScrollbar = false }: {
   id?: string; label: string; value: string;
   options: Array<{ value: string; label: string; disabled?: boolean; icon?: ReactNode; description?: string }>;
-  onValueChange: (value: string) => void; disabled?: boolean; placeholder?: string; allowCustom?: boolean;
+  onValueChange: (value: string) => void; disabled?: boolean; placeholder?: string; allowCustom?: boolean; showScrollbar?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -24,7 +24,7 @@ export function SearchableSelect({ id, label, value, options, onValueChange, dis
         const text = [value, ...(keywords ?? [])].join(" ").toLowerCase();
         return (search.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).every((word) => text.includes(word)) ? 1 : 0;
       }}><CommandInput aria-label={`Search ${label.toLowerCase()}`} placeholder={`Search ${label.toLowerCase()}…`} value={query} onValueChange={setQuery} />
-        <CommandList className="max-h-64 overscroll-contain"><CommandEmpty>No matches found.</CommandEmpty><CommandGroup>
+        <CommandList showScrollbar={showScrollbar} className="max-h-64 overscroll-contain"><CommandEmpty>No matches found.</CommandEmpty><CommandGroup>
           {options.map((option) => <CommandItem key={option.value} value={option.value} keywords={[option.label]} disabled={option.disabled} data-checked={option.value === value} onSelect={() => choose(option.value)}>{option.icon}<span className="min-w-0"><span className="block truncate">{option.label}</span>{option.description ? <span className="block truncate text-xs text-muted-foreground">{option.description}</span> : null}</span></CommandItem>)}
           {allowCustom && query.trim() && !options.some((option) => option.value === query.trim()) ? <CommandItem value={query.trim()} onSelect={() => choose(query.trim())}>Use “{query.trim()}”</CommandItem> : null}
         </CommandGroup></CommandList>
