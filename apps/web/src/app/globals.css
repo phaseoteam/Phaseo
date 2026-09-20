@@ -417,12 +417,39 @@
 }
 
 @layer utilities {
-	[data-obfuscate-pii="true"] [data-pii="true"] {
+	[data-obfuscate-pii="true"] [data-pii="true"]:not([data-pii-revealed="true"]) {
 		filter: blur(0.34rem);
 		-webkit-filter: blur(0.34rem);
 		user-select: none;
 		-webkit-user-select: none;
 		transition: filter 160ms ease;
+	}
+
+	html[data-density="compact"] [data-slot="preference-row"] {
+		padding-block: 0.625rem;
+	}
+
+	html[data-density="compact"] [data-slot="table-head"] {
+		height: 2rem;
+		padding-inline: 0.375rem;
+	}
+
+	html[data-density="compact"] [data-slot="table-cell"] {
+		padding: 0.375rem;
+	}
+
+	html[data-density="compact"] [data-slot="select-item"],
+	html[data-density="compact"] [data-slot="dropdown-menu-item"],
+	html[data-density="compact"] [data-slot="dropdown-menu-sub-trigger"] {
+		min-height: 1.5rem;
+		padding-block: 0.25rem;
+	}
+
+	html[data-density="compact"] [data-slot="input"],
+	html[data-density="compact"] [data-slot="select-trigger"][data-size="default"],
+	html[data-density="compact"] [data-slot="button"][data-size="default"] {
+		height: 1.75rem;
+		min-height: 1.75rem;
 	}
 }
 

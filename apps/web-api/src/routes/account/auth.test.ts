@@ -129,6 +129,10 @@ describe("account auth routes", () => {
 					display_dark_palette: "midnight",
 					display_light_accent: "#7c3aed",
 					display_dark_accent: "#a78bfa",
+					display_density: "compact",
+					display_code_language: "python",
+					display_landing_page: "monitor",
+					obfuscate_info: true,
 				}]), { status: 200 });
 			}
 			if (url.includes("workspace_members")) {
@@ -176,6 +180,10 @@ describe("account auth routes", () => {
 				darkPalette: "midnight",
 				lightAccent: "#7c3aed",
 				darkAccent: "#a78bfa",
+				density: "compact",
+				codeLanguage: "python",
+				landingPage: "monitor",
+				maskSensitiveData: true,
 			},
 			currentTeamId: "workspace-1",
 			userRole: "admin",

@@ -5,6 +5,9 @@ export const DISPLAY_RELATIVE_TIMES = ["contextual", "relative", "absolute"] as 
 export const DISPLAY_NUMBER_NOTATIONS = ["standard", "compact"] as const;
 export const DISPLAY_LIGHT_PALETTES = ["phaseo", "paper", "warm"] as const;
 export const DISPLAY_DARK_PALETTES = ["phaseo", "slate", "midnight"] as const;
+export const DISPLAY_DENSITIES = ["comfortable", "compact"] as const;
+export const DISPLAY_CODE_LANGUAGES = ["typescript", "python", "curl"] as const;
+export const DISPLAY_LANDING_PAGES = ["home", "models", "chat", "monitor"] as const;
 
 export type DisplayLocale = (typeof DISPLAY_LOCALES)[number];
 export type DisplayDateStyle = (typeof DISPLAY_DATE_STYLES)[number];
@@ -13,6 +16,9 @@ export type DisplayRelativeTime = (typeof DISPLAY_RELATIVE_TIMES)[number];
 export type DisplayNumberNotation = (typeof DISPLAY_NUMBER_NOTATIONS)[number];
 export type DisplayLightPalette = (typeof DISPLAY_LIGHT_PALETTES)[number];
 export type DisplayDarkPalette = (typeof DISPLAY_DARK_PALETTES)[number];
+export type DisplayDensity = (typeof DISPLAY_DENSITIES)[number];
+export type DisplayCodeLanguage = (typeof DISPLAY_CODE_LANGUAGES)[number];
+export type DisplayLandingPage = (typeof DISPLAY_LANDING_PAGES)[number];
 
 export type DisplayPreferences = {
 	locale: DisplayLocale;
@@ -25,6 +31,10 @@ export type DisplayPreferences = {
 	darkPalette: DisplayDarkPalette;
 	lightAccent: string;
 	darkAccent: string;
+	density: DisplayDensity;
+	codeLanguage: DisplayCodeLanguage;
+	landingPage: DisplayLandingPage;
+	maskSensitiveData: boolean;
 };
 
 export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
@@ -38,6 +48,10 @@ export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
 	darkPalette: "phaseo",
 	lightAccent: "#0069a8",
 	darkAccent: "#0078b8",
+	density: "comfortable",
+	codeLanguage: "typescript",
+	landingPage: "home",
+	maskSensitiveData: false,
 };
 
 function isOneOf<T extends string>(value: unknown, values: readonly T[]): value is T {
@@ -105,6 +119,18 @@ export function normalizeDisplayPreferences(value: unknown): DisplayPreferences 
 		darkAccent: isValidAccentColor(candidate.darkAccent)
 			? candidate.darkAccent.toLowerCase()
 			: DEFAULT_DISPLAY_PREFERENCES.darkAccent,
+		density: isOneOf(candidate.density, DISPLAY_DENSITIES)
+			? candidate.density
+			: DEFAULT_DISPLAY_PREFERENCES.density,
+		codeLanguage: isOneOf(candidate.codeLanguage, DISPLAY_CODE_LANGUAGES)
+			? candidate.codeLanguage
+			: DEFAULT_DISPLAY_PREFERENCES.codeLanguage,
+		landingPage: isOneOf(candidate.landingPage, DISPLAY_LANDING_PAGES)
+			? candidate.landingPage
+			: DEFAULT_DISPLAY_PREFERENCES.landingPage,
+		maskSensitiveData: typeof candidate.maskSensitiveData === "boolean"
+			? candidate.maskSensitiveData
+			: DEFAULT_DISPLAY_PREFERENCES.maskSensitiveData,
 	};
 }
 

@@ -29,6 +29,7 @@ import { PurchaseLocationStep, type LocationPreview } from "./PurchaseLocationSt
 import { cn } from "@/lib/utils";
 import { formatCardBrand } from "./cardBrand";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { SensitiveValue } from "@/components/display/SensitiveValue";
 
 /* Helpers */
 function clamp(n: number, min: number, max: number) {
@@ -758,7 +759,7 @@ export default function CreditsPurchaseDialog({
 										return (
 											<>
 												Pay with {brand}{" "}
-												<span data-pii="true">****{last4}</span>
+										<SensitiveValue inline label="card number">****{last4}</SensitiveValue>
 											</>
 										);
 									})()

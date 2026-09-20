@@ -29,6 +29,10 @@ describe("account display preferences", () => {
 				display_dark_palette: "slate",
 				display_light_accent: "#7c3aed",
 				display_dark_accent: "#a78bfa",
+				display_density: "compact",
+				display_code_language: "python",
+				display_landing_page: "models",
+				obfuscate_info: true,
 			}]), { status: 200 });
 		}));
 
@@ -53,6 +57,10 @@ describe("account display preferences", () => {
 				darkPalette: "slate",
 				lightAccent: "#7c3aed",
 				darkAccent: "#a78bfa",
+				density: "compact",
+				codeLanguage: "python",
+				landingPage: "models",
+				maskSensitiveData: true,
 			},
 		});
 	});
@@ -84,6 +92,10 @@ describe("account display preferences", () => {
 			darkPalette: "midnight",
 			lightAccent: "#c2410c",
 			darkAccent: "#fb923c",
+			density: "comfortable",
+			codeLanguage: "typescript",
+			landingPage: "chat",
+			maskSensitiveData: false,
 		};
 		const response = await app.request(
 			"https://phaseo.app/api/account/settings/preferences",
@@ -109,6 +121,10 @@ describe("account display preferences", () => {
 			display_dark_palette: "midnight",
 			display_light_accent: "#c2410c",
 			display_dark_accent: "#fb923c",
+			display_density: "comfortable",
+			display_code_language: "typescript",
+			display_landing_page: "chat",
+			obfuscate_info: false,
 		});
 	});
 
@@ -132,6 +148,10 @@ describe("account display preferences", () => {
 					darkPalette: "phaseo",
 					lightAccent: "#0069a8",
 					darkAccent: "#0078b8",
+					density: "comfortable",
+					codeLanguage: "typescript",
+					landingPage: "home",
+					maskSensitiveData: false,
 				}),
 			},
 			env,

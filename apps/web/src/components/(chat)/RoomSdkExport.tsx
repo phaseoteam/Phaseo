@@ -6,11 +6,15 @@ import { Code, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { sdkCode, sdkExportStore } from "@/lib/chat/sdkExport";
+import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 
 export function RoomSdkExport() {
   const request = useSyncExternalStore(sdkExportStore.subscribe, sdkExportStore.get, () => null);
   const pathname = usePathname();
-  const [language, setLanguage] = useState<"typescript" | "python">("typescript");
+  const { preferences } = useDisplayPreferences();
+  const preferredLanguage = preferences.codeLanguage === "python" ? "python" : "typescript";
+  const [languageOverride, setLanguage] = useState<"typescript" | "python" | null>(null);
+  const language = languageOverride ?? preferredLanguage;
   const [notice, setNotice] = useState("");
   useEffect(() => { sdkExportStore.set(null); }, [pathname]);
   if (!request) return null;

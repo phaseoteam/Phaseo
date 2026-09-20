@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 import {
 	normalizeDisplayPreferences,
@@ -8,6 +9,7 @@ import {
 } from "@/lib/displayPreferences";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { OBFUSCATE_INFO_COOKIE, serializeObfuscateInfo } from "@/lib/obfuscation";
 
 export async function updateDisplayPreferences(
 	input: DisplayPreferences,
@@ -20,6 +22,18 @@ export async function updateDisplayPreferences(
 		context.accessToken,
 		{ method: "PUT", body: JSON.stringify(preferences) },
 	);
+	const cookieStore = await cookies();
+	cookieStore.set(
+		OBFUSCATE_INFO_COOKIE,
+		serializeObfuscateInfo(response.preferences.maskSensitiveData),
+		{
+			path: "/",
+			maxAge: 60 * 60 * 24 * 365,
+			sameSite: "lax",
+			secure: process.env.NODE_ENV === "production",
+		},
+	);
 	revalidatePath("/settings/preferences");
+	revalidatePath("/settings/account");
 	return response;
 }

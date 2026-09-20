@@ -1,4 +1,4 @@
-export const DISPLAY_PREFERENCE_SELECT = "display_locale,display_date_style,display_time_zone,display_hour_cycle,display_relative_time,display_number_notation,display_light_palette,display_dark_palette,display_light_accent,display_dark_accent" as const;
+export const DISPLAY_PREFERENCE_SELECT = "display_locale,display_date_style,display_time_zone,display_hour_cycle,display_relative_time,display_number_notation,display_light_palette,display_dark_palette,display_light_accent,display_dark_accent,display_density,display_code_language,display_landing_page,obfuscate_info" as const;
 
 export type DisplayPreferences = {
 	locale: "system" | "en-GB" | "en-US";
@@ -11,6 +11,10 @@ export type DisplayPreferences = {
 	darkPalette: "phaseo" | "slate" | "midnight";
 	lightAccent: string;
 	darkAccent: string;
+	density: "comfortable" | "compact";
+	codeLanguage: "typescript" | "python" | "curl";
+	landingPage: "home" | "models" | "chat" | "monitor";
+	maskSensitiveData: boolean;
 };
 
 export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
@@ -24,6 +28,10 @@ export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
 	darkPalette: "phaseo",
 	lightAccent: "#0069a8",
 	darkAccent: "#0078b8",
+	density: "comfortable",
+	codeLanguage: "typescript",
+	landingPage: "home",
+	maskSensitiveData: false,
 };
 
 const LOCALES = new Set(["system", "en-GB", "en-US"]);
@@ -33,6 +41,9 @@ const RELATIVE_TIMES = new Set(["contextual", "relative", "absolute"]);
 const NUMBER_NOTATIONS = new Set(["standard", "compact"]);
 const LIGHT_PALETTES = new Set(["phaseo", "paper", "warm"]);
 const DARK_PALETTES = new Set(["phaseo", "slate", "midnight"]);
+const DENSITIES = new Set(["comfortable", "compact"]);
+const CODE_LANGUAGES = new Set(["typescript", "python", "curl"]);
+const LANDING_PAGES = new Set(["home", "models", "chat", "monitor"]);
 
 function validAccentColor(value: unknown): value is string {
 	return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
@@ -81,6 +92,18 @@ export function displayPreferencesFromRow(row: Record<string, unknown> | null | 
 		darkAccent: validAccentColor(row?.display_dark_accent)
 			? row.display_dark_accent.toLowerCase()
 			: DEFAULT_DISPLAY_PREFERENCES.darkAccent,
+		density: DENSITIES.has(String(row?.display_density))
+			? row?.display_density as DisplayPreferences["density"]
+			: DEFAULT_DISPLAY_PREFERENCES.density,
+		codeLanguage: CODE_LANGUAGES.has(String(row?.display_code_language))
+			? row?.display_code_language as DisplayPreferences["codeLanguage"]
+			: DEFAULT_DISPLAY_PREFERENCES.codeLanguage,
+		landingPage: LANDING_PAGES.has(String(row?.display_landing_page))
+			? row?.display_landing_page as DisplayPreferences["landingPage"]
+			: DEFAULT_DISPLAY_PREFERENCES.landingPage,
+		maskSensitiveData: typeof row?.obfuscate_info === "boolean"
+			? row.obfuscate_info
+			: DEFAULT_DISPLAY_PREFERENCES.maskSensitiveData,
 	};
 }
 
@@ -97,7 +120,11 @@ export function parseDisplayPreferences(value: unknown): DisplayPreferences | nu
 		!LIGHT_PALETTES.has(String(input.lightPalette)) ||
 		!DARK_PALETTES.has(String(input.darkPalette)) ||
 		!validAccentColor(input.lightAccent) ||
-		!validAccentColor(input.darkAccent)
+		!validAccentColor(input.darkAccent) ||
+		!DENSITIES.has(String(input.density)) ||
+		!CODE_LANGUAGES.has(String(input.codeLanguage)) ||
+		!LANDING_PAGES.has(String(input.landingPage)) ||
+		typeof input.maskSensitiveData !== "boolean"
 	) return null;
 	return {
 		locale: input.locale as DisplayPreferences["locale"],
@@ -110,6 +137,10 @@ export function parseDisplayPreferences(value: unknown): DisplayPreferences | nu
 		darkPalette: input.darkPalette as DisplayPreferences["darkPalette"],
 		lightAccent: input.lightAccent.toLowerCase(),
 		darkAccent: input.darkAccent.toLowerCase(),
+		density: input.density as DisplayPreferences["density"],
+		codeLanguage: input.codeLanguage as DisplayPreferences["codeLanguage"],
+		landingPage: input.landingPage as DisplayPreferences["landingPage"],
+		maskSensitiveData: input.maskSensitiveData,
 	};
 }
 
@@ -125,5 +156,9 @@ export function displayPreferencesToRow(preferences: DisplayPreferences) {
 		display_dark_palette: preferences.darkPalette,
 		display_light_accent: preferences.lightAccent,
 		display_dark_accent: preferences.darkAccent,
+		display_density: preferences.density,
+		display_code_language: preferences.codeLanguage,
+		display_landing_page: preferences.landingPage,
+		obfuscate_info: preferences.maskSensitiveData,
 	};
 }

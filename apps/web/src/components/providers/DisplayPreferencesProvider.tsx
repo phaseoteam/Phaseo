@@ -105,6 +105,8 @@ export function DisplayPreferencesProvider({ children }: { children: React.React
 		const root = document.documentElement;
 		root.dataset.lightPalette = preferences.lightPalette;
 		root.dataset.darkPalette = preferences.darkPalette;
+		root.dataset.density = preferences.density;
+		root.dataset.obfuscatePii = preferences.maskSensitiveData ? "true" : "false";
 		root.style.setProperty("--light-user-accent", preferences.lightAccent);
 		root.style.setProperty(
 			"--light-user-accent-foreground",

@@ -3,4 +3,4 @@
 "@phaseo/web-api": patch
 ---
 
-Add account-level display preferences for date, time, number, and theme formatting, including coordinated light and dark theme presets and custom accents.
+Add account-level preferences for formatting, interface density, code language, sign-in landing page, sensitive-data masking, and coordinated light and dark themes.

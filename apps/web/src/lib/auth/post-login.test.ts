@@ -1,4 +1,5 @@
 import { shouldRedirectToOnboardingAfterLogin } from "./post-login-onboarding";
+import { resolvePostLoginDestination } from "./post-login-landing";
 
 describe("shouldRedirectToOnboardingAfterLogin", () => {
 	it("shows onboarding for newly-created personal workspaces without completion", () => {
@@ -49,5 +50,39 @@ describe("shouldRedirectToOnboardingAfterLogin", () => {
 				createdPersonalTeam: true,
 			}),
 		).toBe(false);
+	});
+});
+
+describe("resolvePostLoginDestination", () => {
+	it("uses the saved landing page for ordinary sign-ins", () => {
+		expect(resolvePostLoginDestination({
+			returnUrl: "/",
+			landingPage: "models",
+			showOnboarding: false,
+		})).toBe("/models");
+	});
+
+	it("preserves explicit return URLs", () => {
+		expect(resolvePostLoginDestination({
+			returnUrl: "/settings/keys",
+			landingPage: "chat",
+			showOnboarding: false,
+		})).toBe("/settings/keys");
+	});
+
+	it("keeps onboarding ahead of the saved landing page", () => {
+		expect(resolvePostLoginDestination({
+			returnUrl: "/",
+			landingPage: "monitor",
+			showOnboarding: true,
+		})).toBe("/onboarding");
+	});
+
+	it("falls back home for unrecognised stored values", () => {
+		expect(resolvePostLoginDestination({
+			returnUrl: "/",
+			landingPage: "external-url",
+			showOnboarding: false,
+		})).toBe("/");
 	});
 });

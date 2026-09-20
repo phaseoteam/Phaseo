@@ -25,6 +25,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
 	DEFAULT_DISPLAY_PREFERENCES,
 	DISPLAY_DARK_PALETTES,
@@ -193,7 +194,7 @@ function PreferenceRow({
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="grid gap-3 border-t border-border/60 py-3.5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
+		<div data-slot="preference-row" className="grid gap-3 border-t border-border/60 py-3.5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
 			<div className="max-w-xl md:pt-1">
 				<p className="text-sm font-medium">{title}</p>
 				<p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
@@ -383,6 +384,8 @@ function applyAppearanceToRoot(preferences: DisplayPreferences) {
 	const root = document.documentElement;
 	root.dataset.lightPalette = preferences.lightPalette;
 	root.dataset.darkPalette = preferences.darkPalette;
+	root.dataset.density = preferences.density;
+	root.dataset.obfuscatePii = preferences.maskSensitiveData ? "true" : "false";
 	root.style.setProperty("--light-user-accent", preferences.lightAccent);
 	root.style.setProperty(
 		"--light-user-accent-foreground",
@@ -544,6 +547,76 @@ export default function DisplayPreferencesClient({
 	return (
 		<div className="space-y-9 pb-2">
 			<SettingsSection
+				id="experience-heading"
+				title="Experience"
+				description="Choose how the interface is arranged and where you start."
+			>
+				<PreferenceRow
+					title="Interface density"
+					description="Adjust spacing in tables, menus, controls, and settings."
+					preview={preferences.density === "compact" ? "Compact spacing" : "Comfortable spacing"}
+				>
+					<div role="radiogroup" aria-label="Interface density" className="grid grid-cols-2 gap-2">
+						{([
+							{ value: "comfortable", label: "Comfortable" },
+							{ value: "compact", label: "Compact" },
+						] as const).map((option) => {
+							const active = preferences.density === option.value;
+							return (
+								<button
+									key={option.value}
+									type="button"
+									role="radio"
+									aria-checked={active}
+									onClick={() => update("density", option.value)}
+									className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "border-primary/70 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}
+								>
+									{option.label}
+								</button>
+							);
+						})}
+					</div>
+				</PreferenceRow>
+				<PreferenceRow
+					title="Code language"
+					description="Sets the initial language shown in code examples."
+					preview={{
+						typescript: "const response = await phaseo.generateText(…)",
+						python: "response = phaseo.generate_text(…)",
+						curl: "curl https://api.phaseo.app/v1/…",
+					}[preferences.codeLanguage]}
+				>
+					<PreferenceSelect
+						ariaLabel="Default code language"
+						value={preferences.codeLanguage}
+						onChange={(value) => update("codeLanguage", value)}
+						options={[
+							{ value: "typescript", label: "TypeScript" },
+							{ value: "python", label: "Python" },
+							{ value: "curl", label: "cURL" },
+						]}
+					/>
+				</PreferenceRow>
+				<PreferenceRow
+					title="Landing page"
+					description="Used after sign-in when you did not follow a link to a specific page."
+					preview={{ home: "/", models: "/models", chat: "/chat", monitor: "/monitor" }[preferences.landingPage]}
+				>
+					<PreferenceSelect
+						ariaLabel="Default landing page"
+						value={preferences.landingPage}
+						onChange={(value) => update("landingPage", value)}
+						options={[
+							{ value: "home", label: "Home" },
+							{ value: "models", label: "Models" },
+							{ value: "chat", label: "Chat" },
+							{ value: "monitor", label: "Monitor" },
+						]}
+					/>
+				</PreferenceRow>
+			</SettingsSection>
+
+			<SettingsSection
 				id="date-time-heading"
 				title="Date and time"
 				description="Control how dates and times are presented throughout the product. UTC-only diagnostics stay unchanged."
@@ -631,9 +704,32 @@ export default function DisplayPreferencesClient({
 			</SettingsSection>
 
 			<SettingsSection
+				id="privacy-heading"
+				title="Privacy"
+				description="Control how personal information is shown on this account."
+			>
+				<PreferenceRow
+					title="Mask sensitive data"
+					description="Blur email addresses, payment details, and other personal values by default. You can reveal individual values when needed."
+					preview={preferences.maskSensitiveData ? "dan•••@example.com" : "daniel@example.com"}
+				>
+					<div className="flex h-10 items-center justify-between rounded-md border border-border px-3">
+						<span className="text-sm text-muted-foreground">
+							{preferences.maskSensitiveData ? "Masked by default" : "Shown by default"}
+						</span>
+						<Switch
+							checked={preferences.maskSensitiveData}
+							onCheckedChange={(checked) => update("maskSensitiveData", Boolean(checked))}
+							aria-label="Mask sensitive data"
+						/>
+					</div>
+				</PreferenceRow>
+			</SettingsSection>
+
+			<SettingsSection
 				id="numbers-heading"
 				title="Numbers"
-				description="Choose the density used for large values in dashboards and summaries."
+				description="Choose how large values are presented in dashboards and summaries."
 			>
 				<PreferenceRow
 					title="Number format"
@@ -655,7 +751,7 @@ export default function DisplayPreferencesClient({
 			<SettingsSection
 				id="appearance-heading"
 				title="Appearance"
-				description="Build a coordinated light and dark theme. Palette and accent changes update this page immediately."
+				description="Build a coordinated light and dark theme. Changes update this page immediately."
 			>
 				<PreferenceRow title="Mode" description="This browser keeps its own System Default, Light, or Dark selection.">
 					<AppearanceModePicker />

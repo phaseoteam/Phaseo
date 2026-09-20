@@ -13,7 +13,7 @@ export default async function PreferencesPage() {
 		<div className="space-y-6">
 			<SettingsPageHeader
 				title="Preferences"
-				description="Choose how dates, times, numbers, and themes appear across Phaseo."
+				description="Choose how Phaseo looks, formats information, and behaves for your account."
 			/>
 			{initialData.signedIn ? (
 				<DisplayPreferencesClient initialPreferences={initialData.preferences} />

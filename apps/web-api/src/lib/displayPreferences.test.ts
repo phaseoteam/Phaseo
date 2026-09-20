@@ -27,6 +27,10 @@ describe("display preferences contract", () => {
 			darkPalette: "midnight" as const,
 			lightAccent: "#7c3aed",
 			darkAccent: "#a78bfa",
+			density: "compact" as const,
+			codeLanguage: "python" as const,
+			landingPage: "models" as const,
+			maskSensitiveData: true,
 		};
 		expect(parseDisplayPreferences(preferences)).toEqual(preferences);
 		expect(displayPreferencesToRow(preferences)).toEqual({
@@ -40,6 +44,10 @@ describe("display preferences contract", () => {
 			display_dark_palette: "midnight",
 			display_light_accent: "#7c3aed",
 			display_dark_accent: "#a78bfa",
+			display_density: "compact",
+			display_code_language: "python",
+			display_landing_page: "models",
+			obfuscate_info: true,
 		});
 	});
 

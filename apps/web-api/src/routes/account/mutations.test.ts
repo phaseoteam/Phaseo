@@ -4,7 +4,7 @@ import app from "@/index";
 describe("account mutation boundaries", () => {
 	it.each([
 		["PUT", "/api/account/settings/beta", { beta_features: {} }],
-		["PUT", "/api/account/settings/preferences", { locale: "system", dateStyle: "medium", timeZone: "system", hourCycle: "system", relativeTime: "contextual", numberNotation: "standard", lightPalette: "phaseo", darkPalette: "phaseo", lightAccent: "#0069a8", darkAccent: "#0078b8" }],
+		["PUT", "/api/account/settings/preferences", { locale: "system", dateStyle: "medium", timeZone: "system", hourCycle: "system", relativeTime: "contextual", numberNotation: "standard", lightPalette: "phaseo", darkPalette: "phaseo", lightAccent: "#0069a8", darkAccent: "#0078b8", density: "comfortable", codeLanguage: "typescript", landingPage: "home", maskSensitiveData: false }],
 		["PUT", "/api/account/settings/routing", { workspaceId: "workspace-1", mode: "balanced" }],
 		["PUT", "/api/account/settings/routing/auto", { workspaceId: "workspace-1", spendProfile: "standard", allowedPatterns: [] }],
 		["POST", "/api/account/settings/dynamic-routes", { workspaceId: "workspace-1", name: "Production", config: {} }],

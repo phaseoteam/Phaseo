@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { SensitiveValue } from "@/components/display/SensitiveValue"
 
 type Props = {
 	profile: ProfileSnapshot
@@ -592,9 +593,9 @@ export default function ProfileDashboard({
 						{publicView ? (
 							<p className="text-sm text-muted-foreground">/{profile.publicProfileSlug}</p>
 						) : profile.email ? (
-							<p className="truncate text-sm text-muted-foreground" data-pii="true">
+							<SensitiveValue inline className="max-w-full truncate text-sm text-muted-foreground" label="email address">
 								{profile.email}
-							</p>
+							</SensitiveValue>
 						) : null}
 					</div>
 				</div>

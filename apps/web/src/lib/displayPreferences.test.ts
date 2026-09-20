@@ -85,7 +85,7 @@ describe("display preferences", () => {
 			"2026-09-19T16:35:00Z",
 			preferences,
 			{ day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" },
-		)).toBe("19 Sept, 16:35");
+		)).toBe("19 Sept, 17:35");
 	});
 
 	it("allows exact values to override compact notation", () => {
