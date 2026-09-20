@@ -23,6 +23,7 @@ The local wrapper at `packages/sdk/sdk-php/src/index.php` currently exposes thes
 - `getAsyncJobWebSocketUrl(...)`, `getBatchWebSocketUrl(...)`, `getVideoWebSocketUrl(...)`, `asyncJobs()->websocketUrl(...)`
 - `listFiles(...)`, `retrieveFile(...)`, `retrieveFileContent(...)`, `retrieveVideoContent(...)`, `getVideoDownloadUrl(...)`, `uploadFile(...)`
 - `listModels(...)`
+- `getModelEndpointCapabilities(...)`, `checkModelParameters(...)`
 - `listApiKeys(...)`, `createApiKey(...)`, `updateApiKey(...)`, `deleteApiKey(...)`
 - `getApiKey(...)`
 - `listWorkspaces(...)`, `getWorkspace(...)`, `createWorkspace(...)`, `updateWorkspace(...)`, `deleteWorkspace(...)`
@@ -43,3 +44,5 @@ use Phaseo\Sdk\Phaseo;
 $client = new Phaseo('YOUR_KEY');
 $models = $client->listModels(['limit' => 5]);
 ```
+
+`checkModelParameters(...)` uses live provider-route metadata to highlight unsupported or invalid values and return the routes that accept the complete parameter set.

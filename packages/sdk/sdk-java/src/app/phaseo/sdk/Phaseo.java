@@ -488,6 +488,17 @@ public class Phaseo {
 		return withLifecycleAndTelemetry("models.list", query, false, () -> parse(Operations.listModels(rawClient, null, query, null, null)));
 	}
 
+	public JsonNode getModelEndpointCapabilities(String modelId, Map<String, String> query) throws IOException, InterruptedException {
+		String[] parts = modelId == null ? new String[0] : modelId.trim().split("/", 2);
+		if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) throw new IllegalArgumentException("model ID must use author/slug format");
+		Map<String, String> path = Map.of("author", parts[0], "slug", parts[1]);
+		return withLifecycleAndTelemetry("models.capabilities", Map.of("model_id", modelId), false, () -> parse(Operations.listModelEndpoints(rawClient, path, query, null, null)));
+	}
+
+	public JsonNode checkModelParameters(String modelId, Map<String, ?> values, Map<String, ?> options) throws IOException, InterruptedException {
+		return ParameterSupport.check(getModelEndpointCapabilities(modelId, Map.of()), values, options);
+	}
+
 	public JsonNode listProviders(Map<String, String> query) throws IOException, InterruptedException {
 		return withLifecycleAndTelemetry("providers", query, false, () -> parse(Operations.listProviders(rawClient, null, query, null, null)));
 	}

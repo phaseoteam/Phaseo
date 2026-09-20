@@ -533,6 +533,20 @@ namespace PhaseoSdk
             return WithLifecycleAndTelemetry("models.list", query, false, () => Operations.ListModelsAsync(_client, query: query));
         }
 
+        public Task<Dictionary<string, object>?> GetModelEndpointCapabilities(string modelId, Dictionary<string, string>? query = null)
+        {
+            var parts = modelId?.Trim().Split('/', 2) ?? [];
+            if (parts.Length != 2 || string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[1])) throw new ArgumentException("model ID must use author/slug format", nameof(modelId));
+            return WithLifecycleAndTelemetry("models.capabilities", new { model_id = modelId, query }, false, () => Operations.ListModelEndpointsAsync(_client, path: new Dictionary<string, string> { ["author"] = parts[0], ["slug"] = parts[1] }, query: query));
+        }
+
+        public async Task<System.Text.Json.Nodes.JsonObject> CheckModelParameters(string modelId, IReadOnlyDictionary<string, object?> values, IReadOnlyDictionary<string, object?>? options = null)
+        {
+            var response = await GetModelEndpointCapabilities(modelId).ConfigureAwait(false);
+            var node = System.Text.Json.JsonSerializer.SerializeToNode(response) ?? new System.Text.Json.Nodes.JsonObject();
+            return ParameterSupport.Check(node, values, options);
+        }
+
         public Task<Dictionary<string, object>?> ListProviders(Dictionary<string, string>? query = null)
         {
             return WithLifecycleAndTelemetry("providers", query, false, () => Operations.ListProvidersAsync(_client, query: query));

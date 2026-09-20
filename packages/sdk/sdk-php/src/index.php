@@ -505,6 +505,117 @@ class Phaseo
         );
     }
 
+    /** @return array<string, mixed> */
+    public function getModelEndpointCapabilities(string $modelId, array $params = []): array
+    {
+        $parts = explode("/", trim($modelId), 2);
+        if (count($parts) !== 2 || $parts[0] === "" || $parts[1] === "") {
+            throw new \InvalidArgumentException("model ID must use author/slug format");
+        }
+        return $this->withLifecycleAndTelemetry(
+            "models.capabilities",
+            ["model_id" => $modelId, "query" => $params],
+            false,
+            fn () => \Phaseo\Gen\listModelEndpoints(
+                $this->client,
+                ["author" => $parts[0], "slug" => $parts[1]],
+                $params,
+                null,
+                null
+            )
+        );
+    }
+
+    /** @return array<string, mixed> */
+    public function checkModelParameters(string $modelId, array $values, array $options = []): array
+    {
+        return self::checkParameterSupport($this->getModelEndpointCapabilities($modelId), $values, $options);
+    }
+
+    /** Build a UI-friendly report from live model endpoint metadata. */
+    public static function checkParameterSupport(array $model, array $values, array $options = []): array
+    {
+        $providers = isset($options["provider"])
+            ? array_fill_keys((array) $options["provider"], true)
+            : null;
+        $routes = array_values(array_filter($model["endpoints"] ?? [], static function ($route) use ($options, $providers): bool {
+            if (!is_array($route) || ($route["routable"] ?? null) !== true || ($route["status"] ?? null) !== "active") return false;
+            $provider = $route["provider"]["id"] ?? "";
+            if ($providers !== null && !isset($providers[$provider])) return false;
+            if (empty($options["endpoint"])) return true;
+            $requested = preg_replace('#^/?(?:v1/)?#', '', (string) $options["endpoint"]);
+            $publicPath = preg_replace('#^/?(?:v1/)?#', '', (string) ($route["public_path"] ?? ""));
+            return in_array($requested, [$route["endpoint"] ?? null, $route["capability_id"] ?? null, $publicPath], true);
+        }));
+        $parameters = [];
+        foreach ($values as $name => $value) {
+            $supportedBy = $acceptedBy = $unsupportedBy = $constraints = $valueIssues = [];
+            $knownRoutes = 0;
+            foreach ($routes as $route) {
+                $ref = self::parameterRouteReference($route);
+                $advertised = $route["capabilities"]["parameters"] ?? null;
+                if (!is_array($advertised)) { $unsupportedBy[] = $ref; continue; }
+                $knownRoutes++;
+                $detail = $route["capabilities"]["parameter_details"][$name] ?? [];
+                $supports = in_array($name, $advertised, true) || ($detail["supported"] ?? null) === true;
+                if (!$supports || ($detail["supported"] ?? null) === false) { $unsupportedBy[] = $ref; continue; }
+                $supportedBy[] = $ref;
+                if ($detail !== []) $constraints[] = ["route" => $ref, "detail" => $detail];
+                $issues = self::parameterValueIssues((string) $name, $value, $detail);
+                if ($issues === []) $acceptedBy[] = $ref; else $valueIssues = [...$valueIssues, ...$issues];
+            }
+            $status = count($routes) === 0 || $knownRoutes === 0 ? "unknown"
+                : (count($supportedBy) === 0 ? "unsupported"
+                : (count($supportedBy) === count($routes) ? "supported" : "partial"));
+            $issues = $status === "unsupported" ? ["{$name} is not supported by any matching active route"]
+                : (count($supportedBy) > 0 && count($acceptedBy) === 0 ? array_values(array_unique($valueIssues)) : []);
+            $parameters[] = [
+                "name" => (string) $name,
+                "value" => $value,
+                "status" => $status,
+                "supported_by" => $supportedBy,
+                "accepted_by" => $acceptedBy,
+                "unsupported_by" => $unsupportedBy,
+                "constraints" => $constraints,
+                "issues" => $issues,
+            ];
+        }
+        $matchingRoutes = array_values(array_map([self::class, "parameterRouteReference"], array_filter($routes, static function ($route) use ($parameters): bool {
+            $id = self::parameterRouteReference($route)["id"];
+            foreach ($parameters as $parameter) if (!in_array($id, array_column($parameter["accepted_by"], "id"), true)) return false;
+            return true;
+        })));
+        $issues = [];
+        if ($routes === []) $issues[] = "No active routable model endpoints matched the filters";
+        elseif ($matchingRoutes === [] && $parameters !== []) $issues[] = "No active route supports all requested parameter values together";
+        foreach ($parameters as $parameter) $issues = [...$issues, ...$parameter["issues"]];
+        return ["ok" => $routes !== [] && $matchingRoutes !== [], "model_id" => $model["id"] ?? "unknown", "route_count" => count($routes), "matching_routes" => $matchingRoutes, "parameters" => $parameters, "issues" => array_values(array_unique($issues))];
+    }
+
+    /** @return array<string, string> */
+    private static function parameterRouteReference(array $route): array
+    {
+        $provider = $route["provider"]["id"] ?? "unknown";
+        $endpoint = $route["endpoint"] ?? $route["capability_id"] ?? "unknown";
+        return ["id" => $route["id"] ?? "{$provider}:{$endpoint}", "provider" => $provider, "endpoint" => $endpoint, "public_path" => $route["public_path"] ?? $endpoint];
+    }
+
+    /** @return list<string> */
+    private static function parameterValueIssues(string $name, mixed $value, array $detail): array
+    {
+        $issues = [];
+        if (($detail["supported"] ?? null) === false) $issues[] = "{$name} is unsupported";
+        $allowed = $detail["values"] ?? $detail["enum"] ?? null;
+        if (is_array($allowed) && !in_array($value, $allowed, true)) $issues[] = "{$name} must be one of: " . implode(", ", array_map("strval", $allowed));
+        if (is_int($value) || is_float($value)) {
+            if (!is_finite((float) $value)) $issues[] = "{$name} must be finite";
+            if (isset($detail["minimum"]) && $value < $detail["minimum"]) $issues[] = "{$name} must be at least {$detail['minimum']}";
+            if (isset($detail["maximum"]) && $value > $detail["maximum"]) $issues[] = "{$name} must be at most {$detail['maximum']}";
+            if (($detail["step"] ?? 0) > 0) { $steps = ($value - ($detail["minimum"] ?? 0)) / $detail["step"]; if (abs($steps - round($steps)) > 1e-8) $issues[] = "{$name} must use steps of {$detail['step']}"; }
+        }
+        return $issues;
+    }
+
     public function listProviders(array $params = []): mixed
     {
         return $this->withLifecycleAndTelemetry(

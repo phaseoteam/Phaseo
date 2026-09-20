@@ -10,3 +10,4 @@ description: "Review the work-in-progress C++ headers."
 - Status: Work in progress (not yet published).
 - Source lives in `packages/sdk/sdk-cpp`.
 - Generated headers are in `packages/sdk/sdk-cpp/src/gen`.
+- `src/phaseo.hpp` adds live model capability fetching and parameter support reports. The preview transport returns raw JSON, so deserialize the response into `ModelEndpointCapabilities` before checking it.
