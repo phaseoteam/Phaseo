@@ -3,6 +3,7 @@ import {
 	buildProviderSections,
 	buildProviderTablePriceSummary,
 	calculateDailyAveragePricingMeterPrice,
+	getAvailableProviderTablePriceDirections,
 	getUtcPricingScheduleTimes,
 } from "./pricingHelpers";
 
@@ -614,6 +615,16 @@ describe("buildProviderSections", () => {
 		expect(sections.textTokens?.write).toEqual([
 			expect.objectContaining({ per1M: 3.75, label: "5 min TTL" }),
 			expect.objectContaining({ per1M: 6, label: "1 hour TTL" }),
+		]);
+		expect(buildProviderTablePriceSummary(sections, "cachewrite")).toMatchObject({
+			primary: expect.objectContaining({
+				price: 3.75,
+				unitLabel: "Per 1M tokens",
+				unitShortLabel: "/M",
+			}),
+		});
+		expect(getAvailableProviderTablePriceDirections([sections])).toEqual([
+			"cachewrite",
 		]);
 	});
 

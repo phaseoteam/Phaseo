@@ -63,6 +63,7 @@ import {
 	ruleComparisonMatchSignature,
 	type QualityRow,
 	type ResolutionRow,
+	type ProviderTablePriceDirection,
 	type ProviderTablePriceSummary,
 	type TokenTier,
 	type TokenTriple,
@@ -1099,31 +1100,13 @@ function renderTablePriceSummary(
 		return <div className="font-medium tabular-nums text-foreground">--</div>;
 	}
 
-	const renderPrice = (
-		candidate: NonNullable<ProviderTablePriceSummary["primary"]>,
-		unitClassName: string,
-	) => (
-		<>
-			<span>{candidate.formattedPrice}</span>
-			{candidate.price !== 0 && candidate.unitShortLabel ? (
-				<span className={unitClassName}>{candidate.unitShortLabel}</span>
-			) : null}
-		</>
-	);
-
 	return (
-		<div className="flex flex-col items-end gap-0.5">
-			<div className={cn("flex items-baseline justify-end gap-1 font-medium tabular-nums", accentClassName)}>
-				{renderPrice(summary.primary, "text-[10px] font-normal text-muted-foreground")}
-			</div>
-			{summary.secondary ? (
-				<div className="flex items-baseline justify-end gap-1 truncate text-[10px] text-muted-foreground">
-					<span>{summary.secondary.label}</span>
-					<span className="flex items-baseline gap-0.5 tabular-nums">
-						{renderPrice(summary.secondary, "")}
-					</span>
-					{summary.extraCount > 0 ? <span>{` +${summary.extraCount} more`}</span> : null}
-				</div>
+		<div className={cn("flex items-baseline justify-end gap-1 font-medium tabular-nums", accentClassName)}>
+			<span>{summary.primary.formattedPrice}</span>
+			{summary.primary.price !== 0 && summary.primary.unitShortLabel ? (
+				<span className="text-[10px] font-normal text-muted-foreground">
+					{summary.primary.unitShortLabel}
+				</span>
 			) : null}
 		</div>
 	);
@@ -1859,7 +1842,7 @@ export default function ProviderCard({
 	pricingTimeMs,
 	displayNameOverride,
 	variantLabels,
-	showCacheReadColumn = false,
+	priceDirections,
 	isLastVisible = false,
 	serviceTiersExpanded = false,
 	showServiceTierDisclosureGutter = false,
@@ -1879,7 +1862,7 @@ export default function ProviderCard({
 	pricingTimeMs: number;
 	displayNameOverride?: string | null;
 	variantLabels?: string[] | null;
-	showCacheReadColumn?: boolean;
+	priceDirections: ProviderTablePriceDirection[];
 	isLastVisible?: boolean;
 	serviceTiersExpanded?: boolean;
 	showServiceTierDisclosureGutter?: boolean;
@@ -2535,11 +2518,12 @@ export default function ProviderCard({
 		return name;
 	})();
 	const logoProviderId = sec.logoProviderId;
-	const tableInputPriceSummary = buildProviderTablePriceSummary(tableSec, "input");
-	const tableOutputPriceSummary = buildProviderTablePriceSummary(tableSec, "output");
-	const tableCacheReadPriceSummary = showCacheReadColumn
-		? buildProviderTablePriceSummary(tableSec, "cached")
-		: null;
+	const tablePriceSummaries = Object.fromEntries(
+		priceDirections.map((direction) => [
+			direction,
+			buildProviderTablePriceSummary(tableSec, direction),
+		]),
+	) as Partial<Record<ProviderTablePriceDirection, ProviderTablePriceSummary>>;
 	const summaryQuantization =
 		typeof quantizationScheme === "string" && quantizationScheme.trim()
 			? quantizationScheme.trim()
@@ -3414,14 +3398,21 @@ export default function ProviderCard({
 						</div>
 					</div>
 				</TableCell>
-				{isCustomerManagedPricing ? <TableCell colSpan={2} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">Customer managed</TableCell> : <>
-					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableInputPriceSummary, tablePlanPriceClass)}</TableCell>
-					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableOutputPriceSummary, tablePlanPriceClass)}</TableCell>
-				</>}
-				{showCacheReadColumn && tableCacheReadPriceSummary ? (
-					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-						{renderTablePriceSummary(tableCacheReadPriceSummary, tablePlanPriceClass)}
-					</TableCell>
+				{priceDirections.length > 0 ? (
+					isCustomerManagedPricing ? (
+						<TableCell colSpan={priceDirections.length} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">
+							Customer managed
+						</TableCell>
+					) : (
+						priceDirections.map((direction) => (
+							<TableCell key={direction} className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+								{renderTablePriceSummary(
+									tablePriceSummaries[direction] ?? buildProviderTablePriceSummary(tableSec, direction),
+									tablePlanPriceClass,
+								)}
+							</TableCell>
+						))
+					)
 				) : null}
 				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
 					<div className="font-medium text-foreground">{tablePerformanceMetrics[0].value}</div>
@@ -3443,7 +3434,7 @@ export default function ProviderCard({
 			</TableRow>
 			<TableRow className="h-0 border-0 hover:bg-transparent">
 				<TableCell
-					colSpan={showCacheReadColumn ? 7 : 6}
+					colSpan={priceDirections.length + 4}
 					className="h-0 border-0 p-0"
 				>
 					<ProviderInspectorSheet open={expanded} onOpenChange={handleInspectorOpenChange}>

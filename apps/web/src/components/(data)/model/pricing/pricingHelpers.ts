@@ -1338,7 +1338,18 @@ function normalizeTablePriceRate(price: number, label: string) {
     };
 }
 
-type ProviderTablePriceDirection = "input" | "output" | "cached";
+export type ProviderTablePriceDirection =
+    | "input"
+    | "output"
+    | "cached"
+    | "cachewrite";
+
+const PROVIDER_TABLE_PRICE_DIRECTIONS: ProviderTablePriceDirection[] = [
+    "input",
+    "output",
+    "cached",
+    "cachewrite",
+];
 
 function getBaseTokenTier(tiers?: TokenTier[] | null): TokenTier | null {
 	const activeTiers = (tiers ?? []).filter((tier) => tier.isCurrent);
@@ -1373,6 +1384,13 @@ function getTablePriceCandidates(
         pushTokenCandidate("image", sections.imageTokens?.cached);
         pushTokenCandidate("audio", sections.audioTokens?.cached);
         pushTokenCandidate("video", sections.videoTokens?.cached);
+    } else if (direction === "cachewrite") {
+        pushTokenCandidate("text", sections.textTokens?.write);
+        pushTokenCandidate("decisions", sections.decisionTokens?.write);
+        pushTokenCandidate("embeddings", sections.embeddingTokens?.write);
+        pushTokenCandidate("image", sections.imageTokens?.write);
+        pushTokenCandidate("audio", sections.audioTokens?.write);
+        pushTokenCandidate("video", sections.videoTokens?.write);
     } else if (direction === "input") {
         pushTokenCandidate("text", sections.textTokens?.in);
         pushTokenCandidate("decisions", sections.decisionTokens?.in);
@@ -1507,6 +1525,16 @@ export function buildProviderTablePriceSummary(
         extraCount: Math.max(candidates.length - (secondary ? 2 : primary ? 1 : 0), 0),
         sortValue: primary?.price ?? null,
     };
+}
+
+export function getAvailableProviderTablePriceDirections(
+    sectionsByOffering: ProviderSections[],
+): ProviderTablePriceDirection[] {
+    return PROVIDER_TABLE_PRICE_DIRECTIONS.filter((direction) =>
+        sectionsByOffering.some(
+            (sections) => buildProviderTablePriceSummary(sections, direction).primary !== null,
+        ),
+    );
 }
 
 /* ---------- pricing calculator helpers ---------- */

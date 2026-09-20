@@ -99,6 +99,8 @@ import { getPricingProviderVariantLabels } from "@/components/(data)/model/prici
 import {
 	buildProviderSections,
 	buildProviderTablePriceSummary,
+	getAvailableProviderTablePriceDirections,
+	type ProviderTablePriceDirection,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import {
     chooseGatewayStatus,
@@ -143,6 +145,7 @@ type SortOption =
     | "input"
     | "output"
     | "cache_read"
+    | "cache_write"
     | "throughput"
     | "latency"
     | "uptime";
@@ -169,10 +172,23 @@ const DEFAULT_SORT_DIRECTIONS: Record<Exclude<SortOption, "default">, SortDirect
     input: "asc",
     output: "asc",
     cache_read: "asc",
+    cache_write: "asc",
     throughput: "desc",
     latency: "asc",
     uptime: "desc",
 };
+
+const PROVIDER_TABLE_PRICE_COLUMNS: ReadonlyArray<{
+	direction: ProviderTablePriceDirection;
+	label: string;
+	sort: Extract<SortOption, "input" | "output" | "cache_read" | "cache_write">;
+	widthClassName: string;
+}> = [
+	{ direction: "input", label: "Input", sort: "input", widthClassName: "w-24" },
+	{ direction: "output", label: "Output", sort: "output", widthClassName: "w-24" },
+	{ direction: "cached", label: "Cache Read", sort: "cache_read", widthClassName: "w-32" },
+	{ direction: "cachewrite", label: "Cache Write", sort: "cache_write", widthClassName: "w-32" },
+];
 
 const EMPTY_RUNTIME_STATS: ProviderRuntimeStatsMap = {};
 const EMPTY_ROUTING_HEALTH: ProviderRoutingStatusMap = {};
@@ -340,10 +356,20 @@ function parseSortOption(value: string | null): SortOption {
     if (value === "cache_read" || value === "cache" || value === "cached") {
         return "cache_read";
     }
+	if (value === "cache_write" || value === "cachewrite") return "cache_write";
     if (value === "throughput") return "throughput";
     if (value === "latency") return "latency";
     if (value === "uptime") return "uptime";
     return "default";
+}
+
+function getPriceDirectionForSort(
+	sort: SortOption,
+): ProviderTablePriceDirection | null {
+	if (sort === "input" || sort === "output") return sort;
+	if (sort === "cache_read") return "cached";
+	if (sort === "cache_write") return "cachewrite";
+	return null;
 }
 
 function isSortDirection(value: string | null): value is SortDirection {
@@ -541,8 +567,13 @@ function renderTierTablePrice(
 	summary: ReturnType<typeof buildProviderTablePriceSummary>,
 ) {
 	return summary.primary ? (
-		<div className="font-medium tabular-nums text-foreground">
-			{summary.primary.formattedPrice}
+		<div className="flex items-baseline justify-end gap-1 font-medium tabular-nums text-foreground">
+			<span>{summary.primary.formattedPrice}</span>
+			{summary.primary.price !== 0 && summary.primary.unitShortLabel ? (
+				<span className="text-[10px] font-normal text-muted-foreground">
+					{summary.primary.unitShortLabel}
+				</span>
+			) : null}
 		</div>
 	) : (
 		<div className="font-medium tabular-nums text-foreground">--</div>
@@ -655,7 +686,7 @@ function ProviderServiceTierRow({
 	provider,
 	plan,
 	pricingTimeMs,
-	showCacheReadColumn,
+	priceDirections,
 	navigationProviderIds,
 	isActive,
 	runtimeStats,
@@ -664,7 +695,7 @@ function ProviderServiceTierRow({
 	provider: ProviderPricing;
 	plan: string;
 	pricingTimeMs: number;
-	showCacheReadColumn: boolean;
+	priceDirections: ProviderTablePriceDirection[];
 	navigationProviderIds: string[];
 	isActive: boolean;
 	runtimeStats: ProviderRuntimeStats | null;
@@ -674,11 +705,14 @@ function ProviderServiceTierRow({
 		() => buildProviderSections(provider, plan, pricingTimeMs),
 		[plan, pricingTimeMs, provider],
 	);
-	const inputPrice = buildProviderTablePriceSummary(sections, "input");
-	const outputPrice = buildProviderTablePriceSummary(sections, "output");
-	const cacheReadPrice = showCacheReadColumn
-		? buildProviderTablePriceSummary(sections, "cached")
-		: null;
+	const priceSummaries = Object.fromEntries(
+		priceDirections.map((direction) => [
+			direction,
+			buildProviderTablePriceSummary(sections, direction),
+		]),
+	) as Partial<
+		Record<ProviderTablePriceDirection, ReturnType<typeof buildProviderTablePriceSummary>>
+	>;
 	const providerName = getProviderServiceTierDisplayName(provider);
 	const logoProviderId = sections.logoProviderId;
 	const discountBadge = getProviderTableDiscountBadge(sections);
@@ -734,17 +768,13 @@ function ProviderServiceTierRow({
 					</span>
 				</div>
 			</TableCell>
-			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-				{renderTierTablePrice(inputPrice)}
-			</TableCell>
-			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-				{renderTierTablePrice(outputPrice)}
-			</TableCell>
-			{showCacheReadColumn ? (
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-					{cacheReadPrice ? renderTierTablePrice(cacheReadPrice) : "--"}
+			{priceDirections.map((direction) => (
+				<TableCell key={direction} className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+					{renderTierTablePrice(
+						priceSummaries[direction] ?? buildProviderTablePriceSummary(sections, direction),
+					)}
 				</TableCell>
-			) : null}
+			))}
 			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
 				{plan === "batch" ? "--" : formatTierLatency(runtimeStats?.latencyMs30m)}
 			</TableCell>
@@ -1018,7 +1048,7 @@ export default function ModelPricingClient({
         };
         const getProviderSortPrice = (
             provider: ProviderPricing,
-            direction: "input" | "output" | "cached"
+            direction: ProviderTablePriceDirection,
         ): number | null => {
             const sections = getCachedSections(provider);
             return buildProviderTablePriceSummary(sections, direction).sortValue;
@@ -1198,13 +1228,13 @@ export default function ModelPricingClient({
             });
         }
 
-        if (sort === "input" || sort === "output" || sort === "cache_read") {
+        const providerPriceDirection = getPriceDirectionForSort(sort);
+        if (providerPriceDirection) {
             return list.sort((a, b) => {
                 const statusCmp = byGatewayStatus(a, b);
                 if (statusCmp !== 0) return statusCmp;
-                const sortDirectionKey = sort === "cache_read" ? "cached" : sort;
-                const aPrice = getProviderSortPrice(a, sortDirectionKey);
-                const bPrice = getProviderSortPrice(b, sortDirectionKey);
+                const aPrice = getProviderSortPrice(a, providerPriceDirection);
+                const bPrice = getProviderSortPrice(b, providerPriceDirection);
                 if (aPrice == null && bPrice == null) return withCreatorBias(a, b);
                 if (aPrice == null) return 1;
                 if (bPrice == null) return -1;
@@ -1323,7 +1353,7 @@ export default function ModelPricingClient({
 			if (bValue == null) return -1;
 			return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
 		};
-		const priceFor = (offering: ProviderOffering, direction: "input" | "output" | "cached") =>
+		const priceFor = (offering: ProviderOffering, direction: ProviderTablePriceDirection) =>
 			buildProviderTablePriceSummary(
 				buildProviderSections(offering.provider, offering.plan, pricingTimeMs),
 				direction,
@@ -1364,7 +1394,8 @@ export default function ModelPricingClient({
 					fallback,
 				);
 			}
-			const priceDirection = sort === "cache_read" ? "cached" : sort;
+			const priceDirection = getPriceDirectionForSort(sort);
+			if (!priceDirection) return fallback;
 			return metricCompare(
 				priceFor(a, priceDirection),
 				priceFor(b, priceDirection),
@@ -1403,16 +1434,28 @@ export default function ModelPricingClient({
 			return next;
 		});
 	}, []);
-    const showCacheReadColumn = useMemo(() => {
-        return visibleOfferings.some(({ provider, plan }) => {
-            const sections = buildProviderSections(
-                provider,
-                plan,
-                pricingTimeMs,
-            );
-            return buildProviderTablePriceSummary(sections, "cached").primary !== null;
-        });
-    }, [pricingTimeMs, visibleOfferings]);
+	const visiblePriceColumns = useMemo(() => {
+		const sectionsByOffering = visibleOfferings.map(({ provider, plan }) =>
+			buildProviderSections(provider, plan, pricingTimeMs),
+		);
+		const availableDirections = new Set(
+			getAvailableProviderTablePriceDirections(sectionsByOffering),
+		);
+		return PROVIDER_TABLE_PRICE_COLUMNS.filter(({ direction }) =>
+			availableDirections.has(direction),
+		);
+	}, [pricingTimeMs, visibleOfferings]);
+	const priceDirections = useMemo(
+		() => visiblePriceColumns.map(({ direction }) => direction),
+		[visiblePriceColumns],
+	);
+	const providerTableMinWidthClass = [
+		"min-w-[696px]",
+		"min-w-[792px]",
+		"min-w-[888px]",
+		"min-w-[944px]",
+		"min-w-[1072px]",
+	][visiblePriceColumns.length] ?? "min-w-[1072px]";
     const providerTableViewportRef = useRef<HTMLDivElement>(null);
     const [providerTableOverflows, setProviderTableOverflows] = useState<boolean | null>(null);
     const [providerTableThumbWidth, setProviderTableThumbWidth] = useState<number | null>(null);
@@ -1453,7 +1496,7 @@ export default function ModelPricingClient({
             resizeObserver.disconnect();
             window.removeEventListener("resize", measure);
         };
-    }, [showCacheReadColumn, visibleProviders.length]);
+    }, [visiblePriceColumns.length, visibleProviders.length]);
 
 	useEffect(() => {
 		return subscribeProviderInspectorSelection((selection) => {
@@ -1819,15 +1862,15 @@ export default function ModelPricingClient({
 								<Table
 									className={cn(
 										"table-auto lg:min-w-full",
-										showCacheReadColumn ? "min-w-[944px]" : "min-w-[888px]",
+										providerTableMinWidthClass,
 									)}
 									wrapInContainer={false}
 								>
 									<colgroup>
 										<col className="w-72" />
-										<col className="w-24" />
-										<col className="w-24" />
-										{showCacheReadColumn ? <col className="w-32" /> : null}
+										{visiblePriceColumns.map((column) => (
+											<col key={column.direction} className={column.widthClassName} />
+										))}
 										<col className="w-24" />
 										<col className="w-28" />
 										<col className="w-32" />
@@ -1837,17 +1880,11 @@ export default function ModelPricingClient({
 											<TableHead className="h-8 min-w-[280px] px-3 whitespace-nowrap">
 												{renderTableSortHead("Provider", "provider", "left")}
 											</TableHead>
-											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
-												{renderTableSortHead("Input", "input")}
-											</TableHead>
-											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
-												{renderTableSortHead("Output", "output")}
-											</TableHead>
-											{showCacheReadColumn ? (
-												<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
-													{renderTableSortHead("Cache Read", "cache_read")}
+											{visiblePriceColumns.map((column) => (
+												<TableHead key={column.direction} className="h-8 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
+													{renderTableSortHead(column.label, column.sort)}
 												</TableHead>
-											) : null}
+											))}
 											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
 												{renderTableSortHead("Latency", "latency")}
 											</TableHead>
@@ -1877,7 +1914,7 @@ export default function ModelPricingClient({
 													provider={prov}
 													plan={plan}
 													pricingTimeMs={pricingTimeMs}
-													showCacheReadColumn={showCacheReadColumn}
+													priceDirections={priceDirections}
 													navigationProviderIds={visibleProviders.map(
 														(candidate) => candidate.provider.api_provider_id,
 													)}
@@ -1904,21 +1941,21 @@ export default function ModelPricingClient({
 												routingStatus={routingHealth[providerId] ?? null}
 												pricingTimeMs={pricingTimeMs}
 												variantLabels={providerVariantLabelsById.get(providerId) ?? null}
-												showCacheReadColumn={showCacheReadColumn}
-													isLastVisible={index === displayedOfferings.length - 1}
-													isSummaryActive={isActive}
-													serviceTiersExpanded={expandedServiceTierProviderIds.has(providerId)}
-													showServiceTierDisclosureGutter={isGroupedProviderView}
-													onToggleServiceTiers={isGroupedProviderView ? () => toggleServiceTiers(providerId) : undefined}
-												/>
+												priceDirections={priceDirections}
+												isLastVisible={index === displayedOfferings.length - 1}
+												isSummaryActive={isActive}
+												serviceTiersExpanded={expandedServiceTierProviderIds.has(providerId)}
+												showServiceTierDisclosureGutter={isGroupedProviderView}
+												onToggleServiceTiers={isGroupedProviderView ? () => toggleServiceTiers(providerId) : undefined}
+											/>
 										);
                                         return (
                                             <React.Fragment key={providerId + "-" + plan}>
                                                 {index === firstVariantIndex ? (
-                                                    <ProviderRouteSeparator colSpan={showCacheReadColumn ? 7 : 6} />
+													<ProviderRouteSeparator colSpan={visiblePriceColumns.length + 4} />
                                                 ) : null}
                                                 {index === firstExternalIndex ? (
-                                                    <ProviderRouteSeparator colSpan={showCacheReadColumn ? 7 : 6} kind="external" />
+													<ProviderRouteSeparator colSpan={visiblePriceColumns.length + 4} kind="external" />
                                                 ) : null}
                                                 {row}
                                             </React.Fragment>
