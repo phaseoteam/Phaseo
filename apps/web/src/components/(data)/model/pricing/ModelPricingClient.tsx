@@ -1431,14 +1431,14 @@ export default function ModelPricingClient({
 		});
 	}, []);
 	const visiblePriceColumns = useMemo(() => {
-		const sectionsByOffering = visibleOfferings.map(({ provider, plan }) =>
+		const sectionsByOffering = displayedOfferings.map(({ provider, plan }) =>
 			buildProviderSections(provider, plan, pricingTimeMs),
 		);
 		return buildProviderTablePriceColumns(sectionsByOffering).map((column) => ({
 			...column,
 			sort: PROVIDER_TABLE_PRICE_DIRECTIONS.find(({ direction }) => direction === column.direction)!.sort,
 		}));
-	}, [pricingTimeMs, visibleOfferings]);
+	}, [displayedOfferings, pricingTimeMs]);
 	const providerTableMinWidth = 696 + visiblePriceColumns.length * 112;
 	const priceColumnCounts = useMemo(
 		() =>

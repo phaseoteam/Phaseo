@@ -1235,6 +1235,13 @@ export default function PricingInsights({
 		? selectedMeter
 		: meterOptions[0]?.meter ?? "input_text_tokens";
 	const activeMeterRule = meterOptions.find((option) => option.meter === activeMeter);
+	const activeMeterSupportsEffectivePricing =
+		INPUT_METER_PREFERENCE.includes(
+			activeMeter as (typeof INPUT_METER_PREFERENCE)[number],
+		) ||
+		OUTPUT_METER_PREFERENCE.includes(
+			activeMeter as (typeof OUTPUT_METER_PREFERENCE)[number],
+		);
 	const effectivePricingHistoryState = useMemo(() => buildPricingHistoryState({
 			rows: historyRows,
 			usageByProvider,
@@ -1247,7 +1254,8 @@ export default function PricingInsights({
 			customStartMs,
 			customEndMs,
 		}), [activeMeter, customEndMs, customStartMs, historyNowMs, historyRows, historyRules, observedUsageByProviderPlan, pricingRange, usageByProvider]);
-	const hasEffectivePricing = effectivePricingHistoryState.hasData;
+	const hasEffectivePricing =
+		activeMeterSupportsEffectivePricing && effectivePricingHistoryState.hasData;
 	const displayedPricingView: PricingView = pricingView === "effective" && !hasEffectivePricing
 		? "listed"
 		: pricingView;
