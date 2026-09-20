@@ -2641,6 +2641,7 @@ function ChatPlaygroundContent({
 				if (latestThread) {
 					const errorMeta = {
 						...(compareMeta ?? {}),
+						...(finalMeta ?? {}),
 						client: buildClientMeta(performance.now()),
 						chat_request_error: nextRequestError,
 					};

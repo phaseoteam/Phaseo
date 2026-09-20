@@ -35,7 +35,7 @@ export function getChatPayloadRequestId(
 
 	if (endpoint !== "responses") return null;
 	return firstNonEmptyString(
-		response?.id,
+		response?.object === "response" ? response.id : null,
 		record.object === "response" ? record.id : null,
 	);
 }

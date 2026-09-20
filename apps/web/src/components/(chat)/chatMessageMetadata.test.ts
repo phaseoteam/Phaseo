@@ -24,6 +24,17 @@ describe("chat message metadata", () => {
 				"chat.completions",
 			),
 		).toBeNull();
+		expect(
+			getChatPayloadRequestId(
+				{
+					response: {
+						id: "chatcmpl_nested_provider_123",
+						object: "chat.completion",
+					},
+				},
+				"responses",
+			),
+		).toBeNull();
 	});
 
 	it("reads persisted and failed-request IDs from message metadata", () => {

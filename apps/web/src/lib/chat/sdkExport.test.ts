@@ -18,8 +18,57 @@ test("redacts explicit credentials but preserves text and unusual JSON strings",
   expect(sdkCode(request, "python")).toContain("request = {\n");
 });
 
-test("realtime, polling and unknown routes are not presented as generation exports", () => {
-  expect(sdkRequestFromChat("/api/chat/realtime/session", { method: "POST", body: '{"requestBody":{}}' })).toBeNull();
+test("live-preview, polling and unknown routes are not presented as generation exports", () => {
+  expect(sdkRequestFromChat("/api/chat/live/session", { method: "POST", body: '{"model":"openai/gpt-live-1"}' })).toBeNull();
   expect(sdkRequestFromChat("/api/chat/video?id=v1", { method: "GET" })).toBeNull();
   expect(sdkRequestFromChat("/api/chat/unknown", { method: "POST", body: '{"requestBody":{}}' })).toBeNull();
+});
+
+test("exports the public realtime session request instead of the private chat proxy", () => {
+  const request = sdkRequestFromChat("/api/chat/realtime/session", {
+    method: "POST",
+    body: JSON.stringify({
+      provider: "xai",
+      model: "grok-voice",
+      voice: "Ara",
+      instructions: "Be concise.",
+      thinkingLevel: "high",
+    }),
+  });
+
+  expect(request).toEqual({
+    endpoint: "/audio/realtime/sessions",
+    body: {
+      model: "spacex-ai/grok-voice",
+      provider: "spacex-ai",
+      voice: "Ara",
+      instructions: "Be concise.",
+      thinking_level: "high",
+    },
+  });
+  expect(sdkCode(request!, "typescript")).toContain('client.request("POST", "/audio/realtime/sessions"');
+  expect(sdkCode(request!, "python")).toContain('client.request("POST", "/audio/realtime/sessions", body=request)');
+});
+
+test.each([
+  ["text", undefined, "responses.create", "responses.create"],
+  ["image", undefined, "generateImage", "images.generate"],
+  ["video", undefined, "videos.generateAndWait", "videos.generate_and_wait"],
+  ["embeddings", undefined, "generateEmbedding", "embeddings.create"],
+  ["moderation", undefined, "generateModeration", "moderations.create"],
+  ["decisions", undefined, "decisions.make", "decisions.make"],
+  ["ocr", undefined, "ocr.create", "ocr.create"],
+  ["rerank", undefined, "rerank.create", "rerank.create"],
+  ["audio", "speech", "generateSpeech", "audio.speech.create"],
+  ["audio", "transcription", "generateTranscription", "audio.transcriptions.create"],
+  ["audio", "translation", "generateTranslation", "audio.translations.create"],
+  ["audio", "music", "music.generateAndWait", "music.generate_and_wait"],
+])("uses real SDK methods for %s %s", (room, action, typescriptMethod, pythonMethod) => {
+  const request = sdkRequestFromChat(`/api/chat/${room}`, {
+    method: "POST",
+    body: JSON.stringify({ action, requestBody: { model: "example/model", input: "Example" } }),
+  });
+  expect(request).not.toBeNull();
+  expect(sdkCode(request!, "typescript")).toContain(`client.${typescriptMethod}`);
+  expect(sdkCode(request!, "python")).toContain(`client.${pythonMethod}`);
 });
