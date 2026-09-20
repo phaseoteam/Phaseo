@@ -15,7 +15,7 @@ import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { parseAsString, useQueryStates } from "nuqs";
 import {
     ArrowDown,
     ArrowUp,
@@ -846,15 +846,18 @@ export default function ModelPricingClient({
 		placeholderData: keepPreviousData,
 	});
 	const providers = pricingQuery.data ?? initialProviders;
-    const pathname = usePathname() ?? "/";
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const effectiveSearchParams = useMemo(
-        () => searchParams ?? new URLSearchParams(),
-        [searchParams]
+    const [queryState, updateUrlState] = useQueryStates(
+        {
+            [PROVIDER_QUERY_KEY]: parseAsString,
+            [SORT_QUERY_KEY]: parseAsString,
+            [SORT_DIRECTION_QUERY_KEY]: parseAsString,
+            [LEGACY_PROVIDER_VIEW_QUERY_KEY]: parseAsString,
+        },
+        // These controls only affect client UI; a route navigation refetches the model page.
+        { shallow: true, history: "replace", scroll: false },
     );
 	const requestedProviderId =
-		effectiveSearchParams.get(PROVIDER_QUERY_KEY)?.trim() || null;
+		queryState.provider?.trim() || null;
     const [selectedPercentile, setSelectedPercentile] = useState<ModelPercentile>(
         DEFAULT_MODEL_PERCENTILE,
     );
@@ -970,10 +973,10 @@ export default function ModelPricingClient({
     };
 
     const [sort, setSort] = useState<SortOption>(() => {
-        return parseSortOption(effectiveSearchParams.get(SORT_QUERY_KEY));
+        return parseSortOption(queryState.sort);
     });
     const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
-        const fromUrl = effectiveSearchParams.get(SORT_DIRECTION_QUERY_KEY);
+        const fromUrl = queryState.dir;
         return isSortDirection(fromUrl) ? fromUrl : "desc";
     });
     const [providerStatusFilters, setProviderStatusFilters] = useState<ProviderStatusFilter[]>(
@@ -985,7 +988,7 @@ export default function ModelPricingClient({
 	const inspectorProviderIdRef = useRef<string | null>(null);
 	const lastAppliedUrlProviderIdRef = useRef<string | null | undefined>(undefined);
 	const urlProviderIdRef = useRef<string | null>(
-		effectiveSearchParams.get(PROVIDER_QUERY_KEY)?.trim() || null,
+		requestedProviderId,
 	);
 
     useEffect(
@@ -1448,26 +1451,6 @@ export default function ModelPricingClient({
         };
     }, [showCacheReadColumn, visibleProviders.length]);
 
-    const updateUrlState = useCallback(
-        (updates: Record<string, string | null>) => {
-            const next = new URLSearchParams(effectiveSearchParams.toString());
-            for (const [key, value] of Object.entries(updates)) {
-                if (!value) {
-                    next.delete(key);
-                } else {
-                    next.set(key, value);
-                }
-            }
-            const nextQuery = next.toString();
-            const hash = window.location.hash;
-            const nextUrl = nextQuery ? `${pathname}?${nextQuery}${hash}` : `${pathname}${hash}`;
-            router.replace(nextUrl, {
-                scroll: false,
-            });
-        },
-        [effectiveSearchParams, pathname, router]
-    );
-
 	useEffect(() => {
 		return subscribeProviderInspectorSelection((selection) => {
 			const providerId = selection?.providerId ?? null;
@@ -1526,21 +1509,21 @@ export default function ModelPricingClient({
 	}, [activeFilterCount, filteredProviders, modelId]);
 
     useEffect(() => {
-        if (!effectiveSearchParams.has(LEGACY_PROVIDER_VIEW_QUERY_KEY)) return;
+        if (queryState.provider_view === null) return;
         updateUrlState({ [LEGACY_PROVIDER_VIEW_QUERY_KEY]: null });
-    }, [effectiveSearchParams, updateUrlState]);
+    }, [queryState.provider_view, updateUrlState]);
 
     useEffect(() => {
-        const nextSort = parseSortOption(effectiveSearchParams.get(SORT_QUERY_KEY));
+        const nextSort = parseSortOption(queryState.sort);
         setSort((current) => (current === nextSort ? current : nextSort));
-        const nextDirection = isSortDirection(effectiveSearchParams.get(SORT_DIRECTION_QUERY_KEY))
-            ? (effectiveSearchParams.get(SORT_DIRECTION_QUERY_KEY) as SortDirection)
+        const nextDirection = isSortDirection(queryState.dir)
+            ? queryState.dir
             : getDefaultSortDirection(nextSort);
         setSortDirection((current) =>
             current === nextDirection ? current : nextDirection
         );
 
-    }, [effectiveSearchParams]);
+    }, [queryState.sort, queryState.dir]);
 
     const onColumnSortChange = useCallback(
         (nextSort: Exclude<SortOption, "default">) => {
