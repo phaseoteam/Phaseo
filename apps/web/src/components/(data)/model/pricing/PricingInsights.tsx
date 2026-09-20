@@ -72,6 +72,8 @@ import {
 	buildProviderTablePriceSummary,
 	calculateDailyAveragePricingMeterPrice,
 	fmtUSD,
+	formatPricingHistoryUnitLabel,
+	normalizePricingHistoryPrice,
 	resolvePricingMeterPrice,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import {
@@ -436,23 +438,26 @@ function getPriceForMeter(
 			meterPreference,
 			timestampMs,
 		) ?? selectedRule;
-	if (!rule.timeWindows?.length) return rule.pricePer1MUnits;
+	if (!rule.timeWindows?.length) {
+		return normalizePricingHistoryPrice(rule.pricePer1MUnits, rule.unit);
+	}
 	if (mode === "exact") {
 		const date = new Date(timestampMs);
 		const utcTime = `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
-		return resolvePricingMeterPrice({
+		const pricePer1MUnits = resolvePricingMeterPrice({
 			price_per_unit: String(rule.pricePerUnit),
 			time_windows: rule.timeWindows,
 		}, utcTime, date).pricePerUnit * (1_000_000 / rule.unitSize);
+		return normalizePricingHistoryPrice(pricePer1MUnits, rule.unit);
 	}
 	const cached = dailyAveragePricePer1MCache.get(rule);
-	if (cached !== undefined) return cached;
+	if (cached !== undefined) return normalizePricingHistoryPrice(cached, rule.unit);
 	const average = calculateDailyAveragePricingMeterPrice({
 		price_per_unit: String(rule.pricePerUnit),
 		time_windows: rule.timeWindows,
 	}) * (1_000_000 / rule.unitSize);
 	dailyAveragePricePer1MCache.set(rule, average);
-	return average;
+	return normalizePricingHistoryPrice(average, rule.unit);
 }
 
 const RANGE_LABELS: Array<{ value: PricingRange; label: string }> = [
@@ -1208,9 +1213,7 @@ export default function PricingInsights({
 		);
 		for (const rule of historyRules) {
 			if (!availableProviderPlans.has(`${rule.providerId}\u0000${rule.pricingPlan}`)) continue;
-			if (pricingView === "effective"
-				&& !INPUT_METER_PREFERENCE.includes(rule.meter as (typeof INPUT_METER_PREFERENCE)[number])
-				&& !OUTPUT_METER_PREFERENCE.includes(rule.meter as (typeof OUTPUT_METER_PREFERENCE)[number])) continue;
+			if (rule.unit.trim().toLowerCase() === "usd") continue;
 			if (!meters.has(rule.meter)) meters.set(rule.meter, rule);
 		}
 		const preferred = [
@@ -1227,7 +1230,7 @@ export default function PricingInsights({
 			if (aRank !== bRank) return (aRank < 0 ? 999 : aRank) - (bRank < 0 ? 999 : bRank);
 			return a.meter.localeCompare(b.meter);
 		});
-	}, [historyRows, historyRules, pricingView]);
+	}, [historyRows, historyRules]);
 	const activeMeter = meterOptions.some((option) => option.meter === selectedMeter)
 		? selectedMeter
 		: meterOptions[0]?.meter ?? "input_text_tokens";
@@ -1363,11 +1366,13 @@ export default function PricingInsights({
 		setSortDirection("desc");
 	};
 
-	const meterUnitLabel = activeMeterRule
-		? activeMeterRule.unit === "token" && activeMeterRule.unitSize === 1_000_000
-			? "USD per 1M tokens"
-			: `USD per ${activeMeterRule.unitSize.toLocaleString()} ${activeMeterRule.unit}${activeMeterRule.unitSize === 1 ? "" : "s"}`
-		: "USD";
+	const meterUnitLabel = formatPricingHistoryUnitLabel(
+		activeMeterRule?.unit,
+		activeMeterRule?.unitSize,
+	);
+	const hasTokenPricing = effectiveRows.some((row) =>
+		row.listedInputPricePer1M != null || row.listedOutputPricePer1M != null,
+	);
 	const renderPricingHistory = (expanded = false) => (
 		<div className={cn("min-w-0", expanded ? "space-y-5" : "space-y-4 p-4 sm:p-5")}>
 			<div className="space-y-3">
@@ -1492,24 +1497,24 @@ export default function PricingInsights({
 					<div className="space-y-1">
 						<h2 className="text-lg font-semibold">Pricing</h2>
 						<p className="text-xs text-muted-foreground">
-							List prices are current provider rates. Effective prices are weighted
-							by observed gateway traffic over the last 30 days. Summary values
-							average time-windowed schedules; one-week history shows each UTC change.
+							{hasTokenPricing
+								? "List prices are current provider rates. Effective prices are weighted by observed gateway traffic over the last 30 days. Summary values average time-windowed schedules; one-week history shows each UTC change."
+								: "List prices use normalized units for comparison. Summary values average time-windowed schedules; one-week history shows each UTC change."}
 						</p>
 					</div>
 				</div>
 			) : null}
 
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+			{hasTokenPricing ? <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="space-y-1">
 					<h3 className="text-sm font-medium text-foreground">Effective pricing</h3>
 					<p className="text-xs text-muted-foreground">
 						Weighted by observed usage over the last 30 days. Every provider with recorded pricing is included.
 					</p>
 				</div>
-			</div>
+			</div> : null}
 
-			<div className="overflow-hidden rounded-lg border border-zinc-200/80 bg-background shadow-sm dark:border-zinc-800">
+			{hasTokenPricing ? <div className="overflow-hidden rounded-lg border border-zinc-200/80 bg-background shadow-sm dark:border-zinc-800">
 				<div className="grid grid-cols-1 divide-y divide-border/60 border-b border-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
 					<div className="px-4 py-3">
 						<p className="text-xs text-muted-foreground">Weighted input price</p>
@@ -1766,7 +1771,7 @@ export default function PricingInsights({
 					</Table>
 				</ScrollArea>
 				</div>
-			</div>
+			</div> : renderPricingHistory()}
 
 			<Dialog open={isHistoryExpanded} onOpenChange={(open) => {
 				setIsHistoryExpanded(open);

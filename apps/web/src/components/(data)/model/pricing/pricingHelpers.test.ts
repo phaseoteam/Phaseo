@@ -2,6 +2,8 @@ import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
 	buildProviderSections,
 	buildProviderTablePriceSummary,
+	formatPricingHistoryUnitLabel,
+	normalizePricingHistoryPrice,
 	calculateDailyAveragePricingMeterPrice,
 	getAvailableProviderTablePriceDirections,
 	getUtcPricingScheduleTimes,
@@ -266,6 +268,191 @@ describe("buildProviderSections", () => {
 			unitShortLabel: "/sec",
 		});
 	});
+
+	test.each([
+		{
+			name: "bytes",
+			meter: "input_text_bytes",
+			unit: "byte",
+			unitSize: 1_000,
+			price: 0.015,
+			direction: "input" as const,
+			expectedPrice: 15,
+			expectedUnit: "Per 1M bytes",
+			expectedShortUnit: "/M bytes",
+		},
+		{
+			name: "characters",
+			meter: "input_characters",
+			unit: "character",
+			unitSize: 1_000,
+			price: 0.1,
+			direction: "input" as const,
+			expectedPrice: 100,
+			expectedUnit: "Per 1M characters",
+			expectedShortUnit: "/M chars",
+		},
+		{
+			name: "pixels",
+			meter: "image_pixels",
+			unit: "pixel",
+			unitSize: 1_000,
+			price: 0.002,
+			direction: "output" as const,
+			expectedPrice: 2,
+			expectedUnit: "Per 1M pixels",
+			expectedShortUnit: "/MP",
+		},
+		{
+			name: "pages",
+			meter: "input_pages",
+			unit: "page",
+			unitSize: 100,
+			price: 1,
+			direction: "input" as const,
+			expectedPrice: 0.01,
+			expectedUnit: "Per page",
+			expectedShortUnit: "/page",
+		},
+		{
+			name: "frames",
+			meter: "output_video_frames",
+			unit: "frame",
+			unitSize: 100,
+			price: 0.7,
+			direction: "output" as const,
+			expectedPrice: 0.007,
+			expectedUnit: "Per frame",
+			expectedShortUnit: "/frame",
+		},
+		{
+			name: "messages",
+			meter: "input_text_messages",
+			unit: "message",
+			unitSize: 100,
+			price: 0.4,
+			direction: "input" as const,
+			expectedPrice: 0.004,
+			expectedUnit: "Per message",
+			expectedShortUnit: "/message",
+		},
+		{
+			name: "credits",
+			meter: "bfl_credits",
+			unit: "credit",
+			unitSize: 100,
+			price: 1,
+			direction: "output" as const,
+			expectedPrice: 0.01,
+			expectedUnit: "Per credit",
+			expectedShortUnit: "/credit",
+		},
+		{
+			name: "images",
+			meter: "output_image",
+			unit: "image",
+			unitSize: 1,
+			price: 0.04,
+			direction: "output" as const,
+			expectedPrice: 0.04,
+			expectedUnit: "Per image",
+			expectedShortUnit: "/image",
+		},
+		{
+			name: "videos",
+			meter: "output_video",
+			unit: "video",
+			unitSize: 1,
+			price: 0.4,
+			direction: "output" as const,
+			expectedPrice: 0.4,
+			expectedUnit: "Per video",
+			expectedShortUnit: "/video",
+		},
+		{
+			name: "requests",
+			meter: "requests",
+			unit: "request",
+			unitSize: 1_000,
+			price: 10,
+			direction: "input" as const,
+			expectedPrice: 0.01,
+			expectedUnit: "Per request",
+			expectedShortUnit: "/request",
+		},
+	])(
+		"normalizes $name pricing for provider table summaries",
+		({ meter, unit, unitSize, price, direction, expectedPrice, expectedUnit, expectedShortUnit }) => {
+			const provider = makeProviderPricing();
+			provider.pricing_rules = [{
+				...provider.pricing_rules[0]!,
+				id: `normalized-${unit}`,
+				meter,
+				unit,
+				unit_size: unitSize,
+				price_per_unit: price,
+				match: [],
+			}];
+
+			const summary = buildProviderTablePriceSummary(
+				buildProviderSections(provider, "standard"),
+				direction,
+			);
+
+			expect(summary.primary).toMatchObject({
+				unitLabel: expectedUnit,
+				unitShortLabel: expectedShortUnit,
+			});
+			expect(summary.primary?.price).toBeCloseTo(expectedPrice);
+		},
+	);
+
+	test("labels provider-reported USD pricing as pass-through", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0]!,
+			id: "native-provider-cost",
+			meter: "deepinfra_cost_usd",
+			unit: "USD",
+			unit_size: 1,
+			price_per_unit: 1,
+			match: [],
+		}];
+
+		const summary = buildProviderTablePriceSummary(
+			buildProviderSections(provider, "standard"),
+			"output",
+		);
+
+		expect(summary.primary).toMatchObject({
+			formattedPrice: "Pass-through",
+			unitLabel: "Provider-reported cost",
+			unitShortLabel: "",
+			sortValue: null,
+		});
+		expect(summary.sortValue).toBeNull();
+	});
+
+	test.each([
+		["token", 5, 5, "USD per 1M tokens"],
+		["character", 12, 12, "USD per 1M characters"],
+		["pixel", 0.053, 0.053, "USD per 1M pixels"],
+		["second", 1_000, 0.001, "USD per second"],
+		["minute", 60_000, 0.001, "USD per second"],
+		["request", 2_000, 0.002, "USD per request"],
+		["page", 2_000, 0.002, "USD per page"],
+		["image", 40_000, 0.04, "USD per image"],
+		["frame", 7_000, 0.007, "USD per frame"],
+		["credit", 10_000, 0.01, "USD per credit"],
+	])(
+		"normalizes %s pricing history to its canonical display unit",
+		(unit, pricePer1MUnits, expectedPrice, expectedLabel) => {
+			expect(normalizePricingHistoryPrice(pricePer1MUnits as number, unit as string))
+				.toBeCloseTo(expectedPrice as number);
+			expect(formatPricingHistoryUnitLabel(unit as string, 1))
+				.toBe(expectedLabel);
+		},
+	);
 
 	test("surfaces per-request web search pricing in provider sheet sections", () => {
 		const provider = makeProviderPricing();

@@ -1533,7 +1533,7 @@ export default function ModelOverviewSections({
 			{!isPrivateModel ? <Section id="pricing">
 				<SectionHeader
 					title="Pricing"
-					description="Weighted provider pricing over the last 30 days, with recent route pricing history below."
+					description="Provider list prices, observed effective pricing, and recent route pricing history."
 				/>
 				<Suspense fallback={<PricingSectionSkeleton />}>
 					<ModelPricingInsightsOverviewSection
