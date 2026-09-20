@@ -273,20 +273,50 @@ videosRoutes.get("/", withRuntime(async (req) => {
 	if (!await isVideoApiAccessEnabled(auth.value)) return featureDisabledResponse();
 	const url = new URL(req.url);
 	const limit = parseVideoListLimit(url);
+	const offsetRaw = Number(url.searchParams.get("offset") ?? "");
+	const offset = Number.isFinite(offsetRaw) ? Math.max(0, Math.min(10_000, Math.trunc(offsetRaw))) : 0;
 	const statuses = parseVideoListStatuses(url);
 	const order = url.searchParams.get("order") === "asc" ? "asc" : "desc";
 	const after = normalizeText(url.searchParams.get("after"));
-	const records = await listTeamVideoJobs({
-		workspaceId: authValue.workspaceId,
-		limit: 101,
-		statuses: statuses.length > 0 ? statuses : undefined,
-	});
-	const ordered = [...records].sort((a, b) => {
-		const delta = Date.parse(a.createdAt ?? "") - Date.parse(b.createdAt ?? "");
-		return order === "asc" ? delta : -delta;
-	});
-	const afterIndex = after ? ordered.findIndex((record) => record.videoId === after) : -1;
-	const pageCandidates = afterIndex >= 0 ? ordered.slice(afterIndex + 1) : ordered;
+	let pageCandidates: Awaited<ReturnType<typeof listTeamVideoJobs>>;
+	if (!after) {
+		pageCandidates = await listTeamVideoJobs({
+			workspaceId: authValue.workspaceId,
+			limit: limit + 1,
+			offset,
+			order,
+			statuses: statuses.length > 0 ? statuses : undefined,
+		});
+	} else {
+		pageCandidates = [];
+		let storageOffset = 0;
+		let remainingOffset = offset;
+		let foundCursor = false;
+		while (pageCandidates.length < limit + 1) {
+			const chunk = await listTeamVideoJobs({
+				workspaceId: authValue.workspaceId,
+				limit: 500,
+				offset: storageOffset,
+				order,
+				statuses: statuses.length > 0 ? statuses : undefined,
+			});
+			if (chunk.length === 0) break;
+			storageOffset += chunk.length;
+			for (const record of chunk) {
+				if (!foundCursor) {
+					foundCursor = record.videoId === after;
+					continue;
+				}
+				if (remainingOffset > 0) {
+					remainingOffset -= 1;
+					continue;
+				}
+				pageCandidates.push(record);
+				if (pageCandidates.length >= limit + 1) break;
+			}
+			if (chunk.length < 500) break;
+		}
+	}
 	const pageRecords = pageCandidates.slice(0, limit);
 	const data = await Promise.all(pageRecords.map((record) =>
 		toPublicVideoResponse({

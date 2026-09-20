@@ -11289,6 +11289,7 @@ export type ListBatchesParams = {
   path?: Record<string, never>;
   query?: {
     limit?: number;
+    offset?: number;
     status?: string[];
     statuses?: string;
   };
@@ -15792,7 +15793,10 @@ export async function listVideoModelsAlias(
 export type ListVideosParams = {
   path?: Record<string, never>;
   query?: {
+    after?: string;
     limit?: number;
+    offset?: number;
+    order?: "asc" | "desc";
     status?: string[];
   };
   headers?: Record<string, never>;

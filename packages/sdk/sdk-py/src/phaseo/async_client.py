@@ -17,8 +17,10 @@ from .helpers import check_capabilities, check_parameter_support, parse_output, 
 from .jobs import JobFailedError, JobTimeoutError, job_status, _validate_options
 from .transport import APIResponse, PhaseoHTTPError, RawResponse, RequestHook, decode_response, request_trace_url, retry_after, validate_controls
 from .media import upload_input
+from .pagination import aiter_items, aiter_pages
 
 ParsedOutput = TypeVar("ParsedOutput", bound=BaseModel)
+PREFLIGHT_STRUCTURAL_FIELDS = {"model", "input", "messages", "prompt", "contents", "provider", "providers", "routing", "metadata", "session_id", "app", "webhook", "idempotency_key"}
 
 
 class AsyncResource:
@@ -81,6 +83,9 @@ class AsyncModels(AsyncResource):
             endpoint=endpoint,
             provider=provider,
         )
+
+    async def preflight(self, request: dict[str, Any], *, endpoint: str | None = None, provider: str | list[str] | None = None) -> dict[str, Any]:
+        return await self.client.preflight_request(request, endpoint=endpoint, provider=provider)
 
 
 class AsyncImages(AsyncResource):
@@ -191,6 +196,16 @@ class AsyncJobs(AsyncResource):
 
     def resume(self, job_id: str) -> AsyncJobHandle:
         return AsyncJobHandle(self, job_id)
+
+    def pages(self, params: dict[str, Any] | None = None) -> AsyncIterator[APIResponse]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return aiter_pages(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
+    def all(self, params: dict[str, Any] | None = None) -> AsyncIterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return aiter_items(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
 
     async def wait(self, job_id: str, *, interval: float = 5, timeout: float = 1800, on_poll: Callable[..., Any] | None = None, _initial: dict[str, Any] | None = None) -> APIResponse:
         last = None
@@ -403,6 +418,14 @@ class AsyncPhaseo:
             endpoint=endpoint,
             provider=provider,
         )
+
+    async def preflight_request(self, request: dict[str, Any], *, endpoint: str | None = None, provider: str | list[str] | None = None) -> dict[str, Any]:
+        model = str(request.get("model") or "").strip()
+        if not model:
+            raise ValueError("preflight requires request['model']")
+        checked = {key: value for key, value in request.items() if key not in PREFLIGHT_STRUCTURAL_FIELDS and value is not None}
+        support = await self.check_model_parameters(model, checked, endpoint=endpoint, provider=provider)
+        return {"ok": bool(support.get("ok")), "model": model, "checked_parameters": checked, "parameter_support": support}
 
     async def close(self) -> None:
         if self._owned:

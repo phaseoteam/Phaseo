@@ -472,12 +472,17 @@ export async function listPendingVideoJobs(
 export async function listTeamVideoJobs(args: {
 	workspaceId: string;
 	limit?: number;
+	offset?: number;
+	order?: "asc" | "desc";
 	statuses?: string[];
 }): Promise<VideoJobRecord[]> {
 	const records = await listTeamAsyncOperations({
 		workspaceId: args.workspaceId,
 		kind: "video",
 		limit: args.limit,
+		offset: args.offset,
+		orderBy: "created_at",
+		ascending: args.order === "asc",
 		statuses: args.statuses,
 	});
 	return records.map((record) => ({

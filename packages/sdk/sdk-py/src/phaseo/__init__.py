@@ -24,6 +24,7 @@ from .jobs import (
     JobWaitOptions, JobTimeoutError, JobCancelledError, JobFailedError, JobHandle,
     wait_for_job, create_and_wait_for_job,
 )
+from .pagination import iter_items, iter_pages
 from .webhooks import compute_async_webhook_signature, verify_async_webhook_signature
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
@@ -33,6 +34,10 @@ REGIONAL_BASE_URLS = {
     "us": "https://us.api.phaseo.app/v1",
 }
 DEFAULT_USER_AGENT = "phaseo-python/2.0.7"
+PREFLIGHT_STRUCTURAL_FIELDS = {
+    "model", "input", "messages", "prompt", "contents", "provider", "providers", "routing",
+    "metadata", "session_id", "app", "webhook", "idempotency_key",
+}
 
 
 class _ChatCompletionsResource:
@@ -157,6 +162,16 @@ class _BatchesResource:
     def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._parent.list_batches(params)
 
+    def pages(self, params: dict[str, Any] | None = None) -> Iterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return iter_pages(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
+    def all(self, params: dict[str, Any] | None = None) -> Iterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return iter_items(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
     def list_models(self) -> dict[str, Any]:
         return self._parent.list_batch_models()
 
@@ -226,6 +241,15 @@ class _ModelsResource:
             provider=provider,
         )
 
+    def preflight(
+        self,
+        request: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        return self._parent.preflight_request(request, endpoint=endpoint, provider=provider)
+
     def get_deprecation_info(self, model_id: str) -> Optional[ModelLifecycleInfo]:
         return self._parent.get_model_deprecation_info(model_id)
 
@@ -257,6 +281,16 @@ class _VideosResource:
 
     def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._parent.list_videos(params)
+
+    def pages(self, params: dict[str, Any] | None = None) -> Iterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return iter_pages(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
+    def all(self, params: dict[str, Any] | None = None) -> Iterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return iter_items(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
 
     def retrieve(self, video_id: str) -> dict[str, Any]:
         return self._parent.get_video(video_id)
@@ -1359,6 +1393,27 @@ class Phaseo:
             endpoint=endpoint,
             provider=provider,
         )
+
+    def preflight_request(
+        self,
+        request: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        model = str(request.get("model") or "").strip()
+        if not model:
+            raise ValueError("preflight requires request['model']")
+        checked = {key: value for key, value in request.items() if key not in PREFLIGHT_STRUCTURAL_FIELDS and value is not None}
+        lifecycle = self.validate_model(model)
+        parameters = self.check_model_parameters(model, checked, endpoint=endpoint, provider=provider)
+        return {
+            "ok": bool(lifecycle.get("ok")) and bool(parameters.get("ok")),
+            "model": model,
+            "checked_parameters": checked,
+            "lifecycle": lifecycle,
+            "parameter_support": parameters,
+        }
 
     def list_team_models(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         request = params or {}

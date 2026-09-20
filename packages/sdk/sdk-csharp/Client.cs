@@ -579,6 +579,22 @@ namespace PhaseoSdk
             return ParameterSupport.Check(node, values, options);
         }
 
+        public async Task<System.Text.Json.Nodes.JsonObject> PreflightRequest(IReadOnlyDictionary<string, object?> request, IReadOnlyDictionary<string, object?>? options = null)
+        {
+            var modelId = request.TryGetValue("model", out var model) ? model?.ToString()?.Trim() : null;
+            if (string.IsNullOrWhiteSpace(modelId)) throw new ArgumentException("preflight requires request model", nameof(request));
+            var structural = new HashSet<string>(StringComparer.Ordinal) { "model", "input", "messages", "prompt", "contents", "provider", "providers", "routing", "metadata", "session_id", "app", "webhook", "idempotency_key" };
+            var values = request.Where(entry => entry.Value is not null && !structural.Contains(entry.Key)).ToDictionary(entry => entry.Key, entry => entry.Value);
+            var support = await CheckModelParameters(modelId, values, options).ConfigureAwait(false);
+            return new System.Text.Json.Nodes.JsonObject
+            {
+                ["ok"] = support["ok"]?.DeepClone(),
+                ["model_id"] = modelId,
+                ["checked_parameters"] = System.Text.Json.JsonSerializer.SerializeToNode(values),
+                ["parameter_support"] = support.DeepClone(),
+            };
+        }
+
         public Task<Dictionary<string, object>?> ListProviders(Dictionary<string, string>? query = null)
         {
             return WithLifecycleAndTelemetry("providers", query, false, () => Operations.ListProvidersAsync(_client, query: query));

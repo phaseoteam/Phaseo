@@ -6,6 +6,10 @@ This package currently exposes the generated headers and operation helpers.
 
 `src/phaseo.hpp` adds `GetModelEndpointCapabilities` plus `CheckParameterSupport`. The checker returns route matches and highlights unsupported, partially supported, unknown, and out-of-range values. Because the preview C++ transport returns raw JSON, deserialize the capability response into `ModelEndpointCapabilities` before calling the checker.
 
+`PreflightRequest` validates a complete request from the same capability object.
+`workflows.hpp` adds typed `PageIterator<T>` and `JobHandle<T>` helpers for lazy
+pagination and resuming existing asynchronous jobs.
+
 ## Status
 
 - Preview SDK

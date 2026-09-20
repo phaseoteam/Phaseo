@@ -1511,6 +1511,12 @@ function parseBatchListLimit(url: URL): number {
 	return Math.max(1, Math.min(100, Math.trunc(raw)));
 }
 
+function parseBatchListOffset(url: URL): number {
+	const raw = Number(url.searchParams.get("offset") ?? "");
+	if (!Number.isFinite(raw)) return 0;
+	return Math.max(0, Math.min(10_000, Math.trunc(raw)));
+}
+
 function parseBatchListStatuses(url: URL): string[] {
 	const values = [
 		...url.searchParams.getAll("status"),
@@ -1555,13 +1561,16 @@ async function handleList(req: Request) {
 	if (accessDenied) return accessDenied;
 	const url = new URL(req.url);
 	const limit = parseBatchListLimit(url);
+	const offset = parseBatchListOffset(url);
 	const statuses = parseBatchListStatuses(url);
 	const records = await listTeamBatchJobs({
 		workspaceId: auth.workspaceId,
-		limit,
+		limit: limit + 1,
+		offset,
 		statuses: statuses.length > 0 ? statuses : undefined,
 	});
-	const data = records.map((record) => decorateBatchPayload({
+	const pageRecords = records.slice(0, limit);
+	const data = pageRecords.map((record) => decorateBatchPayload({
 		requestUrl: req.url,
 		publicBatchId: record.batchId,
 		meta: record.meta,
@@ -1584,7 +1593,7 @@ async function handleList(req: Request) {
 		data,
 		first_id: typeof data[0]?.id === "string" ? data[0].id : null,
 		last_id: typeof data[data.length - 1]?.id === "string" ? data[data.length - 1].id : null,
-		has_more: false,
+		has_more: records.length > pageRecords.length,
 	});
 }
 

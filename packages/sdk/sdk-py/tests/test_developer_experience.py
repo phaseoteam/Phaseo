@@ -219,6 +219,8 @@ def test_live_model_parameter_checks_identify_partial_support_and_invalid_values
         {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
         {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
         {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        {"method": "GET", "path": "/data/models", "json": {"models": [{"model_id": "openai/gpt-5", "status": "active"}]}},
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
     ])
     with httpx.Client(transport=mock) as http:
         with Phaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
@@ -238,6 +240,10 @@ def test_live_model_parameter_checks_identify_partial_support_and_invalid_values
             unsupported = client.models.check_parameters("openai/gpt-5", {"seed": 42})
             assert unsupported["parameters"][0]["status"] == "unsupported"
             assert "seed is not supported" in " ".join(unsupported["issues"])
+
+            preflight = client.models.preflight({"model": "openai/gpt-5", "input": "hello", "temperature": 0.7}, endpoint="responses")
+            assert preflight["ok"]
+            assert preflight["checked_parameters"] == {"temperature": 0.7}
     mock.assert_done()
 
 

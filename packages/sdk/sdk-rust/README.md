@@ -45,6 +45,10 @@ let report = client.check_model_parameters(
 )?;
 ```
 
+Use `client.preflight_request(...)` to validate a complete request against live
+routes. `workflows::Pager` and `workflows::JobHandle` provide lazy pagination and
+resumable job polling.
+
 ## Development
 
 ```bash

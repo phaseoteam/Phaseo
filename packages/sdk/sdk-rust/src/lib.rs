@@ -7,6 +7,7 @@ pub mod gen;
 pub mod model_ids;
 mod parameter_support;
 mod phaseo;
+pub mod workflows;
 
 pub use parameter_support::{check_parameter_support, ParameterSupportOptions};
 pub use phaseo::{

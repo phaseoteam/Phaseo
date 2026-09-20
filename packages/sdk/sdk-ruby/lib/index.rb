@@ -5,6 +5,7 @@ require "securerandom"
 require "cgi"
 require "uri"
 require_relative "phaseo_sdk/model_ids"
+require_relative "phaseo_sdk/workflows"
 require_relative "gen/client"
 require_relative "gen/models"
 require_relative "gen/operations"
@@ -383,6 +384,17 @@ module PhaseoSdk
 
     def check_model_parameters(model_id, values, options = {})
       self.class.check_parameter_support(model_endpoint_capabilities(model_id), values, options)
+    end
+
+    def preflight_request(request, options = {})
+      model_id = (request["model"] || request[:model]).to_s.strip
+      raise ArgumentError, "preflight requires request model" if model_id.empty?
+      structural = %w[model input messages prompt contents provider providers routing metadata session_id app webhook idempotency_key]
+      values = request.each_with_object({}) do |(name, value), result|
+        result[name] = value unless value.nil? || structural.include?(name.to_s)
+      end
+      support = check_model_parameters(model_id, values, options)
+      { "ok" => !!(support["ok"] || support[:ok]), "model_id" => model_id, "checked_parameters" => values, "parameter_support" => support }
     end
 
     # Builds a UI-friendly report from live model endpoint metadata.

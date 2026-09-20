@@ -1,8 +1,19 @@
 import { describe, expect, expectTypeOf, test, vi } from "vitest";
-import { Phaseo } from "../src/index.js";
+import { paginateItems, Phaseo } from "../src/index.js";
 import type { AsyncWebhookPublicState, VideoBillingSummary, VideoStatusResponse } from "../src/index.js";
 
 describe("Phaseo video helpers", () => {
+  test("paginates using the returned item count", async () => {
+    const offsets: number[] = [];
+    const items: number[] = [];
+    for await (const item of paginateItems(async ({ offset }) => {
+      offsets.push(offset);
+      return offset === 0 ? { data: [1, 2], has_more: true } : { data: [3], has_more: false };
+    }, { limit: 2 })) items.push(item);
+    expect(items).toEqual([1, 2, 3]);
+    expect(offsets).toEqual([0, 2]);
+  });
+
   test("VideoStatusResponse exposes normalized async lifecycle fields", () => {
     expectTypeOf<VideoStatusResponse>().toHaveProperty("lifecycle_status").toEqualTypeOf<
       "pending" | "running" | "completed" | "failed" | "cancelled" | "expired" | undefined

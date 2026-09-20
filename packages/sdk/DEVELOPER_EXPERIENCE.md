@@ -11,8 +11,11 @@ job orchestration. Preserve existing resource methods and generated contracts.
 - Native async Python resources, streaming, job waiting and deterministic cleanup.
 - Runnable TypeScript/Python room exports and request trace links.
 - Resumable media jobs, streamed downloads and batch result helpers.
+- Native offset pagination that stops on `has_more: false`, empty pages, or a
+  non-advancing response, plus resumable job handles in every gateway SDK.
 - Optional schema validation and stream accumulation helpers.
-- Explicit catalogue capability validation with useful incompatibility reports.
+- Full-request preflight against live model-route capabilities, with structural
+  prompt fields excluded and unsupported or invalid generation parameters highlighted.
 - Public deterministic test transports and examples; no paid providers in CI.
 
 ## Shared core contract

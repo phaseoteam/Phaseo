@@ -76,7 +76,11 @@ Use `getModelEndpointCapabilities` for live provider routes, or `checkModelParam
 
 ```java
 JsonNode report = client.checkModelParameters("openai/gpt-5.4", Map.of("temperature", 0.7), Map.of("endpoint", "responses"));
+JsonNode preflight = client.preflightRequest(Map.of("model", "openai/gpt-5.4", "input", "Hello", "temperature", 0.7), Map.of("endpoint", "responses"));
 ```
+
+`Workflows.PageIterator<T>` provides lazy offset pagination, and
+`Workflows.JobHandle<T>` refreshes or waits for an existing job ID.
 
 Use `provider_availability_reason` with `availability=all` when you want rollout-state entries such as `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, or `soft_blocked`. Use `capability_status` with `availability=all` when you want non-routable endpoint mappings such as `coming_soon` or `internal_testing`.
 

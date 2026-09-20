@@ -4,6 +4,7 @@ import {
 	getBatchJobMeta,
 	isBatchJobBilled,
 	listPendingBatchJobs,
+	listTeamBatchJobs,
 	markBatchJobBilled,
 	saveBatchFileMeta,
 	saveBatchJobMeta,
@@ -14,6 +15,7 @@ const {
 	getAsyncOperationMock,
 	isAsyncOperationBilledMock,
 	markAsyncOperationBilledMock,
+	listTeamAsyncOperationsMock,
 	updateAsyncOperationReconciliationMock,
 	upsertAsyncOperationMock,
 } = vi.hoisted(() => ({
@@ -21,6 +23,7 @@ const {
 	getAsyncOperationMock: vi.fn(),
 	isAsyncOperationBilledMock: vi.fn(),
 	markAsyncOperationBilledMock: vi.fn(),
+	listTeamAsyncOperationsMock: vi.fn(),
 	updateAsyncOperationReconciliationMock: vi.fn(),
 	upsertAsyncOperationMock: vi.fn(),
 }));
@@ -30,6 +33,7 @@ vi.mock("@core/async-operations", () => ({
 	getAsyncOperation: getAsyncOperationMock,
 	isAsyncOperationBilled: isAsyncOperationBilledMock,
 	markAsyncOperationBilled: markAsyncOperationBilledMock,
+	listTeamAsyncOperations: listTeamAsyncOperationsMock,
 	updateAsyncOperationReconciliation: updateAsyncOperationReconciliationMock,
 	upsertAsyncOperation: upsertAsyncOperationMock,
 	setAsyncOperationStatus: vi.fn(async () => undefined),
@@ -42,11 +46,29 @@ describe("batch-jobs metadata", () => {
 		getAsyncOperationMock.mockReset();
 		isAsyncOperationBilledMock.mockReset();
 		markAsyncOperationBilledMock.mockReset();
+		listTeamAsyncOperationsMock.mockReset();
 		updateAsyncOperationReconciliationMock.mockReset();
 		upsertAsyncOperationMock.mockReset();
 		isAsyncOperationBilledMock.mockResolvedValue(false);
 		claimAsyncOperationsForReconciliationMock.mockResolvedValue([]);
 		markAsyncOperationBilledMock.mockResolvedValue(true);
+	});
+
+	it("applies visible-record offsets after filtering internal file rows", async () => {
+		const record = (internalId: string) => ({
+			workspaceId: "team_1", kind: "batch", internalId, requestId: null, sessionId: null, appId: null,
+			provider: "openai", nativeId: internalId, model: null, status: "completed", meta: {}, billedAt: null,
+			nextReconcileAt: null, reconcileAttempts: 0, reconcileLockedAt: null, reconcileLockedBy: null,
+			lastReconcileError: null, createdAt: null, updatedAt: null,
+		});
+		listTeamAsyncOperationsMock.mockResolvedValueOnce([
+			record("__file__:input"), record("batch_1"), record("batch_2"), record("batch_3"),
+		]);
+
+		const records = await listTeamBatchJobs({ workspaceId: "team_1", offset: 1, limit: 2 });
+
+		expect(records.map((item) => item.batchId)).toEqual(["batch_2", "batch_3"]);
+		expect(listTeamAsyncOperationsMock).toHaveBeenCalledWith(expect.objectContaining({ offset: 0, limit: 100 }));
 	});
 
 	it("stores batch meta with native batch id when provided", async () => {

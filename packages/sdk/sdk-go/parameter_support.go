@@ -56,6 +56,19 @@ type ParameterSupportReport struct {
 	Issues         []string                  `json:"issues"`
 }
 
+type PreflightReport struct {
+	OK                bool                   `json:"ok"`
+	ModelID           string                 `json:"model_id"`
+	CheckedParameters map[string]any         `json:"checked_parameters"`
+	ParameterSupport  ParameterSupportReport `json:"parameter_support"`
+}
+
+var preflightStructuralFields = map[string]bool{
+	"model": true, "input": true, "messages": true, "prompt": true, "contents": true,
+	"provider": true, "providers": true, "routing": true, "metadata": true,
+	"session_id": true, "app": true, "webhook": true, "idempotency_key": true,
+}
+
 func splitModelID(modelID string) (map[string]string, error) {
 	parts := strings.SplitN(strings.TrimSpace(modelID), "/", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
@@ -80,6 +93,19 @@ func (c *Phaseo) CheckModelParameters(ctx context.Context, modelID string, value
 		return ParameterSupportReport{}, err
 	}
 	return CheckParameterSupport(payload, values, options), nil
+}
+
+// PreflightRequest checks every non-structural request field against live model routes.
+func (c *Phaseo) PreflightRequest(ctx context.Context, request map[string]any, options ParameterSupportOptions) (PreflightReport, error) {
+	modelID := strings.TrimSpace(asString(request["model"]))
+	if modelID == "" { return PreflightReport{}, fmt.Errorf("preflight requires request model") }
+	values := map[string]any{}
+	for name, value := range request {
+		if !preflightStructuralFields[name] && value != nil { values[name] = value }
+	}
+	support, err := c.CheckModelParameters(ctx, modelID, values, options)
+	if err != nil { return PreflightReport{}, err }
+	return PreflightReport{OK: support.OK, ModelID: modelID, CheckedParameters: values, ParameterSupport: support}, nil
 }
 
 // CheckParameterSupport builds a UI-friendly report from a model endpoint response.

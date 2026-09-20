@@ -257,6 +257,8 @@ test("live model parameter checks identify partial support and invalid values", 
     { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
     { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
     { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
+    { method: "GET", path: "/v1/models", json: { models: [{ model_id: "openai/gpt-5", status: "active" }] } },
+    { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
   ]);
 
   const supported = await client.models.checkParameters(
@@ -275,6 +277,10 @@ test("live model parameter checks identify partial support and invalid values", 
   const unsupported = await client.models.checkParameters("openai/gpt-5", { seed: 42 });
   expect(unsupported.parameters[0]).toMatchObject({ name: "seed", status: "unsupported" });
   expect(unsupported.issues.join(" ")).toContain("seed is not supported");
+
+  const preflight = await client.models.preflight({ model: "openai/gpt-5", input: "hello", temperature: 0.7 }, { endpoint: "responses" });
+  expect(preflight.ok).toBe(true);
+  expect(preflight.checkedParameters).toEqual({ temperature: 0.7 });
   mock.assertDone();
 });
 

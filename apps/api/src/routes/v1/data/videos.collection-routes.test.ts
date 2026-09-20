@@ -85,7 +85,9 @@ vi.mock("@core/video-jobs", async () => {
 	const actual = await vi.importActual<typeof import("@core/video-jobs")>("@core/video-jobs");
 	return {
 		...actual,
-		listTeamVideoJobs: vi.fn(async () => state.records),
+		listTeamVideoJobs: vi.fn(async (args: { limit?: number; offset?: number }) =>
+			state.records.slice(args.offset ?? 0, (args.offset ?? 0) + (args.limit ?? state.records.length)),
+		),
 		setVideoJobStatus: vi.fn(),
 	};
 });
@@ -235,7 +237,9 @@ describe("videosRoutes collection endpoints", () => {
 		});
 		expect(listTeamVideoJobs).toHaveBeenCalledWith({
 			workspaceId: "ws_video_collection_test",
-			limit: 101,
+			limit: 3,
+			offset: 0,
+			order: "desc",
 			statuses: ["completed", "complete", "success", "succeeded", "failed", "error"],
 		});
 	});
@@ -254,7 +258,9 @@ describe("videosRoutes collection endpoints", () => {
 		expect(response.status).toBe(200);
 		expect(listTeamVideoJobs).toHaveBeenCalledWith({
 			workspaceId: "ws_video_collection_test",
-			limit: 101,
+			limit: 4,
+			offset: 0,
+			order: "desc",
 			statuses: [
 				"completed",
 				"complete",
@@ -265,6 +271,53 @@ describe("videosRoutes collection endpoints", () => {
 				"expired",
 			],
 		});
+	});
+
+	it("paginates videos with offset and reports another page", async () => {
+		state.records = [
+			...state.records,
+			{ ...state.records[0], videoId: "video_2", createdAt: "2026-05-06T00:00:00.000Z" },
+			{ ...state.records[0], videoId: "video_3", createdAt: "2026-05-07T00:00:00.000Z" },
+		];
+
+		const response = await videosRoutes.request(
+			"https://example.com/?limit=1&offset=1&order=asc",
+			{ method: "GET" },
+			{ VIDEO_API_ENABLED: "true" },
+		);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			data: [{ id: "video_2" }],
+			first_id: "video_2",
+			last_id: "video_2",
+			has_more: true,
+		});
+		expect(listTeamVideoJobs).toHaveBeenCalledWith({
+			workspaceId: "ws_video_collection_test",
+			limit: 2,
+			offset: 1,
+			order: "asc",
+			statuses: undefined,
+		});
+	});
+
+	it("continues after a video cursor before applying offset", async () => {
+		state.records = [
+			...state.records,
+			{ ...state.records[0], videoId: "video_2", createdAt: "2026-05-06T00:00:00.000Z" },
+			{ ...state.records[0], videoId: "video_3", createdAt: "2026-05-07T00:00:00.000Z" },
+		];
+
+		const response = await videosRoutes.request(
+			"https://example.com/?limit=1&after=video_1&offset=1&order=asc",
+			{ method: "GET" },
+			{ VIDEO_API_ENABLED: "true" },
+		);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ data: [{ id: "video_3" }], has_more: false });
+		expect(listTeamVideoJobs).toHaveBeenCalledWith(expect.objectContaining({ limit: 500, offset: 0, order: "asc" }));
 	});
 
 	it("lists active video model capabilities", async () => {
