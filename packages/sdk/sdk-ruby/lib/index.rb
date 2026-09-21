@@ -5,6 +5,7 @@ require "securerandom"
 require "cgi"
 require "uri"
 require_relative "phaseo_sdk/model_ids"
+require_relative "phaseo_sdk/workflows"
 require_relative "gen/client"
 require_relative "gen/models"
 require_relative "gen/operations"
@@ -80,6 +81,34 @@ module PhaseoSdk
       @model_lifecycle_cache = {}
       @telemetry_recorder = TelemetryRecorder.new(devtools, "3.0.0")
       @async_jobs = AsyncJobsResource.new(self)
+    end
+
+    def set_timeout(seconds)
+      @raw_client.timeout = seconds
+      self
+    end
+
+    def set_max_retries(max_retries)
+      @raw_client.max_retries = max_retries
+      self
+    end
+
+    def set_request_hooks(on_request: nil, on_response: nil, on_retry: nil)
+      @raw_client.on_request = on_request
+      @raw_client.on_response = on_response
+      @raw_client.on_retry = on_retry
+      self
+    end
+
+    def request_with_response(method:, path:, query: nil, headers: nil, body: nil, options: nil)
+      @raw_client.request_with_response(
+        method: method,
+        path: path,
+        query: query,
+        headers: headers,
+        body: body,
+        options: options
+      )
     end
 
     def get_model_deprecation_info(model_id)
@@ -335,6 +364,122 @@ module PhaseoSdk
         ::Phaseo::Gen::Operations.listModels(@raw_client, query: options)
       end
     end
+
+    def model_endpoint_capabilities(model_id, options = {})
+      author, slug = model_id.to_s.strip.split("/", 2)
+      raise ArgumentError, "model ID must use author/slug format" if author.to_s.empty? || slug.to_s.empty?
+
+      with_lifecycle_and_telemetry(
+        endpoint: "models.capabilities",
+        payload: { "model_id" => model_id, "query" => options },
+        check_lifecycle: false
+      ) do
+        ::Phaseo::Gen::Operations.listModelEndpoints(
+          @raw_client,
+          path: { "author" => author, "slug" => slug },
+          query: options
+        )
+      end
+    end
+
+    def check_model_parameters(model_id, values, options = {})
+      self.class.check_parameter_support(model_endpoint_capabilities(model_id), values, options)
+    end
+
+    def preflight_request(request, options = {})
+      model_id = (request["model"] || request[:model]).to_s.strip
+      raise ArgumentError, "preflight requires request model" if model_id.empty?
+      structural = %w[model input messages prompt contents provider providers routing metadata session_id app webhook idempotency_key]
+      values = request.each_with_object({}) do |(name, value), result|
+        result[name] = value unless value.nil? || structural.include?(name.to_s)
+      end
+      support = check_model_parameters(model_id, values, options)
+      { "ok" => !!(support["ok"] || support[:ok]), "model_id" => model_id, "checked_parameters" => values, "parameter_support" => support }
+    end
+
+    # Builds a UI-friendly report from live model endpoint metadata.
+    def self.check_parameter_support(model, values, options = {})
+      providers = options[:provider] || options["provider"]
+      providers = Array(providers).to_h { |provider| [provider, true] } unless providers.nil?
+      requested_endpoint = options[:endpoint] || options["endpoint"]
+      routes = Array(model["endpoints"] || model[:endpoints]).select do |route|
+        next false unless route["routable"] == true && route["status"] == "active"
+        next false if providers && !providers[route.dig("provider", "id")]
+        next true unless requested_endpoint
+
+        requested = requested_endpoint.sub(%r{^/?(?:v1/)?}, "")
+        [route["endpoint"], route["capability_id"], route["public_path"].to_s.sub(%r{^/?(?:v1/)?}, "")].include?(requested)
+      end
+      parameters = values.map do |name, value|
+        supported_by = []
+        accepted_by = []
+        unsupported_by = []
+        constraints = []
+        value_issues = []
+        known_routes = 0
+        routes.each do |route|
+          reference = parameter_route_reference(route)
+          advertised = route.dig("capabilities", "parameters")
+          unless advertised.is_a?(Array)
+            unsupported_by << reference
+            next
+          end
+          known_routes += 1
+          detail = route.dig("capabilities", "parameter_details", name.to_s) || {}
+          supports_name = advertised.include?(name.to_s) || detail["supported"] == true
+          unless supports_name && detail["supported"] != false
+            unsupported_by << reference
+            next
+          end
+          supported_by << reference
+          constraints << { route: reference, detail: detail } unless detail.empty?
+          issues = parameter_value_issues(name.to_s, value, detail)
+          issues.empty? ? accepted_by << reference : value_issues.concat(issues)
+        end
+        status = if routes.empty? || known_routes.zero? then "unknown"
+                 elsif supported_by.empty? then "unsupported"
+                 elsif supported_by.length == routes.length then "supported"
+                 else "partial" end
+        issues = if status == "unsupported" then ["#{name} is not supported by any matching active route"]
+                 elsif !supported_by.empty? && accepted_by.empty? then value_issues.uniq
+                 else [] end
+        { name: name.to_s, value: value, status: status, supported_by: supported_by, accepted_by: accepted_by, unsupported_by: unsupported_by, constraints: constraints, issues: issues }
+      end
+      matching_routes = routes.filter_map do |route|
+        reference = parameter_route_reference(route)
+        reference if parameters.all? { |parameter| parameter[:accepted_by].any? { |candidate| candidate[:id] == reference[:id] } }
+      end
+      issues = []
+      issues << "No active routable model endpoints matched the filters" if routes.empty?
+      issues << "No active route supports all requested parameter values together" if !routes.empty? && matching_routes.empty? && !parameters.empty?
+      issues.concat(parameters.flat_map { |parameter| parameter[:issues] })
+      { ok: !routes.empty? && !matching_routes.empty?, model_id: model["id"] || model[:id] || "unknown", route_count: routes.length, matching_routes: matching_routes, parameters: parameters, issues: issues.uniq }
+    end
+
+    def self.parameter_route_reference(route)
+      provider = route.dig("provider", "id") || "unknown"
+      endpoint = route["endpoint"] || route["capability_id"] || "unknown"
+      { id: route["id"] || "#{provider}:#{endpoint}", provider: provider, endpoint: endpoint, public_path: route["public_path"] || endpoint }
+    end
+    private_class_method :parameter_route_reference
+
+    def self.parameter_value_issues(name, value, detail)
+      issues = []
+      issues << "#{name} is unsupported" if detail["supported"] == false
+      allowed = detail["values"] || detail["enum"]
+      issues << "#{name} must be one of: #{allowed.join(', ')}" if allowed.is_a?(Array) && !allowed.include?(value)
+      if value.is_a?(Numeric)
+        issues << "#{name} must be finite" unless value.finite?
+        issues << "#{name} must be at least #{detail['minimum']}" if detail["minimum"] && value < detail["minimum"]
+        issues << "#{name} must be at most #{detail['maximum']}" if detail["maximum"] && value > detail["maximum"]
+        if detail["step"].to_f.positive?
+          steps = (value - (detail["minimum"] || 0)) / detail["step"].to_f
+          issues << "#{name} must use steps of #{detail['step']}" if (steps - steps.round).abs > 1e-8
+        end
+      end
+      issues
+    end
+    private_class_method :parameter_value_issues
 
     def list_providers(options = {})
       with_lifecycle_and_telemetry(endpoint: "providers", payload: options, check_lifecycle: false) do

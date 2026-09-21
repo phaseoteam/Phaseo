@@ -49,6 +49,7 @@ import {
 	MediaPlayerVolumeIndicator,
 } from "@/components/ui/media-player";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { ROOM_SIDEBAR_SLOT_ID } from "@/components/(chat)/RoomScaffold";
@@ -2116,6 +2117,7 @@ export function AudioRoom({
 						/>
 					</div>
 					<div className="flex items-center gap-2">
+						<RoomSdkExport />
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button

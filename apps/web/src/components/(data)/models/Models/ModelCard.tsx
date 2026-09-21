@@ -38,6 +38,7 @@ import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllMod
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import { hasPassedLifecycleDate } from "@/lib/models/modelLifecycle";
+import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;
@@ -1271,7 +1272,7 @@ function ModelCardImpl({
 															>
 																<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
 																	<Logo
-																		id={provider.id}
+																		id={resolveProviderLogoId({ providerId: provider.id })}
 																		alt={provider.name}
 																		className="object-contain p-[1px]"
 																		fill

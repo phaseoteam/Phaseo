@@ -57,6 +57,7 @@ import {
 import { cn } from "@/lib/utils";
 import { fetchChatWebApi } from "@/lib/web-api/client";
 import { RoomResponseTimestamp } from "@/components/(chat)/RoomResponseTimestamp";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails, type LiveUsageView, type LiveSettingsValue } from "./LiveSettings";
 import { createAudioBufferFromPcm16, createPcmCapture, ensureAudioRunning, type PcmChunk } from "./realtimeAudio";
 
@@ -3148,6 +3149,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 						</Badge>
 					</div>
 					<div className="flex items-center gap-1">
+						<RoomSdkExport />
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button

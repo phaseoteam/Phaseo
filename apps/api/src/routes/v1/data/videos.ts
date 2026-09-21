@@ -11,6 +11,7 @@ import { guardAuth } from "@pipeline/before/guards";
 import { err } from "@pipeline/before/http";
 import { generatePublicId } from "@pipeline/before/genId";
 import {
+	getVideoJobRecord,
 	listTeamVideoJobs,
 	setVideoJobStatus,
 	type VideoJobMeta,
@@ -162,6 +163,7 @@ const DEFAULT_OPENAI_VIDEO_PROXY_TIMEOUT_MS = 30000;
 const DEFAULT_VIDEO_POLL_SECONDS = 20;
 const DEFAULT_VIDEO_DOWNLOAD_TTL_SECONDS = 900;
 const MAX_VIDEO_DOWNLOAD_TTL_SECONDS = 3600;
+const MAX_VIDEO_LIST_OFFSET = 10_000;
 
 export function isVideoApiEnabled(raw: unknown): boolean {
 	const normalized = String(raw ?? "").trim().toLowerCase();
@@ -273,20 +275,35 @@ videosRoutes.get("/", withRuntime(async (req) => {
 	if (!await isVideoApiAccessEnabled(auth.value)) return featureDisabledResponse();
 	const url = new URL(req.url);
 	const limit = parseVideoListLimit(url);
+	const offsetRaw = Number(url.searchParams.get("offset") ?? "");
+	if (Number.isFinite(offsetRaw) && Math.trunc(offsetRaw) > MAX_VIDEO_LIST_OFFSET) {
+		return err("validation_error", {
+			reason: "offset_too_large",
+			parameter: "offset",
+			max_offset: MAX_VIDEO_LIST_OFFSET,
+			message: `Offset cannot exceed ${MAX_VIDEO_LIST_OFFSET}.`,
+		});
+	}
+	const offset = Number.isFinite(offsetRaw) ? Math.max(0, Math.trunc(offsetRaw)) : 0;
 	const statuses = parseVideoListStatuses(url);
 	const order = url.searchParams.get("order") === "asc" ? "asc" : "desc";
 	const after = normalizeText(url.searchParams.get("after"));
-	const records = await listTeamVideoJobs({
+	const cursor = after ? await getVideoJobRecord(authValue.workspaceId, after) : null;
+	if (after && (!cursor || !cursor.createdAt)) {
+		return err("validation_error", {
+			reason: "invalid_after_cursor",
+			parameter: "after",
+			message: "The after cursor does not identify a video in this workspace.",
+		});
+	}
+	const pageCandidates = await listTeamVideoJobs({
 		workspaceId: authValue.workspaceId,
-		limit: 101,
+		limit: limit + 1,
+		offset,
+		order,
 		statuses: statuses.length > 0 ? statuses : undefined,
+		...(cursor ? { after: { createdAt: cursor.createdAt, videoId: cursor.videoId } } : {}),
 	});
-	const ordered = [...records].sort((a, b) => {
-		const delta = Date.parse(a.createdAt ?? "") - Date.parse(b.createdAt ?? "");
-		return order === "asc" ? delta : -delta;
-	});
-	const afterIndex = after ? ordered.findIndex((record) => record.videoId === after) : -1;
-	const pageCandidates = afterIndex >= 0 ? ordered.slice(afterIndex + 1) : ordered;
 	const pageRecords = pageCandidates.slice(0, limit);
 	const data = await Promise.all(pageRecords.map((record) =>
 		toPublicVideoResponse({

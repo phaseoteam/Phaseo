@@ -13,12 +13,14 @@ from urllib.parse import quote
 
 import httpx
 
-from .helpers import check_capabilities, parse_output, _batch_line, _accumulate_event
+from .helpers import check_capabilities, check_parameter_support, parse_output, _batch_line, _accumulate_event
 from .jobs import JobFailedError, JobTimeoutError, job_status, _validate_options
-from .transport import APIResponse, PhaseoHTTPError, decode_response, retry_after, validate_controls
+from .transport import APIResponse, PhaseoHTTPError, RawResponse, RequestHook, decode_response, request_trace_url, retry_after, validate_controls
 from .media import upload_input
+from .pagination import aiter_items, aiter_pages
 
 ParsedOutput = TypeVar("ParsedOutput", bound=BaseModel)
+PREFLIGHT_STRUCTURAL_FIELDS = {"model", "input", "messages", "prompt", "contents", "provider", "providers", "routing", "metadata", "session_id", "app", "webhook", "idempotency_key"}
 
 
 class AsyncResource:
@@ -61,6 +63,32 @@ class AsyncTextResource(AsyncResource):
 class AsyncChat:
     def __init__(self, client: "AsyncPhaseo"):
         self.completions = AsyncTextResource(client, "/chat/completions")
+
+
+class AsyncModels(AsyncResource):
+    async def capabilities(self, model_id: str, params: dict[str, Any] | None = None) -> APIResponse:
+        return await self.client.get_model_endpoint_capabilities(model_id, params)
+
+    async def check_parameters(
+        self,
+        model_id: str,
+        parameter_values: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        return await self.client.check_model_parameters(
+            model_id,
+            parameter_values,
+            endpoint=endpoint,
+            provider=provider,
+        )
+
+    async def preflight(self, request: dict[str, Any], *, endpoint: str | None = None, provider: str | list[str] | None = None) -> dict[str, Any]:
+        return await self.client.preflight_request(request, endpoint=endpoint, provider=provider)
+
+    async def validate(self, model_id: str) -> dict[str, Any]:
+        return await self.client.validate_model(model_id)
 
 
 class AsyncImages(AsyncResource):
@@ -231,11 +259,25 @@ class AsyncJobs(AsyncResource):
             yield _batch_line(pending)
 
 
+class AsyncListableJobs(AsyncJobs):
+    def pages(self, params: dict[str, Any] | None = None) -> AsyncIterator[APIResponse]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return aiter_pages(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
+    def all(self, params: dict[str, Any] | None = None) -> AsyncIterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return aiter_items(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
+
 class AsyncPhaseo:
     def __init__(self, api_key: str | None = None, base_url: str | None = None, *, region: str | None = None,
                  timeout: float = 60, max_retries: int = 0, http_client: httpx.AsyncClient | None = None,
                  headers: dict[str, str] | None = None, app: dict[str, str] | None = None,
-                 client_source: str | None = None, client_source_version: str | None = None):
+                 client_source: str | None = None, client_source_version: str | None = None,
+                 on_request: RequestHook | None = None, on_response: RequestHook | None = None,
+                 on_retry: RequestHook | None = None):
         from . import REGIONAL_BASE_URLS, DEFAULT_USER_AGENT
         key = api_key or os.getenv("PHASEO_API_KEY")
         if not key:
@@ -255,6 +297,7 @@ class AsyncPhaseo:
         self.timeout, self.max_retries = timeout, max_retries
         self.http = http_client or httpx.AsyncClient()
         self._owned = http_client is None
+        self.on_request, self.on_response, self.on_retry = on_request, on_response, on_retry
         self.responses = AsyncTextResource(self, "/responses")
         self.chat = AsyncChat(self)
         self.messages = AsyncTextResource(self, "/messages")
@@ -266,37 +309,54 @@ class AsyncPhaseo:
         self.rerank = AsyncResource(self, "/rerank")
         self.moderations = AsyncResource(self, "/moderations")
         self.decisions = AsyncDecisions(self, "/decisions")
-        self.models = AsyncResource(self, "/models")
+        self.models = AsyncModels(self, "/models")
         self.files = AsyncFiles(self, "/batches/files")
         self.music = AsyncJobs(self, "/music/generate", "music")
-        self.videos = AsyncJobs(self, "/videos", "video")
-        self.batches = AsyncJobs(self, "/batches", "batch")
+        self.videos = AsyncListableJobs(self, "/videos", "video")
+        self.batches = AsyncListableJobs(self, "/batches", "batch")
 
     def with_options(self, *, timeout: float | None = None, max_retries: int | None = None, headers: dict[str, str] | None = None) -> "AsyncPhaseo":
         return AsyncPhaseo(api_key=self.headers["Authorization"].removeprefix("Bearer "), base_url=self.base_url,
             timeout=self.timeout if timeout is None else timeout, max_retries=self.max_retries if max_retries is None else max_retries,
-            headers={**self.headers, **(headers or {})}, http_client=self.http)
+            headers={**self.headers, **(headers or {})}, http_client=self.http,
+            on_request=self.on_request, on_response=self.on_response, on_retry=self.on_retry)
 
     @asynccontextmanager
     async def _stream(self, method: str, path: str, **kwargs: Any) -> AsyncIterator[httpx.Response]:
         if not path.startswith("/") or path.startswith("//"):
             raise ValueError("Expected a relative API path")
+        timeout = kwargs.pop("request_timeout", self.timeout)
+        max_retries = kwargs.pop("max_retries", self.max_retries)
+        idempotency_key = kwargs.pop("idempotency_key", None)
         kwargs["headers"] = {**self.headers, **kwargs.pop("headers", {})}
-        retries = self.max_retries if method.upper() in ("GET", "HEAD") else 0
+        if idempotency_key:
+            kwargs["headers"]["Idempotency-Key"] = idempotency_key
+        validate_controls(timeout, max_retries)
+        retries = max_retries if method.upper() in ("GET", "HEAD") else 0
         for attempt in range(retries + 1):
-            context = self.http.stream(method, self.base_url + path, timeout=self.timeout, follow_redirects=False, **kwargs)
+            if self.on_request:
+                self.on_request({"method": method.upper(), "attempt": attempt})
+            context = self.http.stream(method, self.base_url + path, timeout=timeout, follow_redirects=False, **kwargs)
             try:
                 response = await context.__aenter__()
-            except httpx.TransportError:
+            except httpx.TransportError as error:
                 if attempt >= retries:
                     raise
-                await asyncio.sleep(min(.25 * 2 ** attempt, 5))
+                delay = min(.25 * 2 ** attempt, 5)
+                if self.on_retry:
+                    self.on_retry({"method": method.upper(), "attempt": attempt + 1, "delay": delay, "error": error})
+                await asyncio.sleep(delay)
                 continue
             if response.status_code in (408, 429, 500, 502, 503, 504) and attempt < retries:
                 delay = retry_after(response)
                 await context.__aexit__(None, None, None)
-                await asyncio.sleep(delay if delay is not None else min(.25 * 2 ** attempt, 5))
+                wait = delay if delay is not None else min(.25 * 2 ** attempt, 5)
+                if self.on_retry:
+                    self.on_retry({"method": method.upper(), "attempt": attempt + 1, "status_code": response.status_code, "delay": wait})
+                await asyncio.sleep(wait)
                 continue
+            if self.on_response:
+                self.on_response({"method": method.upper(), "attempt": attempt, "status_code": response.status_code, "headers": response.headers})
             try:
                 if not response.is_success:
                     await response.aread()
@@ -306,10 +366,21 @@ class AsyncPhaseo:
                 await context.__aexit__(None, None, None)
             return
 
-    async def request(self, method: str, path: str, *, query: dict[str, Any] | None = None, headers: dict[str, str] | None = None, body: Any = None) -> Any:
-        async with self._stream(method, path, params=query, headers=headers or {}, json=body) as response:
+    async def request(self, method: str, path: str, *, query: dict[str, Any] | None = None, headers: dict[str, str] | None = None, body: Any = None,
+                      timeout: float | None = None, max_retries: int | None = None, idempotency_key: str | None = None) -> Any:
+        return (await self.request_with_response(method, path, query=query, headers=headers, body=body, timeout=timeout,
+                                                 max_retries=max_retries, idempotency_key=idempotency_key)).data
+
+    async def request_with_response(self, method: str, path: str, *, query: dict[str, Any] | None = None, headers: dict[str, str] | None = None, body: Any = None,
+                                    timeout: float | None = None, max_retries: int | None = None, idempotency_key: str | None = None) -> RawResponse[Any]:
+        async with self._stream(method, path, params=query, headers=headers or {}, json=body,
+                                request_timeout=self.timeout if timeout is None else timeout,
+                                max_retries=self.max_retries if max_retries is None else max_retries,
+                                idempotency_key=idempotency_key) as response:
             await response.aread()
-            return decode_response(response)
+            data = decode_response(response)
+            request_id = response.headers.get("x-request-id") or response.headers.get("x-phaseo-request-id")
+            return RawResponse(data, response.status_code, response.headers, request_id, request_trace_url(request_id) if request_id else None)
 
     async def stream_content(self, path: str) -> AsyncIterator[bytes]:
         async with self._stream("GET", path) as response:
@@ -320,6 +391,83 @@ class AsyncPhaseo:
         payload = await self.request("GET", "/models", query={"model_id": model_id, "limit": 1})
         model = next((item for item in payload.get("models", []) if item.get("id", item.get("model_id")) == model_id), None)
         return check_capabilities(model, **requirements) if model else {"ok": False, "issues": [f"Model {model_id} was not found in the catalogue"]}
+
+    async def get_model_endpoint_capabilities(
+        self,
+        model_id: str,
+        params: dict[str, Any] | None = None,
+    ) -> APIResponse:
+        if model_id.count("/") != 1:
+            raise ValueError("model_id must use author/slug format")
+        author, slug = model_id.split("/", 1)
+        if not author or not slug:
+            raise ValueError("model_id must use author/slug format")
+        return await self.request(
+            "GET",
+            f"/models/{quote(author, safe='')}/{quote(slug, safe='')}/endpoints",
+            query=params,
+        )
+
+    async def check_model_parameters(
+        self,
+        model_id: str,
+        parameter_values: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        capabilities = await self.get_model_endpoint_capabilities(model_id)
+        return check_parameter_support(
+            capabilities,
+            parameter_values,
+            endpoint=endpoint,
+            provider=provider,
+        )
+
+    async def get_model_deprecation_info(self, model_id: str) -> dict[str, Any] | None:
+        normalized_model_id = str(model_id or "").strip()
+        if not normalized_model_id:
+            return None
+        try:
+            payload = await self.request(
+                "GET",
+                "/data/models",
+                query={"model_id": normalized_model_id, "limit": 1},
+            )
+        except Exception:
+            return None
+        rows = payload.get("models") if isinstance(payload, dict) else None
+        if not isinstance(rows, list):
+            return None
+        model_row = next((row for row in rows if isinstance(row, dict) and str(row.get("model_id") or "").strip() == normalized_model_id), None)
+        if not model_row:
+            return None
+        from . import _to_model_lifecycle_info
+        return _to_model_lifecycle_info(model_row, normalized_model_id)
+
+    async def validate_model(self, model_id: str) -> dict[str, Any]:
+        info = await self.get_model_deprecation_info(model_id)
+        if not info:
+            return {"ok": True, "info": None}
+        from . import _build_inactive_model_request_message, _is_model_requestable_for_inference
+        if not _is_model_requestable_for_inference(info):
+            return {"ok": False, "info": info, "reason": _build_inactive_model_request_message(info)}
+        return {"ok": True, "info": info}
+
+    async def preflight_request(self, request: dict[str, Any], *, endpoint: str | None = None, provider: str | list[str] | None = None) -> dict[str, Any]:
+        model = str(request.get("model") or "").strip()
+        if not model:
+            raise ValueError("preflight requires request['model']")
+        checked = {key: value for key, value in request.items() if key not in PREFLIGHT_STRUCTURAL_FIELDS and value is not None}
+        lifecycle = await self.validate_model(model)
+        support = await self.check_model_parameters(model, checked, endpoint=endpoint, provider=provider)
+        return {
+            "ok": bool(lifecycle.get("ok")) and bool(support.get("ok")),
+            "model": model,
+            "checked_parameters": checked,
+            "lifecycle": lifecycle,
+            "parameter_support": support,
+        }
 
     async def close(self) -> None:
         if self._owned:

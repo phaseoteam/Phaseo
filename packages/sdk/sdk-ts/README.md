@@ -41,6 +41,34 @@ HTTP status. `PhaseoHttpError` retains the body and headers and exposes `code`,
   provider offer to support the combination and validates advertised values,
   numeric ranges and steps. Unknown metadata is reported, not assumed supported.
   This is a preflight check, not a provider execution guarantee.
+- `models.checkParameters(id, values, { endpoint, provider })` reads the live
+  provider endpoint metadata and returns structured support states that a UI can
+  highlight directly. It reports matching routes and marks each parameter as
+  `supported`, `partial`, `unsupported`, or `unknown`.
+
+```ts
+const support = await client.models.checkParameters(
+  "openai/gpt-5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+
+for (const parameter of support.parameters) {
+  console.log(parameter.name, parameter.status, parameter.issues);
+}
+
+const preflight = await client.models.preflight({ model: "openai/gpt-5", input: "Hello", temperature: 0.7 });
+for await (const video of client.videos.all({ limit: 50 })) console.log(video.id);
+```
+
+`videos.pages()` / `batches.pages()` yield response pages; `all()` yields items and
+advances by the number actually returned. Preflight excludes prompt content and
+Phaseo routing metadata, then checks every generation parameter against live routes.
+
+Use `models.capabilities(id)` when you need the complete live endpoint rows,
+constraints, providers, routing state, and pricing. Parameter checks are explicit
+so they do not add a discovery request to every generation call. Catalogue
+metadata is a routing preflight; the gateway still validates the final request.
 
 ## Test without provider charges
 
@@ -188,6 +216,8 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.streamChat(...)`, `client.streamResponses(...)`, and `client.streamMessages(...)` for parsed text streaming chunks with `text`, `usage`, and `reasoningTokens`
 - `client.streamImage(...)` and `client.streamImageEdit(...)` for incremental image-generation and image-edit events
 - `client.models.list(...)`
+- `client.models.capabilities(modelId)`
+- `client.models.checkParameters(modelId, values, options)`
 - `client.listOrganisations(...)` for paginated `/organisations` discovery
 - `client.listPricingModels(...)` for `/pricing/models` catalogue pricing discovery
 - `client.calculatePricing(...)` for `/pricing/calculate` usage estimation

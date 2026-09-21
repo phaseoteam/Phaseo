@@ -14,7 +14,8 @@
     "traces": { "enabled": true, "head_sampling_rate": 0.01 }
   },
   "vars": {
-    "PHASEO_API_BASE_URL": "https://api.phaseo.app"
+    "PHASEO_API_BASE_URL": "https://api.phaseo.app",
+    "PHASEO_WEB_BASE_URL": "https://phaseo.app"
   },
   "env": {
     "production": {
@@ -30,7 +31,8 @@
         { "binding": "PHASEO_API", "service": "phaseo-gateway" }
       ],
       "vars": {
-        "PHASEO_API_BASE_URL": "https://api.phaseo.app"
+        "PHASEO_API_BASE_URL": "https://api.phaseo.app",
+        "PHASEO_WEB_BASE_URL": "https://phaseo.app"
       }
     }
   }

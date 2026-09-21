@@ -15,6 +15,14 @@ export type ClientOptions = RequestControls & {
 	timeoutMs?: number;
 };
 
+export type RawResponse<T> = {
+	data: T;
+	status: number;
+	headers: Headers;
+	requestId?: string;
+	traceUrl?: string;
+};
+
 export class PhaseoHttpError extends Error {
 	readonly status: number;
 	readonly statusText: string;
@@ -70,6 +78,10 @@ export class Client {
 	}
 
 	async request<T>(options: RequestOptions): Promise<T> {
+		return (await this.requestWithResponse<T>(options)).data;
+	}
+
+	async requestWithResponse<T>(options: RequestOptions): Promise<RawResponse<T>> {
 		const url = new URL(this.baseUrl + options.path);
 		if (options.query) {
 			for (const [key, value] of Object.entries(options.query)) {
@@ -81,7 +93,10 @@ export class Client {
 			}
 		}
 
-		const transport = createTransport(this.fetchImpl, { ...this.controls, ...options });
+		const scopedControls = Object.fromEntries(
+			Object.entries(options).filter(([, value]) => value !== undefined),
+		) as RequestControls;
+		const transport = createTransport(this.fetchImpl, { ...this.controls, ...scopedControls });
 		const { body, headers } = prepareBody(options.body);
 		const response = await transport(url.toString(), {
 			method: options.method,
@@ -103,11 +118,22 @@ export class Client {
 				headers: Object.fromEntries(response.headers.entries())
 			});
 		}
+		let data: T;
 		if (response.headers.get("content-type")?.split(";")[0].trim().toLowerCase() === "application/x-ndjson") {
-			return text as T;
+			data = text as T;
+		} else if (!text) {
+			data = undefined as T;
+		} else {
+			data = trackResponse(parsedBody, response) as T;
 		}
-		if (!text) return undefined as T;
-		return trackResponse(parsedBody, response) as T;
+		const requestId = response.headers.get("x-request-id") ?? response.headers.get("x-phaseo-request-id") ?? undefined;
+		return {
+			data,
+			status: response.status,
+			headers: response.headers,
+			requestId,
+			traceUrl: requestId ? requestTraceUrl(requestId) : undefined,
+		};
 	}
 }
 

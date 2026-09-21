@@ -57,6 +57,7 @@ import { useQueryState } from "nuqs";
 import { featureLabels } from "@/lib/config/featureLabels";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
 
 const MODALITY_DISPLAY_ORDER = [
@@ -1001,7 +1002,7 @@ export function MonitorDataTable({
 				<div className="w-4 h-4 relative">
 					{isLinked ? (
 						<Logo
-							id={provider.id}
+							id={resolveProviderLogoId({ providerId: provider.id })}
 							alt={provider.name}
 							className="object-contain"
 							fill

@@ -64,7 +64,11 @@ const ReleaseTooltip = ({
 	if (!active || !payload?.length) return null;
 
 	const rows = payload.filter((item) => item.value !== undefined);
-	const currentLabel = format.dateParts(new Date(), { month: "short", year: "2-digit" });
+	const currentLabel = format.dateParts(new Date(), {
+		month: "short",
+		year: "2-digit",
+		timeZone: "UTC",
+	});
 
 	return (
 		<div className="rounded-2xl border border-zinc-200 bg-white p-3 text-xs text-zinc-900 shadow-lg dark:border-zinc-800 dark:bg-zinc-950 dark:text-white">
@@ -105,8 +109,8 @@ export default function ModelReleasePace({
 	const now = useMemo(() => new Date(), []);
 
 	const data = useMemo<ReleasePaceData[]>(() => {
-		const windowStart = new Date(now.getFullYear(), now.getMonth(), 1);
-		windowStart.setMonth(windowStart.getMonth() - (monthsWindow - 1));
+		const windowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+		windowStart.setUTCMonth(windowStart.getUTCMonth() - (monthsWindow - 1));
 
 		const releaseMap = new Map<string, number>();
 
@@ -114,18 +118,18 @@ export default function ModelReleasePace({
 			if (!isRelease(event)) return;
 			const parsed = new Date(event.date);
 			if (Number.isNaN(parsed.getTime())) return;
-			const key = `${parsed.getFullYear()}-${padTwo(
-				parsed.getMonth() + 1
+			const key = `${parsed.getUTCFullYear()}-${padTwo(
+				parsed.getUTCMonth() + 1
 			)}`;
 			releaseMap.set(key, (releaseMap.get(key) ?? 0) + 1);
 		});
 
 		const months = Array.from({ length: monthsWindow }, (_, index) => {
 			const point = new Date(windowStart);
-			point.setMonth(windowStart.getMonth() + index);
+			point.setUTCMonth(windowStart.getUTCMonth() + index);
 			return {
-				key: `${point.getFullYear()}-${padTwo(point.getMonth() + 1)}`,
-				label: format.dateParts(point, { month: "short", year: "2-digit" }),
+				key: `${point.getUTCFullYear()}-${padTwo(point.getUTCMonth() + 1)}`,
+				label: format.dateParts(point, { month: "short", year: "2-digit", timeZone: "UTC" }),
 			};
 		});
 

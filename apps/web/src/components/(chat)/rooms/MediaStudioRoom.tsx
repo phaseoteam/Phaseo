@@ -56,6 +56,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
 	Tooltip,
@@ -1816,6 +1817,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					/>
 				</div>
 				<div className="flex items-center gap-2">
+					<RoomSdkExport />
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button

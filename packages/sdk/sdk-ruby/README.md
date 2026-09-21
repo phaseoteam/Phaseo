@@ -54,6 +54,16 @@ puts response["id"]
 
 Model discovery supports the public `/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
 
+Use `model_endpoint_capabilities` for live provider routes, or `check_model_parameters` to highlight unsupported, partially supported, unknown, and out-of-range values before submitting a request.
+
+```ruby
+report = client.check_model_parameters("openai/gpt-5.4", { "temperature" => 0.7 }, endpoint: "responses")
+preflight = client.preflight_request({ "model" => "openai/gpt-5.4", "input" => "Hello", "temperature" => 0.7 }, endpoint: "responses")
+```
+
+`PageEnumerator` provides lazy offset pagination, and `JobHandle` refreshes or
+waits for an existing job ID without resubmitting it.
+
 Use `provider_availability_reason` with `availability: "all"` when you want rollout-state entries such as `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, or `soft_blocked`. Use `capability_status` with `availability: "all"` when you want non-routable endpoint mappings such as `coming_soon` or `internal_testing`.
 
 ```ruby

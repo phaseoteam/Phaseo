@@ -16,6 +16,9 @@ const KNOWN_PROVIDER_DISPLAY_NAME_OVERRIDES = new Map<string, string>([
 const KNOWN_PROVIDER_LOGO_ID_OVERRIDES = new Map<string, string>([
     ["anthropic-aws", "aws"],
     ["anthropic-aws-us", "aws"],
+    ["mistral-eu", "mistral"],
+    ["moonshotai-turbo", "moonshotai"],
+    ["wafer-zdr", "wafer"],
 ]);
 
 function toTitleCase(value: string): string {

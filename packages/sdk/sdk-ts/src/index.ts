@@ -19,6 +19,7 @@ import type {
   ImagesGenerationRequest,
   ImagesGenerationResponse,
   ListFilesResponse as FileListResponse,
+  ModelEndpointsResponse,
   ModelId as OapiModelId,
   ModerationsRequest,
   ModerationsResponse,
@@ -40,12 +41,25 @@ import type {
   VideoGenerationResponse
 } from "./oapi-gen/models/index.js";
 import * as ops from "./oapi-gen/client/index.js";
-import { PhaseoHttpError, Client } from "./runtime/client.js";
-import { createTransport, trackResponse, type RequestControls } from "./runtime/transport.js";
+import { PhaseoHttpError, Client, type RawResponse } from "./runtime/client.js";
+import { createTransport, type RequestControls } from "./runtime/transport.js";
 import { JobHandle } from "./jobHandle.js";
-import { parseOutput, checkCapabilities, toFile, type OutputSchema, type CapabilityRequirements, type ModelCapabilities } from "./helpers.js";
+import { paginateItems, paginatePages, type PageOptions } from "./pagination.js";
+import {
+  parseOutput,
+  checkCapabilities,
+  checkParameterSupport,
+  toFile,
+  type OutputSchema,
+  type CapabilityRequirements,
+  type ModelCapabilities,
+  type ParameterSupportOptions,
+  type ParameterSupportReport,
+} from "./helpers.js";
 export { JobHandle } from "./jobHandle.js";
-export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type ResponseMetadata } from "./runtime/transport.js";
+export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
+export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
+export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type RequestEvent, type ResponseEvent, type RetryEvent, type ResponseMetadata } from "./runtime/transport.js";
 import {
   TelemetryCapture,
   extractBatchMetadata,
@@ -61,9 +75,31 @@ import { createAndWaitForJob, waitForJob, type JobWaitOptions } from "./jobs.js"
 export { JobFailedError, JobTimeoutError, JobCancelledError, type JobWaitOptions, type JobKind } from "./jobs.js";
 
 export type KnownModelId = GeneratedKnownModelId;
-export { parseOutput, outputText, collectStream, checkCapabilities, batchResults, matchBatchResult, downloadTo, toFile, StructuredOutputError, StreamResponseError } from "./helpers.js";
-export type { OutputSchema, CapabilityRequirements, CapabilityCheck, BatchResult } from "./helpers.js";
+export { parseOutput, outputText, collectStream, checkCapabilities, checkParameterSupport, batchResults, matchBatchResult, downloadTo, toFile, StructuredOutputError, StreamResponseError } from "./helpers.js";
+export type {
+  OutputSchema,
+  CapabilityRequirements,
+  CapabilityCheck,
+  BatchResult,
+  ParameterSupport,
+  ParameterSupportOptions,
+  ParameterSupportReport,
+  ParameterSupportStatus,
+  ParameterRouteReference,
+} from "./helpers.js";
 export type ModelIdLiteral = KnownModelId;
+export type PreflightReport = {
+  ok: boolean;
+  model: string;
+  checkedParameters: Record<string, unknown>;
+  lifecycle: { ok: boolean; info: ModelLifecycleInfo | null; reason?: string };
+  parameterSupport: ParameterSupportReport;
+};
+
+const PREFLIGHT_STRUCTURAL_FIELDS = new Set([
+  "model", "input", "messages", "prompt", "contents", "provider", "providers", "routing",
+  "metadata", "session_id", "app", "webhook", "idempotency_key",
+]);
 /**
  * Model identifier in `provider/model` format (for example: `openai/gpt-5.4`).
  *
@@ -358,6 +394,7 @@ export type {
   ModerationsResponse,
   MusicGenerateRequest,
   MusicGenerateResponse,
+  ModelEndpointsResponse,
   OcrRequest,
   OcrResponse,
   ParseRequest,
@@ -445,6 +482,15 @@ export class Phaseo {
 
   readonly models = {
     list: async (params: Record<string, unknown> = {}): Promise<ModelListResponse> => this.getModels(params),
+    capabilities: async (modelId: string, params: Record<string, unknown> = {}): Promise<ModelEndpointsResponse> =>
+      this.getModelEndpointCapabilities(modelId, params),
+    checkParameters: async (
+      modelId: string,
+      parameterValues: Record<string, unknown>,
+      options: ParameterSupportOptions = {},
+    ): Promise<ParameterSupportReport> => this.checkModelParameters(modelId, parameterValues, options),
+    preflight: async (request: Record<string, unknown>, options: ParameterSupportOptions = {}): Promise<PreflightReport> =>
+      this.preflightRequest(request, options),
     getDeprecationInfo: async (modelId: string): Promise<ModelLifecycleInfo | null> =>
       this.getModelDeprecationInfo(modelId),
     validate: async (modelId: string): Promise<{ ok: boolean; info: ModelLifecycleInfo | null; reason?: string }> =>
@@ -458,6 +504,14 @@ export class Phaseo {
     createAndWait: (req: BatchCreateRequest, options: JobWaitOptions<BatchResponse> = {}) =>
       this.createBatchAndWait(req, options),
     list: async (params: Record<string, unknown> = {}): Promise<BatchListResponse> => this.listBatches(params),
+    pages: (params: Record<string, unknown> & PageOptions = {}) => paginatePages<BatchResponse, BatchListResponse>(
+      ({ limit, offset }) => this.listBatches({ ...params, limit, offset }),
+      params,
+    ),
+    all: (params: Record<string, unknown> & PageOptions = {}) => paginateItems<BatchResponse, BatchListResponse>(
+      ({ limit, offset }) => this.listBatches({ ...params, limit, offset }),
+      params,
+    ),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
     streamResults: (batchId: string, options: { signal?: AbortSignal } = {}): Promise<ReadableStream<Uint8Array>> =>
       this.streamBatchResults(batchId, options),
@@ -482,6 +536,15 @@ export class Phaseo {
     resume: (id: string) => this.videoHandle(id),
     streamContent: (id: string) => this.streamContent(`/videos/${encodeURIComponent(id)}/content`),
     create: async (req: VideoCreateRequest): Promise<VideoStatusResponse> => this.generateVideo(req),
+    list: async (params: Record<string, unknown> = {}): Promise<VideoListResponse> => this.listVideos(params as Record<string, QueryParamValue>),
+    pages: (params: Record<string, unknown> & PageOptions = {}) => paginatePages<VideoStatusResponse, VideoListResponse>(
+      ({ limit, offset }) => this.listVideos({ ...params, limit, offset } as Record<string, QueryParamValue>),
+      params,
+    ),
+    all: (params: Record<string, unknown> & PageOptions = {}) => paginateItems<VideoStatusResponse, VideoListResponse>(
+      ({ limit, offset }) => this.listVideos({ ...params, limit, offset } as Record<string, QueryParamValue>),
+      params,
+    ),
     generateAndWait: (req: VideoCreateRequest, options: JobWaitOptions<VideoStatusResponse> = {}) =>
       this.generateVideoAndWait(req, options),
     wait: (videoId: string, options: JobWaitOptions<VideoStatusResponse> = {}) => this.waitForVideo(videoId, options),
@@ -605,44 +668,75 @@ export class Phaseo {
     return model ? checkCapabilities(model, requirements) : { ok: false, issues: [`Model ${modelId} was not found in the catalogue`] };
   }
 
-  async request(method: string, path: string, options: {
+  async getModelEndpointCapabilities(
+    modelId: string,
+    params: Record<string, unknown> = {},
+  ): Promise<ModelEndpointsResponse> {
+    const parts = modelId.split("/");
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+      throw new Error("modelId must use author/slug format");
+    }
+    const [author, slug] = parts;
+    return this.telemetry.wrap(
+      "models.capabilities",
+      () => ops.listModelEndpoints(this.client, {
+        path: { author, slug },
+        query: params as any,
+      }),
+      () => ({ model: modelId, ...params }),
+    );
+  }
+
+  async checkModelParameters(
+    modelId: string,
+    parameterValues: Record<string, unknown>,
+    options: ParameterSupportOptions = {},
+  ): Promise<ParameterSupportReport> {
+    const capabilities = await this.getModelEndpointCapabilities(modelId);
+    return checkParameterSupport(capabilities, parameterValues, options);
+  }
+
+  async preflightRequest(request: Record<string, unknown>, options: ParameterSupportOptions = {}): Promise<PreflightReport> {
+    const model = typeof request.model === "string" ? request.model.trim() : "";
+    if (!model) throw new TypeError("preflight requires request.model");
+    const checkedParameters = Object.fromEntries(
+      Object.entries(request).filter(([name, value]) => value !== undefined && !PREFLIGHT_STRUCTURAL_FIELDS.has(name)),
+    );
+    const [lifecycle, parameterSupport] = await Promise.all([
+      this.validateModel(model),
+      this.checkModelParameters(model, checkedParameters, options),
+    ]);
+    return { ok: lifecycle.ok && parameterSupport.ok, model, checkedParameters, lifecycle, parameterSupport };
+  }
+
+  async request(method: string, path: string, options: RequestControls & {
     query?: Record<string, QueryParamValue>;
     headers?: Record<string, string>;
     body?: unknown;
   } = {}): Promise<unknown> {
-    const url = new URL(path.replace(/^\/+/, ""), `${this.basePath}/`);
-    if (options.query) {
-      for (const [key, value] of Object.entries(options.query)) {
-        if (Array.isArray(value)) {
-          for (const item of value) {
-            url.searchParams.append(key, String(item));
-          }
-        } else {
-          url.searchParams.set(key, String(value));
-        }
-      }
-    }
-    const res = await this.fetchImpl(url.toString(), {
+    return (await this.requestWithResponse(method, path, options)).data ?? null;
+  }
+
+  async requestWithResponse(method: string, path: string, options: RequestControls & {
+    query?: Record<string, QueryParamValue>;
+    headers?: Record<string, string>;
+    body?: unknown;
+  } = {}): Promise<RawResponse<unknown>> {
+    const normalizedPath = `/${path.replace(/^\/+/, "")}`;
+    return this.client.requestWithResponse({
       method,
-      headers: {
-        ...this.headers,
-        ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
-        ...(options.headers ?? {})
-      },
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined
+      path: normalizedPath,
+      query: options.query as Record<string, string | number | boolean | Array<string | number | boolean>> | undefined,
+      headers: options.headers,
+      body: options.body,
+      signal: options.signal,
+      timeoutMs: options.timeoutMs,
+      maxRetries: options.maxRetries,
+      idempotencyKey: options.idempotencyKey,
+      onRequest: options.onRequest,
+      onResponse: options.onResponse,
+      onRetry: options.onRetry,
     });
-    if (!res.ok) {
-      const text = await res.text();
-      throw createHttpError(res, text);
-    }
-    if (res.status === 204) return null;
-    const text = await res.text();
-    if (!text) return null;
-    try {
-      return trackResponse(JSON.parse(text), res);
-    } catch {
-      return text;
-    }
   }
 
   getAsyncJobWebSocketUrl(kind: AsyncJobKind, jobId: string, options: AsyncJobWebSocketOptions = {}): string {

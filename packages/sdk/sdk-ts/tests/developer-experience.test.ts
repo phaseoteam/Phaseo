@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { Phaseo, responseMetadata, RequestTimeoutError, parseOutput, collectStream, checkCapabilities, batchResults, matchBatchResult } from "../src/index.js";
+import { Phaseo, responseMetadata, RequestTimeoutError, parseOutput, collectStream, checkCapabilities, checkParameterSupport, batchResults, matchBatchResult } from "../src/index.js";
 import { createMockTransport } from "../src/testing.js";
 import { PhaseoHttpError } from "../src/runtime/client.js";
 import { JobHandle } from "../src/jobHandle.js";
@@ -31,6 +31,26 @@ test("paid POST is never retried and preserves error context", async () => {
   });
   mock.assertDone();
   expect(mock.requests).toHaveLength(1);
+});
+
+test("raw responses, idempotency headers, and transport hooks share one request pipeline", async () => {
+  const events: string[] = [];
+  const { client, mock } = setup([
+    { method: "GET", path: "/v1/health", status: 503, headers: { "retry-after": "0" } },
+    { method: "GET", path: "/v1/health", json: { ok: true }, headers: { "x-request-id": "req_raw" } },
+    { method: "POST", path: "/v1/responses", json: { id: "resp_1" } },
+  ]);
+  const raw = await client.requestWithResponse("GET", "/health", {
+    maxRetries: 1,
+    onRequest: event => events.push(`request:${event.attempt}`),
+    onRetry: event => events.push(`retry:${event.attempt}`),
+    onResponse: event => events.push(`response:${event.status}`),
+  });
+  expect(raw).toMatchObject({ data: { ok: true }, status: 200, requestId: "req_raw" });
+  expect(events).toEqual(["request:0", "retry:1", "request:1", "response:200"]);
+  await client.request("POST", "/responses", { body: { model: "test" }, idempotencyKey: "idem-1" });
+  expect(new Headers(mock.requests[2]?.headers).get("idempotency-key")).toBe("idem-1");
+  mock.assertDone();
 });
 
 test("cancellation interrupts a pending response body and releases it", async () => {
@@ -160,6 +180,16 @@ test("HTTP errors remain backwards compatible", () => {
   expect(new PhaseoHttpError({ status: 400, statusText: "Bad request", body: "bad" }).status).toBe(400);
 });
 
+test("request preserves null for successful empty responses", async () => {
+  const { client, mock } = setup([
+    { method: "DELETE", path: "/v1/files/file_1", status: 204 },
+    { method: "GET", path: "/v1/empty", status: 200 },
+  ]);
+  await expect(client.request("DELETE", "/files/file_1")).resolves.toBeNull();
+  await expect(client.request("GET", "/empty")).resolves.toBeNull();
+  mock.assertDone();
+});
+
 test("batch line limits count UTF-8 bytes across split code points and reset per row", async () => {
   const row = JSON.stringify({ response: "🎵".repeat(100) });
   const bytes = new TextEncoder().encode(row);
@@ -187,4 +217,129 @@ test("advertised parameter values and ranges are checked on provider offers", ()
   } }] };
   expect(checkCapabilities(model, { parameterValues: { duration: 10 } }).ok).toBe(true);
   expect(checkCapabilities(model, { parameterValues: { duration: 7 } }).issues.join(" ")).toContain("steps of 5");
+});
+
+test("live model parameter checks identify partial support and invalid values", async () => {
+  const capabilities = {
+    ok: true,
+    id: "openai/gpt-5",
+    endpoints: [
+      {
+        id: "openai:responses",
+        endpoint: "responses",
+        public_path: "/v1/responses",
+        provider: { id: "openai" },
+        routable: true,
+        status: "active",
+        capabilities: {
+          parameters: ["temperature", "top_p"],
+          parameter_details: {
+            temperature: { minimum: 0, maximum: 2 },
+            top_p: { minimum: 0, maximum: 1 },
+          },
+        },
+      },
+      {
+        id: "azure:responses",
+        endpoint: "responses",
+        public_path: "/v1/responses",
+        provider: { id: "azure" },
+        routable: true,
+        status: "active",
+        capabilities: {
+          parameters: ["temperature"],
+          parameter_details: { temperature: { minimum: 0, maximum: 1 } },
+        },
+      },
+    ],
+  };
+  const { client, mock } = setup([
+    { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
+    { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
+    { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
+    { method: "GET", path: "/v1/models", json: { models: [{ model_id: "openai/gpt-5", status: "active" }] } },
+    { method: "GET", path: "/v1/models/openai/gpt-5/endpoints", json: capabilities },
+  ]);
+
+  const supported = await client.models.checkParameters(
+    "openai/gpt-5",
+    { temperature: 0.7, top_p: 0.9 },
+    { endpoint: "responses" },
+  );
+  expect(supported.ok).toBe(true);
+  expect(supported.parameters.find(parameter => parameter.name === "top_p")?.status).toBe("partial");
+  expect(supported.matchingRoutes.map(route => route.provider)).toEqual(["openai"]);
+
+  const invalid = await client.models.checkParameters("openai/gpt-5", { temperature: 3 });
+  expect(invalid.ok).toBe(false);
+  expect(invalid.issues.join(" ")).toContain("temperature must be at most 2");
+
+  const unsupported = await client.models.checkParameters("openai/gpt-5", { seed: 42 });
+  expect(unsupported.parameters[0]).toMatchObject({ name: "seed", status: "unsupported" });
+  expect(unsupported.issues.join(" ")).toContain("seed is not supported");
+
+  const preflight = await client.models.preflight({ model: "openai/gpt-5", input: "hello", temperature: 0.7 }, { endpoint: "responses" });
+  expect(preflight.ok).toBe(true);
+  expect(preflight.checkedParameters).toEqual({ temperature: 0.7 });
+  mock.assertDone();
+});
+
+test("parameter reports validate types, preserve partial issues, and omit unknown routes", () => {
+  const model = {
+    id: "test/model",
+    endpoints: [
+      {
+        id: "wide",
+        provider: { id: "wide" },
+        endpoint: "responses",
+        routable: true,
+        status: "active",
+        capabilities: {
+          parameters: ["temperature", "count"],
+          parameter_details: {
+            temperature: { type: "number", maximum: 2 },
+            count: { type: "integer" },
+          },
+        },
+      },
+      {
+        id: "narrow",
+        provider: { id: "narrow" },
+        endpoint: "responses",
+        routable: true,
+        status: "active",
+        capabilities: {
+          parameters: ["temperature", "count"],
+          parameter_details: {
+            temperature: { type: "number", maximum: 1 },
+            count: { type: "integer" },
+          },
+        },
+      },
+      {
+        id: "unknown",
+        provider: { id: "unknown" },
+        endpoint: "responses",
+        routable: true,
+        status: "active",
+        capabilities: {},
+      },
+    ],
+  };
+
+  const partial = checkParameterSupport(model, { temperature: 1.5 });
+  expect(partial.parameters[0]).toMatchObject({ status: "partial" });
+  expect(partial.parameters[0].issues.join(" ")).toContain("at most 1");
+  expect(partial.parameters[0].unsupportedBy).toEqual([]);
+
+  const invalidType = checkParameterSupport(model, { count: 1.5 });
+  expect(invalidType.parameters[0]).toMatchObject({ status: "unsupported" });
+  expect(invalidType.parameters[0].issues.join(" ")).toContain("must be an integer");
+});
+
+test("model capability lookup rejects ambiguous model IDs before requesting", async () => {
+  const { client, mock } = setup([]);
+  await expect(client.models.capabilities("author/slug/extra")).rejects.toThrow("author/slug format");
+  await expect(client.models.capabilities("author//slug")).rejects.toThrow("author/slug format");
+  mock.assertDone();
 });

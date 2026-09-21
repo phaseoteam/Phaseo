@@ -98,6 +98,7 @@ import {
 	chatMarkdownPlugins,
 	normalizeChatMarkdown,
 } from "@/components/(chat)/chatMarkdown";
+import { getChatMessageRequestId } from "@/components/(chat)/chatMessageMetadata";
 import {
 	buildModelLink,
 	ensureVariants,
@@ -466,6 +467,7 @@ export function ChatConversationMessages({
 
 	const usage = metadataVariant?.usage ?? metadataMessage?.usage ?? null;
 	const meta = metadataVariant?.meta ?? metadataMessage?.meta ?? null;
+	const metadataRequestId = getChatMessageRequestId(meta);
 	const outputTokens =
 		(usage as any)?.output_tokens ??
 		(usage as any)?.output_text_tokens ??
@@ -1374,6 +1376,7 @@ export function ChatConversationMessages({
 										metadataOpen={metadataOpenId === message.id}
 										metadataProviderId={metadataProviderId}
 										metadataProviderLabel={metadataProviderLabel}
+										metadataRequestId={metadataRequestId}
 										metadataServiceTier={metadataServiceTier}
 										sentAtLabel={sentAtLabel}
 										onBranch={() => onBranchAssistant(message.id)}
@@ -1752,6 +1755,7 @@ export function ChatConversationMessages({
 		costLabel,
 		outputTokens,
 		metadataProviderLabel,
+		metadataRequestId,
 		metadataServiceTier,
 		onMetadataOpenIdChange,
 		responseLayout,

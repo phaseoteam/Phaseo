@@ -11,9 +11,13 @@ The high-level client supports:
 - Responses API requests with `Phaseo::responses(...)`
 - Chat Completions requests with `Phaseo::chat_completions(...)`
 - other JSON endpoints with `Phaseo::post(...)`
+- live model route discovery with `Phaseo::model_endpoint_capabilities(...)`
+- parameter support reports with `Phaseo::check_model_parameters(...)`
 - environment-based configuration with `Phaseo::from_env()`
 - custom HTTPS endpoints and loopback development servers
 - structured status, JSON body, request ID, and error details
+
+Parameter reports label each requested parameter as `supported`, `partial`, `unsupported`, or `unknown`, validate advertised values and ranges, and return the routes that accept the complete parameter set.
 
 ```rust
 use phaseo::Phaseo;

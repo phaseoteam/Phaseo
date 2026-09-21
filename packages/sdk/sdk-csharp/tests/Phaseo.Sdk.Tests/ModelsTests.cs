@@ -49,6 +49,16 @@ public class ModelsTests
         Assert.Equal("scheduled", provider.GetProperty("availability_reason").GetString());
     }
 
+    [Fact]
+    public void ParameterSupportHighlightsInvalidValue()
+    {
+        var model = System.Text.Json.Nodes.JsonNode.Parse("{\"id\":\"openai/example\",\"endpoints\":[{\"id\":\"openai:responses\",\"endpoint\":\"responses\",\"routable\":true,\"status\":\"active\",\"provider\":{\"id\":\"openai\"},\"capabilities\":{\"parameters\":[\"temperature\"],\"parameter_details\":{\"temperature\":{\"supported\":true,\"minimum\":0,\"maximum\":1}}}}]}")!;
+        var report = PhaseoSdk.ParameterSupport.Check(model, new Dictionary<string, object?> { ["temperature"] = 1.5 });
+        Assert.False(report["ok"]!.GetValue<bool>());
+        Assert.Equal("supported", report["parameters"]![0]!["status"]!.GetValue<string>());
+        Assert.Empty(report["parameters"]![0]!["accepted_by"]!.AsArray());
+    }
+
     private sealed class StubHttpHandler : HttpMessageHandler
     {
         private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
