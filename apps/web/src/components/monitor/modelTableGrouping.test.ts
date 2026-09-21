@@ -46,13 +46,22 @@ describe("groupModelRows", () => {
 				context: 256_000,
 				popularityTokensWeek: 150,
 			}),
-			row({ id: "openai/gpt-test/openai/chat", endpoint: "chat.completions" }),
+			row({
+				id: "openai/gpt-test/openai/chat",
+				endpoint: "chat.completions",
+				gatewayStatus: "disabled",
+			}),
 		]);
 
 		expect(result).toHaveLength(1);
 		expect(result[0]).toMatchObject({
 			modelId: "openai/gpt-test",
 			endpoints: ["responses", "chat.completions"],
+			statusEndpoints: [
+				{ status: "active", endpoint: "responses" },
+				{ status: "active", endpoint: "chat.completions" },
+				{ status: "disabled", endpoint: "chat.completions" },
+			],
 			inputModalities: ["text", "image"],
 			features: ["tools", "json"],
 			executionRegions: ["us", "eu"],

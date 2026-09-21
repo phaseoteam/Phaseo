@@ -27,6 +27,11 @@ export interface ModelData {
 
 export type ModelProvider = ModelData["provider"];
 
+export type ModelStatusEndpoint = {
+	status: string;
+	endpoint: string;
+};
+
 export interface GroupedModelData {
 	id: string;
 	model: string;
@@ -34,7 +39,7 @@ export interface GroupedModelData {
 	organisationId?: string;
 	providers: ModelProvider[];
 	endpoints: string[];
-	gatewayStatuses: string[];
+	statusEndpoints: ModelStatusEndpoint[];
 	inputModalities: string[];
 	outputModalities: string[];
 	features: string[];
@@ -99,8 +104,13 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 				a.name.localeCompare(b.name),
 			),
 			endpoints: unique(variants.map(({ endpoint }) => endpoint)),
-			gatewayStatuses: unique(
-				variants.map(({ gatewayStatus }) => gatewayStatus),
+			statusEndpoints: Array.from(
+				new Map(
+					variants.map(({ gatewayStatus, endpoint }) => [
+						`${gatewayStatus}\u0000${endpoint}`,
+						{ status: gatewayStatus, endpoint },
+					]),
+				).values(),
 			),
 			inputModalities: unique(
 				variants.flatMap(({ inputModalities }) => inputModalities),

@@ -822,8 +822,8 @@ export function MonitorDataTable({
 						bValue = b.outputPrices[0] ?? Number.POSITIVE_INFINITY;
 						break;
 					case "status":
-						aValue = normalizeStatusValue(a.gatewayStatuses[0] ?? "");
-						bValue = normalizeStatusValue(b.gatewayStatuses[0] ?? "");
+						aValue = normalizeStatusValue(a.statusEndpoints[0]?.status ?? "");
+						bValue = normalizeStatusValue(b.statusEndpoints[0]?.status ?? "");
 						break;
 					case "tier":
 						aValue = a.tiers[0] ?? "";
@@ -1261,9 +1261,9 @@ export function MonitorDataTable({
 
 	const renderStatuses = (item: GroupedModelData) => (
 		<div className="flex items-center justify-center gap-0.5">
-			{item.gatewayStatuses.map((status) => (
-				<span key={status}>
-					{renderStatus(status, item.endpoints.map(formatEndpoint).join(", "))}
+			{item.statusEndpoints.map(({ status, endpoint }) => (
+				<span key={`${status}-${endpoint}`}>
+					{renderStatus(status, formatEndpoint(endpoint))}
 				</span>
 			))}
 		</div>
