@@ -19,8 +19,9 @@ export const MOONSHOT_BATCH_PROVIDER_ID = "moonshotai";
 export const X_AI_BATCH_PROVIDER_ID = "x-ai";
 export const PARASAIL_BATCH_PROVIDER_ID = "parasail";
 export const OVHCLOUD_BATCH_PROVIDER_ID = "ovhcloud";
+export const XIAOMI_BATCH_PROVIDER_ID = "xiaomi";
 export const JSON_BATCH_CONTENT_TYPE = "application/json";
-export const FILE_BACKED_JSONL_BATCH_PROVIDERS = new Set(["openai", "groq", "together", "alibaba-cloud", "moonshotai", "parasail", "ovhcloud"]);
+export const FILE_BACKED_JSONL_BATCH_PROVIDERS = new Set(["openai", "groq", "together", "alibaba-cloud", "moonshotai", "parasail", "ovhcloud", XIAOMI_BATCH_PROVIDER_ID]);
 const MAX_BATCH_RESULT_ENTRIES = 50_000;
 const MAX_BATCH_OUTPUT_BYTES = 512 * 1024 * 1024;
 const MAX_BATCH_OUTPUT_LINE_CHARS = 8 * 1024 * 1024;
@@ -192,12 +193,13 @@ function buildProviderBaseUrl(providerId: string, bindings: Record<string, strin
 	if (providerId === ANTHROPIC_BATCH_PROVIDER_ID) return String(bindings.ANTHROPIC_BASE_URL || "https://api.anthropic.com/v1").replace(/\/+$/, "");
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) return String(bindings.GOOGLE_AI_STUDIO_BASE_URL || "https://generativelanguage.googleapis.com/v1beta").replace(/\/+$/, "");
 	if (providerId === PARASAIL_BATCH_PROVIDER_ID) return String(bindings.PARASAIL_BATCH_BASE_URL || "https://api.saas.parasail.io/v1").replace(/\/+$/, "");
+	if (providerId === XIAOMI_BATCH_PROVIDER_ID) return String(bindings.XIAOMI_MIMO_BATCH_BASE_URL || "https://batch-api-ams.xiaomimimo.com/v1").replace(/\/+$/, "");
 	return "";
 }
 
 export function buildProviderBatchApiUrl(providerId: string, endpointPath: string): string {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	return providerId === PARASAIL_BATCH_PROVIDER_ID
+	return providerId === PARASAIL_BATCH_PROVIDER_ID || providerId === XIAOMI_BATCH_PROVIDER_ID
 		? `${buildProviderBaseUrl(providerId, bindings)}${endpointPath}`
 		: openAICompatUrl(providerId, endpointPath);
 }

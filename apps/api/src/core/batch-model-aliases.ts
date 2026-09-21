@@ -27,6 +27,7 @@ function stripProviderPrefix(providerId: string, model: string): string {
 		"x-ai": ["x-ai/", "xai/", "spacex-ai/"],
 		groq: ["groq/"],
 		together: ["together/", "together-ai/"],
+		xiaomi: ["xiaomi/"],
 	};
 	for (const prefix of prefixes[providerId] ?? []) {
 		if (lower.startsWith(prefix)) return model.slice(prefix.length);

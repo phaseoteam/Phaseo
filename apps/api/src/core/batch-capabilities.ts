@@ -218,6 +218,22 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 		notes: "Native input is a non-empty JSONL file up to 100 MB. Gateway inline requests are converted to a purpose=batch file. Only kimi-k2.5 and kimi-k2.6 are supported, with one model per batch and a 12h–7d completion window.",
 	},
 	{
+		providerId: "xiaomi",
+		displayName: "Xiaomi MiMo",
+		nativeInputModes: ["file"],
+		gatewayInputModes: ["file", "requests"],
+		documentationUrl: "https://mimo.mi.com/docs/en-US/quick-start/usage-guide/text-generation/batch-api",
+		status: "active",
+		previewReadiness: "validated",
+		reconciliationMode: "polling",
+		submissionRecovery: "metadata_lookup",
+		endpoints: [
+			{ endpoint: "/v1/chat/completions", mode: "native" },
+			{ endpoint: "/v1/responses", mode: "native" },
+		],
+		notes: "OpenAI-compatible Files and Batch APIs run on the separate AMS batch host. JSONL files are limited to 128 MB, completion_window is fixed at 24h, files are retained for 30 days, and batch inference is billed at 50% of real-time pricing. Only mimo-v2.6-pro and mimo-v2.6-flash are supported.",
+	},
+	{
 		providerId: "groq",
 		displayName: "Groq",
 		nativeInputModes: ["file"],
@@ -356,6 +372,8 @@ function providerFromModelPrefix(model: string): string | null {
 		case "moonshotai":
 		case "moonshot-ai":
 			return "moonshotai";
+		case "xiaomi":
+			return "xiaomi";
 		case "x-ai":
 		case "xai":
 		case "spacex-ai":
