@@ -246,11 +246,11 @@ function noulProbabilityEntries(answer: DecisionAnswer): Array<[string, number]>
 }
 
 const probabilityColors = [
-	"bg-chart-2",
-	"bg-chart-4",
-	"bg-chart-1",
-	"bg-chart-5",
-	"bg-chart-3",
+	"bg-sky-500",
+	"bg-emerald-500",
+	"bg-violet-500",
+	"bg-amber-500",
+	"bg-rose-500",
 ];
 
 function ProbabilityStrip({ entries }: { entries: Array<[string, number]> }) {

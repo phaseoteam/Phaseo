@@ -1,6 +1,5 @@
 "use client";
 
-import { createPortal } from "react-dom";
 import { MessageScroller } from "@shadcn/react/message-scroller";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -12,7 +11,6 @@ import {
 	Save,
 	Settings,
 	SquarePen,
-	Trash2,
 	X,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -20,7 +18,10 @@ import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySup
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { fetchChatWebApi } from "@/lib/web-api/client";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { APP_HEADERS } from "@/components/(chat)/playground/chat-playground-core";
+import {
+	APP_HEADERS,
+	getRoomStorageKeys,
+} from "@/components/(chat)/playground/chat-playground-core";
 import {
 	DecisionComposer,
 	createDefaultDecisionDraft,
@@ -45,18 +46,36 @@ import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
 import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomWorkingIndicator } from "@/components/(chat)/RoomWorkingIndicator";
 import { RoomErrorNotice } from "@/components/(chat)/rooms/RoomErrorNotice";
+import { DecisionsChatSidebar } from "@/components/(chat)/rooms/DecisionsChatSidebar";
 import { DecisionsModelSettingsDialog } from "@/components/(chat)/rooms/settings/DecisionsModelSettingsDialog";
 import { useRoomModelSettings } from "@/components/(chat)/rooms/useRoomModelSettings";
-import { ROOM_SIDEBAR_SLOT_ID } from "@/components/(chat)/RoomScaffold";
-import {
-	CHAT_SIDEBAR_ACTIONS_CLASS,
-	CHAT_SIDEBAR_HISTORY_GROUP_CLASS,
-} from "@/components/(chat)/chatSidebarStyles";
+import { chatLocalStorage } from "@/lib/chat/userStorage";
 import {
 	deleteRoomHistory,
 	listRoomHistory,
 	upsertRoomHistory,
 } from "@/lib/indexeddb/chatRoomHistory";
+import {
+	deleteChat,
+	getAllChatTags,
+	getAllChats,
+	normalizeChatTags,
+	upsertChat,
+	upsertChatTags,
+	type ChatTag,
+} from "@/lib/indexeddb/chats";
+import {
+	buildDecisionConversations,
+	createDecisionConversation,
+	fromStoredDecisionRun,
+	sortDecisionConversations,
+	toStoredDecisionRun,
+	truncateConversationTitle,
+	type DecisionConversation,
+	type DecisionHistoryPayload,
+	type DecisionRequest,
+	type DecisionRun,
+} from "@/components/(chat)/rooms/decisionChatConversations";
 import { Button } from "@/components/ui/button";
 import {
 	Message,
@@ -65,16 +84,7 @@ import {
 } from "@/components/ui/message";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import {
-	SidebarGroup,
-	SidebarGroupContent,
-	SidebarGroupLabel,
-	SidebarMenu,
-	SidebarMenuAction,
-	SidebarMenuButton,
-	SidebarMenuItem,
-	useSidebar,
-} from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/sidebar";
 import {
 	Tooltip,
 	TooltipContent,
@@ -82,35 +92,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const DEFAULT_MODEL_ID = "typesafe/jev-1.13.0";
-
-type DecisionRequest = {
-	model: string;
-	state: Record<string, unknown>;
-	questions: Record<string, unknown>;
-};
-
-type DecisionRun = {
-	id: string;
-	conversationId: string;
-	conversationTitle: string;
-	input: string;
-	model: string;
-	request: Omit<DecisionRequest, "model">;
-	draft: DecisionDraft;
-	result: unknown;
-	createdAt: string;
-	completedAt?: string;
-	isPending: boolean;
-	error?: string;
-};
-
-type DecisionHistoryPayload = Omit<DecisionRun, "isPending">;
-
-type DecisionConversation = {
-	id: string;
-	title: string;
-	updatedAt: string;
-};
+const DECISIONS_STORAGE_KEYS = getRoomStorageKeys("decisions");
 
 function formatDecisionTime(value: string): string {
 	const date = new Date(value);
@@ -171,43 +153,6 @@ function cloneDraft(draft: DecisionDraft): DecisionDraft {
 	return structuredClone(draft);
 }
 
-function createConversationId(): string {
-	return `decisions-${crypto.randomUUID()}`;
-}
-
-function truncateConversationTitle(value: string, max = 72): string {
-	const trimmed = value.trim();
-	if (trimmed.length <= max) return trimmed;
-	return `${trimmed.slice(0, max - 3).trimEnd()}...`;
-}
-
-function buildDecisionConversations(runs: DecisionRun[]): DecisionConversation[] {
-	const conversations = new Map<string, DecisionConversation>();
-	for (const run of runs) {
-		const updatedAt = run.completedAt ?? run.createdAt;
-		const existing = conversations.get(run.conversationId);
-		if (!existing || updatedAt > existing.updatedAt) {
-			conversations.set(run.conversationId, {
-				id: run.conversationId,
-				title: run.conversationTitle,
-				updatedAt,
-			});
-		}
-	}
-	return Array.from(conversations.values()).sort((left, right) =>
-		right.updatedAt.localeCompare(left.updatedAt),
-	);
-}
-
-function toStoredDecisionRun(run: DecisionRun): DecisionHistoryPayload {
-	const { isPending: _isPending, ...payload } = run;
-	return payload;
-}
-
-function fromStoredDecisionRun(payload: DecisionHistoryPayload): DecisionRun {
-	return { ...payload, isPending: false };
-}
-
 function getDefaultDecisionModelParams(): Record<string, never> {
 	return {};
 }
@@ -224,8 +169,10 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const [model, setModel] = useState(requestedModel);
 	const [draft, setDraft] = useState<DecisionDraft>(createDefaultDecisionDraft);
 	const [runs, setRuns] = useState<DecisionRun[]>([]);
+	const [conversations, setConversations] = useState<DecisionConversation[]>([]);
+	const initialConversationRef = useRef<DecisionConversation | null>(null);
+	const [chatTags, setChatTags] = useState<ChatTag[]>([]);
 	const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-	const [sidebarSlotEl, setSidebarSlotEl] = useState<HTMLElement | null>(null);
 	const [historyLoaded, setHistoryLoaded] = useState(false);
 	const [copiedRunId, setCopiedRunId] = useState<string | null>(null);
 	const [copiedInputRunId, setCopiedInputRunId] = useState<string | null>(null);
@@ -255,7 +202,6 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		}
 		return names;
 	}, [roomModels]);
-	const conversations = useMemo(() => buildDecisionConversations(runs), [runs]);
 	const activeConversation = useMemo(
 		() =>
 			conversations.find((conversation) => conversation.id === activeConversationId) ??
@@ -270,47 +216,122 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	}, [activeConversationId, runs]);
 
 	useEffect(() => {
-		const frame = window.requestAnimationFrame(() => {
-			setSidebarSlotEl(document.getElementById(ROOM_SIDEBAR_SLOT_ID));
-		});
-		return () => window.cancelAnimationFrame(frame);
-	}, []);
-
-	useEffect(() => {
 		let mounted = true;
-		void listRoomHistory<DecisionHistoryPayload>("decisions")
-			.then((records) => {
+		void Promise.all([
+			listRoomHistory<DecisionHistoryPayload>("decisions"),
+			getAllChats("decisions").catch(() => []),
+			getAllChatTags().catch(() => []),
+		])
+			.then(async ([records, storedConversations, storedTags]) => {
 				if (!mounted) return;
 				const storedRuns = records.map((record) =>
 					fromStoredDecisionRun(record.payload),
 				);
-				const storedConversations = buildDecisionConversations(storedRuns);
+				let loadedConversations = buildDecisionConversations(
+					storedRuns,
+					storedConversations,
+					requestedModel,
+				);
+				if (loadedConversations.length === 0) {
+					initialConversationRef.current ??=
+						createDecisionConversation(requestedModel);
+					loadedConversations = [initialConversationRef.current];
+				}
+				const storedIds = new Set(
+					storedConversations.map((conversation) => conversation.id),
+				);
+				const newConversations = loadedConversations.filter(
+					(conversation) => !storedIds.has(conversation.id),
+				);
+				await Promise.all(
+					newConversations.map((conversation) =>
+						upsertChat(conversation, "decisions").catch(() => {
+							if (mounted) {
+								setError("A chat could not be saved locally.");
+							}
+						}),
+					),
+				);
+				if (!mounted) return;
 				setRuns(storedRuns);
-				setActiveConversationId(
-					storedConversations[0]?.id ?? createConversationId(),
+				setConversations(loadedConversations);
+				setChatTags(storedTags);
+				const storedActiveId = chatLocalStorage.getItem(
+					DECISIONS_STORAGE_KEYS.activeChatId,
+				);
+				const selectedId =
+					loadedConversations.find(
+						(conversation) => conversation.id === storedActiveId,
+					)?.id ?? loadedConversations[0].id;
+				setActiveConversationId(selectedId);
+				chatLocalStorage.setItem(
+					DECISIONS_STORAGE_KEYS.activeChatId,
+					selectedId,
 				);
 				setHistoryLoaded(true);
 			})
 			.catch(() => {
 				if (!mounted) return;
-				setActiveConversationId(createConversationId());
+				initialConversationRef.current ??=
+					createDecisionConversation(requestedModel);
+				const initialConversation = initialConversationRef.current;
+				setConversations([initialConversation]);
+				setActiveConversationId(initialConversation.id);
 				setHistoryLoaded(true);
 				setError("Local chat history could not be loaded.");
 			});
 		return () => {
 			mounted = false;
 		};
-	}, []);
+	}, [requestedModel]);
 
-	function startNewConversation() {
-		setDraft(createDefaultDecisionDraft());
-		setActiveConversationId(createConversationId());
+	function persistActiveConversation(id: string) {
+		try {
+			chatLocalStorage.setItem(DECISIONS_STORAGE_KEYS.activeChatId, id);
+		} catch {
+			setError("The active chat could not be saved locally.");
+		}
+	}
+
+	function resetConversationView() {
 		setCopiedRunId(null);
 		setCopiedInputRunId(null);
 		setMetadataOpenRunId(null);
 		setEditingRunId(null);
 		setEditingValue("");
 		setError(null);
+	}
+
+	function selectConversation(conversation: DecisionConversation) {
+		setActiveConversationId(conversation.id);
+		const latestRun = runs
+			.filter((run) => run.conversationId === conversation.id)
+			.sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
+		setDraft(createDefaultDecisionDraft(latestRun?.draft.mode));
+		resetConversationView();
+		persistActiveConversation(conversation.id);
+	}
+
+	async function createNewConversation(
+		initialDraft = createDefaultDecisionDraft(),
+	) {
+		const conversation = createDecisionConversation(model || DEFAULT_MODEL_ID);
+		setConversations((previous) =>
+			sortDecisionConversations([conversation, ...previous]),
+		);
+		setActiveConversationId(conversation.id);
+		setDraft(initialDraft);
+		resetConversationView();
+		persistActiveConversation(conversation.id);
+		try {
+			await upsertChat(conversation, "decisions");
+		} catch {
+			setError("The new chat could not be saved locally.");
+		}
+	}
+
+	function startNewConversation() {
+		void createNewConversation();
 	}
 
 	async function persistRun(run: DecisionRun) {
@@ -323,24 +344,131 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		});
 	}
 
-	async function deleteConversation(conversation: DecisionConversation) {
-		const confirmed = window.confirm(`Delete "${conversation.title}"?`);
-		if (!confirmed) return;
+	async function deleteConversation(
+		conversation: DecisionConversation,
+	): Promise<boolean> {
 		const conversationRuns = runs.filter(
 			(run) => run.conversationId === conversation.id,
 		);
-		await Promise.all(
-			conversationRuns.map((run) => deleteRoomHistory(run.id)),
-		);
+		if (conversationRuns.some((run) => run.isPending)) {
+			setError("Wait for the decision to finish before deleting this chat.");
+			return false;
+		}
+		try {
+			await Promise.all([
+				deleteChat(conversation.id, "decisions"),
+				...conversationRuns.map((run) => deleteRoomHistory(run.id)),
+			]);
+		} catch {
+			setError("This chat could not be deleted locally.");
+			return false;
+		}
 		const nextRuns = runs.filter(
 			(run) => run.conversationId !== conversation.id,
 		);
+		const nextConversations = conversations.filter(
+			(entry) => entry.id !== conversation.id,
+		);
 		setRuns(nextRuns);
+		setConversations(nextConversations);
 		if (activeConversationId === conversation.id) {
-			const nextConversations = buildDecisionConversations(nextRuns);
-			setActiveConversationId(
-				nextConversations[0]?.id ?? createConversationId(),
+			const nextConversation = nextConversations[0];
+			if (nextConversation) {
+				selectConversation(nextConversation);
+			} else {
+				await createNewConversation();
+			}
+		}
+		return true;
+	}
+
+	async function renameConversation(
+		conversation: DecisionConversation,
+		title: string,
+	): Promise<boolean> {
+		const renamedConversation = {
+			...conversation,
+			title: title.trim(),
+			titleLocked: true,
+		};
+		setConversations((previous) =>
+			sortDecisionConversations(
+				previous.map((entry) =>
+					entry.id === conversation.id ? renamedConversation : entry,
+				),
+			),
+		);
+		try {
+			await upsertChat(renamedConversation, "decisions");
+			return true;
+		} catch {
+			setConversations((previous) =>
+				sortDecisionConversations(
+					previous.map((entry) =>
+						entry.id === conversation.id ? conversation : entry,
+					),
+				),
 			);
+			setError("This chat could not be renamed locally.");
+			return false;
+		}
+	}
+
+	async function toggleConversationPin(conversation: DecisionConversation) {
+		const updatedConversation = {
+			...conversation,
+			pinned: !conversation.pinned,
+		};
+		setConversations((previous) =>
+			sortDecisionConversations(
+				previous.map((entry) =>
+					entry.id === conversation.id ? updatedConversation : entry,
+				),
+			),
+		);
+		try {
+			await upsertChat(updatedConversation, "decisions");
+		} catch {
+			setConversations((previous) =>
+				sortDecisionConversations(
+					previous.map((entry) =>
+						entry.id === conversation.id ? conversation : entry,
+					),
+				),
+			);
+			setError("This chat could not be updated locally.");
+		}
+	}
+
+	async function saveConversationTags(
+		conversation: DecisionConversation,
+		tags: ChatTag[],
+	): Promise<boolean> {
+		const normalizedTags = normalizeChatTags(tags).sort((left, right) =>
+			left.name.localeCompare(right.name),
+		);
+		const updatedConversation = { ...conversation, tags: normalizedTags };
+		try {
+			await upsertChatTags(normalizedTags);
+			await upsertChat(updatedConversation, "decisions");
+			setConversations((previous) =>
+				sortDecisionConversations(
+					previous.map((entry) =>
+						entry.id === conversation.id ? updatedConversation : entry,
+					),
+				),
+			);
+			setChatTags((previous) => {
+				const byId = new Map(previous.map((tag) => [tag.id, tag]));
+				for (const tag of normalizedTags) byId.set(tag.id, tag);
+				return Array.from(byId.values()).sort((left, right) =>
+					left.name.localeCompare(right.name),
+				);
+			});
+			return true;
+		} catch {
+			setError("These chat tags could not be saved locally.");
+			return false;
 		}
 	}
 
@@ -362,10 +490,34 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		const prompt = draft.prompt.trim();
 		const runId = `decision-${crypto.randomUUID()}`;
 		const runModel = model || DEFAULT_MODEL_ID;
-		const conversationId = activeConversationId ?? createConversationId();
+		const conversation =
+			activeConversation ?? createDecisionConversation(runModel);
+		const conversationId = conversation.id;
+		const hasPreviousRuns = runs.some(
+			(run) => run.conversationId === conversationId,
+		);
 		const conversationTitle =
-			activeConversation?.title ?? truncateConversationTitle(prompt);
-		if (!activeConversationId) setActiveConversationId(conversationId);
+			conversation.titleLocked || hasPreviousRuns
+				? conversation.title
+				: truncateConversationTitle(prompt);
+		const createdAt = new Date().toISOString();
+		const updatedConversation = {
+			...conversation,
+			title: conversationTitle,
+			modelId: runModel,
+			updatedAt: createdAt,
+		};
+		setConversations((previous) =>
+			sortDecisionConversations([
+				...previous.filter((entry) => entry.id !== conversationId),
+				updatedConversation,
+			]),
+		);
+		setActiveConversationId(conversationId);
+		persistActiveConversation(conversationId);
+		void upsertChat(updatedConversation, "decisions").catch(() => {
+			setError("This chat could not be saved locally.");
+		});
 		const pendingRun: DecisionRun = {
 			id: runId,
 			conversationId,
@@ -378,7 +530,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			},
 			draft: submittedDraft,
 			result: null,
-			createdAt: new Date().toISOString(),
+			createdAt,
 			isPending: true,
 		};
 		setRuns((previousRuns) => [
@@ -524,10 +676,8 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		);
 	}
 
-	function branchRun(run: DecisionRun) {
-		setActiveConversationId(createConversationId());
-		setDraft(cloneDraft(run.draft));
-		setError(null);
+	async function branchRun(run: DecisionRun) {
+		await createNewConversation(cloneDraft(run.draft));
 		window.requestAnimationFrame(() => {
 			document
 				.querySelector<HTMLElement>("[data-decision-question-input='true']")
@@ -564,74 +714,21 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		}
 	}
 
-	const sidebarHistory = sidebarSlotEl
-		? createPortal(
-				<>
-					<div
-						data-chat-sidebar-actions="true"
-						className={CHAT_SIDEBAR_ACTIONS_CLASS}
-					>
-						<Button
-							type="button"
-							variant="ghost"
-							className="h-8 min-w-0 w-full justify-start gap-2 px-2 text-sm font-medium"
-							onClick={startNewConversation}
-							aria-label="New Chat"
-						>
-							<SquarePen className="h-4 w-4 shrink-0" />
-							{sidebarCollapsed ? null : (
-								<span className="truncate text-left">New Chat</span>
-							)}
-						</Button>
-					</div>
-					<ScrollArea className="min-h-0 flex-1">
-						<SidebarGroup className={CHAT_SIDEBAR_HISTORY_GROUP_CLASS}>
-							<SidebarGroupLabel>Chats</SidebarGroupLabel>
-							<SidebarGroupContent>
-								<SidebarMenu>
-									{conversations.map((conversation) => (
-										<SidebarMenuItem
-											key={conversation.id}
-											className="mb-1 w-full overflow-hidden last:mb-0"
-										>
-											<SidebarMenuButton
-												className="rounded-md"
-												isActive={activeConversationId === conversation.id}
-												onClick={() => {
-													setActiveConversationId(conversation.id);
-													setError(null);
-												}}
-											>
-												<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
-													{conversation.title}
-												</span>
-											</SidebarMenuButton>
-											<SidebarMenuAction
-												showOnHover
-												onClick={() => void deleteConversation(conversation)}
-												aria-label={`Delete ${conversation.title}`}
-											>
-												<Trash2 className="h-4 w-4" />
-											</SidebarMenuAction>
-										</SidebarMenuItem>
-									))}
-									{historyLoaded && conversations.length === 0 ? (
-										<p className="px-2 py-3 text-xs text-muted-foreground">
-											No chats yet.
-										</p>
-									) : null}
-								</SidebarMenu>
-							</SidebarGroupContent>
-						</SidebarGroup>
-					</ScrollArea>
-				</>,
-				sidebarSlotEl,
-			)
-		: null;
-
 	return (
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			{sidebarHistory}
+			<DecisionsChatSidebar
+				conversations={conversations}
+				activeConversationId={activeConversationId}
+				historyLoaded={historyLoaded}
+				collapsed={sidebarCollapsed}
+				availableTags={chatTags}
+				onCreate={startNewConversation}
+				onSelect={selectConversation}
+				onRename={renameConversation}
+				onTogglePin={(conversation) => void toggleConversationPin(conversation)}
+				onSaveTags={saveConversationTags}
+				onDelete={deleteConversation}
+			/>
 			<header className="border-b border-border px-3 py-3 md:px-5">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<div className="flex min-w-0 items-center gap-1">
@@ -671,6 +768,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 									variant="ghost"
 									size="icon"
 									onClick={startNewConversation}
+									disabled={!historyLoaded}
 									aria-label="New chat"
 								>
 									<SquarePen className="h-4 w-4" />
