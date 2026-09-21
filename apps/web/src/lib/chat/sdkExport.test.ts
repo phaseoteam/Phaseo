@@ -1,4 +1,4 @@
-import { agentSdkSupportReason, sdkCode, sdkRequestFromChat } from "./sdkExport";
+import { agentSdkSupportReason, convertTextProtocol, sdkCode, sdkRequestFromChat } from "./sdkExport";
 
 test("exports the submitted body and selected endpoint without proxy credentials", () => {
   const request = sdkRequestFromChat("/api/chat/audio", { method: "POST", headers: { Authorization: "secret" }, body: JSON.stringify({
@@ -112,7 +112,7 @@ test("builds runnable TypeScript and Python Agent SDK samples from Responses req
 
 test("only offers Agent SDK samples when a request can be converted safely", () => {
   expect(agentSdkSupportReason({ endpoint: "/images/generations", body: { prompt: "A lighthouse" } }))
-    .toBe("Available for Responses requests");
+    .toBe("Available for text requests");
   expect(agentSdkSupportReason({ endpoint: "/responses", body: { model: "phaseo/free" } }))
     .toBe("Add an input to use the Agent SDK");
   expect(agentSdkSupportReason({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "function" }] } }))
@@ -141,4 +141,58 @@ test("normalizes a Responses message into runnable Agent SDK input and instructi
   expect(sdkCode(request, "agent-typescript")).toContain('input: "Summarize this."');
   expect(sdkCode(request, "agent-python")).toContain('"instructions": "Follow the house style.\\n\\nBe concise."');
   expect(sdkCode(request, "agent-python")).toContain('input="Summarize this."');
+});
+
+test("puts cURL on a complete public endpoint with the captured JSON body", () => {
+  const code = sdkCode({ endpoint: "/rerank", body: { model: "cohere/rerank", query: "Best", documents: ["One", "Two"] } }, "curl");
+  expect(code).toContain("curl --request POST");
+  expect(code).toContain("https://api.phaseo.app/v1/rerank");
+  expect(code).toContain("Authorization: Bearer $PHASEO_API_KEY");
+  expect(code).toContain('"documents": [');
+});
+
+test.each([
+  ["sdk-typescript", "@phaseo/sdk"], ["sdk-python", "from phaseo import AsyncPhaseo"],
+  ["sdk-go", "sdk-go/v3"], ["sdk-csharp", "using PhaseoSdk"],
+  ["sdk-java", "app.phaseo.sdk.Phaseo"], ["sdk-php", "Phaseo\\Sdk\\Phaseo"],
+  ["sdk-ruby", "require \"phaseo_sdk\""], ["sdk-cpp", "phaseo::gen::CreateResponse"],
+  ["sdk-rust", "use phaseo::Phaseo"],
+] as const)("generates a Responses request for %s", (sample, marker) => {
+  expect(sdkCode({ endpoint: "/responses", body: { model: "phaseo/free", input: "Hello" } }, sample)).toContain(marker);
+});
+
+test.each([
+  ["agent-typescript", "createGatewayAgentClient"], ["agent-python", "create_gateway_agent_client"],
+  ["agent-go", "CreateGatewayAgentClient"], ["agent-csharp", "AgentSdk.CreateGatewayAgentClient"],
+  ["agent-java", "AgentSdk.createGatewayAgentClient"], ["agent-php", "AgentSdk::createGatewayAgentClient"],
+  ["agent-ruby", "PhaseoAgentSdk.create_gateway_agent_client"], ["agent-rust", "create_gateway_agent_client"],
+] as const)("generates an Agent SDK starter for %s", (sample, marker) => {
+  expect(sdkCode({ endpoint: "/responses", body: { model: "phaseo/free", input: "Hello" } }, sample)).toContain(marker);
+});
+
+test("switches text-only requests between Responses, Chat Completions, and Messages shapes", () => {
+  const source = {
+    endpoint: "/responses",
+    body: { model: "phaseo/free", instructions: "Be concise.", input: "Hello", max_output_tokens: 64, service_tier: "priority" },
+  };
+  const chat = convertTextProtocol(source, "chat-completions");
+  expect(chat.endpoint).toBe("/chat/completions");
+  expect(chat.body).toEqual({
+    model: "phaseo/free",
+    service_tier: "priority",
+    messages: [{ role: "system", content: "Be concise." }, { role: "user", content: "Hello" }],
+    max_completion_tokens: 64,
+  });
+  const messages = convertTextProtocol(chat, "messages");
+  expect(messages.endpoint).toBe("/messages");
+  expect(messages.body.system).toBe("Be concise.");
+  expect(messages.body.max_tokens).toBe(64);
+  expect(convertTextProtocol(messages, "responses")).toEqual(source);
+});
+
+test("does not silently convert tool-bearing or multimodal protocol requests", () => {
+  expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "function" }] } }, "messages"))
+    .toThrow("requires a request without tools");
+  expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: [{ role: "user", content: [{ type: "input_image", image_url: "example" }] }] } }, "messages"))
+    .toThrow("requires text-only messages");
 });
