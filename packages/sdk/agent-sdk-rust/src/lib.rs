@@ -832,6 +832,7 @@ impl Agent {
 pub struct GatewayAgentClient {
     client: Phaseo,
     model: String,
+    gateway_tools: Vec<Value>,
 }
 
 impl GatewayAgentClient {
@@ -839,7 +840,13 @@ impl GatewayAgentClient {
         Self {
             client,
             model: model.into(),
+            gateway_tools: Vec::new(),
         }
+    }
+
+    pub fn with_gateway_tools(mut self, tools: Vec<Value>) -> Self {
+        self.gateway_tools = tools;
+        self
     }
 
     pub fn from_env(model: impl Into<String>) -> Result<Self, AgentError> {
@@ -866,7 +873,7 @@ impl ModelClient for GatewayAgentClient {
             &request.model
         };
         let input = response_input(&request.messages);
-        let tools: Vec<Value> = request
+        let mut tools: Vec<Value> = request
             .tools
             .iter()
             .map(|tool| {
@@ -878,6 +885,7 @@ impl ModelClient for GatewayAgentClient {
                 })
             })
             .collect();
+        tools.extend(self.gateway_tools.iter().cloned());
         let mut body = json!({
             "model": model,
             "input": input,
@@ -1069,6 +1077,24 @@ fn emit(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn configures_gateway_native_tools() {
+        let client = GatewayAgentClient::new(
+            Phaseo::new("test-key")
+                .expect("test client")
+                .with_base_url("https://api.phaseo.app/v1")
+                .expect("test base URL"),
+            "phaseo/free",
+        )
+        .with_gateway_tools(vec![json!({
+            "type": "gateway:datetime",
+            "parameters": { "timezones": ["UTC"] }
+        })]);
+
+        assert_eq!(client.gateway_tools.len(), 1);
+        assert_eq!(client.gateway_tools[0]["type"], "gateway:datetime");
+    }
 
     struct ToolLoopClient {
         calls: usize,

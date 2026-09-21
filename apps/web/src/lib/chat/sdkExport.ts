@@ -108,9 +108,9 @@ function messageText(content: unknown): string | null {
   return text.every((part): part is string => part !== null) ? text.join("\n") : null;
 }
 
-function normalizeConversation(request: SdkRequest) {
+function normalizeConversation(request: SdkRequest, allowTools = false) {
   if (!textProtocolForRequest(request)) return { messages: [] as ConversationMessage[], reason: "Available for text requests" };
-  if (Array.isArray(request.body.tools) && request.body.tools.length > 0) return { messages: [] as ConversationMessage[], reason: "Protocol switching requires a request without tools" };
+  if (!allowTools && Array.isArray(request.body.tools) && request.body.tools.length > 0) return { messages: [] as ConversationMessage[], reason: "Protocol switching requires a request without tools" };
   const messages: ConversationMessage[] = [];
   if (typeof request.body.instructions === "string" && request.body.instructions.trim()) messages.push({ role: "system", text: request.body.instructions });
   if (typeof request.body.system === "string" && request.body.system.trim()) messages.push({ role: "system", text: request.body.system });
@@ -175,22 +175,34 @@ export function convertTextProtocol(request: SdkRequest, protocol: TextProtocol)
   return { ...request, endpoint: protocol === "responses" ? "/responses" : protocol === "chat-completions" ? "/chat/completions" : "/messages", body };
 }
 
-function normalizeAgentInput(request: SdkRequest): { input?: string; instructions?: string; reason: string | null } {
-  const conversation = normalizeConversation(request);
+function normalizeAgentInput(request: SdkRequest): { input?: string; instructions?: string; omitsHistory?: boolean; reason: string | null } {
+  const conversation = normalizeConversation(request, true);
   if (conversation.reason?.includes("text-only")) return { reason: "Use text-only messages to create an agent starter" };
   if (conversation.reason) return { reason: conversation.reason.replace("Protocol switching", "Agent samples") };
   const instructions = conversation.messages.filter(message => message.role === "system" || message.role === "developer").map(message => message.text);
   const turns = conversation.messages.filter(message => message.role === "user" || message.role === "assistant");
-  if (turns.some(message => message.role === "assistant")) return { reason: "Start a new turn to create an agent starter" };
-  if (turns.length !== 1 || turns[0].role !== "user") return { reason: "Start with one user message to create an agent starter" };
-  return { input: turns[0].text, ...(instructions.length ? { instructions: instructions.join("\n\n") } : {}), reason: null };
+  const latestUserIndex = turns.findLastIndex(message => message.role === "user");
+  if (latestUserIndex < 0) return { reason: "Add a user message to create an agent starter" };
+  return {
+    input: turns[latestUserIndex].text,
+    ...(instructions.length ? { instructions: instructions.join("\n\n") } : {}),
+    ...(turns.length > 1 ? { omitsHistory: true } : {}),
+    reason: null,
+  };
 }
 
 export function agentSdkSupportReason(request: SdkRequest): string | null {
   if (!textProtocolForRequest(request)) return "Available for text requests";
-  if (Array.isArray(request.body.tools) && request.body.tools.length > 0) return "Remove request tools to create an agent starter";
+  if (managedGatewayTools(request) === null) return "Define function tool handlers to create an agent starter";
   if ((request.endpoint === "/responses" ? request.body.input : request.body.messages) === undefined) return "Add an input to use the Agent SDK";
   return normalizeAgentInput(request).reason;
+}
+
+function managedGatewayTools(request: SdkRequest): Array<Record<string, unknown>> | null {
+  if (!Array.isArray(request.body.tools)) return [];
+  const tools = request.body.tools.filter((tool): tool is Record<string, unknown> => Boolean(tool) && typeof tool === "object");
+  if (tools.some(tool => tool.type === "function" || ("function" in tool && typeof tool.function === "object"))) return null;
+  return tools;
 }
 
 function indent(value: string, spaces: number) { return value.replace(/\n/g, `\n${" ".repeat(spaces)}`); }
@@ -207,18 +219,20 @@ function cppRawLiteral(value: string) {
   return `R\"${delimiter}(${value})${delimiter}\"`;
 }
 
-function agentCode(request: SdkRequest, language: AgentLanguage): string {
+function agentCodeWithoutHistoryNote(request: SdkRequest, language: AgentLanguage): string {
   const reason = agentSdkSupportReason(request);
   if (reason) throw new Error(reason);
   const normalized = normalizeAgentInput(request);
   const model = typeof request.body.model === "string" ? request.body.model : "phaseo/free";
   const input = normalized.input!;
   const instructions = normalized.instructions;
+  const gatewayTools = managedGatewayTools(request) ?? [];
   const optionKeys = new Set(["provider", "reasoning", "metadata", "response_format", "meta", "web_search_options", "plugins", "provider_options", "prompt_cache_key"]);
   const requestOptions = Object.fromEntries(Object.entries(request.body).filter(([key]) => !new Set(["model", "input", "messages", "system", "instructions", "tools", "stream", "temperature", "max_output_tokens", "max_completion_tokens", "max_tokens", "top_p", ...optionKeys]).has(key)));
   if (language === "typescript") {
     const clientOptions = [
       ...Object.entries(request.body).filter(([key]) => optionKeys.has(key)).map(([key, value]) => `  ${key === "meta" ? "includeMeta" : key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())}: ${indent(JSON.stringify(value, null, 2), 2)},`),
+      ...(gatewayTools.length ? [`  gatewayTools: ${indent(JSON.stringify(gatewayTools, null, 2), 2)},`] : []),
       ...(Object.keys(requestOptions).length ? [`  requestOptions: ${indent(JSON.stringify(requestOptions, null, 2), 2)},`] : []),
     ].join("\n");
     return `// npm install @phaseo/sdk @phaseo/agent-sdk\nimport { createAgent, createGatewayAgentClient } from "@phaseo/agent-sdk";\n\nconst agent = createAgent({\n  id: "request-agent",\n  model: ${JSON.stringify(model)},${instructions ? `\n  instructions: ${JSON.stringify(instructions)},` : ""}${typeof request.body.temperature === "number" ? `\n  temperature: ${request.body.temperature},` : ""}${typeof request.body.max_output_tokens === "number" ? `\n  maxOutputTokens: ${request.body.max_output_tokens},` : ""}${typeof request.body.top_p === "number" ? `\n  topP: ${request.body.top_p},` : ""}\n});\nconst client = createGatewayAgentClient({\n  clientOptions: { apiKey: process.env.PHASEO_API_KEY!${request.baseUrl ? `, baseUrl: ${JSON.stringify(request.baseUrl)}` : ""} },\n${clientOptions}\n});\nconst result = await agent.run({ input: ${JSON.stringify(input)}, client });\nconsole.log(result.output);\n`;
@@ -226,16 +240,26 @@ function agentCode(request: SdkRequest, language: AgentLanguage): string {
   if (language === "python") {
     const clientOptions = [
       ...Object.entries(request.body).filter(([key]) => optionKeys.has(key)).map(([key, value]) => `    ${key === "meta" ? "include_meta" : key}=${pythonLiteral(value, 1)},`),
+      ...(gatewayTools.length ? [`    gateway_tools=${pythonLiteral(gatewayTools, 1)},`] : []),
       ...(Object.keys(requestOptions).length ? [`    request_options=${pythonLiteral(requestOptions, 1)},`] : []),
     ].join("\n");
     return `# pip install phaseo phaseo-agent-sdk\nimport os\nfrom phaseo_agent import create_agent, create_gateway_agent_client\n\nagent = create_agent({\n    "id": "request-agent",\n    "model": ${JSON.stringify(model)},${instructions ? `\n    "instructions": ${JSON.stringify(instructions)},` : ""}${typeof request.body.temperature === "number" ? `\n    "temperature": ${request.body.temperature},` : ""}${typeof request.body.max_output_tokens === "number" ? `\n    "max_output_tokens": ${request.body.max_output_tokens},` : ""}${typeof request.body.top_p === "number" ? `\n    "top_p": ${request.body.top_p},` : ""}\n})\nclient = create_gateway_agent_client(\n    client_options={\n        "api_key": os.environ["PHASEO_API_KEY"],\n        "base_url": ${JSON.stringify(request.baseUrl ?? "https://api.phaseo.app/v1")},\n    },\n${clientOptions}\n)\nresult = agent.run(input=${JSON.stringify(input)}, client=client)\nprint(result.output)\n`;
   }
-  if (language === "go") return `// go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest\npackage main\n\nimport (\n  "context"\n  "fmt"\n  agent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"\n)\n\nfunc main() {\n  runner := agent.CreateAgent(agent.AgentDefinition{ID: "request-agent", Model: ${JSON.stringify(model)}${instructions ? `, Instructions: ${JSON.stringify(instructions)}` : ""}})\n  client, err := agent.CreateGatewayAgentClient(agent.GatewayAgentClientOptions{${request.baseUrl ? `BaseURL: ${JSON.stringify(request.baseUrl)}` : ""}})\n  if err != nil { panic(err) }\n  result, err := runner.Run(context.Background(), agent.RunOptions{Input: ${JSON.stringify(input)}, Client: client})\n  if err != nil { panic(err) }\n  fmt.Println(result.Output)\n}\n`;
-  if (language === "csharp") return `// dotnet add package Phaseo.Sdk\n// dotnet add package Phaseo.AgentSdk\nusing System.Collections.Generic;\nusing PhaseoAgentSdk;\n\nvar agent = AgentSdk.CreateAgent(new AgentDefinition { Id = "request-agent", Model = ${JSON.stringify(model)}${instructions ? `, Instructions = ${JSON.stringify(instructions)}` : ""} });\nvar client = AgentSdk.CreateGatewayAgentClient(${request.baseUrl ? `new GatewayAgentClientOptions { ClientOptions = new Dictionary<string, object?> { ["baseUrl"] = ${JSON.stringify(request.baseUrl)} } }` : ""});\nvar result = await agent.Run(new RunOptions { Input = ${JSON.stringify(input)}, Client = client });\nConsole.WriteLine(result.Output);\n`;
-  if (language === "java") return `// Maven: app.phaseo:phaseo-agent-sdk\nimport app.phaseo.agent.AgentSdk;\nimport java.util.List;\n\npublic final class Main {\n  public static void main(String[] args) throws Exception {\n    var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(\n        "request-agent", ${JSON.stringify(model)}, null, ${instructions ? JSON.stringify(instructions) : "null"}, List.of(), 12, null, null, null, null\n    ));\n    var client = AgentSdk.createGatewayAgentClient(${request.baseUrl ? `new AgentSdk.GatewayOptions(null, null, ${JSON.stringify(request.baseUrl)}, null, null, null)` : ""});\n    var result = agent.run(new AgentSdk.RunOptions(\n        ${JSON.stringify(input)}, client, null, null, null, null, null, null, null, null\n    ));\n    System.out.println(result.output());\n  }\n}\n`;
-  if (language === "php") return `<?php\n// composer require phaseo/sdk phaseo/agent-sdk\nrequire "vendor/autoload.php";\nuse Phaseo\\AgentSdk\\AgentDefinition;\nuse Phaseo\\AgentSdk\\AgentSdk;\nuse Phaseo\\AgentSdk\\GatewayAgentClientOptions;\n\n$agent = AgentSdk::createAgent(new AgentDefinition(id: "request-agent", model: ${singleQuotedLiteral(model)}${instructions ? `, instructions: ${singleQuotedLiteral(instructions)}` : ""}));\n$client = AgentSdk::createGatewayAgentClient(${request.baseUrl ? `new GatewayAgentClientOptions(clientOptions: ["base_url" => ${singleQuotedLiteral(request.baseUrl)}])` : ""});\n$result = $agent->run(input: ${singleQuotedLiteral(input)}, client: $client);\necho $result->output . PHP_EOL;\n`;
-  if (language === "ruby") return `# gem install phaseo_sdk phaseo_agent_sdk\nrequire "phaseo_agent_sdk"\n\nagent = PhaseoAgentSdk.create_agent(id: "request-agent", model: ${singleQuotedLiteral(model)}${instructions ? `, instructions: ${singleQuotedLiteral(instructions)}` : ""})\nclient = PhaseoAgentSdk.create_gateway_agent_client(${request.baseUrl ? `base_url: ${singleQuotedLiteral(request.baseUrl)}` : ""})\nresult = agent.run(input: ${singleQuotedLiteral(input)}, client: client)\nputs result.output\n`;
-  return `# Cargo.toml: phaseo = "0.1", phaseo-agent = "0.1"\nuse phaseo::Phaseo;\nuse phaseo_agent::{create_agent, AgentDefinition, GatewayAgentClient, RunOptions};\n\nfn main() -> Result<(), Box<dyn std::error::Error>> {\n    let agent = create_agent(AgentDefinition::new("request-agent", ${rustRawLiteral(model)})${instructions ? `.instructions(${rustRawLiteral(instructions)})` : ""});\n    let phaseo = Phaseo::from_env()?${request.baseUrl ? `.with_base_url(${rustRawLiteral(request.baseUrl)})?` : ""};\n    let mut client = GatewayAgentClient::new(phaseo, ${rustRawLiteral(model)});\n    let result = agent.run(&mut client, RunOptions::new(${rustRawLiteral(input)}))?;\n    println!("{}", result.output);\n    Ok(())\n}\n`;
+  if (language === "go") return `// go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest\npackage main\n\nimport (\n  "context"\n${gatewayTools.length ? '  "encoding/json"\n' : ""}  "fmt"\n  agent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"\n)\n\nfunc main() {\n  runner := agent.CreateAgent(agent.AgentDefinition{ID: "request-agent", Model: ${JSON.stringify(model)}${instructions ? `, Instructions: ${JSON.stringify(instructions)}` : ""}})\n${gatewayTools.length ? `  var gatewayTools []map[string]any\n  if err := json.Unmarshal([]byte(${JSON.stringify(JSON.stringify(gatewayTools))}), &gatewayTools); err != nil { panic(err) }\n` : ""}  client, err := agent.CreateGatewayAgentClient(agent.GatewayAgentClientOptions{${[request.baseUrl ? `BaseURL: ${JSON.stringify(request.baseUrl)}` : "", gatewayTools.length ? "GatewayTools: gatewayTools" : ""].filter(Boolean).join(", ")}})\n  if err != nil { panic(err) }\n  result, err := runner.Run(context.Background(), agent.RunOptions{Input: ${JSON.stringify(input)}, Client: client})\n  if err != nil { panic(err) }\n  fmt.Println(result.Output)\n}\n`;
+  if (language === "csharp") return `// dotnet add package Phaseo.Sdk\n// dotnet add package Phaseo.AgentSdk\nusing System.Collections.Generic;\n${gatewayTools.length ? "using System.Text.Json;\n" : ""}using PhaseoAgentSdk;\n\nvar agent = AgentSdk.CreateAgent(new AgentDefinition { Id = "request-agent", Model = ${JSON.stringify(model)}${instructions ? `, Instructions = ${JSON.stringify(instructions)}` : ""} });\nvar client = AgentSdk.CreateGatewayAgentClient(${request.baseUrl || gatewayTools.length ? `new GatewayAgentClientOptions { ${[request.baseUrl ? `ClientOptions = new Dictionary<string, object?> { ["baseUrl"] = ${JSON.stringify(request.baseUrl)} }` : "", gatewayTools.length ? `GatewayTools = JsonSerializer.Deserialize<List<Dictionary<string, object?>>>(${JSON.stringify(JSON.stringify(gatewayTools))})!` : ""].filter(Boolean).join(", ")} }` : ""});\nvar result = await agent.Run(new RunOptions { Input = ${JSON.stringify(input)}, Client = client });\nConsole.WriteLine(result.Output);\n`;
+  if (language === "java") return `// Maven: app.phaseo:phaseo-agent-sdk\nimport app.phaseo.agent.AgentSdk;\n${gatewayTools.length ? "import com.fasterxml.jackson.core.type.TypeReference;\nimport com.fasterxml.jackson.databind.ObjectMapper;\nimport java.util.Map;\n" : ""}import java.util.List;\n\npublic final class Main {\n  public static void main(String[] args) throws Exception {\n    var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(\n        "request-agent", ${JSON.stringify(model)}, null, ${instructions ? JSON.stringify(instructions) : "null"}, List.of(), 12, null, null, null, null\n    ));\n    var client = AgentSdk.createGatewayAgentClient(${request.baseUrl || gatewayTools.length ? `new AgentSdk.GatewayOptions(null, null, ${request.baseUrl ? JSON.stringify(request.baseUrl) : "null"}, null, null, ${gatewayTools.length ? `Map.of("tools", new ObjectMapper().readValue(${JSON.stringify(JSON.stringify(gatewayTools))}, new TypeReference<List<Map<String, Object>>>() {}))` : "null"})` : ""});\n    var result = agent.run(new AgentSdk.RunOptions(\n        ${JSON.stringify(input)}, client, null, null, null, null, null, null, null, null\n    ));\n    System.out.println(result.output());\n  }\n}\n`;
+  if (language === "php") return `<?php\n// composer require phaseo/sdk phaseo/agent-sdk\nrequire "vendor/autoload.php";\nuse Phaseo\\AgentSdk\\AgentDefinition;\nuse Phaseo\\AgentSdk\\AgentSdk;\nuse Phaseo\\AgentSdk\\GatewayAgentClientOptions;\n\n$agent = AgentSdk::createAgent(new AgentDefinition(id: "request-agent", model: ${singleQuotedLiteral(model)}${instructions ? `, instructions: ${singleQuotedLiteral(instructions)}` : ""}));\n$client = AgentSdk::createGatewayAgentClient(${request.baseUrl || gatewayTools.length ? `new GatewayAgentClientOptions(${[request.baseUrl ? `clientOptions: ["base_url" => ${singleQuotedLiteral(request.baseUrl)}]` : "", gatewayTools.length ? `gatewayTools: json_decode(${singleQuotedLiteral(JSON.stringify(gatewayTools))}, true, flags: JSON_THROW_ON_ERROR)` : ""].filter(Boolean).join(", ")})` : ""});\n$result = $agent->run(input: ${singleQuotedLiteral(input)}, client: $client);\necho $result->output . PHP_EOL;\n`;
+  if (language === "ruby") return `# gem install phaseo_sdk phaseo_agent_sdk\n${gatewayTools.length ? 'require "json"\n' : ""}require "phaseo_agent_sdk"\n\nagent = PhaseoAgentSdk.create_agent(id: "request-agent", model: ${singleQuotedLiteral(model)}${instructions ? `, instructions: ${singleQuotedLiteral(instructions)}` : ""})\nclient = PhaseoAgentSdk.create_gateway_agent_client(${[request.baseUrl ? `base_url: ${singleQuotedLiteral(request.baseUrl)}` : "", gatewayTools.length ? `gateway_tools: JSON.parse(${singleQuotedLiteral(JSON.stringify(gatewayTools))})` : ""].filter(Boolean).join(", ")})\nresult = agent.run(input: ${singleQuotedLiteral(input)}, client: client)\nputs result.output\n`;
+  return `# Cargo.toml: phaseo = "0.1", phaseo-agent = "0.1"\nuse phaseo::Phaseo;\nuse phaseo_agent::{create_agent, AgentDefinition, GatewayAgentClient, RunOptions};\n${gatewayTools.length ? "use serde_json::json;\n" : ""}\nfn main() -> Result<(), Box<dyn std::error::Error>> {\n    let agent = create_agent(AgentDefinition::new("request-agent", ${rustRawLiteral(model)})${instructions ? `.instructions(${rustRawLiteral(instructions)})` : ""});\n    let phaseo = Phaseo::from_env()?${request.baseUrl ? `.with_base_url(${rustRawLiteral(request.baseUrl)})?` : ""};\n    let mut client = GatewayAgentClient::new(phaseo, ${rustRawLiteral(model)})${gatewayTools.length ? `.with_gateway_tools(vec![${gatewayTools.map(tool => `json!(${JSON.stringify(tool)})`).join(", ")}])` : ""};\n    let result = agent.run(&mut client, RunOptions::new(${rustRawLiteral(input)}))?;\n    println!("{}", result.output);\n    Ok(())\n}\n`;
+}
+
+function agentCode(request: SdkRequest, language: AgentLanguage): string {
+  const code = agentCodeWithoutHistoryNote(request, language);
+  if (!normalizeAgentInput(request).omitsHistory) return code;
+  const marker = language === "python" || language === "ruby" ? "#" : "//";
+  const firstLineEnd = code.indexOf("\n");
+  const note = `${marker} Starts a new agent run from the latest user turn; prior chat messages are not replayed.\n`;
+  return firstLineEnd < 0 ? `${code}\n${note}` : `${code.slice(0, firstLineEnd + 1)}${note}${code.slice(firstLineEnd + 1)}`;
 }
 
 function curlCode(request: SdkRequest) {
