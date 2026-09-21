@@ -66,6 +66,8 @@ import {
 	fetchProviderFileText,
 	normalizeProviderBatchPayload as normalizeProviderBatchPayloadShared,
 	parseProviderBatchInputEntries,
+	XIAOMI_BATCH_FILE_MAX_BYTES,
+	XIAOMI_BATCH_PROVIDER_ID,
 } from "@core/batch-provider-adapters";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
@@ -82,7 +84,8 @@ const MOONSHOT_PROVIDER_ID = "moonshotai";
 const X_AI_PROVIDER_ID = "x-ai";
 const PARASAIL_PROVIDER_ID = "parasail";
 const OVHCLOUD_PROVIDER_ID = "ovhcloud";
-const FILE_BACKED_JSONL_BATCH_PROVIDERS = new Set(["openai", "groq", "together", "alibaba-cloud", MOONSHOT_PROVIDER_ID, PARASAIL_PROVIDER_ID, OVHCLOUD_PROVIDER_ID]);
+const XIAOMI_PROVIDER_ID = "xiaomi";
+const FILE_BACKED_JSONL_BATCH_PROVIDERS = new Set(["openai", "groq", "together", "alibaba-cloud", MOONSHOT_PROVIDER_ID, PARASAIL_PROVIDER_ID, OVHCLOUD_PROVIDER_ID, XIAOMI_PROVIDER_ID]);
 const JSON_BATCH_CONTENT_TYPE = "application/json";
 const MAX_BATCH_CUSTOM_ID_BYTES = 512;
 const MAX_BATCH_REQUESTS = 10_000;
@@ -871,6 +874,7 @@ function buildProviderBaseUrl(providerId: string, bindings: Record<string, strin
 	if (providerId === ANTHROPIC_PROVIDER_ID) return String(bindings.ANTHROPIC_BASE_URL || "https://api.anthropic.com/v1").replace(/\/+$/, "");
 	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) return String(bindings.GOOGLE_AI_STUDIO_BASE_URL || "https://generativelanguage.googleapis.com/v1beta").replace(/\/+$/, "");
 	if (providerId === PARASAIL_PROVIDER_ID) return String(bindings.PARASAIL_BATCH_BASE_URL || "https://api.saas.parasail.io/v1").replace(/\/+$/, "");
+	if (providerId === XIAOMI_PROVIDER_ID) return String(bindings.XIAOMI_MIMO_BATCH_BASE_URL || "https://batch-api-ams.xiaomimimo.com/v1").replace(/\/+$/, "");
 	return "";
 }
 
@@ -934,7 +938,7 @@ async function fetchProviderBatchApi(providerId: string, args: {
 	if (args.contentType) headers.set("Content-Type", args.contentType);
 	if (!args.contentType) headers.delete("Content-Type");
 	if (args.idempotencyKey) headers.set("Idempotency-Key", args.idempotencyKey);
-	const url = providerId === PARASAIL_PROVIDER_ID
+	const url = providerId === PARASAIL_PROVIDER_ID || providerId === XIAOMI_PROVIDER_ID
 		? `${buildProviderBaseUrl(providerId, bindings)}${args.endpointPath}`
 		: openAICompatUrl(providerId, args.endpointPath);
 	return fetch(url, {
@@ -1102,6 +1106,13 @@ function validateMoonshotBatchModels(models: string[]): boolean {
 	return models.every((model) => {
 		const native = providerNativeModelId(MOONSHOT_PROVIDER_ID, model).toLowerCase();
 		return native === "kimi-k2.5" || native === "kimi-k2.6";
+	});
+}
+
+function validateXiaomiBatchModels(models: string[]): boolean {
+	return models.every((model) => {
+		const native = providerNativeModelId(XIAOMI_PROVIDER_ID, model).toLowerCase();
+		return native === "mimo-v2.6-pro" || native === "mimo-v2.6-flash";
 	});
 }
 
@@ -1811,6 +1822,28 @@ async function handleCreate(req: Request) {
 			}
 		}
 	}
+	if (providerId === XIAOMI_PROVIDER_ID) {
+		const completionWindow = toText(payload.completion_window) ?? "24h";
+		if (completionWindow !== "24h") {
+			return err("validation_error", {
+				reason: "xiaomi_batch_completion_window_unsupported",
+				message: "Xiaomi MiMo Batch supports only a 24h completion window.",
+				request_id: requestId,
+				workspace_id: auth.workspaceId,
+			});
+		}
+		payload.completion_window = completionWindow;
+		upstreamPayload.completion_window = completionWindow;
+		const declaredModels = extractRawBatchModels(payload);
+		if (declaredModels.length > 0 && !validateXiaomiBatchModels(declaredModels)) {
+			return err("validation_error", {
+				reason: "xiaomi_batch_model_unsupported",
+				message: "Xiaomi MiMo Batch currently supports only mimo-v2.6-pro and mimo-v2.6-flash.",
+				request_id: requestId,
+				workspace_id: auth.workspaceId,
+			});
+		}
+	}
 	if (providerId === "together") {
 		const completionWindow = toText(payload.completion_window) ?? "24h";
 		if (completionWindow !== "24h") {
@@ -1926,7 +1959,11 @@ async function handleCreate(req: Request) {
 				await fetchProviderFileText(
 					providerId,
 					directInputFileId,
-					providerId === MOONSHOT_PROVIDER_ID ? MAX_MOONSHOT_BATCH_FILE_BYTES : undefined,
+					providerId === MOONSHOT_PROVIDER_ID
+						? MAX_MOONSHOT_BATCH_FILE_BYTES
+						: providerId === XIAOMI_BATCH_PROVIDER_ID
+							? XIAOMI_BATCH_FILE_MAX_BYTES
+							: undefined,
 					{
 						workspaceId: auth.workspaceId,
 						keySource: ownedInputFile?.keySource,
@@ -2018,6 +2055,14 @@ async function handleCreate(req: Request) {
 			return err("validation_error", {
 				reason: "moonshot_batch_model_unsupported",
 				message: "Kimi Batch currently supports only kimi-k2.5 and kimi-k2.6.",
+				request_id: requestId,
+				workspace_id: auth.workspaceId,
+			});
+		}
+		if (providerId === XIAOMI_PROVIDER_ID && !validateXiaomiBatchModels(nativeModels)) {
+			return err("validation_error", {
+				reason: "xiaomi_batch_model_unsupported",
+				message: "Xiaomi MiMo Batch currently supports only mimo-v2.6-pro and mimo-v2.6-flash.",
 				request_id: requestId,
 				workspace_id: auth.workspaceId,
 			});

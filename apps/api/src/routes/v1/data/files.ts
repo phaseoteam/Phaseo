@@ -27,6 +27,8 @@ import {
 	fetchProviderFileContent,
 	OPENAI_BATCH_PROVIDER_ID,
 	parseUpstreamJson,
+	XIAOMI_BATCH_FILE_MAX_BYTES,
+	XIAOMI_BATCH_PROVIDER_ID,
 } from "@core/batch-provider-adapters";
 import { resolveBatchSubmissionCredential } from "@core/batch-credentials";
 
@@ -229,7 +231,9 @@ async function handleUpload(req: Request) {
 		? MAX_MOONSHOT_BATCH_FILE_UPLOAD_BYTES
 		: providerId === "parasail"
 			? MAX_PARASAIL_BATCH_FILE_UPLOAD_BYTES
-			: MAX_BATCH_FILE_UPLOAD_BYTES;
+			: providerId === XIAOMI_BATCH_PROVIDER_ID
+				? XIAOMI_BATCH_FILE_MAX_BYTES
+				: MAX_BATCH_FILE_UPLOAD_BYTES;
 	const declaredLength = Number(req.headers.get("content-length") ?? 0);
 	if (Number.isFinite(declaredLength) && declaredLength > maxUploadBytes) {
 		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large" } }, 413);

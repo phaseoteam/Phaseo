@@ -259,6 +259,7 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "BFL_POLL_TIMEOUT_MS",
     "XIAOMI_MIMO_API_KEY",
     "XIAOMI_MIMO_BASE_URL",
+    "XIAOMI_MIMO_BATCH_BASE_URL",
     "NOVITA_API_KEY",
     "NOVITA_BASE_URL",
     "PARALLEL_API_KEY",
