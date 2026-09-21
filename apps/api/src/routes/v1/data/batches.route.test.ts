@@ -532,6 +532,19 @@ describe("batchRoutes", () => {
 		}]);
 	});
 
+	it("rejects batch offsets beyond the supported window", async () => {
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/?offset=10001", { method: "GET" });
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "validation_error",
+			reason: "offset_too_large",
+			max_offset: 10_000,
+		});
+		expect(state.batchListCalls).toEqual([]);
+	});
+
 	it("rejects batch requests before provider work when the Statsig gate is disabled", async () => {
 		state.batchApiEnabled = false;
 		const fetchMock = vi.fn();

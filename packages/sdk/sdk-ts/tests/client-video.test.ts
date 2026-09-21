@@ -14,6 +14,18 @@ describe("Phaseo video helpers", () => {
     expect(offsets).toEqual([0, 2]);
   });
 
+  test("stops before requesting an offset beyond the gateway limit", async () => {
+    const fetchPage = vi.fn(async () => ({ data: [1], has_more: true }));
+    const consume = async () => {
+      for await (const _item of paginateItems(fetchPage, { offset: 10_000 })) {
+        // Consume the page so pagination attempts to advance.
+      }
+    };
+
+    await expect(consume()).rejects.toThrow("Pagination offset cannot exceed 10000");
+    expect(fetchPage).toHaveBeenCalledTimes(1);
+  });
+
   test("VideoStatusResponse exposes normalized async lifecycle fields", () => {
     expectTypeOf<VideoStatusResponse>().toHaveProperty("lifecycle_status").toEqualTypeOf<
       "pending" | "running" | "completed" | "failed" | "cancelled" | "expired" | undefined

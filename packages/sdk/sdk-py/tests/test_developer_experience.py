@@ -358,6 +358,55 @@ def test_async_models_parameter_check_uses_the_same_live_report():
     asyncio.run(run())
 
 
+def test_async_preflight_includes_lifecycle_validation():
+    async def run():
+        capabilities = {
+            "ok": True,
+            "id": "openai/retired-model",
+            "endpoints": [{
+                "id": "openai:responses",
+                "endpoint": "responses",
+                "provider": {"id": "openai"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {"parameters": ["temperature"]},
+            }],
+        }
+        mock = MockTransport([
+            {
+                "method": "GET",
+                "path": "/data/models",
+                "json": {"models": [{"model_id": "openai/retired-model", "status": "retired"}]},
+            },
+            {"method": "GET", "path": "/models/openai/retired-model/endpoints", "json": capabilities},
+        ])
+        async with httpx.AsyncClient(transport=mock) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                report = await client.models.preflight(
+                    {"model": "openai/retired-model", "input": "hello", "temperature": 0.7},
+                    endpoint="responses",
+                )
+                assert not report["ok"]
+                assert not report["lifecycle"]["ok"]
+                assert report["lifecycle"]["info"]["status"] == "retired"
+                assert report["parameter_support"]["ok"]
+        mock.assert_done()
+
+    asyncio.run(run())
+
+
+def test_async_music_does_not_expose_collection_pagination():
+    async def run():
+        async with httpx.AsyncClient(transport=MockTransport([])) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                assert not hasattr(client.music, "pages")
+                assert not hasattr(client.music, "all")
+                assert hasattr(client.videos, "pages")
+                assert hasattr(client.batches, "all")
+
+    asyncio.run(run())
+
+
 def test_async_image_edits_use_multipart_and_preserve_file_ownership(tmp_path):
     from email.parser import BytesParser
     from email.policy import default

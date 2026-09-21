@@ -499,12 +499,15 @@ export async function listTeamAsyncOperations(args: {
 	orderBy?: "created_at" | "updated_at";
 	ascending?: boolean;
 	statuses?: Array<string | null>;
+	after?: { createdAt: string; internalId: string };
 }): Promise<AsyncOperationRecord[]> {
 	const workspaceId = normalizeText(args.workspaceId);
 	if (!workspaceId) return [];
 	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.min(500, Math.trunc(args.limit!))) : 100;
 	const offset = Number.isFinite(args.offset) ? Math.max(0, Math.trunc(args.offset!)) : 0;
 
+	const orderBy = args.orderBy ?? "updated_at";
+	const ascending = args.ascending ?? false;
 	let query = getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select(
@@ -512,9 +515,17 @@ export async function listTeamAsyncOperations(args: {
 		)
 		.eq("workspace_id", workspaceId)
 		.eq("kind", args.kind)
-		.order(args.orderBy ?? "updated_at", { ascending: args.ascending ?? false });
+		.order(orderBy, { ascending });
+	if (orderBy === "created_at") {
+		query = query.order("internal_id", { ascending });
+	}
 
-	query = offset > 0 ? query.range(offset, offset + limit - 1) : query.limit(limit);
+	if (args.after && orderBy === "created_at") {
+		const operator = ascending ? "gt" : "lt";
+		const createdAt = `"${args.after.createdAt.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+		const internalId = `"${args.after.internalId.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+		query = query.or(`created_at.${operator}.${createdAt},and(created_at.eq.${createdAt},internal_id.${operator}.${internalId})`);
+	}
 
 	if (args.statuses && args.statuses.length > 0) {
 		const includeNullStatus = args.statuses.some((value) => value == null);
@@ -531,6 +542,8 @@ export async function listTeamAsyncOperations(args: {
 			query = query.in("status", statuses);
 		}
 	}
+
+	query = offset > 0 ? query.range(offset, offset + limit - 1) : query.limit(limit);
 
 	const { data, error } = await query;
 	if (error) throw error;

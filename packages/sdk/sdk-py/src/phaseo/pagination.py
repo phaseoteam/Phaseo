@@ -5,10 +5,17 @@ from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from typing import Any
 
 Page = dict[str, Any]
+MAX_PAGE_OFFSET = 10_000
+
+
+def _validate_offset(offset: int) -> None:
+    if offset > MAX_PAGE_OFFSET:
+        raise ValueError(f"pagination offset cannot exceed {MAX_PAGE_OFFSET}")
 
 
 def iter_pages(fetch_page: Callable[[dict[str, int]], Page], *, limit: int = 50, offset: int = 0) -> Iterator[Page]:
     limit, offset = max(1, int(limit)), max(0, int(offset))
+    _validate_offset(offset)
     while True:
         page = fetch_page({"limit": limit, "offset": offset})
         yield page
@@ -16,6 +23,7 @@ def iter_pages(fetch_page: Callable[[dict[str, int]], Page], *, limit: int = 50,
         if not page.get("has_more") or not items:
             return
         offset += len(items)
+        _validate_offset(offset)
 
 
 def iter_items(fetch_page: Callable[[dict[str, int]], Page], *, limit: int = 50, offset: int = 0) -> Iterator[Any]:
@@ -25,6 +33,7 @@ def iter_items(fetch_page: Callable[[dict[str, int]], Page], *, limit: int = 50,
 
 async def aiter_pages(fetch_page: Callable[[dict[str, int]], Awaitable[Page]], *, limit: int = 50, offset: int = 0) -> AsyncIterator[Page]:
     limit, offset = max(1, int(limit)), max(0, int(offset))
+    _validate_offset(offset)
     while True:
         page = await fetch_page({"limit": limit, "offset": offset})
         yield page
@@ -32,6 +41,7 @@ async def aiter_pages(fetch_page: Callable[[dict[str, int]], Awaitable[Page]], *
         if not page.get("has_more") or not items:
             return
         offset += len(items)
+        _validate_offset(offset)
 
 
 async def aiter_items(fetch_page: Callable[[dict[str, int]], Awaitable[Page]], *, limit: int = 50, offset: int = 0) -> AsyncIterator[Any]:

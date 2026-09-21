@@ -87,6 +87,9 @@ class AsyncModels(AsyncResource):
     async def preflight(self, request: dict[str, Any], *, endpoint: str | None = None, provider: str | list[str] | None = None) -> dict[str, Any]:
         return await self.client.preflight_request(request, endpoint=endpoint, provider=provider)
 
+    async def validate(self, model_id: str) -> dict[str, Any]:
+        return await self.client.validate_model(model_id)
+
 
 class AsyncImages(AsyncResource):
     async def generate(self, params: dict[str, Any]) -> APIResponse:
@@ -197,16 +200,6 @@ class AsyncJobs(AsyncResource):
     def resume(self, job_id: str) -> AsyncJobHandle:
         return AsyncJobHandle(self, job_id)
 
-    def pages(self, params: dict[str, Any] | None = None) -> AsyncIterator[APIResponse]:
-        options = dict(params or {})
-        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
-        return aiter_pages(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
-
-    def all(self, params: dict[str, Any] | None = None) -> AsyncIterator[dict[str, Any]]:
-        options = dict(params or {})
-        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
-        return aiter_items(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
-
     async def wait(self, job_id: str, *, interval: float = 5, timeout: float = 1800, on_poll: Callable[..., Any] | None = None, _initial: dict[str, Any] | None = None) -> APIResponse:
         last = None
         async def run() -> APIResponse:
@@ -266,6 +259,18 @@ class AsyncJobs(AsyncResource):
             yield _batch_line(pending)
 
 
+class AsyncListableJobs(AsyncJobs):
+    def pages(self, params: dict[str, Any] | None = None) -> AsyncIterator[APIResponse]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return aiter_pages(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
+    def all(self, params: dict[str, Any] | None = None) -> AsyncIterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return aiter_items(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
+
 class AsyncPhaseo:
     def __init__(self, api_key: str | None = None, base_url: str | None = None, *, region: str | None = None,
                  timeout: float = 60, max_retries: int = 0, http_client: httpx.AsyncClient | None = None,
@@ -307,8 +312,8 @@ class AsyncPhaseo:
         self.models = AsyncModels(self, "/models")
         self.files = AsyncFiles(self, "/batches/files")
         self.music = AsyncJobs(self, "/music/generate", "music")
-        self.videos = AsyncJobs(self, "/videos", "video")
-        self.batches = AsyncJobs(self, "/batches", "batch")
+        self.videos = AsyncListableJobs(self, "/videos", "video")
+        self.batches = AsyncListableJobs(self, "/batches", "batch")
 
     def with_options(self, *, timeout: float | None = None, max_retries: int | None = None, headers: dict[str, str] | None = None) -> "AsyncPhaseo":
         return AsyncPhaseo(api_key=self.headers["Authorization"].removeprefix("Bearer "), base_url=self.base_url,
@@ -419,13 +424,50 @@ class AsyncPhaseo:
             provider=provider,
         )
 
+    async def get_model_deprecation_info(self, model_id: str) -> dict[str, Any] | None:
+        normalized_model_id = str(model_id or "").strip()
+        if not normalized_model_id:
+            return None
+        try:
+            payload = await self.request(
+                "GET",
+                "/data/models",
+                query={"model_id": normalized_model_id, "limit": 1},
+            )
+        except Exception:
+            return None
+        rows = payload.get("models") if isinstance(payload, dict) else None
+        if not isinstance(rows, list):
+            return None
+        model_row = next((row for row in rows if isinstance(row, dict) and str(row.get("model_id") or "").strip() == normalized_model_id), None)
+        if not model_row:
+            return None
+        from . import _to_model_lifecycle_info
+        return _to_model_lifecycle_info(model_row, normalized_model_id)
+
+    async def validate_model(self, model_id: str) -> dict[str, Any]:
+        info = await self.get_model_deprecation_info(model_id)
+        if not info:
+            return {"ok": True, "info": None}
+        from . import _build_inactive_model_request_message, _is_model_requestable_for_inference
+        if not _is_model_requestable_for_inference(info):
+            return {"ok": False, "info": info, "reason": _build_inactive_model_request_message(info)}
+        return {"ok": True, "info": info}
+
     async def preflight_request(self, request: dict[str, Any], *, endpoint: str | None = None, provider: str | list[str] | None = None) -> dict[str, Any]:
         model = str(request.get("model") or "").strip()
         if not model:
             raise ValueError("preflight requires request['model']")
         checked = {key: value for key, value in request.items() if key not in PREFLIGHT_STRUCTURAL_FIELDS and value is not None}
+        lifecycle = await self.validate_model(model)
         support = await self.check_model_parameters(model, checked, endpoint=endpoint, provider=provider)
-        return {"ok": bool(support.get("ok")), "model": model, "checked_parameters": checked, "parameter_support": support}
+        return {
+            "ok": bool(lifecycle.get("ok")) and bool(support.get("ok")),
+            "model": model,
+            "checked_parameters": checked,
+            "lifecycle": lifecycle,
+            "parameter_support": support,
+        }
 
     async def close(self) -> None:
         if self._owned:
