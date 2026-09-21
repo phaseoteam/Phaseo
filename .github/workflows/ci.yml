@@ -692,7 +692,7 @@ jobs:
 
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b
+              uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073
               with:
                   ruby-version: "3.2"
 
@@ -1002,7 +1002,7 @@ jobs:
                   java-version: "17"
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b
+              uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073
               with:
                   ruby-version: "3.2"
             - name: Setup Rust
