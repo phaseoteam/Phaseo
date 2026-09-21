@@ -46,12 +46,14 @@ type ModelRow = {
 	lab_slug: string;
 	hidden: boolean;
 	status: string;
+	catalogue_status?: string | null;
 };
 
 type StateRow = {
 	model_slug: string;
 	status: string;
 	attempt_count: number;
+	catalogue_status_snapshot?: string | null;
 };
 
 function buildClient(
@@ -124,16 +126,16 @@ describe("runPublicModelAnnouncementCheck", () => {
 		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
 	});
 
-	it("announces new and previously pending public models with OG image URLs", async () => {
+	it("announces new and previously pending available models with OG image URLs", async () => {
 		const supabase = buildClient(
 			[
-				{ model_slug: "openai/gpt-new", name: "GPT New", lab_slug: "openai", hidden: false, status: "active" },
-				{ model_slug: "anthropic/claude-pending", name: "Claude Pending", lab_slug: "anthropic", hidden: false, status: "active" },
-				{ model_slug: "openai/gpt-old", name: "GPT Old", lab_slug: "openai", hidden: false, status: "active" },
+				{ model_slug: "openai/gpt-new", name: "GPT New", lab_slug: "openai", hidden: false, status: "active", catalogue_status: "available" },
+				{ model_slug: "anthropic/claude-pending", name: "Claude Pending", lab_slug: "anthropic", hidden: false, status: "active", catalogue_status: "available" },
+				{ model_slug: "openai/gpt-old", name: "GPT Old", lab_slug: "openai", hidden: false, status: "active", catalogue_status: "available" },
 			],
 			[
 				{ model_slug: "anthropic/claude-pending", status: "pending", attempt_count: 2 },
-				{ model_slug: "openai/gpt-old", status: "announced", attempt_count: 0 },
+				{ model_slug: "openai/gpt-old", status: "announced", attempt_count: 0, catalogue_status_snapshot: "available" },
 			],
 			[
 				{ model_slug: "openai/gpt-new", status: "pending", attempt_count: 0 },
@@ -173,10 +175,10 @@ describe("runPublicModelAnnouncementCheck", () => {
 		]);
 	});
 
-	it("promotes a baseline model when it becomes public", async () => {
+	it("promotes a baseline model when it becomes available", async () => {
 		const supabase = buildClient(
 			[
-				{ model_slug: "openai/gpt-promoted", name: "GPT Promoted", lab_slug: "openai", hidden: false, status: "active" },
+				{ model_slug: "openai/gpt-promoted", name: "GPT Promoted", lab_slug: "openai", hidden: false, status: "active", catalogue_status: "available" },
 			],
 			[
 				{ model_slug: "openai/gpt-promoted", status: "baseline", attempt_count: 0 },

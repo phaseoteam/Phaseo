@@ -4,4 +4,4 @@
 "@phaseo/web": patch
 ---
 
-Announce existing public models when their catalog lifecycle becomes released, and add a per-model Discord announcement action to the internal model editor using the current public embed format.
+Announce public models when their catalogue status becomes available, check for availability every minute, and add a per-model Discord announcement action to the internal model editor using the current public embed format.

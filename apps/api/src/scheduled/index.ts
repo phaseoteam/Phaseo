@@ -13,6 +13,7 @@ import {
 	normalizeModelDiscoveryShardSize,
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
+import { runPublicModelAnnouncementCheck } from "@/pipeline/model-discovery/public-model-catalog-announcements";
 import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
@@ -170,6 +171,25 @@ async function handleModelDiscoveryScheduledEvent(event: ScheduledController, en
 			notify: true,
 			prune: shardIndex === 0,
 		});
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handlePublicModelAnnouncementsScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (!toBool(env.MODEL_DISCOVERY_ENABLED, true)) return;
+
+	configureRuntime(env);
+	try {
+		const summary = await runPublicModelAnnouncementCheck({
+			runId: crypto.randomUUID(),
+			notify: true,
+		});
+		if (summary.error) {
+			console.error("public_model_announcement_check_failed", summary.error);
+		} else if (summary.detected > 0 || summary.notified > 0 || summary.pending > 0) {
+			console.log("public_model_announcement_check_completed", summary);
+		}
 	} finally {
 		clearRuntime();
 	}
@@ -478,6 +498,12 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 		} finally {
 			clearRuntime();
 		}
+	}
+	// Keep release notices independent from the slower provider discovery sweep.
+	try {
+		await handlePublicModelAnnouncementsScheduledEvent(env);
+	} catch (error) {
+		console.error("public_model_announcement_check_scheduled_failed", serializeError(error));
 	}
 	if (isDailyPaymentMethodExpiryTick(event)) {
 		try {
