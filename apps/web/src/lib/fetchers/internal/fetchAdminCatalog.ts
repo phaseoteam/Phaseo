@@ -7,6 +7,15 @@ async function fetchAdminCatalogPath<T>(path: `/api/account/${string}`): Promise
 	return fetchAccountWebApi<T>(path, accessToken);
 }
 
+async function postAdminCatalogPath<T>(path: `/api/account/${string}`, body: unknown): Promise<T> {
+	const { accessToken } = await getServerAccountContext();
+	if (!accessToken) throw new Error("Authentication required");
+	return fetchAccountWebApi<T>(path, accessToken, {
+		method: "POST",
+		body: JSON.stringify(body),
+	});
+}
+
 export function fetchAdminCatalogCounts() {
 	return fetchAdminCatalogPath<{ models: number; organisations: number; providers: number; benchmarks: number }>("/api/account/models/catalog/counts");
 }
@@ -30,6 +39,10 @@ export function fetchAdminCatalogList(resource: "models" | "organisations" | "pr
 
 export function fetchAdminCatalogRecord(resource: "organisation" | "provider" | "benchmark" | "model", id: string) {
 	return fetchAdminCatalogPath<{ row: any | null; links?: any[] }>(`/api/account/models/catalog/record?resource=${resource}&id=${encodeURIComponent(id)}`);
+}
+
+export function recordAdminModelAnnouncement(modelId: string) {
+	return postAdminCatalogPath<{ success: boolean }>("/api/account/models/catalog/model-announcements", { modelId });
 }
 
 export function fetchAdminModelFormOptions() {

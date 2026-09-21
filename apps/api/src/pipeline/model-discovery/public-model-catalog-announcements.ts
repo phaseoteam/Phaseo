@@ -5,6 +5,7 @@ import { buildPublicModelAnnouncementPayload } from "./public-model-announcement
 import { sendDiscordWebhookPayload } from "./discord-webhook";
 
 const PUBLIC_ANNOUNCEMENT_BATCH_SIZE = 10;
+const PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE = 100;
 const PUBLIC_ANNOUNCEMENT_PAGE_SIZE = 1_000;
 const PUBLIC_ANNOUNCEMENT_CLAIM_LEASE_SECONDS = 300;
 const PUBLIC_MODEL_DISCOVERY_USERNAME = "Phaseo Public Model Discovery";
@@ -17,12 +18,17 @@ type PublicModelRow = {
 	lab_slug: string | null;
 	hidden: boolean | null;
 	status: string | null;
+	catalogue_status: string | null;
+	released_at: string | null;
 };
 
 type AnnouncementStateRow = {
 	model_slug: string | null;
 	status: string | null;
 	attempt_count: number | null;
+	first_seen_at: string | null;
+	announced_at: string | null;
+	catalogue_status_snapshot: string | null;
 };
 
 type PendingAnnouncement = {
@@ -85,6 +91,31 @@ function isPublicModel(row: PublicModelRow): boolean {
 	return !status || !["draft", "disabled", "retired"].includes(status);
 }
 
+function isReleasedCatalogueStatus(value: string | null | undefined): boolean {
+	const status = value?.trim().toLowerCase();
+	return status === "preview" || status === "available" || status === "limited_access";
+}
+
+function isReleaseSinceLastAnnouncement(
+	model: PublicModelRow,
+	state: AnnouncementStateRow,
+	nowIso: string,
+): boolean {
+	if (state.status !== "baseline" && state.status !== "announced") return false;
+	if (!isPublicModel(model) || !isReleasedCatalogueStatus(model.catalogue_status)) return false;
+
+	const now = Date.parse(nowIso);
+	const releasedAt = Date.parse(model.released_at ?? "");
+	if (Number.isFinite(releasedAt) && Number.isFinite(now) && releasedAt > now) return false;
+
+	const hasCatalogueStatusTransition = !isReleasedCatalogueStatus(state.catalogue_status_snapshot);
+	if (hasCatalogueStatusTransition) return true;
+	if (!model.released_at) return false;
+
+	const lastAnnouncementAt = state.announced_at ? Date.parse(state.announced_at) : Date.parse(state.first_seen_at ?? "");
+	return Number.isFinite(releasedAt) && Number.isFinite(lastAnnouncementAt) && releasedAt <= now && releasedAt > lastAnnouncementAt;
+}
+
 function modelPath(modelSlug: string): string {
 	return modelSlug
 		.split("/")
@@ -109,7 +140,7 @@ async function loadPublicModels(): Promise<PublicModelRow[]> {
 	for (let offset = 0; ; offset += PUBLIC_ANNOUNCEMENT_PAGE_SIZE) {
 		const { data, error } = await supabase
 			.from("v2_models")
-			.select("model_slug,name,lab_slug,hidden,status")
+			.select("model_slug,name,lab_slug,hidden,status,catalogue_status,released_at")
 			.order("model_slug", { ascending: true })
 			.range(offset, offset + PUBLIC_ANNOUNCEMENT_PAGE_SIZE - 1);
 		if (error) throw new Error(error.message || "Failed to load public model catalog");
@@ -129,7 +160,7 @@ async function loadAnnouncementState(): Promise<AnnouncementStateRow[]> {
 	for (let offset = 0; ; offset += PUBLIC_ANNOUNCEMENT_PAGE_SIZE) {
 		const { data, error } = await supabase
 			.from("model_discovery_public_announcements")
-			.select("model_slug,status,attempt_count")
+			.select("model_slug,status,attempt_count,first_seen_at,announced_at,catalogue_status_snapshot")
 			.order("model_slug", { ascending: true })
 			.range(offset, offset + PUBLIC_ANNOUNCEMENT_PAGE_SIZE - 1);
 		if (error) throw new Error(error.message || "Failed to load public model announcement state");
@@ -156,6 +187,7 @@ async function insertNewAnnouncementState(
 		return [{
 			model_slug: modelSlug,
 			status: baseline || !isPublicModel(model) ? "baseline" : "pending",
+			catalogue_status_snapshot: model.catalogue_status,
 			last_run_id: runId,
 			first_seen_at: nowIso,
 			updated_at: nowIso,
@@ -170,29 +202,40 @@ async function insertNewAnnouncementState(
 	if (error) throw new Error(error.message || "Failed to persist public model announcement state");
 }
 
-async function promoteBaselineAnnouncementState(
+async function promoteReleasedAnnouncementState(
 	runId: string,
 	models: PublicModelRow[],
 	nowIso: string,
 ): Promise<void> {
-	const modelSlugs = models.flatMap((model) => {
+	const modelsByCatalogueStatus = new Map<string | null, string[]>();
+	for (const model of models) {
 		const modelSlug = normalizeSlug(model.model_slug);
-		return modelSlug ? [modelSlug] : [];
-	});
-	if (modelSlugs.length === 0) return;
+		if (!modelSlug) continue;
+		const catalogueStatus = model.catalogue_status;
+		const modelSlugs = modelsByCatalogueStatus.get(catalogueStatus) ?? [];
+		modelSlugs.push(modelSlug);
+		modelsByCatalogueStatus.set(catalogueStatus, modelSlugs);
+	}
+	if (modelsByCatalogueStatus.size === 0) return;
 
 	const supabase = getSupabaseAdmin();
-	const { error } = await supabase
-		.from("model_discovery_public_announcements")
-		.update({
-			status: "pending",
-			last_run_id: runId,
-			last_error: null,
-			updated_at: nowIso,
-		})
-		.in("model_slug", modelSlugs)
-		.eq("status", "baseline");
-	if (error) throw new Error(error.message || "Failed to promote public model announcement state");
+	for (const [catalogueStatus, modelSlugs] of modelsByCatalogueStatus) {
+		for (let offset = 0; offset < modelSlugs.length; offset += PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE) {
+			const batch = modelSlugs.slice(offset, offset + PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE);
+			const { error } = await supabase
+				.from("model_discovery_public_announcements")
+				.update({
+					status: "pending",
+					catalogue_status_snapshot: catalogueStatus,
+					last_run_id: runId,
+					last_error: null,
+					updated_at: nowIso,
+				})
+				.in("model_slug", batch)
+				.in("status", ["baseline", "announced"]);
+			if (error) throw new Error(error.message || "Failed to promote released model announcement state");
+		}
+	}
 }
 
 async function markPendingRun(
@@ -321,7 +364,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 
 		const nowIso = new Date().toISOString();
 		const newModels: PublicModelRow[] = [];
-		const promotedModels: PublicModelRow[] = [];
+		const releasedModels: PublicModelRow[] = [];
 		const skippedModels: PublicModelRow[] = [];
 		for (const model of models) {
 			const modelSlug = normalizeSlug(model.model_slug);
@@ -332,16 +375,22 @@ export async function runPublicModelAnnouncementCheck(args: {
 		for (const model of models) {
 			const modelSlug = normalizeSlug(model.model_slug);
 			const state = modelSlug ? stateBySlug.get(modelSlug) : undefined;
-			if (state?.status === "baseline" && isPublicModel(model)) promotedModels.push(model);
+			if (state && isReleaseSinceLastAnnouncement(model, state, nowIso)) releasedModels.push(model);
 		}
 
-		summary.detected = newModels.length + promotedModels.length;
+		summary.detected = newModels.length + releasedModels.length;
 		summary.skipped = skippedModels.length;
 		await insertNewAnnouncementState(args.runId, [...newModels, ...skippedModels], nowIso);
-		await promoteBaselineAnnouncementState(args.runId, promotedModels, nowIso);
+		await promoteReleasedAnnouncementState(args.runId, releasedModels, nowIso);
 
 		const newModelSlugs = new Set(
-			[...newModels, ...promotedModels].flatMap((model) => {
+			[...newModels, ...releasedModels].flatMap((model) => {
+				const modelSlug = normalizeSlug(model.model_slug);
+				return modelSlug ? [modelSlug] : [];
+			}),
+		);
+		const releasedModelSlugs = new Set(
+			releasedModels.flatMap((model) => {
 				const modelSlug = normalizeSlug(model.model_slug);
 				return modelSlug ? [modelSlug] : [];
 			}),
@@ -385,14 +434,18 @@ export async function runPublicModelAnnouncementCheck(args: {
 						imageUrl: model.imageUrl,
 						creatorId: model.labSlug,
 						creatorName: displayLabName(model.labSlug),
-						changeSummaryLines: ["Added to the public Phaseo model catalog."],
+						changeSummaryLines: [
+							releasedModelSlugs.has(model.modelSlug)
+								? "Now available in the public Phaseo model catalog."
+								: "Added to the public Phaseo model catalog.",
+						],
 					})),
 					null,
 					{
 						username: PUBLIC_MODEL_DISCOVERY_USERNAME,
 						avatarUrl: PUBLIC_MODEL_DISCOVERY_AVATAR_URL,
 						latestModelsUrl: PUBLIC_MODELS_URL,
-						message: "New public model catalog entries detected.",
+						message: "Public model catalog updates detected.",
 						includeMentions: false,
 						maxModelEmbeds: PUBLIC_ANNOUNCEMENT_BATCH_SIZE,
 					},
