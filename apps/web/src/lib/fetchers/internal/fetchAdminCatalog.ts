@@ -52,10 +52,10 @@ export function sendAdminModelAnnouncement(modelId: string, payload: unknown, we
 	);
 }
 
-export function sendAdminModelAnnouncementTest(payload: unknown, webhookUrl?: string) {
-	return postAdminCatalogPath<{ success: boolean }>(
+export function sendAdminModelAnnouncementTest(payload: unknown, webhookUrl?: string, modelIds?: string[]) {
+	return postAdminCatalogPath<{ success: boolean; stateRecorded?: boolean }>(
 		"/api/account/models/catalog/model-announcements/test",
-		{ payload, webhookUrl },
+		{ payload, webhookUrl, modelIds },
 	);
 }
 

@@ -35,6 +35,7 @@ export type Env = {
 	RESEND_API_KEY?: string;
 	DISCORD_BILLING_WEBHOOK_URL?: string;
 	DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?: string;
+	DISCORD_ROLE_ID?: string;
 	GITHUB_REPOSITORY?: string;
 	GITHUB_TOKEN?: string;
 	GH_TOKEN?: string;

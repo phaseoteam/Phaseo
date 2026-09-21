@@ -102,23 +102,29 @@ const modelNoticeSchema = z.object({
 	markdown: z.string().max(20_000),
 });
 
+const modelAnnouncementPayloadSchema = z.object({
+	content: z.string().max(2_000),
+	allowed_mentions: z.object({
+		parse: z.array(z.string()).max(25),
+		roles: z.array(z.string()).max(25),
+		users: z.array(z.string()).max(25),
+	}),
+	username: z.string().trim().min(1).max(80),
+	avatar_url: z.url().optional(),
+	embeds: z.array(z.record(z.string(), z.unknown())).min(1).max(10),
+});
+
 const modelAnnouncementSchema = z.object({
 	modelId: z.string().trim().min(3).max(240).regex(/^[a-z0-9][a-z0-9._:/+@-]*$/).refine((value) => value.includes("/")),
-	payload: z.object({
-		content: z.string().max(2_000),
-		allowed_mentions: z.object({
-			parse: z.array(z.string()).max(25),
-			roles: z.array(z.string()).max(25),
-			users: z.array(z.string()).max(25),
-		}),
-		username: z.string().trim().min(1).max(80),
-		avatar_url: z.url().optional(),
-		embeds: z.array(z.record(z.string(), z.unknown())).min(1).max(10),
-	}).optional(),
+	payload: modelAnnouncementPayloadSchema.optional(),
 	webhookUrl: z.string().trim().optional(),
 });
 
-const modelAnnouncementTestSchema = modelAnnouncementSchema.omit({ modelId: true });
+const modelAnnouncementTestSchema = z.object({
+	payload: modelAnnouncementPayloadSchema,
+	modelIds: z.array(z.string().trim().min(3).max(240).regex(/^[a-z0-9][a-z0-9._:/+@-]*$/).refine((value) => value.includes("/"))).max(100).optional(),
+	webhookUrl: z.string().trim().optional(),
+});
 
 const DISCORD_WEBHOOK_HOSTS = new Set([
 	"discord.com",
@@ -143,15 +149,36 @@ function resolveModelAnnouncementWebhookUrl(env: Env, override?: string): string
 	return parsed.toString();
 }
 
+function shouldRecordModelAnnouncementState(webhookUrl?: string): boolean {
+	// An override is reserved for staging or ad hoc delivery; only the configured
+	// production webhook should advance the automatic announcement cursor.
+	return !webhookUrl?.trim();
+}
+
 async function sendModelAnnouncementWebhook(
 	env: Env,
 	payload: unknown,
 	webhookUrl?: string,
 ): Promise<void> {
+	const parsedPayload = modelAnnouncementPayloadSchema.parse(payload);
+	const defaultRoleId = env.DISCORD_ROLE_ID?.trim();
+	const shouldAddDefaultRole = Boolean(defaultRoleId) && parsedPayload.allowed_mentions.roles.length === 0;
+	const roleMention = shouldAddDefaultRole ? `<@&${defaultRoleId}>` : null;
+	const payloadWithDefaultRole = shouldAddDefaultRole
+		? {
+			...parsedPayload,
+			content: [roleMention, parsedPayload.content].filter(Boolean).join("\n"),
+			allowed_mentions: {
+				...parsedPayload.allowed_mentions,
+				parse: [],
+				roles: [defaultRoleId!],
+			},
+		}
+		: parsedPayload;
 	const response = await fetch(resolveModelAnnouncementWebhookUrl(env, webhookUrl), {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(payload),
+		body: JSON.stringify(payloadWithDefaultRole),
 	});
 	if (!response.ok) {
 		const body = await response.text().catch(() => "");
@@ -163,6 +190,35 @@ function isPublicModelRecord(row: { hidden?: boolean | null; status?: string | n
 	if (row.hidden === true) return false;
 	const status = row.status?.trim().toLowerCase();
 	return !status || !["draft", "disabled", "retired"].includes(status);
+}
+
+async function recordModelAnnouncementState(
+	client: ReturnType<typeof getDataClient>,
+	modelIds: string[],
+): Promise<void> {
+	const ids = [...new Set(modelIds.map((modelId) => modelId.trim().toLowerCase()).filter(Boolean))];
+	if (ids.length === 0) return;
+	const models = await client
+		.from("v2_models")
+		.select("model_slug,catalogue_status,hidden,status")
+		.in("model_slug", ids);
+	if (models.error) throw models.error;
+	const announcedAt = new Date().toISOString();
+	const rows = (models.data ?? []).map((model) => ({
+		model_slug: model.model_slug,
+		status: "announced",
+		announced_at: announcedAt,
+		last_attempt_at: announcedAt,
+		last_error: null,
+		catalogue_status_snapshot: model.catalogue_status,
+		public_visibility_snapshot: isPublicModelRecord(model),
+		updated_at: announcedAt,
+	}));
+	if (rows.length === 0) return;
+	const { error } = await client
+		.from("model_discovery_public_announcements")
+		.upsert(rows, { onConflict: "model_slug" });
+	if (error) throw error;
 }
 
 const modelAliasesSchema = z.array(z.object({
@@ -595,23 +651,25 @@ accountModelsRouter.post("/catalog/model-announcements", async (c) => {
 			await sendModelAnnouncementWebhook(c.env, parsed.data.payload, parsed.data.webhookUrl);
 		}
 
-		const announcedAt = new Date().toISOString();
 		let stateRecorded = true;
-		try {
-			const { error } = await client.from("model_discovery_public_announcements").upsert({
-				model_slug: model.data.model_slug,
-				status: "announced",
-				announced_at: announcedAt,
-				last_attempt_at: announcedAt,
-				last_error: null,
-				catalogue_status_snapshot: model.data.catalogue_status,
-				public_visibility_snapshot: isPublicModelRecord(model.data),
-				updated_at: announcedAt,
-			}, { onConflict: "model_slug" });
-			if (error) throw error;
-		} catch (error) {
-			stateRecorded = false;
-			console.error("[web-api/account/models] model announcement state update failed", { modelId: parsed.data.modelId, error });
+		if (shouldRecordModelAnnouncementState(parsed.data.webhookUrl)) {
+			const announcedAt = new Date().toISOString();
+			try {
+				const { error } = await client.from("model_discovery_public_announcements").upsert({
+					model_slug: model.data.model_slug,
+					status: "announced",
+					announced_at: announcedAt,
+					last_attempt_at: announcedAt,
+					last_error: null,
+					catalogue_status_snapshot: model.data.catalogue_status,
+					public_visibility_snapshot: isPublicModelRecord(model.data),
+					updated_at: announcedAt,
+				}, { onConflict: "model_slug" });
+				if (error) throw error;
+			} catch (error) {
+				stateRecorded = false;
+				console.error("[web-api/account/models] model announcement state update failed", { modelId: parsed.data.modelId, error });
+			}
 		}
 
 		return c.json({ success: true, stateRecorded }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -631,7 +689,16 @@ accountModelsRouter.post("/catalog/model-announcements/test", async (c) => {
 
 	try {
 		await sendModelAnnouncementWebhook(c.env, parsed.data.payload, parsed.data.webhookUrl);
-		return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+		let stateRecorded = true;
+		if (shouldRecordModelAnnouncementState(parsed.data.webhookUrl) && parsed.data.modelIds?.length) {
+			try {
+				await recordModelAnnouncementState(admin.context.client, parsed.data.modelIds);
+			} catch (error) {
+				stateRecorded = false;
+				console.error("[web-api/account/models] model announcement test state update failed", { error });
+			}
+		}
+		return c.json({ success: true, stateRecorded }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		console.error("[web-api/account/models] model announcement test delivery failed", { error });
 		return c.json({ error: "model_announcement_delivery_failed" }, 503, PRIVATE_NO_STORE_HEADERS);

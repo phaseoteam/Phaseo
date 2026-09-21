@@ -230,11 +230,17 @@ export async function testInternalModelDiscoveryNotifierAction(
 			};
 		}
 
-		await sendAdminModelAnnouncementTest(payload, trimOrNull(input.webhookUrl) ?? undefined);
+		const delivery = await sendAdminModelAnnouncementTest(
+			payload,
+			trimOrNull(input.webhookUrl) ?? undefined,
+			models.map((model) => model.modelId),
+		);
 
 		return {
 			ok: true,
-			message: `Sent test Discord embed notification for ${models.length} model${models.length === 1 ? "" : "s"}.`,
+			message: delivery.stateRecorded === false
+				? `Sent the Discord embed notification for ${models.length} model${models.length === 1 ? "" : "s"}, but could not save its announcement state.`
+				: `Sent the Discord embed notification for ${models.length} model${models.length === 1 ? "" : "s"}.`,
 			payloadPreview,
 			modelCount: models.length,
 		};
