@@ -166,7 +166,7 @@ export function RoomSdkExport() {
                   {protocolOptions.map((option) => {
                     const unavailableReason = protocolSwitchSupportReason(request, option.id);
                     const disabled = Boolean(unavailableReason && option.id !== sourceProtocol);
-                    return <button key={option.id} type="button" disabled={disabled} title={disabled ? unavailableReason ?? undefined : undefined} onClick={() => setProtocol(option.id)} className={cn("rounded-sm px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40", activeProtocol === option.id ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground")}>{option.label}</button>;
+                    return <button key={option.id} type="button" aria-pressed={activeProtocol === option.id} disabled={disabled} title={disabled ? unavailableReason ?? undefined : undefined} onClick={() => setProtocol(option.id)} className={cn("rounded-sm px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40", activeProtocol === option.id ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground")}>{option.label}</button>;
                   })}
                 </div>
               </div>
@@ -178,7 +178,7 @@ export function RoomSdkExport() {
                 <div className="min-w-0"><p className="truncate text-sm font-medium">{activeIntegration.title} {activeIntegration.group}</p><p className="truncate font-mono text-xs text-muted-foreground">{activeIntegration.packageName}</p></div>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                <span role="status" className="hidden text-xs text-muted-foreground md:inline">{notice}</span>
+                <span role="status" className="text-xs text-muted-foreground">{notice}</span>
                 <Tooltip><TooltipTrigger asChild><Button type="button" variant={wrap ? "secondary" : "outline"} size="icon-sm" aria-label="Wrap code" aria-pressed={wrap} onClick={() => setWrap(value => !value)}><WrapText className="size-3.5" /></Button></TooltipTrigger><TooltipContent>{wrap ? "Disable word wrap" : "Wrap long lines"}</TooltipContent></Tooltip>
                 <Button type="button" variant="outline" size="sm" onClick={copyCode}>{notice === "Copied" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{notice === "Copied" ? "Copied" : "Copy"}</Button>
               </div>

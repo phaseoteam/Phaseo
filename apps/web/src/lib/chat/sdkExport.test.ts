@@ -154,9 +154,16 @@ test("normalizes a Responses message into runnable Agent SDK input and instructi
 test("puts cURL on a complete public endpoint with the captured JSON body", () => {
   const code = sdkCode({ endpoint: "/rerank", body: { model: "cohere/rerank", query: "Best", documents: ["One", "Two"] } }, "curl");
   expect(code).toContain("curl --request POST");
-  expect(code).toContain("https://api.phaseo.app/v1/rerank");
+  expect(code).toContain("--url 'https://api.phaseo.app/v1'/rerank");
   expect(code).toContain("Authorization: Bearer $PHASEO_API_KEY");
   expect(code).toContain('"documents": [');
+});
+
+test("shell-quotes custom cURL base URLs and avoids Ruby interpolation", () => {
+  const request = { endpoint: "/responses", baseUrl: "https://example.com/#{danger}'$(danger)", body: { input: "Hello" } };
+  expect(sdkCode(request, "curl")).toContain(`--url 'https://example.com/#{danger}'"'"'$(danger)'/responses`);
+  expect(sdkCode(request, "sdk-ruby")).toContain("base_path: 'https://example.com/#{danger}\\'$(danger)'");
+  expect(sdkCode(request, "sdk-php")).toContain("basePath: 'https://example.com/#{danger}\\'$(danger)'");
 });
 
 test.each([
@@ -175,13 +182,25 @@ test("uses captured base URLs in Go and the C# response payload property", () =>
   expect(go).toContain('phaseo.NewPhaseo(os.Getenv("PHASEO_API_KEY"), "http://localhost:8787/v1")');
   expect(go).not.toContain("NewPhaseoFromEnv");
   expect(sdkCode(request, "sdk-csharp")).toContain("response.Data");
+  expect(sdkCode(request, "sdk-rust")).toContain('.with_base_url(r#"http://localhost:8787/v1"#)?');
+});
+
+test.each([
+  ["agent-go", 'BaseURL: "http://localhost:8787/v1"'],
+  ["agent-csharp", '["baseUrl"] = "http://localhost:8787/v1"'],
+  ["agent-java", 'new AgentSdk.GatewayOptions(null, null, "http://localhost:8787/v1"'],
+  ["agent-php", '["base_url" => \'http://localhost:8787/v1\']'],
+  ["agent-ruby", "base_url: 'http://localhost:8787/v1'"],
+  ["agent-rust", '.with_base_url(r#"http://localhost:8787/v1"#)?'],
+] as const)("uses the captured base URL for %s", (sample, marker) => {
+  expect(sdkCode({ endpoint: "/responses", baseUrl: "http://localhost:8787/v1", body: { model: "phaseo/free", input: "Hello" } }, sample)).toContain(marker);
 });
 
 test.each([
   ["agent-typescript", "createGatewayAgentClient"], ["agent-python", "create_gateway_agent_client"],
   ["agent-go", "CreateGatewayAgentClient"], ["agent-csharp", "AgentSdk.CreateGatewayAgentClient"],
   ["agent-java", "AgentSdk.createGatewayAgentClient"], ["agent-php", "AgentSdk::createGatewayAgentClient"],
-  ["agent-ruby", "PhaseoAgentSdk.create_gateway_agent_client"], ["agent-rust", "create_gateway_agent_client"],
+  ["agent-ruby", "PhaseoAgentSdk.create_gateway_agent_client"], ["agent-rust", "GatewayAgentClient::new"],
 ] as const)("generates an Agent SDK starter for %s", (sample, marker) => {
   expect(sdkCode({ endpoint: "/responses", body: { model: "phaseo/free", input: "Hello" } }, sample)).toContain(marker);
 });
@@ -211,11 +230,11 @@ test("preserves OpenAI text controls and disables incompatible Messages conversi
     endpoint: "/responses",
     body: {
       model: "phaseo/free", input: "Hello", presence_penalty: 0.2,
-      frequency_penalty: 0.3, seed: 7, stop: ["DONE"],
+      frequency_penalty: 0.3, seed: 7, stop: ["DONE"], stream_options: { include_usage: true },
     },
   };
   const chat = convertTextProtocol(source, "chat-completions");
-  expect(chat.body).toMatchObject({ presence_penalty: 0.2, frequency_penalty: 0.3, seed: 7, stop: ["DONE"] });
+  expect(chat.body).toMatchObject({ presence_penalty: 0.2, frequency_penalty: 0.3, seed: 7, stop: ["DONE"], stream_options: { include_usage: true } });
   expect(protocolSwitchSupportReason(source, "chat-completions")).toBeNull();
   expect(protocolSwitchSupportReason(source, "messages")).toContain("presence_penalty");
 });
