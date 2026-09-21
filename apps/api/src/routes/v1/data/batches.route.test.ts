@@ -15,6 +15,7 @@ const state = vi.hoisted(() => ({
 		internal: false,
 	},
 	batchMeta: new Map<string, Record<string, unknown>>(),
+	batchListCalls: [] as Array<Record<string, unknown>>,
 	fileMeta: new Map<string, Record<string, unknown>>(),
 	webhookEvents: [] as Array<Record<string, unknown>>,
 	finalizeCalls: [] as Array<Record<string, unknown>>,
@@ -44,6 +45,7 @@ const state = vi.hoisted(() => ({
 
 function resetState() {
 	state.batchMeta.clear();
+	state.batchListCalls = [];
 	state.fileMeta.clear();
 	state.webhookEvents = [];
 	state.finalizeCalls = [];
@@ -255,6 +257,31 @@ vi.mock("@core/batch-jobs", () => ({
 				createdAt: "2026-06-17T09:59:00.000Z",
 			};
 		});
+	}),
+	listTeamBatchJobs: vi.fn(async (args: { workspaceId: string; limit?: number; offset?: number }) => {
+		state.batchListCalls.push(args);
+		const records = Array.from(state.batchMeta.entries()).map(([key, meta]) => {
+			const [workspaceId, batchId] = key.split(":");
+			return {
+				workspaceId,
+				batchId,
+				requestId: null,
+				sessionId: null,
+				appId: null,
+				nativeId: typeof meta.nativeBatchId === "string" ? meta.nativeBatchId : null,
+				provider: typeof meta.provider === "string" ? meta.provider : null,
+				model: typeof meta.model === "string" ? meta.model : null,
+				status: typeof meta.status === "string" ? meta.status : null,
+				billedAt: null,
+				meta,
+				nextReconcileAt: null,
+				reconcileAttempts: 0,
+				updatedAt: "2026-06-17T10:00:00.000Z",
+				createdAt: "2026-06-17T09:59:00.000Z",
+			};
+		});
+		const offset = args.offset ?? 0;
+		return records.slice(offset, offset + (args.limit ?? records.length));
 	}),
 	updateBatchJobReconciliation: vi.fn(async (args: Record<string, unknown>) => {
 		state.reconciliationUpdates.push(args);
@@ -480,6 +507,42 @@ describe("batchRoutes", () => {
 		resetState();
 		vi.resetModules();
 		vi.unstubAllGlobals();
+	});
+
+	it("paginates batch jobs and reports another page", async () => {
+		state.batchMeta.set(batchKey("ws_batch_test", "batch_1"), { provider: "openai", status: "completed" });
+		state.batchMeta.set(batchKey("ws_batch_test", "batch_2"), { provider: "openai", status: "completed" });
+		state.batchMeta.set(batchKey("ws_batch_test", "batch_3"), { provider: "openai", status: "completed" });
+		const { batchRoutes } = await import("./batches");
+
+		const response = await batchRoutes.request("https://example.com/?limit=1&offset=1", { method: "GET" });
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			data: [{ id: "batch_2" }],
+			first_id: "batch_2",
+			last_id: "batch_2",
+			has_more: true,
+		});
+		expect(state.batchListCalls).toEqual([{
+			workspaceId: "ws_batch_test",
+			limit: 2,
+			offset: 1,
+			statuses: undefined,
+		}]);
+	});
+
+	it("rejects batch offsets beyond the supported window", async () => {
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/?offset=10001", { method: "GET" });
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "validation_error",
+			reason: "offset_too_large",
+			max_offset: 10_000,
+		});
+		expect(state.batchListCalls).toEqual([]);
 	});
 
 	it("rejects batch requests before provider work when the Statsig gate is disabled", async () => {

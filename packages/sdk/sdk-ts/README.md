@@ -56,7 +56,14 @@ const support = await client.models.checkParameters(
 for (const parameter of support.parameters) {
   console.log(parameter.name, parameter.status, parameter.issues);
 }
+
+const preflight = await client.models.preflight({ model: "openai/gpt-5", input: "Hello", temperature: 0.7 });
+for await (const video of client.videos.all({ limit: 50 })) console.log(video.id);
 ```
+
+`videos.pages()` / `batches.pages()` yield response pages; `all()` yields items and
+advances by the number actually returned. Preflight excludes prompt content and
+Phaseo routing metadata, then checks every generation parameter against live routes.
 
 Use `models.capabilities(id)` when you need the complete live endpoint rows,
 constraints, providers, routing state, and pricing. Parameter checks are explicit

@@ -531,6 +531,21 @@ public class Phaseo {
 		return ParameterSupport.check(getModelEndpointCapabilities(modelId, Map.of()), values, options);
 	}
 
+	public JsonNode preflightRequest(Map<String, ?> request, Map<String, ?> options) throws IOException, InterruptedException {
+		String modelId = request.get("model") == null ? "" : request.get("model").toString().trim();
+		if (modelId.isEmpty()) throw new IllegalArgumentException("preflight requires request model");
+		Set<String> structural = Set.of("model", "input", "messages", "prompt", "contents", "provider", "providers", "routing", "metadata", "session_id", "app", "webhook", "idempotency_key");
+		Map<String, Object> values = new HashMap<>();
+		request.forEach((name, value) -> { if (value != null && !structural.contains(name)) values.put(name, value); });
+		JsonNode support = checkModelParameters(modelId, values, options);
+		var result = MAPPER.createObjectNode();
+		result.put("ok", support.path("ok").asBoolean(false));
+		result.put("model_id", modelId);
+		result.set("checked_parameters", MAPPER.valueToTree(values));
+		result.set("parameter_support", support);
+		return result;
+	}
+
 	public JsonNode listProviders(Map<String, String> query) throws IOException, InterruptedException {
 		return withLifecycleAndTelemetry("providers", query, false, () -> parse(Operations.listProviders(rawClient, null, query, null, null)));
 	}

@@ -44,6 +44,7 @@ import * as ops from "./oapi-gen/client/index.js";
 import { PhaseoHttpError, Client, type RawResponse } from "./runtime/client.js";
 import { createTransport, type RequestControls } from "./runtime/transport.js";
 import { JobHandle } from "./jobHandle.js";
+import { paginateItems, paginatePages, type PageOptions } from "./pagination.js";
 import {
   parseOutput,
   checkCapabilities,
@@ -56,6 +57,7 @@ import {
   type ParameterSupportReport,
 } from "./helpers.js";
 export { JobHandle } from "./jobHandle.js";
+export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
 export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
 export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type RequestEvent, type ResponseEvent, type RetryEvent, type ResponseMetadata } from "./runtime/transport.js";
 import {
@@ -86,6 +88,18 @@ export type {
   ParameterRouteReference,
 } from "./helpers.js";
 export type ModelIdLiteral = KnownModelId;
+export type PreflightReport = {
+  ok: boolean;
+  model: string;
+  checkedParameters: Record<string, unknown>;
+  lifecycle: { ok: boolean; info: ModelLifecycleInfo | null; reason?: string };
+  parameterSupport: ParameterSupportReport;
+};
+
+const PREFLIGHT_STRUCTURAL_FIELDS = new Set([
+  "model", "input", "messages", "prompt", "contents", "provider", "providers", "routing",
+  "metadata", "session_id", "app", "webhook", "idempotency_key",
+]);
 /**
  * Model identifier in `provider/model` format (for example: `openai/gpt-5.4`).
  *
@@ -475,6 +489,8 @@ export class Phaseo {
       parameterValues: Record<string, unknown>,
       options: ParameterSupportOptions = {},
     ): Promise<ParameterSupportReport> => this.checkModelParameters(modelId, parameterValues, options),
+    preflight: async (request: Record<string, unknown>, options: ParameterSupportOptions = {}): Promise<PreflightReport> =>
+      this.preflightRequest(request, options),
     getDeprecationInfo: async (modelId: string): Promise<ModelLifecycleInfo | null> =>
       this.getModelDeprecationInfo(modelId),
     validate: async (modelId: string): Promise<{ ok: boolean; info: ModelLifecycleInfo | null; reason?: string }> =>
@@ -488,6 +504,14 @@ export class Phaseo {
     createAndWait: (req: BatchCreateRequest, options: JobWaitOptions<BatchResponse> = {}) =>
       this.createBatchAndWait(req, options),
     list: async (params: Record<string, unknown> = {}): Promise<BatchListResponse> => this.listBatches(params),
+    pages: (params: Record<string, unknown> & PageOptions = {}) => paginatePages<BatchResponse, BatchListResponse>(
+      ({ limit, offset }) => this.listBatches({ ...params, limit, offset }),
+      params,
+    ),
+    all: (params: Record<string, unknown> & PageOptions = {}) => paginateItems<BatchResponse, BatchListResponse>(
+      ({ limit, offset }) => this.listBatches({ ...params, limit, offset }),
+      params,
+    ),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
     streamResults: (batchId: string, options: { signal?: AbortSignal } = {}): Promise<ReadableStream<Uint8Array>> =>
       this.streamBatchResults(batchId, options),
@@ -512,6 +536,15 @@ export class Phaseo {
     resume: (id: string) => this.videoHandle(id),
     streamContent: (id: string) => this.streamContent(`/videos/${encodeURIComponent(id)}/content`),
     create: async (req: VideoCreateRequest): Promise<VideoStatusResponse> => this.generateVideo(req),
+    list: async (params: Record<string, unknown> = {}): Promise<VideoListResponse> => this.listVideos(params as Record<string, QueryParamValue>),
+    pages: (params: Record<string, unknown> & PageOptions = {}) => paginatePages<VideoStatusResponse, VideoListResponse>(
+      ({ limit, offset }) => this.listVideos({ ...params, limit, offset } as Record<string, QueryParamValue>),
+      params,
+    ),
+    all: (params: Record<string, unknown> & PageOptions = {}) => paginateItems<VideoStatusResponse, VideoListResponse>(
+      ({ limit, offset }) => this.listVideos({ ...params, limit, offset } as Record<string, QueryParamValue>),
+      params,
+    ),
     generateAndWait: (req: VideoCreateRequest, options: JobWaitOptions<VideoStatusResponse> = {}) =>
       this.generateVideoAndWait(req, options),
     wait: (videoId: string, options: JobWaitOptions<VideoStatusResponse> = {}) => this.waitForVideo(videoId, options),
@@ -661,6 +694,19 @@ export class Phaseo {
   ): Promise<ParameterSupportReport> {
     const capabilities = await this.getModelEndpointCapabilities(modelId);
     return checkParameterSupport(capabilities, parameterValues, options);
+  }
+
+  async preflightRequest(request: Record<string, unknown>, options: ParameterSupportOptions = {}): Promise<PreflightReport> {
+    const model = typeof request.model === "string" ? request.model.trim() : "";
+    if (!model) throw new TypeError("preflight requires request.model");
+    const checkedParameters = Object.fromEntries(
+      Object.entries(request).filter(([name, value]) => value !== undefined && !PREFLIGHT_STRUCTURAL_FIELDS.has(name)),
+    );
+    const [lifecycle, parameterSupport] = await Promise.all([
+      this.validateModel(model),
+      this.checkModelParameters(model, checkedParameters, options),
+    ]);
+    return { ok: lifecycle.ok && parameterSupport.ok, model, checkedParameters, lifecycle, parameterSupport };
   }
 
   async request(method: string, path: string, options: RequestControls & {

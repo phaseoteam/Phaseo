@@ -70,6 +70,10 @@ support = client.models.check_parameters(
 
 for parameter in support["parameters"]:
     print(parameter["name"], parameter["status"], parameter["issues"])
+
+preflight = client.models.preflight({"model": "openai/gpt-5", "input": "Hello", "temperature": 0.7})
+for video in client.videos.all({"limit": 50}):
+    print(video["id"])
 ```
 
 Each parameter is marked `supported`, `partial`, `unsupported`, or `unknown`.
@@ -78,6 +82,8 @@ The report includes routes that accept the whole parameter set. Use
 routing, and pricing metadata. The async client exposes the same awaitable
 methods. Checks are explicit so normal generation calls do not gain an extra
 network request.
+Use `pages()` when page metadata matters and `all()` for a lazy item iterator.
+The async resources expose matching async iterators.
 
 ## Local application tests
 

@@ -219,6 +219,8 @@ def test_live_model_parameter_checks_identify_partial_support_and_invalid_values
         {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
         {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
         {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        {"method": "GET", "path": "/data/models", "json": {"models": [{"model_id": "openai/gpt-5", "status": "active"}]}},
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
     ])
     with httpx.Client(transport=mock) as http:
         with Phaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
@@ -238,6 +240,10 @@ def test_live_model_parameter_checks_identify_partial_support_and_invalid_values
             unsupported = client.models.check_parameters("openai/gpt-5", {"seed": 42})
             assert unsupported["parameters"][0]["status"] == "unsupported"
             assert "seed is not supported" in " ".join(unsupported["issues"])
+
+            preflight = client.models.preflight({"model": "openai/gpt-5", "input": "hello", "temperature": 0.7}, endpoint="responses")
+            assert preflight["ok"]
+            assert preflight["checked_parameters"] == {"temperature": 0.7}
     mock.assert_done()
 
 
@@ -348,6 +354,55 @@ def test_async_models_parameter_check_uses_the_same_live_report():
                 assert report["ok"]
                 assert report["parameters"][0]["status"] == "supported"
         mock.assert_done()
+
+    asyncio.run(run())
+
+
+def test_async_preflight_includes_lifecycle_validation():
+    async def run():
+        capabilities = {
+            "ok": True,
+            "id": "openai/retired-model",
+            "endpoints": [{
+                "id": "openai:responses",
+                "endpoint": "responses",
+                "provider": {"id": "openai"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {"parameters": ["temperature"]},
+            }],
+        }
+        mock = MockTransport([
+            {
+                "method": "GET",
+                "path": "/data/models",
+                "json": {"models": [{"model_id": "openai/retired-model", "status": "retired"}]},
+            },
+            {"method": "GET", "path": "/models/openai/retired-model/endpoints", "json": capabilities},
+        ])
+        async with httpx.AsyncClient(transport=mock) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                report = await client.models.preflight(
+                    {"model": "openai/retired-model", "input": "hello", "temperature": 0.7},
+                    endpoint="responses",
+                )
+                assert not report["ok"]
+                assert not report["lifecycle"]["ok"]
+                assert report["lifecycle"]["info"]["status"] == "retired"
+                assert report["parameter_support"]["ok"]
+        mock.assert_done()
+
+    asyncio.run(run())
+
+
+def test_async_music_does_not_expose_collection_pagination():
+    async def run():
+        async with httpx.AsyncClient(transport=MockTransport([])) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                assert not hasattr(client.music, "pages")
+                assert not hasattr(client.music, "all")
+                assert hasattr(client.videos, "pages")
+                assert hasattr(client.batches, "all")
 
     asyncio.run(run())
 

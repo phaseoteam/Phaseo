@@ -25,6 +25,7 @@
     <Compile Include="Client.cs" />
     <Compile Include="Devtools.cs" />
     <Compile Include="ParameterSupport.cs" />
+    <Compile Include="Workflows.cs" />
     <Compile Include="src\gen\**\*.cs" />
   </ItemGroup>
 

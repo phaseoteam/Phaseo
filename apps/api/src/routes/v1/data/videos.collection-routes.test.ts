@@ -85,7 +85,16 @@ vi.mock("@core/video-jobs", async () => {
 	const actual = await vi.importActual<typeof import("@core/video-jobs")>("@core/video-jobs");
 	return {
 		...actual,
-		listTeamVideoJobs: vi.fn(async () => state.records),
+		getVideoJobRecord: vi.fn(async (_workspaceId: string, videoId: string) =>
+			state.records.find((record) => record.videoId === videoId) ?? null,
+		),
+		listTeamVideoJobs: vi.fn(async (args: { limit?: number; offset?: number; after?: { videoId: string } }) => {
+			const cursorIndex = args.after
+				? state.records.findIndex((record) => record.videoId === args.after?.videoId) + 1
+				: 0;
+			const start = cursorIndex + (args.offset ?? 0);
+			return state.records.slice(start, start + (args.limit ?? state.records.length));
+		}),
 		setVideoJobStatus: vi.fn(),
 	};
 });
@@ -108,7 +117,7 @@ vi.mock("./videos.helpers", async () => {
 	};
 });
 
-import { listTeamVideoJobs } from "@core/video-jobs";
+import { getVideoJobRecord, listTeamVideoJobs } from "@core/video-jobs";
 import { fetchCatalogue } from "../control/models.catalogue";
 import { videosRoutes } from "./videos";
 
@@ -235,7 +244,9 @@ describe("videosRoutes collection endpoints", () => {
 		});
 		expect(listTeamVideoJobs).toHaveBeenCalledWith({
 			workspaceId: "ws_video_collection_test",
-			limit: 101,
+			limit: 3,
+			offset: 0,
+			order: "desc",
 			statuses: ["completed", "complete", "success", "succeeded", "failed", "error"],
 		});
 	});
@@ -254,7 +265,9 @@ describe("videosRoutes collection endpoints", () => {
 		expect(response.status).toBe(200);
 		expect(listTeamVideoJobs).toHaveBeenCalledWith({
 			workspaceId: "ws_video_collection_test",
-			limit: 101,
+			limit: 4,
+			offset: 0,
+			order: "desc",
 			statuses: [
 				"completed",
 				"complete",
@@ -265,6 +278,88 @@ describe("videosRoutes collection endpoints", () => {
 				"expired",
 			],
 		});
+	});
+
+	it("paginates videos with offset and reports another page", async () => {
+		state.records = [
+			...state.records,
+			{ ...state.records[0], videoId: "video_2", createdAt: "2026-05-06T00:00:00.000Z" },
+			{ ...state.records[0], videoId: "video_3", createdAt: "2026-05-07T00:00:00.000Z" },
+		];
+
+		const response = await videosRoutes.request(
+			"https://example.com/?limit=1&offset=1&order=asc",
+			{ method: "GET" },
+			{ VIDEO_API_ENABLED: "true" },
+		);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			data: [{ id: "video_2" }],
+			first_id: "video_2",
+			last_id: "video_2",
+			has_more: true,
+		});
+		expect(listTeamVideoJobs).toHaveBeenCalledWith({
+			workspaceId: "ws_video_collection_test",
+			limit: 2,
+			offset: 1,
+			order: "asc",
+			statuses: undefined,
+		});
+	});
+
+	it("rejects offsets beyond the supported window", async () => {
+		const response = await videosRoutes.request(
+			"https://example.com/?offset=10001",
+			{ method: "GET" },
+			{ VIDEO_API_ENABLED: "true" },
+		);
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "validation_error",
+			reason: "offset_too_large",
+			max_offset: 10_000,
+		});
+		expect(listTeamVideoJobs).not.toHaveBeenCalled();
+	});
+
+	it("continues after a video cursor before applying offset", async () => {
+		state.records = [
+			...state.records,
+			{ ...state.records[0], videoId: "video_2", createdAt: "2026-05-06T00:00:00.000Z" },
+			{ ...state.records[0], videoId: "video_3", createdAt: "2026-05-07T00:00:00.000Z" },
+		];
+
+		const response = await videosRoutes.request(
+			"https://example.com/?limit=1&after=video_1&offset=1&order=asc",
+			{ method: "GET" },
+			{ VIDEO_API_ENABLED: "true" },
+		);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ data: [{ id: "video_3" }], has_more: false });
+		expect(getVideoJobRecord).toHaveBeenCalledWith("ws_video_collection_test", "video_1");
+		expect(listTeamVideoJobs).toHaveBeenCalledOnce();
+		expect(listTeamVideoJobs).toHaveBeenCalledWith(expect.objectContaining({
+			limit: 2,
+			offset: 1,
+			order: "asc",
+			after: { createdAt: "2026-05-05T00:00:00.000Z", videoId: "video_1" },
+		}));
+	});
+
+	it("rejects a video cursor outside the workspace", async () => {
+		const response = await videosRoutes.request(
+			"https://example.com/?after=video_missing",
+			{ method: "GET" },
+			{ VIDEO_API_ENABLED: "true" },
+		);
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error: "validation_error", reason: "invalid_after_cursor" });
+		expect(listTeamVideoJobs).not.toHaveBeenCalled();
 	});
 
 	it("lists active video model capabilities", async () => {

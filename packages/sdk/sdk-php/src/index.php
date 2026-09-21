@@ -10,6 +10,7 @@ require_once __DIR__ . "/gen/Client.php";
 require_once __DIR__ . "/gen/Models.php";
 require_once __DIR__ . "/gen/Operations.php";
 require_once __DIR__ . "/ModelIds.php";
+require_once __DIR__ . "/Workflows.php";
 
 use Phaseo\Gen\Client as GenClient;
 use RuntimeException;
@@ -559,6 +560,17 @@ class Phaseo
     public function checkModelParameters(string $modelId, array $values, array $options = []): array
     {
         return self::checkParameterSupport($this->getModelEndpointCapabilities($modelId), $values, $options);
+    }
+
+    /** @return array<string, mixed> */
+    public function preflightRequest(array $request, array $options = []): array
+    {
+        $modelId = trim((string) ($request['model'] ?? ''));
+        if ($modelId === '') throw new \InvalidArgumentException('preflight requires request model');
+        $structural = array_fill_keys(['model', 'input', 'messages', 'prompt', 'contents', 'provider', 'providers', 'routing', 'metadata', 'session_id', 'app', 'webhook', 'idempotency_key'], true);
+        $values = array_filter($request, static fn ($value, $name) => $value !== null && !isset($structural[$name]), ARRAY_FILTER_USE_BOTH);
+        $support = $this->checkModelParameters($modelId, $values, $options);
+        return ['ok' => (bool) ($support['ok'] ?? false), 'model_id' => $modelId, 'checked_parameters' => $values, 'parameter_support' => $support];
     }
 
     /** Build a UI-friendly report from live model endpoint metadata. */

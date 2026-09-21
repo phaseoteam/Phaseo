@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "requirements": [
     "typed request options",
     "safe GET and HEAD retries only",
@@ -7,37 +7,59 @@
     "raw response metadata",
     "structured HTTP error metadata",
     "request, response, and retry hooks",
-    "one transport pipeline"
+    "one transport pipeline",
+    "native pagination helpers",
+    "resumable job handles",
+    "full-request capability preflight"
   ],
   "surfaces": {
     "typescript": {
       "packages/sdk/sdk-ts/src/runtime/transport.ts": ["idempotencyKey", "onRequest", "onResponse", "onRetry"],
+      "packages/sdk/sdk-ts/src/pagination.ts": ["paginatePages", "paginateItems", "has_more"],
+      "packages/sdk/sdk-ts/src/jobHandle.ts": ["class JobHandle", "result", "events"],
+      "packages/sdk/sdk-ts/src/index.ts": ["preflightRequest", "checkedParameters", "parameterSupport"],
       "packages/sdk/sdk-ts/src/runtime/client.ts": ["RawResponse", "requestWithResponse", "PhaseoHttpError"]
     },
     "python": {
-      "packages/sdk/sdk-py/src/phaseo/transport.py": ["class RawResponse", "idempotency_key", "on_request", "on_response", "on_retry", "PhaseoHTTPError"]
+      "packages/sdk/sdk-py/src/phaseo/transport.py": ["class RawResponse", "idempotency_key", "on_request", "on_response", "on_retry", "PhaseoHTTPError"],
+      "packages/sdk/sdk-py/src/phaseo/pagination.py": ["iter_pages", "iter_items", "aiter_pages", "aiter_items"],
+      "packages/sdk/sdk-py/src/phaseo/jobs.py": ["class JobHandle", "def result", "def events"],
+      "packages/sdk/sdk-py/src/phaseo/__init__.py": ["preflight_request", "checked_parameters", "parameter_support"]
     },
     "go": {
-      "packages/sdk/sdk-go/src/gen/client.go": ["type RequestOptions struct", "IdempotencyKey", "RequestWithOptions", "OnRetry", "type HTTPError struct"]
+      "packages/sdk/sdk-go/src/gen/client.go": ["type RequestOptions struct", "IdempotencyKey", "RequestWithOptions", "OnRetry", "type HTTPError struct"],
+      "packages/sdk/sdk-go/workflows.go": ["type Pager", "func NewPager", "type JobHandle", "func NewJobHandle"],
+      "packages/sdk/sdk-go/parameter_support.go": ["PreflightRequest", "CheckedParameters", "ParameterSupport"]
     },
     "csharp": {
-      "packages/sdk/sdk-csharp/src/gen/Client.cs": ["class RequestOptions", "IdempotencyKey", "SendWithResponseAsync", "_onRetry", "ApiErrorException"]
+      "packages/sdk/sdk-csharp/src/gen/Client.cs": ["class RequestOptions", "IdempotencyKey", "SendWithResponseAsync", "_onRetry", "ApiErrorException"],
+      "packages/sdk/sdk-csharp/Workflows.cs": ["IAsyncEnumerable", "class JobHandle", "WaitAsync"],
+      "packages/sdk/sdk-csharp/Client.cs": ["PreflightRequest", "checked_parameters", "parameter_support"]
     },
     "java": {
-      "packages/sdk/sdk-java/src/app/phaseo/gen/Client.java": ["class RequestOptions", "idempotencyKey", "requestWithResponse", "setHooks", "class ApiException"]
+      "packages/sdk/sdk-java/src/app/phaseo/gen/Client.java": ["class RequestOptions", "idempotencyKey", "requestWithResponse", "setHooks", "class ApiException"],
+      "packages/sdk/sdk-java/src/app/phaseo/sdk/Workflows.java": ["class PageIterator", "class JobHandle", "waitForCompletion"],
+      "packages/sdk/sdk-java/src/app/phaseo/sdk/Phaseo.java": ["preflightRequest", "checked_parameters", "parameter_support"]
     },
     "php": {
-      "packages/sdk/sdk-php/src/gen/Client.php": ["class Response", "idempotency_key", "requestWithResponse", "setHooks", "class RequestException"]
+      "packages/sdk/sdk-php/src/gen/Client.php": ["class Response", "idempotency_key", "requestWithResponse", "setHooks", "class RequestException"],
+      "packages/sdk/sdk-php/src/Workflows.php": ["class PageIterator", "class JobHandle", "function wait"],
+      "packages/sdk/sdk-php/src/index.php": ["preflightRequest", "checked_parameters", "parameter_support"]
     },
     "ruby": {
-      "packages/sdk/sdk-ruby/lib/gen/client.rb": ["class Response", "idempotency_key", "request_with_response", "on_retry", "class RequestError"]
+      "packages/sdk/sdk-ruby/lib/gen/client.rb": ["class Response", "idempotency_key", "request_with_response", "on_retry", "class RequestError"],
+      "packages/sdk/sdk-ruby/lib/phaseo_sdk/workflows.rb": ["class PageEnumerator", "class JobHandle", "def wait"],
+      "packages/sdk/sdk-ruby/lib/index.rb": ["preflight_request", "checked_parameters", "parameter_support"]
     },
     "rust": {
       "packages/sdk/sdk-rust/src/gen/client.rs": ["struct RequestOptions", "idempotency_key", "request_with_options"],
-      "packages/sdk/sdk-rust/src/phaseo.rs": ["struct PhaseoResponse", "RequestHook", "RetryHook"]
+      "packages/sdk/sdk-rust/src/phaseo.rs": ["struct PhaseoResponse", "RequestHook", "RetryHook", "preflight_request", "checked_parameters", "parameter_support"],
+      "packages/sdk/sdk-rust/src/workflows.rs": ["struct Pager", "struct JobHandle", "pub fn wait"]
     },
     "cpp": {
-      "packages/sdk/sdk-cpp/src/gen/client.hpp": ["struct RequestOptions", "idempotency_key", "request_with_options", "set_request_hooks", "class RequestError"]
+      "packages/sdk/sdk-cpp/src/gen/client.hpp": ["struct RequestOptions", "idempotency_key", "request_with_options", "set_request_hooks", "class RequestError"],
+      "packages/sdk/sdk-cpp/src/workflows.hpp": ["class PageIterator", "class JobHandle", "T Wait"],
+      "packages/sdk/sdk-cpp/src/phaseo.hpp": ["PreflightRequest", "checked_parameters", "parameter_support"]
     }
   }
 }

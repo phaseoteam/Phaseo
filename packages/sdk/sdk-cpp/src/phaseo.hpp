@@ -12,6 +12,7 @@
 
 #include "gen/client.hpp"
 #include "gen/operations.hpp"
+#include "workflows.hpp"
 
 namespace phaseo {
 
@@ -21,11 +22,28 @@ struct ParameterRouteReference { std::string id; std::string provider; std::stri
 struct ParameterConstraint { ParameterRouteReference route; std::map<std::string, std::any> detail; };
 struct ParameterSupport { std::string name; std::any value; std::string status; std::vector<ParameterRouteReference> supported_by; std::vector<ParameterRouteReference> accepted_by; std::vector<ParameterRouteReference> unsupported_by; std::vector<ParameterConstraint> constraints; std::vector<std::string> issues; };
 struct ParameterSupportReport { bool ok = false; std::string model_id; std::size_t route_count = 0; std::vector<ParameterRouteReference> matching_routes; std::vector<ParameterSupport> parameters; std::vector<std::string> issues; };
+struct PreflightReport { bool ok = false; std::string model_id; std::map<std::string, std::any> checked_parameters; ParameterSupportReport parameter_support; };
+inline ParameterSupportReport CheckParameterSupport(const ModelEndpointCapabilities&, const std::map<std::string, std::any>&, const ParameterSupportOptions&);
 
 inline gen::Response GetModelEndpointCapabilities(gen::Client& client, const std::string& model_id) {
   const auto separator = model_id.find('/');
   if (separator == std::string::npos || separator == 0 || separator + 1 == model_id.size()) throw std::invalid_argument("model ID must use author/slug format");
   return gen::ListModelEndpoints(client, {{"author", model_id.substr(0, separator)}, {"slug", model_id.substr(separator + 1)}});
+}
+
+inline PreflightReport PreflightRequest(
+    const ModelEndpointCapabilities& capabilities,
+    const std::map<std::string, std::any>& request,
+    const ParameterSupportOptions& options = {}) {
+  auto model = request.find("model");
+  if (model == request.end() || model->second.type() != typeid(std::string) || std::any_cast<std::string>(model->second).empty()) {
+    throw std::invalid_argument("preflight requires request model");
+  }
+  static const std::set<std::string> structural = {"model", "input", "messages", "prompt", "contents", "provider", "providers", "routing", "metadata", "session_id", "app", "webhook", "idempotency_key"};
+  std::map<std::string, std::any> values;
+  for (const auto& [name, value] : request) if (structural.count(name) == 0) values.emplace(name, value);
+  auto support = CheckParameterSupport(capabilities, values, options);
+  return PreflightReport{support.ok, std::any_cast<std::string>(model->second), values, std::move(support)};
 }
 
 namespace detail {

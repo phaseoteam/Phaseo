@@ -257,6 +257,54 @@ impl Phaseo {
         ))
     }
 
+    /// Validates all non-structural fields in a complete request against live routes.
+    pub fn preflight_request(
+        &self,
+        request: &Value,
+        options: &crate::ParameterSupportOptions,
+    ) -> Result<Value, PhaseoError> {
+        let object = request
+            .as_object()
+            .ok_or_else(|| PhaseoError::configuration("preflight requires an object request"))?;
+        let model_id = object
+            .get("model")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim();
+        if model_id.is_empty() {
+            return Err(PhaseoError::configuration(
+                "preflight requires request model",
+            ));
+        }
+        let structural = [
+            "model",
+            "input",
+            "messages",
+            "prompt",
+            "contents",
+            "provider",
+            "providers",
+            "routing",
+            "metadata",
+            "session_id",
+            "app",
+            "webhook",
+            "idempotency_key",
+        ];
+        let values: HashMap<String, Value> = object
+            .iter()
+            .filter(|(name, value)| !value.is_null() && !structural.contains(&name.as_str()))
+            .map(|(name, value)| (name.clone(), value.clone()))
+            .collect();
+        let support = self.check_model_parameters(model_id, &values, options)?;
+        Ok(serde_json::json!({
+            "ok": support.get("ok").and_then(Value::as_bool).unwrap_or(false),
+            "model_id": model_id,
+            "checked_parameters": values,
+            "parameter_support": support,
+        }))
+    }
+
     pub fn post(&self, path: &str, request: &Value) -> Result<PhaseoResponse, PhaseoError> {
         self.request("POST", path, Some(request), &RequestOptions::default())
     }
