@@ -86,7 +86,7 @@ export type UsageRow = {
     unit: UnitClass;
     unitQuantity: number;
     unitLabel: string;
-    mod: "image" | "video";
+    mod: "audio" | "image" | "video";
     basePrice?: number | null;
     comparisonKind?: PriceComparisonKind | null;
     comparisonDirection?: PriceComparisonDirection;
@@ -99,6 +99,7 @@ export type UsageRow = {
 export type PricingSectionKey =
     | "textTokens"
     | "requests"
+    | "audioInputs"
     | "imageInputs"
     | "videoInputs"
     | "imageTokens"
@@ -675,11 +676,17 @@ function buildUpcomingChangeLabels(
 
     if (
         dir === "input" &&
-        ((mod === "image" && unit === "image") || (mod === "video" && (unit === "second" || unit === "minute")))
+        ((mod === "image" && unit === "image") ||
+            ((mod === "audio" || mod === "video") && (unit === "second" || unit === "minute")))
     ) {
         const scope = conciseConditionLabel(conds);
         return {
-            sectionKey: mod === "image" ? "imageInputs" : "videoInputs",
+            sectionKey:
+                mod === "audio"
+                    ? "audioInputs"
+                    : mod === "image"
+                        ? "imageInputs"
+                        : "videoInputs",
             title: `${modalityLabel(mod) ?? "Media"} Inputs`,
             subtitle: scope === "All usage" ? null : scope,
         };
@@ -1275,16 +1282,29 @@ export function buildProviderSections(
             } else {
                 labels = ["Any resolution"];
             }
+            const normalizedDuration =
+                unit === "second" || unit === "minute"
+                    ? normalizeTablePriceRate(price, unitLabel(unit, unitSize), unit, unitSize)
+                    : null;
+            const normalizedBaseDuration =
+                normalizedDuration && displayBasePrice != null
+                    ? normalizeTablePriceRate(
+                        displayBasePrice,
+                        unitLabel(unit, comparisonBaseUnitSize),
+                        unit,
+                        comparisonBaseUnitSize,
+                    )
+                    : null;
             for (const label of labels) {
                 const rowLabel = audioHintLabel ? `${label} - ${audioHintLabel}` : label;
                 (out.videoGen ??= []).push({
                     resolution: rowLabel,
-                    unit,
-                    unitQuantity: unitSize,
-                    unitLabel: unitLabel(unit, unitSize),
-                    price,
+                    unit: normalizedDuration ? "minute" : unit,
+                    unitQuantity: normalizedDuration ? 1 : unitSize,
+                    unitLabel: normalizedDuration?.unitLabel ?? unitLabel(unit, unitSize),
+                    price: normalizedDuration?.price ?? price,
                     audioMode,
-                    basePrice: displayBasePrice,
+                    basePrice: normalizedBaseDuration?.price ?? displayBasePrice,
                     comparisonKind,
                     comparisonDirection,
                     discountEndsAt,
@@ -1298,17 +1318,36 @@ export function buildProviderSections(
             (dir === "input" &&
                 (((mod === "image" || mod === "video") && unit === "pixel") ||
                     (mod === "image" && unit === "image") ||
-                    (mod === "video" && (unit === "second" || unit === "minute"))))
+                    ((mod === "audio" || mod === "video") &&
+                        (unit === "second" || unit === "minute"))))
         ) {
             const label = conciseConditionLabel(conds);
+            const normalizedDuration =
+                unit === "second" || unit === "minute"
+                    ? normalizeTablePriceRate(price, unitLabel(unit, unitSize), unit, unitSize)
+                    : null;
+            const normalizedBaseDuration =
+                normalizedDuration && displayBasePrice != null
+                    ? normalizeTablePriceRate(
+                        displayBasePrice,
+                        unitLabel(unit, comparisonBaseUnitSize),
+                        unit,
+                        comparisonBaseUnitSize,
+                    )
+                    : null;
             (out.mediaInputs ??= []).push({
                 label,
-                price,
-                unit,
-                unitQuantity: unitSize,
-                unitLabel: unitLabel(unit, unitSize),
-                mod: mod === "image" ? "image" : "video",
-                basePrice: displayBasePrice,
+                price: normalizedDuration?.price ?? price,
+                unit: normalizedDuration ? "minute" : unit,
+                unitQuantity: normalizedDuration ? 1 : unitSize,
+                unitLabel: normalizedDuration?.unitLabel ?? unitLabel(unit, unitSize),
+                mod:
+                    mod === "audio"
+                        ? "audio"
+                        : mod === "image"
+                            ? "image"
+                            : "video",
+                basePrice: normalizedBaseDuration?.price ?? displayBasePrice,
                 comparisonKind,
                 comparisonDirection,
                 discountEndsAt,
@@ -1627,6 +1666,22 @@ export function getProviderTablePriceCandidates(
         sortTablePriceCandidates(videoInputs);
         candidates.push(...videoInputs);
 
+        const audioInputs = sections.mediaInputs
+            ?.filter((row) => row.mod === "audio" && row.isCurrent)
+            .map((row, index) =>
+                createTablePriceCandidate({
+                    key: `input-audio-${index}`,
+                    label: "audio",
+                    modality: "audio",
+                    price: row.price,
+                    unitLabel: row.unitLabel,
+                    unit: row.unit,
+                    unitQuantity: row.unitQuantity,
+                }),
+            ) ?? [];
+        sortTablePriceCandidates(audioInputs);
+        candidates.push(...audioInputs);
+
         pushTokenCandidate("image", sections.imageTokens?.in);
         pushTokenCandidate("audio", sections.audioTokens?.in);
         pushTokenCandidate("video", sections.videoTokens?.in);
@@ -1656,7 +1711,9 @@ export function getProviderTablePriceCandidates(
             ?.map((row, index) =>
                 createTablePriceCandidate({
                     key: `output-video-${index}`,
-                    label: "video",
+                    label: row.audioMode
+                        ? `${row.resolution} · ${row.audioMode === "with-audio" ? "With audio" : "Without audio"}`
+                        : row.resolution,
                     modality: "video",
                     price: row.price,
                     unitLabel: row.unitLabel,
@@ -1800,7 +1857,7 @@ export function buildProviderTablePriceColumns(
     );
     const showModality = visibleModalities.size > 1;
 
-    return PROVIDER_TABLE_PRICE_DIRECTIONS.flatMap((direction) => {
+    const columns = PROVIDER_TABLE_PRICE_DIRECTIONS.flatMap((direction) => {
         const columnKeys = new Map<string, { modality: Modality; unitLabel: string }>();
         for (const candidate of candidatesByDirection.get(direction) ?? []) {
             const key = `${candidate.modality}:${candidate.unitLabel}`;
@@ -1833,6 +1890,24 @@ export function buildProviderTablePriceColumns(
                 headerUnitLabel: formatProviderTableHeaderUnit(unitLabel),
                 modality,
             }));
+    });
+
+    if (!showModality) return columns;
+    const multimodalDirectionOrder: ProviderTablePriceDirection[] = [
+        "input",
+        "cached",
+        "cachewrite",
+        "output",
+    ];
+    return columns.sort((left, right) => {
+        const modalityDelta =
+            PROVIDER_TABLE_MODALITY_ORDER.indexOf(left.modality) -
+            PROVIDER_TABLE_MODALITY_ORDER.indexOf(right.modality);
+        if (modalityDelta !== 0) return modalityDelta;
+        return (
+            multimodalDirectionOrder.indexOf(left.direction) -
+            multimodalDirectionOrder.indexOf(right.direction)
+        );
     });
 }
 

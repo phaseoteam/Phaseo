@@ -262,7 +262,10 @@ describe("buildProviderSections", () => {
 
 		const sections = buildProviderSections(provider, "standard");
 
-		expect(sections.otherRules).toHaveLength(1);
+		expect(sections.otherRules).toHaveLength(0);
+		expect(sections.mediaInputs).toEqual([
+			expect.objectContaining({ mod: "audio", unitLabel: "Per minute" }),
+		]);
 		expect(buildProviderTablePriceSummary(sections, "input").primary).toMatchObject({
 			label: "audio",
 			price: 0.6,
@@ -473,8 +476,8 @@ describe("buildProviderSections", () => {
 
 		expect(columns.map(({ label, headerUnitLabel }) => `${label} ${headerUnitLabel}`)).toEqual([
 			"Text Input $/1M",
-			"Audio Input $/1M",
 			"Text Output $/1M",
+			"Audio Input $/1M",
 			"Audio Output $/1M",
 		]);
 	});
@@ -493,8 +496,11 @@ describe("buildProviderSections", () => {
 			buildProviderSections(provider, "standard"),
 		]);
 
-		expect(columns.map(({ label }) => label)).toContain("Text Cache Read");
-		expect(columns.map(({ label }) => label)).not.toContain("Image Cache Read");
+		expect(columns.map(({ label }) => label)).toEqual([
+			"Text Input",
+			"Text Cache Read",
+			"Image Output",
+		]);
 	});
 
 	test("collapses resolution-dependent video prices into a column range", () => {

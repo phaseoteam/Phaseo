@@ -1100,11 +1100,22 @@ function renderTablePriceSummary(
 		return <div className="font-medium tabular-nums text-foreground">--</div>;
 	}
 
+	const showVideoVariant = summary.primary.modality === "video";
+	const variantLabels = [summary.primary.label, summary.secondary?.label]
+		.filter((label): label is string => Boolean(label));
 	return (
-		<div className={cn("font-medium tabular-nums", accentClassName)}>
-			{summary.secondary
-				? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
-				: summary.primary.formattedPrice}
+		<div className="text-right">
+			<div className={cn("font-medium tabular-nums", accentClassName)}>
+				{summary.secondary
+					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
+					: summary.primary.formattedPrice}
+			</div>
+			{showVideoVariant ? (
+				<div className="max-w-40 truncate text-[10px] font-normal text-muted-foreground">
+					{variantLabels.join(" · ")}
+					{summary.extraCount > 0 ? ` · +${summary.extraCount}` : ""}
+				</div>
+			) : null}
 		</div>
 	);
 }
@@ -2128,12 +2139,14 @@ export default function ProviderCard({
 	) || Boolean(workspacePolicyBlockedReasons?.length);
 
 	const isFreePlan = selectedPlan === "free";
+	const audioInputs = sec.mediaInputs?.filter((r) => r.mod === "audio") ?? [];
 	const imageInputs = sec.mediaInputs?.filter((r) => r.mod === "image") ?? [];
 	const videoInputs = sec.mediaInputs?.filter((r) => r.mod === "video") ?? [];
 	const upcomingFor = (
 		sectionKey:
 			| "textTokens"
 			| "requests"
+			| "audioInputs"
 			| "imageInputs"
 			| "videoInputs"
 			| "imageTokens"
@@ -2399,6 +2412,7 @@ export default function ProviderCard({
 		!sec.decisionTokens &&
 		!sec.imageGen &&
 		!sec.videoGen &&
+		!audioInputs.length &&
 		!imageInputs.length &&
 		!videoInputs.length &&
 		!sec.requests?.length &&
@@ -2928,30 +2942,6 @@ export default function ProviderCard({
 		</div>
 	) : null;
 	const additionalMeterSummaries: AdditionalMeterSummary[] = [
-		imageInputs.length > 0
-			? {
-					key: "image-inputs",
-					label: "Image inputs",
-					value: formatPriceRange(imageInputs.map((row) => row.price)),
-					unit:
-						new Set(imageInputs.map((row) => row.unitLabel)).size === 1
-							? imageInputs[0]?.unitLabel ?? "Usage"
-							: "Mixed units",
-					detail: formatCountLabel(new Set(imageInputs.map((row) => row.label)).size, "condition"),
-				}
-			: null,
-		videoInputs.length > 0
-			? {
-					key: "video-inputs",
-					label: "Video inputs",
-					value: formatPriceRange(videoInputs.map((row) => row.price)),
-					unit:
-						new Set(videoInputs.map((row) => row.unitLabel)).size === 1
-							? videoInputs[0]?.unitLabel ?? "Usage"
-							: "Mixed units",
-					detail: formatCountLabel(new Set(videoInputs.map((row) => row.label)).size, "condition"),
-				}
-			: null,
 		sec.otherRules.length > 0
 			? {
 					key: "conditional",
@@ -2962,6 +2952,35 @@ export default function ProviderCard({
 				}
 			: null,
 	].filter((summary): summary is AdditionalMeterSummary => Boolean(summary));
+	const pricingMediaInputContent =
+		!isFreePlan &&
+		(audioInputs.length > 0 ||
+			imageInputs.length > 0 ||
+			videoInputs.length > 0 ||
+			upcomingFor("audioInputs").length > 0 ||
+			upcomingFor("imageInputs").length > 0 ||
+			upcomingFor("videoInputs").length > 0) ? (
+			<div className="space-y-2.5 pt-1">
+				{audioInputs.length > 0 ? (
+					<InputsSection title="Audio Input" rows={audioInputs} comparisonAccent={pricingComparisonAccent} />
+				) : null}
+				{imageInputs.length > 0 ? (
+					<InputsSection title="Image Input" rows={imageInputs} comparisonAccent={pricingComparisonAccent} />
+				) : null}
+				{videoInputs.length > 0 ? (
+					<InputsSection title="Video Input" rows={videoInputs} comparisonAccent={pricingComparisonAccent} />
+				) : null}
+				{upcomingFor("audioInputs").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("audioInputs")} title="Upcoming" compact />
+				) : null}
+				{upcomingFor("imageInputs").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("imageInputs")} title="Upcoming" compact />
+				) : null}
+				{upcomingFor("videoInputs").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("videoInputs")} title="Upcoming" compact />
+				) : null}
+			</div>
+		) : null;
 	const pricingGeneratedOutputContent =
 		!isFreePlan &&
 		(Boolean(sec.imageGen) ||
@@ -3001,10 +3020,6 @@ export default function ProviderCard({
 			upcomingFor("decisionTokens").length > 0 ||
 			(sec.requests?.length ?? 0) > 0 ||
 			upcomingFor("requests").length > 0 ||
-			imageInputs.length > 0 ||
-			upcomingFor("imageInputs").length > 0 ||
-			videoInputs.length > 0 ||
-			upcomingFor("videoInputs").length > 0 ||
 			sec.otherRules.length > 0 ||
 			upcomingFor("other").length > 0) ? (
 			<div className="space-y-2 pt-2">
@@ -3090,26 +3105,6 @@ export default function ProviderCard({
 					) : null}
 					{upcomingFor("requests").length > 0 ? (
 						<UpcomingPricingSection rows={upcomingFor("requests")} title="Upcoming" compact />
-					) : null}
-					{imageInputs.length > 0 ? (
-						<InputsSection
-							title="Image Inputs"
-							rows={imageInputs}
-							comparisonAccent={pricingComparisonAccent}
-						/>
-					) : null}
-					{upcomingFor("imageInputs").length > 0 ? (
-						<UpcomingPricingSection rows={upcomingFor("imageInputs")} title="Upcoming" compact />
-					) : null}
-					{videoInputs.length > 0 ? (
-						<InputsSection
-							title="Video Inputs"
-							rows={videoInputs}
-							comparisonAccent={pricingComparisonAccent}
-						/>
-					) : null}
-					{upcomingFor("videoInputs").length > 0 ? (
-						<UpcomingPricingSection rows={upcomingFor("videoInputs")} title="Upcoming" compact />
 					) : null}
 					{sec.otherRules.length > 0 ? (
 						<div>
@@ -3638,6 +3633,7 @@ export default function ProviderCard({
 							) : null}
 						</div>
 						{pricingPrimaryContent}
+						{pricingMediaInputContent}
 						{pricingGeneratedOutputContent}
 						{timeWindowPricingRules.length > 0 ? (
 							<div className="py-3">

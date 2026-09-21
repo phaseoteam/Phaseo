@@ -581,10 +581,18 @@ function renderTierTablePrice(
 	summary: ReturnType<typeof buildProviderTablePriceSummary>,
 ) {
 	return summary.primary ? (
-		<div className="font-medium tabular-nums text-foreground">
-			{summary.secondary
-				? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
-				: summary.primary.formattedPrice}
+		<div className="text-right">
+			<div className="font-medium tabular-nums text-foreground">
+				{summary.secondary
+					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
+					: summary.primary.formattedPrice}
+			</div>
+			{summary.primary.modality === "video" ? (
+				<div className="max-w-40 truncate text-[10px] font-normal text-muted-foreground">
+					{[summary.primary.label, summary.secondary?.label].filter(Boolean).join(" · ")}
+					{summary.extraCount > 0 ? ` · +${summary.extraCount}` : ""}
+				</div>
+			) : null}
 		</div>
 	) : (
 		<div className="font-medium tabular-nums text-foreground">--</div>
