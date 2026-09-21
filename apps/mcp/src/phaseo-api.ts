@@ -42,7 +42,14 @@ export type GatewayModel = {
 	}>;
 };
 
-type ModelsResponse = { ok: boolean; models?: GatewayModel[]; message?: string };
+type ModelsResponse = {
+	ok: boolean;
+	models?: GatewayModel[];
+	message?: string;
+	total?: number;
+	limit?: number;
+	offset?: number;
+};
 type ProvidersResponse = {
 	ok: boolean;
 	providers?: Array<{
@@ -155,6 +162,38 @@ export async function listModels(env: PhaseoEnv, limit = 250, credentials?: Phas
 	const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", { query: { limit }, credentials });
 	if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
 	return payload.models;
+}
+
+export async function listAllModels(env: PhaseoEnv, credentials?: PhaseoCredentials): Promise<GatewayModel[]> {
+	const pageSize = 250;
+	const models: GatewayModel[] = [];
+	const seen = new Set<string>();
+	let offset = 0;
+
+	while (true) {
+		const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", {
+			query: { limit: pageSize, offset },
+			credentials,
+		});
+		if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
+
+		let added = 0;
+		for (const model of payload.models) {
+			if (seen.has(model.id)) continue;
+			seen.add(model.id);
+			models.push(model);
+			added += 1;
+		}
+
+		offset += payload.models.length;
+		if (
+			payload.models.length < pageSize ||
+			(typeof payload.total === "number" && offset >= payload.total) ||
+			added === 0
+		) break;
+	}
+
+	return models;
 }
 
 export async function getModel(env: PhaseoEnv, modelId: string, credentials?: PhaseoCredentials): Promise<GatewayModel | null> {

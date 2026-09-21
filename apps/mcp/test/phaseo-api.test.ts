@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getModel, listBenchmarkRankings, listModels, listProviders, requestPhaseo } from "../src/phaseo-api";
+import { getModel, listAllModels, listBenchmarkRankings, listModels, listProviders, requestPhaseo } from "../src/phaseo-api";
 
 const env = {
 	PHASEO_API_BASE_URL: "https://api.phaseo.app",
@@ -25,6 +25,19 @@ describe("Phaseo API client", () => {
 		expect(request.url).toBe("https://api.phaseo.app/v1/models?limit=250");
 		expect(request.method).toBe("GET");
 		expect(request.headers.get("authorization")).toBe("Bearer oauth-token");
+	});
+
+	it("loads every model page for catalogue-wide filtering and sorting", async () => {
+		const firstPage = Array.from({ length: 250 }, (_, index) => ({ id: `model-${index}` }));
+		fetchMock
+			.mockResolvedValueOnce(Response.json({ ok: true, total: 251, models: firstPage }))
+			.mockResolvedValueOnce(Response.json({ ok: true, total: 251, models: [{ id: "model-250" }] }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		const models = await listAllModels(env, { accessToken: "oauth-token" });
+		expect(models).toHaveLength(251);
+		expect((fetchMock.mock.calls[0]?.[0] as Request).url).toBe("https://api.phaseo.app/v1/models?limit=250&offset=0");
+		expect((fetchMock.mock.calls[1]?.[0] as Request).url).toBe("https://api.phaseo.app/v1/models?limit=250&offset=250");
 	});
 
 	it("redacts upstream 5xx database details", async () => {

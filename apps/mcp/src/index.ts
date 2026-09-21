@@ -9,6 +9,7 @@ import {
 	type GatewayModel,
 	type PhaseoEnv,
 	getModel,
+	listAllModels,
 	listBenchmarkRankings,
 	listModels,
 	listProviders,
@@ -613,7 +614,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, gatewayAvailableOnly, sortBy, sortOrder, limit }) => {
 			try {
 				const queryTerms = normalise(query).split(/\s+/).filter(Boolean);
-				const models = (await listModels(env, 250, { accessToken: authenticatedUser.accessToken })).filter((model) => {
+				const models = (await listAllModels(env, { accessToken: authenticatedUser.accessToken })).filter((model) => {
 					const searchable = normalise([model.id, model.name, model.description, model.organization?.name].filter(Boolean).join(" "));
 					const inputPrice = tokenRate(model.pricing.meters.input_tokens ?? model.pricing.meters.input_text_tokens);
 					return (
@@ -688,7 +689,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 				const category = focus === "cost_efficiency" ? "cost" : focus;
 				const [rankings, models] = await Promise.all([
 					listBenchmarkRankings(env),
-					listModels(env, 250, { accessToken: authenticatedUser.accessToken }),
+					listAllModels(env, { accessToken: authenticatedUser.accessToken }),
 				]);
 				const ranking = rankings.find((candidate) => candidate.category === category);
 				if (!ranking) {
