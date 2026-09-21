@@ -12,7 +12,7 @@ import {
 	Trash2,
 	type LucideIcon,
 } from "lucide-react";
-import { type KeyboardEvent } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 export type DecisionMode = "noul" | "choice" | "score";
 
@@ -93,18 +94,15 @@ function createScoreLevel(value = ""): DecisionScoreLevel {
 	return { id: createId("score"), value };
 }
 
-export function createDefaultDecisionDraft(): DecisionDraft {
+export function createDefaultDecisionDraft(
+	mode: DecisionMode = "noul",
+): DecisionDraft {
 	return {
-		mode: "noul",
+		mode,
 		prompt: "",
 		context: "",
 		choices: [createChoice(), createChoice()],
-		scoreLevels: [
-			createScoreLevel("No evidence"),
-			createScoreLevel("Early signal"),
-			createScoreLevel("Repeated evidence"),
-			createScoreLevel("Strong evidence"),
-		],
+		scoreLevels: [createScoreLevel()],
 	};
 }
 
@@ -191,9 +189,7 @@ export function serializeDecisionDraft(draft: DecisionDraft): {
 			decision: {
 				type: "score",
 				instructions: prompt,
-				criteria: draft.scoreLevels.map(
-					(level, index) => `${index} = ${level.value.trim()}`,
-				),
+				criteria: draft.scoreLevels.map((level) => level.value.trim()),
 			},
 		},
 	};
@@ -266,19 +262,69 @@ export function DecisionComposer({
 	onDraftChange,
 	onSubmit,
 }: DecisionComposerProps) {
+	const [isActive, setIsActive] = useState(false);
+	const composerRef = useRef<HTMLDivElement | null>(null);
 	const updateDraft = (patch: Partial<DecisionDraft>) => {
 		onDraftChange({ ...draft, ...patch });
 	};
+	const hasModeDetails =
+		draft.mode === "choice"
+			? draft.choices.some((choice) => choice.value.trim())
+			: draft.mode === "score"
+				? draft.scoreLevels.some((level) => level.value.trim())
+				: false;
+	const composerExpanded =
+		isActive ||
+		draft.prompt.trim().length >= 96 ||
+		draft.prompt.includes("\n") ||
+		Boolean(draft.context.trim()) ||
+		hasModeDetails;
+
+	useEffect(() => {
+		function handlePointerDown(event: PointerEvent) {
+			const target = event.target;
+			if (!(target instanceof Node) || composerRef.current?.contains(target)) {
+				return;
+			}
+			if (
+				target instanceof Element &&
+				target.closest('[role="menu"], [data-slot="popover-content"]')
+			) {
+				return;
+			}
+			setIsActive(false);
+		}
+
+		document.addEventListener("pointerdown", handlePointerDown, true);
+		return () => {
+			document.removeEventListener("pointerdown", handlePointerDown, true);
+		};
+	}, []);
 
 	function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-		if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+		if (
+			event.key === "Enter" &&
+			!event.shiftKey &&
+			!event.nativeEvent.isComposing
+		) {
 			event.preventDefault();
 			onSubmit();
 		}
 	}
 
 	return (
-		<div data-decision-composer="true" className="min-w-0">
+		<div
+			ref={composerRef}
+			data-decision-composer="true"
+			data-expanded={composerExpanded}
+			className="min-w-0"
+			onFocusCapture={() => setIsActive(true)}
+			onBlurCapture={(event) => {
+				if (!event.currentTarget.contains(event.relatedTarget)) {
+					setIsActive(false);
+				}
+			}}
+		>
 			<Textarea
 				data-decision-question-input="true"
 				value={draft.prompt}
@@ -291,10 +337,16 @@ export function DecisionComposer({
 							? "What should Jev choose?"
 							: "What should Jev score?"
 				}
-				className="min-h-20 max-h-36 resize-none border-0 bg-transparent px-3.5 py-3 text-sm shadow-none focus-visible:ring-0"
+				rows={1}
+				className={cn(
+					"max-h-36 resize-none overflow-y-auto border-0 bg-transparent text-sm leading-5 shadow-none transition-[min-height,padding] duration-200 focus-visible:ring-0 motion-reduce:transition-none",
+					composerExpanded
+						? "min-h-20 px-3.5 py-3"
+						: "min-h-9 px-3.5 py-2",
+				)}
 			/>
 
-			{draft.mode === "choice" ? (
+			{composerExpanded && draft.mode === "choice" ? (
 				<div className="border-t border-border/70 px-3.5 py-3">
 					<div className="mb-2 flex items-center justify-between gap-3">
 						<Label className="text-xs">Answers</Label>
@@ -348,7 +400,7 @@ export function DecisionComposer({
 				</div>
 			) : null}
 
-			{draft.mode === "score" ? (
+			{composerExpanded && draft.mode === "score" ? (
 				<div className="border-t border-border/70 px-3.5 py-3">
 					<div className="mb-2 flex items-center justify-between gap-3">
 						<Label className="text-xs">Score levels</Label>
@@ -364,7 +416,7 @@ export function DecisionComposer({
 							<Plus className="size-3.5" /> Add level
 						</Button>
 					</div>
-					<ScrollArea className="h-36" viewportClassName="pr-2">
+					<ScrollArea className="max-h-36" viewportClassName="pr-2">
 						<div className="space-y-2">
 							{draft.scoreLevels.map((level, index) => (
 								<div key={level.id} className="flex min-w-0 items-center gap-2">
@@ -390,7 +442,7 @@ export function DecisionComposer({
 										variant="ghost"
 										size="icon"
 										className="h-9 w-9 shrink-0"
-										disabled={draft.scoreLevels.length <= 2}
+										disabled={draft.scoreLevels.length <= 1}
 										onClick={() =>
 											updateDraft({
 												scoreLevels: draft.scoreLevels.filter((item) => item.id !== level.id),
@@ -407,7 +459,12 @@ export function DecisionComposer({
 				</div>
 			) : null}
 
-			<div className="flex items-center justify-between gap-2 border-t border-border/70 px-2.5 py-2">
+			<div
+				className={cn(
+					"flex items-center justify-between gap-2 px-2.5 py-2",
+					composerExpanded && "border-t border-border/70",
+				)}
+			>
 				<div className="flex min-w-0 items-center gap-1">
 					<ModeMenu mode={draft.mode} onModeChange={(mode) => updateDraft({ mode })} />
 					<Popover>
@@ -445,7 +502,9 @@ export function DecisionComposer({
 					</Popover>
 				</div>
 				<div className="flex items-center gap-2">
-					<span className="hidden text-[11px] text-muted-foreground sm:inline">Ctrl+Enter</span>
+					<span className="hidden text-[11px] text-muted-foreground sm:inline">
+						Enter
+					</span>
 					<Button
 						type="button"
 						size="icon"

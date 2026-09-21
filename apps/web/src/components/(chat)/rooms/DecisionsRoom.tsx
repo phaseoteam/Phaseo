@@ -1,15 +1,19 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import { MessageScroller } from "@shadcn/react/message-scroller";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+	ArrowDown,
 	PanelLeftClose,
 	PanelLeftOpen,
+	Save,
 	Settings,
 	SquarePen,
 	Trash2,
+	X,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
@@ -60,6 +64,7 @@ import {
 	MessageHeader,
 } from "@/components/ui/message";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	SidebarGroup,
 	SidebarGroupContent,
@@ -225,8 +230,11 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const [copiedRunId, setCopiedRunId] = useState<string | null>(null);
 	const [copiedInputRunId, setCopiedInputRunId] = useState<string | null>(null);
 	const [metadataOpenRunId, setMetadataOpenRunId] = useState<string | null>(null);
+	const [editingRunId, setEditingRunId] = useState<string | null>(null);
+	const [editingValue, setEditingValue] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const scrollViewportRef = useRef<HTMLDivElement | null>(null);
 	const modelSettings = useRoomModelSettings<Record<string, never>>({
 		roomId: "decisions",
 		models: roomModels,
@@ -300,6 +308,8 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		setCopiedRunId(null);
 		setCopiedInputRunId(null);
 		setMetadataOpenRunId(null);
+		setEditingRunId(null);
+		setEditingValue("");
 		setError(null);
 	}
 
@@ -350,7 +360,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		const { state, questions } = serializeDecisionDraft(draft);
 		const submittedDraft = cloneDraft(draft);
 		const prompt = draft.prompt.trim();
-		const runId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+		const runId = `decision-${crypto.randomUUID()}`;
 		const runModel = model || DEFAULT_MODEL_ID;
 		const conversationId = activeConversationId ?? createConversationId();
 		const conversationTitle =
@@ -375,7 +385,12 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			...previousRuns,
 			pendingRun,
 		]);
-		setDraft({ ...submittedDraft, prompt: "", context: "" });
+		setDraft(createDefaultDecisionDraft(submittedDraft.mode));
+		window.requestAnimationFrame(() => {
+			document
+				.querySelector<HTMLElement>("[data-decision-question-input='true']")
+				?.blur();
+		});
 		await evaluateRun(runId, {
 			model: runModel,
 			state,
@@ -467,7 +482,50 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		}, run);
 	}
 
-	function editRun(run: DecisionRun) {
+	function startEditingRun(run: DecisionRun) {
+		if (isSubmitting) return;
+		setEditingRunId(run.id);
+		setEditingValue(run.input);
+		setError(null);
+	}
+
+	function cancelEditingRun() {
+		setEditingRunId(null);
+		setEditingValue("");
+		setError(null);
+	}
+
+	function saveEditedRun(run: DecisionRun) {
+		if (isSubmitting) return;
+		const nextPrompt = editingValue.trim();
+		const nextDraft = { ...cloneDraft(run.draft), prompt: nextPrompt };
+		const draftError = validateDecisionDraft(nextDraft);
+		if (draftError) {
+			setError(draftError);
+			return;
+		}
+		if (nextPrompt === run.input) {
+			cancelEditingRun();
+			return;
+		}
+		const { state, questions } = serializeDecisionDraft(nextDraft);
+		const editedRun: DecisionRun = {
+			...run,
+			input: nextPrompt,
+			request: { state, questions },
+			draft: nextDraft,
+		};
+		setEditingRunId(null);
+		setEditingValue("");
+		void evaluateRun(
+			run.id,
+			{ model: run.model, state, questions },
+			editedRun,
+		);
+	}
+
+	function branchRun(run: DecisionRun) {
+		setActiveConversationId(createConversationId());
 		setDraft(cloneDraft(run.draft));
 		setError(null);
 		window.requestAnimationFrame(() => {
@@ -475,11 +533,6 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				.querySelector<HTMLElement>("[data-decision-question-input='true']")
 				?.focus();
 		});
-	}
-
-	function branchRun(run: DecisionRun) {
-		setActiveConversationId(createConversationId());
-		editRun(run);
 	}
 
 	async function copyRunResult(run: DecisionRun) {
@@ -671,11 +724,26 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 							}
 						/>
 					) : (
-						<ScrollArea
-							className="min-h-0 flex-1"
-							viewportClassName="overscroll-y-contain pr-1"
+						<MessageScroller.Provider
+							key={activeConversationId}
+							autoScroll
+							defaultScrollPosition="end"
+							scrollEdgeThreshold={48}
+							scrollMargin={24}
 						>
-							<div className="space-y-8 pb-2">
+							<MessageScroller.Root className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden overscroll-contain">
+								<ScrollArea
+									className="h-full min-w-0 w-full"
+									viewportClassName="overscroll-contain pr-1"
+									viewportRef={scrollViewportRef}
+									viewportRender={
+										<MessageScroller.Viewport
+											aria-label="Decision messages"
+											role="region"
+										/>
+									}
+								>
+									<MessageScroller.Content className="space-y-8 pb-2">
 								{activeRuns.map((run) => {
 									const sentAtLabel = formatDecisionTime(run.createdAt);
 									const responseSentAtLabel = formatDecisionTime(
@@ -690,24 +758,55 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 										run.model.split("/").pop() ??
 										run.model;
 									return (
-										<section
+										<MessageScroller.Item
 											key={run.id}
-											data-decision-run-id={run.id}
-											className="space-y-5"
+											messageId={run.id}
+											scrollAnchor
 										>
+										<section data-decision-run-id={run.id} className="space-y-5">
 											<Message
 												align="end"
 												className="group/message min-w-0 max-w-full"
 											>
 												<MessageContent className="max-w-[min(100%,42rem)] items-end gap-2">
-													<div className="min-w-0 max-w-full whitespace-pre-line rounded-md bg-foreground px-4 py-3 text-sm leading-relaxed text-background shadow-sm">
-														{run.input}
+													<div className="min-w-0 max-w-full rounded-md bg-foreground px-4 py-3 text-sm leading-relaxed text-background shadow-sm">
+														{editingRunId === run.id ? (
+															<div className="grid gap-3">
+																<Textarea
+																	autoFocus
+																	value={editingValue}
+																	onChange={(event) => setEditingValue(event.target.value)}
+																	onKeyDown={(event) => {
+																		if (event.key === "Escape") cancelEditingRun();
+																	}}
+																	rows={3}
+																	className="min-h-[100px] resize-none"
+																	aria-label="Edit decision question"
+																/>
+																<div className="flex items-center justify-end gap-2">
+																	<Button size="sm" variant="ghost" onClick={cancelEditingRun}>
+																		<X className="mr-1 h-4 w-4" />
+																		Cancel
+																	</Button>
+																	<Button
+																		size="sm"
+																		onClick={() => saveEditedRun(run)}
+																		disabled={!editingValue.trim() || isSubmitting}
+																	>
+																		<Save className="mr-1 h-4 w-4" />
+																		Save
+																	</Button>
+																</div>
+															</div>
+														) : (
+															<span className="whitespace-pre-wrap">{run.input}</span>
+														)}
 													</div>
 													<UserMessageFooter
 														copied={copiedInputRunId === run.id}
 														sentAtLabel={sentAtLabel || null}
 														onCopy={() => void copyRunInput(run)}
-														onEdit={() => editRun(run)}
+														onEdit={() => startEditingRun(run)}
 													/>
 												</MessageContent>
 											</Message>
@@ -773,16 +872,26 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 												</MessageContent>
 											</Message>
 										</section>
+										</MessageScroller.Item>
 									);
 								})}
-							</div>
-						</ScrollArea>
+									</MessageScroller.Content>
+								</ScrollArea>
+								<MessageScroller.Button
+									aria-label="Scroll to latest decision"
+									className="absolute bottom-4 left-1/2 z-20 inline-flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active=false]:pointer-events-none data-[active=false]:opacity-0"
+									direction="end"
+								>
+									<ArrowDown className="h-4 w-4" />
+								</MessageScroller.Button>
+							</MessageScroller.Root>
+						</MessageScroller.Provider>
 					)}
 				</div>
 			</main>
 
 			<RoomComposerFooter>
-				<div className="mx-auto w-full max-w-5xl">
+				<div className="mx-auto w-full max-w-3xl">
 					<RoomComposerSurface>
 						<DecisionComposer
 							draft={draft}
