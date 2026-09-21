@@ -4,7 +4,7 @@
 
 ## Setup
 
-For local use, set `ARTIFICIAL_ANALYSIS_API_KEY` in the root `.env.local` (or `.env` or `apps/web/.env.local`). The daily GitHub Actions workflow loads it from the `prod` Infisical environment at `/` using OIDC; do not store it as a GitHub Actions secret. Existing process environment values take priority, followed by the web app file and then the root files. Do not put the key in mappings or client code.
+For local use, set `ARTIFICIAL_ANALYSIS_API_KEY` in the root `.env.local` (or `.env` or `apps/web/.env.local`). The daily GitHub Actions workflow loads it from the `prod` Infisical environment at `/provider-keys` using OIDC; do not store it as a GitHub Actions secret. Existing process environment values take priority, followed by the web app file and then the root files. Do not put the key in mappings or client code.
 
 ```sh
 pnpm data:sync-artificial-analysis --report=artificial-analysis-report.json
