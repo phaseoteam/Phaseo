@@ -94,6 +94,23 @@ import {
 const DEFAULT_MODEL_ID = "typesafe/jev-1.13.0";
 const DECISIONS_STORAGE_KEYS = getRoomStorageKeys("decisions");
 
+function readActiveDecisionConversationId(): string | null {
+	try {
+		return chatLocalStorage.getItem(DECISIONS_STORAGE_KEYS.activeChatId);
+	} catch {
+		return null;
+	}
+}
+
+function writeActiveDecisionConversationId(id: string): boolean {
+	try {
+		chatLocalStorage.setItem(DECISIONS_STORAGE_KEYS.activeChatId, id);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 function formatDecisionTime(value: string): string {
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return "";
@@ -219,7 +236,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		let mounted = true;
 		void Promise.all([
 			listRoomHistory<DecisionHistoryPayload>("decisions"),
-			getAllChats("decisions").catch(() => []),
+			getAllChats("decisions"),
 			getAllChatTags().catch(() => []),
 		])
 			.then(async ([records, storedConversations, storedTags]) => {
@@ -256,18 +273,13 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				setRuns(storedRuns);
 				setConversations(loadedConversations);
 				setChatTags(storedTags);
-				const storedActiveId = chatLocalStorage.getItem(
-					DECISIONS_STORAGE_KEYS.activeChatId,
-				);
+				const storedActiveId = readActiveDecisionConversationId();
 				const selectedId =
 					loadedConversations.find(
 						(conversation) => conversation.id === storedActiveId,
 					)?.id ?? loadedConversations[0].id;
 				setActiveConversationId(selectedId);
-				chatLocalStorage.setItem(
-					DECISIONS_STORAGE_KEYS.activeChatId,
-					selectedId,
-				);
+				writeActiveDecisionConversationId(selectedId);
 				setHistoryLoaded(true);
 			})
 			.catch(() => {
@@ -286,9 +298,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	}, [requestedModel]);
 
 	function persistActiveConversation(id: string) {
-		try {
-			chatLocalStorage.setItem(DECISIONS_STORAGE_KEYS.activeChatId, id);
-		} catch {
+		if (!writeActiveDecisionConversationId(id)) {
 			setError("The active chat could not be saved locally.");
 		}
 	}
