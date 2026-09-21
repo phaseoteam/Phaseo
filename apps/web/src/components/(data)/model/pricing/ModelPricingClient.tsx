@@ -98,7 +98,11 @@ import {
 import { getPricingProviderVariantLabels } from "@/components/(data)/model/pricing/pricingProviderVariants";
 import {
 	buildProviderSections,
+	buildProviderTablePriceColumns,
 	buildProviderTablePriceSummary,
+	buildProviderTablePriceSummaryForColumn,
+	type ProviderTablePriceColumn,
+	type ProviderTablePriceDirection,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import {
     chooseGatewayStatus,
@@ -137,15 +141,17 @@ export function resolveRuntimeStatsPercentileAfterError(
 		: attemptedPercentile;
 }
 
-type SortOption =
-    | "default"
+type StaticSortOption =
     | "provider"
     | "input"
     | "output"
     | "cache_read"
+    | "cache_write"
     | "throughput"
     | "latency"
     | "uptime";
+type PriceColumnSortOption = `price:${string}`;
+type SortOption = "default" | StaticSortOption | PriceColumnSortOption;
 type SortDirection = "asc" | "desc";
 type ProviderStatusFilter = "routable" | "preview" | "inactive" | "external";
 type PrivacyFilter = "workspace" | "all" | "zdr" | "no_training";
@@ -164,11 +170,12 @@ type WorkspacePrivacySettings = {
     accountProviderRestrictionMode?: "none" | "allowlist" | "blocklist";
     accountProviderRestrictionProviderIds?: string[];
 };
-const DEFAULT_SORT_DIRECTIONS: Record<Exclude<SortOption, "default">, SortDirection> = {
+const DEFAULT_SORT_DIRECTIONS: Record<StaticSortOption, SortDirection> = {
     provider: "asc",
     input: "asc",
     output: "asc",
     cache_read: "asc",
+    cache_write: "asc",
     throughput: "desc",
     latency: "asc",
     uptime: "desc",
@@ -334,16 +341,48 @@ function getPreferredPlan(plans: string[]): string {
 }
 
 function parseSortOption(value: string | null): SortOption {
+    if (value?.startsWith("price:")) return value as PriceColumnSortOption;
     if (value === "pricing" || value === "input") return "input";
     if (value === "provider") return "provider";
     if (value === "output") return "output";
     if (value === "cache_read" || value === "cache" || value === "cached") {
         return "cache_read";
     }
+	if (value === "cache_write" || value === "cachewrite") return "cache_write";
     if (value === "throughput") return "throughput";
     if (value === "latency") return "latency";
     if (value === "uptime") return "uptime";
     return "default";
+}
+
+function getPriceDirectionForSort(
+	sort: SortOption,
+): ProviderTablePriceDirection | null {
+	if (sort === "input" || sort === "output") return sort;
+	if (sort === "cache_read") return "cached";
+	if (sort === "cache_write") return "cachewrite";
+	return null;
+}
+
+function getPriceColumnForSort(sort: SortOption): ProviderTablePriceColumn | null {
+    if (!sort.startsWith("price:")) return null;
+    const key = sort.slice("price:".length);
+    const [direction, modality, ...unitParts] = key.split(":");
+    if (
+        !["input", "output", "cached", "cachewrite"].includes(direction ?? "") ||
+        !modality ||
+        unitParts.length === 0
+    ) {
+        return null;
+    }
+    return {
+        key,
+        direction: direction as ProviderTablePriceDirection,
+        modality: modality as ProviderTablePriceColumn["modality"],
+        unitLabel: unitParts.join(":"),
+        label: "",
+        headerUnitLabel: "",
+    };
 }
 
 function isSortDirection(value: string | null): value is SortDirection {
@@ -352,7 +391,8 @@ function isSortDirection(value: string | null): value is SortDirection {
 
 function getDefaultSortDirection(sort: SortOption): SortDirection {
     if (sort === "default") return "desc";
-    return DEFAULT_SORT_DIRECTIONS[sort];
+    if (sort.startsWith("price:")) return "asc";
+    return DEFAULT_SORT_DIRECTIONS[sort as StaticSortOption];
 }
 
 function getProviderDefaultPlan(provider: ProviderPricing): string {
@@ -541,8 +581,18 @@ function renderTierTablePrice(
 	summary: ReturnType<typeof buildProviderTablePriceSummary>,
 ) {
 	return summary.primary ? (
-		<div className="font-medium tabular-nums text-foreground">
-			{summary.primary.formattedPrice}
+		<div className="text-right">
+			<div className="font-medium tabular-nums text-foreground">
+				{summary.secondary
+					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
+					: summary.primary.formattedPrice}
+			</div>
+			{summary.primary.modality === "video" ? (
+				<div className="max-w-40 truncate text-[10px] font-normal text-muted-foreground">
+					{[summary.primary.label, summary.secondary?.label].filter(Boolean).join(" · ")}
+					{summary.extraCount > 0 ? ` · +${summary.extraCount}` : ""}
+				</div>
+			) : null}
 		</div>
 	) : (
 		<div className="font-medium tabular-nums text-foreground">--</div>
@@ -655,7 +705,7 @@ function ProviderServiceTierRow({
 	provider,
 	plan,
 	pricingTimeMs,
-	showCacheReadColumn,
+	priceColumns,
 	navigationProviderIds,
 	isActive,
 	runtimeStats,
@@ -664,7 +714,7 @@ function ProviderServiceTierRow({
 	provider: ProviderPricing;
 	plan: string;
 	pricingTimeMs: number;
-	showCacheReadColumn: boolean;
+	priceColumns: ProviderTablePriceColumn[];
 	navigationProviderIds: string[];
 	isActive: boolean;
 	runtimeStats: ProviderRuntimeStats | null;
@@ -674,11 +724,12 @@ function ProviderServiceTierRow({
 		() => buildProviderSections(provider, plan, pricingTimeMs),
 		[plan, pricingTimeMs, provider],
 	);
-	const inputPrice = buildProviderTablePriceSummary(sections, "input");
-	const outputPrice = buildProviderTablePriceSummary(sections, "output");
-	const cacheReadPrice = showCacheReadColumn
-		? buildProviderTablePriceSummary(sections, "cached")
-		: null;
+	const priceSummaries = Object.fromEntries(
+		priceColumns.map((column) => [
+			column.key,
+			buildProviderTablePriceSummaryForColumn(sections, column),
+		]),
+	) as Record<string, ReturnType<typeof buildProviderTablePriceSummaryForColumn>>;
 	const providerName = getProviderServiceTierDisplayName(provider);
 	const logoProviderId = sections.logoProviderId;
 	const discountBadge = getProviderTableDiscountBadge(sections);
@@ -734,17 +785,13 @@ function ProviderServiceTierRow({
 					</span>
 				</div>
 			</TableCell>
-			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-				{renderTierTablePrice(inputPrice)}
-			</TableCell>
-			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-				{renderTierTablePrice(outputPrice)}
-			</TableCell>
-			{showCacheReadColumn ? (
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-					{cacheReadPrice ? renderTierTablePrice(cacheReadPrice) : "--"}
+			{priceColumns.map((column) => (
+				<TableCell key={column.key} className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+					{renderTierTablePrice(
+						priceSummaries[column.key] ?? buildProviderTablePriceSummaryForColumn(sections, column),
+					)}
 				</TableCell>
-			) : null}
+			))}
 			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
 				{plan === "batch" ? "--" : formatTierLatency(runtimeStats?.latencyMs30m)}
 			</TableCell>
@@ -1018,7 +1065,7 @@ export default function ModelPricingClient({
         };
         const getProviderSortPrice = (
             provider: ProviderPricing,
-            direction: "input" | "output" | "cached"
+            direction: ProviderTablePriceDirection,
         ): number | null => {
             const sections = getCachedSections(provider);
             return buildProviderTablePriceSummary(sections, direction).sortValue;
@@ -1198,13 +1245,25 @@ export default function ModelPricingClient({
             });
         }
 
-        if (sort === "input" || sort === "output" || sort === "cache_read") {
+        const providerPriceColumn = getPriceColumnForSort(sort);
+        const providerPriceDirection = getPriceDirectionForSort(sort);
+        if (providerPriceColumn || providerPriceDirection) {
             return list.sort((a, b) => {
                 const statusCmp = byGatewayStatus(a, b);
                 if (statusCmp !== 0) return statusCmp;
-                const sortDirectionKey = sort === "cache_read" ? "cached" : sort;
-                const aPrice = getProviderSortPrice(a, sortDirectionKey);
-                const bPrice = getProviderSortPrice(b, sortDirectionKey);
+                const getSortPrice = (provider: ProviderPricing) => {
+                    if (!providerPriceColumn) {
+                        return getProviderSortPrice(provider, providerPriceDirection!);
+                    }
+                    const plan = getProviderDefaultPlan(provider);
+                    const sections = buildProviderSections(provider, plan, pricingTimeMs);
+                    return buildProviderTablePriceSummaryForColumn(
+                        sections,
+                        providerPriceColumn,
+                    ).sortValue;
+                };
+                const aPrice = getSortPrice(a);
+                const bPrice = getSortPrice(b);
                 if (aPrice == null && bPrice == null) return withCreatorBias(a, b);
                 if (aPrice == null) return 1;
                 if (bPrice == null) return -1;
@@ -1323,11 +1382,20 @@ export default function ModelPricingClient({
 			if (bValue == null) return -1;
 			return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
 		};
-		const priceFor = (offering: ProviderOffering, direction: "input" | "output" | "cached") =>
-			buildProviderTablePriceSummary(
-				buildProviderSections(offering.provider, offering.plan, pricingTimeMs),
-				direction,
-			).sortValue;
+		const priceFor = (
+			offering: ProviderOffering,
+			direction: ProviderTablePriceDirection | null,
+			column: ProviderTablePriceColumn | null,
+		) => {
+			const sections = buildProviderSections(
+				offering.provider,
+				offering.plan,
+				pricingTimeMs,
+			);
+			return column
+				? buildProviderTablePriceSummaryForColumn(sections, column).sortValue
+				: buildProviderTablePriceSummary(sections, direction!).sortValue;
+		};
 		return offerings.sort((a, b) => {
 			const fallback = fallbackCompare(a, b);
 			if (sort === "provider") {
@@ -1364,10 +1432,12 @@ export default function ModelPricingClient({
 					fallback,
 				);
 			}
-			const priceDirection = sort === "cache_read" ? "cached" : sort;
+			const priceColumn = getPriceColumnForSort(sort);
+			const priceDirection = getPriceDirectionForSort(sort);
+			if (!priceColumn && !priceDirection) return fallback;
 			return metricCompare(
-				priceFor(a, priceDirection),
-				priceFor(b, priceDirection),
+				priceFor(a, priceDirection, priceColumn),
+				priceFor(b, priceDirection, priceColumn),
 				fallback,
 			);
 		});
@@ -1403,16 +1473,16 @@ export default function ModelPricingClient({
 			return next;
 		});
 	}, []);
-    const showCacheReadColumn = useMemo(() => {
-        return visibleOfferings.some(({ provider, plan }) => {
-            const sections = buildProviderSections(
-                provider,
-                plan,
-                pricingTimeMs,
-            );
-            return buildProviderTablePriceSummary(sections, "cached").primary !== null;
-        });
-    }, [pricingTimeMs, visibleOfferings]);
+	const visiblePriceColumns = useMemo(() => {
+		const sectionsByOffering = displayedOfferings.map(({ provider, plan }) =>
+			buildProviderSections(provider, plan, pricingTimeMs),
+		);
+		return buildProviderTablePriceColumns(sectionsByOffering).map((column) => ({
+			...column,
+			sort: `price:${column.key}` as PriceColumnSortOption,
+		}));
+	}, [displayedOfferings, pricingTimeMs]);
+	const providerTableMinWidth = 696 + visiblePriceColumns.length * 112;
     const providerTableViewportRef = useRef<HTMLDivElement>(null);
     const [providerTableOverflows, setProviderTableOverflows] = useState<boolean | null>(null);
     const [providerTableThumbWidth, setProviderTableThumbWidth] = useState<number | null>(null);
@@ -1453,7 +1523,7 @@ export default function ModelPricingClient({
             resizeObserver.disconnect();
             window.removeEventListener("resize", measure);
         };
-    }, [showCacheReadColumn, visibleProviders.length]);
+    }, [visiblePriceColumns.length, visibleProviders.length]);
 
 	useEffect(() => {
 		return subscribeProviderInspectorSelection((selection) => {
@@ -1568,7 +1638,8 @@ export default function ModelPricingClient({
 	const renderTableSortHead = (
 		label: string,
 		option: Exclude<SortOption, "default">,
-		align: "left" | "right" = "right"
+		align: "left" | "right" = "right",
+		subLabel?: string,
 	) => {
         const isActive = sort === option;
 		const labelNode = (
@@ -1579,6 +1650,7 @@ export default function ModelPricingClient({
 				)}
 			>
 				{label}
+				{subLabel ? ` ${subLabel}` : ""}
 			</span>
 		);
         const icon = isActive ? (
@@ -1611,7 +1683,7 @@ export default function ModelPricingClient({
                         "group inline-flex w-full items-center gap-1.5 text-left text-xs font-medium transition-colors hover:text-foreground justify-start",
                         isActive ? "text-foreground" : "text-muted-foreground"
                     )}
-                    aria-label={`Sort providers by ${label.toLowerCase()}`}
+					aria-label={`Sort providers by ${label.toLowerCase()}${subLabel ? ` ${subLabel}` : ""}`}
                 >
                     {labelNode}
                     {icon}
@@ -1627,13 +1699,22 @@ export default function ModelPricingClient({
                     "group inline-flex w-full items-center justify-end gap-1.5 text-right text-xs font-medium transition-colors hover:text-foreground",
                     isActive ? "text-foreground" : "text-muted-foreground"
                 )}
-                aria-label={`Sort providers by ${label.toLowerCase()}`}
+				aria-label={`Sort providers by ${label.toLowerCase()}${subLabel ? ` ${subLabel}` : ""}`}
             >
                 {icon}
                 {labelNode}
             </button>
-        );
-    };
+		);
+	};
+
+	const renderTablePriceHead = (column: (typeof visiblePriceColumns)[number]) => {
+		return renderTableSortHead(
+			column.label,
+			column.sort,
+			"right",
+			column.headerUnitLabel,
+		);
+	};
 
     return (
         <div className="space-y-6">
@@ -1817,17 +1898,15 @@ export default function ModelPricingClient({
                                 viewportRef={providerTableViewportRef}
                             >
 								<Table
-									className={cn(
-										"table-auto lg:min-w-full",
-										showCacheReadColumn ? "min-w-[944px]" : "min-w-[888px]",
-									)}
+									className="table-auto lg:min-w-full"
+									style={{ minWidth: providerTableMinWidth }}
 									wrapInContainer={false}
 								>
 									<colgroup>
 										<col className="w-72" />
-										<col className="w-24" />
-										<col className="w-24" />
-										{showCacheReadColumn ? <col className="w-32" /> : null}
+										{visiblePriceColumns.map((column) => (
+											<col key={column.key} className="w-28" />
+										))}
 										<col className="w-24" />
 										<col className="w-28" />
 										<col className="w-32" />
@@ -1837,17 +1916,11 @@ export default function ModelPricingClient({
 											<TableHead className="h-8 min-w-[280px] px-3 whitespace-nowrap">
 												{renderTableSortHead("Provider", "provider", "left")}
 											</TableHead>
-											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
-												{renderTableSortHead("Input $/M", "input")}
-											</TableHead>
-											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
-												{renderTableSortHead("Output $/M", "output")}
-											</TableHead>
-											{showCacheReadColumn ? (
-												<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
-													{renderTableSortHead("Cache Read $/M", "cache_read")}
+											{visiblePriceColumns.map((column) => (
+												<TableHead key={column.key} className="h-8 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
+													{renderTablePriceHead(column)}
 												</TableHead>
-											) : null}
+											))}
 											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
 												{renderTableSortHead("Latency", "latency")}
 											</TableHead>
@@ -1872,12 +1945,12 @@ export default function ModelPricingClient({
 											(activeInspectorSelection.serviceTier ?? getProviderDefaultPlan(prov)) === plan;
 
                                             const row = !isPrimary ? (
-												<ProviderServiceTierRow
-													key={`${providerId}-${plan}`}
-													provider={prov}
-													plan={plan}
-													pricingTimeMs={pricingTimeMs}
-													showCacheReadColumn={showCacheReadColumn}
+											<ProviderServiceTierRow
+												key={`${providerId}-${plan}`}
+												provider={prov}
+												plan={plan}
+												pricingTimeMs={pricingTimeMs}
+												priceColumns={visiblePriceColumns}
 													navigationProviderIds={visibleProviders.map(
 														(candidate) => candidate.provider.api_provider_id,
 													)}
@@ -1901,24 +1974,24 @@ export default function ModelPricingClient({
 														getProviderRuntimeStats(liveRuntimeStats, providerId, serviceTier) ?? null,
 													]),
 												)}
-												routingStatus={routingHealth[providerId] ?? null}
-												pricingTimeMs={pricingTimeMs}
-												variantLabels={providerVariantLabelsById.get(providerId) ?? null}
-												showCacheReadColumn={showCacheReadColumn}
-													isLastVisible={index === displayedOfferings.length - 1}
-													isSummaryActive={isActive}
-													serviceTiersExpanded={expandedServiceTierProviderIds.has(providerId)}
-													showServiceTierDisclosureGutter={isGroupedProviderView}
-													onToggleServiceTiers={isGroupedProviderView ? () => toggleServiceTiers(providerId) : undefined}
-												/>
+											routingStatus={routingHealth[providerId] ?? null}
+											pricingTimeMs={pricingTimeMs}
+											variantLabels={providerVariantLabelsById.get(providerId) ?? null}
+											priceColumns={visiblePriceColumns}
+												isLastVisible={index === displayedOfferings.length - 1}
+												isSummaryActive={isActive}
+												serviceTiersExpanded={expandedServiceTierProviderIds.has(providerId)}
+												showServiceTierDisclosureGutter={isGroupedProviderView}
+												onToggleServiceTiers={isGroupedProviderView ? () => toggleServiceTiers(providerId) : undefined}
+											/>
 										);
                                         return (
                                             <React.Fragment key={providerId + "-" + plan}>
                                                 {index === firstVariantIndex ? (
-                                                    <ProviderRouteSeparator colSpan={showCacheReadColumn ? 7 : 6} />
+													<ProviderRouteSeparator colSpan={visiblePriceColumns.length + 4} />
                                                 ) : null}
                                                 {index === firstExternalIndex ? (
-                                                    <ProviderRouteSeparator colSpan={showCacheReadColumn ? 7 : 6} kind="external" />
+													<ProviderRouteSeparator colSpan={visiblePriceColumns.length + 4} kind="external" />
                                                 ) : null}
                                                 {row}
                                             </React.Fragment>

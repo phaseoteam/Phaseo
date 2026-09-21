@@ -57,13 +57,14 @@ import {
 } from "@/components/(data)/model/pricing/ProviderModelParameters";
 import {
 	buildProviderSections,
-	buildProviderTablePriceSummary,
+	buildProviderTablePriceSummaryForColumn,
 	fmtCompact,
 	fmtUSD,
 	ruleMatchCovers,
 	ruleComparisonMatchSignature,
 	type QualityRow,
 	type ResolutionRow,
+	type ProviderTablePriceColumn,
 	type ProviderTablePriceSummary,
 	type TokenTier,
 	type TokenTriple,
@@ -1101,32 +1102,21 @@ function renderTablePriceSummary(
 		return <div className="font-medium tabular-nums text-foreground">--</div>;
 	}
 
-	const detailParts: string[] = [];
-	if (!summary.secondary && summary.primary.label !== "text") {
-		detailParts.push(summary.primary.label);
-	}
-	if (summary.secondary) {
-		detailParts.push(summary.secondary.label);
-	}
-	if (summary.extraCount > 0) {
-		detailParts.push(`+${summary.extraCount} more`);
-	}
-	const detailLabel = detailParts.join(" / ");
-
+	const showVideoVariant = summary.primary.modality === "video";
+	const variantLabels = [summary.primary.label, summary.secondary?.label]
+		.filter((label): label is string => Boolean(label));
 	return (
-		<div className="flex flex-col items-end gap-0.5">
+		<div className="text-right">
 			<div className={cn("font-medium tabular-nums", accentClassName)}>
-				{summary.primary.formattedPrice}
+				{summary.secondary
+					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
+					: summary.primary.formattedPrice}
 			</div>
-			{summary.secondary ? (
-				<div className="truncate text-[10px] text-muted-foreground">
-					<span>{summary.secondary.label}</span>
-					{" "}
-					<span className="tabular-nums">{summary.secondary.formattedPrice}</span>
-					{summary.extraCount > 0 ? <span>{` +${summary.extraCount} more`}</span> : null}
+			{showVideoVariant ? (
+				<div className="max-w-40 truncate text-[10px] font-normal text-muted-foreground">
+					{variantLabels.join(" · ")}
+					{summary.extraCount > 0 ? ` · +${summary.extraCount}` : ""}
 				</div>
-			) : detailLabel ? (
-				<div className="truncate text-[10px] text-muted-foreground">{detailLabel}</div>
 			) : null}
 		</div>
 	);
@@ -1859,7 +1849,7 @@ export default function ProviderCard({
 	pricingTimeMs,
 	displayNameOverride,
 	variantLabels,
-	showCacheReadColumn = false,
+	priceColumns,
 	isLastVisible = false,
 	serviceTiersExpanded = false,
 	showServiceTierDisclosureGutter = false,
@@ -1879,7 +1869,7 @@ export default function ProviderCard({
 	pricingTimeMs: number;
 	displayNameOverride?: string | null;
 	variantLabels?: string[] | null;
-	showCacheReadColumn?: boolean;
+	priceColumns: ProviderTablePriceColumn[];
 	isLastVisible?: boolean;
 	serviceTiersExpanded?: boolean;
 	showServiceTierDisclosureGutter?: boolean;
@@ -2149,12 +2139,14 @@ export default function ProviderCard({
 	) || Boolean(workspacePolicyBlockedReasons?.length);
 
 	const isFreePlan = selectedPlan === "free";
+	const audioInputs = sec.mediaInputs?.filter((r) => r.mod === "audio") ?? [];
 	const imageInputs = sec.mediaInputs?.filter((r) => r.mod === "image") ?? [];
 	const videoInputs = sec.mediaInputs?.filter((r) => r.mod === "video") ?? [];
 	const upcomingFor = (
 		sectionKey:
 			| "textTokens"
 			| "requests"
+			| "audioInputs"
 			| "imageInputs"
 			| "videoInputs"
 			| "imageTokens"
@@ -2420,6 +2412,7 @@ export default function ProviderCard({
 		!sec.decisionTokens &&
 		!sec.imageGen &&
 		!sec.videoGen &&
+		!audioInputs.length &&
 		!imageInputs.length &&
 		!videoInputs.length &&
 		!sec.requests?.length &&
@@ -2536,11 +2529,12 @@ export default function ProviderCard({
 		return name;
 	})();
 	const logoProviderId = sec.logoProviderId;
-	const tableInputPriceSummary = buildProviderTablePriceSummary(tableSec, "input");
-	const tableOutputPriceSummary = buildProviderTablePriceSummary(tableSec, "output");
-	const tableCacheReadPriceSummary = showCacheReadColumn
-		? buildProviderTablePriceSummary(tableSec, "cached")
-		: null;
+	const tablePriceSummaries = Object.fromEntries(
+		priceColumns.map((column) => [
+			column.key,
+			buildProviderTablePriceSummaryForColumn(tableSec, column),
+		]),
+	) as Record<string, ProviderTablePriceSummary>;
 	const summaryQuantization =
 		typeof quantizationScheme === "string" && quantizationScheme.trim()
 			? quantizationScheme.trim()
@@ -2948,30 +2942,6 @@ export default function ProviderCard({
 		</div>
 	) : null;
 	const additionalMeterSummaries: AdditionalMeterSummary[] = [
-		imageInputs.length > 0
-			? {
-					key: "image-inputs",
-					label: "Image inputs",
-					value: formatPriceRange(imageInputs.map((row) => row.price)),
-					unit:
-						new Set(imageInputs.map((row) => row.unitLabel)).size === 1
-							? imageInputs[0]?.unitLabel ?? "Usage"
-							: "Mixed units",
-					detail: formatCountLabel(new Set(imageInputs.map((row) => row.label)).size, "condition"),
-				}
-			: null,
-		videoInputs.length > 0
-			? {
-					key: "video-inputs",
-					label: "Video inputs",
-					value: formatPriceRange(videoInputs.map((row) => row.price)),
-					unit:
-						new Set(videoInputs.map((row) => row.unitLabel)).size === 1
-							? videoInputs[0]?.unitLabel ?? "Usage"
-							: "Mixed units",
-					detail: formatCountLabel(new Set(videoInputs.map((row) => row.label)).size, "condition"),
-				}
-			: null,
 		sec.otherRules.length > 0
 			? {
 					key: "conditional",
@@ -2982,6 +2952,35 @@ export default function ProviderCard({
 				}
 			: null,
 	].filter((summary): summary is AdditionalMeterSummary => Boolean(summary));
+	const pricingMediaInputContent =
+		!isFreePlan &&
+		(audioInputs.length > 0 ||
+			imageInputs.length > 0 ||
+			videoInputs.length > 0 ||
+			upcomingFor("audioInputs").length > 0 ||
+			upcomingFor("imageInputs").length > 0 ||
+			upcomingFor("videoInputs").length > 0) ? (
+			<div className="space-y-2.5 pt-1">
+				{audioInputs.length > 0 ? (
+					<InputsSection title="Audio Input" rows={audioInputs} comparisonAccent={pricingComparisonAccent} />
+				) : null}
+				{imageInputs.length > 0 ? (
+					<InputsSection title="Image Input" rows={imageInputs} comparisonAccent={pricingComparisonAccent} />
+				) : null}
+				{videoInputs.length > 0 ? (
+					<InputsSection title="Video Input" rows={videoInputs} comparisonAccent={pricingComparisonAccent} />
+				) : null}
+				{upcomingFor("audioInputs").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("audioInputs")} title="Upcoming" compact />
+				) : null}
+				{upcomingFor("imageInputs").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("imageInputs")} title="Upcoming" compact />
+				) : null}
+				{upcomingFor("videoInputs").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("videoInputs")} title="Upcoming" compact />
+				) : null}
+			</div>
+		) : null;
 	const pricingGeneratedOutputContent =
 		!isFreePlan &&
 		(Boolean(sec.imageGen) ||
@@ -3021,10 +3020,6 @@ export default function ProviderCard({
 			upcomingFor("decisionTokens").length > 0 ||
 			(sec.requests?.length ?? 0) > 0 ||
 			upcomingFor("requests").length > 0 ||
-			imageInputs.length > 0 ||
-			upcomingFor("imageInputs").length > 0 ||
-			videoInputs.length > 0 ||
-			upcomingFor("videoInputs").length > 0 ||
 			sec.otherRules.length > 0 ||
 			upcomingFor("other").length > 0) ? (
 			<div className="space-y-2 pt-2">
@@ -3110,26 +3105,6 @@ export default function ProviderCard({
 					) : null}
 					{upcomingFor("requests").length > 0 ? (
 						<UpcomingPricingSection rows={upcomingFor("requests")} title="Upcoming" compact />
-					) : null}
-					{imageInputs.length > 0 ? (
-						<InputsSection
-							title="Image Inputs"
-							rows={imageInputs}
-							comparisonAccent={pricingComparisonAccent}
-						/>
-					) : null}
-					{upcomingFor("imageInputs").length > 0 ? (
-						<UpcomingPricingSection rows={upcomingFor("imageInputs")} title="Upcoming" compact />
-					) : null}
-					{videoInputs.length > 0 ? (
-						<InputsSection
-							title="Video Inputs"
-							rows={videoInputs}
-							comparisonAccent={pricingComparisonAccent}
-						/>
-					) : null}
-					{upcomingFor("videoInputs").length > 0 ? (
-						<UpcomingPricingSection rows={upcomingFor("videoInputs")} title="Upcoming" compact />
 					) : null}
 					{sec.otherRules.length > 0 ? (
 						<div>
@@ -3415,14 +3390,21 @@ export default function ProviderCard({
 						</div>
 					</div>
 				</TableCell>
-				{isCustomerManagedPricing ? <TableCell colSpan={2} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">Customer managed</TableCell> : <>
-					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableInputPriceSummary, tablePlanPriceClass)}</TableCell>
-					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">{renderTablePriceSummary(tableOutputPriceSummary, tablePlanPriceClass)}</TableCell>
-				</>}
-				{showCacheReadColumn && tableCacheReadPriceSummary ? (
-					<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-						{renderTablePriceSummary(tableCacheReadPriceSummary, tablePlanPriceClass)}
-					</TableCell>
+				{priceColumns.length > 0 ? (
+					isCustomerManagedPricing ? (
+						<TableCell colSpan={priceColumns.length} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">
+							Customer managed
+						</TableCell>
+					) : (
+						priceColumns.map((column) => (
+							<TableCell key={column.key} className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+								{renderTablePriceSummary(
+									tablePriceSummaries[column.key] ?? buildProviderTablePriceSummaryForColumn(tableSec, column),
+									tablePlanPriceClass,
+								)}
+							</TableCell>
+						))
+					)
 				) : null}
 				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
 					<div className="font-medium text-foreground">{tablePerformanceMetrics[0].value}</div>
@@ -3444,7 +3426,7 @@ export default function ProviderCard({
 			</TableRow>
 			<TableRow className="h-0 border-0 hover:bg-transparent">
 				<TableCell
-					colSpan={showCacheReadColumn ? 7 : 6}
+					colSpan={priceColumns.length + 4}
 					className="h-0 border-0 p-0"
 				>
 					<ProviderInspectorSheet open={expanded} onOpenChange={handleInspectorOpenChange}>
@@ -3651,6 +3633,7 @@ export default function ProviderCard({
 							) : null}
 						</div>
 						{pricingPrimaryContent}
+						{pricingMediaInputContent}
 						{pricingGeneratedOutputContent}
 						{timeWindowPricingRules.length > 0 ? (
 							<div className="py-3">
