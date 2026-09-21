@@ -124,11 +124,66 @@ test("only offers Agent SDK samples when a request can be converted safely", () 
   expect(agentSdkSupportReason({ endpoint: "/responses", body: { model: "phaseo/free" } }))
     .toBe("Add an input to use the Agent SDK");
   expect(agentSdkSupportReason({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "function" }] } }))
-    .toBe("Remove request tools to create an agent starter");
+    .toBe("Define function tool handlers to create an agent starter");
+  expect(agentSdkSupportReason({ endpoint: "/messages", body: { messages: [{ role: "user", content: "Hello" }], tools: [{ name: "lookup", input_schema: { type: "object" } }] } }))
+    .toBe("Define function tool handlers to create an agent starter");
   expect(agentSdkSupportReason({ endpoint: "/responses", body: { input: [{ role: "assistant", content: "Earlier reply" }, { role: "user", content: "Continue" }] } }))
-    .toBe("Start a new turn to create an agent starter");
+    .toBeNull();
   expect(agentSdkSupportReason({ endpoint: "/responses", body: { input: [{ role: "user", content: [{ type: "input_image", image_url: "data:image/png;base64,abc" }] }] } }))
     .toBe("Use text-only messages to create an agent starter");
+});
+
+test.each([
+  "agent-typescript",
+  "agent-python",
+  "agent-go",
+  "agent-csharp",
+  "agent-java",
+  "agent-php",
+  "agent-ruby",
+  "agent-rust",
+] as const)("uses the latest user turn and explains omitted history in %s", sample => {
+  const request = {
+    endpoint: "/responses",
+    body: {
+      model: "phaseo/free",
+      input: [
+        { role: "user", content: "First question" },
+        { role: "assistant", content: "Earlier reply" },
+        { role: "user", content: "Continue from here" },
+      ],
+    },
+  };
+
+  const code = sdkCode(request, sample);
+  expect(code).toContain("Starts a new agent run from the latest user turn; prior chat messages are not replayed.");
+  expect(code).toContain("Continue from here");
+  expect(code).not.toContain("First question");
+  expect(code).not.toContain("Earlier reply");
+});
+
+test.each([
+  ["agent-typescript", "gatewayTools:"],
+  ["agent-python", "gateway_tools="],
+  ["agent-go", "GatewayTools: gatewayTools"],
+  ["agent-csharp", "GatewayTools ="],
+  ["agent-java", 'Map.of("tools"'],
+  ["agent-php", "gatewayTools:"],
+  ["agent-ruby", "gateway_tools:"],
+  ["agent-rust", ".with_gateway_tools("],
+] as const)("passes managed gateway tools through %s samples", (sample, expected) => {
+  const request = {
+    endpoint: "/responses",
+    body: {
+      model: "phaseo/free",
+      input: "What time is it?",
+      tools: [{ type: "gateway:datetime", parameters: { timezones: ["UTC", "Europe/London"] } }],
+    },
+  };
+
+  expect(agentSdkSupportReason(request)).toBeNull();
+  expect(sdkCode(request, sample)).toContain(expected);
+  expect(sdkCode(request, sample)).toContain("gateway:datetime");
 });
 
 test("normalizes a Responses message into runnable Agent SDK input and instructions", () => {
