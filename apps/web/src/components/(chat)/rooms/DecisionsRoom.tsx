@@ -878,7 +878,10 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 												className="group/message min-w-0 max-w-full"
 											>
 												<MessageContent className="max-w-[min(100%,42rem)] items-end gap-2">
-													<div className="min-w-0 max-w-full rounded-md bg-foreground px-4 py-3 text-sm leading-relaxed text-background shadow-sm">
+													<div
+														data-slot="message-panel"
+														className="min-w-0 max-w-full w-fit rounded-md bg-foreground px-4 py-3 text-sm leading-relaxed text-background shadow-sm"
+													>
 														{editingRunId === run.id ? (
 															<div className="grid gap-3">
 																<Textarea
