@@ -151,9 +151,10 @@ export function DecisionsChatSidebar({
 											render={
 												<SidebarMenuAction
 													showOnHover
+													disabled={!historyLoaded}
 													aria-label={`Open actions for ${conversation.title}`}
 												/>
-										}
+											}
 										>
 											<MoreHorizontal className="h-4 w-4" />
 										</DropdownMenuTrigger>

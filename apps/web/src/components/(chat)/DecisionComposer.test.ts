@@ -49,6 +49,7 @@ describe("DecisionComposer draft helpers", () => {
 			createElement(DecisionComposer, {
 				draft: createDefaultDecisionDraft(),
 				error: null,
+				historyLoaded: true,
 				isSubmitting: false,
 				onDraftChange: () => undefined,
 				onSubmit: () => undefined,
@@ -57,5 +58,23 @@ describe("DecisionComposer draft helpers", () => {
 
 		expect(html).toContain("overflow-y-auto");
 		expect(html).not.toContain("overflow-hidden");
+	});
+
+	it("disables sending until chat history has loaded", () => {
+		const draft = createDefaultDecisionDraft();
+		draft.prompt = "A ready-to-send question";
+		const html = renderToStaticMarkup(
+			createElement(DecisionComposer, {
+				draft,
+				error: null,
+				historyLoaded: false,
+				isSubmitting: false,
+				onDraftChange: () => undefined,
+				onSubmit: () => undefined,
+			}),
+		);
+
+		expect(html).toContain('aria-label="Send decision"');
+		expect(html).toContain("disabled");
 	});
 });

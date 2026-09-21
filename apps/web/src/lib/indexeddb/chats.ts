@@ -280,8 +280,22 @@ async function withStore<T>(
         const tx = db.transaction(storeName, mode);
         const store = tx.objectStore(storeName);
         const request = fn(store);
+        let result: T | undefined;
+        let hasResult = false;
         request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => {
+            result = request.result;
+            hasResult = true;
+        };
+        tx.onerror = () => reject(tx.error ?? new Error("IndexedDB error"));
+        tx.onabort = () => reject(tx.error ?? new Error("IndexedDB transaction aborted"));
+        tx.oncomplete = () => {
+            if (!hasResult) {
+                reject(new Error("IndexedDB request completed without a result."));
+                return;
+            }
+            resolve(result as T);
+        };
     });
 }
 

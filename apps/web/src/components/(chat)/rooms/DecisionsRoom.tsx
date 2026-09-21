@@ -52,22 +52,18 @@ import { useRoomModelSettings } from "@/components/(chat)/rooms/useRoomModelSett
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import {
 	deleteRoomHistory,
-	listRoomHistory,
 	upsertRoomHistory,
 } from "@/lib/indexeddb/chatRoomHistory";
 import {
 	deleteChat,
-	getAllChatTags,
-	getAllChats,
 	normalizeChatTags,
 	upsertChat,
 	upsertChatTags,
 	type ChatTag,
 } from "@/lib/indexeddb/chats";
 import {
-	buildDecisionConversations,
 	createDecisionConversation,
-	fromStoredDecisionRun,
+	loadDecisionConversationHistory,
 	sortDecisionConversations,
 	toStoredDecisionRun,
 	truncateConversationTitle,
@@ -190,7 +186,8 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const initialConversationRef = useRef<DecisionConversation | null>(null);
 	const [chatTags, setChatTags] = useState<ChatTag[]>([]);
 	const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-	const [historyLoaded, setHistoryLoaded] = useState(false);
+	const [loadedHistoryModel, setLoadedHistoryModel] = useState<string | null>(null);
+	const historyLoaded = loadedHistoryModel === requestedModel;
 	const [copiedRunId, setCopiedRunId] = useState<string | null>(null);
 	const [copiedInputRunId, setCopiedInputRunId] = useState<string | null>(null);
 	const [metadataOpenRunId, setMetadataOpenRunId] = useState<string | null>(null);
@@ -234,62 +231,41 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 
 	useEffect(() => {
 		let mounted = true;
-		void Promise.all([
-			listRoomHistory<DecisionHistoryPayload>("decisions"),
-			getAllChats("decisions"),
-			getAllChatTags().catch(() => []),
-		])
-			.then(async ([records, storedConversations, storedTags]) => {
+		void loadDecisionConversationHistory(
+			requestedModel,
+			initialConversationRef.current,
+		)
+			.then(async (loadedHistory) => {
 				if (!mounted) return;
-				const storedRuns = records.map((record) =>
-					fromStoredDecisionRun(record.payload),
-				);
-				let loadedConversations = buildDecisionConversations(
-					storedRuns,
-					storedConversations,
-					requestedModel,
-				);
-				if (loadedConversations.length === 0) {
-					initialConversationRef.current ??=
-						createDecisionConversation(requestedModel);
-					loadedConversations = [initialConversationRef.current];
-				}
-				const storedIds = new Set(
-					storedConversations.map((conversation) => conversation.id),
-				);
-				const newConversations = loadedConversations.filter(
-					(conversation) => !storedIds.has(conversation.id),
-				);
-				await Promise.all(
-					newConversations.map((conversation) =>
-						upsertChat(conversation, "decisions").catch(() => {
-							if (mounted) {
-								setError("A chat could not be saved locally.");
-							}
-						}),
+				initialConversationRef.current = loadedHistory.initialConversation;
+				const saveResults = await Promise.allSettled(
+					loadedHistory.conversationsToPersist.map((conversation) =>
+						upsertChat(conversation, "decisions"),
 					),
 				);
 				if (!mounted) return;
-				setRuns(storedRuns);
-				setConversations(loadedConversations);
-				setChatTags(storedTags);
+				setRuns(loadedHistory.runs);
+				setConversations(loadedHistory.conversations);
+				setChatTags(loadedHistory.tags);
 				const storedActiveId = readActiveDecisionConversationId();
 				const selectedId =
-					loadedConversations.find(
+					loadedHistory.conversations.find(
 						(conversation) => conversation.id === storedActiveId,
-					)?.id ?? loadedConversations[0].id;
+					)?.id ?? loadedHistory.conversations[0]?.id ?? null;
 				setActiveConversationId(selectedId);
-				writeActiveDecisionConversationId(selectedId);
-				setHistoryLoaded(true);
+				if (selectedId) writeActiveDecisionConversationId(selectedId);
+				setLoadedHistoryModel(loadedHistory.complete ? requestedModel : null);
+				if (!loadedHistory.complete) {
+					setError(
+						"Some local chat history could not be loaded. Reload before editing or sending.",
+					);
+				} else if (saveResults.some((result) => result.status === "rejected")) {
+					setError("A chat could not be saved locally.");
+				}
 			})
 			.catch(() => {
 				if (!mounted) return;
-				initialConversationRef.current ??=
-					createDecisionConversation(requestedModel);
-				const initialConversation = initialConversationRef.current;
-				setConversations([initialConversation]);
-				setActiveConversationId(initialConversation.id);
-				setHistoryLoaded(true);
+				setLoadedHistoryModel(null);
 				setError("Local chat history could not be loaded.");
 			});
 		return () => {
@@ -319,12 +295,18 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			.sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
 		setDraft(createDefaultDecisionDraft(latestRun?.draft.mode));
 		resetConversationView();
+		if (!historyLoaded) {
+			setError(
+				"Some local chat history could not be loaded. Reload before editing or sending.",
+			);
+		}
 		persistActiveConversation(conversation.id);
 	}
 
 	async function createNewConversation(
 		initialDraft = createDefaultDecisionDraft(),
 	) {
+		if (!historyLoaded) return;
 		const conversation = createDecisionConversation(model || DEFAULT_MODEL_ID);
 		setConversations((previous) =>
 			sortDecisionConversations([conversation, ...previous]),
@@ -357,6 +339,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	async function deleteConversation(
 		conversation: DecisionConversation,
 	): Promise<boolean> {
+		if (!historyLoaded) return false;
 		const conversationRuns = runs.filter(
 			(run) => run.conversationId === conversation.id,
 		);
@@ -364,13 +347,28 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			setError("Wait for the decision to finish before deleting this chat.");
 			return false;
 		}
-		try {
-			await Promise.all([
-				deleteChat(conversation.id, "decisions"),
-				...conversationRuns.map((run) => deleteRoomHistory(run.id)),
+		const deletionResults = await Promise.allSettled([
+			deleteChat(conversation.id, "decisions"),
+			...conversationRuns.map((run) => deleteRoomHistory(run.id)),
+		]);
+		if (deletionResults.some((result) => result.status === "rejected")) {
+			// Chat metadata and room history live in separate IndexedDB databases,
+			// so restore the snapshot if one database fails after another commits.
+			const currentConversation =
+				conversations.find((entry) => entry.id === conversation.id) ??
+				conversation;
+			const restoreResults = await Promise.allSettled([
+				upsertChat(currentConversation, "decisions"),
+				...conversationRuns.map((run) => persistRun(run)),
 			]);
-		} catch {
-			setError("This chat could not be deleted locally.");
+			const restored = restoreResults.every(
+				(result) => result.status === "fulfilled",
+			);
+			setError(
+				restored
+					? "This chat could not be deleted locally; its saved history was restored."
+					: "This chat could not be deleted completely. Reload to reconcile its local history.",
+			);
 			return false;
 		}
 		const nextRuns = runs.filter(
@@ -396,6 +394,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		conversation: DecisionConversation,
 		title: string,
 	): Promise<boolean> {
+		if (!historyLoaded) return false;
 		const renamedConversation = {
 			...conversation,
 			title: title.trim(),
@@ -425,6 +424,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	}
 
 	async function toggleConversationPin(conversation: DecisionConversation) {
+		if (!historyLoaded) return;
 		const updatedConversation = {
 			...conversation,
 			pinned: !conversation.pinned,
@@ -454,6 +454,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		conversation: DecisionConversation,
 		tags: ChatTag[],
 	): Promise<boolean> {
+		if (!historyLoaded) return false;
 		const normalizedTags = normalizeChatTags(tags).sort((left, right) =>
 			left.name.localeCompare(right.name),
 		);
@@ -483,7 +484,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	}
 
 	async function submit() {
-		if (isSubmitting) return;
+		if (!historyLoaded || isSubmitting) return;
 		setError(null);
 		if (modelSettings.selectedProfile?.enabled === false) {
 			setError("Enable this model in settings before sending a decision.");
@@ -1004,6 +1005,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 						<DecisionComposer
 							draft={draft}
 							error={error}
+							historyLoaded={historyLoaded}
 							isSubmitting={isSubmitting}
 							onDraftChange={setDraft}
 							onSubmit={() => void submit()}

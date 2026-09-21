@@ -3,7 +3,13 @@ import {
 	buildDefaultSystemPrompt,
 	DEFAULT_SETTINGS,
 } from "@/components/(chat)/playground/chat-playground-core";
-import type { ChatThread } from "@/lib/indexeddb/chats";
+import { listRoomHistory } from "@/lib/indexeddb/chatRoomHistory";
+import {
+	getAllChatTags,
+	getAllChats,
+	type ChatTag,
+	type ChatThread,
+} from "@/lib/indexeddb/chats";
 
 export type DecisionRequest = {
 	model: string;
@@ -132,6 +138,55 @@ export function buildDecisionConversations(
 	}
 
 	return sortDecisionConversations(Array.from(conversations.values()));
+}
+
+export type DecisionConversationHistoryLoad = {
+	runs: DecisionRun[];
+	conversations: DecisionConversation[];
+	tags: ChatTag[];
+	conversationsToPersist: DecisionConversation[];
+	initialConversation: DecisionConversation | null;
+	complete: boolean;
+};
+
+export async function loadDecisionConversationHistory(
+	defaultModelId: string,
+	initialConversation: DecisionConversation | null,
+): Promise<DecisionConversationHistoryLoad> {
+	const [historyResult, conversationsResult, tagsResult] =
+		await Promise.allSettled([
+			listRoomHistory<DecisionHistoryPayload>("decisions"),
+			getAllChats("decisions"),
+			getAllChatTags(),
+		]);
+	const historyLoaded = historyResult.status === "fulfilled";
+	const conversationsLoaded = conversationsResult.status === "fulfilled";
+	const runs = (historyLoaded ? historyResult.value : []).map((record) =>
+		fromStoredDecisionRun(record.payload),
+	);
+	const storedConversations = conversationsLoaded
+		? conversationsResult.value
+		: [];
+	let conversations = buildDecisionConversations(
+		runs,
+		storedConversations,
+		defaultModelId,
+	);
+	if (conversations.length === 0 && historyLoaded && conversationsLoaded) {
+		initialConversation ??= createDecisionConversation(defaultModelId);
+		conversations = [initialConversation];
+	}
+	const storedIds = new Set(storedConversations.map((conversation) => conversation.id));
+	return {
+		runs,
+		conversations,
+		tags: tagsResult.status === "fulfilled" ? tagsResult.value : [],
+		conversationsToPersist: conversationsLoaded
+			? conversations.filter((conversation) => !storedIds.has(conversation.id))
+			: [],
+		initialConversation,
+		complete: historyLoaded && conversationsLoaded,
+	};
 }
 
 export function toStoredDecisionRun(run: DecisionRun): DecisionHistoryPayload {
