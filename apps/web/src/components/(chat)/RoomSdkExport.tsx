@@ -19,6 +19,7 @@ import {
   sdkExportStore,
   textProtocolForRequest,
   type SdkLanguage,
+  type SdkRequest,
   type SdkSample,
   type TextProtocol,
 } from "@/lib/chat/sdkExport";
@@ -73,8 +74,9 @@ function IntegrationMark({ language, isAgent }: Pick<Integration, "language" | "
   );
 }
 
-export function RoomSdkExport() {
-  const request = useSyncExternalStore(sdkExportStore.subscribe, sdkExportStore.get, () => null);
+export function RoomSdkExport({ request: requestOverride }: { request?: SdkRequest | null } = {}) {
+  const liveRequest = useSyncExternalStore(sdkExportStore.subscribe, sdkExportStore.get, () => null);
+  const request = requestOverride === undefined ? liveRequest : requestOverride;
   const pathname = usePathname();
   const { preferences } = useDisplayPreferences();
   const [selection, setSelection] = useState<SdkSample>(() =>
