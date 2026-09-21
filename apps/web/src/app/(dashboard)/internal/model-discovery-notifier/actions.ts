@@ -2,12 +2,13 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import {
-	sendDiscordWebhookPayload,
-	type InternalModelNotificationModel,
-} from "@/lib/model-discovery/internalModelDiscordNotifier";
+import type { InternalModelNotificationModel } from "@/lib/model-discovery/internalModelDiscordNotifier";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
-import { fetchAdminCatalogRecord, recordAdminModelAnnouncement } from "@/lib/fetchers/internal/fetchAdminCatalog";
+import {
+	fetchAdminCatalogRecord,
+	sendAdminModelAnnouncement,
+	sendAdminModelAnnouncementTest,
+} from "@/lib/fetchers/internal/fetchAdminCatalog";
 import { buildPublicModelAnnouncementPayload } from "../../../../../../api/src/pipeline/model-discovery/public-model-announcement-discord";
 
 type NotifierTestResult = {
@@ -229,25 +230,7 @@ export async function testInternalModelDiscoveryNotifierAction(
 			};
 		}
 
-		const webhookUrl =
-			trimOrNull(input.webhookUrl) ??
-			trimOrNull(process.env.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC) ??
-			null;
-		if (!webhookUrl) {
-			return {
-				ok: false,
-				message: "Webhook URL missing. Provide one in the form or set DISCORD_WEBHOOK_NEW_MODELS_PUBLIC.",
-				payloadPreview,
-				modelCount: models.length,
-			};
-		}
-
-		await sendDiscordWebhookPayload(webhookUrl, payload, {
-			maxAttempts: 3,
-			timeoutMs: 10_000,
-			retryDelayMs: 750,
-			logger: console,
-		});
+		await sendAdminModelAnnouncementTest(payload, trimOrNull(input.webhookUrl) ?? undefined);
 
 		return {
 			ok: true,
@@ -275,11 +258,6 @@ export async function sendInternalModelAnnouncementAction(
 		const modelId = trimOrNull(rawModelId)?.toLowerCase();
 		if (!modelId || !modelId.includes("/") || !/^[a-z0-9][a-z0-9._:/+@-]*$/.test(modelId)) {
 			return { ok: false, message: "Invalid model ID." };
-		}
-
-		const webhookUrl = trimOrNull(process.env.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC);
-		if (!webhookUrl) {
-			return { ok: false, message: "DISCORD_WEBHOOK_NEW_MODELS_PUBLIC is not configured." };
 		}
 
 		const { row } = await fetchAdminCatalogRecord("model", modelId);
@@ -313,21 +291,9 @@ export async function sendInternalModelAnnouncementAction(
 			maxModelEmbeds: 1,
 			nowIso,
 		});
-		await sendDiscordWebhookPayload(webhookUrl, payload, {
-			maxAttempts: 3,
-			timeoutMs: 10_000,
-			retryDelayMs: 750,
-			logger: console,
-		});
-
-		try {
-			await recordAdminModelAnnouncement(canonicalModelId);
-		} catch (trackingError) {
-			const trackingMessage = trackingError instanceof Error ? trackingError.message : String(trackingError);
-			return {
-				ok: true,
-				message: "Sent the Discord announcement, but could not save its state: " + trackingMessage,
-			};
+		const result = await sendAdminModelAnnouncement(canonicalModelId, payload);
+		if (result.stateRecorded === false) {
+			return { ok: true, message: "Sent the Discord announcement, but could not save its state." };
 		}
 
 		return { ok: true, message: "Sent a Discord announcement for " + modelName + "." };

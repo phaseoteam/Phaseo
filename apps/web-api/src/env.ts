@@ -34,6 +34,7 @@ export type Env = {
 	GATEWAY_INTERNAL_TEST_TOKEN?: string;
 	RESEND_API_KEY?: string;
 	DISCORD_BILLING_WEBHOOK_URL?: string;
+	DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?: string;
 	GITHUB_REPOSITORY?: string;
 	GITHUB_TOKEN?: string;
 	GH_TOKEN?: string;

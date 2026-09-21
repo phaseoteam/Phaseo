@@ -28,6 +28,7 @@ type AnnouncementStateRow = {
 	first_seen_at: string | null;
 	announced_at: string | null;
 	catalogue_status_snapshot: string | null;
+	public_visibility_snapshot: boolean | null;
 };
 
 type PendingAnnouncement = {
@@ -101,7 +102,10 @@ function isNewlyAvailable(
 	if (state.status !== "baseline" && state.status !== "announced") return false;
 	return isPublicModel(model)
 		&& isAvailableCatalogueStatus(model.catalogue_status)
-		&& !isAvailableCatalogueStatus(state.catalogue_status_snapshot);
+		&& (
+			!isAvailableCatalogueStatus(state.catalogue_status_snapshot)
+			|| state.public_visibility_snapshot === false
+		);
 }
 
 function modelPath(modelSlug: string): string {
@@ -148,7 +152,7 @@ async function loadAnnouncementState(): Promise<AnnouncementStateRow[]> {
 	for (let offset = 0; ; offset += PUBLIC_ANNOUNCEMENT_PAGE_SIZE) {
 		const { data, error } = await supabase
 			.from("model_discovery_public_announcements")
-			.select("model_slug,status,attempt_count,first_seen_at,announced_at,catalogue_status_snapshot")
+			.select("model_slug,status,attempt_count,first_seen_at,announced_at,catalogue_status_snapshot,public_visibility_snapshot")
 			.order("model_slug", { ascending: true })
 			.range(offset, offset + PUBLIC_ANNOUNCEMENT_PAGE_SIZE - 1);
 		if (error) throw new Error(error.message || "Failed to load public model announcement state");
@@ -178,6 +182,7 @@ async function insertNewAnnouncementState(
 				? "baseline"
 				: "pending",
 			catalogue_status_snapshot: model.catalogue_status,
+			public_visibility_snapshot: isPublicModel(model),
 			last_run_id: runId,
 			first_seen_at: nowIso,
 			updated_at: nowIso,
@@ -213,6 +218,7 @@ async function promoteAvailableAnnouncementState(
 			.update({
 				status: "pending",
 				catalogue_status_snapshot: "available",
+				public_visibility_snapshot: true,
 				last_run_id: runId,
 				last_error: null,
 				updated_at: nowIso,
@@ -220,6 +226,50 @@ async function promoteAvailableAnnouncementState(
 			.in("model_slug", batch)
 			.in("status", ["baseline", "announced"]);
 		if (error) throw new Error(error.message || "Failed to promote available model announcement state");
+	}
+}
+
+async function persistObservedAnnouncementState(
+	runId: string,
+	models: PublicModelRow[],
+	stateBySlug: Map<string, AnnouncementStateRow>,
+	nowIso: string,
+): Promise<void> {
+	const updates = new Map<string, string[]>();
+	for (const model of models) {
+		const modelSlug = normalizeSlug(model.model_slug);
+		const state = modelSlug ? stateBySlug.get(modelSlug) : undefined;
+		if (!modelSlug || !state || (state.status !== "baseline" && state.status !== "announced")) continue;
+		const catalogueStatus = model.catalogue_status ?? "";
+		const publicVisibility = isPublicModel(model);
+		if (
+			(state.catalogue_status_snapshot ?? "") === catalogueStatus
+			&& state.public_visibility_snapshot === publicVisibility
+		) continue;
+		const key = JSON.stringify([catalogueStatus, publicVisibility]);
+		const modelSlugs = updates.get(key) ?? [];
+		modelSlugs.push(modelSlug);
+		updates.set(key, modelSlugs);
+	}
+	if (updates.size === 0) return;
+
+	const supabase = getSupabaseAdmin();
+	for (const [key, modelSlugs] of updates) {
+		const [catalogueStatus, publicVisibility] = JSON.parse(key) as [string, boolean];
+		for (let offset = 0; offset < modelSlugs.length; offset += PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE) {
+			const batch = modelSlugs.slice(offset, offset + PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE);
+			const { error } = await supabase
+				.from("model_discovery_public_announcements")
+				.update({
+					catalogue_status_snapshot: catalogueStatus || null,
+					public_visibility_snapshot: publicVisibility,
+					last_run_id: runId,
+					updated_at: nowIso,
+				})
+				.in("model_slug", batch)
+				.in("status", ["baseline", "announced"]);
+			if (error) throw new Error(error.message || "Failed to persist public model announcement observation");
+		}
 	}
 }
 
@@ -367,6 +417,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 		summary.detected = newModels.length + newlyAvailableModels.length;
 		summary.skipped = skippedModels.length;
 		await insertNewAnnouncementState(args.runId, [...newModels, ...skippedModels], nowIso);
+		await persistObservedAnnouncementState(args.runId, models, stateBySlug, nowIso);
 		await promoteAvailableAnnouncementState(args.runId, newlyAvailableModels, nowIso);
 
 		const newModelSlugs = new Set(

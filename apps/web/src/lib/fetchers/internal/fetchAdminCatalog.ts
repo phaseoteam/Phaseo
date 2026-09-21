@@ -45,6 +45,20 @@ export function recordAdminModelAnnouncement(modelId: string) {
 	return postAdminCatalogPath<{ success: boolean }>("/api/account/models/catalog/model-announcements", { modelId });
 }
 
+export function sendAdminModelAnnouncement(modelId: string, payload: unknown, webhookUrl?: string) {
+	return postAdminCatalogPath<{ success: boolean; stateRecorded?: boolean; message?: string }>(
+		"/api/account/models/catalog/model-announcements",
+		{ modelId, payload, webhookUrl },
+	);
+}
+
+export function sendAdminModelAnnouncementTest(payload: unknown, webhookUrl?: string) {
+	return postAdminCatalogPath<{ success: boolean }>(
+		"/api/account/models/catalog/model-announcements/test",
+		{ payload, webhookUrl },
+	);
+}
+
 export function fetchAdminModelFormOptions() {
 	return fetchAdminCatalogPath<{ organisations: any[]; providers: any[]; families: any[]; benchmarks: any[]; previousModels: any[]; subscriptionPlans: any[] }>("/api/account/models/catalog/model-form-options");
 }

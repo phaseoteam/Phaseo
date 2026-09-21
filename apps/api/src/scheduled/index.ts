@@ -177,8 +177,6 @@ async function handleModelDiscoveryScheduledEvent(event: ScheduledController, en
 }
 
 async function handlePublicModelAnnouncementsScheduledEvent(env: GatewayBindings): Promise<void> {
-	if (!toBool(env.MODEL_DISCOVERY_ENABLED, true)) return;
-
 	configureRuntime(env);
 	try {
 		const summary = await runPublicModelAnnouncementCheck({
