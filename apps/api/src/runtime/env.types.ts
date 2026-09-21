@@ -246,6 +246,7 @@ export type GatewayBindings = {
     BFL_POLL_TIMEOUT_MS?: string;
     XIAOMI_MIMO_API_KEY?: string;
     XIAOMI_MIMO_BASE_URL?: string;
+    XIAOMI_MIMO_BATCH_BASE_URL?: string;
     NOVITA_API_KEY?: string;
     NOVITA_BASE_URL?: string;
     PARALLEL_API_KEY?: string;

@@ -66,6 +66,8 @@ import {
 	fetchProviderFileText,
 	normalizeProviderBatchPayload as normalizeProviderBatchPayloadShared,
 	parseProviderBatchInputEntries,
+	XIAOMI_BATCH_FILE_MAX_BYTES,
+	XIAOMI_BATCH_PROVIDER_ID,
 } from "@core/batch-provider-adapters";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
@@ -1957,7 +1959,11 @@ async function handleCreate(req: Request) {
 				await fetchProviderFileText(
 					providerId,
 					directInputFileId,
-					providerId === MOONSHOT_PROVIDER_ID ? MAX_MOONSHOT_BATCH_FILE_BYTES : undefined,
+					providerId === MOONSHOT_PROVIDER_ID
+						? MAX_MOONSHOT_BATCH_FILE_BYTES
+						: providerId === XIAOMI_BATCH_PROVIDER_ID
+							? XIAOMI_BATCH_FILE_MAX_BYTES
+							: undefined,
 					{
 						workspaceId: auth.workspaceId,
 						keySource: ownedInputFile?.keySource,

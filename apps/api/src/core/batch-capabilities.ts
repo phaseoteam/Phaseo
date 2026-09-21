@@ -226,7 +226,7 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 		status: "active",
 		previewReadiness: "validated",
 		reconciliationMode: "polling",
-		submissionRecovery: "metadata_lookup",
+		submissionRecovery: "manual_review",
 		endpoints: [
 			{ endpoint: "/v1/chat/completions", mode: "native" },
 			{ endpoint: "/v1/responses", mode: "native" },

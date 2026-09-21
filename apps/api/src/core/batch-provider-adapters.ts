@@ -20,6 +20,7 @@ export const X_AI_BATCH_PROVIDER_ID = "x-ai";
 export const PARASAIL_BATCH_PROVIDER_ID = "parasail";
 export const OVHCLOUD_BATCH_PROVIDER_ID = "ovhcloud";
 export const XIAOMI_BATCH_PROVIDER_ID = "xiaomi";
+export const XIAOMI_BATCH_FILE_MAX_BYTES = 128 * 1024 * 1024;
 export const JSON_BATCH_CONTENT_TYPE = "application/json";
 export const FILE_BACKED_JSONL_BATCH_PROVIDERS = new Set(["openai", "groq", "together", "alibaba-cloud", "moonshotai", "parasail", "ovhcloud", XIAOMI_BATCH_PROVIDER_ID]);
 const MAX_BATCH_RESULT_ENTRIES = 50_000;
