@@ -53,6 +53,7 @@ function Button({
   }) {
   const sharedProps = {
     "data-slot": "button",
+    "data-size": size,
     className: cn(buttonVariants({ variant, size, className })),
     nativeButton: asChild ? false : nativeButton,
     render: renderAsChild(asChild, children),

@@ -23,6 +23,7 @@ import {
 	XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import {
 	ProviderInspectorSheet,
@@ -1071,6 +1072,8 @@ function formatPricingWindowRange(
 	window: NonNullable<ProviderPricing["pricing_rules"][number]["time_windows"]>[number],
 	mode: PricingTimezoneMode,
 	now: Date,
+	formatDateParts: ReturnType<typeof useDisplayFormatters>["dateParts"],
+	formatTime: ReturnType<typeof useDisplayFormatters>["time"],
 ): string {
 	if (mode === "utc") return `${window.start_time}–${window.end_time} UTC`;
 	const start = parseUtcClockMinutes(window.start_time);
@@ -1084,9 +1087,8 @@ function formatPricingWindowRange(
 		if (allowedDays && !allowedDays.has(PRICING_UTC_DAY_KEYS[candidateDay.getUTCDay()])) continue;
 		const startAt = new Date(candidateDay.getTime() + start * 60_000);
 		const endAt = new Date(candidateDay.getTime() + end * 60_000 + (end <= start ? 86_400_000 : 0));
-		const weekday = new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(startAt);
-		const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
-		return `${weekday} ${timeFormatter.format(startAt)}–${timeFormatter.format(endAt)}`;
+		const weekday = formatDateParts(startAt, { weekday: "short" });
+		return `${weekday} ${formatTime(startAt)}–${formatTime(endAt)}`;
 	}
 	return `${window.start_time}–${window.end_time} UTC`;
 }
@@ -1475,14 +1477,11 @@ function formatPlanMultiplierLabel(value: DerivedPlanMultiplier | null): string 
 	return `${formatMultiplierValue(value.multiplier)}x`;
 }
 
-function formatLeavingDate(value: string, now: Date): string {
-	const to = new Date(value);
-	const includeYear = to.getFullYear() !== now.getFullYear();
-	return to.toLocaleDateString("en-GB", {
-		day: "2-digit",
-		month: "long",
-		...(includeYear ? { year: "numeric" as const } : {}),
-	});
+function formatLeavingDate(
+	value: string,
+	formatCalendarDate: ReturnType<typeof useDisplayFormatters>["calendarDate"]
+): string {
+	return formatCalendarDate(value);
 }
 
 function parseRuleConditionValues(value: unknown): string[] {
@@ -1887,6 +1886,7 @@ export default function ProviderCard({
 	onToggleServiceTiers?: () => void;
 	isSummaryActive?: boolean;
 }) {
+	const format = useDisplayFormatters();
 	const [selectedPlan, setSelectedPlan] = useState(defaultPlan);
 	const [expanded, setExpanded] = useState(false);
 	const reduceMotion = useReducedMotion();
@@ -2101,7 +2101,7 @@ export default function ProviderCard({
 	const routingHealthSummary = getRoutingHealthSummary(routingStatus);
 	const statusDetail =
 		statusKey === "active" && leavingSoonProviderModel?.effective_to
-			? `${statusMeta.description} Provider availability ends on ${formatLeavingDate(leavingSoonProviderModel.effective_to, now)}`
+			? `${statusMeta.description} Provider availability ends on ${formatLeavingDate(leavingSoonProviderModel.effective_to, format.calendarDate)}`
 			: statusMeta.description;
 	const isComingSoonProvider = statusKey === "coming_soon";
 	const isInternalTestingProvider = statusKey === "internal_testing";
@@ -2138,7 +2138,7 @@ export default function ProviderCard({
 	const tableStatusLabel = tableStatusMeta.label;
 	const tableStatusDetail =
 		tableStatusKey === "active" && tableLeavingSoonProviderModel?.effective_to
-			? `${tableStatusMeta.description} Provider availability ends on ${formatLeavingDate(tableLeavingSoonProviderModel.effective_to, now)}`
+			? `${tableStatusMeta.description} Provider availability ends on ${formatLeavingDate(tableLeavingSoonProviderModel.effective_to, format.calendarDate)}`
 			: tableStatusMeta.description;
 	const privacyReasonMeta = (privacyIgnoredReasons ?? []).map((reason) => ({
 		reason,
@@ -3701,7 +3701,13 @@ export default function ProviderCard({
 										<div className="mt-1 space-y-0.5 text-[11px] tabular-nums text-muted-foreground">
 											{representativePricingWindows.map((window, index) => (
 												<div key={`${window.start_time}-${window.end_time}-${index}`}>
-													{formatPricingWindowRange(window, pricingTimezoneMode, now)}
+											{formatPricingWindowRange(
+												window,
+												pricingTimezoneMode,
+												now,
+												format.dateParts,
+												format.time
+											)}
 												</div>
 											))}
 										</div>

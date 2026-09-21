@@ -5,6 +5,7 @@ import { Pause, Play, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const sampleTokens = [
 	"Lorem", "ipsum", "dolor", "sit", "amet,", "consectetur", "adipiscing", "elit.",
@@ -28,6 +29,7 @@ const lanes = [
 const windowSize = 72;
 
 export default function TokenSpeedSimulation() {
+	const format = useDisplayFormatters();
 	const [elapsed, setElapsed] = useState(0);
 	const [playing, setPlaying] = useState(false);
 	const [isVisible, setIsVisible] = useState(false);
@@ -104,7 +106,9 @@ export default function TokenSpeedSimulation() {
 						<div key={lane.name} className="grid gap-4 px-5 py-6 sm:grid-cols-[9rem_minmax(0,1fr)]">
 							<div>
 								<div className="flex items-center gap-2"><span className={`size-2 rounded-full ${lane.color}`} /><p className="text-sm font-medium">{lane.name}</p></div>
-								<p className="mt-1 pl-4 font-mono text-xs text-muted-foreground">{lane.speed}</p>
+								<p className="mt-1 pl-4 font-mono text-xs text-muted-foreground">
+									{format.number(lane.rate)} tokens/s
+								</p>
 							</div>
 							<StreamingOutput
 								laneName={lane.name}
@@ -119,7 +123,12 @@ export default function TokenSpeedSimulation() {
 
 			<div className="flex items-center justify-between border-t border-border/70 bg-muted/20 px-5 py-2 font-mono text-xs text-muted-foreground">
 				<span>{playing ? "Streaming continuously" : "Playback paused"}</span>
-				<span>{(elapsed / 1000).toFixed(1)} seconds</span>
+				<span>
+					{format.number(elapsed / 1000, {
+						minimumFractionDigits: 1,
+						maximumFractionDigits: 1,
+					})} seconds
+				</span>
 			</div>
 		</div>
 	);

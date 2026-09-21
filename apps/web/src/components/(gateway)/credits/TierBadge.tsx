@@ -8,6 +8,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ArrowUpRight } from "lucide-react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
 
@@ -36,6 +37,13 @@ export function TierBadge({
 	remainingFormatted,
 	topTier = false,
 }: TierBadgeProps) {
+	const format = useDisplayFormatters();
+	const percent = (value: number) =>
+		format.number(value, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			notation: "standard",
+		});
 	const hasSavings = savingsPoints > 0;
 	const displayTierName = HIDE_ENTERPRISE_REFERENCES ? "Standard" : tierName;
 	const showNextTierHint =
@@ -52,7 +60,7 @@ export function TierBadge({
 						variant="secondary"
 						className="flex items-center gap-1 rounded-full bg-white/70 px-2 py-0 text-[11px] text-indigo-800 shadow-sm dark:bg-zinc-900/70 dark:text-indigo-200"
 					>
-						{feePct.toFixed(1)}%
+						{percent(feePct)}%
 						<ArrowUpRight className="h-3 w-3" aria-hidden />
 					</Badge>
 				</Link>
@@ -65,9 +73,9 @@ export function TierBadge({
 							Current tier: {displayTierName}
 						</div>
 						<div className="text-xs text-muted-foreground">
-							Credit top-up fee: {feePct.toFixed(1)}%{" "}
+							Credit top-up fee: {percent(feePct)}%{" "}
 							{hasSavings
-								? `(save ${savingsPoints.toFixed(1)}% vs Basic)`
+								? `(save ${percent(savingsPoints)}% vs Basic)`
 								: ""}
 						</div>
 					</div>
@@ -97,9 +105,9 @@ export function TierBadge({
 									{nextFeePct !== undefined && nextFeePct !== null ? (
 										<>
 											{" "}
-											({nextFeePct.toFixed(1)}% top-up fee
+											({percent(nextFeePct)}% top-up fee
 											{nextDiscountDelta
-												? `, save ${nextDiscountDelta.toFixed(1)}%`
+												? `, save ${percent(nextDiscountDelta)}%`
 												: ""}
 											)
 										</>

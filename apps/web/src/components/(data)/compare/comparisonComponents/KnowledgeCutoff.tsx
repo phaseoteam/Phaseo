@@ -1,4 +1,7 @@
+"use client";
+
 import * as React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Card,
 	CardHeader,
@@ -18,17 +21,6 @@ function getMonthDiff(date1: Date, date2: Date) {
 	return years * 12 + months;
 }
 
-function formatDate(dateStr: string | null | undefined) {
-	if (!dateStr) return "-";
-	const date = new Date(dateStr);
-	if (isNaN(date.getTime())) return "-";
-	return date.toLocaleDateString("en-GB", {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-	});
-}
-
 function positionStyle(idx: number, total: number): React.CSSProperties {
 	if (total <= 1) {
 		return { left: "50%", transform: "translateX(-50%)" };
@@ -44,6 +36,8 @@ export default function KnowledgeCutoffTimeline({
 }: {
 	selectedModels: ExtendedModel[];
 }) {
+	const format = useDisplayFormatters();
+	const formatDate = (value: string | null | undefined) => format.calendarDate(value);
 	const modelsWithCutoff = selectedModels.filter((m) => m.knowledge_cutoff);
 	if (modelsWithCutoff.length < 1) return null;
 
@@ -289,4 +283,3 @@ export default function KnowledgeCutoffTimeline({
 		</section>
 	);
 }
-

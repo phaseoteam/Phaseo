@@ -5,13 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BlogRecentPosts } from "./BlogRecentPosts";
 import {
-	formatAnnouncementDate,
 	formatAnnouncementReadingTime,
 	getAnnouncementPosts,
 	isAnnouncementPublished,
 	type AnnouncementCategory,
 	type AnnouncementSummary,
 } from "@/lib/content/announcements";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
 import { buildMetadata } from "@/lib/seo";
 import { canPreviewFutureBlogPosts } from "@/lib/flags/blogPreview";
@@ -119,7 +119,7 @@ function PostImage({
 }
 
 function PostDate({ post }: { post: AnnouncementSummary }) {
-	return <span>{formatAnnouncementDate(post.publishedAt)}</span>;
+	return <span><DisplayCalendarDate value={post.publishedAt} /></span>;
 }
 
 function PinnedPostCard({ post }: { post: AnnouncementSummary }) {
@@ -192,11 +192,9 @@ export default async function AnnouncementsPage({
 		coverImage: post.coverImage,
 		categoryLabel: categoryLabel(post.category),
 		isPreview: isPreviewPost(post),
-		metaParts: [
-			post.author,
-			formatAnnouncementDate(post.publishedAt),
-			formatAnnouncementReadingTime(post.readingTimeMinutes),
-		].filter((part): part is string => Boolean(part)),
+		author: post.author,
+		publishedAt: post.publishedAt,
+		readingTimeLabel: formatAnnouncementReadingTime(post.readingTimeMinutes),
 	}));
 
 	return (

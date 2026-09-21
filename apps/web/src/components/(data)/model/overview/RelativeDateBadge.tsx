@@ -11,6 +11,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -66,7 +67,7 @@ export default function RelativeDateBadge({
 					</p>
 					<p className="text-sm font-semibold">{relativeDate.detailedLabel}</p>
 					<p className="text-xs text-muted-foreground">
-						{relativeDate.totalDays.toLocaleString()} total day
+						<DisplayNumber value={relativeDate.totalDays} /> total day
 						{relativeDate.totalDays === 1 ? "" : "s"}
 						{relativeDate.dayDifference < 0
 							? " elapsed"

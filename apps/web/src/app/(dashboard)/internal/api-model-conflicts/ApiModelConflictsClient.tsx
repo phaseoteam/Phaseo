@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { AlertTriangle, CheckCircle2, GitCompare, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,15 +37,11 @@ type ApiModelConflictsClientProps = {
 	snapshot: ApiModelConflictsSnapshot;
 };
 
-function formatTimestamp(value: string): string {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleString();
-}
-
 export default function ApiModelConflictsClient({
 	snapshot,
 }: ApiModelConflictsClientProps) {
+	const format = useDisplayFormatters();
+	const formatTimestamp = format.dateTime;
 	const [query, setQuery] = useState("");
 	const [providerFilter, setProviderFilter] = useState<string>("all");
 	const [conflictsOnly, setConflictsOnly] = useState(false);

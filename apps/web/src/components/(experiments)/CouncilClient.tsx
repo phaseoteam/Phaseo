@@ -2,6 +2,7 @@
 
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useRouter } from "next/navigation";
 import {
 	AlertCircle,
@@ -221,19 +222,6 @@ function pickLogoId(organisationId: string | null, providerId: string) {
 		if (resolved.src) return organisationId;
 	}
 	return providerId;
-}
-
-function formatRunTime(iso: string) {
-	try {
-		return new Date(iso).toLocaleString(undefined, {
-			month: "short",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-	} catch {
-		return iso;
-	}
 }
 
 function extractOutputTokens(payload: any): number | null {
@@ -789,6 +777,8 @@ export default function CouncilClient({
 	initialSelectedRunId = null,
 	routeBasePath = "/experiments/council",
 }: CouncilClientProps) {
+	const format = useDisplayFormatters();
+	const formatRunTime = format.dateTime;
 	const router = useRouter();
 	const initialAuth = useInitialChatAuth();
 	const [dayPeriod, setDayPeriod] = useState("Morning");
@@ -2182,7 +2172,7 @@ export default function CouncilClient({
 											</div>
 										</div>
 										<div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-											{displayStatus(selectedRun.status)} - {successfulSourceCount} complete - {failedSourceCount} failed - {totalSourceOutputTokens.toLocaleString()} output tokens
+											{displayStatus(selectedRun.status)} - {format.number(successfulSourceCount)} complete - {format.number(failedSourceCount)} failed - {format.number(totalSourceOutputTokens)} output tokens
 										</div>
 										<div className="space-y-2">
 											{selectedRun.modelSlugs.map((modelId) => {
@@ -2198,7 +2188,7 @@ export default function CouncilClient({
 													? "Running"
 													: isCompleted
 														? outputTokens !== null
-															? `Complete (${outputTokens.toLocaleString()} tokens, ${((result?.latency_ms ?? 0) / 1000).toFixed(1)}s)`
+													? `Complete (${format.number(outputTokens)} tokens, ${format.number((result?.latency_ms ?? 0) / 1000, { maximumFractionDigits: 1, notation: "standard" })}s)`
 															: `Complete (${((result?.latency_ms ?? 0) / 1000).toFixed(1)}s)`
 														: isFailed
 															? "Failed"
@@ -2955,7 +2945,7 @@ export default function CouncilClient({
 								</ProviderInspectorSheetTitle>
 								<ProviderInspectorSheetDescription>
 									{sourceViewResult?.status === "completed"
-										? `${sourceViewResult.output_tokens?.toLocaleString() ?? "—"} output tokens · ${((sourceViewResult.latency_ms ?? 0) / 1000).toFixed(1)}s`
+										? `${sourceViewResult.output_tokens != null ? format.number(sourceViewResult.output_tokens) : "—"} output tokens · ${format.number((sourceViewResult.latency_ms ?? 0) / 1000, { maximumFractionDigits: 1, notation: "standard" })}s`
 										: sourceViewResult?.status === "failed"
 											? "Generation failed"
 											: "Generating response…"}

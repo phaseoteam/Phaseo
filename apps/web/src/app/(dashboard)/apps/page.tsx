@@ -17,6 +17,7 @@ import {
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import { getPublicAppPath } from "@/lib/apps/publicAppPath";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const TOP_APPS_QUERY_LIMIT = 100;
 const MOST_POPULAR_LIMIT = 4;
@@ -60,15 +61,6 @@ export const metadata: Metadata = buildMetadata({
 	],
 	robots: { index: false, follow: true },
 });
-
-function formatCompactNumber(value: number): string {
-	if (!Number.isFinite(value)) return "0";
-	if (value >= 1e12) return `${(value / 1e12).toFixed(1)}T`;
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-	return value.toLocaleString();
-}
 
 function formatPercent(value: number | null): string {
 	if (value == null || !Number.isFinite(value)) return "New";
@@ -204,11 +196,11 @@ function PopularAppRow({
 			/>
 			<div className="min-w-0 flex-1">
 				<p className="truncate text-sm font-semibold group-hover:underline group-hover:underline-offset-4">{app.appName}</p>
-				<p className="mt-0.5 text-xs text-muted-foreground">{formatCompactNumber(app.requests)} requests</p>
+				<p className="mt-0.5 text-xs text-muted-foreground"><DisplayNumber value={app.requests} options={{ maximumFractionDigits: 1 }} /> requests</p>
 				<AppCategoryTags categoryCsv={app.appCategory} className="mt-1.5" />
 			</div>
 			<div className="shrink-0 text-right">
-				<p className="text-base font-semibold tabular-nums tracking-tight sm:text-lg">{formatCompactNumber(app.tokens)}</p>
+				<p className="text-base font-semibold tabular-nums tracking-tight sm:text-lg"><DisplayNumber value={app.tokens} options={{ maximumFractionDigits: 1 }} /></p>
 				<p className="text-[11px] text-muted-foreground">tokens · 4 weeks</p>
 				<span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
 					<TrendingUp className="size-3" />
@@ -342,7 +334,7 @@ export default async function AppsPage() {
 								</div>
 								<div className="text-right">
 									<div className="text-sm font-semibold tabular-nums text-foreground">
-										{formatCompactNumber(app.currentWeekTokens)}
+										<DisplayNumber value={app.currentWeekTokens} options={{ maximumFractionDigits: 1 }} />
 									</div>
 									<div className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
 										<TrendingUp className="h-3 w-3" />

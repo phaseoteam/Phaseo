@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface TopModelRow {
 	modelId: string;
@@ -35,12 +36,13 @@ export default function InsightsSection({
 	mostExpensive,
 	fastestModel,
 }: InsightsSectionProps) {
+	const format = useDisplayFormatters();
 	const quickStats = [
 		{
 			icon: Target,
 			title: "Top Provider",
 			value: topProvider?.name || "No data",
-			subtitle: topProvider ? `${topProvider.requests.toLocaleString()} requests` : null,
+			subtitle: topProvider ? `${format.number(topProvider.requests)} requests` : null,
 			color: "text-blue-600",
 			bgColor: "bg-blue-50",
 		},
@@ -151,7 +153,7 @@ export default function InsightsSection({
 												<ArrowUpRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
 											</div>
 											<div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-												<span>{model.requests.toLocaleString()} requests</span>
+												<span>{format.number(model.requests)} requests</span>
 												{model.avgLatency && (
 													<span>{Math.round(model.avgLatency)}ms avg</span>
 												)}

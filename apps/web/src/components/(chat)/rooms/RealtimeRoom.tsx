@@ -4,6 +4,7 @@ import { chatLocalStorage } from "@/lib/chat/userStorage";
 import NumberFlow from "@number-flow/react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { ReactNode } from "react";
 import {
 	AlertTriangle,
@@ -744,10 +745,6 @@ function formatDuration(ms: number): string {
 	return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
-function formatElapsedSeconds(ms: number): string {
-	return `${Math.floor(ms / 1000).toLocaleString("en-US")}s`;
-}
-
 function formatDiagnosticDetail(value: unknown): string | undefined {
 	if (value == null) return undefined;
 	if (typeof value === "string") return value;
@@ -965,6 +962,7 @@ function RealtimeModelSelector({
 	onSelectModel: (modelId: string) => void;
 	disabled: boolean;
 }) {
+	const format = useDisplayFormatters();
 	const [open, setOpen] = useState(false);
 	const [searchValue, setSearchValue] = useState("");
 	const normalizedSearch = searchValue.trim().toLowerCase();
@@ -988,8 +986,11 @@ function RealtimeModelSelector({
 		() =>
 			normalizedSearch
 				? [{ heading: `Results (${filteredModels.length})`, items: filteredModels }]
-				: groupModelsByReleaseMonth(filteredModels),
-		[filteredModels, normalizedSearch],
+				: groupModelsByReleaseMonth(
+					filteredModels,
+					(date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
+				),
+		[filteredModels, format, normalizedSearch],
 	);
 
 	const handleOpenChange = (nextOpen: boolean) => {
@@ -1374,6 +1375,9 @@ type RealtimeRoomProps = {
 };
 
 export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
+	const format = useDisplayFormatters();
+	const formatElapsedSeconds = (ms: number) =>
+		`${format.number(Math.floor(ms / 1000), { notation: "standard" })}s`;
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const realtimeModels = useMemo(() => buildRealtimeModels(models), [models]);
 	const suggestedModels = useMemo(() => {
@@ -1509,7 +1513,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			setDiagnosticLogs((logs) => [
 				{
 					id: crypto.randomUUID(),
-					at: new Date().toLocaleTimeString(),
+					at: format.time(new Date(), { includeSeconds: true }),
 					level,
 					message,
 					detail: SHOW_REALTIME_DIAGNOSTIC_DETAILS
@@ -3003,7 +3007,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		setDiagnosticLogs([
 			{
 				id: crypto.randomUUID(),
-				at: new Date().toLocaleTimeString(),
+				at: format.time(new Date(), { includeSeconds: true }),
 				level: "info",
 				message: "Starting realtime session",
 			},
@@ -3078,6 +3082,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		startRelay,
 		startXAI,
 		ensureMicrophoneAccess,
+		format,
 		selectedModel,
 		status,
 		stopSession,

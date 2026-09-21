@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import ExpiryDateTimeField from "./ExpiryDateTimeField";
 import CreditGrantEditDialog from "./CreditGrantEditDialog";
+import { DisplayDateTime } from "@/components/display/DisplayValue";
 
 export const metadata = {
 	title: "Internal Credits",
@@ -47,13 +48,6 @@ function formatUsdFromNanosBigInt(nanos: bigint): string {
 	return `${sign}$${dollars.toLocaleString("en-US")}.${cents
 		.toString()
 		.padStart(2, "0")}`;
-}
-
-function formatDate(value: string | null | undefined): string {
-	if (!value) return "-";
-	const date = new Date(value);
-	if (!Number.isFinite(date.getTime())) return "-";
-	return date.toLocaleString();
 }
 
 export default async function InternalCreditsPage() {
@@ -187,9 +181,9 @@ export default async function InternalCreditsPage() {
 										<td className="py-2 pr-4">
 											{Number(grant.redemptions_count ?? 0)} / {Number(grant.max_redemptions ?? 0)}
 										</td>
-										<td className="py-2 pr-4">{formatDate(grant.expires_at)}</td>
+										<td className="py-2 pr-4"><DisplayDateTime value={grant.expires_at} /></td>
 										<td className="py-2 pr-4">{isActive ? "Active" : "Inactive"}</td>
-										<td className="py-2 pr-4">{formatDate(grant.created_at)}</td>
+										<td className="py-2 pr-4"><DisplayDateTime value={grant.created_at} /></td>
 										<td className="py-2 pr-4">{String(grant.note ?? "-")}</td>
 										<td className="py-2">
 											<CreditGrantEditDialog

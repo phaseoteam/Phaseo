@@ -2,22 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type CreditsBalanceResponse = {
 	initialBalance?: number | null;
 };
 
-function formatCreditsBalance(value: number | null) {
+function formatCreditsBalance(
+	value: number | null,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"]
+) {
 	if (value === null || !Number.isFinite(value)) return null;
-	return new Intl.NumberFormat("en-US", {
+	return formatNumber(value, {
 		style: "currency",
 		currency: "USD",
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
-	}).format(value);
+		notation: "standard",
+	});
 }
 
 export function useChatCredits(userId?: string) {
+	const format = useDisplayFormatters();
 	const [balance, setBalance] = useState<number | null>(null);
 	const [loading, setLoading] = useState(false);
 
@@ -77,7 +83,7 @@ export function useChatCredits(userId?: string) {
 	}, [userId]);
 
 	return {
-		creditsLabel: formatCreditsBalance(balance),
+		creditsLabel: formatCreditsBalance(balance, format.number),
 		creditsLoading: loading,
 	};
 }

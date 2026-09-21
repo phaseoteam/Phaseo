@@ -35,6 +35,7 @@ import {
     normalizeFavoriteModelId,
 } from "@/components/(chat)/playgroundConfig";
 import { estimatePromptTokenCount } from "@/components/(chat)/playground/chat-playground-core";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -169,6 +170,7 @@ export function ModelSettingsDialog({
     onApplyToAll,
     canApplyToAll = false,
 }: ModelSettingsDialogProps) {
+    const format = useDisplayFormatters();
     const reduceMotion = useReducedMotion();
     const [modelPickerOpen, setModelPickerOpen] = useState(false);
     const [modelPickerSearch, setModelPickerSearch] = useState("");
@@ -428,8 +430,11 @@ export function ModelSettingsDialog({
         const remainingChoices = filteredModelChoices.filter(
             (choice) => !favoriteModelIdSet.has(choice.favoriteId)
         );
-        return groupModelsByReleaseMonth(remainingChoices);
-    }, [favoriteModelIdSet, filteredModelChoices]);
+        return groupModelsByReleaseMonth(
+            remainingChoices,
+            (date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
+        );
+    }, [favoriteModelIdSet, filteredModelChoices, format]);
     const modelPickerHasResults =
         featuredModelChoices.length > 0 || groupedModelChoices.length > 0;
     const selectedChoice = useMemo(
@@ -763,7 +768,10 @@ export function ModelSettingsDialog({
                         <div className="flex items-center justify-between gap-3">
                             <Label htmlFor="system-prompt">System prompt</Label>
                             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                                ~{estimatePromptTokenCount(settings.systemPrompt).toLocaleString()} tokens
+                                ~{format.number(estimatePromptTokenCount(settings.systemPrompt), {
+                                    maximumFractionDigits: 0,
+                                    notation: "standard",
+                                })} tokens
                             </span>
                         </div>
                         <Textarea

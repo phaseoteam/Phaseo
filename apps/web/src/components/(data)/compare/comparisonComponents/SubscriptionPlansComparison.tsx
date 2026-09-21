@@ -1,3 +1,5 @@
+"use client";
+
 import type { ExtendedModel } from "@/data/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
@@ -5,6 +7,7 @@ import Link from "next/link";
 import { Info } from "lucide-react";
 import { ProviderLogo } from "../ProviderLogo";
 import { PriceRotator } from "./PriceRotator";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface SubscriptionPlansComparisonProps {
 	selectedModels: ExtendedModel[];
@@ -102,18 +105,30 @@ function planSortKey(prices: PlanPrice[] | null | undefined): number {
 	return raw.length > 0 ? Math.min(...raw) : Number.POSITIVE_INFINITY;
 }
 
-function formatCurrencyAmount(amount: number, currency: string | null | undefined): string {
+function formatCurrencyAmount(
+	amount: number,
+	currency: string | null | undefined,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"],
+): string {
 	const c = (currency ?? "").trim().toUpperCase();
-	if (!c || c === "USD") return `$${amount.toFixed(2)}`;
-	return `${c} ${amount.toFixed(2)}`;
+	return formatNumber(amount, {
+		style: "currency",
+		currency: c || "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+		notation: "standard",
+	});
 }
 
-function formatPriceLine(p: PlanPrice): string {
+function formatPriceLine(
+	p: PlanPrice,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"],
+): string {
 	const freq = normalizeFrequency(p.frequency);
 	if (freq.toLowerCase() === "usage") return "Usage-based";
 	if (freq.toLowerCase() === "custom") return "Custom pricing";
 	if (p.price == null || !Number.isFinite(p.price)) return `Custom / ${freq}`;
-	return `${formatCurrencyAmount(p.price, p.currency)} / ${freq}`;
+	return `${formatCurrencyAmount(p.price, p.currency, formatNumber)} / ${freq}`;
 }
 
 function getSortedPlanPrices(prices: PlanPrice[] | null | undefined): PlanPrice[] {
@@ -140,6 +155,7 @@ export default function SubscriptionPlansComparison({
 	selectedModels,
 	hideHeader = false,
 }: SubscriptionPlansComparisonProps) {
+	const format = useDisplayFormatters();
 	if (!selectedModels || selectedModels.length === 0) return null;
 
 	const modelPlans = selectedModels.map((model) => ({
@@ -198,7 +214,9 @@ export default function SubscriptionPlansComparison({
 									})
 									.map((plan) => {
 										const sortedPrices = getSortedPlanPrices(plan.prices);
-										const priceLines = sortedPrices.map(formatPriceLine);
+										const priceLines = sortedPrices.map((price) =>
+											formatPriceLine(price, format.number),
+										);
 										const notes = getPlanNotes(plan);
 										return (
 									<div

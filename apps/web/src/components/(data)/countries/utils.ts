@@ -12,16 +12,6 @@ export function flagEmojiFromIso(iso: string) {
 	return String.fromCodePoint(...codePoints);
 }
 
-export function formatCountryDate(value: string | null | undefined) {
-	if (!value) return "Unknown";
-	const parsed = new Date(value);
-	if (Number.isNaN(parsed.getTime())) return "Unknown";
-	return parsed.toLocaleString("en-US", {
-		month: "short",
-		year: "numeric",
-	});
-}
-
 export function normaliseIso(isoInput: string | undefined) {
 	if (typeof isoInput !== "string") return "";
 	const trimmed = isoInput.trim();

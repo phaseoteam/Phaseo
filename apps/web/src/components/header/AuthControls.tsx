@@ -31,6 +31,7 @@ export default async function AuthControls({
 				isLoggedIn={false}
 				user={undefined}
 				teams={[]}
+				displayPreferences={undefined}
 				currentTeamId={undefined}
 				userRole={undefined}
 				variant={variant}
@@ -43,6 +44,7 @@ export default async function AuthControls({
 			isLoggedIn={true}
 			user={data.user}
 			teams={data.teams}
+			displayPreferences={data.displayPreferences}
 			currentTeamId={data.currentTeamId}
 			userRole={data.userRole}
 			providerMode={data.providerMode}

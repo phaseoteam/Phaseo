@@ -3,8 +3,10 @@
 import { useState, type ReactNode } from "react";
 import { Loader2, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SensitiveValue } from "@/components/display/SensitiveValue";
 import {
     Dialog,
     DialogContent,
@@ -43,15 +45,6 @@ function formatExpiry(expMonth: number | null | undefined, expYear: number | nul
     return `${String(expMonth).padStart(2, "0")}/${String(expYear).slice(-2)}`;
 }
 
-function formatDate(unixSeconds: number | null | undefined) {
-    if (!unixSeconds) return "-";
-    try {
-        return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(unixSeconds * 1000));
-    } catch {
-        return "-";
-    }
-}
-
 async function readJsonSafe(response: Response) {
     try {
         return await response.json();
@@ -67,6 +60,9 @@ export function PaymentMethodsManager({
     initialData: PaymentMethodsPayload;
 	customerPortal?: ReactNode;
 }) {
+	const format = useDisplayFormatters();
+	const formatDate = (unixSeconds: number | null | undefined) =>
+		format.date(unixSeconds ? unixSeconds * 1000 : null);
     const [data, setData] = useState<PaymentMethodsPayload>(initialData);
     const [refreshing, setRefreshing] = useState(false);
     const [adding, setAdding] = useState(false);
@@ -208,14 +204,14 @@ export function PaymentMethodsManager({
 										</div>
 									{isDefault ? <Badge variant="secondary" className="border bg-background/70 text-[11px]">Default</Badge> : null}
 								</div>
-								<div className="mt-5 whitespace-nowrap font-mono text-base tracking-[0.12em] text-foreground sm:text-lg" data-pii="true">
+								<SensitiveValue inline className="mt-5 whitespace-nowrap font-mono text-base tracking-[0.12em] text-foreground sm:text-lg" label="card number">
 									•••• •••• •••• {pm.last4 ?? "••••"}
-								</div>
+								</SensitiveValue>
 								<div className="absolute inset-x-4 bottom-3.5 flex items-end justify-between gap-3">
 									<div className="flex gap-5 text-xs text-muted-foreground">
 										<div>
 											<div>Expires</div>
-											<div className="mt-0.5 text-xs font-medium text-foreground" data-pii="true">{formatExpiry(pm.expMonth, pm.expYear)}</div>
+											<SensitiveValue inline className="mt-0.5 text-xs font-medium text-foreground" label="card expiry">{formatExpiry(pm.expMonth, pm.expYear)}</SensitiveValue>
 										</div>
 										{pm.funding ? <div><div>Card type</div><div className="mt-0.5 text-xs font-medium capitalize text-foreground">{pm.funding}</div></div> : null}
 									</div>
@@ -264,9 +260,9 @@ export function PaymentMethodsManager({
                                 return (
                                     <>
                                         {formatCardBrand(selected.brand)} ending{" "}
-                                        <span data-pii="true">
+										<SensitiveValue inline label="card number">
                                             {selected.last4 ?? "****"}
-                                        </span>{" "}
+										</SensitiveValue>{" "}
                                         will no longer be available for credits and auto top-ups.
                                     </>
                                 );

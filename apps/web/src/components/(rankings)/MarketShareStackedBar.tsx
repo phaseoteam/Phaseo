@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { MarketShareTimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
 import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
@@ -22,24 +23,6 @@ type MarketShareStackedBarProps = {
 
 type SeriesStyle = Record<string, { label: string; color: string; stroke: string }>;
 const TOP_SERIES = 10;
-
-function formatBucketLabel(value: string) {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-		timeZone: "UTC",
-	});
-}
-
-function formatNumber(value: number) {
-	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-	return value.toLocaleString();
-}
 
 function formatPercent(value: number) {
 	if (!Number.isFinite(value)) return "--";
@@ -64,6 +47,11 @@ export function MarketShareStackedBar({
 	metric = "requests",
 	normalizeToPercent = false,
 }: MarketShareStackedBarProps) {
+	const format = useDisplayFormatters();
+	const formatBucketLabel = (value: string) => format.calendarDate(value, value);
+	const formatNumber = (value: number) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 	const [nowMs] = useState(() => Date.now());
 

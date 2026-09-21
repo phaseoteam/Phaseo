@@ -26,6 +26,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowDown, ArrowUp, ChevronDown, ExternalLink, GripVertical, KeyRound } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -58,14 +59,8 @@ function maskKey(prefix?: string, suffix?: string) {
 	return `${prefix ?? ""}${"*".repeat(6)}${suffix ?? ""}`;
 }
 
-function formatLastUsed(value: string | null) {
-	if (!value) return "Never used";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return "Never used";
-	return `Last used ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date)}`;
-}
-
 function KeySummary({ entry }: { entry: ByokKeyEntry }) {
+	const format = useDisplayFormatters();
 	const modelCount = entry.allowedModelSlugs?.length ?? 0;
 	const apiKeyCount = entry.allowedApiKeyIds?.length ?? 0;
 	return (
@@ -78,7 +73,7 @@ function KeySummary({ entry }: { entry: ByokKeyEntry }) {
 			</div>
 			<div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
 				<span className="font-mono">{maskKey(entry.prefix, entry.suffix)}</span>
-				<span>{formatLastUsed(entry.lastUsedAt)}</span>
+				<span>{entry.lastUsedAt ? `Last used ${format.dateTime(entry.lastUsedAt)}` : "Never used"}</span>
 				<span>{modelCount ? `${modelCount} models` : "All models"}</span>
 				<span>{apiKeyCount ? `${apiKeyCount} API keys` : "All API keys"}</span>
 			</div>

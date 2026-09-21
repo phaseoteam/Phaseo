@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, History, RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
 	AlertDialog,
@@ -29,14 +30,9 @@ import { purgeCacheScopeAction } from "./actions";
 
 type PendingPurge = { scope: CacheScope; targetId: string };
 
-function formatTimestamp(value: string) {
-	return new Intl.DateTimeFormat(undefined, {
-		dateStyle: "medium",
-		timeStyle: "short",
-	}).format(new Date(value));
-}
-
 export default function CacheOpsClient() {
+	const format = useDisplayFormatters();
+	const formatTimestamp = format.dateTime;
 	const [state, setState] = useState<CacheControlState | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [targets, setTargets] = useState<Record<string, string>>({});

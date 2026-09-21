@@ -1,3 +1,5 @@
+"use client";
+
 // components/(rankings)/TrendingModels.tsx
 // Purpose: Display trending models with momentum indicators
 // Why: Shows models gaining traction (accelerating growth)
@@ -8,12 +10,14 @@ import { TrendingUp, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { TrendingModel } from "@/lib/fetchers/rankings/getRankingsData";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface TrendingModelsProps {
     data: TrendingModel[];
 }
 
 export function TrendingModels({ data }: TrendingModelsProps) {
+	const format = useDisplayFormatters();
     if (!data.length) {
         return (
             <RankingsEmptyState
@@ -23,11 +27,10 @@ export function TrendingModels({ data }: TrendingModelsProps) {
         );
     }
 
-    const formatRequests = (num: number) => {
-        if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M`;
-        if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
-        return num.toString();
-    };
+    const formatRequests = (num: number) => format.number(num, {
+        notation: num >= 1_000 ? "compact" : "standard",
+        maximumFractionDigits: 1,
+    });
 
     const getMomentumBadge = (score: number, idx: number) => {
         if (idx === 0) {
@@ -62,7 +65,9 @@ export function TrendingModels({ data }: TrendingModelsProps) {
                 const growth = currentWeek - previousWeek;
                 const growthPercent =
                     previousWeek > 0
-                        ? ((growth / previousWeek) * 100).toFixed(0)
+                        ? format.number((growth / previousWeek) * 100, {
+                            maximumFractionDigits: 0,
+                        })
                         : "inf";
 
                 return (
@@ -88,7 +93,9 @@ export function TrendingModels({ data }: TrendingModelsProps) {
                                 </div>
                                 <div className="text-right">
                                     <div className="text-sm tabular-nums text-muted-foreground">
-                                        Velocity: {Number(model.velocity ?? 0).toFixed(0)}
+                                        Velocity: {format.number(Number(model.velocity ?? 0), {
+                                            maximumFractionDigits: 0,
+                                        })}
                                     </div>
                                 </div>
                             </div>

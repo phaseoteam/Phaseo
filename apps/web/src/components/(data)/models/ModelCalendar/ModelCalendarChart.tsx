@@ -16,6 +16,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const STACKED_TYPES: EventType[] = [
 	"Announced",
@@ -63,6 +64,7 @@ export default function ModelCalendarChart({
 	events,
 	monthsWindow = 12,
 }: ModelCalendarChartProps) {
+	const format = useDisplayFormatters();
 	const now = useMemo(() => new Date(), []);
 
 	const chartData = useMemo<ChartEntry[]>(() => {
@@ -77,7 +79,7 @@ export default function ModelCalendarChart({
 			)}`;
 			return {
 				key,
-				label: monthDate.toLocaleString("en-US", {
+				label: format.dateParts(monthDate, {
 					month: "short",
 					year: "numeric",
 				}),
@@ -158,7 +160,7 @@ export default function ModelCalendarChart({
 				}
 			>,
 		}));
-	}, [events, now, monthsWindow]);
+	}, [events, format, now, monthsWindow]);
 
 	return (
 		<section className="space-y-4 py-6">

@@ -12,6 +12,7 @@ import { ensureWorkspaceStripeWallet } from "@/lib/server/activeTeamStripe";
 import type { createClient } from "@/utils/supabase/server";
 import { setActiveWorkspaceCookie } from "@/utils/workspaceCookie";
 import { shouldRedirectToOnboardingAfterLogin } from "@/lib/auth/post-login-onboarding";
+import { resolvePostLoginDestination } from "@/lib/auth/post-login-landing";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -500,8 +501,29 @@ export async function finalizePostLogin(
 		onboardingComplete,
 		createdPersonalTeam: provisionedTeam.createdPersonalTeam,
 	});
+	let landingPage: unknown = null;
+	if (input.returnUrl === "/" && !shouldShowOnboarding) {
+		const { data, error } = await supabaseAdmin
+			.from("users")
+			.select("display_landing_page")
+			.eq("user_id", user.id)
+			.maybeSingle();
+		if (error) {
+			console.error("Failed to load landing page preference during post-login", {
+				source: input.source,
+				userId: user.id,
+				error: error.message,
+			});
+		} else {
+			landingPage = data?.display_landing_page;
+		}
+	}
 
-	const redirectPath = shouldShowOnboarding ? "/onboarding" : input.returnUrl;
+	const redirectPath = resolvePostLoginDestination({
+		returnUrl: input.returnUrl,
+		landingPage,
+		showOnboarding: shouldShowOnboarding,
+	});
 
 	return {
 		redirectPath,

@@ -83,6 +83,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-settings", title: "Settings", subtitle: "Manage your account and workspace", href: "/settings", keywords: ["account", "workspace", "preferences"], shortcut: ["G", "S"] },
 	{ id: "nav-settings-profile", title: "Profile Settings", subtitle: "Manage your public profile", href: "/settings/profile", keywords: ["profile", "avatar", "name"] },
 	{ id: "nav-settings-account", title: "Account Settings", subtitle: "Manage account details and security", href: "/settings/account", keywords: ["account", "security", "mfa", "passkeys"] },
+	{ id: "nav-settings-preferences", title: "Display Preferences", subtitle: "Choose date, time, number, and theme formats", href: "/settings/preferences", keywords: ["preferences", "date format", "time zone", "locale", "clock", "theme"] },
 	{ id: "nav-settings-billing", title: "Billing", subtitle: "Manage credits and payment details", href: "/settings/credits", keywords: ["credits", "payments", "transactions", "invoices"] },
 	{ id: "nav-settings-usage", title: "Usage", subtitle: "Review gateway usage", href: "/settings/usage", keywords: ["requests", "spend", "analytics"] },
 	{ id: "nav-settings-logs", title: "Request Logs", subtitle: "Inspect individual gateway requests", href: "/settings/usage/logs", keywords: ["logs", "requests", "debug"] },

@@ -26,18 +26,22 @@ import {
 	setDataContributionClassifierEnabled,
 	updateDataContributionConsent,
 } from "@/app/(dashboard)/settings/privacy/actions";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const DEFAULT_CATEGORIES = JSON.stringify({
 	product: ["support", "sales", "onboarding"],
 	operation: ["research", "content", "automation", "other"],
 }, null, 2);
 
-function formatMoney(nanos: number): string {
-	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4 })
-		.format(nanos / 1_000_000_000);
-}
-
 export function DataContributionSettingsCard({ initial }: { initial: DataContributionSettings }) {
+	const format = useDisplayFormatters();
+	const formatMoney = (nanos: number) => format.number(nanos / 1_000_000_000, {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 4,
+		notation: "standard",
+	});
 	const router = useRouter();
 	const [enabled, setEnabled] = useState(initial.enabled);
 	const [confirmOpen, setConfirmOpen] = useState(false);
@@ -126,7 +130,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 
 			<div className="grid border-b sm:grid-cols-3">
 				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Percent className="size-4 text-emerald-600" /><div><div className="text-xs text-muted-foreground">Discount</div><div className="font-semibold">{initial.discountBps / 100}% per request</div></div></div>
-				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Database className="size-4 text-sky-600" /><div><div className="text-xs text-muted-foreground">Retained (30 days)</div><div className="font-semibold">{initial.contributions30d.toLocaleString()} requests</div></div></div>
+				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Database className="size-4 text-sky-600" /><div><div className="text-xs text-muted-foreground">Retained (30 days)</div><div className="font-semibold">{format.number(initial.contributions30d)} requests</div></div></div>
 				<div className="flex items-center gap-3 p-4"><BarChart3 className="size-4 text-violet-600" /><div><div className="text-xs text-muted-foreground">Discount earned</div><div className="font-semibold">{formatMoney(initial.discountNanos30d)}</div></div></div>
 			</div>
 
@@ -166,7 +170,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 					<div className="space-y-2 rounded-lg border p-3">
 						{categoryTotals.map(([category, count]) => {
 							const max = categoryTotals[0]?.[1] ?? 1;
-							return <div key={category} className="space-y-1"><div className="flex justify-between gap-3 text-xs"><span className="truncate">{category.replaceAll("_", " ")}</span><span className="tabular-nums text-muted-foreground">{count.toLocaleString()}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-foreground/70" style={{ width: `${Math.max(4, (count / max) * 100)}%` }} /></div></div>;
+							return <div key={category} className="space-y-1"><div className="flex justify-between gap-3 text-xs"><span className="truncate">{category.replaceAll("_", " ")}</span><span className="tabular-nums text-muted-foreground">{format.number(count)}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-foreground/70" style={{ width: `${Math.max(4, (count / max) * 100)}%` }} /></div></div>;
 						})}
 						{!categoryTotals.length ? <p className="py-6 text-center text-xs text-muted-foreground">Classifications will appear after sampled requests are processed.</p> : null}
 					</div>

@@ -16,6 +16,7 @@ import { Kbd } from "@/components/ui/kbd";
 import { KeyboardShortcut } from "@/components/ui/keyboard-shortcut";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Logo } from "@/components/Logo";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
 import {
 	ArrowDown,
@@ -499,7 +500,7 @@ function SearchFooter({
 				</span>
 			</div>
 			<span className="shrink-0 tabular-nums">
-				{count.toLocaleString()} {label}
+				<DisplayNumber value={count} /> {label}
 			</span>
 		</div>
 	);

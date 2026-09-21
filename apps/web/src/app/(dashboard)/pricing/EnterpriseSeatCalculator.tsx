@@ -7,6 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ENTERPRISE_MAX_QUOTED_MEMBERS, ENTERPRISE_MAX_SELF_SERVE_MEMBERS, ENTERPRISE_MEMBER_OVERAGE_USD, ENTERPRISE_MIN_SELF_SERVE_MEMBERS, enterpriseTierForMembers } from "@/lib/billing/enterprisePricing";
+import {
+	useDisplayFormatters,
+	useDisplayPreferences,
+} from "@/components/providers/DisplayPreferencesProvider";
 
 const features = [
 	"SAML SSO and enforced sign-in",
@@ -55,6 +59,8 @@ function Included() {
 }
 
 export function EnterpriseSeatCalculator() {
+	const format = useDisplayFormatters();
+	const { preferences } = useDisplayPreferences();
 	const [members, setMembers] = useState(100);
 	const pricing = enterpriseTierForMembers(members);
 
@@ -76,7 +82,7 @@ export function EnterpriseSeatCalculator() {
 								id="enterprise-members"
 								type="text"
 								inputMode="numeric"
-								value={members.toLocaleString("en-US")}
+								value={format.number(members, { notation: "standard" })}
 								onChange={(event) => updateMembers(Number(event.target.value.replace(/\D/g, "")) || 1)}
 								className="h-10 pr-12 text-right font-medium tabular-nums"
 							/>
@@ -85,7 +91,7 @@ export function EnterpriseSeatCalculator() {
 					</div>
 					<Slider
 						aria-label="Active members"
-						aria-valuetext={`${members.toLocaleString("en-US")} active members`}
+						aria-valuetext={`${format.number(members, { notation: "standard" })} active members`}
 						className="mt-5"
 						min={0}
 						max={MEMBER_STEPS.length - 1}
@@ -105,8 +111,8 @@ export function EnterpriseSeatCalculator() {
 
 				<div className="border-l border-border pl-6">
 					<p className="text-xs font-medium text-muted-foreground">Enterprise subscription</p>
-					<p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">$<NumberFlow value={estimatedMonthlyUsd} format={{ maximumFractionDigits: 2 }} /><span className="text-sm font-normal text-muted-foreground">/month estimated</span></p>
-					{overageMembers > 0 ? <p className="mt-2 text-xs text-muted-foreground">$1,999 base plus {overageMembers.toLocaleString("en-US")} additional members at ${ENTERPRISE_MEMBER_OVERAGE_USD}/member/month.</p> : null}
+					<p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">$<NumberFlow value={estimatedMonthlyUsd} locales={preferences.locale === "system" ? undefined : preferences.locale} format={{ maximumFractionDigits: 2, notation: "standard" }} /><span className="text-sm font-normal text-muted-foreground">/month estimated</span></p>
+					{overageMembers > 0 ? <p className="mt-2 text-xs text-muted-foreground">$1,999 base plus {format.number(overageMembers)} additional members at ${format.number(ENTERPRISE_MEMBER_OVERAGE_USD, { notation: "standard" })}/member/month.</p> : null}
 				</div>
 			</div>
 

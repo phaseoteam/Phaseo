@@ -10,6 +10,7 @@ import {
 	Zap,
 	DollarSign,
 } from "lucide-react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface FunStatsProps {
 	topModel: { name: string; requests: number } | null;
@@ -28,12 +29,13 @@ export default function FunStats({
 	totalSaved,
 	streak,
 }: FunStatsProps) {
+	const format = useDisplayFormatters();
 	const stats = [
 		{
 			icon: Trophy,
 			title: "Top Model",
 			value: topModel?.name || "No data",
-			subtitle: topModel ? `${topModel.requests.toLocaleString()} requests` : null,
+			subtitle: topModel ? `${format.number(topModel.requests)} requests` : null,
 			color: "text-yellow-600",
 			bgColor: "bg-yellow-50",
 		},
@@ -41,7 +43,7 @@ export default function FunStats({
 			icon: Target,
 			title: "Top Provider",
 			value: topProvider?.name || "No data",
-			subtitle: topProvider ? `${topProvider.requests.toLocaleString()} requests` : null,
+			subtitle: topProvider ? `${format.number(topProvider.requests)} requests` : null,
 			color: "text-blue-600",
 			bgColor: "bg-blue-50",
 		},

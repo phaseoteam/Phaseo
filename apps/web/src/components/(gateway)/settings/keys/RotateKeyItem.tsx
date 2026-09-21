@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { rotateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
 import { SecretRevealActions } from "./SecretRevealActions";
 
@@ -45,13 +46,6 @@ function toIsoFromMode(mode: ExpiryMode, customValue: string): string | null {
 	return null;
 }
 
-function formatExpiryLabel(iso: string | null | undefined): string {
-	if (!iso) return "Never";
-	const parsed = new Date(iso);
-	if (Number.isNaN(parsed.getTime())) return "Never";
-	return parsed.toLocaleString();
-}
-
 export default function RotateKeyItem({
 	k,
 	trigger = true,
@@ -63,6 +57,7 @@ export default function RotateKeyItem({
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
 }) {
+	const format = useDisplayFormatters();
 	const [internalOpen, setInternalOpen] = useState(false);
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const open = controlledOpen ?? internalOpen;
@@ -215,7 +210,7 @@ export default function RotateKeyItem({
 							{newPlaintext}
 						</div>
 						<div className="text-sm text-muted-foreground">
-							Previous key expiry: {formatExpiryLabel(oldExpiryApplied)}
+							Previous key expiry: {oldExpiryApplied ? format.dateTime(oldExpiryApplied) : "Never"}
 						</div>
 						<div className="text-sm text-muted-foreground font-semibold">
 							Store this key now. It will not be shown again.

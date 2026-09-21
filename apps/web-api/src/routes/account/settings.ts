@@ -28,6 +28,12 @@ import { accountSettingsProviderOnboardingRouter } from "./settings-provider-onb
 import { accountSettingsProviderCatalogRouter } from "./settings-provider-catalog";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
 import { keyDisplayData } from "./settings-key-display";
+import {
+	DISPLAY_PREFERENCE_SELECT,
+	displayPreferencesFromRow,
+	displayPreferencesToRow,
+	parseDisplayPreferences,
+} from "@/lib/displayPreferences";
 
 // Mirrors the first-party CLI allowlist enforced by the gateway OAuth service.
 const PHASEO_CLI_SCOPES = [
@@ -271,6 +277,44 @@ accountSettingsRouter.put("/beta", async (c) => {
 	const result = await client.from("users").upsert({ user_id: user.id, beta_opt_in: profile.betaOptIn, beta_features: profile.betaFeatures }, { onConflict: "user_id" });
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ ok: true, profile }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsRouter.get("/preferences", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) {
+		return c.json({
+			preferences: displayPreferencesFromRow(null),
+			signedIn: false,
+		}, 200, PRIVATE_NO_STORE_HEADERS);
+	}
+	const { data, error } = await getDataClient(c.env)
+		.from("users")
+		.select(DISPLAY_PREFERENCE_SELECT)
+		.eq("user_id", user.id)
+		.maybeSingle();
+	if (error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({
+		preferences: displayPreferencesFromRow(data),
+		signedIn: true,
+	}, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsRouter.put("/preferences", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const preferences = parseDisplayPreferences(await c.req.json().catch(() => null));
+	if (!preferences) {
+		return c.json({ error: "invalid_display_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
+	const result = await getDataClient(c.env)
+		.from("users")
+		.upsert({
+			user_id: user.id,
+			...displayPreferencesToRow(preferences),
+			updated_at: new Date().toISOString(),
+		}, { onConflict: "user_id" });
+	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ ok: true, preferences }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsRouter.get("/privacy", async (c) => {

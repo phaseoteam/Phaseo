@@ -13,6 +13,7 @@ import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { getLogoLabel } from "@/lib/logos";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 export type SubscriptionPrice = {
 	price: number;
@@ -62,22 +63,6 @@ const PLAN_FREQUENCY_SORT_ORDER: Record<string, number> = {
 	custom: 99,
 };
 
-const CURRENCY_FORMATTER_CACHE = new Map<string, Intl.NumberFormat>();
-
-function getCurrencyFormatter(currency: string): Intl.NumberFormat {
-	const normalized = currency.toUpperCase();
-	const cached = CURRENCY_FORMATTER_CACHE.get(normalized);
-	if (cached) return cached;
-	const formatter = new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency: normalized,
-		minimumFractionDigits: 0,
-		maximumFractionDigits: 2,
-	});
-	CURRENCY_FORMATTER_CACHE.set(normalized, formatter);
-	return formatter;
-}
-
 function normalizePlanFrequency(value: string | null | undefined): string {
 	const normalized = String(value ?? "").trim().toLowerCase();
 	return PLAN_FREQUENCY_ALIASES[normalized] ?? normalized;
@@ -110,28 +95,36 @@ function getCurrencySortRank(currency: string | null | undefined): number {
 	return 1;
 }
 
-function formatPlanPriceValue(price: SubscriptionPrice): string {
+type NumberFormatter = ReturnType<typeof useDisplayFormatters>["number"];
+
+function formatPlanPriceValue(price: SubscriptionPrice, formatNumber: NumberFormatter): string {
 	const normalized = normalizePlanFrequency(price.frequency);
 	if (normalized === "usage") return "Usage-based";
 	if (normalized === "custom") return "Custom Pricing";
 
 	const currency = String(price.currency || "USD").toUpperCase();
-	return getCurrencyFormatter(currency).format(price.price);
+	return formatNumber(price.price, {
+		style: "currency",
+		currency,
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 2,
+		notation: "standard",
+	});
 }
 
-function formatPlanPriceDisplay(price: SubscriptionPrice): {
+function formatPlanPriceDisplay(price: SubscriptionPrice, formatNumber: NumberFormatter): {
 	value: string;
 	frequency: string | null;
 } {
 	if (isNonFixedPlanFrequency(price.frequency)) {
 		return {
-			value: formatPlanPriceValue(price),
+			value: formatPlanPriceValue(price, formatNumber),
 			frequency: null,
 		};
 	}
 
 	return {
-		value: formatPlanPriceValue(price),
+		value: formatPlanPriceValue(price, formatNumber),
 		frequency: getFrequencyLabel(price.frequency).toLowerCase(),
 	};
 }
@@ -251,7 +244,7 @@ function isOwnerGroup(
 	);
 }
 
-function getStartingPriceText(plans: SubscriptionPlan[]): string | null {
+function getStartingPriceText(plans: SubscriptionPlan[], formatNumber: NumberFormatter): string | null {
 	const prices = sortSubscriptionPlanPricesForDisplay(
 		plans.flatMap((plan) =>
 			(plan.prices ?? []).filter(
@@ -263,9 +256,9 @@ function getStartingPriceText(plans: SubscriptionPlan[]): string | null {
 	const first = prices[0];
 	if (!first) return null;
 	if (isNonFixedPlanFrequency(first.frequency)) {
-		return formatPlanPriceValue(first);
+		return formatPlanPriceValue(first, formatNumber);
 	}
-	return `${formatPlanPriceValue(first)} ${getFrequencyLabel(first.frequency).toLowerCase()}`;
+	return `${formatPlanPriceValue(first, formatNumber)} ${getFrequencyLabel(first.frequency).toLowerCase()}`;
 }
 
 function getVisibleStartingPriceSortKey(plans: SubscriptionPlan[]): {
@@ -301,6 +294,7 @@ export default function ModelSubscriptionsClient({
 	ownerOrganisationName?: string | null;
 	showHeader?: boolean;
 }) {
+	const format = useDisplayFormatters();
 	const groupedPlans = subscriptionPlans.reduce<SubscriptionPlanGroup[]>((groups, plan) => {
 		const organisationId = plan.organisation?.organisation_id ?? plan.organisation_id;
 		const sourceOrganisationName = plan.organisation?.name?.trim();
@@ -428,11 +422,11 @@ export default function ModelSubscriptionsClient({
 										</p>
 									</div>
 								</div>
-								{getStartingPriceText(group.plans) ? (
+								{getStartingPriceText(group.plans, format.number) ? (
 									<div className="text-xs text-muted-foreground sm:text-right">
 										From{" "}
 										<span className="font-medium tabular-nums text-foreground">
-											{getStartingPriceText(group.plans)}
+											{getStartingPriceText(group.plans, format.number)}
 										</span>
 									</div>
 								) : null}
@@ -467,7 +461,7 @@ export default function ModelSubscriptionsClient({
 											<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm sm:justify-end">
 												{sortedPrices.length > 0 ? (
 													sortedPrices.map((price, priceIndex) => {
-														const displayPrice = formatPlanPriceDisplay(price);
+												const displayPrice = formatPlanPriceDisplay(price, format.number);
 														return (
 															<span
 																key={`${plan.plan_id}:${price.frequency}:${price.currency}:${price.price}`}

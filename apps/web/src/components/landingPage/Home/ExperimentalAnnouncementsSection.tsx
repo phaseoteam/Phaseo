@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import {
-	formatAnnouncementDate,
-	getAnnouncementPosts,
-} from "@/lib/content/announcements";
+import { getAnnouncementPosts } from "@/lib/content/announcements";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 export function ExperimentalAnnouncementsSectionFallback() {
 	return (
@@ -49,7 +47,7 @@ export default async function ExperimentalAnnouncementsSection() {
 					</div>
 					<div className="flex flex-wrap items-center gap-3">
 						<span className="rounded-full border border-zinc-200/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:border-zinc-800/80 dark:text-zinc-400">
-							{formatAnnouncementDate(featured.publishedAt)}
+							<DisplayCalendarDate value={featured.publishedAt} />
 						</span>
 						{featured.tags.slice(0, 2).map((tag) => (
 							<span
@@ -81,7 +79,7 @@ export default async function ExperimentalAnnouncementsSection() {
 							className="group rounded-[1.6rem] border border-zinc-200/80 bg-white px-4 py-4 transition-colors hover:border-zinc-300 dark:border-zinc-800/80 dark:bg-zinc-950/78 dark:hover:border-zinc-700"
 						>
 							<p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-								{formatAnnouncementDate(post.publishedAt)}
+								<DisplayCalendarDate value={post.publishedAt} />
 							</p>
 							<h3 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-zinc-950 group-hover:text-zinc-700 dark:text-zinc-50 dark:group-hover:text-zinc-300">
 								{post.title}

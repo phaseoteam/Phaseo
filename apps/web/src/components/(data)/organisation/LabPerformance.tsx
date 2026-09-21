@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Activity, ArrowUpRight, Gauge, Timer } from "lucide-react";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 import type { OrganisationModelCards } from "@/lib/fetchers/organisations/types";
 
@@ -7,37 +9,30 @@ type Metric = {
 	icon: typeof Gauge;
 	id: "throughput" | "latency" | "usage";
 	label: string;
-	format: (value: number, model: OrganisationModelCards) => string;
+	format: (value: number, model: OrganisationModelCards) => ReactNode;
 	value: (model: OrganisationModelCards) => number | null | undefined;
 };
-
-const compactNumber = new Intl.NumberFormat("en", {
-	compactDisplay: "short",
-	notation: "compact",
-	maximumFractionDigits: 1,
-});
 
 const metrics: Metric[] = [
 	{
 		icon: Gauge,
 		id: "throughput",
 		label: "Throughput",
-		format: (value) => `${value.toFixed(1)} t/s`,
+		format: (value) => <><DisplayNumber value={value} options={{ maximumFractionDigits: 1, notation: "standard" }} /> t/s</>,
 		value: (model) => model.throughput_week,
 	},
 	{
 		icon: Timer,
 		id: "latency",
 		label: "Time to first token",
-		format: (value) => `${Math.round(value).toLocaleString()} ms`,
+		format: (value) => <><DisplayNumber value={Math.round(value)} options={{ maximumFractionDigits: 0, notation: "standard" }} /> ms</>,
 		value: (model) => model.latency_week,
 	},
 	{
 		icon: Activity,
 		id: "usage",
 		label: "Weekly usage",
-		format: (value, model) =>
-			`${compactNumber.format(value)} ${model.weekly_usage_unit ?? "units"}`,
+		format: (value, model) => <><DisplayNumber value={value} /> {model.weekly_usage_unit ?? "units"}</>,
 		value: (model) => model.weekly_usage_quantity,
 	},
 ];

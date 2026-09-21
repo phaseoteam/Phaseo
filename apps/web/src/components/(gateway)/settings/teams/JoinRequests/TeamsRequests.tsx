@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	approveJoinRequest,
 	rejectJoinRequest,
@@ -66,6 +67,7 @@ export default function TeamsRequests({
 	onApprove,
 	onReject,
 }: Props) {
+	const format = useDisplayFormatters();
 	const [localActiveTeamId, setLocalActiveTeamId] = React.useState<
 		string | undefined
 	>(teams.length ? teams[0].id : undefined);
@@ -102,16 +104,7 @@ export default function TeamsRequests({
 	const activeTeam = teams.find((t) => t.id === activeWorkspaceId);
 
 	function formatDate(d?: string | null) {
-		if (!d) return "";
-		try {
-			return new Date(d).toLocaleDateString(undefined, {
-				day: "2-digit",
-				month: "short",
-				year: "numeric",
-			});
-		} catch {
-			return "";
-		}
+		return format.date(d, "");
 	}
 
 	// status-driven class maps

@@ -51,9 +51,7 @@ export default function Performance({ details }: PerformanceProps) {
 				{/* Input Context Window Card */}
 				<div className="p-4 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg h-full">
 					<span className="text-xl font-bold">
-						{inputCtx != null
-							? `${inputCtx.toLocaleString()} tokens`
-							: "-"}
+						{inputCtx != null ? <><DisplayNumber value={inputCtx} /> tokens</> : "-"}
 					</span>
 					<span className="text-sm font-medium text-gray-500 mt-1">
 						Input Context
@@ -62,9 +60,7 @@ export default function Performance({ details }: PerformanceProps) {
 				{/* Output Context Window Card */}
 				<div className="p-2 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg">
 					<span className="text-xl font-bold">
-						{outputCtx != null
-							? `${outputCtx.toLocaleString()} tokens`
-							: "-"}
+						{outputCtx != null ? <><DisplayNumber value={outputCtx} /> tokens</> : "-"}
 					</span>
 					<span className="text-sm font-medium text-gray-500 mt-1">
 						Output Context
@@ -73,18 +69,7 @@ export default function Performance({ details }: PerformanceProps) {
 				{/* Knowledge Cutoff Card (replaces Latency) */}
 				<div className="p-2 flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 rounded-lg">
 					<span className="text-xl font-bold">
-						{knowledgeCutoff
-							? // Format as dd MMM yyyy, e.g. 01 Oct 2024
-							  (() => {
-									const d = new Date(knowledgeCutoff);
-									if (isNaN(d.getTime())) return "-";
-									return d.toLocaleDateString("en-GB", {
-										day: "2-digit",
-										month: "short",
-										year: "numeric",
-									});
-							  })()
-							: "-"}
+						{knowledgeCutoff ? <DisplayCalendarDate value={knowledgeCutoff} /> : "-"}
 					</span>
 					<span className="text-sm font-medium text-gray-500 mt-1">
 						Knowledge Cutoff
@@ -94,3 +79,4 @@ export default function Performance({ details }: PerformanceProps) {
 		</div>
 	);
 }
+import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";

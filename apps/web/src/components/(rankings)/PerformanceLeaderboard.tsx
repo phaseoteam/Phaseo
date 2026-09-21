@@ -8,6 +8,7 @@ import { EmptyLeaderboardPreview } from "@/components/(rankings)/EmptyLeaderboar
 import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { ChevronDown } from "lucide-react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 export type PerformanceLeaderboardEntry = {
 	key: string;
@@ -26,11 +27,16 @@ type PerformanceLeaderboardProps = {
 	maxExpanded?: number;
 };
 
-function formatThroughput(value: number) {
+function formatThroughput(
+	value: number,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"],
+) {
 	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-	return value.toFixed(1);
+	return formatNumber(value, {
+		notation: value >= 1_000 ? "compact" : "standard",
+		minimumFractionDigits: value >= 1_000 ? 0 : 1,
+		maximumFractionDigits: 1,
+	});
 }
 
 function getModelHref(entry: PerformanceLeaderboardEntry) {
@@ -42,6 +48,7 @@ export function PerformanceLeaderboard({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: PerformanceLeaderboardProps) {
+	const format = useDisplayFormatters();
 	const [showAll, setShowAll] = useState(false);
 
 	if (!data.length) {
@@ -116,7 +123,7 @@ export function PerformanceLeaderboard({
 				</div>
 				<div className="text-right">
 					<div className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
-						{formatThroughput(entry.throughput)}{" "}
+						{formatThroughput(entry.throughput, format.number)}{" "}
 						<span className="text-xs text-muted-foreground">tok/s</span>
 					</div>
 				</div>

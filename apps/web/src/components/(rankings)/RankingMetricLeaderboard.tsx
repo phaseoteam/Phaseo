@@ -1,20 +1,42 @@
+"use client";
+
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import type { ModalityLeaderboardEntry } from "@/components/(rankings)/ModalityLeaderboards";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 
 type RankingMetricLeaderboardProps = {
+	metricId: string;
 	title: string;
 	description: string;
 	entries: ModalityLeaderboardEntry[];
 };
 
 export function RankingMetricLeaderboard({
+	metricId,
 	title,
 	description,
 	entries,
 }: RankingMetricLeaderboardProps) {
+	const format = useDisplayFormatters();
 	const visibleEntries = entries.slice(0, 5);
+	const formatValue = (entry: ModalityLeaderboardEntry) => {
+		if (metricId === "audio-cache") {
+			return `${format.number(entry.value / 60, { maximumFractionDigits: entry.value >= 600 ? 0 : 1 })} min`;
+		}
+		if (metricId === "video-seconds" || metricId === "speech-seconds") {
+			return `${format.number(entry.value, { maximumFractionDigits: 1 })} sec`;
+		}
+		if (metricId === "text-throughput") {
+			return `${format.number(entry.value, { maximumFractionDigits: 1 })} tok/s`;
+		}
+		if (metricId === "text-latency") {
+			return `${format.number(entry.value, { maximumFractionDigits: 0 })} ms`;
+		}
+		const unit = metricId.includes("image") ? "images" : "tokens";
+		return `${format.number(entry.value, { maximumFractionDigits: 1 })} ${unit}`;
+	};
 
 	if (!visibleEntries.length) return (
 		<div className="space-y-2">
@@ -101,7 +123,7 @@ export function RankingMetricLeaderboard({
 							</div>
 							<div className="pl-3 text-right">
 								<div className="whitespace-nowrap text-sm font-medium tabular-nums">
-									{entry.value_label}
+									{formatValue(entry)}
 								</div>
 								{entry.tertiary ? (
 									<div className="whitespace-nowrap text-xs text-muted-foreground">

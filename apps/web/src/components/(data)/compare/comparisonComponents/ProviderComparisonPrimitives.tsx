@@ -1,13 +1,11 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { ExtendedModel } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { Binary, Captions, FileText, Image as ImageIcon, Music4, Radio, Speech, Type, Video, Volume2 } from "lucide-react";
-
-function formatInteger(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
-}
 
 function normalizeTypeLabel(value: string): string {
 	const normalized = value.trim().toLowerCase();
@@ -84,6 +82,7 @@ export function MiniBars({
 	modelId: string;
 	points: Array<{ date: string; value: number }>;
 }) {
+	const format = useDisplayFormatters();
 	const compactPoints = points.slice(-18);
 	const maxValue = compactPoints.length
 		? Math.max(...compactPoints.map((point) => point.value), 1)
@@ -103,7 +102,10 @@ export function MiniBars({
 							)}%`,
 							opacity: point.value > 0 ? 1 : 0.2,
 						}}
-						title={`${formatInteger(point.value)} tokens`}
+						title={`${format.number(point.value, {
+							maximumFractionDigits: 0,
+							notation: "standard",
+						})} tokens`}
 					/>
 				))
 			) : (

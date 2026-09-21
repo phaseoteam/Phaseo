@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -116,13 +117,6 @@ function stateMeta(state: ManagementKeyState) {
 	}
 }
 
-function formatDate(value?: string | null) {
-	if (!value) return "Never";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return "Never";
-	return date.toLocaleDateString();
-}
-
 function formatExpiry(value?: string | null) {
 	if (!value) return "No expiry";
 	const date = new Date(value);
@@ -138,6 +132,7 @@ function formatKeyReference(prefix?: string | null) {
 }
 
 export default function ManagementKeysPanel({ teamsWithKeys }: any) {
+	const format = useDisplayFormatters();
 	const [activeDialog, setActiveDialog] =
 		useState<ActiveManagementKeyDialog>(null);
 	const rows = useMemo(() => {
@@ -225,10 +220,10 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 									</div>
 								</TableCell>
 								<TableCell className="text-xs text-muted-foreground">
-									{formatDate(k.created_at)}
+									{format.date(k.created_at, "Never")}
 								</TableCell>
 								<TableCell className="text-xs text-muted-foreground">
-									{formatDate(k.last_used_at)}
+									{format.date(k.last_used_at, "Never")}
 								</TableCell>
 								<TableCell className="text-xs text-muted-foreground">
 									{formatExpiry(k.expires_at)}

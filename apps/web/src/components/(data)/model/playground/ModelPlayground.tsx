@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/tooltip";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { fetchChatWebApi } from "@/lib/web-api/client";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	buildAudioRequestOptions,
 	buildEmbeddingsRequestOptions,
@@ -216,20 +217,6 @@ function extractThroughputTokensPerSecond(
 	if (fromMeta != null) return fromMeta;
 	if (totalTokens == null || elapsedMs <= 0) return null;
 	return totalTokens / (elapsedMs / 1000);
-}
-
-function formatDuration(ms: number): string {
-	return `${(ms / 1000).toFixed(1)}s`;
-}
-
-function formatTokens(totalTokens: number | null): string {
-	if (totalTokens == null) return "N/A tokens";
-	return `${Math.round(totalTokens).toLocaleString()} tokens`;
-}
-
-function formatThroughput(tokensPerSecond: number | null): string {
-	if (tokensPerSecond == null) return "N/A tok/s";
-	return `${tokensPerSecond.toFixed(1)} tok/s`;
 }
 
 function formatCost(totalCostUsd: string | null): string {
@@ -1496,6 +1483,14 @@ export default function ModelPlayground({
 	gatewayModels = [],
 	primaryModelIdentifierByEndpoint = {},
 }: ModelPlaygroundProps) {
+	const format = useDisplayFormatters();
+	const formatDuration = (ms: number) => `${format.number(ms / 1000, { maximumFractionDigits: 1, notation: "standard" })}s`;
+	const formatTokens = (totalTokens: number | null) => totalTokens == null
+		? "N/A tokens"
+		: `${format.number(Math.round(totalTokens))} tokens`;
+	const formatThroughput = (tokensPerSecond: number | null) => tokensPerSecond == null
+		? "N/A tok/s"
+		: `${format.number(tokensPerSecond, { maximumFractionDigits: 1, notation: "standard" })} tok/s`;
 	const [mode, setMode] = useState<PlaygroundMode>("text");
 	const [prompt, setPrompt] = useState("");
 	const [responseText, setResponseText] = useState("");
@@ -2847,11 +2842,11 @@ export default function ModelPlayground({
 							<div className="space-y-2 rounded-md border border-black/15 bg-black/[0.02] p-3 text-sm dark:border-white/20 dark:bg-white/[0.03]">
 								<p>
 									<span className="font-medium">Vectors:</span>{" "}
-									{embeddingsVectors.length.toLocaleString()}
+									{format.number(embeddingsVectors.length)}
 								</p>
 								<p>
 									<span className="font-medium">Dimensions:</span>{" "}
-									{(embeddingsFirstVector?.length ?? 0).toLocaleString()}
+									{format.number(embeddingsFirstVector?.length ?? 0)}
 								</p>
 								{embeddingsFirstVector ? (
 									<p className="font-mono text-xs text-black/70 dark:text-white/70">

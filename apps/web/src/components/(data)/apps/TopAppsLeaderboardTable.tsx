@@ -14,6 +14,7 @@ import {
 import { getPublicAppPath } from "@/lib/apps/publicAppPath";
 import AppCategoryTags from "@/components/(data)/apps/AppCategoryTags";
 import AppLogo from "@/components/(data)/apps/AppLogo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const PAGE_SIZE = 20;
 
@@ -35,15 +36,6 @@ const RANGE_OPTIONS: Array<{ value: RankingRange; label: string }> = [
 	{ value: "month", label: "This month" },
 ];
 
-function formatCompactNumber(value: number): string {
-	if (!Number.isFinite(value)) return "0";
-	if (value >= 1e12) return `${(value / 1e12).toFixed(1)}T`;
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-	return value.toLocaleString();
-}
-
 function getInitial(name: string): string {
 	return name.trim().charAt(0).toUpperCase() || "A";
 }
@@ -64,6 +56,7 @@ export default function TopAppsLeaderboardTable({
 	rowsByRange: Record<RankingRange, LeaderboardAppRow[]>;
 	imageUrlsById: Record<string, string | null>;
 }) {
+	const format = useDisplayFormatters();
 	const [range, setRange] = useState<RankingRange>("month");
 	const [page, setPage] = useState(1);
 	const rows = rowsByRange[range];
@@ -144,12 +137,12 @@ export default function TopAppsLeaderboardTable({
 										<div className="min-w-0">
 											<p className="truncate text-sm font-semibold text-foreground group-hover:underline group-hover:underline-offset-4">{app.appName}</p>
 											<p className="mt-0.5 truncate text-xs text-muted-foreground">
-												{urlLabel ?? `${formatCompactNumber(app.requests)} requests`} · {app.uniqueModels} {app.uniqueModels === 1 ? "model" : "models"}
+												{urlLabel ?? `${format.number(app.requests, { maximumFractionDigits: 1 })} requests`} · {format.number(app.uniqueModels)} {app.uniqueModels === 1 ? "model" : "models"}
 											</p>
 											<AppCategoryTags categoryCsv={app.appCategory} className="mt-1.5" />
 										</div>
 										<p className="pl-2 text-right text-sm font-semibold tabular-nums text-foreground">
-											{formatCompactNumber(app.tokens)} <span className="hidden font-normal text-muted-foreground sm:inline">tokens</span>
+											{format.number(app.tokens, { maximumFractionDigits: 1 })} <span className="hidden font-normal text-muted-foreground sm:inline">tokens</span>
 										</p>
 									</Link>
 								);

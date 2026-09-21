@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from "recharts";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { assignSeriesColours, keyForSeries } from "@/components/(rankings)/chart-colors";
@@ -21,21 +22,6 @@ type Row = {
 const TOP_MODELS = 10;
 const UNKNOWN_MODEL_LABEL = "Unknown model";
 const WINDOW_DAYS = 30;
-
-function formatDayLabel(date: Date) {
-	return date.toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-	});
-}
-
-function formatNumber(value: number) {
-	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-	return value.toLocaleString();
-}
 
 function getTokens(usage: any) {
 	const total = Number(usage?.total_tokens);
@@ -66,6 +52,11 @@ export default function AppUsageChart({
 	modelLabels?: Record<string, string>;
 	modelColours?: Record<string, string | null | undefined>;
 }) {
+	const format = useDisplayFormatters();
+	const formatDayLabel = (date: Date) => format.calendarDate(date);
+	const formatNumber = (value: number) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
 	const { chartData, seriesKeys, seriesStyle } = useMemo(() => {
@@ -301,4 +292,3 @@ export default function AppUsageChart({
 		</div>
 	);
 }
-

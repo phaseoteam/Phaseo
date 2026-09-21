@@ -16,6 +16,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const DEFAULT_VISIBLE_BENCHMARKS = 4;
 
@@ -196,18 +197,21 @@ function buildComparableBenchmarks(
 
 function formatScoreValue(
 	value: number | null | undefined,
-	scoreType: BenchmarkScoreType
+	scoreType: BenchmarkScoreType,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"]
 ): string {
 	if (value == null || !Number.isFinite(value)) return "-";
 	if (scoreType === "percent") {
-		return `${value.toLocaleString("en-US", {
+		return `${formatNumber(value, {
 			minimumFractionDigits: value < 10 ? 1 : 0,
 			maximumFractionDigits: 2,
+			notation: "standard",
 		})}%`;
 	}
-	return value.toLocaleString("en-US", {
+	return formatNumber(value, {
 		minimumFractionDigits: 0,
 		maximumFractionDigits: 2,
+		notation: "standard",
 	});
 }
 
@@ -242,6 +246,7 @@ function CustomTooltip({
 	label?: string;
 	metaByName: Record<string, ComparableBenchmark>;
 }) {
+	const format = useDisplayFormatters();
 	if (!active || !payload || !payload.length || !label) return null;
 	const benchmarkMeta = metaByName[label];
 	const scoreType = benchmarkMeta?.scoreType ?? "numeric";
@@ -257,7 +262,7 @@ function CustomTooltip({
 				<div key={item.name} className="flex items-center justify-between gap-3 text-xs">
 					<span>{item.name}</span>
 					<span className="font-mono">
-						{formatScoreValue(item.value, scoreType)}
+						{formatScoreValue(item.value, scoreType, format.number)}
 					</span>
 				</div>
 			))}
@@ -270,6 +275,7 @@ export default function PerformanceBenchmarkGraph({
 }: {
 	selectedModels: ExtendedModel[];
 }) {
+	const format = useDisplayFormatters();
 	const [expanded, setExpanded] = React.useState(false);
 	const [selectedScoreType, setSelectedScoreType] =
 		React.useState<BenchmarkScoreType>("percent");
@@ -507,7 +513,7 @@ export default function PerformanceBenchmarkGraph({
 														) : null}
 													</span>
 													<span className="min-w-[70px] text-right font-mono tabular-nums">
-														{formatScoreValue(value, benchmark.scoreType)}
+												{formatScoreValue(value, benchmark.scoreType, format.number)}
 													</span>
 												</div>
 												<div className="h-2 rounded bg-muted/60 overflow-hidden">
@@ -548,4 +554,3 @@ export default function PerformanceBenchmarkGraph({
 		</section>
 	);
 }
-

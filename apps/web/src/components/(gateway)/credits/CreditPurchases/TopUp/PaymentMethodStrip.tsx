@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ShieldCheck, CreditCard, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCardBrand } from "./cardBrand";
+import { SensitiveValue } from "@/components/display/SensitiveValue";
 
 function Tile({
     active,
@@ -101,18 +102,18 @@ export default function PaymentMethodStrip({
 
                                     <div className="leading-tight">
                                         <div className="text-sm font-medium capitalize text-foreground">
-                                            <span data-pii="true">****{last4}</span>
+											<SensitiveValue inline label="card number">****{last4}</SensitiveValue>
                                         </div>
                                         <div className="text-xs text-muted-foreground">
                                             {brand}
                                             {pm.card?.exp_month && pm.card?.exp_year
                                                 ? (
-                                                    <span data-pii="true">
+													<SensitiveValue inline label="card expiry">
                                                         {" "}
                                                         - Expires{" "}
                                                         {String(pm.card.exp_month).padStart(2, "0")}/
                                                         {String(pm.card.exp_year).slice(-2)}
-                                                    </span>
+													</SensitiveValue>
                                                 )
                                                 : null}
                                         </div>

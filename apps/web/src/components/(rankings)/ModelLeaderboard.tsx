@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -51,14 +52,6 @@ const RANGE_OPTIONS: Array<{ key: LeaderboardRange; label: string }> = [
 	{ key: "month", label: "Last 30d" },
 	{ key: "trending", label: "Trending" },
 ];
-
-function formatTokens(value: number) {
-	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-	return value.toLocaleString();
-}
 
 function getChangeDisplay(entry: ModelLeaderboardEntry) {
 	const trend = entry.trend ?? "same";
@@ -111,6 +104,10 @@ export function ModelLeaderboard({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: ModelLeaderboardProps) {
+	const format = useDisplayFormatters();
+	const formatTokens = (value: number) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const availableRanges = useMemo(
 		() =>
 			RANGE_OPTIONS.filter(

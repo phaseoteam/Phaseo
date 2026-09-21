@@ -4,6 +4,10 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { normaliseCountryCode } from "@/lib/countryCodes";
+import {
+	DISPLAY_PREFERENCE_SELECT,
+	displayPreferencesFromRow,
+} from "@/lib/displayPreferences";
 import { providerAccountWorkspaceId } from "./provider-account";
 
 function cookieValue(request: Request, name: string): string | null {
@@ -270,7 +274,7 @@ accountAuthRouter.get("/header", async (c) => {
 	try {
 		const client = getDataClient(c.env);
 		const [userResult, membershipResult, ownedResult] = await Promise.all([
-			client.from("users").select("default_workspace_id,role,display_name").eq("user_id", user.id).maybeSingle(),
+			client.from("users").select(`default_workspace_id,role,display_name,${DISPLAY_PREFERENCE_SELECT}`).eq("user_id", user.id).maybeSingle(),
 			client.from("workspace_members").select("workspace_id").eq("user_id", user.id),
 			client.from("workspaces").select("id").eq("owner_user_id", user.id),
 		]);
@@ -326,6 +330,7 @@ accountAuthRouter.get("/header", async (c) => {
 				avatarUrl: metadataString(user.userMetadata, ["avatar_url", "picture", "picture_url"]),
 			},
 			teams,
+			displayPreferences: displayPreferencesFromRow(userResult.data),
 			...(currentTeamId ? { currentTeamId } : {}),
 			...(role ? { userRole: role } : {}),
 		}, 200, PRIVATE_NO_STORE_HEADERS);

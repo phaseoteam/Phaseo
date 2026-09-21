@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, type ReactElement } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import {
 	Collapsible,
@@ -91,21 +92,6 @@ type ThreadDateGroup = {
 	threads: ChatThread[];
 };
 
-function getOrdinalDay(day: number) {
-	const remainder = day % 100;
-	if (remainder >= 11 && remainder <= 13) return `${day}th`;
-	switch (day % 10) {
-		case 1:
-			return `${day}st`;
-		case 2:
-			return `${day}nd`;
-		case 3:
-			return `${day}rd`;
-		default:
-			return `${day}th`;
-	}
-}
-
 function getThreadDate(thread: ChatThread) {
 	return getChatThreadActivityDate(thread);
 }
@@ -119,13 +105,10 @@ function getThreadDateKey(date: Date | null) {
 	].join("-");
 }
 
-function formatThreadDate(date: Date | null) {
-	if (!date) return "Unknown date";
-	const month = date.toLocaleDateString("en-GB", { month: "long" });
-	return `${getOrdinalDay(date.getDate())} ${month} ${date.getFullYear()}`;
-}
-
-function buildThreadDateGroups(groupedThreads: GroupedThreads) {
+function buildThreadDateGroups(
+	groupedThreads: GroupedThreads,
+	formatDate: (date: Date | null) => string,
+) {
 	const groups = new Map<string, ThreadDateGroup>();
 
 	const appendThreads = (threads: ChatThread[], labelOverride?: string) => {
@@ -139,7 +122,7 @@ function buildThreadDateGroups(groupedThreads: GroupedThreads) {
 			}
 			groups.set(key, {
 				key,
-				label: labelOverride ?? formatThreadDate(date),
+				label: labelOverride ?? formatDate(date),
 				threads: [thread],
 			});
 		}
@@ -182,6 +165,7 @@ export function ChatSidebar({
 	activeTagId,
 	onTagFilterChange,
 }: ChatSidebarProps) {
+	const format = useDisplayFormatters();
 	const { state: sidebarState, isMobile } = useSidebar();
 	const [tagsOpen, setTagsOpen] = useState(true);
 	const [chatEditMode, setChatEditMode] = useState(false);
@@ -202,7 +186,10 @@ export function ChatSidebar({
 			button
 		);
 	const activeTag = tags.find((tag) => tag.id === activeTagId) ?? null;
-	const dateThreadGroups = buildThreadDateGroups(groupedThreads);
+	const dateThreadGroups = buildThreadDateGroups(
+		groupedThreads,
+		(date) => date ? format.date(date) : "Unknown date",
+	);
 	const tagsByRecentUse = useMemo(() => {
 		const latestUseByTagId = new Map<string, number>();
 		for (const thread of threads) {

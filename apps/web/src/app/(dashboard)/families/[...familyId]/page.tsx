@@ -17,6 +17,7 @@ import type { FamilyModelItem } from "@/lib/fetchers/families/types";
 import { fetchFrontendFamily } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
+import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";
 
 const STATUS_STYLES: Record<string, string> = {
 	Available:
@@ -35,17 +36,6 @@ const STATUS_STYLES: Record<string, string> = {
 		"border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300",
 	default: "border-border bg-muted/40 text-muted-foreground",
 };
-
-const monthYearFormatter = new Intl.DateTimeFormat("en", {
-	month: "short",
-	year: "numeric",
-});
-
-const fullDateFormatter = new Intl.DateTimeFormat("en", {
-	day: "numeric",
-	month: "short",
-	year: "numeric",
-});
 
 function parseFamilyId(input: string[] | string | undefined): string {
 	if (!input) return "";
@@ -80,9 +70,7 @@ function getReleaseSpan(members: FamilyModelItem[]) {
 	const first = dates[0];
 	const last = dates[dates.length - 1];
 	if (!first || !last) return null;
-	const firstLabel = monthYearFormatter.format(first);
-	const lastLabel = monthYearFormatter.format(last);
-	return { firstLabel, lastLabel };
+	return { first, last };
 }
 
 async function fetchFamily(familyId: string) {
@@ -188,19 +176,19 @@ export default async function Page({
 
 					<dl className="grid grid-cols-2 border-y border-border/70 lg:border-y-0">
 						{[
-							{ label: "Models", value: String(members.length) },
+							{ label: "Models", value: <DisplayNumber value={members.length} /> },
 							{
 								label: "Release span",
 								value: releaseSpan ? (
 									<span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-										{releaseSpan.firstLabel}
-										{releaseSpan.firstLabel !== releaseSpan.lastLabel ? (
+										<DisplayCalendarDate value={releaseSpan.first} />
+										{releaseSpan.first.getTime() !== releaseSpan.last.getTime() ? (
 											<>
 												<ArrowRight
 													className="size-3.5 shrink-0 text-muted-foreground"
 													aria-hidden="true"
 												/>
-												{releaseSpan.lastLabel}
+											<DisplayCalendarDate value={releaseSpan.last} />
 											</>
 										) : null}
 									</span>
@@ -269,7 +257,7 @@ export default async function Page({
 											</div>
 											<div className="flex items-center gap-2 text-sm text-muted-foreground">
 												<CalendarDays className="size-4" />
-												{date ? fullDateFormatter.format(date) : "Date pending"}
+												{date ? <DisplayCalendarDate value={date} /> : "Date pending"}
 											</div>
 											<div>
 												<Badge

@@ -7,6 +7,7 @@ import { CodeBlock } from "@/components/ai-elements/code-block";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { agentSdkSupportReason, sdkCode, sdkExportStore, type SdkSample } from "@/lib/chat/sdkExport";
 import { cn } from "@/lib/utils";
@@ -43,7 +44,10 @@ function IntegrationMark({ language, isAgent }: Pick<Integration, "language" | "
 export function RoomSdkExport() {
   const request = useSyncExternalStore(sdkExportStore.subscribe, sdkExportStore.get, () => null);
   const pathname = usePathname();
-  const [selection, setSelection] = useState<SdkSample>("sdk-typescript");
+  const { preferences } = useDisplayPreferences();
+  const [selection, setSelection] = useState<SdkSample>(() =>
+    preferences.codeLanguage === "python" ? "sdk-python" : "sdk-typescript",
+  );
   const [notice, setNotice] = useState("");
   const copyGeneration = useRef(0);
 

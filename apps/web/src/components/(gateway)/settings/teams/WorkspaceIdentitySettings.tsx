@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +29,7 @@ async function responseJson<T>(response: Response): Promise<T> {
 }
 
 export default function WorkspaceIdentitySettings({ workspaceId, initialSettings, canEdit, canConfigureEnterprise, mode = "overview" }: Props) {
+	const format = useDisplayFormatters();
 	const [summary, setSummary] = React.useState<IdentityAddonSummary | null>(null);
 	const [loading, setLoading] = React.useState(true);
 	const [working, setWorking] = React.useState(false);
@@ -89,9 +91,7 @@ export default function WorkspaceIdentitySettings({ workspaceId, initialSettings
 	if (!active) return canConfigureEnterprise ? <EnterprisePlanQuestionnaire canEdit={canEdit} workspaceId={workspaceId} /> : null;
 	if (mode === "sso") return <WorkspaceSamlSettingsCard workspaceId={workspaceId} initialSettings={initialSettings} canEdit={canEdit} />;
 	if (mode === "scim") return <WorkspaceScimSettingsCard workspaceId={workspaceId} canEdit={canEdit} />;
-	const periodEnd = summary?.currentPeriodEnd
-		? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(summary.currentPeriodEnd))
-		: null;
+	const periodEnd = summary?.currentPeriodEnd ? format.date(summary.currentPeriodEnd) : null;
 
 	return (
 		<div className="space-y-6">
@@ -100,13 +100,13 @@ export default function WorkspaceIdentitySettings({ workspaceId, initialSettings
 					{[["Single sign-on", "SAML for your identity provider"], ["Provisioning", "SCIM users, groups and bulk sync"], ["Directory", "Departments, roles and leads"]].map(([title, detail]) => <div key={title} className="grid gap-1 py-3 sm:grid-cols-[12rem_1fr]"><p className="text-sm font-medium">{title}</p><p className="text-sm text-muted-foreground">{detail}</p></div>)}
 				</div>
 				<div className="grid gap-6 border-b border-border/60 pb-5 sm:grid-cols-2">
-					<div><h3 className="text-sm font-semibold">Subscription</h3><dl className="mt-3 space-y-2 text-sm"><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Plan</dt><dd>Self Serve Enterprise</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Members included</dt><dd>{summary?.includedMembers?.toLocaleString("en-US") ?? "—"}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Credit top-up fee</dt><dd>{summary?.feePolicy === "included_allowance" ? "Included allowance" : "5% ($1 minimum)"}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Renewal</dt><dd>{summary?.grandfathered ? "Included" : periodEnd ?? "Active"}</dd></div></dl></div>
+					<div><h3 className="text-sm font-semibold">Subscription</h3><dl className="mt-3 space-y-2 text-sm"><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Plan</dt><dd>Self Serve Enterprise</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Members included</dt><dd>{summary?.includedMembers != null ? format.number(summary.includedMembers) : "—"}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Credit top-up fee</dt><dd>{summary?.feePolicy === "included_allowance" ? "Included allowance" : "5% ($1 minimum)"}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Renewal</dt><dd>{summary?.grandfathered ? "Included" : periodEnd ?? "Active"}</dd></div></dl></div>
 					<div><h3 className="text-sm font-semibold">Administration</h3><div className="mt-3 flex flex-col items-start gap-2"><Button asChild variant="outline" size="sm"><Link href="/settings/workspaces/enterprise/directory">View directory</Link></Button><Button asChild variant="outline" size="sm"><Link href="/settings/workspaces/enterprise/departments">Manage departments</Link></Button></div></div>
 				</div>
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="text-sm">
 						<p className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-500" />{summary?.grandfathered ? "Included for this workspace" : periodEnd ? summary?.cancelAtPeriodEnd ? `Cancels ${periodEnd}` : `Renews ${periodEnd}` : "Subscription active"}</p>
-						{summary?.includedMembers ? <p className="mt-1 text-xs text-muted-foreground">Up to {summary.includedMembers} members{summary.feePolicy === "included_allowance" ? ` · $${summary.remainingCardTopUpUsd.toLocaleString("en-US")} fee-free card allowance remaining` : " · Standard credit top-up fee"}</p> : null}
+						{summary?.includedMembers ? <p className="mt-1 text-xs text-muted-foreground">Up to {format.number(summary.includedMembers)} members{summary.feePolicy === "included_allowance" ? ` · $${format.number(summary.remainingCardTopUpUsd, { notation: "standard" })} fee-free card allowance remaining` : " · Standard credit top-up fee"}</p> : null}
 					</div>
 					{summary?.provider === "stripe" ? <Button variant="outline" onClick={openPortal} disabled={working || !canEdit}>Manage subscription <ArrowUpRight className="ml-2 h-4 w-4" /></Button> : <p className="max-w-xs text-right text-xs text-muted-foreground">Included for this workspace; there is no separate card subscription to manage.</p>}
 				</div>

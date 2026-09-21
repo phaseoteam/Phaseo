@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Check, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -88,13 +89,6 @@ function getReleaseDate(model: ExtendedModel): Date | null {
 	return parsed;
 }
 
-function getReleaseMonthLabel(date: Date): string {
-	return date.toLocaleDateString("en-US", {
-		month: "short",
-		year: "numeric",
-	});
-}
-
 export default function ModelCombobox({
 	models,
 	selected,
@@ -107,6 +101,15 @@ export default function ModelCombobox({
 	showSelectionCount = true,
 	className,
 }: ModelComboboxProps) {
+	const format = useDisplayFormatters();
+	const getReleaseMonthLabel = React.useCallback(
+		(date: Date) => format.dateParts(date, {
+			month: "long",
+			year: "numeric",
+			timeZone: "UTC",
+		}),
+		[format],
+	);
 	const [internalDialogOpen, setInternalDialogOpen] = React.useState(false);
 	const openPropIsControlled = open !== undefined;
 	const dialogOpen = open ?? internalDialogOpen;
@@ -172,7 +175,7 @@ export default function ModelCombobox({
 					}),
 			}))
 			.sort((a, b) => b.monthTimestamp - a.monthTimestamp);
-	}, [models]);
+	}, [getReleaseMonthLabel, models]);
 
 	const filteredGroups = React.useMemo(() => {
 		const term = searchTerm.trim().toLowerCase();
