@@ -1,4 +1,7 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
+	DecisionComposer,
 	createDefaultDecisionDraft,
 	serializeDecisionDraft,
 	validateDecisionDraft,
@@ -39,5 +42,20 @@ describe("DecisionComposer draft helpers", () => {
 				criteria: ["No evidence", "Early signal"],
 			},
 		});
+	});
+
+	it("keeps long decision questions vertically scrollable", () => {
+		const html = renderToStaticMarkup(
+			createElement(DecisionComposer, {
+				draft: createDefaultDecisionDraft(),
+				error: null,
+				isSubmitting: false,
+				onDraftChange: () => undefined,
+				onSubmit: () => undefined,
+			}),
+		);
+
+		expect(html).toContain("overflow-y-auto");
+		expect(html).not.toContain("overflow-hidden");
 	});
 });

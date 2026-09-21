@@ -339,7 +339,7 @@ export function DecisionComposer({
 				}
 				rows={1}
 				className={cn(
-					"max-h-36 resize-none overflow-hidden border-0 bg-transparent text-sm leading-5 shadow-none transition-[min-height,padding] duration-200 focus-visible:ring-0 motion-reduce:transition-none",
+					"max-h-36 resize-none overflow-y-auto border-0 bg-transparent text-sm leading-5 shadow-none transition-[min-height,padding] duration-200 focus-visible:ring-0 motion-reduce:transition-none",
 					composerExpanded
 						? "min-h-20 px-3.5 py-3"
 						: "min-h-9 px-3.5 py-2",
