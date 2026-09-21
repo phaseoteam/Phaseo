@@ -36,6 +36,20 @@ describe("Xiaomi quirks", () => {
 		});
 	});
 
+	it("uses reasoning.effort for native Responses requests", () => {
+		const request: Record<string, unknown> = { input: [] };
+		const ir: any = {
+			reasoning: {
+				effort: "high",
+			},
+		};
+
+		xiaomiQuirks.transformRequest?.({ request, ir });
+
+		expect(request.reasoning).toEqual({ effort: "high" });
+		expect(request).not.toHaveProperty("chat_template_kwargs");
+	});
+
 	it("maps developer role to system", () => {
 		const request: Record<string, any> = {
 			messages: [

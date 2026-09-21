@@ -81,6 +81,7 @@ function usesOpenAIResponsesShape(providerId?: string): boolean {
 	return (
 		canonicalProviderId === "openai" ||
 		canonicalProviderId === "openai-eu" ||
+		canonicalProviderId === "xiaomi" ||
 		canonicalProviderId === "deepseek" ||
 		canonicalProviderId === "meta" ||
 		canonicalProviderId === "amazon-bedrock" ||
@@ -160,63 +161,6 @@ export function irToOpenAIResponses(
 	actualProviderId?: string,
 ): any {
 	const asyncToolProviderId = actualProviderId ?? providerId;
-	// Xiaomi uses messages instead of input_items for responses
-	// This is a fallback path - normally Xiaomi uses Chat Completions route
-	if (providerId === 'xiaomi') {
-		const messages: any[] = [];
-		for (const msg of ir.messages) {
-			if (msg.role === "system") {
-				messages.push({
-					role: "system",
-					content: msg.content.map(mapContentPart).map(c => typeof c === 'string' ? c : c.text).join(''),
-				});
-			} else if (msg.role === "developer") {
-				messages.push({
-					role: "developer",
-					content: msg.content.map(mapContentPart).map(c => typeof c === 'string' ? c : c.text).join(''),
-				});
-			} else if (msg.role === "user") {
-				messages.push({
-					role: "user",
-					content: msg.content.map(mapContentPart).map(c => typeof c === 'string' ? c : c.text).join(''),
-				});
-			} else if (msg.role === "assistant") {
-				messages.push({
-					role: "assistant",
-					content: msg.content.map(mapContentPart).map(c => typeof c === 'string' ? c : c.text).join(''),
-				});
-			}
-		}
-		const request: any = {
-			model: providerModelSlug || ir.model,
-			messages,
-		};
-		if (ir.maxTokens !== undefined) request.max_tokens = ir.maxTokens;
-		if (ir.temperature !== undefined) request.temperature = ir.temperature;
-		if (ir.topP !== undefined) request.top_p = ir.topP;
-		if (ir.seed !== undefined) request.seed = ir.seed;
-		if (ir.webSearchOptions !== undefined) request.web_search_options = ir.webSearchOptions;
-		if (ir.tools && ir.tools.length > 0) {
-			request.tools = ir.tools.map((tool) => toOpenAIResponsesTool(tool, false, asyncToolProviderId));
-		}
-
-		// Apply reasoning params - Xiaomi not configured, so this won't add anything
-		applyReasoningParams({ ir, request, providerId, providerModelSlug });
-
-		// Xiaomi-specific format: chat_template_kwargs.enable_thinking
-		// Xiaomi uses a nested parameter instead of the standard reasoning field
-		const reasoningEnabled = ir.reasoning?.enabled ??
-			(ir.reasoning?.effort && ir.reasoning.effort !== "none");
-
-		if (reasoningEnabled) {
-			request.chat_template_kwargs = {
-				enable_thinking: true,
-			};
-		}
-
-		return request;
-	}
-
 	const inputItems: any[] = [];
 
 	// Convert IR messages to Responses API input_items

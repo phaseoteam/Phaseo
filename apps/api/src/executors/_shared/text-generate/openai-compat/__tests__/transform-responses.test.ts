@@ -490,6 +490,26 @@ describe("openAIResponsesToIR", () => {
 });
 
 describe("irToOpenAIResponses", () => {
+	it("uses Xiaomi's native Responses API input shape", () => {
+		const request = irToOpenAIResponses({
+			model: "xiaomi/mimo-v2.6-pro",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hello" }],
+			}],
+			stream: true,
+		} as any, "mimo-v2.6-pro-ultraspeed", "xiaomi");
+
+		expect(request.model).toBe("mimo-v2.6-pro-ultraspeed");
+		expect(request.input).toEqual([{
+			type: "message",
+			role: "user",
+			content: [{ type: "input_text", text: "hello" }],
+		}]);
+		expect(request).not.toHaveProperty("messages");
+		expect(request).not.toHaveProperty("input_items");
+	});
+
 	it("preserves cache_control markers for explicit cache providers", () => {
 		const request = irToOpenAIResponses({
 			model: "qwen/qwen3.7-max",
