@@ -1,4 +1,5 @@
 export type SdkRequest = { endpoint: string; body: Record<string, unknown>; baseUrl?: string; requestId?: string; status?: number };
+export type SdkSample = "sdk-typescript" | "sdk-python" | "agent-typescript" | "agent-python";
 
 const endpoints: Record<string, string> = {
   text: "/responses", playground: "/responses", "chat-completions": "/chat/completions", messages: "/messages",
@@ -80,7 +81,136 @@ function pythonLiteral(value: unknown, depth = 1): string {
   return JSON.stringify(value);
 }
 
-export function sdkCode(request: SdkRequest, language: "typescript" | "python"): string {
+const agentClientOptionKeys: Record<string, string> = {
+  provider: "provider",
+  reasoning: "reasoning",
+  metadata: "metadata",
+  response_format: "responseFormat",
+  meta: "includeMeta",
+  web_search_options: "webSearchOptions",
+  plugins: "plugins",
+  provider_options: "providerOptions",
+  prompt_cache_key: "promptCacheKey",
+};
+
+const agentOwnedRequestKeys = new Set([
+  "model", "input", "instructions", "tools", "stream", "temperature", "max_output_tokens", "top_p",
+  ...Object.keys(agentClientOptionKeys),
+]);
+
+export function agentSdkSupportReason(request: SdkRequest): string | null {
+  if (request.endpoint !== "/responses") return "Available for Responses requests";
+  if (request.body.input === undefined) return "Add an input to use the Agent SDK";
+  if (Array.isArray(request.body.tools) && request.body.tools.length > 0) return "Remove request tools to create an agent starter";
+  return normalizeAgentInput(request.body.input).reason;
+}
+
+type NormalizedAgentInput = { input?: string; instructions?: string; reason: string | null };
+
+function responseMessageText(content: unknown): string | null {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return null;
+  const text = content.map((part) => {
+    if (!part || typeof part !== "object" || Array.isArray(part)) return null;
+    const record = part as Record<string, unknown>;
+    return record.type === "input_text" && typeof record.text === "string" ? record.text : null;
+  });
+  return text.every((part): part is string => part !== null) ? text.join("\n") : null;
+}
+
+function normalizeAgentInput(value: unknown): NormalizedAgentInput {
+  if (typeof value === "string") return { input: value, reason: null };
+  if (!Array.isArray(value)) return { reason: "Use text input to create an agent starter" };
+
+  const instructions: string[] = [];
+  const userInputs: string[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return { reason: "Use text-only messages to create an agent starter" };
+    }
+    const message = item as Record<string, unknown>;
+    const content = responseMessageText(message.content);
+    if (content === null) return { reason: "Use text-only messages to create an agent starter" };
+    if (message.role === "system" || message.role === "developer") instructions.push(content);
+    else if (message.role === "user") userInputs.push(content);
+    else return { reason: "Start a new turn to create an agent starter" };
+  }
+  if (userInputs.length !== 1) return { reason: "Start with one user message to create an agent starter" };
+  return {
+    input: userInputs[0],
+    ...(instructions.length > 0 ? { instructions: instructions.join("\n\n") } : {}),
+    reason: null,
+  };
+}
+
+function indent(value: string, spaces: number) {
+  const padding = " ".repeat(spaces);
+  return value.replace(/\n/g, `\n${padding}`);
+}
+
+function typescriptProperty(name: string, value: unknown, spaces = 2) {
+  return `${" ".repeat(spaces)}${name}: ${indent(JSON.stringify(value, null, 2), spaces)},`;
+}
+
+function agentCode(request: SdkRequest, language: "typescript" | "python"): string {
+  const supportReason = agentSdkSupportReason(request);
+  if (supportReason) throw new Error(supportReason);
+
+  const body = request.body;
+  const model = typeof body.model === "string" ? body.model : "phaseo/free";
+  const normalizedInput = normalizeAgentInput(body.input);
+  const input = normalizedInput.input!;
+  const definitionEntries: Array<[string, unknown]> = [["model", model]];
+  const instructions = [
+    typeof body.instructions === "string" && body.instructions.trim() ? body.instructions : null,
+    normalizedInput.instructions,
+  ].filter((value): value is string => Boolean(value)).join("\n\n");
+  if (instructions) definitionEntries.push(["instructions", instructions]);
+  if (typeof body.temperature === "number") definitionEntries.push(["temperature", body.temperature]);
+  if (typeof body.max_output_tokens === "number") definitionEntries.push(["maxOutputTokens", body.max_output_tokens]);
+  if (typeof body.top_p === "number") definitionEntries.push(["topP", body.top_p]);
+
+  const clientEntries = Object.entries(agentClientOptionKeys)
+    .filter(([source]) => body[source] !== undefined)
+    .map(([source, target]) => [target, body[source]] as [string, unknown]);
+  const requestOptions = Object.fromEntries(Object.entries(body).filter(([key]) => !agentOwnedRequestKeys.has(key)));
+  if (Object.keys(requestOptions).length > 0) clientEntries.push(["requestOptions", requestOptions]);
+
+  if (language === "typescript") {
+    const definition = definitionEntries.map(([key, value]) => typescriptProperty(key, value)).join("\n");
+    const clientOptions = [
+      "  clientOptions: {",
+      "    apiKey: process.env.PHASEO_API_KEY!,",
+      ...(request.baseUrl ? [typescriptProperty("baseUrl", request.baseUrl, 4)] : []),
+      "  },",
+      ...clientEntries.map(([key, value]) => typescriptProperty(key, value)),
+    ].join("\n");
+    return `// npm install @phaseo/sdk @phaseo/agent-sdk\n// Set PHASEO_API_KEY in your server environment.\nimport { createAgent, createGatewayAgentClient } from "@phaseo/agent-sdk";\n\nconst agent = createAgent({\n  id: "request-agent",\n${definition}\n});\n\nconst client = createGatewayAgentClient({\n${clientOptions}\n});\n\nconst result = await agent.run({\n  input: ${indent(JSON.stringify(input, null, 2), 2)},\n  client,\n});\n\nconsole.log(result.output);\n`;
+  }
+
+  const pythonDefinitions: Array<[string, unknown]> = definitionEntries.map(([key, value]) => [
+    key === "maxOutputTokens" ? "max_output_tokens" : key === "topP" ? "top_p" : key,
+    value,
+  ]);
+  const pythonClientEntries: Array<[string, unknown]> = clientEntries.map(([key, value]) => [
+    ({ responseFormat: "response_format", includeMeta: "include_meta", webSearchOptions: "web_search_options", providerOptions: "provider_options", promptCacheKey: "prompt_cache_key", requestOptions: "request_options" } as Record<string, string>)[key] ?? key,
+    value,
+  ]);
+  const definition = pythonDefinitions.map(([key, value]) => `    ${JSON.stringify(key)}: ${pythonLiteral(value, 1)},`).join("\n");
+  const clientOptions = [
+    "    client_options={",
+    '        "api_key": os.environ["PHASEO_API_KEY"],',
+    ...(request.baseUrl ? [`        "base_url": ${JSON.stringify(request.baseUrl)},`] : []),
+    "    },",
+    ...pythonClientEntries.map(([key, value]) => `    ${key}=${pythonLiteral(value, 1)},`),
+  ].join("\n");
+  return `# pip install phaseo phaseo-agent-sdk\n# Set PHASEO_API_KEY in your server environment.\nimport os\n\nfrom phaseo_agent import create_agent, create_gateway_agent_client\n\nagent = create_agent({\n    "id": "request-agent",\n${definition}\n})\n\nclient = create_gateway_agent_client(\n${clientOptions}\n)\n\nresult = agent.run(\n    input=${pythonLiteral(input, 1)},\n    client=client,\n)\n\nprint(result.output)\n`;
+}
+
+export function sdkCode(request: SdkRequest, sample: SdkSample | "typescript" | "python"): string {
+  if (sample === "agent-typescript") return agentCode(request, "typescript");
+  if (sample === "agent-python") return agentCode(request, "python");
+  const language = sample === "sdk-python" ? "python" : sample === "sdk-typescript" ? "typescript" : sample;
   const method = methods[request.endpoint];
   const genericRequest = request.endpoint === "/audio/realtime/sessions";
   if (!method && !genericRequest) throw new Error("This endpoint has no SDK export");

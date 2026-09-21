@@ -9,7 +9,6 @@ import {
   type HTMLAttributes,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
 import { type BundledLanguage, codeToHtml, type ShikiTransformer } from "shiki";
@@ -80,23 +79,29 @@ export const CodeBlock = ({
   children,
   ...props
 }: CodeBlockProps) => {
-  const [html, setHtml] = useState<string>("");
-  const [darkHtml, setDarkHtml] = useState<string>("");
-  const mounted = useRef(false);
+  const highlightKey = `${language}:${showLineNumbers}:${code}`;
+  const [highlighted, setHighlighted] = useState({ key: "", html: "", darkHtml: "" });
 
   useEffect(() => {
-    highlightCode(code, language, showLineNumbers).then(([light, dark]) => {
-      if (!mounted.current) {
-        setHtml(light);
-        setDarkHtml(dark);
-        mounted.current = true;
-      }
-    });
+    let cancelled = false;
+
+    highlightCode(code, language, showLineNumbers)
+      .then(([light, dark]) => {
+        if (cancelled) return;
+        setHighlighted({ key: highlightKey, html: light, darkHtml: dark });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHighlighted({ key: highlightKey, html: "", darkHtml: "" });
+      });
 
     return () => {
-      mounted.current = false;
+      cancelled = true;
     };
-  }, [code, language, showLineNumbers]);
+  }, [code, highlightKey, language, showLineNumbers]);
+
+  const html = highlighted.key === highlightKey ? highlighted.html : "";
+  const darkHtml = highlighted.key === highlightKey ? highlighted.darkHtml : "";
 
   return (
     <CodeBlockContext.Provider value={{ code }}>
@@ -108,16 +113,24 @@ export const CodeBlock = ({
         {...props}
       >
         <div className="relative">
-          <div
-            className="overflow-auto dark:hidden [&>pre]:m-0 [&>pre]:bg-background! [&>pre]:p-4 [&>pre]:text-foreground! [&>pre]:text-sm [&_code]:font-mono [&_code]:text-sm"
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: "this is needed."
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-          <div
-            className="hidden overflow-auto dark:block [&>pre]:m-0 [&>pre]:bg-background! [&>pre]:p-4 [&>pre]:text-foreground! [&>pre]:text-sm [&_code]:font-mono [&_code]:text-sm"
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: "this is needed."
-            dangerouslySetInnerHTML={{ __html: darkHtml }}
-          />
+          {html && darkHtml ? (
+            <>
+              <div
+                className="overflow-auto dark:hidden [&>pre]:m-0 [&>pre]:bg-background! [&>pre]:p-4 [&>pre]:text-foreground! [&>pre]:text-sm [&_code]:font-mono [&_code]:text-sm"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: "this is needed."
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
+              <div
+                className="hidden overflow-auto dark:block [&>pre]:m-0 [&>pre]:bg-background! [&>pre]:p-4 [&>pre]:text-foreground! [&>pre]:text-sm [&_code]:font-mono [&_code]:text-sm"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: "this is needed."
+                dangerouslySetInnerHTML={{ __html: darkHtml }}
+              />
+            </>
+          ) : (
+            <pre className="m-0 overflow-auto bg-background p-4 text-sm text-foreground">
+              <code className="font-mono text-sm">{code}</code>
+            </pre>
+          )}
           {children && (
             <div className="absolute top-2 right-2 flex items-center gap-2">
               {children}
