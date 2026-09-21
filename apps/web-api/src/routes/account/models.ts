@@ -149,6 +149,12 @@ function resolveModelAnnouncementWebhookUrl(env: Env, override?: string): string
 	return parsed.toString();
 }
 
+function shouldRecordModelAnnouncementState(webhookUrl?: string): boolean {
+	// An override is reserved for staging or ad hoc delivery; only the configured
+	// production webhook should advance the automatic announcement cursor.
+	return !webhookUrl?.trim();
+}
+
 async function sendModelAnnouncementWebhook(
 	env: Env,
 	payload: unknown,
@@ -645,23 +651,25 @@ accountModelsRouter.post("/catalog/model-announcements", async (c) => {
 			await sendModelAnnouncementWebhook(c.env, parsed.data.payload, parsed.data.webhookUrl);
 		}
 
-		const announcedAt = new Date().toISOString();
 		let stateRecorded = true;
-		try {
-			const { error } = await client.from("model_discovery_public_announcements").upsert({
-				model_slug: model.data.model_slug,
-				status: "announced",
-				announced_at: announcedAt,
-				last_attempt_at: announcedAt,
-				last_error: null,
-				catalogue_status_snapshot: model.data.catalogue_status,
-				public_visibility_snapshot: isPublicModelRecord(model.data),
-				updated_at: announcedAt,
-			}, { onConflict: "model_slug" });
-			if (error) throw error;
-		} catch (error) {
-			stateRecorded = false;
-			console.error("[web-api/account/models] model announcement state update failed", { modelId: parsed.data.modelId, error });
+		if (shouldRecordModelAnnouncementState(parsed.data.webhookUrl)) {
+			const announcedAt = new Date().toISOString();
+			try {
+				const { error } = await client.from("model_discovery_public_announcements").upsert({
+					model_slug: model.data.model_slug,
+					status: "announced",
+					announced_at: announcedAt,
+					last_attempt_at: announcedAt,
+					last_error: null,
+					catalogue_status_snapshot: model.data.catalogue_status,
+					public_visibility_snapshot: isPublicModelRecord(model.data),
+					updated_at: announcedAt,
+				}, { onConflict: "model_slug" });
+				if (error) throw error;
+			} catch (error) {
+				stateRecorded = false;
+				console.error("[web-api/account/models] model announcement state update failed", { modelId: parsed.data.modelId, error });
+			}
 		}
 
 		return c.json({ success: true, stateRecorded }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -682,7 +690,7 @@ accountModelsRouter.post("/catalog/model-announcements/test", async (c) => {
 	try {
 		await sendModelAnnouncementWebhook(c.env, parsed.data.payload, parsed.data.webhookUrl);
 		let stateRecorded = true;
-		if (parsed.data.modelIds?.length) {
+		if (shouldRecordModelAnnouncementState(parsed.data.webhookUrl) && parsed.data.modelIds?.length) {
 			try {
 				await recordModelAnnouncementState(admin.context.client, parsed.data.modelIds);
 			} catch (error) {
