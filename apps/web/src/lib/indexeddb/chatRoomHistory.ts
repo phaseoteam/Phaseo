@@ -57,13 +57,19 @@ export async function listRoomHistory<TPayload = Record<string, unknown>>(
 		const store = tx.objectStore(STORE_NAME);
 		const index = store.index(ROOM_ID_INDEX);
 		const request = index.getAll(IDBKeyRange.only(roomId));
+		let records: Array<RoomHistoryRecord<TPayload>> = [];
 		request.onerror = () =>
 			reject(request.error ?? new Error("IndexedDB error"));
 		request.onsuccess = () => {
-			const records =
+			records =
 				(Array.isArray(request.result)
 					? request.result
 					: []) as Array<RoomHistoryRecord<TPayload>>;
+		};
+		tx.onerror = () => reject(tx.error ?? new Error("IndexedDB error"));
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("IndexedDB transaction aborted"));
+		tx.oncomplete = () => {
 			records.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 			resolve(records);
 		};
@@ -80,7 +86,10 @@ export async function upsertRoomHistory<TPayload = Record<string, unknown>>(
 		const request = store.put(record);
 		request.onerror = () =>
 			reject(request.error ?? new Error("IndexedDB error"));
-		request.onsuccess = () => resolve();
+		tx.onerror = () => reject(tx.error ?? new Error("IndexedDB error"));
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("IndexedDB transaction aborted"));
+		tx.oncomplete = () => resolve();
 	});
 }
 
@@ -92,6 +101,9 @@ export async function deleteRoomHistory(id: string): Promise<void> {
 		const request = store.delete(id);
 		request.onerror = () =>
 			reject(request.error ?? new Error("IndexedDB error"));
-		request.onsuccess = () => resolve();
+		tx.onerror = () => reject(tx.error ?? new Error("IndexedDB error"));
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("IndexedDB transaction aborted"));
+		tx.oncomplete = () => resolve();
 	});
 }

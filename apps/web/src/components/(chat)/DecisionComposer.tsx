@@ -198,6 +198,7 @@ export function serializeDecisionDraft(draft: DecisionDraft): {
 type DecisionComposerProps = {
 	draft: DecisionDraft;
 	error: string | null;
+	historyLoaded: boolean;
 	isSubmitting: boolean;
 	onDraftChange: (draft: DecisionDraft) => void;
 	onSubmit: () => void;
@@ -258,6 +259,7 @@ function ModeMenu({
 export function DecisionComposer({
 	draft,
 	error,
+	historyLoaded,
 	isSubmitting,
 	onDraftChange,
 	onSubmit,
@@ -510,7 +512,7 @@ export function DecisionComposer({
 						size="icon"
 						className="size-8 rounded-full"
 						onClick={onSubmit}
-						disabled={isSubmitting || !draft.prompt.trim()}
+						disabled={!historyLoaded || isSubmitting || !draft.prompt.trim()}
 						aria-label={isSubmitting ? "Evaluating decision" : "Send decision"}
 					>
 						<ArrowUp className="size-4" />
