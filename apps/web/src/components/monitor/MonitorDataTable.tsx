@@ -18,6 +18,11 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
 	AlignCenter,
 	AlertTriangle,
 	ArrowDown,
@@ -51,6 +56,13 @@ import {
 } from "lucide-react";
 
 import { Logo } from "@/components/Logo";
+import TableSettings from "@/components/(gateway)/usage/TableSettings";
+import { useTablePreferences } from "@/components/(gateway)/usage/useTablePreferences";
+import type {
+	TableColumnDefinition,
+	TableColumnPreference,
+	TableDensity,
+} from "@/components/(gateway)/usage/tablePreferences";
 
 import Link from "next/link";
 import { useQueryState } from "nuqs";
@@ -59,6 +71,13 @@ import { getModalityTone } from "@/lib/models/modalityStyles";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
+import {
+	groupModelRows,
+	type GroupedModelData,
+	type ModelData,
+} from "./modelTableGrouping";
+
+export type { ModelData } from "./modelTableGrouping";
 
 const MODALITY_DISPLAY_ORDER = [
 	"text",
@@ -429,59 +448,41 @@ const statusLegendOrder = [
 	"inactive",
 	"disabled",
 ] as const;
-const TABLE_COLUMNS_COUNT = 15;
 const TABLE_LOADING_SKELETON_ROWS = 12;
 const DEFAULT_SORT_FIELD = "added";
 const DEFAULT_SORT_DIRECTION: "asc" | "desc" = "desc";
-const TABLE_COLUMN_WIDTHS = [
-	420, // Model
-	168, // Provider
-	132, // Gateway Status
-	170, // Capability
-	112, // Input $
-	112, // Output $
-	96, // Tier
-	164, // Input Modalities
-	164, // Output Modalities
-	200, // Features — keep capability icons on one line
-	112, // Context
-	112, // Max Output
-	140, // Weekly Tokens
-	116, // Added
-	116, // Retired
-] as const;
-const TABLE_TOTAL_WIDTH = TABLE_COLUMN_WIDTHS.reduce(
-	(total, width) => total + width,
-	0,
-);
+export const MODEL_TABLE_COLUMNS = [
+	{ id: "model", label: "Model", width: 360 },
+	{ id: "providers", label: "Providers", width: 184 },
+	{ id: "status", label: "Gateway Status", width: 148 },
+	{ id: "capability", label: "Capabilities", width: 190 },
+	{ id: "inputPrice", label: "Input $", width: 112, numeric: true },
+	{ id: "outputPrice", label: "Output $", width: 112, numeric: true },
+	{ id: "tier", label: "Tier", width: 112 },
+	{ id: "inputModalities", label: "Input Modalities", width: 164 },
+	{ id: "outputModalities", label: "Output Modalities", width: 164 },
+	{ id: "features", label: "Features", width: 200 },
+	{ id: "context", label: "Context", width: 112, numeric: true },
+	{ id: "maxOutput", label: "Max Output", width: 112, numeric: true },
+	{ id: "weeklyTokens", label: "Weekly Tokens", width: 140, numeric: true },
+	{ id: "added", label: "Added", width: 116 },
+	{ id: "retired", label: "Retired", width: 116 },
+] as const satisfies readonly (TableColumnDefinition & { width: number })[];
 
-// Types for the model data
-export interface ModelData {
-	id: string;
-	model: string;
-	modelId: string;
-	organisationId?: string;
-	provider: {
-		name: string;
-		id: string;
-		inputPrice: number;
-		outputPrice: number;
-		features: string[];
-		executionRegions?: string[] | null;
-	};
-	endpoint: string;
-	gatewayStatus: string;
-	inputModalities: string[]; // text, image, video, audio/audio_stt/audio_tts/audio_music, file, embeddings
-	outputModalities: string[]; // text, image, video, audio/audio_stt/audio_tts/audio_music
-	context: number; // context window in tokens
-	maxOutput: number; // max output tokens
-	quantization?: string; // quantization level
-	supportedParameters?: string[];
-	tier?: string; // pricing tier
-	added?: string; // date added
-	retired?: string; // when this model is retired
-	popularityTokensWeek?: number;
-}
+type ModelTableColumnId = (typeof MODEL_TABLE_COLUMNS)[number]["id"];
+type ModelTableColumn = TableColumnDefinition & {
+	id: ModelTableColumnId;
+	width: number;
+	numeric?: boolean;
+};
+
+export type ModelTablePreferences = {
+	columns: TableColumnPreference<ModelTableColumnId>[];
+	density: TableDensity;
+	updateColumns: (columns: TableColumnPreference<ModelTableColumnId>[]) => void;
+	updateDensity: (density: TableDensity) => void;
+	resetColumns: () => void;
+};
 
 // Props for the datatable component
 interface MonitorDataTableProps {
@@ -489,6 +490,7 @@ interface MonitorDataTableProps {
 	loading?: boolean;
 	effectiveStatuses?: string[];
 	stickyHeaderOffset?: number;
+	modelTablePreferences?: ModelTablePreferences;
 }
 
 export function MonitorDataTable({
@@ -496,8 +498,17 @@ export function MonitorDataTable({
 	loading = false,
 	effectiveStatuses,
 	stickyHeaderOffset = 60,
+	modelTablePreferences,
 }: MonitorDataTableProps) {
 	const format = useDisplayFormatters();
+	const localModelTablePreferences = useTablePreferences("models-table", MODEL_TABLE_COLUMNS);
+	const {
+		columns: modelTableColumns,
+		density: modelTableDensity,
+		updateColumns: updateModelTableColumns,
+		updateDensity: updateModelTableDensity,
+		resetColumns: resetModelTableColumns,
+	} = modelTablePreferences ?? localModelTablePreferences;
 	const [searchQuery] = useQueryState("search", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -660,7 +671,7 @@ export function MonitorDataTable({
 		);
 	};
 
-	const filteredSortedData = useMemo(() => {
+	const filteredGroupedData = useMemo(() => {
 		const filtered = data.filter((item) => {
 			if (searchQuery) {
 				const searchLower = searchQuery.toLowerCase();
@@ -767,9 +778,10 @@ export function MonitorDataTable({
 			return true;
 		});
 
-		if (!sortField) return filtered;
+		const grouped = groupModelRows(filtered);
+		if (!sortField) return grouped;
 
-		return [...filtered].sort((a, b) => {
+		return [...grouped].sort((a, b) => {
 			let aValue: any;
 			let bValue: any;
 
@@ -788,50 +800,50 @@ export function MonitorDataTable({
 				return 0;
 			}
 
-			switch (sortField) {
-				case "model":
-					aValue = a.model;
-					bValue = b.model;
-					break;
-				case "provider":
-					aValue = a.provider.name;
-					bValue = b.provider.name;
-					break;
-				case "endpoint":
-					aValue = a.endpoint;
-					bValue = b.endpoint;
-					break;
-				case "inputPrice":
-					aValue = a.provider.inputPrice;
-					bValue = b.provider.inputPrice;
-					break;
-				case "outputPrice":
-					aValue = a.provider.outputPrice;
-					bValue = b.provider.outputPrice;
-					break;
-				case "status":
-					aValue = normalizeStatusValue(a.gatewayStatus);
-					bValue = normalizeStatusValue(b.gatewayStatus);
-					break;
-				case "tier":
-					aValue = a.tier || "";
-					bValue = b.tier || "";
-					break;
-				case "weeklyTokens":
-					aValue = a.popularityTokensWeek ?? 0;
-					bValue = b.popularityTokensWeek ?? 0;
-					break;
-				case "context":
-					aValue = a.context;
-					bValue = b.context;
-					break;
-				case "maxOutput":
-					aValue = a.maxOutput;
-					bValue = b.maxOutput;
-					break;
-				default:
-					aValue = "";
-					bValue = "";
+				switch (sortField) {
+					case "model":
+						aValue = a.model;
+						bValue = b.model;
+						break;
+					case "provider":
+						aValue = a.providers[0]?.name ?? "";
+						bValue = b.providers[0]?.name ?? "";
+						break;
+					case "endpoint":
+						aValue = a.endpoints[0] ?? "";
+						bValue = b.endpoints[0] ?? "";
+						break;
+					case "inputPrice":
+						aValue = a.inputPrices[0] ?? Number.POSITIVE_INFINITY;
+						bValue = b.inputPrices[0] ?? Number.POSITIVE_INFINITY;
+						break;
+					case "outputPrice":
+						aValue = a.outputPrices[0] ?? Number.POSITIVE_INFINITY;
+						bValue = b.outputPrices[0] ?? Number.POSITIVE_INFINITY;
+						break;
+					case "status":
+						aValue = normalizeStatusValue(a.statusEndpoints[0]?.status ?? "");
+						bValue = normalizeStatusValue(b.statusEndpoints[0]?.status ?? "");
+						break;
+					case "tier":
+						aValue = a.tiers[0] ?? "";
+						bValue = b.tiers[0] ?? "";
+						break;
+					case "weeklyTokens":
+						aValue = a.popularityTokensWeek ?? 0;
+						bValue = b.popularityTokensWeek ?? 0;
+						break;
+					case "context":
+						aValue = a.context;
+						bValue = b.context;
+						break;
+					case "maxOutput":
+						aValue = a.maxOutput;
+						bValue = b.maxOutput;
+						break;
+					default:
+						aValue = "";
+						bValue = "";
 			}
 
 			if (Array.isArray(aValue)) aValue = aValue.join(",");
@@ -866,7 +878,7 @@ export function MonitorDataTable({
 		sortDirection,
 	]);
 
-	const totalItems = filteredSortedData.length;
+	const totalItems = filteredGroupedData.length;
 	const tableContainerRef = useRef<HTMLDivElement | null>(null);
 	const tableHeaderTrackRef = useRef<HTMLDivElement | null>(null);
 	useEffect(() => {
@@ -876,6 +888,10 @@ export function MonitorDataTable({
 
 		const syncHeaderScroll = () => {
 			headerTrack.style.transform = `translate3d(${-tableContainer.scrollLeft}px, 0, 0)`;
+			headerTrack.style.setProperty(
+				"--table-scroll-left",
+				`${tableContainer.scrollLeft}px`,
+			);
 		};
 
 		syncHeaderScroll();
@@ -884,7 +900,7 @@ export function MonitorDataTable({
 		});
 		return () => tableContainer.removeEventListener("scroll", syncHeaderScroll);
 	}, []);
-	const shouldVirtualizeRows = filteredSortedData.length > 60;
+	const shouldVirtualizeRows = filteredGroupedData.length > 60;
 	const [scrollMargin, setScrollMargin] = useState(0);
 	useEffect(() => {
 		if (!shouldVirtualizeRows || typeof window === "undefined") return;
@@ -896,11 +912,16 @@ export function MonitorDataTable({
 		updateScrollMargin();
 		window.addEventListener("resize", updateScrollMargin);
 		return () => window.removeEventListener("resize", updateScrollMargin);
-	}, [shouldVirtualizeRows, filteredSortedData.length]);
+	}, [shouldVirtualizeRows, filteredGroupedData.length]);
 
 	const rowVirtualizer = useWindowVirtualizer({
-		count: filteredSortedData.length,
-		estimateSize: () => 52,
+		count: filteredGroupedData.length,
+		estimateSize: () =>
+			modelTableDensity === "compact"
+				? 36
+				: modelTableDensity === "expanded"
+					? 64
+					: 52,
 		overscan: 8,
 		scrollMargin,
 		scrollPaddingStart: stickyHeaderOffset,
@@ -910,10 +931,10 @@ export function MonitorDataTable({
 		const sortSignature = `${sortField}:${sortDirection}`;
 		if (previousSortRef.current === sortSignature) return;
 		previousSortRef.current = sortSignature;
-		if (!shouldVirtualizeRows || filteredSortedData.length === 0) return;
+		if (!shouldVirtualizeRows || filteredGroupedData.length === 0) return;
 		rowVirtualizer.scrollToIndex(0, { align: "start" });
 	}, [
-		filteredSortedData,
+		filteredGroupedData,
 		rowVirtualizer,
 		shouldVirtualizeRows,
 		sortDirection,
@@ -925,7 +946,7 @@ export function MonitorDataTable({
 		? virtualRows.length > 0
 			? virtualRows.map((row) => ({ index: row.index }))
 			: deferredVirtualRows.map((row) => ({ index: row.index }))
-		: filteredSortedData.map((_, index) => ({ index }));
+		: filteredGroupedData.map((_, index) => ({ index }));
 	const virtualScrollMargin = rowVirtualizer.options.scrollMargin ?? 0;
 	const paddingTop =
 		shouldVirtualizeRows && virtualRows.length > 0
@@ -988,64 +1009,69 @@ export function MonitorDataTable({
 			</div>
 		);
 	};
-	const renderProvider = (provider: {
-		name: string;
-		id: string;
-		inputPrice: number;
-		outputPrice: number;
-		features: string[];
-	}) => {
-		const isLinked = provider.id && provider.id !== "unlinked";
-
-		const logo = (
-			<div className="w-6 h-6 relative flex items-center justify-center rounded-md border">
-				<div className="w-4 h-4 relative">
-					{isLinked ? (
-						<Logo
-							id={resolveProviderLogoId({ providerId: provider.id })}
-							alt={provider.name}
-							className="object-contain"
-							fill
-						/>
-					) : (
-						<span className="text-xs text-muted-foreground">-</span>
-					)}
-				</div>
-			</div>
+	const renderProviders = (providers: GroupedModelData["providers"]) => {
+		const linkedProviders = providers.filter(
+			(provider) => provider.id && provider.id !== "unlinked",
 		);
-
-		const name = (
-			<span className="text-xs">
-				{provider.name && provider.name.toLowerCase() !== "unlinked"
-					? provider.name
-					: "-"}
-			</span>
-		);
-
-		if (!isLinked) {
-			return <span className="text-xs">-</span>;
-		}
-
+		if (!linkedProviders.length) return <span className="text-xs">-</span>;
+		const visibleProviders = linkedProviders.slice(0, 5);
+		const hiddenProviders = linkedProviders.slice(visibleProviders.length);
 		return (
-			<div className="flex items-center gap-2">
-				<Link
-					href={`/api-providers/${provider.id}`}
-					className="inline-flex cursor-pointer"
-				>
-					{logo}
-				</Link>
-				<Link
-					href={`/api-providers/${provider.id}`}
-					className="text-xs hover:underline underline-offset-2 decoration-[1px]"
-				>
-					{name}
-				</Link>
+			<div className="flex items-center">
+				<div className="flex items-center gap-1">
+					{visibleProviders.map((provider) => (
+						<Tooltip key={provider.id}>
+							<TooltipTrigger asChild>
+								<Link
+									href={`/api-providers/${provider.id}`}
+									aria-label={provider.name}
+									className="relative flex size-6 items-center justify-center rounded-md border bg-background transition-transform hover:z-10 hover:-translate-y-0.5 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								>
+									<span className="relative size-4">
+									<Logo
+										id={resolveProviderLogoId({ providerId: provider.id })}
+										alt=""
+										className="object-contain"
+										fill
+									/>
+									</span>
+								</Link>
+							</TooltipTrigger>
+							<TooltipContent side="top">{provider.name}</TooltipContent>
+						</Tooltip>
+					))}
+				</div>
+				{hiddenProviders.length > 0 ? (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<span
+								tabIndex={0}
+								aria-label={`${hiddenProviders.length} additional providers`}
+								className="ml-2 inline-flex h-6 min-w-6 items-center justify-center rounded-md border px-1 text-[10px] font-medium tabular-nums text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							>
+								+{hiddenProviders.length}
+							</span>
+						</TooltipTrigger>
+						<TooltipContent side="top" className="max-w-56">
+							<div className="space-y-1">
+								{hiddenProviders.map(({ id, name }) => (
+									<span key={id} className="block">{name}</span>
+								))}
+							</div>
+						</TooltipContent>
+					</Tooltip>
+				) : null}
 			</div>
 		);
 	};
 
-	const renderPrice = (price: number) => {
-		return price > 0 ? `$${price.toFixed(2)}` : "-";
+	const renderPriceRange = (prices: number[]) => {
+		if (!prices.length) return "-";
+		const minimum = prices[0];
+		const maximum = prices[prices.length - 1];
+		return minimum === maximum
+			? `$${minimum.toFixed(2)}`
+			: `$${minimum.toFixed(2)}–$${maximum.toFixed(2)}`;
 	};
 
 	const renderModalities = (modalities: string[], type: "input" | "output") => {
@@ -1233,6 +1259,37 @@ export function MonitorDataTable({
 		return trimmed ? trimmed : "-";
 	};
 
+	const renderStatuses = (item: GroupedModelData) => (
+		<div className="flex items-center justify-center gap-0.5">
+			{item.statusEndpoints.map(({ status, endpoint }) => (
+				<span key={`${status}-${endpoint}`}>
+					{renderStatus(status, formatEndpoint(endpoint))}
+				</span>
+			))}
+		</div>
+	);
+
+	const renderCapabilities = (endpoints: string[]) => {
+		const labels = endpoints.map(formatEndpoint);
+		if (!labels.length) return "-";
+		return (
+			<span className="block truncate font-mono text-[11px]" title={labels.join(", ")}>
+				{labels.join(", ")}
+			</span>
+		);
+	};
+
+	const renderTiers = (tiers: string[]) => (
+		<div className="flex items-center justify-center gap-2">
+			{tiers.slice(0, 2).map((tier) => (
+				<span key={tier}>{renderTier(tier)}</span>
+			))}
+			{tiers.length > 2 ? (
+				<span className="text-[11px] text-muted-foreground">+{tiers.length - 2}</span>
+			) : null}
+		</div>
+	);
+
 	const formatTokenCount = (value: number): string => {
 		if (!Number.isFinite(value) || value < 0) return "-";
 		if (value >= 1_000_000_000_000_000_000) {
@@ -1266,79 +1323,156 @@ export function MonitorDataTable({
 		return format.number(value);
 	};
 
+	const visibleModelTableColumns = modelTableColumns
+		.filter(({ visible }) => visible)
+		.map((preference) => ({
+			preference,
+			definition: MODEL_TABLE_COLUMNS.find(({ id }) => id === preference.id)! as ModelTableColumn,
+		}));
+	const modelTableWidth = visibleModelTableColumns.reduce(
+		(total, { definition }) => total + definition.width,
+		0,
+	);
+	const modelTablePinnedProps = (index: number, header = false) => {
+		const current = visibleModelTableColumns[index];
+		if (!current?.preference.pinned) return {};
+		const left = visibleModelTableColumns
+			.slice(0, index)
+			.reduce((total, { definition }) => total + definition.width, 0);
+		return {
+			"data-pinned": true,
+			style: {
+				position: "sticky" as const,
+				left,
+				zIndex: header ? 3 : 1,
+				backgroundColor: "var(--background)",
+				transform: header
+					? "translateX(var(--table-scroll-left, 0px))"
+					: undefined,
+				boxShadow: !visibleModelTableColumns[index + 1]?.preference.pinned
+					? "inset -1px 0 0 var(--border)"
+					: undefined,
+			},
+		};
+	};
+	const modelTableSettings = modelTablePreferences ? null : (
+		<TableSettings
+			columns={modelTableColumns}
+			definitions={MODEL_TABLE_COLUMNS}
+			tableLabel="models"
+			onReset={resetModelTableColumns}
+			onChange={updateModelTableColumns}
+			density={modelTableDensity}
+			onDensityChange={updateModelTableDensity}
+		/>
+	);
+	const sortFieldForColumn = (
+		column: ModelTableColumnId,
+	): string | null => {
+		switch (column) {
+			case "providers":
+				return "provider";
+			case "capability":
+				return "endpoint";
+			case "inputModalities":
+			case "outputModalities":
+			case "features":
+				return null;
+			default:
+				return column;
+		}
+	};
+	const renderModelTableHeader = (
+		column: ModelTableColumn,
+	) => {
+		const field = sortFieldForColumn(column.id);
+		const align = column.numeric || column.id === "status" ? "center" : "left";
+		const content = field
+			? renderSortHead(column.label, field, align)
+			: <span className={cn("text-xs font-semibold", align === "center" && "block text-center")}>{column.label}</span>;
+		if (column.id !== "status") return content;
+		return (
+			<HoverCard openDelay={1000} closeDelay={120}>
+				<HoverCardTrigger asChild>{content}</HoverCardTrigger>
+				<HoverCardContent align="start" className="w-52 p-3">
+					<div className="space-y-2">
+						<p className="text-[11px] font-medium text-muted-foreground">Status Key</p>
+						<div className="space-y-1.5">
+							{statusLegendOrder.map((statusKey) => {
+								const statusMeta = statusMetaByKey[statusKey];
+								if (!statusMeta) return null;
+								const IconComponent = statusMeta.icon;
+								return (
+									<div key={statusKey} className="flex items-center gap-2 text-xs">
+										<IconComponent className={`h-3.5 w-3.5 ${statusMeta.color}`} />
+										<span>{statusMeta.label}</span>
+									</div>
+								);
+							})}
+						</div>
+						<p className="text-[11px] text-muted-foreground">Applies to each provider capability.</p>
+					</div>
+				</HoverCardContent>
+			</HoverCard>
+		);
+	};
+	const renderModelTableCell = (
+		item: GroupedModelData,
+		column: ModelTableColumnId,
+	) => {
+		switch (column) {
+			case "model":
+				return renderModel(item.model, item.organisationId, item.modelId);
+			case "providers":
+				return renderProviders(item.providers);
+			case "status":
+				return renderStatuses(item);
+			case "capability":
+				return renderCapabilities(item.endpoints);
+			case "inputPrice":
+				return renderPriceRange(item.inputPrices);
+			case "outputPrice":
+				return renderPriceRange(item.outputPrices);
+			case "tier":
+				return renderTiers(item.tiers);
+			case "inputModalities":
+				return renderModalities(item.inputModalities, "input");
+			case "outputModalities":
+				return renderModalities(item.outputModalities, "output");
+			case "features":
+				return renderFeatures(item.features);
+			case "context":
+				return item.context > 0 ? format.number(item.context) : "-";
+			case "maxOutput":
+				return item.maxOutput > 0 ? format.number(item.maxOutput) : "-";
+			case "weeklyTokens":
+				return formatTokenCount(item.popularityTokensWeek);
+			case "added":
+				return item.added ? formatDate(item.added) : "-";
+			case "retired":
+				return item.retired ? formatDate(item.retired) : "-";
+		}
+	};
 	const renderLoadingRows = () =>
 		Array.from({ length: TABLE_LOADING_SKELETON_ROWS }).map((_, rowIndex) => (
 			<TableRow key={`table-loading-row-${rowIndex}`} aria-hidden>
-				<TableCell>
-					<div className="flex items-center gap-2">
-						<Skeleton className="h-6 w-6 rounded-md" />
-						<div className="space-y-1">
-							<Skeleton className="h-3 w-28" />
-							<Skeleton className="h-3 w-36" />
-						</div>
-					</div>
-				</TableCell>
-				<TableCell>
-					<div className="flex items-center gap-2">
-						<Skeleton className="h-6 w-6 rounded-md" />
-						<Skeleton className="h-3 w-16" />
-					</div>
-				</TableCell>
-				<TableCell className="text-center">
-					<Skeleton className="mx-auto h-4 w-4 rounded-full" />
-				</TableCell>
-				<TableCell className="text-center">
-					<Skeleton className="mx-auto h-3 w-24" />
-				</TableCell>
-				<TableCell className="text-center">
-					<Skeleton className="mx-auto h-3 w-12" />
-				</TableCell>
-				<TableCell className="text-center">
-					<Skeleton className="mx-auto h-3 w-12" />
-				</TableCell>
-				<TableCell className="text-center">
-					<Skeleton className="mx-auto h-3 w-14" />
-				</TableCell>
-				<TableCell>
-					<div className="flex items-center justify-center gap-1">
-						<Skeleton className="h-6 w-6 rounded-md" />
-						<Skeleton className="h-6 w-6 rounded-md" />
-						<Skeleton className="h-6 w-6 rounded-md" />
-					</div>
-				</TableCell>
-				<TableCell>
-					<div className="flex items-center justify-center gap-1">
-						<Skeleton className="h-6 w-6 rounded-md" />
-						<Skeleton className="h-6 w-6 rounded-md" />
-					</div>
-				</TableCell>
-				<TableCell>
-					<div className="flex items-center justify-center gap-1">
-						<Skeleton className="h-6 w-6 rounded-md" />
-						<Skeleton className="h-6 w-6 rounded-md" />
-					</div>
-				</TableCell>
-				<TableCell className="text-center">
-					<Skeleton className="mx-auto h-3 w-14" />
-				</TableCell>
-				<TableCell className="text-center">
-					<Skeleton className="mx-auto h-3 w-14" />
-				</TableCell>
-				<TableCell className="text-center">
-					<Skeleton className="mx-auto h-3 w-12" />
-				</TableCell>
-				<TableCell className="text-center">
-					<Skeleton className="mx-auto h-3 w-16" />
-				</TableCell>
-				<TableCell className="text-center">
-					<Skeleton className="mx-auto h-3 w-16" />
-				</TableCell>
+				{visibleModelTableColumns.map(({ definition }, index) => (
+					<TableCell
+						key={definition.id}
+						{...modelTablePinnedProps(index)}
+						className={definition.numeric ? "text-center" : undefined}
+					>
+						<Skeleton className={cn("h-3 w-20", definition.numeric && "mx-auto w-12")} />
+					</TableCell>
+				))}
 			</TableRow>
 		));
 
 	return (
 		<div className="space-y-4">
-			{/* Table */}
+			{modelTableSettings ? (
+				<div className="flex justify-end">{modelTableSettings}</div>
+			) : null}
 			<div className="relative">
 				<div
 					className="sticky z-30 w-full overflow-hidden bg-background"
@@ -1348,8 +1482,8 @@ export function MonitorDataTable({
 						ref={tableHeaderTrackRef}
 						className="will-change-transform"
 						style={{
-							width: `${TABLE_TOTAL_WIDTH}px`,
-							minWidth: `${TABLE_TOTAL_WIDTH}px`,
+							width: `${modelTableWidth}px`,
+							minWidth: `${modelTableWidth}px`,
 						}}
 					>
 						<Table
@@ -1357,97 +1491,29 @@ export function MonitorDataTable({
 							aria-label="Models table column headers"
 							className="table-fixed w-max bg-background text-xs"
 							style={{
-								width: `${TABLE_TOTAL_WIDTH}px`,
-								minWidth: `${TABLE_TOTAL_WIDTH}px`,
+								width: `${modelTableWidth}px`,
+								minWidth: `${modelTableWidth}px`,
 							}}
 						>
 							<colgroup>
-								{TABLE_COLUMN_WIDTHS.map((width, index) => (
+								{visibleModelTableColumns.map(({ definition }) => (
 									<col
-										key={`header-col-${index}`}
-										style={{ width: `${width}px` }}
+										key={definition.id}
+										style={{ width: `${definition.width}px` }}
 									/>
 								))}
 							</colgroup>
 							<TableHeader>
 								<TableRow className="bg-background hover:bg-background">
-							<TableHead className="bg-background min-w-48">
-								{renderSortHead("Model", "model")}
-							</TableHead>
-							<TableHead className="bg-background min-w-32">
-								{renderSortHead("Provider", "provider")}
-							</TableHead>
-							<TableHead className="bg-background min-w-16">
-								<HoverCard openDelay={1000} closeDelay={120}>
-									<HoverCardTrigger asChild>
-										{renderSortHead("Gateway Status", "status")}
-									</HoverCardTrigger>
-									<HoverCardContent align="start" className="w-52 p-3">
-										<div className="space-y-2">
-											<p className="text-[11px] font-medium text-muted-foreground">
-												Status Key
-											</p>
-											<div className="space-y-1.5">
-												{statusLegendOrder.map((statusKey) => {
-													const statusMeta = statusMetaByKey[statusKey];
-													if (!statusMeta) return null;
-													const IconComponent = statusMeta.icon;
-													return (
-														<div
-															key={statusKey}
-															className="flex items-center gap-2 text-xs"
-														>
-															<IconComponent
-																className={`h-3.5 w-3.5 ${statusMeta.color}`}
-															/>
-															<span>{statusMeta.label}</span>
-														</div>
-													);
-												})}
-											</div>
-											<p className="text-[11px] text-muted-foreground">
-												Applies to the row capability.
-											</p>
-										</div>
-									</HoverCardContent>
-								</HoverCard>
-							</TableHead>
-							<TableHead className="bg-background min-w-24 text-center">
-								{renderSortHead("Capability", "endpoint", "center")}
-							</TableHead>
-							<TableHead className="bg-background min-w-20 text-center">
-								{renderSortHead("Input $", "inputPrice", "center")}
-							</TableHead>
-							<TableHead className="bg-background min-w-20 text-center">
-								{renderSortHead("Output $", "outputPrice", "center")}
-							</TableHead>
-							<TableHead className="bg-background min-w-16 text-center">
-								{renderSortHead("Tier", "tier", "center")}
-							</TableHead>
-							<TableHead className="bg-background min-w-32 text-center">
-								<div className="text-xs font-semibold">Input Modalities</div>
-							</TableHead>
-							<TableHead className="bg-background min-w-32 text-center">
-								<div className="text-xs font-semibold">Output Modalities</div>
-							</TableHead>
-							<TableHead className="bg-background min-w-24 text-center">
-								<div className="text-xs font-semibold">Features</div>
-							</TableHead>
-							<TableHead className="bg-background min-w-20 text-center">
-								{renderSortHead("Context", "context", "center")}
-							</TableHead>
-							<TableHead className="bg-background min-w-20 text-center">
-								{renderSortHead("Max Output", "maxOutput", "center")}
-							</TableHead>
-							<TableHead className="bg-background min-w-20 text-center">
-								{renderSortHead("Weekly Tokens", "weeklyTokens", "center")}
-							</TableHead>
-							<TableHead className="bg-background min-w-20 text-center">
-								{renderSortHead("Added", "added", "center")}
-							</TableHead>
-							<TableHead className="bg-background min-w-20 text-center">
-								{renderSortHead("Retired", "retired", "center")}
-							</TableHead>
+									{visibleModelTableColumns.map(({ definition }, index) => (
+										<TableHead
+											key={definition.id}
+											{...modelTablePinnedProps(index, true)}
+											className={cn("bg-background", definition.numeric && "text-center")}
+										>
+											{renderModelTableHeader(definition)}
+										</TableHead>
+									))}
 								</TableRow>
 							</TableHeader>
 						</Table>
@@ -1459,27 +1525,35 @@ export function MonitorDataTable({
 					className="relative overflow-x-auto overflow-y-clip"
 				>
 					<Table
-						wrapInContainer={false}
-						aria-label="Models table rows"
-						className="table-fixed w-max bg-background text-xs"
-						style={{
-							width: `${TABLE_TOTAL_WIDTH}px`,
-							minWidth: `${TABLE_TOTAL_WIDTH}px`,
-						}}
-					>
-						<colgroup>
-							{TABLE_COLUMN_WIDTHS.map((width, index) => (
-								<col key={`body-col-${index}`} style={{ width: `${width}px` }} />
-							))}
-						</colgroup>
-					<TableBody className="bg-background">
-						{loading ? (
-							<>{renderLoadingRows()}</>
-						) : filteredSortedData.length === 0 ? (
-							<TableRow>
-								<TableCell
-									colSpan={TABLE_COLUMNS_COUNT}
-									className="text-center py-8"
+							wrapInContainer={false}
+							aria-label="Models table rows"
+							data-density={modelTableDensity}
+							className={cn(
+								"table-fixed w-max bg-background text-xs",
+								modelTableDensity === "compact"
+									? "[&_tbody_td:not([colspan])]:py-1"
+									: modelTableDensity === "expanded"
+										? "[&_tbody_td:not([colspan])]:py-4"
+										: "[&_tbody_td:not([colspan])]:py-2",
+							)}
+							style={{
+								width: `${modelTableWidth}px`,
+								minWidth: `${modelTableWidth}px`,
+							}}
+						>
+							<colgroup>
+								{visibleModelTableColumns.map(({ definition }) => (
+									<col key={definition.id} style={{ width: `${definition.width}px` }} />
+								))}
+							</colgroup>
+						<TableBody className="bg-background">
+							{loading ? (
+								<>{renderLoadingRows()}</>
+							) : filteredGroupedData.length === 0 ? (
+								<TableRow>
+									<TableCell
+										colSpan={visibleModelTableColumns.length}
+										className="text-center py-8"
 								>
 									No models match the current filters
 								</TableCell>
@@ -1489,78 +1563,37 @@ export function MonitorDataTable({
 								{paddingTop > 0 ? (
 									<TableRow aria-hidden>
 										<TableCell
-											colSpan={TABLE_COLUMNS_COUNT}
+											colSpan={visibleModelTableColumns.length}
 											style={{ height: `${paddingTop}px` }}
 											className="bg-background p-0"
 										/>
 									</TableRow>
 								) : null}
 								{rowsToRender.map((virtualRowLike) => {
-									const item = filteredSortedData[virtualRowLike.index];
+									const item = filteredGroupedData[virtualRowLike.index];
 									if (!item) return null;
 									return (
 										<TableRow key={item.id}>
-											<TableCell className="font-medium">
-												{renderModel(
-													item.model,
-													item.organisationId,
-													item.modelId,
-												)}
-											</TableCell>
-											<TableCell>{renderProvider(item.provider)}</TableCell>
-											<TableCell className="text-center">
-												{renderStatus(item.gatewayStatus, item.endpoint)}
-											</TableCell>
-											<TableCell className="text-center">
-												<span
-													className="block truncate font-mono text-[11px]"
-													title={formatEndpoint(item.endpoint)}
+											{visibleModelTableColumns.map(({ definition }, index) => (
+												<TableCell
+													key={definition.id}
+													{...modelTablePinnedProps(index)}
+													className={cn(
+														definition.id === "model" && "font-medium",
+														(definition.numeric || ["status", "tier", "inputModalities", "outputModalities", "features", "added", "retired"].includes(definition.id)) && "text-center",
+														definition.numeric && "font-mono",
+													)}
 												>
-													{formatEndpoint(item.endpoint)}
-												</span>
-											</TableCell>
-											<TableCell className="font-mono text-center">
-												{renderPrice(item.provider.inputPrice)}
-											</TableCell>
-											<TableCell className="font-mono text-center">
-												{renderPrice(item.provider.outputPrice)}
-											</TableCell>
-											<TableCell className="text-center">
-												{renderTier(item.tier)}
-											</TableCell>
-											<TableCell className="text-center">
-												{renderModalities(item.inputModalities, "input")}
-											</TableCell>
-											<TableCell className="text-center">
-												{renderModalities(item.outputModalities, "output")}
-											</TableCell>
-											<TableCell className="text-center">
-												{renderFeatures(item.provider.features)}
-											</TableCell>
-											<TableCell className="font-mono text-center">
-												{item.context > 0 ? format.number(item.context) : "-"}
-											</TableCell>
-											<TableCell className="font-mono text-center">
-												{item.maxOutput > 0
-													? format.number(item.maxOutput)
-													: "-"}
-											</TableCell>
-											<TableCell className="font-mono text-center">
-												{formatTokenCount(item.popularityTokensWeek ?? 0)}
-											</TableCell>
-											<TableCell className="text-xs text-center">
-												{item.added ? formatDate(item.added) : "-"}
-											</TableCell>
-											<TableCell className="text-xs text-center">
-												{item.retired ? formatDate(item.retired) : "-"}
-											</TableCell>
+													{renderModelTableCell(item, definition.id)}
+												</TableCell>
+											))}
 										</TableRow>
 									);
 								})}
 								{paddingBottom > 0 ? (
 									<TableRow aria-hidden>
 										<TableCell
-											colSpan={TABLE_COLUMNS_COUNT}
+											colSpan={visibleModelTableColumns.length}
 											style={{ height: `${paddingBottom}px` }}
 											className="bg-background p-0"
 										/>
@@ -1580,7 +1613,7 @@ export function MonitorDataTable({
 			) : (
 				<div className="flex items-center gap-2 text-xs text-muted-foreground">
 					<span className="tabular-nums">
-						{format.number(totalItems)} {totalItems === 1 ? "row" : "rows"}
+						{format.number(totalItems)} {totalItems === 1 ? "model" : "models"}
 					</span>
 					<span aria-hidden>·</span>
 					<span>Visible rows render on demand</span>
