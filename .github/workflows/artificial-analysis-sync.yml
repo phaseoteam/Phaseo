@@ -39,7 +39,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /provider-keys
                   secret-name: ARTIFICIAL_ANALYSIS_API_KEY
             - name: Fetch benchmark snapshot
               env:
