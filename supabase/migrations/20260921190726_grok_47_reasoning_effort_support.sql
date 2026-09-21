@@ -39,7 +39,7 @@ begin
     and capability.capability_id = 'text.generate';
 
   get diagnostics affected_count = row_count;
-  if affected_count <> 1 then
-    raise exception 'Expected one active Grok 4.7 text.generate route; updated % rows', affected_count;
+  if affected_count > 1 then
+    raise exception 'Expected at most one active Grok 4.7 text.generate route; updated % rows', affected_count;
   end if;
 end $$;

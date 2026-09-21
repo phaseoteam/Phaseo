@@ -191,7 +191,7 @@ cross join lateral public.get_v2_model_provider_percentile_series_v2_unsuppresse
 where model.model_slug = lower(trim(p_model_slug))
   and model.hidden = false
   and model.status <> 'disabled'
-  and series.requests >= 1;
+  and series.requests >= 20;
 $$;
 
 comment on function public.get_v2_model_provider_percentile_series_v2(text, text, text, text) is
