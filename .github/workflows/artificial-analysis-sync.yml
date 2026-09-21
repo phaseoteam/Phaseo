@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
     contents: read
+    id-token: write
 
 jobs:
     sync:
@@ -31,9 +32,17 @@ jobs:
             - run: pnpm install --frozen-lockfile
             - name: Test benchmark matching
               run: pnpm exec tsx --test scripts/artificial-analysis/core.test.ts
+            - name: Load Artificial Analysis API key from Infisical
+              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              with:
+                  method: oidc
+                  identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+                  project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+                  env-slug: prod
+                  secret-path: /
+                  secret-name: ARTIFICIAL_ANALYSIS_API_KEY
             - name: Fetch benchmark snapshot
               env:
-                  ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
                   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
               run: pnpm data:sync-artificial-analysis --write --report=artificial-analysis-report.json
