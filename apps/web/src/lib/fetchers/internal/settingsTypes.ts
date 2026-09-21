@@ -1,6 +1,7 @@
 import type { StatsigProfile } from "@/lib/statsig/shared";
 import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
+import type { DisplayPreferences } from "@/lib/displayPreferences";
 
 export type SettingsLayoutInitialData = {
 	isEnterpriseInvoiceMode: boolean;
@@ -330,6 +331,11 @@ export type SettingsCreditsInitialData = {
 		auto_top_up_amount: number | null;
 		[key: string]: unknown;
 	} | null;
+};
+
+export type SettingsPreferencesInitialData = {
+	preferences: DisplayPreferences;
+	signedIn: boolean;
 };
 
 export type ProviderOnboardingSubmission = {

@@ -12,4 +12,5 @@
 - Dictionary-compatible responses expose `request_id`, `trace_url`, and `output_text`. `PhaseoHTTPError` exposes `code`, `request_id`, and `retry_after` in seconds.
 - Job resources support `start` and `resume` handles with `result`, `events`, and `to_dict`. Remote music cancellation is unsupported.
 - Use `parse_output(response, PydanticModel)` for validated output; configure server structured output explicitly in the request.
+- Use `models.check_parameters(model_id, values, endpoint=..., provider=...)` for live, structured parameter support and `models.capabilities(model_id)` for raw endpoint capability rows. The same methods are awaitable on `AsyncPhaseo`.
 - Inject `phaseo.testing.MockTransport` through an HTTPX client for deterministic tests with no network fallback.

@@ -113,6 +113,175 @@ def check_capabilities(model: dict[str, Any], *, input_types: Iterable[str] = ()
     return {"ok": not issues, "issues": issues}
 
 
+def _parameter_route_reference(route: dict[str, Any]) -> dict[str, str]:
+    provider = route.get("provider", {}).get("id") or "unknown"
+    endpoint = route.get("endpoint") or route.get("capability_id") or "unknown"
+    return {
+        "id": route.get("id") or f"{provider}:{endpoint}",
+        "provider": provider,
+        "endpoint": endpoint,
+        "public_path": route.get("public_path") or endpoint,
+    }
+
+
+def _matches_parameter_type(value: Any, expected: Any) -> bool:
+    if expected == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if expected == "integer":
+        return (
+            isinstance(value, int) and not isinstance(value, bool)
+            or isinstance(value, float) and value.is_integer()
+        )
+    if expected == "boolean":
+        return isinstance(value, bool)
+    if expected == "string":
+        return isinstance(value, str)
+    if expected == "array":
+        return isinstance(value, list)
+    if expected == "object":
+        return isinstance(value, dict)
+    if expected == "null":
+        return value is None
+    return True
+
+
+def _parameter_value_issues(name: str, value: Any, detail: dict[str, Any]) -> list[str]:
+    issues: list[str] = []
+    if detail.get("supported") is False:
+        issues.append(f"{name} is unsupported")
+    if not _matches_parameter_type(value, detail.get("type")):
+        article = "an" if detail.get("type") in {"integer", "object"} else "a"
+        issues.append(f"{name} must be {article} {detail.get('type')}")
+    allowed = detail.get("values", detail.get("enum"))
+    if isinstance(allowed, list) and not any(
+        item == value and isinstance(item, bool) == isinstance(value, bool)
+        for item in allowed
+    ):
+        issues.append(f"{name} must be one of: {', '.join(map(str, allowed))}")
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        is_finite = not isinstance(value, float) or math.isfinite(value)
+        if not is_finite:
+            issues.append(f"{name} must be finite")
+        else:
+            if isinstance(detail.get("minimum"), (int, float)) and value < detail["minimum"]:
+                issues.append(f"{name} must be at least {detail['minimum']}")
+            if isinstance(detail.get("maximum"), (int, float)) and value > detail["maximum"]:
+                issues.append(f"{name} must be at most {detail['maximum']}")
+            if isinstance(detail.get("step"), (int, float)) and detail["step"] > 0:
+                steps = (value - detail.get("minimum", 0)) / detail["step"]
+                if abs(steps - round(steps)) > 1e-8:
+                    issues.append(f"{name} must use steps of {detail['step']}")
+    return issues
+
+
+def check_parameter_support(
+    model: dict[str, Any],
+    parameter_values: dict[str, Any],
+    *,
+    endpoint: str | None = None,
+    provider: str | Iterable[str] | None = None,
+) -> dict[str, Any]:
+    """Build a UI-friendly parameter report from live model endpoint metadata."""
+    providers = None if provider is None else {provider} if isinstance(provider, str) else set(provider)
+    requested_endpoint = endpoint.removeprefix("/v1/").removeprefix("/") if endpoint else None
+
+    routes: list[dict[str, Any]] = []
+    for route in model.get("endpoints", []):
+        if route.get("routable") is not True or route.get("status") != "active":
+            continue
+        if providers is not None and route.get("provider", {}).get("id") not in providers:
+            continue
+        route_endpoints = {
+            route.get("endpoint"),
+            route.get("capability_id"),
+            str(route.get("public_path") or "").removeprefix("/v1/").removeprefix("/"),
+        }
+        if endpoint and endpoint not in route_endpoints and requested_endpoint not in route_endpoints:
+            continue
+        routes.append(route)
+
+    parameters: list[dict[str, Any]] = []
+    for name, value in parameter_values.items():
+        supported_by: list[dict[str, str]] = []
+        accepted_by: list[dict[str, str]] = []
+        unsupported_by: list[dict[str, str]] = []
+        constraints: list[dict[str, Any]] = []
+        value_issues: list[str] = []
+        known_route_count = 0
+
+        for route in routes:
+            reference = _parameter_route_reference(route)
+            capabilities = route.get("capabilities") or {}
+            advertised = capabilities.get("parameters")
+            if not isinstance(advertised, list):
+                continue
+            known_route_count += 1
+            detail = (capabilities.get("parameter_details") or {}).get(name)
+            supports_name = name in advertised or isinstance(detail, dict) and detail.get("supported") is True
+            if not supports_name or isinstance(detail, dict) and detail.get("supported") is False:
+                unsupported_by.append(reference)
+                continue
+            supported_by.append(reference)
+            if isinstance(detail, dict):
+                constraints.append({"route": reference, "detail": detail})
+                issues = _parameter_value_issues(name, value, detail)
+            else:
+                issues = []
+            if issues:
+                value_issues.extend(issues)
+            else:
+                accepted_by.append(reference)
+
+        if not routes or not known_route_count:
+            status = "unknown"
+        elif not supported_by:
+            status = "unsupported"
+        elif not accepted_by:
+            status = "unsupported"
+        elif len(accepted_by) == len(routes):
+            status = "supported"
+        else:
+            status = "partial"
+        issues = (
+            [f"{name} is not supported by any matching active route"]
+            if status == "unsupported" and not supported_by
+            else list(dict.fromkeys(value_issues))
+        )
+        parameters.append({
+            "name": name,
+            "value": value,
+            "status": status,
+            "supported_by": supported_by,
+            "accepted_by": accepted_by,
+            "unsupported_by": unsupported_by,
+            "constraints": constraints,
+            "issues": issues,
+        })
+
+    matching_routes = [
+        _parameter_route_reference(route)
+        for route in routes
+        if all(
+            any(candidate["id"] == _parameter_route_reference(route)["id"] for candidate in parameter["accepted_by"])
+            for parameter in parameters
+        )
+    ]
+    issues: list[str] = []
+    if not routes:
+        issues.append("No active routable model endpoints matched the filters")
+    elif parameters and not matching_routes:
+        issues.append("No active route supports all requested parameter values together")
+    issues.extend(issue for parameter in parameters for issue in parameter["issues"])
+    return {
+        "ok": bool(routes) and bool(matching_routes),
+        "model_id": model.get("id", "unknown"),
+        "route_count": len(routes),
+        "matching_routes": matching_routes,
+        "parameters": parameters,
+        "issues": list(dict.fromkeys(issues)),
+    }
+
+
 def batch_results(chunks: Iterable[bytes], max_line_bytes: int = 10 * 1024 * 1024) -> Iterator[dict[str, Any]]:
     pending = b""
     try:

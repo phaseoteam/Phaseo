@@ -4,7 +4,7 @@ import json
 import httpx
 import pytest
 from pydantic import BaseModel
-from phaseo import AsyncPhaseo, Phaseo, PhaseoHTTPError, JobFailedError, JobTimeoutError, parse_output, check_capabilities, batch_results
+from phaseo import AsyncPhaseo, Phaseo, PhaseoHTTPError, JobFailedError, JobTimeoutError, parse_output, check_capabilities, check_parameter_support, batch_results
 from phaseo.testing import MockTransport, job_fixtures
 from phaseo import collect_stream
 
@@ -25,6 +25,46 @@ def test_sync_transport_metadata_retries_and_post_safety():
             assert error.value.code == "unavailable"
         assert not http.is_closed
     fixtures.assert_done()
+
+
+def test_raw_response_idempotency_and_transport_hooks():
+    events = []
+    fixtures = MockTransport([
+        {"method": "GET", "path": "/health", "status": 503, "headers": {"retry-after": "0"}},
+        {"method": "GET", "path": "/health", "json": {"ok": True}, "headers": {"x-request-id": "req_raw"}},
+        {"method": "POST", "path": "/responses", "json": {"id": "resp_1"}},
+    ])
+    with httpx.Client(transport=fixtures) as http:
+        with Phaseo(
+            api_key="test",
+            base_url="https://example.test",
+            http_client=http,
+            on_request=lambda event: events.append(("request", event["attempt"])),
+            on_retry=lambda event: events.append(("retry", event["attempt"])),
+            on_response=lambda event: events.append(("response", event["status_code"])),
+        ) as client:
+            raw = client.request_with_response("GET", "/health", max_retries=1)
+            assert raw.data == {"ok": True}
+            assert raw.request_id == "req_raw"
+            assert events == [("request", 0), ("retry", 1), ("request", 1), ("response", 200)]
+            client.request("POST", "/responses", body={"model": "test"}, idempotency_key="idem-1")
+    assert fixtures.requests[2].headers["idempotency-key"] == "idem-1"
+    fixtures.assert_done()
+
+
+def test_async_raw_response_and_idempotency():
+    async def run():
+        fixtures = MockTransport([
+            {"method": "POST", "path": "/responses", "json": {"id": "resp_1"}, "headers": {"x-request-id": "req_async"}},
+        ])
+        async with httpx.AsyncClient(transport=fixtures) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                raw = await client.request_with_response("POST", "/responses", body={"model": "test"}, idempotency_key="idem-async")
+                assert raw.request_id == "req_async"
+                assert raw.data["id"] == "resp_1"
+        assert fixtures.requests[0].headers["idempotency-key"] == "idem-async"
+        fixtures.assert_done()
+    asyncio.run(run())
 
 
 @pytest.mark.parametrize("kind,path", [("music", "/music/generate"), ("videos", "/videos"), ("batches", "/batches")])
@@ -139,6 +179,232 @@ def test_advertised_parameter_ranges():
         "capabilities": {"parameters": ["duration"], "parameter_details": {"duration": {"minimum": 5, "maximum": 10, "step": 5}}}}]}
     assert check_capabilities(model, parameter_values={"duration": 10})["ok"]
     assert not check_capabilities(model, parameter_values={"duration": 7})["ok"]
+
+
+def test_live_model_parameter_checks_identify_partial_support_and_invalid_values():
+    capabilities = {
+        "ok": True,
+        "id": "openai/gpt-5",
+        "endpoints": [
+            {
+                "id": "openai:responses",
+                "endpoint": "responses",
+                "public_path": "/v1/responses",
+                "provider": {"id": "openai"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature", "top_p"],
+                    "parameter_details": {
+                        "temperature": {"minimum": 0, "maximum": 2},
+                        "top_p": {"minimum": 0, "maximum": 1},
+                    },
+                },
+            },
+            {
+                "id": "azure:responses",
+                "endpoint": "responses",
+                "public_path": "/v1/responses",
+                "provider": {"id": "azure"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature"],
+                    "parameter_details": {"temperature": {"minimum": 0, "maximum": 1}},
+                },
+            },
+        ],
+    }
+    mock = MockTransport([
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        {"method": "GET", "path": "/data/models", "json": {"models": [{"model_id": "openai/gpt-5", "status": "active"}]}},
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+    ])
+    with httpx.Client(transport=mock) as http:
+        with Phaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+            supported = client.models.check_parameters(
+                "openai/gpt-5",
+                {"temperature": 0.7, "top_p": 0.9},
+                endpoint="responses",
+            )
+            assert supported["ok"]
+            assert next(item for item in supported["parameters"] if item["name"] == "top_p")["status"] == "partial"
+            assert [route["provider"] for route in supported["matching_routes"]] == ["openai"]
+
+            invalid = client.models.check_parameters("openai/gpt-5", {"temperature": 3})
+            assert not invalid["ok"]
+            assert "temperature must be at most 2" in " ".join(invalid["issues"])
+
+            unsupported = client.models.check_parameters("openai/gpt-5", {"seed": 42})
+            assert unsupported["parameters"][0]["status"] == "unsupported"
+            assert "seed is not supported" in " ".join(unsupported["issues"])
+
+            preflight = client.models.preflight({"model": "openai/gpt-5", "input": "hello", "temperature": 0.7}, endpoint="responses")
+            assert preflight["ok"]
+            assert preflight["checked_parameters"] == {"temperature": 0.7}
+    mock.assert_done()
+
+
+def test_parameter_reports_validate_types_preserve_partial_issues_and_omit_unknown_routes():
+    model = {
+        "id": "test/model",
+        "endpoints": [
+            {
+                "id": "wide",
+                "provider": {"id": "wide"},
+                "endpoint": "responses",
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature", "count", "mode"],
+                    "parameter_details": {
+                        "temperature": {"type": "number", "maximum": 2, "step": 0.5},
+                        "count": {"type": "integer"},
+                        "mode": {"values": [1]},
+                    },
+                },
+            },
+            {
+                "id": "narrow",
+                "provider": {"id": "narrow"},
+                "endpoint": "responses",
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature", "count", "mode"],
+                    "parameter_details": {
+                        "temperature": {"type": "number", "maximum": 1, "step": 0.5},
+                        "count": {"type": "integer"},
+                        "mode": {"values": [1]},
+                    },
+                },
+            },
+            {
+                "id": "unknown",
+                "provider": {"id": "unknown"},
+                "endpoint": "responses",
+                "routable": True,
+                "status": "active",
+                "capabilities": {},
+            },
+        ],
+    }
+
+    partial = check_parameter_support(model, {"temperature": 1.5})
+    assert partial["parameters"][0]["status"] == "partial"
+    assert "at most 1" in " ".join(partial["parameters"][0]["issues"])
+    assert partial["parameters"][0]["unsupported_by"] == []
+
+    invalid_type = check_parameter_support(model, {"count": 1.5})
+    assert invalid_type["parameters"][0]["status"] == "unsupported"
+    assert "must be an integer" in " ".join(invalid_type["parameters"][0]["issues"])
+
+    non_finite = check_parameter_support(model, {"temperature": float("inf")})
+    assert "must be finite" in " ".join(non_finite["parameters"][0]["issues"])
+
+    boolean_enum = check_parameter_support(model, {"mode": True})
+    assert "must be one of" in " ".join(boolean_enum["parameters"][0]["issues"])
+
+
+def test_model_capability_lookup_rejects_ambiguous_model_ids_before_requesting():
+    mock = MockTransport([])
+    with httpx.Client(transport=mock) as http:
+        with Phaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+            with pytest.raises(ValueError, match="author/slug format"):
+                client.models.capabilities("author/slug/extra")
+    mock.assert_done()
+
+    async def run():
+        async_mock = MockTransport([])
+        async with httpx.AsyncClient(transport=async_mock) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                with pytest.raises(ValueError, match="author/slug format"):
+                    await client.models.capabilities("author//slug")
+        async_mock.assert_done()
+
+    asyncio.run(run())
+
+
+def test_async_models_parameter_check_uses_the_same_live_report():
+    async def run():
+        capabilities = {
+            "ok": True,
+            "id": "openai/gpt-5",
+            "endpoints": [{
+                "id": "openai:responses",
+                "endpoint": "responses",
+                "public_path": "/v1/responses",
+                "provider": {"id": "openai"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature"],
+                    "parameter_details": {"temperature": {"minimum": 0, "maximum": 2}},
+                },
+            }],
+        }
+        mock = MockTransport([
+            {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        ])
+        async with httpx.AsyncClient(transport=mock) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                report = await client.models.check_parameters("openai/gpt-5", {"temperature": 0.7})
+                assert report["ok"]
+                assert report["parameters"][0]["status"] == "supported"
+        mock.assert_done()
+
+    asyncio.run(run())
+
+
+def test_async_preflight_includes_lifecycle_validation():
+    async def run():
+        capabilities = {
+            "ok": True,
+            "id": "openai/retired-model",
+            "endpoints": [{
+                "id": "openai:responses",
+                "endpoint": "responses",
+                "provider": {"id": "openai"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {"parameters": ["temperature"]},
+            }],
+        }
+        mock = MockTransport([
+            {
+                "method": "GET",
+                "path": "/data/models",
+                "json": {"models": [{"model_id": "openai/retired-model", "status": "retired"}]},
+            },
+            {"method": "GET", "path": "/models/openai/retired-model/endpoints", "json": capabilities},
+        ])
+        async with httpx.AsyncClient(transport=mock) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                report = await client.models.preflight(
+                    {"model": "openai/retired-model", "input": "hello", "temperature": 0.7},
+                    endpoint="responses",
+                )
+                assert not report["ok"]
+                assert not report["lifecycle"]["ok"]
+                assert report["lifecycle"]["info"]["status"] == "retired"
+                assert report["parameter_support"]["ok"]
+        mock.assert_done()
+
+    asyncio.run(run())
+
+
+def test_async_music_does_not_expose_collection_pagination():
+    async def run():
+        async with httpx.AsyncClient(transport=MockTransport([])) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                assert not hasattr(client.music, "pages")
+                assert not hasattr(client.music, "all")
+                assert hasattr(client.videos, "pages")
+                assert hasattr(client.batches, "all")
+
+    asyncio.run(run())
 
 
 def test_async_image_edits_use_multipart_and_preserve_file_ownership(tmp_path):

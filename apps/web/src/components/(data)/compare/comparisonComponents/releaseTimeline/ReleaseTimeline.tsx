@@ -1,4 +1,7 @@
+"use client";
+
 import * as React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Card,
 	CardHeader,
@@ -18,15 +21,6 @@ function getMonthDiff(date1: Date, date2: Date) {
 	return years * 12 + months;
 }
 
-function formatDate(dateStr: string) {
-	const date = new Date(dateStr);
-	return date.toLocaleDateString("en-GB", {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-	});
-}
-
 function positionStyle(idx: number, total: number): React.CSSProperties {
 	if (total <= 1) {
 		return { left: "50%", transform: "translateX(-50%)" };
@@ -42,6 +36,8 @@ export default function ReleaseTimeline({
 }: {
 	selectedModels: ExtendedModel[];
 }) {
+	const format = useDisplayFormatters();
+	const formatDate = (value: string) => format.calendarDate(value, value);
 	const modelsWithDates = selectedModels.filter(
 		(model): model is ExtendedModel & { release_date: string } =>
 			model.release_date !== null
@@ -298,4 +294,3 @@ export default function ReleaseTimeline({
 		</section>
 	);
 }
-

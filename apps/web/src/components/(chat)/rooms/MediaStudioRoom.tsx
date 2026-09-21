@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
@@ -55,6 +56,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
 	Tooltip,
@@ -515,36 +517,10 @@ function extractEntryMetrics(payload: any): EntryMetrics {
 	};
 }
 
-function formatTimestamp(value: string): string {
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleString(undefined, {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-		second: "2-digit",
-	});
-}
-
 function formatDuration(durationMs: number | null | undefined): string {
 	if (typeof durationMs !== "number" || !Number.isFinite(durationMs)) return "N/A";
 	if (durationMs < 1000) return `${Math.round(durationMs)}ms`;
 	return `${(durationMs / 1000).toFixed(2)}s`;
-}
-
-function formatCost(costUsd: number | null | undefined): string {
-	if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return "N/A";
-	return `$${costUsd.toFixed(3)}`;
-}
-
-function formatCostFull(costUsd: number | null | undefined): string {
-	if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return "N/A";
-	return `$${costUsd.toLocaleString(undefined, {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 9,
-	})}`;
 }
 
 function formatVideoSeconds(seconds: number | null | undefined): string {
@@ -868,6 +844,28 @@ function buildResolvedEntries(args: {
 }
 
 export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
+	const format = useDisplayFormatters();
+	const formatTimestamp = (value: string) => format.dateTime(value, { includeSeconds: true });
+	const formatCost = (costUsd: number | null | undefined) =>
+		typeof costUsd !== "number" || !Number.isFinite(costUsd)
+			? "N/A"
+			: format.number(costUsd, {
+				style: "currency",
+				currency: "USD",
+				minimumFractionDigits: 3,
+				maximumFractionDigits: 3,
+				notation: "standard",
+			});
+	const formatCostFull = (costUsd: number | null | undefined) =>
+		typeof costUsd !== "number" || !Number.isFinite(costUsd)
+			? "N/A"
+			: format.number(costUsd, {
+				style: "currency",
+				currency: "USD",
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 9,
+				notation: "standard",
+			});
 	const isImageRoom = roomId === "image";
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const filteredModels = useMemo(
@@ -1819,6 +1817,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					/>
 				</div>
 				<div className="flex items-center gap-2">
+					<RoomSdkExport />
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button

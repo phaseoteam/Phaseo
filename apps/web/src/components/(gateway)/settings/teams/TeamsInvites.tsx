@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import TeamInviteDialog from "./TeamInviteDialog";
 import { Infinity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,7 @@ export default function TeamsInvites({
 	currentUserId,
 	activeWorkspaceId: controlledActiveId,
 }: Props) {
+	const format = useDisplayFormatters();
 	const [localActiveTeamId, setLocalActiveTeamId] = React.useState<
 		string | undefined
 	>(teams.length ? teams[0].id : undefined);
@@ -195,9 +197,7 @@ export default function TeamsInvites({
 													</div>
 													<div className="text-xs text-muted-foreground">
 														Created{" "}
-														{new Date(
-															i.created_at
-														).toLocaleDateString()}
+														{format.date(i.created_at)}
 													</div>
 												</div>
 												<div className="ml-2">
@@ -220,9 +220,7 @@ export default function TeamsInvites({
 											<div className="mt-2 flex items-center justify-between text-xs">
 												<div className="text-muted-foreground">
 													{i.expires_at
-														? `Expires ${new Date(
-																i.expires_at
-														  ).toLocaleDateString()}`
+														? `Expires ${format.date(i.expires_at)}`
 														: "No expiry"}
 												</div>
 												<div className="flex items-center gap-2">

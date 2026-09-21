@@ -1,20 +1,11 @@
+"use client";
+
 import type { ExtendedModel } from "@/data/types";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ProviderLogo } from "../ProviderLogo";
-
-function formatMonthYear(value: string | null | undefined): string {
-	if (!value) return "-";
-	const d = new Date(value);
-	if (Number.isNaN(d.getTime())) return "-";
-	return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-}
-
-function formatCount(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
-}
 
 function bestNumber(
 	models: ExtendedModel[],
@@ -97,6 +88,11 @@ export default function OverviewCard({
 }: {
 	selectedModels: ExtendedModel[];
 }) {
+	const format = useDisplayFormatters();
+	const formatMonthYear = (value: string | null | undefined) => format.calendarDate(value);
+	const formatCount = (value: number | null | undefined) => value == null || !Number.isFinite(value)
+		? "-"
+		: format.number(value, { maximumFractionDigits: 0 });
 	if (!selectedModels || selectedModels.length === 0) return null;
 	const bestInputContext = bestNumber(
 		selectedModels,
@@ -297,5 +293,4 @@ export default function OverviewCard({
 		</section>
 	);
 }
-
 

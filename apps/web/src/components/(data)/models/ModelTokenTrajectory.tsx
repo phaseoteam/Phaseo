@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/empty";
 import { BarChart3 } from "lucide-react";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const cumulativeTokensChartConfig: ChartConfig = {
 	cumulativeTokens: {
@@ -71,17 +73,6 @@ function formatDelta(value: number): string {
 	return `${sign}${magnitude}`;
 }
 
-function formatDate(value: string | null) {
-	if (!value) return "—";
-	const date = new Date(value);
-	if (!Number.isFinite(date.getTime())) return value;
-	return date.toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	});
-}
-
 function formatDays(value: number | null) {
 	if (value == null) return "—";
 	return `${value}d`;
@@ -116,7 +107,7 @@ function MilestoneTable({
 							{formatDays(milestone.daysSinceRelease)}
 						</TableCell>
 						<TableCell className="text-muted-foreground">
-							{formatDate(milestone.reachedOn)}
+							<DisplayCalendarDate value={milestone.reachedOn} fallback="—" />
 						</TableCell>
 					</TableRow>
 				))}
@@ -150,7 +141,7 @@ function SuccessorList({
 							{formatDays(successor.daysSinceRelease)}
 						</TableCell>
 						<TableCell className="text-muted-foreground">
-							{formatDate(successor.releaseDate)}
+							<DisplayCalendarDate value={successor.releaseDate} fallback="—" />
 						</TableCell>
 					</TableRow>
 				))}
@@ -162,6 +153,7 @@ function SuccessorList({
 export default function ModelTokenTrajectoryChart({
 	data,
 }: ModelTokenTrajectoryProps) {
+	const format = useDisplayFormatters();
 	if (!data || !data.points.length) {
 		return (
 			<Card className="p-6">
@@ -184,7 +176,7 @@ export default function ModelTokenTrajectoryChart({
 	const releaseDate = new Date(data.releaseDate);
 	const deprecationDays = data.deprecationDaysSinceRelease ?? null;
 	const deprecationLabel = data.deprecationDate
-		? `Deprecated ${formatDate(data.deprecationDate)}`
+		? `Deprecated ${format.calendarDate(data.deprecationDate, "—")}`
 		: null;
 
 	const pointByDay = useMemo(() => {
@@ -253,7 +245,7 @@ export default function ModelTokenTrajectoryChart({
 					<p className="text-xs uppercase text-muted-foreground">
 						Day {point.daysSinceRelease}
 					</p>
-					<p className="font-semibold">{formatDate(point.date)}</p>
+					<p className="font-semibold">{format.calendarDate(point.date, "—")}</p>
 				</div>
 				<div className="space-y-1 text-sm">
 					<div className="flex items-center justify-between">
@@ -297,7 +289,7 @@ export default function ModelTokenTrajectoryChart({
 						</p>
 						<p className="text-muted-foreground">
 							Model marked deprecated on{" "}
-							{formatDate(data.deprecationDate)}
+							{format.calendarDate(data.deprecationDate, "—")}
 						</p>
 					</div>
 				)}
@@ -330,7 +322,7 @@ export default function ModelTokenTrajectoryChart({
 						</h3>
 					</div>
 					<span className="text-xs text-muted-foreground">
-						Release date: {formatDate(data.releaseDate)}
+						Release date: {format.calendarDate(data.releaseDate, "—")}
 					</span>
 				</div>
 				<div className="mt-4 h-[360px]">
@@ -418,7 +410,7 @@ export default function ModelTokenTrajectoryChart({
 							<div className="flex items-center justify-between">
 								<span>Deprecated on</span>
 								<span className="font-semibold">
-									{formatDate(data.deprecationDate)}
+									{format.calendarDate(data.deprecationDate, "—")}
 								</span>
 							</div>
 							<div className="flex items-center justify-between text-muted-foreground">

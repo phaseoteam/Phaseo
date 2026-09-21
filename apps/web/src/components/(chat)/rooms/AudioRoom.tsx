@@ -4,6 +4,7 @@ import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
@@ -48,6 +49,7 @@ import {
 	MediaPlayerVolumeIndicator,
 } from "@/components/ui/media-player";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
+import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { ROOM_SIDEBAR_SLOT_ID } from "@/components/(chat)/RoomScaffold";
@@ -983,6 +985,7 @@ export function AudioRoom({
 	initialMode = "speech",
 	allowedModes = ["speech"],
 }: AudioRoomProps) {
+	const format = useDisplayFormatters();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const normalizedAllowedModes = useMemo(
@@ -1604,7 +1607,7 @@ export function AudioRoom({
 		const existingTitle = activeConversation?.title?.trim() ?? "";
 		const candidateTitle = promptText
 			? truncateTitle(promptText)
-			: `${modeLabel(targetMode)} ${new Date().toLocaleDateString()}`;
+			: `${modeLabel(targetMode)} ${format.date(new Date())}`;
 		const conversationTitle =
 			overrides?.forcedConversationTitle ||
 			(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
@@ -2114,6 +2117,7 @@ export function AudioRoom({
 						/>
 					</div>
 					<div className="flex items-center gap-2">
+						<RoomSdkExport />
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button

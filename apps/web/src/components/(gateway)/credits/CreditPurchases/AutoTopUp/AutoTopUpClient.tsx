@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SensitiveValue } from "@/components/display/SensitiveValue";
 import {
 	SetUpAutoTopUp,
 	DisableAutoTopUpServer,
@@ -264,7 +265,7 @@ export default function AutoTopUpClient({
 
 						<div className="leading-tight">
 							<div className="text-sm font-medium capitalize text-foreground">
-								<span data-pii="true">****{pm.card?.last4 ?? ""}</span>
+								<SensitiveValue inline label="card number">****{pm.card?.last4 ?? ""}</SensitiveValue>
 							</div>
 							<div className="text-xs capitalize text-muted-foreground">
 								{pm.card?.brand ?? "Card"}
@@ -554,9 +555,9 @@ export default function AutoTopUpClient({
 																			>
 																				<div className="leading-tight">
 																					<div className="text-sm font-medium">
-																				<span className="text-foreground" data-pii="true">
+																				<SensitiveValue inline className="text-foreground" label="card number">
 																							****{pm.card?.last4}
-																						</span>
+																						</SensitiveValue>
 																				<div className="text-xs capitalize text-muted-foreground">
 																							{pm
 																								.card

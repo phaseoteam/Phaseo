@@ -7,52 +7,11 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
-
-function formatDateTime(date: Date, timeZone: string): string {
-	return new Intl.DateTimeFormat("en-US", {
-		timeZone,
-		year: "numeric",
-		month: "short",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-		second: "2-digit",
-		hour12: false,
-	}).format(date);
-}
-
-function formatRelativeFromNow(date: Date, nowMs: number): string {
-	const diffInSeconds = Math.floor((date.getTime() - nowMs) / 1000);
-	const absDiffInSeconds = Math.abs(diffInSeconds);
-
-	if (absDiffInSeconds < 300) return "just now";
-
-	let value: number;
-	let unit: "minute" | "hour" | "day" | "week" | "month" | "year";
-
-	if (absDiffInSeconds < 3600) {
-		value = Math.floor(absDiffInSeconds / 60);
-		unit = "minute";
-	} else if (absDiffInSeconds < 86400) {
-		value = Math.floor(absDiffInSeconds / 3600);
-		unit = "hour";
-	} else if (absDiffInSeconds < 604800) {
-		value = Math.floor(absDiffInSeconds / 86400);
-		unit = "day";
-	} else if (absDiffInSeconds < 2419200) {
-		value = Math.floor(absDiffInSeconds / 604800);
-		unit = "week";
-	} else if (absDiffInSeconds < 31536000) {
-		value = Math.floor(absDiffInSeconds / 2628000);
-		unit = "month";
-	} else {
-		value = Math.floor(absDiffInSeconds / 31536000);
-		unit = "year";
-	}
-
-	const unitLabel = value === 1 ? unit : `${unit}s`;
-	return diffInSeconds >= 0 ? `in ${value} ${unitLabel}` : `${value} ${unitLabel} ago`;
-}
+import {
+	useDisplayFormatters,
+	useDisplayPreferences,
+} from "@/components/providers/DisplayPreferencesProvider";
+import { formatDisplayTimestamp } from "@/lib/displayPreferences";
 
 type ResetWindowHoverProps = {
 	iso: string;
@@ -60,13 +19,17 @@ type ResetWindowHoverProps = {
 };
 
 export default function ResetWindowHover({ iso, triggerText }: ResetWindowHoverProps) {
+	const format = useDisplayFormatters();
+	const { preferences } = useDisplayPreferences();
 	const [relativeNowMs, setRelativeNowMs] = useState<number | null>(null);
 	const userTimeZone = useMemo(
 		() =>
-			typeof Intl !== "undefined"
+			preferences.timeZone !== "system"
+				? preferences.timeZone
+				: typeof Intl !== "undefined"
 				? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 				: "UTC",
-		[],
+		[preferences.timeZone],
 	);
 
 	const date = useMemo(() => new Date(iso), [iso]);
@@ -89,16 +52,30 @@ export default function ResetWindowHover({ iso, triggerText }: ResetWindowHoverP
 				<div className="grid gap-2 text-xs">
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">{userTimeZone}</div>
-						<div className="font-mono">{formatDateTime(date, userTimeZone)}</div>
+						<div className="font-mono">
+							{format.dateTime(date, { includeSeconds: true })}
+						</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">UTC</div>
-						<div className="font-mono">{formatDateTime(date, "UTC")}</div>
+						<div className="font-mono">
+							{format.dateParts(date, {
+								dateStyle: preferences.dateStyle === "iso" ? "short" : preferences.dateStyle,
+								timeStyle: "medium",
+								timeZone: "UTC",
+							})}
+						</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
 						<div className="text-muted-foreground">Relative</div>
 						<div className="font-mono">
-							{relativeNowMs ? formatRelativeFromNow(date, relativeNowMs) : "-"}
+							{relativeNowMs
+								? formatDisplayTimestamp(
+										date,
+										{ ...preferences, relativeTime: "relative" },
+										new Date(relativeNowMs),
+									)
+								: "-"}
 						</div>
 					</div>
 				</div>

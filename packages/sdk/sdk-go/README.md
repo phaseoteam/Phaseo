@@ -62,6 +62,16 @@ func main() {
 
 Model discovery supports the public `/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
 
+Use `GetModelEndpointCapabilities` for live provider routes, or `CheckModelParameters` to highlight unsupported, partially supported, unknown, and out-of-range values before submitting a request.
+
+```go
+report, err := client.CheckModelParameters(ctx, "openai/gpt-5.4", map[string]any{"temperature": 0.7}, phaseo.ParameterSupportOptions{Endpoint: "responses"})
+preflight, err := client.PreflightRequest(ctx, map[string]any{"model": "openai/gpt-5.4", "input": "Hello", "temperature": 0.7}, phaseo.ParameterSupportOptions{Endpoint: "responses"})
+```
+
+`NewPager` provides context-aware offset pagination, and `NewJobHandle` resumes an
+existing job ID with caller-supplied typed fetch and status functions.
+
 Use `provider_availability_reason` with `availability=all` when you want rollout-state entries such as `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, or `soft_blocked`. Use `capability_status` with `availability=all` when you want non-routable endpoint mappings such as `coming_soon` or `internal_testing`.
 
 ```go

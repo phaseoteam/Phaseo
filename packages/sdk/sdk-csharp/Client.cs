@@ -112,6 +112,38 @@ namespace PhaseoSdk
             AsyncJobs = new AsyncJobsResource(this);
         }
 
+		public Phaseo SetTimeout(TimeSpan timeout)
+		{
+			_client.SetTimeout(timeout);
+			return this;
+		}
+
+		public Phaseo SetMaxRetries(int maxRetries)
+		{
+			_client.SetMaxRetries(maxRetries);
+			return this;
+		}
+
+		public Phaseo SetRequestHooks(
+			Action<global::Phaseo.Gen.RequestEvent>? onRequest,
+			Action<global::Phaseo.Gen.ResponseEvent>? onResponse,
+			Action<global::Phaseo.Gen.RetryEvent>? onRetry)
+		{
+			_client.SetHooks(onRequest, onResponse, onRetry);
+			return this;
+		}
+
+		public Task<global::Phaseo.Gen.RawResponse<Dictionary<string, object>>> RequestWithResponse(
+			string method,
+			string path,
+			Dictionary<string, string>? query = null,
+			Dictionary<string, string>? headers = null,
+			object? body = null,
+			global::Phaseo.Gen.RequestOptions? options = null)
+		{
+			return _client.SendWithResponseAsync<Dictionary<string, object>>(method, path, query, headers, body, options);
+		}
+
         public async Task<ModelLifecycleInfo?> GetModelDeprecationInfo(string modelId)
         {
             var normalized = modelId?.Trim();
@@ -531,6 +563,36 @@ namespace PhaseoSdk
         public Task<Dictionary<string, object>?> ListModels(Dictionary<string, string>? query = null)
         {
             return WithLifecycleAndTelemetry("models.list", query, false, () => Operations.ListModelsAsync(_client, query: query));
+        }
+
+        public Task<Dictionary<string, object>?> GetModelEndpointCapabilities(string modelId, Dictionary<string, string>? query = null)
+        {
+            var parts = modelId?.Trim().Split('/', 2) ?? [];
+            if (parts.Length != 2 || string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[1])) throw new ArgumentException("model ID must use author/slug format", nameof(modelId));
+            return WithLifecycleAndTelemetry("models.capabilities", new { model_id = modelId, query }, false, () => Operations.ListModelEndpointsAsync(_client, path: new Dictionary<string, string> { ["author"] = parts[0], ["slug"] = parts[1] }, query: query));
+        }
+
+        public async Task<System.Text.Json.Nodes.JsonObject> CheckModelParameters(string modelId, IReadOnlyDictionary<string, object?> values, IReadOnlyDictionary<string, object?>? options = null)
+        {
+            var response = await GetModelEndpointCapabilities(modelId).ConfigureAwait(false);
+            var node = System.Text.Json.JsonSerializer.SerializeToNode(response) ?? new System.Text.Json.Nodes.JsonObject();
+            return ParameterSupport.Check(node, values, options);
+        }
+
+        public async Task<System.Text.Json.Nodes.JsonObject> PreflightRequest(IReadOnlyDictionary<string, object?> request, IReadOnlyDictionary<string, object?>? options = null)
+        {
+            var modelId = request.TryGetValue("model", out var model) ? model?.ToString()?.Trim() : null;
+            if (string.IsNullOrWhiteSpace(modelId)) throw new ArgumentException("preflight requires request model", nameof(request));
+            var structural = new HashSet<string>(StringComparer.Ordinal) { "model", "input", "messages", "prompt", "contents", "provider", "providers", "routing", "metadata", "session_id", "app", "webhook", "idempotency_key" };
+            var values = request.Where(entry => entry.Value is not null && !structural.Contains(entry.Key)).ToDictionary(entry => entry.Key, entry => entry.Value);
+            var support = await CheckModelParameters(modelId, values, options).ConfigureAwait(false);
+            return new System.Text.Json.Nodes.JsonObject
+            {
+                ["ok"] = support["ok"]?.DeepClone(),
+                ["model_id"] = modelId,
+                ["checked_parameters"] = System.Text.Json.JsonSerializer.SerializeToNode(values),
+                ["parameter_support"] = support.DeepClone(),
+            };
         }
 
         public Task<Dictionary<string, object>?> ListProviders(Dictionary<string, string>? query = null)

@@ -35,6 +35,7 @@ import {
 	ChartContainer,
 	type ChartConfig,
 } from "@/components/ui/chart";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Table,
 	TableBody,
@@ -191,11 +192,6 @@ const OUTPUT_METER_PREFERENCE = ["output_text_tokens", "output_tokens"] as const
 function formatPercent(value: number | null): string {
 	if (value == null || !Number.isFinite(value)) return "--";
 	return `${value.toFixed(1)}%`;
-}
-
-function formatTokenCount(value: number): string {
-	if (!Number.isFinite(value)) return "--";
-	return `${Math.round(value).toLocaleString()} tokens`;
 }
 
 function formatUsd(value: number | null): string {
@@ -840,6 +836,10 @@ export default function PricingInsights({
 	usageRows,
 	effectivePricingRows,
 }: PricingInsightsProps) {
+	const format = useDisplayFormatters();
+	const formatTokenCount = (value: number) => Number.isFinite(value)
+		? `${format.number(Math.round(value))} tokens`
+		: "--";
 	const [sortKey, setSortKey] = useState<SortKey | null>("tokenShare");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 	const [pricingView, setPricingView] = useState<PricingView>("effective");

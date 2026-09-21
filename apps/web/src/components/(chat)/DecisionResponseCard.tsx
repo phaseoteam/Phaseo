@@ -179,9 +179,47 @@ export function getDecisionResponseMetadata(
 	};
 }
 
-function answerValue(answer: DecisionAnswer): string {
+function normalizeScoreLevelLabel(value: string): string {
+	const normalized = value.replace(/^\s*\d+(?:\.\d+)?\s*=\s*/, "").trim();
+	return normalized || value;
+}
+
+function scoreLevelLabel(answer: DecisionAnswer, option: string): string {
+	const label = answer.legend?.[option];
+	return label ? normalizeScoreLevelLabel(label) : `Score ${option}`;
+}
+
+function dominantScoreOption(
+	answer: DecisionAnswer,
+	probabilities: Array<[string, number]>,
+): string | undefined {
+	if (probabilities.length > 0) {
+		return probabilities.reduce((best, current) =>
+			current[1] > best[1] ? current : best,
+		)[0];
+	}
+	if (answer.score === undefined) return undefined;
+	const numericOptions = Object.keys(answer.legend ?? {})
+		.map((option) => ({ option, value: Number(option) }))
+		.filter(({ value }) => Number.isFinite(value));
+	if (numericOptions.length === 0) return undefined;
+	return numericOptions.reduce((best, current) =>
+		Math.abs(current.value - (answer.score ?? 0)) <
+		Math.abs(best.value - (answer.score ?? 0))
+			? current
+			: best,
+	).option;
+}
+
+function answerValue(
+	answer: DecisionAnswer,
+	probabilities: Array<[string, number]>,
+): string {
 	if (answer.type === "choice") return formatLabel(answer.choice ?? "No choice");
-	if (answer.type === "score") return formatDecimal(answer.score);
+	if (answer.type === "score") {
+		const option = dominantScoreOption(answer, probabilities);
+		return option ? scoreLevelLabel(answer, option) : "Score";
+	}
 	if (answer.type === "noul") {
 		return answer.noul !== undefined && answer.noul >= 0.5 ? "Yes" : "No";
 	}
@@ -213,7 +251,6 @@ const probabilityColors = [
 	"bg-violet-500",
 	"bg-amber-500",
 	"bg-rose-500",
-	"bg-cyan-500",
 ];
 
 function ProbabilityStrip({ entries }: { entries: Array<[string, number]> }) {
@@ -228,7 +265,7 @@ function ProbabilityStrip({ entries }: { entries: Array<[string, number]> }) {
 		>
 			{entries.map(([label, probability], index) => (
 				<div
-					key={label}
+					key={`${label}-${index}`}
 					className={`${probabilityColors[index % probabilityColors.length]} transition-[width]`}
 					style={{
 						width: `${total > 0 ? (Math.max(0, probability) / total) * 100 : 0}%`,
@@ -249,7 +286,11 @@ function ProbabilityRows({
 	return (
 		<div className="space-y-2.5">
 			{entries.map(([option, probability], index) => {
-				const description = answer.legend?.[option];
+				const isScore = answer.type === "score";
+				const description = isScore ? undefined : answer.legend?.[option];
+				const label = isScore
+					? scoreLevelLabel(answer, option)
+					: formatLabel(option);
 				return (
 					<div key={option} className="space-y-1">
 						<div className="flex items-start justify-between gap-3 text-xs">
@@ -259,7 +300,7 @@ function ProbabilityRows({
 										className={`size-2 shrink-0 rounded-full ${probabilityColors[index % probabilityColors.length]}`}
 									/>
 									<span className="truncate font-medium text-foreground">
-										{answer.type === "score" ? option : formatLabel(option)}
+										{label}
 									</span>
 								</div>
 								{description ? (
@@ -293,31 +334,41 @@ function DecisionAnswerView({ answer }: { answer: DecisionAnswer }) {
 		? noulProbabilityEntries(answer)
 		: probabilityEntries(answer);
 	const confidence = answer.confidence;
+	const displayProbabilities =
+		answer.type === "score"
+			? probabilities.map(([option, probability]) => [
+					scoreLevelLabel(answer, option),
+					probability,
+				] as [string, number])
+			: probabilities;
 	const scoreOptions = [
 		...probabilities.map(([option]) => Number(option)),
 		...Object.keys(answer.legend ?? {}).map(Number),
 	].filter((option) => Number.isFinite(option));
 	const maxScore = scoreOptions.length > 0 ? Math.max(...scoreOptions) : undefined;
 
+	if (isNoul) {
+		return (
+			<div className="w-full py-1 text-sm leading-relaxed text-foreground">
+				<ProbabilityRows answer={answer} entries={probabilities} />
+			</div>
+		);
+	}
+
 	return (
 		<div className="w-full space-y-4 py-1 text-sm leading-relaxed text-foreground">
 			<div className="flex items-end justify-between gap-3">
 				<div className="min-w-0">
 					<div className="truncate text-lg font-semibold tracking-tight text-foreground">
-						{answerValue(answer)}
-						{answer.type === "score" && maxScore !== undefined ? (
-							<span className="ml-1 text-sm font-normal text-muted-foreground">
-								/ {maxScore}
-							</span>
-						) : null}
+						{answerValue(answer, probabilities)}
 					</div>
-					{isNoul ? (
+					{answer.type === "score" && maxScore !== undefined ? (
 						<div className="mt-0.5 text-xs text-muted-foreground">
-							{formatPercent(answer.noul)} yes probability · {formatPercent(1 - (answer.noul ?? 0))} no
+							Weighted average: {formatDecimal(answer.score)} of {maxScore}
 						</div>
 					) : null}
 				</div>
-				{!isNoul && confidence !== undefined ? (
+				{confidence !== undefined ? (
 					<div className="shrink-0 text-right text-xs text-muted-foreground">
 						<div className="font-medium text-foreground">
 							{formatPercent(confidence)}
@@ -329,7 +380,7 @@ function DecisionAnswerView({ answer }: { answer: DecisionAnswer }) {
 
 			{probabilities.length > 0 ? (
 				<div className="space-y-3">
-					<ProbabilityStrip entries={probabilities} />
+					<ProbabilityStrip entries={displayProbabilities} />
 					<ProbabilityRows answer={answer} entries={probabilities} />
 				</div>
 			) : null}

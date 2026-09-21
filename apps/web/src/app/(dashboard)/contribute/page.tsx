@@ -8,6 +8,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { buildMetadata } from "@/lib/seo";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type StaticContributor = {
 	name?: string;
@@ -194,10 +195,7 @@ export default async function Page() {
 													variant="outline"
 													className="h-5 shrink-0 px-2 text-[10px]"
 												>
-													{(
-														contributor.contributions ??
-														0
-													).toLocaleString()}{" "}
+											<DisplayNumber value={contributor.contributions ?? 0} />{" "}
 													commits
 												</Badge>
 											</CardContent>

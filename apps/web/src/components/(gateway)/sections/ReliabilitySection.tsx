@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart3, CircuitBoard } from "lucide-react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	ChartContainer,
@@ -19,32 +20,6 @@ function formatPercent(value: number | null | undefined, digits = 2): string {
 function formatLatency(value: number | null | undefined): string {
 	const normalized = value == null || Number.isNaN(value) ? 0 : value;
 	return `${Math.round(normalized)} ms`;
-}
-
-function formatCompactNumber(value: number | null | undefined): string {
-	const normalized = value == null || Number.isNaN(value) ? 0 : value;
-	return Intl.NumberFormat("en-US", {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(normalized);
-}
-
-function formatAbsoluteNumber(
-	value: number | string | null | undefined
-): string {
-	if (value == null) return "0";
-	const numericValue =
-		typeof value === "number" ? value : Number.parseFloat(String(value));
-	if (!Number.isFinite(numericValue)) return "0";
-	return Intl.NumberFormat("en-US").format(Math.round(numericValue));
-}
-
-function formatHourLabel(iso: string): string {
-	const date = new Date(iso);
-	return date.toLocaleString(undefined, {
-		weekday: "short",
-		hour: "numeric",
-	});
 }
 
 function formatHoursAgoTick(value: number | string | null | undefined): string {
@@ -77,7 +52,8 @@ function formatHoursAgoTooltip(
 
 function formatTooltipNumber(
 	value: number | string | null | undefined,
-	unit: string
+	unit: string,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"]
 ): string {
 	if (value == null) return `0 ${unit}`;
 	const numericValue =
@@ -85,9 +61,10 @@ function formatTooltipNumber(
 	if (!Number.isFinite(numericValue)) {
 		return `0 ${unit}`;
 	}
-	return `${Intl.NumberFormat("en-US", {
+	return `${formatNumber(numericValue, {
 		maximumFractionDigits: 1,
-	}).format(numericValue)} ${unit}`;
+		notation: "standard",
+	})} ${unit}`;
 }
 
 interface ReliabilitySectionProps {
@@ -95,6 +72,20 @@ interface ReliabilitySectionProps {
 }
 
 export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
+	const format = useDisplayFormatters();
+	const formatCompactNumber = (value: number | null | undefined) =>
+		format.number(value == null || Number.isNaN(value) ? 0 : value, {
+			maximumFractionDigits: 1,
+		});
+	const formatAbsoluteNumber = (value: number | string | null | undefined) => {
+		if (value == null) return "0";
+		const numericValue = typeof value === "number" ? value : Number.parseFloat(String(value));
+		return Number.isFinite(numericValue) ? format.number(Math.round(numericValue)) : "0";
+	};
+	const formatHourLabel = (iso: string) => format.dateParts(iso, {
+		weekday: "short",
+		hour: "numeric",
+	});
 	const throughputData = (() => {
 		return metrics.timeseries.throughput.map((point) => {
 			const hoursAgo =
@@ -249,8 +240,9 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 													<div className="flex flex-col gap-0.5">
 														<span className="font-mono text-sm font-semibold text-slate-900 dark:text-slate-100">
 															{formatTooltipNumber(
-																resolved,
-																"tokens"
+															resolved,
+															"tokens",
+															format.number
 															)}
 														</span>
 														<span className="text-[0.65rem] uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">

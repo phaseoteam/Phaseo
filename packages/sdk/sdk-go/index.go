@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -115,6 +116,30 @@ func WithLogger(logger PhaseoLogger) Option {
 	}
 }
 
+func WithHTTPClient(httpClient *http.Client) Option {
+	return func(c *Phaseo) {
+		if httpClient != nil {
+			c.raw.HTTPClient = httpClient
+		}
+	}
+}
+
+func WithTimeout(timeout time.Duration) Option {
+	return func(c *Phaseo) { c.raw.Timeout = timeout }
+}
+
+func WithMaxRetries(maxRetries int) Option {
+	return func(c *Phaseo) { c.raw.MaxRetries = maxRetries }
+}
+
+func WithRequestHooks(onRequest func(gen.RequestEvent), onResponse func(gen.ResponseEvent), onRetry func(gen.RetryEvent)) Option {
+	return func(c *Phaseo) {
+		c.raw.OnRequest = onRequest
+		c.raw.OnResponse = onResponse
+		c.raw.OnRetry = onRetry
+	}
+}
+
 func WithClientSource(source string, version string) Option {
 	return func(c *Phaseo) {
 		if normalized := strings.TrimSpace(source); normalized != "" {
@@ -201,16 +226,17 @@ func (c *Phaseo) RawClient() *gen.Client {
 }
 
 // Request sends an arbitrary HTTP request through the generated transport.
-func (c *Phaseo) Request(_ context.Context, method string, path string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+func (c *Phaseo) Request(ctx context.Context, method string, path string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	endpoint := strings.TrimPrefix(strings.TrimSpace(path), "/")
 	if endpoint == "" {
 		endpoint = "request"
 	}
-	return withLifecycleAndTelemetry(c, context.Background(), endpoint, body, true, func() (map[string]interface{}, error) {
-		raw, err := c.raw.Request(method, path, query, headers, body)
+	return withLifecycleAndTelemetry(c, ctx, endpoint, body, true, func() (map[string]interface{}, error) {
+		response, err := c.raw.RequestWithOptions(method, path, query, body, &gen.RequestOptions{Context: ctx, Headers: headers})
 		if err != nil {
 			return nil, err
 		}
+		raw := response.Body
 		if len(raw) == 0 {
 			return map[string]interface{}{}, nil
 		}
@@ -220,6 +246,17 @@ func (c *Phaseo) Request(_ context.Context, method string, path string, query ma
 		}
 		return decoded, nil
 	})
+}
+
+// RequestWithResponse sends an arbitrary request and preserves HTTP metadata.
+func (c *Phaseo) RequestWithResponse(ctx context.Context, method string, path string, query map[string]string, body any, options *gen.RequestOptions) (*gen.Response, error) {
+	if options == nil {
+		options = &gen.RequestOptions{}
+	}
+	if options.Context == nil {
+		options.Context = ctx
+	}
+	return c.raw.RequestWithOptions(method, path, query, body, options)
 }
 
 func decodeTo[T any](input map[string]interface{}) (T, error) {

@@ -1,14 +1,18 @@
+"use client";
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import { ArrowUpRight } from "lucide-react";
 import { ExtendedModel, Price, APIProvider } from "@/data/types";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface ModelPriceCardProps {
 	model: ExtendedModel;
 }
 
 export default function ModelPriceCard({ model }: ModelPriceCardProps) {
+	const format = useDisplayFormatters();
 	// Defensive: if no prices, show nothing
 	if (!model.prices || model.prices.length === 0) return null;
 
@@ -107,7 +111,13 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 				const Money = (n: number | null, suffix = "/1M") =>
 					n === null || isNaN(n)
 						? "N/A"
-						: `$${n.toFixed(2)}${suffix}`;
+						: `${format.number(n, {
+								style: "currency",
+								currency: "USD",
+								minimumFractionDigits: 2,
+								maximumFractionDigits: 2,
+								notation: "standard",
+							})}${suffix}`;
 
 				return (
 					<Card

@@ -22,6 +22,7 @@ import {
 import { canPreviewFutureBlogPosts } from "@/lib/flags/blogPreview";
 import { buildMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 type AnnouncementPageProps = {
 	params: Promise<{ slug: string }>;
@@ -96,10 +97,13 @@ export default async function AnnouncementPostPage({
 
 	const isPreview = !isAnnouncementPublished(post.publishedAt);
 	const metaParts = [
-		post.author,
-		formatAnnouncementDate(post.publishedAt),
-		formatAnnouncementReadingTime(post.readingTimeMinutes),
-	].filter(Boolean);
+		{ key: "author", value: post.author },
+		{ key: "published", value: <DisplayCalendarDate value={post.publishedAt} /> },
+		{
+			key: "reading-time",
+			value: formatAnnouncementReadingTime(post.readingTimeMinutes),
+		},
+	].filter((part) => Boolean(part.value));
 
 	const tocItems: BlogTocItem[] = [];
 	const { content } = await compileMDX({
@@ -140,14 +144,14 @@ export default async function AnnouncementPostPage({
 						) : null}
 						<p className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">
 							{metaParts.map((part, index) => (
-								<span key={part} className="inline-flex items-center gap-x-1.5">
+								<span key={part.key} className="inline-flex items-center gap-x-1.5">
 									{index > 0 ? (
 										<span
 											className="inline-block h-[5px] w-[5px] rounded-full bg-zinc-400 align-middle dark:bg-zinc-500"
 											aria-hidden="true"
 										/>
 									) : null}
-									<span>{part}</span>
+									<span>{part.value}</span>
 								</span>
 							))}
 						</p>

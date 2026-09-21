@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -22,14 +23,6 @@ type MarketShareLeaderboardProps = {
 	maxExpanded?: number;
 };
 
-function formatTokens(value: number) {
-	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
-	return value.toLocaleString();
-}
-
 function formatPercent(value: number) {
 	if (!Number.isFinite(value)) return "--";
 	if (value === 0) return "0%";
@@ -42,6 +35,10 @@ export function MarketShareLeaderboard({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: MarketShareLeaderboardProps) {
+	const format = useDisplayFormatters();
+	const formatTokens = (value: number) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const [showAll, setShowAll] = useState(false);
 
 	if (!data.length) {

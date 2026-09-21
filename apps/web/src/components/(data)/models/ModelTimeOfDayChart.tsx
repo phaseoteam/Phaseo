@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/chart";
 import type { ModelTimeOfDayPoint } from "@/lib/fetchers/models/getModelPerformance";
 import { Button } from "@/components/ui/button";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type MetricKey = "throughput" | "latency" | "generation";
 
@@ -26,7 +27,6 @@ const METRIC_CONFIG: Record<
 		unit: string;
 		valueKey: keyof ModelTimeOfDayPoint;
 		color: string;
-		format: (value: number | null) => string;
 	}
 > = {
 	throughput: {
@@ -34,24 +34,18 @@ const METRIC_CONFIG: Record<
 		unit: "t/s",
 		valueKey: "avgThroughput",
 		color: "hsl(189, 90%, 45%)",
-		format: (value) =>
-			value != null ? `${value.toFixed(2)} t/s` : "No data",
 	},
 	latency: {
 		label: "Latency",
 		unit: "ms",
 		valueKey: "avgLatencyMs",
 		color: "hsl(32, 95%, 44%)",
-		format: (value) =>
-			value != null ? `${Math.round(value)} ms` : "No data",
 	},
 	generation: {
 		label: "E2E latency",
 		unit: "ms",
 		valueKey: "avgGenerationMs",
 		color: "hsl(262, 83%, 58%)",
-		format: (value) =>
-			value != null ? `${Math.round(value)} ms` : "No data",
 	},
 };
 
@@ -66,6 +60,7 @@ interface ModelTimeOfDayChartProps {
 export default function ModelTimeOfDayChart({
 	timeOfDay,
 }: ModelTimeOfDayChartProps) {
+	const format = useDisplayFormatters();
 	const [selectedMetric, setSelectedMetric] =
 		useState<MetricKey>("throughput");
 
@@ -166,7 +161,7 @@ export default function ModelTimeOfDayChart({
 										fill: "var(--muted-foreground)",
 									}}
 									tickFormatter={(value) =>
-										`${value}${metricConfig.unit}`
+										`${format.number(Number(value))}${metricConfig.unit}`
 									}
 								/>
 								<ChartTooltip
@@ -184,9 +179,12 @@ export default function ModelTimeOfDayChart({
 													)}
 												</p>
 												<p className="text-sm font-medium">
-													{metricConfig.format(
-														point.payload.value
-													)}
+											{point.payload.value == null
+												? "No data"
+												: `${format.number(point.payload.value, {
+														maximumFractionDigits:
+															selectedMetric === "throughput" ? 2 : 0,
+													})} ${metricConfig.unit}`}
 												</p>
 											</div>
 										);

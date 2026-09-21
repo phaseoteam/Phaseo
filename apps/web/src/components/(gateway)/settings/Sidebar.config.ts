@@ -24,6 +24,7 @@ import {
 	Workflow,
 	ClipboardCheck,
 	Inbox,
+	SlidersHorizontal,
 } from "lucide-react";
 
 export type NavItem = {
@@ -91,6 +92,12 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				label: "Workspaces",
 				icon: Building2,
 				match: ["/settings/account/workspaces"],
+			},
+			{
+				href: "/settings/preferences",
+				label: "Preferences",
+				icon: SlidersHorizontal,
+				match: ["/settings/preferences"],
 			},
 			{
 				href: "/settings/credits",

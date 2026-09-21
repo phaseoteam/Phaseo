@@ -4,6 +4,7 @@ import React from "react";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, XCircle } from "lucide-react";
 import {
 	Dialog,
@@ -55,7 +56,6 @@ import {
 	DetailKeyValueGrid,
 	DetailTimingBar,
 } from "./DetailDialogPrimitives";
-import { formatWordyDateTime } from "@/lib/gateway/usage/timeFormatting";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 import {
 	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
@@ -89,7 +89,10 @@ interface RequestDetailDialogProps {
 
 type ProviderAttemptRow = RequestRow["provider_attempts"][number];
 
-function formatRequestPricingLine(line: RequestRow["pricing_lines"][number]): string {
+function formatRequestPricingLine(
+	line: RequestRow["pricing_lines"][number],
+	formatNumber: (value: number) => string,
+): string {
 	if (line == null) return "null";
 	if (
 		typeof line === "string" ||
@@ -124,7 +127,7 @@ function formatRequestPricingLine(line: RequestRow["pricing_lines"][number]): st
 				: null;
 	const costNanos =
 		typeof line.cost_nanos === "number"
-			? line.cost_nanos.toLocaleString()
+			? formatNumber(line.cost_nanos)
 			: typeof line.cost_nanos === "string" && line.cost_nanos.trim().length > 0
 				? line.cost_nanos.trim()
 				: null;
@@ -784,7 +787,8 @@ function RequestHeader({
 	request: RequestRow;
 	headerNavigation?: React.ReactNode;
 }) {
-	const timestamp = formatWordyDateTime(request.created_at, { includeTime: true });
+	const format = useDisplayFormatters();
+	const timestamp = format.dateTime(request.created_at);
 	return (
 		<div className="relative">
 			{headerNavigation ? (
@@ -821,6 +825,7 @@ export default function RequestDetailDialog({
 	disablePointerDismissal = false,
 	loading = false,
 }: RequestDetailDialogProps) {
+	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
 
 	if (!request) return null;
@@ -1496,7 +1501,7 @@ export default function RequestDetailDialog({
 				<span className="inline-flex items-center justify-end gap-2">
 					<Database className="size-3.5 shrink-0 text-muted-foreground" />
 					{ioLog?.retention_until
-						? `Retained Until ${formatWordyDateTime(ioLog.retention_until)}`
+						? `Retained Until ${format.dateTime(ioLog.retention_until)}`
 						: "No Retained Payload"}
 				</span>
 			),
@@ -2644,7 +2649,7 @@ export default function RequestDetailDialog({
 												</div>
 											) : null}
 											<div className="mt-2 text-amber-950/85">
-												{entry.returnedChars.toLocaleString()} chars returned
+												{format.number(entry.returnedChars)} chars returned
 												{entry.truncated ? " | truncated" : ""}
 											</div>
 										</div>
@@ -2665,7 +2670,7 @@ export default function RequestDetailDialog({
 									{ label: "Generation time", value: <span className="font-mono">{timelineTiming.generationMs !== null ? `${timingGeneration} ms` : "-"}</span> },
 									{ label: "Throughput", value: <span className="font-mono">{formatThroughput(request.throughput)}</span> },
 									{ label: "Cost", value: <span className="font-mono">{formatCost(request.cost_nanos)}</span> },
-									{ label: "Tokens", value: <span className="font-mono">{usageSummary.input != null || usageSummary.output != null ? `${formatUsageNumber(usageSummary.input ?? 0)} → ${formatUsageNumber(usageSummary.output ?? 0)}` : "-"}</span> },
+									{ label: "Tokens", value: <span className="font-mono">{usageSummary.input != null || usageSummary.output != null ? `${formatUsageNumber(usageSummary.input ?? 0, format.number)} → ${formatUsageNumber(usageSummary.output ?? 0, format.number)}` : "-"}</span> },
 									{ label: "Stop reason", value: request.finish_reason || "-" },
 								]}
 							/>
@@ -2702,8 +2707,8 @@ export default function RequestDetailDialog({
 								<div className="space-y-4 text-sm">
 									<div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
 										<span>Status: <span className="font-medium text-foreground">{ioLog.status}</span></span>
-										{ioLog.bytes ? <span>{ioLog.bytes.toLocaleString()} bytes</span> : null}
-										{ioLog.retention_until ? <span>Retained until {formatWordyDateTime(ioLog.retention_until)}</span> : null}
+										{ioLog.bytes ? <span>{format.number(ioLog.bytes)} bytes</span> : null}
+										{ioLog.retention_until ? <span>Retained until {format.dateTime(ioLog.retention_until)}</span> : null}
 									</div>
 									{ioLog.payload ? (
 										<div className="grid gap-4 xl:grid-cols-2">
@@ -2728,7 +2733,7 @@ export default function RequestDetailDialog({
 											className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2"
 										>
 											<code className="whitespace-pre-wrap break-words font-mono text-xs">
-												{formatRequestPricingLine(line)}
+												{formatRequestPricingLine(line, (value) => format.number(value, { notation: "standard" }))}
 											</code>
 										</div>
 									))}
@@ -2878,13 +2883,14 @@ function CopyableText({ value, ariaLabel }: { value: string; ariaLabel: string }
 }
 
 function UsageGroup({ title, meters }: { title: string; meters: UsageMeter[] }) {
+	const format = useDisplayFormatters();
 	return (
 		<div>
 			<h3 className="mb-2 text-xs font-medium text-foreground">{title}</h3>
 			<DetailRows
 				items={meters.map((meter) => ({
 					label: meter.label,
-					value: <span className="font-mono">{formatUsageNumber(meter.value)}</span>,
+					value: <span className="font-mono">{formatUsageNumber(meter.value, format.number)}</span>,
 				}))}
 			/>
 		</div>

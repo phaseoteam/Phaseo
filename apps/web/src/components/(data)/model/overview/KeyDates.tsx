@@ -1,6 +1,6 @@
 import { Megaphone, Rocket, Archive, Ban } from "lucide-react";
 import RelativeDateBadge from "./RelativeDateBadge";
-import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 interface KeyDatesProps {
 	announced?: string;
@@ -81,7 +81,7 @@ export default function KeyDates({
 						>
 							{value ? (
 								<>
-									<span>{formatModelLifecycleDate(value)}</span>
+									<span><DisplayCalendarDate value={value} /></span>
 									<span className="text-muted-foreground/50">·</span>
 									<RelativeDateBadge
 										date={value}

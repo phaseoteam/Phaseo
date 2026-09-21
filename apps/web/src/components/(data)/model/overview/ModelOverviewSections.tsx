@@ -29,6 +29,7 @@ import ModelBenchmarks from "@/components/(data)/model/benchmarks/ModelBenchmark
 import KeyDates from "@/components/(data)/model/overview/KeyDates";
 import OtherInfo from "@/components/(data)/model/overview/OtherInfo";
 import ModelLinks, { hasModelLinks } from "@/components/(data)/model/overview/ModelLinks";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
@@ -72,7 +73,7 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
-import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import {
@@ -287,20 +288,6 @@ function SectionHeader({
 	);
 }
 
-function formatCompactUsage(value: number): string {
-	if (!Number.isFinite(value) || value <= 0) return "0";
-	if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`;
-	if (value >= 1_000_000) {
-		const millions = Math.round(value / 1_000_000);
-		return millions >= 1_000 ? `${(value / 1_000_000_000).toFixed(2)}B` : `${millions}M`;
-	}
-	if (value >= 1_000) {
-		const thousands = Math.round((value / 1_000) * 10) / 10;
-		return thousands >= 1_000 ? "1M" : `${thousands.toFixed(1)}K`;
-	}
-	return Math.round(value).toLocaleString();
-}
-
 function getAppInitial(title: string): string {
 	return title.trim().charAt(0).toUpperCase() || "A";
 }
@@ -491,7 +478,7 @@ export async function ModelAppsSection({
 											) : null}
 										</div>
 										<div className="whitespace-nowrap text-right text-sm tabular-nums text-muted-foreground">
-											{formatCompactUsage(app.totalTokens)} tokens
+											<DisplayNumber value={app.totalTokens} options={{ maximumFractionDigits: 2 }} /> tokens
 										</div>
 									</Link>
 								);
@@ -1041,7 +1028,7 @@ export async function ModelCreatorModelsSection({
 										</div>
 										<div className="mt-3">
 											<p className="text-xs text-muted-foreground">
-												{formatModelLifecycleDate(creatorModel.primary_date)}
+												<DisplayCalendarDate value={creatorModel.primary_date} />
 											</p>
 										</div>
 									</Link>

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ArrowRight, Check, Loader2, MessagesSquare, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ async function responseJson<T>(response: Response): Promise<T> {
 }
 
 export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Props) {
+	const format = useDisplayFormatters();
 	const [memberCount, setMemberCount] = React.useState(String(ENTERPRISE_MIN_SELF_SERVE_MEMBERS));
 	const [needsSso, setNeedsSso] = React.useState(true);
 	const [needsScim, setNeedsScim] = React.useState(true);
@@ -87,14 +89,14 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 							<section key={option.variant} className="space-y-5 border-y border-border/60 py-5">
 								<div className="flex flex-wrap items-start justify-between gap-3"><h4 className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" />Self Serve Enterprise</h4><div><span className="text-2xl font-semibold tracking-tight">${option.monthlyUsd}</span><span className="text-sm text-muted-foreground"> / month</span></div></div>
 								<div className="space-y-2 text-sm">
-									{["SAML SSO and SCIM provisioning", `${option.includedMembers.toLocaleString("en-US")} active members included`, ...(option.overageMembers > 0 ? [`Estimated ${option.overageMembers.toLocaleString("en-US")} additional members at $${option.overageMemberMonthlyUsd}/member/month`, `Estimated monthly total: $${option.estimatedMonthlyUsd.toLocaleString("en-US")}`] : []), "Departments, roles and governance", "Standard 5% credit top-up fee"].map((feature) => <p key={feature} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />{feature}</p>)}
+									{["SAML SSO and SCIM provisioning", `${format.number(option.includedMembers)} active members included`, ...(option.overageMembers > 0 ? [`Estimated ${format.number(option.overageMembers)} additional members at $${format.number(option.overageMemberMonthlyUsd, { notation: "standard" })}/member/month`, `Estimated monthly total: $${format.number(option.estimatedMonthlyUsd, { notation: "standard" })}`] : []), "Departments, roles and governance", "Standard 5% credit top-up fee"].map((feature) => <p key={feature} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />{feature}</p>)}
 								</div>
 								<div className="flex justify-end"><Button onClick={() => checkout(option.variant)} disabled={working || !canEdit}>{working ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Subscribe</Button></div>
 							</section>
 						);
 					})}
 				</div>
-				<p className="text-xs text-muted-foreground">Quote valid until {new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(quote.expiresAt))}. USD billing only.</p>
+				<p className="text-xs text-muted-foreground">Quote valid until {format.dateTime(quote.expiresAt)}. USD billing only.</p>
 			</div>
 		);
 	}

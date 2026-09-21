@@ -11,4 +11,4 @@
 - `responseMetadata(result)` provides request and dashboard trace identifiers. HTTP errors expose `code`, `requestId`, `traceUrl`, and `retryAfterMs`.
 - Job resources expose `start`, `resume`, `result`, `events`, and `toJSON`. Remote music cancellation is unsupported.
 - Use `responses.parse(request, schema)` or `parseOutput(response, schema)` with a Zod-compatible parser. Configure server structured output in the request explicitly.
-- Use `checkModelCapabilities` for advertised capabilities, `batchResults` for incremental JSONL, `downloadTo` for media, and `@phaseo/sdk/testing` for local fixtures.
+- Use `models.checkParameters(modelId, values, options)` for live, structured parameter support and `models.capabilities(modelId)` for raw endpoint capability rows. Use `checkModelCapabilities` for broader advertised capabilities, `batchResults` for incremental JSONL, `downloadTo` for media, and `@phaseo/sdk/testing` for local fixtures.

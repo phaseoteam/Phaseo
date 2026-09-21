@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DisplayDate } from "@/components/display/DisplayValue";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -15,14 +16,6 @@ interface DeprecationWarningsProps {
 }
 
 type AlertCardMode = "deprecated" | "retired";
-
-function formatDate(value: string) {
-	return new Date(value).toLocaleDateString(undefined, {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	});
-}
 
 function formatFutureDays(days: number) {
 	if (days <= 0) return "today";
@@ -149,7 +142,7 @@ function AlertCard({
 								<span>
 									Last used{" "}
 									<span className="font-medium text-foreground">
-										{formatDate(row.lastUsedAt)}
+										<DisplayDate value={row.lastUsedAt} />
 									</span>
 								</span>
 							</span>
@@ -159,7 +152,7 @@ function AlertCard({
 					<span>
 						Retired{" "}
 						<span className="font-medium text-foreground">
-							{row.retirementDate ? formatDate(row.retirementDate) : "unknown"}
+							{row.retirementDate ? <DisplayDate value={row.retirementDate} /> : "unknown"}
 						</span>
 					</span>
 				)}
@@ -359,4 +352,3 @@ export default async function DeprecationWarnings({
 		</div>
 	);
 }
-

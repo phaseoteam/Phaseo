@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -20,19 +21,23 @@ type Row = {
 	key_id?: string | null;
 };
 
-function bucketFor(d: Date, range: RangeKey): string {
-	const pad = (n: number) => String(n).padStart(2, "0");
+function bucketFor(
+	d: Date,
+	range: RangeKey,
+	formatDateParts: ReturnType<typeof useDisplayFormatters>["dateParts"],
+): string {
 	if (range === "1h") {
 		const minutes = Math.floor(d.getMinutes() / 5) * 5;
-		return `${pad(d.getHours())}:${pad(minutes)}`;
+		d.setMinutes(minutes, 0, 0);
+		return formatDateParts(d, { hour: "2-digit", minute: "2-digit" });
 	}
-	if (range === "1d") return `${pad(d.getHours())}:00`;
+	if (range === "1d") return formatDateParts(d, { hour: "2-digit", minute: "2-digit" });
     if (range === "1m" || range === "1w")
-        return d.toLocaleDateString(undefined, {
+        return formatDateParts(d, {
             month: "short",
             day: "2-digit",
         });
-    return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+    return formatDateParts(d, { month: "short", year: "numeric" });
 }
 
 function getTokens(u: any) {
@@ -52,6 +57,7 @@ type TooltipProps = {
 };
 
 function UsageTooltipContent(props: TooltipProps & Record<string, any>) {
+	const format = useDisplayFormatters();
 	// Recharts will clone the `content` element and pass tooltip props
 	// such as `payload`, `label` and `active`. We must forward those
 	// to the inner `ChartTooltipContent` so it can render the tooltip.
@@ -70,8 +76,17 @@ function UsageTooltipContent(props: TooltipProps & Record<string, any>) {
 				const val = Number(v ?? 0);
 				const formatted = isFinite(val)
 					? metric === "spend"
-						? `$${val.toFixed(5)}`
-						: Intl.NumberFormat().format(Math.round(val))
+						? format.number(val, {
+								style: "currency",
+								currency: "USD",
+								minimumFractionDigits: 0,
+								maximumFractionDigits: 5,
+								notation: "standard",
+							})
+						: format.number(Math.round(val), {
+								maximumFractionDigits: 0,
+								notation: "standard",
+							})
 					: "0";
 				const seriesKey = String(item?.dataKey ?? name ?? "");
 				const cfg = (seriesStyle as any)[seriesKey];
@@ -199,6 +214,7 @@ export default function UsageOverviewChart({
 	groupMode = "model",
 	keyMeta = [],
 }: Props) {
+	const format = useDisplayFormatters();
 	const [metric, setMetric] = React.useState<"requests" | "tokens" | "spend">(
 		"tokens"
 	);
@@ -230,7 +246,7 @@ export default function UsageOverviewChart({
 		const cursor = new Date(start.getTime());
 
 		const pushAndAdvance = () => {
-			buckets.push(bucketFor(new Date(cursor), range));
+			buckets.push(bucketFor(new Date(cursor), range, format.dateParts));
         if (range === "1h") cursor.setMinutes(cursor.getMinutes() + 5);
         else if (range === "1d") cursor.setHours(cursor.getHours() + 1);
         else if (range === "1w" || range === "1m") cursor.setDate(cursor.getDate() + 1);
@@ -284,7 +300,7 @@ export default function UsageOverviewChart({
 			let totalAll = 0;
 
 			rows.forEach((r) => {
-				const b = bucketFor(new Date(r.created_at), range);
+				const b = bucketFor(new Date(r.created_at), range, format.dateParts);
 				const groupValue =
 					groupMode === "key"
 						? (r as any)?.key_id

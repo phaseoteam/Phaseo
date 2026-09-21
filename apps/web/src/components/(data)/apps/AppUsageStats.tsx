@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchFrontendAppUsage } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
 
@@ -46,17 +47,17 @@ export default async function AppUsageStats({
 		{
 			label: "Total Requests",
 			value: currentRequests,
-			format: (v: number) => v.toLocaleString(),
+			options: undefined,
 		},
 		{
 			label: "Total Tokens",
 			value: currentTokens,
-			format: (v: number) => v.toLocaleString(),
+			options: undefined,
 		},
 		{
 			label: "Avg Tokens/Request",
 			value: currentRequests > 0 ? currentTokens / currentRequests : 0,
-			format: (v: number) => v.toFixed(1),
+			options: { maximumFractionDigits: 1 },
 		},
 	];
 
@@ -69,7 +70,7 @@ export default async function AppUsageStats({
 					</CardHeader>
 					<CardContent>
 						<div className="text-2xl font-bold">
-							{stat.format(stat.value)}
+							<DisplayNumber value={stat.value} options={stat.options} />
 						</div>
 						<p className="text-xs text-muted-foreground mt-1">
 							{range} period

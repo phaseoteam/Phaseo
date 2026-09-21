@@ -16,14 +16,15 @@ from gen import models
 from gen import operations as ops
 from phaseo_devtools import TelemetryRecorder, create_phaseo_devtools
 from .model_ids import MODEL_IDS, ModelIds
-from .transport import HttpClient, APIResponse, PhaseoHTTPError, request_trace_url
-from .helpers import parse_output, output_text, collect_stream, check_capabilities, batch_results, match_batch_result, StructuredOutputError, StreamResponseError
+from .transport import HttpClient, APIResponse, PhaseoHTTPError, RawResponse, RequestHook, request_trace_url
+from .helpers import parse_output, output_text, collect_stream, check_capabilities, check_parameter_support, batch_results, match_batch_result, StructuredOutputError, StreamResponseError
 from .async_client import AsyncPhaseo, AsyncJobHandle, collect_async_stream, ParsedOutput
 from .media import upload_input, download_to
 from .jobs import (
     JobWaitOptions, JobTimeoutError, JobCancelledError, JobFailedError, JobHandle,
     wait_for_job, create_and_wait_for_job,
 )
+from .pagination import iter_items, iter_pages
 from .webhooks import compute_async_webhook_signature, verify_async_webhook_signature
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
@@ -33,6 +34,10 @@ REGIONAL_BASE_URLS = {
     "us": "https://us.api.phaseo.app/v1",
 }
 DEFAULT_USER_AGENT = "phaseo-python/2.0.7"
+PREFLIGHT_STRUCTURAL_FIELDS = {
+    "model", "input", "messages", "prompt", "contents", "provider", "providers", "routing",
+    "metadata", "session_id", "app", "webhook", "idempotency_key",
+}
 
 
 class _ChatCompletionsResource:
@@ -157,6 +162,16 @@ class _BatchesResource:
     def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._parent.list_batches(params)
 
+    def pages(self, params: dict[str, Any] | None = None) -> Iterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return iter_pages(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
+    def all(self, params: dict[str, Any] | None = None) -> Iterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return iter_items(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
     def list_models(self) -> dict[str, Any]:
         return self._parent.list_batch_models()
 
@@ -208,6 +223,33 @@ class _ModelsResource:
     def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._parent.get_models(params)
 
+    def capabilities(self, model_id: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._parent.get_model_endpoint_capabilities(model_id, params)
+
+    def check_parameters(
+        self,
+        model_id: str,
+        parameter_values: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        return self._parent.check_model_parameters(
+            model_id,
+            parameter_values,
+            endpoint=endpoint,
+            provider=provider,
+        )
+
+    def preflight(
+        self,
+        request: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        return self._parent.preflight_request(request, endpoint=endpoint, provider=provider)
+
     def get_deprecation_info(self, model_id: str) -> Optional[ModelLifecycleInfo]:
         return self._parent.get_model_deprecation_info(model_id)
 
@@ -239,6 +281,16 @@ class _VideosResource:
 
     def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._parent.list_videos(params)
+
+    def pages(self, params: dict[str, Any] | None = None) -> Iterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return iter_pages(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
+
+    def all(self, params: dict[str, Any] | None = None) -> Iterator[dict[str, Any]]:
+        options = dict(params or {})
+        limit, offset = int(options.pop("limit", 50)), int(options.pop("offset", 0))
+        return iter_items(lambda page: self.list({**options, **page}), limit=limit, offset=offset)
 
     def retrieve(self, video_id: str) -> dict[str, Any]:
         return self._parent.get_video(video_id)
@@ -435,6 +487,9 @@ class Phaseo:
         region: Optional[Literal["global", "eu", "us"]] = None,
         max_retries: int = 0,
         http_client: httpx.Client | None = None,
+        on_request: RequestHook | None = None,
+        on_response: RequestHook | None = None,
+        on_retry: RequestHook | None = None,
     ):
         api_key = api_key or os.getenv("PHASEO_API_KEY")
         if not api_key:
@@ -463,7 +518,8 @@ class Phaseo:
                 for key, value in app_headers.items()
                 if isinstance(value, str) and value.strip()
             })
-        self._client = HttpClient(base_url=host, headers=self._headers, timeout=timeout, max_retries=max_retries, http_client=http_client)
+        self._client = HttpClient(base_url=host, headers=self._headers, timeout=timeout, max_retries=max_retries, http_client=http_client,
+                                  on_request=on_request, on_response=on_response, on_retry=on_retry)
         self._timeout = timeout
         self.chat = _ChatResource(self)
         self.responses = _ResponsesResource(self)
@@ -514,7 +570,8 @@ class Phaseo:
             timeout=self._timeout if timeout is None else timeout,
             max_retries=self._client.max_retries if max_retries is None else max_retries,
             http_client=self._client.http, enable_deprecation_warnings=self._enable_deprecation_warnings,
-            warnings_as_errors=self._warnings_as_errors, logger=self._logger)
+            warnings_as_errors=self._warnings_as_errors, logger=self._logger,
+            on_request=self._client.on_request, on_response=self._client.on_response, on_retry=self._client.on_retry)
         scoped._headers.update(self._headers)
         scoped._headers.update(headers or {})
         scoped._devtools = self._devtools
@@ -533,8 +590,27 @@ class Phaseo:
         query: Optional[dict[str, Any]] = None,
         headers: Optional[dict[str, str]] = None,
         body: Optional[Any] = None,
-    ) -> dict[str, Any]:
-        return self._client.request(method, path, query=query, headers=headers, body=body)
+        timeout: float | None = None,
+        max_retries: int | None = None,
+        idempotency_key: str | None = None,
+    ) -> Any:
+        return self._client.request(method, path, query=query, headers=headers, body=body, timeout=timeout,
+                                    max_retries=max_retries, idempotency_key=idempotency_key)
+
+    def request_with_response(
+        self,
+        method: str,
+        path: str,
+        *,
+        query: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
+        body: Optional[Any] = None,
+        timeout: float | None = None,
+        max_retries: int | None = None,
+        idempotency_key: str | None = None,
+    ) -> RawResponse[Any]:
+        return self._client.request_with_response(method, path, query=query, headers=headers, body=body, timeout=timeout,
+                                                  max_retries=max_retries, idempotency_key=idempotency_key)
 
     def get_model_deprecation_info(self, model_id: str) -> Optional[ModelLifecycleInfo]:
         normalized_model_id = _as_trimmed_string(model_id)
@@ -1281,6 +1357,64 @@ class Phaseo:
             call=lambda: ops.listModels(self._client, query=request),
         )
 
+    def get_model_endpoint_capabilities(
+        self,
+        model_id: str,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        if model_id.count("/") != 1:
+            raise ValueError("model_id must use author/slug format")
+        author, slug = model_id.split("/", 1)
+        if not author or not slug:
+            raise ValueError("model_id must use author/slug format")
+        request = params or {}
+        return self._run_traced(
+            endpoint="models.capabilities",
+            request={"model": model_id, **request},
+            call=lambda: ops.listModelEndpoints(
+                self._client,
+                path={"author": author, "slug": slug},
+                query=request,
+            ),
+        )
+
+    def check_model_parameters(
+        self,
+        model_id: str,
+        parameter_values: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        capabilities = self.get_model_endpoint_capabilities(model_id)
+        return check_parameter_support(
+            capabilities,
+            parameter_values,
+            endpoint=endpoint,
+            provider=provider,
+        )
+
+    def preflight_request(
+        self,
+        request: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        model = str(request.get("model") or "").strip()
+        if not model:
+            raise ValueError("preflight requires request['model']")
+        checked = {key: value for key, value in request.items() if key not in PREFLIGHT_STRUCTURAL_FIELDS and value is not None}
+        lifecycle = self.validate_model(model)
+        parameters = self.check_model_parameters(model, checked, endpoint=endpoint, provider=provider)
+        return {
+            "ok": bool(lifecycle.get("ok")) and bool(parameters.get("ok")),
+            "model": model,
+            "checked_parameters": checked,
+            "lifecycle": lifecycle,
+            "parameter_support": parameters,
+        }
+
     def list_team_models(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         request = params or {}
         return self._run_traced(
@@ -1839,10 +1973,12 @@ __all__ = [
     "AsyncJobHandle",
     "JobHandle",
     "PhaseoHTTPError",
+    "RawResponse",
     "StructuredOutputError",
     "StreamResponseError",
     "batch_results",
     "check_capabilities",
+    "check_parameter_support",
     "collect_async_stream",
     "collect_stream",
     "download_to",

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
   Collapsible,
   CollapsibleContent,
@@ -217,6 +218,7 @@ export const WebPreviewConsole = ({
   children,
   ...props
 }: WebPreviewConsoleProps) => {
+  const format = useDisplayFormatters();
   const { consoleOpen, setConsoleOpen } = useWebPreview();
 
   return (
@@ -261,7 +263,7 @@ export const WebPreviewConsole = ({
                 key={`${log.timestamp.getTime()}-${index}`}
               >
                 <span className="text-neutral-500 dark:text-neutral-400">
-                  {log.timestamp.toLocaleTimeString()}
+                  {format.time(log.timestamp, { includeSeconds: true })}
                 </span>{""}
                 {log.message}
               </div>

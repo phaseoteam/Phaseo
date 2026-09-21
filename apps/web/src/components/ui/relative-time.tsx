@@ -6,35 +6,13 @@ import {
 	useContext,
 	useEffect,
 } from "react";
+import {
+	useDisplayFormatters,
+	useDisplayPreferences,
+} from "@/components/providers/DisplayPreferencesProvider";
 import { cn } from "@/lib/utils";
 
 const STABLE_DEFAULT_TIME = new Date(0);
-const formatDate = (
-	date: Date,
-	timeZone: string,
-	options?: Intl.DateTimeFormatOptions
-) =>
-	new Intl.DateTimeFormat(
-		"en-US",
-		options ?? {
-			dateStyle: "long",
-			timeZone,
-		}
-	).format(date);
-const formatTime = (
-	date: Date,
-	timeZone: string,
-	options?: Intl.DateTimeFormatOptions
-) =>
-	new Intl.DateTimeFormat(
-		"en-US",
-		options ?? {
-			hour: "2-digit",
-			minute: "2-digit",
-			second: "2-digit",
-			timeZone,
-		}
-	).format(date);
 type RelativeTimeContextType = {
 	time: Date;
 	dateFormatOptions?: Intl.DateTimeFormatOptions;
@@ -125,7 +103,15 @@ export const RelativeTimeZoneDisplay = ({
 }: RelativeTimeZoneDisplayProps) => {
 	const { time, timeFormatOptions } = useContext(RelativeTimeContext);
 	const { zone } = useContext(RelativeTimeZoneContext);
-	const display = formatTime(time, zone, timeFormatOptions);
+	const format = useDisplayFormatters();
+	const display = format.dateParts(time, {
+		...(timeFormatOptions ?? {
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+		}),
+		timeZone: zone,
+	});
 	return (
 		<div
 			className={cn("pl-8 text-muted-foreground tabular-nums", className)}
@@ -142,7 +128,14 @@ export const RelativeTimeZoneDate = ({
 }: RelativeTimeZoneDateProps) => {
 	const { time, dateFormatOptions } = useContext(RelativeTimeContext);
 	const { zone } = useContext(RelativeTimeZoneContext);
-	const display = formatDate(time, zone, dateFormatOptions);
+	const { preferences } = useDisplayPreferences();
+	const format = useDisplayFormatters();
+	const display = format.dateParts(time, {
+		...(dateFormatOptions ?? {
+			dateStyle: preferences.dateStyle === "iso" ? "short" : preferences.dateStyle,
+		}),
+		timeZone: zone,
+	});
 	return <div {...props}>{display}</div>;
 };
 export type RelativeTimeZoneLabelProps = HTMLAttributes<HTMLDivElement>;

@@ -103,11 +103,20 @@ export function groupModelsByReleaseMonth<
 	T extends {
 		releaseDate: string | null;
 	},
->(items: T[]) {
+>(
+	items: T[],
+	formatMonth: (date: Date) => string = (date) => date.toLocaleDateString(undefined, {
+		year: "numeric",
+		month: "long",
+	}),
+) {
 	const groups: Array<{ heading: string; items: T[] }> = [];
 	const byHeading = new Map<string, T[]>();
 	for (const item of items) {
-		const heading = formatModelReleaseMonth(item.releaseDate);
+		const date = item.releaseDate ? new Date(item.releaseDate) : null;
+		const heading = date && Number.isFinite(date.getTime())
+			? formatMonth(date)
+			: "Unknown";
 		const existing = byHeading.get(heading);
 		if (existing) {
 			existing.push(item);

@@ -19,6 +19,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DEFAULT_CARD_LIMIT = 10;
@@ -100,14 +101,6 @@ function formatPercent(value: number) {
 	return `${(value * 100).toFixed(1)}%`;
 }
 
-function formatNumber(value: number) {
-	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-	return value.toLocaleString();
-}
-
 function getLocalMonthDayKey(date: Date) {
 	return `${String(date.getMonth() + 1).padStart(2, "0")}-${String(
 		date.getDate()
@@ -118,6 +111,10 @@ export default function ModelReleaseWeekdayAnalysis({
 	events,
 	compact = false,
 }: ModelReleaseWeekdayAnalysisProps) {
+	const format = useDisplayFormatters();
+	const formatNumber = (value: number) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
 	const [hoveredDayKey, setHoveredDayKey] = useState<string | null>(null);
 	const [expandLevel, setExpandLevel] = useState<ExpandLevel>(0);
 	const [organisationQuery, setOrganisationQuery] = useState("");
@@ -370,8 +367,8 @@ export default function ModelReleaseWeekdayAnalysis({
 							Release day analysis
 						</h2>
 						<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-							{analysis.totalReleases.toLocaleString()} releases across{" "}
-							{analysis.uniqueReleaseDayCount.toLocaleString()} active days
+							{format.number(analysis.totalReleases)} releases across{" "}
+							{format.number(analysis.uniqueReleaseDayCount)} active days
 						</p>
 					</div>
 					<div className="text-right">
@@ -454,19 +451,19 @@ export default function ModelReleaseWeekdayAnalysis({
 					<div className="flex items-center gap-2">
 						<span className="text-zinc-500 dark:text-zinc-400">Release events</span>
 						<span className="font-semibold text-zinc-900 dark:text-zinc-50">
-							{analysis.totalReleases.toLocaleString()}
+							{format.number(analysis.totalReleases)}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
 						<span className="text-zinc-500 dark:text-zinc-400">Models released</span>
 						<span className="font-semibold text-zinc-900 dark:text-zinc-50">
-							{analysis.uniqueModelCount.toLocaleString()}
+							{format.number(analysis.uniqueModelCount)}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
 						<span className="text-zinc-500 dark:text-zinc-400">Active release days</span>
 						<span className="font-semibold text-zinc-900 dark:text-zinc-50">
-							{analysis.uniqueReleaseDayCount.toLocaleString()}
+							{format.number(analysis.uniqueReleaseDayCount)}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
@@ -475,7 +472,7 @@ export default function ModelReleaseWeekdayAnalysis({
 							{analysis.topWeekdayLabel}
 						</span>
 						<span className="text-zinc-500 dark:text-zinc-400">
-							{analysis.topWeekdayCount.toLocaleString()} (
+							{format.number(analysis.topWeekdayCount)} (
 							{formatPercent(analysis.topWeekdayShare)})
 						</span>
 					</div>
@@ -497,7 +494,7 @@ export default function ModelReleaseWeekdayAnalysis({
 								/>
 								{entry.label}
 							</span>{" "}
-							<span className="font-mono">{entry.count.toLocaleString()}</span>{" "}
+							<span className="font-mono">{format.number(entry.count)}</span>{" "}
 							<span className="text-zinc-500 dark:text-zinc-400">
 								({formatPercent(entry.share)})
 							</span>
@@ -591,7 +588,7 @@ export default function ModelReleaseWeekdayAnalysis({
 																<span>{day?.label ?? String(name)}</span>
 															</span>
 															<span className="font-mono">
-																{amount.toLocaleString()} (
+																{format.number(amount)} (
 																{formatPercent(share)})
 															</span>
 														</div>
@@ -656,7 +653,7 @@ export default function ModelReleaseWeekdayAnalysis({
 									className="h-9 w-full rounded-md border border-zinc-200 bg-transparent px-3 text-sm outline-none placeholder:text-zinc-500 focus:border-zinc-400 dark:border-zinc-700 dark:focus:border-zinc-500"
 								/>
 								<p className="text-xs text-zinc-500 dark:text-zinc-400">
-									{matchingOrganisations.length.toLocaleString()} organisation
+									{format.number(matchingOrganisations.length)} organisation
 									{matchingOrganisations.length === 1 ? "" : "s"}
 								</p>
 								<ScrollArea className="h-[420px] pr-3">

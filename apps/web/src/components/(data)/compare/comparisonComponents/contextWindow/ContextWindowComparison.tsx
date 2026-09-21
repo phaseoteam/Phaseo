@@ -1,3 +1,5 @@
+"use client";
+
 import { ExtendedModel } from "@/data/types";
 import {
 	Card,
@@ -10,6 +12,7 @@ import React from "react";
 import { Info } from "lucide-react";
 import Link from "next/link";
 import { ProviderLogoName } from "../../ProviderLogoName";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface ContextWindowComparisonProps {
 	selectedModels: ExtendedModel[];
@@ -42,7 +45,7 @@ function getBarChartData(models: ExtendedModel[]) {
 	];
 }
 
-function getInfoSentence(models: ExtendedModel[]) {
+function getInfoSentence(models: ExtendedModel[], formatNumber: (value: number) => string) {
 	if (models.length < 2) return null;
 	// Sort by input context length descending
 	const sorted = [...models].sort(
@@ -59,7 +62,7 @@ function getInfoSentence(models: ExtendedModel[]) {
 					{first.name}
 				</span>
 			</Link>{" "}
-			accepts {first.input_context_length?.toLocaleString() ?? "-"} input
+			accepts {first.input_context_length != null ? formatNumber(first.input_context_length) : "-"} input
 			tokens compared to{" "}
 			<Link
 				href={`/models/${second.id}`}
@@ -69,7 +72,7 @@ function getInfoSentence(models: ExtendedModel[]) {
 					{second.name}
 				</span>
 			</Link>
-			&apos;s {second.input_context_length?.toLocaleString() ?? "-"}.{" "}
+			&apos;s {second.input_context_length != null ? formatNumber(second.input_context_length) : "-"}.{" "}
 			<Link
 				href={`/models/${first.id}`}
 				className="group"
@@ -79,7 +82,7 @@ function getInfoSentence(models: ExtendedModel[]) {
 				</span>
 			</Link>{" "}
 			can generate responses up to{" "}
-			{first.output_context_length?.toLocaleString() ?? "-"} tokens, while{" "}
+			{first.output_context_length != null ? formatNumber(first.output_context_length) : "-"} tokens, while{" "}
 			<Link
 				href={`/models/${second.id}`}
 				className="group"
@@ -89,12 +92,13 @@ function getInfoSentence(models: ExtendedModel[]) {
 				</span>
 			</Link>{" "}
 			is limited to{" "}
-			{second.output_context_length?.toLocaleString() ?? "-"} tokens.
+			{second.output_context_length != null ? formatNumber(second.output_context_length) : "-"} tokens.
 		</>
 	);
 }
 
 function BarChartTooltip({ active, payload, label }: any) {
+	const format = useDisplayFormatters();
 	if (!active || !payload || payload.length === 0) return null;
 	return (
 		<div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-3 border border-zinc-200 dark:border-zinc-800 min-w-[225px]">
@@ -103,7 +107,7 @@ function BarChartTooltip({ active, payload, label }: any) {
 				<div key={p.name} className="flex justify-between text-xs mb-1">
 					<span>{p.name}</span>
 					<span>
-						{p.value != null ? p.value.toLocaleString() : "-"}{" "}
+						{p.value != null ? format.number(Number(p.value)) : "-"}{" "}
 						tokens
 					</span>
 				</div>
@@ -141,6 +145,7 @@ function getModelCountBadge(models: ExtendedModel[]) {
 export default function ContextWindowComparison({
 	selectedModels,
 }: ContextWindowComparisonProps) {
+	const format = useDisplayFormatters();
 	if (!selectedModels || selectedModels.length === 0) return null;
 
 	const anyContext = selectedModels.some(
@@ -148,7 +153,7 @@ export default function ContextWindowComparison({
 	);
 	if (!anyContext) return null;
 
-	const infoSentence = getInfoSentence(selectedModels);
+	const infoSentence = getInfoSentence(selectedModels, format.number);
 	return (
 		<section className="space-y-3">
 			<header className="flex items-start justify-between gap-4">
@@ -207,9 +212,7 @@ export default function ContextWindowComparison({
 									</span>
 									<span className="font-mono font-bold mt-1 sm:mt-0">
 										{model.input_context_length != null
-											? formatTokens(
-													model.input_context_length
-											  )
+											? format.number(model.input_context_length)
 											: "-"}
 									</span>
 								</div>
@@ -219,9 +222,7 @@ export default function ContextWindowComparison({
 									</span>
 									<span className="font-mono font-bold mt-1 sm:mt-0">
 										{model.output_context_length != null
-											? formatTokens(
-													model.output_context_length
-											  )
+											? format.number(model.output_context_length)
 											: "-"}
 									</span>
 								</div>
@@ -243,16 +244,5 @@ export default function ContextWindowComparison({
 			</div>
 		</section>
 	);
-}
-
-// Helper for K/M/B formatting
-function formatTokens(val: number | null | undefined): string {
-	if (val == null) return "-";
-	if (val >= 1_000_000_000)
-		return (val / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + "B";
-	if (val >= 1_000_000)
-		return (val / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-	if (val >= 1_000) return (val / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
-	return val.toLocaleString();
 }
 

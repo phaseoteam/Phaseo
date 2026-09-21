@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -170,6 +171,25 @@ public class Phaseo {
 		return rawClient;
 	}
 
+	public Phaseo setTimeout(Duration timeout) {
+		rawClient.setTimeout(timeout);
+		return this;
+	}
+
+	public Phaseo setMaxRetries(int maxRetries) {
+		rawClient.setMaxRetries(maxRetries);
+		return this;
+	}
+
+	public Phaseo setRequestHooks(
+		java.util.function.Consumer<Client.RequestEvent> onRequest,
+		java.util.function.Consumer<Client.ResponseEvent> onResponse,
+		java.util.function.Consumer<Client.RetryEvent> onRetry
+	) {
+		rawClient.setHooks(onRequest, onResponse, onRetry);
+		return this;
+	}
+
 	public String getAsyncJobWebSocketUrl(String kind, String jobId) {
 		return getAsyncJobWebSocketUrl(kind, jobId, null, null);
 	}
@@ -262,6 +282,18 @@ public class Phaseo {
 		String payload = body == null ? null : MAPPER.writeValueAsString(body);
 		String raw = rawClient.request(method, path, query, headers, payload);
 		return parse(raw);
+	}
+
+	public Client.RawResponse<String> requestWithResponse(
+		String method,
+		String path,
+		Map<String, String> query,
+		Map<String, String> headers,
+		Object body,
+		Client.RequestOptions options
+	) throws IOException, InterruptedException {
+		String payload = body == null ? null : MAPPER.writeValueAsString(body);
+		return rawClient.requestWithResponse(method, path, query, headers, payload, options);
 	}
 
 	public ModelLifecycleInfo getModelDeprecationInfo(String modelId) throws IOException, InterruptedException {
@@ -486,6 +518,32 @@ public class Phaseo {
 
 	public JsonNode listModels(Map<String, String> query) throws IOException, InterruptedException {
 		return withLifecycleAndTelemetry("models.list", query, false, () -> parse(Operations.listModels(rawClient, null, query, null, null)));
+	}
+
+	public JsonNode getModelEndpointCapabilities(String modelId, Map<String, String> query) throws IOException, InterruptedException {
+		String[] parts = modelId == null ? new String[0] : modelId.trim().split("/", 2);
+		if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) throw new IllegalArgumentException("model ID must use author/slug format");
+		Map<String, String> path = Map.of("author", parts[0], "slug", parts[1]);
+		return withLifecycleAndTelemetry("models.capabilities", Map.of("model_id", modelId), false, () -> parse(Operations.listModelEndpoints(rawClient, path, query, null, null)));
+	}
+
+	public JsonNode checkModelParameters(String modelId, Map<String, ?> values, Map<String, ?> options) throws IOException, InterruptedException {
+		return ParameterSupport.check(getModelEndpointCapabilities(modelId, Map.of()), values, options);
+	}
+
+	public JsonNode preflightRequest(Map<String, ?> request, Map<String, ?> options) throws IOException, InterruptedException {
+		String modelId = request.get("model") == null ? "" : request.get("model").toString().trim();
+		if (modelId.isEmpty()) throw new IllegalArgumentException("preflight requires request model");
+		Set<String> structural = Set.of("model", "input", "messages", "prompt", "contents", "provider", "providers", "routing", "metadata", "session_id", "app", "webhook", "idempotency_key");
+		Map<String, Object> values = new HashMap<>();
+		request.forEach((name, value) -> { if (value != null && !structural.contains(name)) values.put(name, value); });
+		JsonNode support = checkModelParameters(modelId, values, options);
+		var result = MAPPER.createObjectNode();
+		result.put("ok", support.path("ok").asBoolean(false));
+		result.put("model_id", modelId);
+		result.set("checked_parameters", MAPPER.valueToTree(values));
+		result.set("parameter_support", support);
+		return result;
 	}
 
 	public JsonNode listProviders(Map<String, String> query) throws IOException, InterruptedException {

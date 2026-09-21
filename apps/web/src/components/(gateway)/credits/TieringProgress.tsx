@@ -10,15 +10,22 @@ import {
 	computeTierInfo,
 	type GatewayTier,
 } from "@/components/(gateway)/credits/tiers";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
 
 function money(amount: number, currency: string) {
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency,
-		maximumFractionDigits: 0,
-	}).format(amount);
+	return (
+		<DisplayNumber
+			value={amount}
+			options={{
+				style: "currency",
+				currency,
+				maximumFractionDigits: 0,
+				notation: "standard",
+			}}
+		/>
+	);
 }
 
 interface Props {
@@ -304,4 +311,3 @@ export default async function TieringProgress({
 		</Card>
 	);
 }
-

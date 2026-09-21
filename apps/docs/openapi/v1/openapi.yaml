@@ -1327,6 +1327,26 @@ paths:
             type: array
             items:
               type: string
+        - name: offset
+          in: query
+          description: Number of video jobs to skip before returning the page.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+        - name: after
+          in: query
+          description: Return video jobs after this video ID in the selected order.
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: Sort video jobs by creation time.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
       responses:
         '200':
           description: Video list response
@@ -1809,6 +1829,13 @@ paths:
           description: Comma-separated lifecycle status filters.
           schema:
             type: string
+        - name: offset
+          in: query
+          description: Number of batch jobs to skip before returning the page.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
       responses:
         '200':
           description: Batch list response

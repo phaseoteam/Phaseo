@@ -16,6 +16,7 @@ import {
 	Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { cn } from "@/lib/utils";
 import {
 	Select,
@@ -201,6 +202,7 @@ function MethodIcon({ method }: { method: ContactMethod }) {
 }
 
 function SupportTimeHint({ londonTimeLabel }: { londonTimeLabel?: string }) {
+	const format = useDisplayFormatters();
 	const [now, setNow] = useState<Date | null>(null);
 
 	useEffect(() => {
@@ -212,22 +214,22 @@ function SupportTimeHint({ londonTimeLabel }: { londonTimeLabel?: string }) {
 
 	const localTimeLabel = useMemo(() => {
 		if (!now) return null;
-		return new Intl.DateTimeFormat(undefined, {
+		return format.dateParts(now, {
 			hour: "2-digit",
 			minute: "2-digit",
 			timeZoneName: "short",
-		}).format(now);
-	}, [now]);
+		});
+	}, [format, now]);
 
 	const liveLondonTimeLabel = useMemo(() => {
 		if (!now) return londonTimeLabel || "Europe/London";
-		return new Intl.DateTimeFormat("en-GB", {
+		return format.dateParts(now, {
 			hour: "2-digit",
 			minute: "2-digit",
 			timeZone: "Europe/London",
 			timeZoneName: "short",
-		}).format(now);
-	}, [londonTimeLabel, now]);
+		});
+	}, [format, londonTimeLabel, now]);
 
 	return (
 		<Tooltip>

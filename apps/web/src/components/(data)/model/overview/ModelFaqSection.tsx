@@ -15,6 +15,7 @@ import { PRICING_METER_OPTIONS } from "@/lib/pricing/meters";
 import { modelMarkdownComponents } from "../modelMarkdown";
 import type { ModelLineageLinks } from "./modelOverviewMetadata";
 import ModelFaqAccordion from "./ModelFaqAccordion";
+import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";
 
 function parseTypes(value: string | null | undefined): string[] {
 	if (!value) return [];
@@ -376,11 +377,13 @@ export default function ModelFaqSection({
 						question: `What is the context length of ${modelName}?`,
 						answer: (
 							<>
-								{inputContextLength
-									? `${modelName} has a recorded input context length of ${inputContextLength.toLocaleString("en-US")} tokens`
-									: `${modelName} does not have an input context length recorded`}
+								{inputContextLength ? (
+									<>{modelName} has a recorded input context length of <DisplayNumber value={inputContextLength} /> tokens</>
+								) : (
+									`${modelName} does not have an input context length recorded`
+								)}
 								{outputContextLength
-									? ` and a recorded maximum output length of ${outputContextLength.toLocaleString("en-US")} tokens`
+									? <> and a recorded maximum output length of <DisplayNumber value={outputContextLength} /> tokens</>
 									: ""}
 								.
 							</>
@@ -565,7 +568,7 @@ export default function ModelFaqSection({
 			? [
 					{
 						question: `When was ${modelName} released?`,
-						answer: `${modelName} was ${model.release_date ? "released" : "announced"} on ${formatModelLifecycleDate(releaseDate)}.`,
+						answer: <>{modelName} was {model.release_date ? "released" : "announced"} on <DisplayCalendarDate value={releaseDate} />.</>,
 					},
 				]
 			: []),

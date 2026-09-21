@@ -1,4 +1,7 @@
+"use client";
+
 import React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Bar,
 	BarChart,
@@ -25,20 +28,26 @@ function getNiceMax(value: number): number {
 	return Math.ceil(value / pow) * pow;
 }
 
-function formatAxisValue(value: number, allPercent: boolean): string {
+function formatAxisValue(
+	value: number,
+	allPercent: boolean,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"]
+): string {
 	if (!Number.isFinite(value)) return allPercent ? "0%" : "0";
 	if (allPercent) {
-		return `${value.toLocaleString("en-US", {
+		return `${formatNumber(value, {
 			minimumFractionDigits: 0,
 			maximumFractionDigits: 1,
+			notation: "standard",
 		})}%`;
 	}
 	let digits = 0;
 	if (Math.abs(value) < 1) digits = 2;
 	else if (Math.abs(value) < 10) digits = 1;
-	return value.toLocaleString("en-US", {
+	return formatNumber(value, {
 		minimumFractionDigits: 0,
 		maximumFractionDigits: digits,
+		notation: "standard",
 	});
 }
 
@@ -62,6 +71,7 @@ export default function BenchmarkBarChart({
 	allPercent,
 	CustomTooltip,
 }: BenchmarkBarChartProps) {
+	const format = useDisplayFormatters();
 	const allValues = extractAllSeriesValues(chartData, models);
 	const maxVal = Math.max(...allValues, 0);
 	const computedMax = allPercent ? Math.max(100, getNiceMax(maxVal)) : getNiceMax(maxVal);
@@ -98,7 +108,9 @@ export default function BenchmarkBarChart({
 					type="number"
 					domain={[0, computedMax]}
 					ticks={linearTicks}
-					tickFormatter={(value) => formatAxisValue(Number(value), allPercent)}
+					tickFormatter={(value) =>
+						formatAxisValue(Number(value), allPercent, format.number)
+					}
 					tick={{ fontSize: 12 }}
 					axisLine={false}
 					tickLine={false}

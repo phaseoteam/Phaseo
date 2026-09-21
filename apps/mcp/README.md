@@ -8,7 +8,8 @@ It reuses Phaseo OAuth permissions rather than creating a second identity system
 
 The MCP server supports:
 
-- model search and model details;
+- model search, deterministic price sorting, model details, and structured provider support;
+- named general, coding, agentic, and evaluation-cost benchmark rankings;
 - provider availability;
 - model cost estimates;
 - credit balance and recent activity;
@@ -16,6 +17,8 @@ The MCP server supports:
 - privacy-minimized request and generation metadata.
 
 It does not expose billable inference, administrative writes, credential values, prompts, responses, or raw control-plane records.
+
+Model rankings remain evidence-based and independent of Gateway availability. Tool results report whether a model is currently routable through the Phaseo Gateway and provide its Gateway model ID, but availability never changes benchmark order or price sorting.
 
 ## Local development
 

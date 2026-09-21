@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import { Input } from "@/components/ui/input";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type CountryModelsSectionProps = {
 	models: ModelCardType[];
@@ -67,7 +68,7 @@ export default function CountryModelsSection({ models }: CountryModelsSectionPro
 					/>
 				</div>
 				<p className="shrink-0 text-sm tabular-nums text-muted-foreground">
-					{visibleCount.toLocaleString()} {visibleCount === 1 ? "model" : "models"}
+					<DisplayNumber value={visibleCount} /> {visibleCount === 1 ? "model" : "models"}
 				</p>
 			</div>
 

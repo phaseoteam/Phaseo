@@ -6,6 +6,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Card } from "@/components/ui/card";
 import type { MarketShareData } from "@/lib/fetchers/rankings/getRankingsData";
 
@@ -32,6 +33,7 @@ export function MarketShareVisualizations({
     data,
     dimension,
 }: MarketShareVisualizationsProps) {
+	const format = useDisplayFormatters();
     const chartData = data.map((row, idx) => ({
         name: row.name,
         value: row.share_pct,
@@ -68,14 +70,14 @@ export function MarketShareVisualizations({
                                         <p className="font-semibold">{data.name}</p>
                                         <div className="text-sm space-y-1 pt-2 border-t">
                                             <p>Share: {data.value.toFixed(1)}%</p>
-                                            <p>Requests: {data.requests.toLocaleString()}</p>
+                                            <p>Requests: {format.number(data.requests)}</p>
                                             <p>
                                                 Tokens:{" "}
                                                 {data.tokens >= 1e9
                                                     ? `${(data.tokens / 1e9).toFixed(2)}B`
                                                     : data.tokens >= 1e6
                                                     ? `${(data.tokens / 1e6).toFixed(2)}M`
-                                                    : data.tokens.toLocaleString()}
+                                                    : format.number(data.tokens)}
                                             </p>
                                         </div>
                                     </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+
 import {
 	ChartContainer,
 	type ChartConfig,
@@ -44,12 +46,6 @@ const e2eLatencyChartConfig: ChartConfig = {
 	},
 };
 
-function formatDateTick(timestamp: string) {
-	const date = new Date(timestamp);
-	if (Number.isNaN(date.getTime())) return timestamp;
-	return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 interface LatencyChartProps {
 	data: Array<{ timestamp: string; avgLatencyMs: number | null }>;
 	onHoverBucket?: (timestamp: string | null) => void;
@@ -61,6 +57,8 @@ export function LatencyChart({
 	onHoverBucket,
 	syncId,
 }: LatencyChartProps) {
+	const format = useDisplayFormatters();
+	const formatDateTick = (timestamp: string) => format.calendarDate(timestamp, timestamp);
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		latency: point.avgLatencyMs,
@@ -192,6 +190,8 @@ export function ThroughputChart({
 	onHoverBucket,
 	syncId,
 }: ThroughputChartProps) {
+	const format = useDisplayFormatters();
+	const formatDateTick = (timestamp: string) => format.calendarDate(timestamp, timestamp);
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		throughput: point.avgThroughput,
@@ -323,6 +323,8 @@ export function E2ELatencyChart({
 	onHoverBucket,
 	syncId,
 }: E2ELatencyChartProps) {
+	const format = useDisplayFormatters();
+	const formatDateTick = (timestamp: string) => format.calendarDate(timestamp, timestamp);
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		e2eLatency: point.avgGenerationMs,

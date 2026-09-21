@@ -37,6 +37,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import type { QuickstartRequestContext } from "./requestContext";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import type { ByokOnlyProvider } from "./byokOnly";
 
 interface QuickstartProps {
@@ -326,6 +327,12 @@ export default function Quickstart({
 	requestContext,
 	byokOnlyProviders = [],
 }: QuickstartProps) {
+	const { preferences } = useDisplayPreferences();
+	const preferredLanguage = {
+		typescript: "typescript-sdk",
+		python: "python-sdk",
+		curl: "curl",
+	}[preferences.codeLanguage];
 	const isModelMetadataQuickstart = mode === "model-metadata";
 	const supportedEndpointValues = useMemo(() => {
 		const normalized = new Set(
@@ -376,7 +383,8 @@ export default function Quickstart({
 	);
 
 	const [selectedEndpoint, setSelectedEndpoint] = useState(defaultEndpoint);
-	const [selectedLanguage, setSelectedLanguage] = useState("typescript-sdk");
+	const [selectedLanguageOverride, setSelectedLanguage] = useState<string | null>(null);
+	const selectedLanguage = selectedLanguageOverride ?? preferredLanguage;
 	const [selectedServiceTier, setSelectedServiceTier] =
 		useState<ServiceTier>("standard");
 	const batchEnabled = false;

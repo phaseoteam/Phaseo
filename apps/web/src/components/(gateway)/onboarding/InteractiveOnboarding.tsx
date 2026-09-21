@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 export type OnboardingWorkspace = {
 	id: string;
@@ -218,6 +219,7 @@ function SimulatedResponse({
 	onViewChange: (view: ResponseView) => void;
 	objectJson: string;
 }) {
+	const format = useDisplayFormatters();
 	if (!value && !isStreaming) return null;
 
 	return (
@@ -226,7 +228,10 @@ function SimulatedResponse({
 				<div className="flex items-center gap-2">
 					<span className="text-sm font-medium">Response</span>
 					<span className="font-mono text-xs text-muted-foreground">
-						{(elapsedMs / 1000).toFixed(1)}s - {streamedTokens} tokens
+						{format.number(elapsedMs / 1000, {
+							minimumFractionDigits: 1,
+							maximumFractionDigits: 1,
+						})}s - {format.number(streamedTokens)} tokens
 					</span>
 				</div>
 				<div className="flex items-center gap-1">

@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import {
 	Activity,
@@ -299,16 +300,6 @@ function humanizeModelSlug(value: string | null | undefined) {
 	return humanizeSlug(normalized);
 }
 
-function formatAbsoluteTime(timestamp: string) {
-	return new Intl.DateTimeFormat("en-US", {
-		day: "numeric",
-		hour: "2-digit",
-		hour12: false,
-		minute: "2-digit",
-		month: "short",
-	}).format(new Date(timestamp));
-}
-
 function formatUtcTime(timestamp: string) {
 	return new Intl.DateTimeFormat("en-US", {
 		day: "numeric",
@@ -324,21 +315,6 @@ function formatUtcTime(timestamp: string) {
 function formatShortCommit(commit: string | null | undefined) {
 	const value = String(commit ?? "").trim();
 	return value ? value.slice(0, 7) : null;
-}
-
-function formatRelativeTime(timestamp: string, now: number) {
-	const deltaMs = Math.max(0, now - new Date(timestamp).getTime());
-	const minutes = Math.floor(deltaMs / 60000);
-	const hours = Math.floor(deltaMs / 3600000);
-	const days = Math.floor(deltaMs / 86400000);
-
-	if (minutes < 1) return "just now";
-	if (minutes < 60) return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
-	if (hours < 24) return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
-	if (days < 30) return days === 1 ? "1 day ago" : `${days} days ago`;
-
-	const months = Math.floor(days / 30);
-	return months === 1 ? "1 month ago" : `${months} months ago`;
 }
 
 function formatNumber(value: number) {
@@ -1043,7 +1019,12 @@ function getCardSortPriority(card: MonitorCard) {
 	return 3;
 }
 
-function buildCommitGroups(data: ChangeHistory[], now: number): CommitGroup[] {
+function buildCommitGroups(
+	data: ChangeHistory[],
+	now: number,
+	formatAbsoluteTime: (value: string) => string,
+	formatRelativeTime: (value: string, referenceDate?: Date) => string,
+): CommitGroup[] {
 	const sorted = [...data].sort(
 		(a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
 	);
@@ -1060,7 +1041,7 @@ function buildCommitGroups(data: ChangeHistory[], now: number): CommitGroup[] {
 				cards: [],
 				commit: change.commit,
 				id: groupId,
-				relativeLabel: formatRelativeTime(change.timestamp, now),
+				relativeLabel: formatRelativeTime(change.timestamp, new Date(now)),
 				timestamp: change.timestamp,
 			};
 			groups.set(groupId, group);
@@ -1883,6 +1864,7 @@ export function MonitorHistoryClient({
 	now?: number;
 	providerOptions?: MonitorHistoryFilterOption[];
 }) {
+	const format = useDisplayFormatters();
 	const isRemoteMode = Boolean(initialPage && modelOptions && providerOptions);
 	const [modelQuery, setModelQuery] = useState("");
 	const [modelLabel, setModelLabel] = useState<string | undefined>();
@@ -2066,7 +2048,10 @@ export function MonitorHistoryClient({
 		[deferredModelQuery, deferredProviderQuery, isRemoteMode, trackedData, typeFilter],
 	);
 
-	const groupedCommits = useMemo(() => buildCommitGroups(filteredData, now), [filteredData, now]);
+	const groupedCommits = useMemo(
+		() => buildCommitGroups(filteredData, now, format.dateTime, format.timestamp),
+		[filteredData, format, now],
+	);
 	const visibleGroups = isRemoteMode
 		? groupedCommits
 		: groupedCommits.slice(0, visibleCommitCount);
@@ -2159,14 +2144,14 @@ export function MonitorHistoryClient({
 					<div className="border-t border-zinc-200/80 px-4 py-4 sm:border-t-0 dark:border-zinc-800/80">
 						<p className="text-sm text-zinc-500 dark:text-zinc-400">Generated</p>
 						<p className="mt-1 text-2xl font-semibold text-zinc-950 dark:text-zinc-50">
-							{generatedAt ? formatAbsoluteTime(generatedAt.toISOString()) : "Unknown"}
+							{generatedAt ? format.dateTime(generatedAt) : "Unknown"}
 						</p>
 					</div>
 
 					<div className="border-t border-zinc-200/80 px-4 py-4 sm:border-t-0 dark:border-zinc-800/80">
 						<p className="text-sm text-zinc-500 dark:text-zinc-400">Commits covered</p>
 						<p className="mt-1 text-2xl font-semibold text-zinc-950 dark:text-zinc-50">
-							{totalCommits.toLocaleString()}
+							{format.number(totalCommits)}
 						</p>
 					</div>
 				</div>

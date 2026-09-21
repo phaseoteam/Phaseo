@@ -47,6 +47,14 @@ describe("providerOffers", () => {
         ).toBe("aws");
     });
 
+    test.each([
+        ["mistral-eu", "mistral"],
+        ["moonshotai-turbo", "moonshotai"],
+        ["wafer-zdr", "wafer"],
+    ])("uses the %s brand logo", (providerId, logoId) => {
+        expect(resolveProviderLogoId({ providerId })).toBe(logoId);
+    });
+
     test("resolves regional and specialized provider logos through their catalog IDs", () => {
         expect(
             resolveProviderLogoId({

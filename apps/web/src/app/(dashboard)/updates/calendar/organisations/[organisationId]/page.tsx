@@ -7,6 +7,7 @@ import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import { fetchFrontendOrganisationReleaseEvents } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type PageProps = {
 	params: Promise<{ organisationId: string }>;
@@ -193,25 +194,25 @@ export default async function OrganisationCalendarPage({
 						<span className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 dark:border-zinc-700 dark:bg-zinc-950">
 							Total release events:{" "}
 							<span className="font-semibold">
-								{releasedEvents.length.toLocaleString()}
+								<DisplayNumber value={releasedEvents.length} />
 							</span>
 						</span>
 						<span className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 dark:border-zinc-700 dark:bg-zinc-950">
 							Released models:{" "}
 							<span className="font-semibold">
-								{uniqueReleasedModelCount.toLocaleString()}
+								<DisplayNumber value={uniqueReleasedModelCount} />
 							</span>
 						</span>
 						<span className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 dark:border-zinc-700 dark:bg-zinc-950">
 							Released on this day:{" "}
 							<span className="font-semibold">
-								{releasedTodayEvents.length.toLocaleString()}
+								<DisplayNumber value={releasedTodayEvents.length} />
 							</span>
 						</span>
 						<span className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 dark:border-zinc-700 dark:bg-zinc-950">
 							Weekday groups:{" "}
 							<span className="font-semibold">
-								{groupedByDay.length.toLocaleString()}
+								<DisplayNumber value={groupedByDay.length} />
 							</span>
 						</span>
 					</div>

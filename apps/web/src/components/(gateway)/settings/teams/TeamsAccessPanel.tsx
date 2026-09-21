@@ -4,6 +4,7 @@ import React from "react";
 import { Check, ExternalLink, Infinity, X } from "lucide-react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { toast } from "sonner";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import TeamInviteDialog from "./TeamInviteDialog";
 import { approveJoinRequest, rejectJoinRequest } from "@/app/(dashboard)/settings/teams/actions";
@@ -51,19 +52,6 @@ interface Props {
 	canManageWorkspace?: boolean;
 }
 
-function formatDate(value?: string | null) {
-	if (!value) return "—";
-	try {
-		return new Date(value).toLocaleDateString(undefined, {
-			day: "2-digit",
-			month: "short",
-			year: "numeric",
-		});
-	} catch {
-		return "—";
-	}
-}
-
 export default function TeamsAccessPanel({
 	requestsByTeam,
 	invitesByTeam,
@@ -73,6 +61,8 @@ export default function TeamsAccessPanel({
 	currentUserId,
 	canManageWorkspace,
 }: Props) {
+	const format = useDisplayFormatters();
+	const formatDate = (value?: string | null) => format.date(value, "—");
 	const router = useRouter();
 	const [selectedInvite, setSelectedInvite] = React.useState<Invite | null>(null);
 	const [busyRequestId, setBusyRequestId] = React.useState<string | null>(null);

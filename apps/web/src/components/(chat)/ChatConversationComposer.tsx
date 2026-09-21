@@ -70,6 +70,7 @@ import {
 	normalizeFavoriteModelId,
 } from "@/components/(chat)/playgroundConfig";
 import { Logo } from "@/components/Logo";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Attachment,
 	AttachmentAction,
@@ -936,6 +937,7 @@ interface ChatConversationComposerProps {
 }
 
 export function ChatConversationComposer(props: ChatConversationComposerProps) {
+	const format = useDisplayFormatters();
 	const {
 		sendGateType,
 		isSending,
@@ -1693,6 +1695,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					!selectedIdSet.has(option.modelId) &&
 					!favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId)),
 			),
+			(date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
 		);
 		const toCommand = (option: ComposerModelOption): SlashCommand => {
 			const isBlocked = option.chatBlockedReasons.length > 0;
@@ -1737,7 +1740,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			});
 		}
 		return groups;
-	}, [activeModelOptions, favoriteModelIdSet, selectedModelIds]);
+	}, [activeModelOptions, favoriteModelIdSet, format, selectedModelIds]);
 
 	const modelSlashCommands = useMemo<SlashCommand[]>(
 		() => modelSlashGroups.flatMap((group) => group.commands),

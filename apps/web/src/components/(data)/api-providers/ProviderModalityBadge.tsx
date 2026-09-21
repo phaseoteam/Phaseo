@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { cn } from "@/lib/utils";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type ProviderModalityBadgeProps = {
 	label: string;
@@ -44,8 +45,8 @@ export function ProviderModalityBadge({
 					</div>
 				</div>
 				<div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3">
-					<div><p className="text-xs text-muted-foreground">Input</p><p className="font-medium tabular-nums">{inputCount.toLocaleString()}</p></div>
-					<div><p className="text-xs text-muted-foreground">Output</p><p className="font-medium tabular-nums">{outputCount.toLocaleString()}</p></div>
+					<div><p className="text-xs text-muted-foreground">Input</p><p className="font-medium tabular-nums"><DisplayNumber value={inputCount} /></p></div>
+					<div><p className="text-xs text-muted-foreground">Output</p><p className="font-medium tabular-nums"><DisplayNumber value={outputCount} /></p></div>
 				</div>
 			</HoverCardContent>
 		</HoverCard>

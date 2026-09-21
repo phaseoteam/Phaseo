@@ -8,6 +8,7 @@ import {
 	ChartTooltipContent,
 } from "@/components/ui/chart";
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface RequestsChartProps {
 	data: Array<{
@@ -46,6 +47,7 @@ export default function RequestsChart({
 	colorMap,
 	onBarClick,
 }: RequestsChartProps) {
+	const format = useDisplayFormatters();
 	// Extract model IDs from data (excluding 'bucket' key)
 	const modelIds = React.useMemo(() => {
 		const ids = new Set<string>();
@@ -93,7 +95,7 @@ export default function RequestsChart({
 								<ChartTooltipContent
 									labelFormatter={(label) => String(label)}
 									formatter={(value, name) => [
-										Number(value).toLocaleString(),
+										format.number(Number(value)),
 										String(name),
 									]}
 								/>

@@ -6,6 +6,7 @@
 "use client";
 
 import { useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +35,7 @@ export function TopModelsRankings({
     initialTimeRange = "week",
     initialMetric = "tokens",
 }: TopModelsRankingsProps) {
+	const format = useDisplayFormatters();
     const [data] = useState(initialData);
     const [timeRange] = useState<TimeRange>(initialTimeRange as TimeRange);
     const [metric] = useState<Metric>(initialMetric as Metric);
@@ -79,17 +81,15 @@ export function TopModelsRankings({
     const formatValue = (value: number, metricType: Metric) => {
         const safeValue = Number(value);
         if (!Number.isFinite(safeValue)) return "--";
-        if (metricType === "tokens") {
-            return safeValue >= 1e9
-                ? `${(safeValue / 1e9).toFixed(2)}B`
-                : safeValue >= 1e6
-                ? `${(safeValue / 1e6).toFixed(2)}M`
-                : safeValue >= 1e3
-                ? `${(safeValue / 1e3).toFixed(2)}K`
-                : safeValue.toString();
-        }
-        if (metricType === "cost") return `$${safeValue.toFixed(2)}`;
-        return safeValue.toLocaleString();
+        if (metricType === "cost") {
+			return format.number(safeValue, {
+				style: "currency",
+				currency: "USD",
+				maximumFractionDigits: 2,
+				notation: "standard",
+			});
+		}
+		return format.number(safeValue, { maximumFractionDigits: 2 });
     };
 
     return (

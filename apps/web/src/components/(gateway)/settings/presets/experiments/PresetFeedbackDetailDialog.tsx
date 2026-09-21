@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Eye } from "lucide-react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +27,6 @@ export type PresetFeedbackDetail = {
 	requestId: string | null;
 	sessionId: string | null;
 	endUserId: string | null;
-	createdAtLabel: string;
 	createdAt: string | null;
 	metadataDimensions: Record<string, string>;
 };
@@ -53,6 +53,8 @@ export function PresetFeedbackDetailDialog({
 }: {
 	feedback: PresetFeedbackDetail;
 }) {
+	const format = useDisplayFormatters();
+	const createdAtLabel = format.dateTime(feedback.createdAt);
 	const metadataEntries = Object.entries(feedback.metadataDimensions);
 
 	return (
@@ -67,7 +69,7 @@ export function PresetFeedbackDetailDialog({
 				<DialogHeader>
 					<DialogTitle>Feedback detail</DialogTitle>
 					<DialogDescription>
-						{feedback.presetName} feedback captured {feedback.createdAtLabel}.
+						{feedback.presetName} feedback captured {createdAtLabel}.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -155,7 +157,7 @@ export function PresetFeedbackDetailDialog({
 					</DetailRow>
 					<DetailRow label="Created">
 						<div className="space-y-1">
-							<p>{feedback.createdAtLabel}</p>
+							<p>{createdAtLabel}</p>
 							{feedback.createdAt ? (
 								<code className="text-xs text-muted-foreground">
 									{feedback.createdAt}

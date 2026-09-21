@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import * as React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,70 +101,48 @@ const DEFAULT_PROMPT =
 const BEST_TONE =
 	"border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300";
 
-function formatMonthYear(value: string | null | undefined): string {
-	if (!value) return "-";
-	const d = new Date(value);
-	if (Number.isNaN(d.getTime())) return "-";
-	return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-}
-
-function formatInteger(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
-}
-
-function formatCompact(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return Intl.NumberFormat("en-US", {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(value);
-}
-
-function formatUsd(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	const maximumFractionDigits = value > 0 && value < 0.01 ? 4 : 2;
-	return `$${value.toLocaleString("en-US", {
-		minimumFractionDigits: Math.min(2, maximumFractionDigits),
-		maximumFractionDigits,
-	})}`;
-}
-
-function formatRequestCost(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	if (value > 0 && value < 0.01) {
-		return `$${value.toLocaleString("en-US", {
-			minimumFractionDigits: 4,
-			maximumFractionDigits: 4,
-		})}`;
-	}
-	return `$${value.toLocaleString("en-US", {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	})}`;
-}
-
-function formatLatency(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	if (value >= 1000) {
-		return `${(value / 1000).toLocaleString("en-US", {
-			maximumFractionDigits: 2,
-		})} s`;
-	}
-	return `${Math.round(value).toLocaleString("en-US")} ms`;
-}
-
-function formatThroughput(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	return `${value.toLocaleString("en-US", { maximumFractionDigits: 1 })} tok/s`;
-}
-
-function formatDuration(valueMs: number | null | undefined): string {
-	if (valueMs == null || !Number.isFinite(valueMs)) return "-";
-	if (valueMs < 1000) return `${Math.round(valueMs)} ms`;
-	return `${(valueMs / 1000).toLocaleString("en-US", {
-		maximumFractionDigits: 1,
-	})} s`;
+function useDecisionFormatters() {
+	const format = useDisplayFormatters();
+	const valid = (value: number | null | undefined): value is number =>
+		value != null && Number.isFinite(value);
+	const currency = (value: number, minimumFractionDigits: number, maximumFractionDigits: number) =>
+		format.number(value, {
+			style: "currency",
+			currency: "USD",
+			minimumFractionDigits,
+			maximumFractionDigits,
+			notation: "standard",
+		});
+	return {
+		formatMonthYear: (value: string | null | undefined) => format.calendarDate(value),
+		formatInteger: (value: number | null | undefined) => valid(value)
+			? format.number(value, { maximumFractionDigits: 0 })
+			: "-",
+		formatCompact: (value: number | null | undefined) => valid(value)
+			? format.number(value, { maximumFractionDigits: 1 })
+			: "-",
+		formatUsd: (value: number | null | undefined) => {
+			if (!valid(value)) return "-";
+			const digits = value > 0 && value < 0.01 ? 4 : 2;
+			return currency(value, Math.min(2, digits), digits);
+		},
+		formatRequestCost: (value: number | null | undefined) => !valid(value)
+			? "-"
+			: currency(value, value > 0 && value < 0.01 ? 4 : 2, value > 0 && value < 0.01 ? 4 : 2),
+		formatLatency: (value: number | null | undefined) => !valid(value)
+			? "-"
+			: value >= 1000
+				? `${format.number(value / 1000, { maximumFractionDigits: 2, notation: "standard" })} s`
+				: `${format.number(Math.round(value), { notation: "standard" })} ms`,
+		formatThroughput: (value: number | null | undefined) => valid(value)
+			? `${format.number(value, { maximumFractionDigits: 1, notation: "standard" })} tok/s`
+			: "-",
+		formatDuration: (value: number | null | undefined) => !valid(value)
+			? "-"
+			: value < 1000
+				? `${format.number(Math.round(value), { notation: "standard" })} ms`
+				: `${format.number(value / 1000, { maximumFractionDigits: 1, notation: "standard" })} s`,
+	};
 }
 
 function estimateTokensFromText(value: string): number {
@@ -551,6 +530,16 @@ export default function DecisionMatrix({
 	selectedIds,
 	onSelectedIdsChange,
 }: DecisionMatrixProps) {
+	const {
+		formatCompact,
+		formatDuration,
+		formatInteger,
+		formatLatency,
+		formatMonthYear,
+		formatRequestCost,
+		formatThroughput,
+		formatUsd,
+	} = useDecisionFormatters();
 	const [highlightBest, setHighlightBest] = React.useState(true);
 	const [selectedProviderByModel, setSelectedProviderByModel] = React.useState<
 		Record<string, string>

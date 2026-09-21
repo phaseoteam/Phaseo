@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -6,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { Logo } from "@/components/Logo";
-import { formatCountryDate } from "@/components/(data)/countries/utils";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface CountryModelCardProps {
     model: ModelCardType;
@@ -19,8 +21,13 @@ export function CountryModelCard({
     variant = "default",
     showDatePill = true,
 }: CountryModelCardProps) {
+    const format = useDisplayFormatters();
     const modelSlug = model.model_id;
-    const releaseDate = formatCountryDate(model.primary_date);
+    const releaseDate = format.dateParts(
+        model.primary_date,
+        { month: "short", year: "numeric" },
+        "Unknown",
+    );
     const accentColour = model.organisation_colour;
     const accentBorder = accentColour ?? "rgba(59,130,246,0.9)";
 

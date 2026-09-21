@@ -27,6 +27,7 @@ import {
 } from "@/app/(dashboard)/settings/teams/actions";
 import WorkspaceIdentitySettings from "./WorkspaceIdentitySettings";
 import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type Team = { id: string; name: string; publisherHandle?: string | null; logoUrl?: string | null };
 type MembersByTeam = Record<
@@ -387,6 +388,7 @@ function ConfirmDeleteTeam({
 	deleting: boolean;
 	remainingBalance?: number;
 }) {
+	const format = useDisplayFormatters();
 	const [text, setText] = React.useState("");
 	const [ackCredits, setAckCredits] = React.useState(false);
 	const ok = text.trim().toUpperCase() === "DELETE WORKSPACE";
@@ -394,11 +396,12 @@ function ConfirmDeleteTeam({
 		typeof remainingBalance === "number" ? Math.max(remainingBalance, 0) : 0;
 	const hasCredits = balance > 0.001;
 	const formattedBalance = hasCredits
-		? new Intl.NumberFormat("en-US", {
+		? format.number(balance, {
 				style: "currency",
 				currency: "USD",
 				maximumFractionDigits: 2,
-			}).format(balance)
+				notation: "standard",
+			})
 		: null;
 
 	return (

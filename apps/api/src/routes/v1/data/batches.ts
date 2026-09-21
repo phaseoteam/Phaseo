@@ -92,6 +92,7 @@ const MAX_MOONSHOT_BATCH_FILE_BYTES = 100 * 1024 * 1024;
 const GATEWAY_BATCH_ID_PREFIX = "batch_";
 const MAX_BATCH_CREATE_BODY_BYTES = 200 * 1024 * 1024;
 const DEFAULT_BATCH_MAX_OUTPUT_TOKENS = 16_384;
+const MAX_BATCH_LIST_OFFSET = 10_000;
 
 class ProviderBatchPreDispatchError extends Error {
 	constructor(message: string, options?: { cause?: unknown }) {
@@ -1511,6 +1512,13 @@ function parseBatchListLimit(url: URL): number {
 	return Math.max(1, Math.min(100, Math.trunc(raw)));
 }
 
+function parseBatchListOffset(url: URL): number | null {
+	const raw = Number(url.searchParams.get("offset") ?? "");
+	if (!Number.isFinite(raw)) return 0;
+	const offset = Math.trunc(raw);
+	return offset > MAX_BATCH_LIST_OFFSET ? null : Math.max(0, offset);
+}
+
 function parseBatchListStatuses(url: URL): string[] {
 	const values = [
 		...url.searchParams.getAll("status"),
@@ -1555,13 +1563,25 @@ async function handleList(req: Request) {
 	if (accessDenied) return accessDenied;
 	const url = new URL(req.url);
 	const limit = parseBatchListLimit(url);
+	const offset = parseBatchListOffset(url);
+	if (offset == null) {
+		return err("validation_error", {
+			reason: "offset_too_large",
+			parameter: "offset",
+			max_offset: MAX_BATCH_LIST_OFFSET,
+			message: `Offset cannot exceed ${MAX_BATCH_LIST_OFFSET}.`,
+			request_id: requestId,
+		});
+	}
 	const statuses = parseBatchListStatuses(url);
 	const records = await listTeamBatchJobs({
 		workspaceId: auth.workspaceId,
-		limit,
+		limit: limit + 1,
+		offset,
 		statuses: statuses.length > 0 ? statuses : undefined,
 	});
-	const data = records.map((record) => decorateBatchPayload({
+	const pageRecords = records.slice(0, limit);
+	const data = pageRecords.map((record) => decorateBatchPayload({
 		requestUrl: req.url,
 		publicBatchId: record.batchId,
 		meta: record.meta,
@@ -1584,7 +1604,7 @@ async function handleList(req: Request) {
 		data,
 		first_id: typeof data[0]?.id === "string" ? data[0].id : null,
 		last_id: typeof data[data.length - 1]?.id === "string" ? data[data.length - 1].id : null,
-		has_more: false,
+		has_more: records.length > pageRecords.length,
 	});
 }
 

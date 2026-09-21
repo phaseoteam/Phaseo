@@ -13,6 +13,7 @@ const Table = React.forwardRef<
   const table = (
     <table
       ref={ref}
+      data-slot="table"
       className={cn("w-full caption-bottom text-sm", className)}
       {...props}
     />
@@ -30,7 +31,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  <thead ref={ref} data-slot="table-header" className={cn("[&_tr]:border-b", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -40,6 +41,7 @@ const TableBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tbody
     ref={ref}
+    data-slot="table-body"
     className={cn("[&_tr:last-child]:border-0", className)}
     {...props}
   />
@@ -52,6 +54,7 @@ const TableFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tfoot
     ref={ref}
+    data-slot="table-footer"
     className={cn(
       "border-t bg-zinc-100/50 font-medium last:[&>tr]:border-b-0 dark:bg-zinc-800/50",
       className
@@ -67,6 +70,7 @@ const TableRow = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tr
     ref={ref}
+    data-slot="table-row"
     className={cn(
       "border-b transition-colors hover:bg-zinc-100/50 data-[state=selected]:bg-zinc-100 dark:hover:bg-zinc-800/50 dark:data-[state=selected]:bg-zinc-800",
       className
@@ -82,6 +86,7 @@ const TableHead = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <th
     ref={ref}
+    data-slot="table-head"
     className={cn(
       "h-10 px-2 text-left align-middle font-medium text-zinc-500 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:text-zinc-400",
       className
@@ -97,6 +102,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
+    data-slot="table-cell"
     className={cn(
       "p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
       className
@@ -112,6 +118,7 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
+    data-slot="table-caption"
     className={cn("mt-4 text-sm text-zinc-500 dark:text-zinc-400", className)}
     {...props}
   />

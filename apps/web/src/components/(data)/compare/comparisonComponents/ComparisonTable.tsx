@@ -1,4 +1,7 @@
+"use client";
+
 import React from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { ExtendedModel } from "@/data/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -29,13 +32,6 @@ function renderBool(value: boolean | null | undefined) {
 	if (value === true) return <Check className="mx-auto h-4 w-4 text-emerald-600" />;
 	if (value === false) return <X className="mx-auto h-4 w-4 text-muted-foreground" />;
 	return <span className="block text-center text-xs text-muted-foreground">-</span>;
-}
-
-function formatMonthYear(value: string | null | undefined): string {
-	if (!value) return "-";
-	const d = new Date(value);
-	if (Number.isNaN(d.getTime())) return "-";
-	return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
 function formatLicenseLabel(value: string | null | undefined): string {
@@ -126,6 +122,8 @@ function getBenchmarkNameToIdMap(
 export default function ComparisonTable({
 	selectedModels,
 }: ComparisonTableProps) {
+	const format = useDisplayFormatters();
+	const formatMonthYear = (value: string | null | undefined) => format.calendarDate(value);
 	if (!selectedModels || selectedModels.length === 0) return null;
 
 	// Get all unique benchmark names across all models
@@ -256,11 +254,11 @@ export default function ComparisonTable({
 											className="text-center"
 										>
 											Input:{" "}
-											{model.input_context_length?.toLocaleString() ||
+											{model.input_context_length != null ? format.number(model.input_context_length) :
 												"-"}
 											<br />
 											Output:{" "}
-											{model.output_context_length?.toLocaleString() ||
+											{model.output_context_length != null ? format.number(model.output_context_length) :
 												"-"}
 										</TableCell>
 									))}
@@ -752,16 +750,10 @@ export default function ComparisonTable({
 																				: "text-zinc-500 dark:text-zinc-400"
 																		)}
 																	>
-																		{isPercent
-																			? `${numericScore.toFixed(
-																					2
-																			  )}%`
-																			: numericScore.toLocaleString(
-																					undefined,
-																					{
-																						maximumFractionDigits: 2,
-																					}
-																			  )}
+																			{`${format.number(numericScore, {
+																				maximumFractionDigits: 2,
+																				notation: "standard",
+																			})}${isPercent ? "%" : ""}`}
 																	</span>
 																</div>
 															) : (
@@ -831,14 +823,14 @@ export default function ComparisonTable({
 											<div className="flex justify-between pl-4">
 												<span>Input:</span>
 												<span>
-													{model.input_context_length?.toLocaleString() ||
+													{model.input_context_length != null ? format.number(model.input_context_length) :
 														"-"}
 												</span>
 											</div>
 											<div className="flex justify-between pl-4">
 												<span>Output:</span>
 												<span>
-													{model.output_context_length?.toLocaleString() ||
+													{model.output_context_length != null ? format.number(model.output_context_length) :
 														"-"}
 												</span>
 											</div>
@@ -880,17 +872,9 @@ export default function ComparisonTable({
 												Knowledge Cutoff:
 											</span>
 											<span>
-												{model.knowledge_cutoff
-													? new Date(
-															model.knowledge_cutoff
-													  ).toLocaleString(
-															"en-US",
-															{
-																month: "short",
-																year: "numeric",
-															}
-													  )
-													: "-"}
+														{model.knowledge_cutoff
+															? format.calendarDate(model.knowledge_cutoff)
+															: "-"}
 											</span>
 										</div>
 									</div>
@@ -1084,22 +1068,13 @@ export default function ComparisonTable({
 																	...bestScores
 															  )
 														: null;
-												const disp =
-													num != null
-														? isPercent
-															? `${num.toLocaleString(
-																	undefined,
-																	{
+														const disp =
+															num != null
+																? `${format.number(num, {
 																		maximumFractionDigits: 2,
-																	}
-															  )}%`
-															: num.toLocaleString(
-																	undefined,
-																	{
-																		maximumFractionDigits: 2,
-																	}
-															  )
-														: "-";
+																		notation: "standard",
+																  })}${isPercent ? "%" : ""}`
+																: "-";
 												return (
 													<div
 														key={benchmarkName}
@@ -1152,4 +1127,3 @@ export default function ComparisonTable({
 		</section>
 	);
 }
-

@@ -22,6 +22,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface PricingAnalysisProps {
 	selectedModels: ExtendedModel[];
@@ -107,12 +108,20 @@ function normalizePricePerMillion(
 	return (pricePerUnit * 1_000_000) / normalizedUnitSize;
 }
 
-function formatUsd(value: number | null | undefined): string {
+type NumberFormatter = ReturnType<typeof useDisplayFormatters>["number"];
+
+function formatUsd(
+	value: number | null | undefined,
+	formatNumber: NumberFormatter
+): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return `$${value.toLocaleString("en-US", {
+	return formatNumber(value, {
+		style: "currency",
+		currency: "USD",
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
-	})}`;
+		notation: "standard",
+	});
 }
 
 function meterMatchesInput(meter: string): boolean {
@@ -289,7 +298,8 @@ function getCheapestBadge(summaries: ModelPricingSummary[]) {
 function getStatCards(
 	summaries: ModelPricingSummary[],
 	providerSelectionByModel: ProviderSelectionByModel,
-	onProviderSelectionChange: (modelId: string, providerId: string) => void
+	onProviderSelectionChange: (modelId: string, providerId: string) => void,
+	formatNumber: NumberFormatter
 ) {
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3">
@@ -324,7 +334,7 @@ function getStatCards(
 										Input $/M
 									</div>
 									<div className="font-mono text-foreground">
-										{formatUsd(summary.input.valuePerMillion)}
+										{formatUsd(summary.input.valuePerMillion, formatNumber)}
 									</div>
 									<div className="text-[10px] text-muted-foreground truncate">
 										{summary.input.provider?.name ?? "-"}
@@ -335,7 +345,7 @@ function getStatCards(
 										Output $/M
 									</div>
 									<div className="font-mono text-foreground">
-										{formatUsd(summary.output.valuePerMillion)}
+										{formatUsd(summary.output.valuePerMillion, formatNumber)}
 									</div>
 									<div className="text-[10px] text-muted-foreground truncate">
 										{summary.output.provider?.name ?? "-"}
@@ -346,7 +356,7 @@ function getStatCards(
 										Blended $/M
 									</div>
 									<div className="font-mono text-foreground">
-										{formatUsd(summary.blendedPerMillion)}
+										{formatUsd(summary.blendedPerMillion, formatNumber)}
 									</div>
 									<div className="text-[10px] text-muted-foreground">
 										90/10 input-output
@@ -407,6 +417,7 @@ function toChartData(summaries: ModelPricingSummary[]): PricingChartDatum[] {
 }
 
 function BarChartTooltip({ active, payload, label }: any) {
+	const format = useDisplayFormatters();
 	if (!active || !payload || payload.length === 0) return null;
 	const point = payload[0]?.payload as PricingChartDatum | undefined;
 	if (!point) return null;
@@ -419,21 +430,21 @@ function BarChartTooltip({ active, payload, label }: any) {
 			<CardContent className="p-0 space-y-1 text-xs">
 				<div className="flex justify-between gap-3">
 					<span>Input</span>
-					<span className="font-mono">{formatUsd(point.input)}</span>
+					<span className="font-mono">{formatUsd(point.input, format.number)}</span>
 				</div>
 				<div className="text-[10px] text-muted-foreground truncate">
 					Provider: {point.inputProvider ?? "-"}
 				</div>
 				<div className="flex justify-between gap-3">
 					<span>Output</span>
-					<span className="font-mono">{formatUsd(point.output)}</span>
+					<span className="font-mono">{formatUsd(point.output, format.number)}</span>
 				</div>
 				<div className="text-[10px] text-muted-foreground truncate">
 					Provider: {point.outputProvider ?? "-"}
 				</div>
 				<div className="flex justify-between gap-3 pt-1 border-t border-border/60">
 					<span>Blended (90/10)</span>
-					<span className="font-mono">{formatUsd(point.blended)}</span>
+					<span className="font-mono">{formatUsd(point.blended, format.number)}</span>
 				</div>
 			</CardContent>
 		</Card>
@@ -565,6 +576,7 @@ function buildMeterComparisonRows(
 }
 
 export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps) {
+	const format = useDisplayFormatters();
 	const [chartScale, setChartScale] = React.useState<"linear" | "log">("linear");
 	const [providerSelectionByModel, setProviderSelectionByModel] =
 		React.useState<ProviderSelectionByModel>({});
@@ -632,7 +644,8 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 						{getStatCards(
 							summaries,
 							providerSelectionByModel,
-							handleProviderSelectionChange
+							handleProviderSelectionChange,
+							format.number
 						)}
 					</div>
 					<Card className="border border-border/60 bg-background/60 shadow-none">
@@ -769,7 +782,7 @@ export default function PricingAnalysis({ selectedModels }: PricingAnalysisProps
 															<span
 																className={isBest ? "text-emerald-600 dark:text-emerald-400" : ""}
 															>
-																{formatUsd(value)}
+														{formatUsd(value, format.number)}
 															</span>
 														) : (
 															<span className="text-muted-foreground">-</span>

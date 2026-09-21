@@ -45,4 +45,13 @@ public class PhaseoModelsTest {
 			server.stop(0);
 		}
 	}
+
+	@Test
+	void parameterSupportHighlightsInvalidValue() throws Exception {
+		JsonNode model = new com.fasterxml.jackson.databind.ObjectMapper().readTree("{\"id\":\"openai/example\",\"endpoints\":[{\"id\":\"openai:responses\",\"endpoint\":\"responses\",\"routable\":true,\"status\":\"active\",\"provider\":{\"id\":\"openai\"},\"capabilities\":{\"parameters\":[\"temperature\"],\"parameter_details\":{\"temperature\":{\"supported\":true,\"minimum\":0,\"maximum\":1}}}}]}");
+		JsonNode report = app.phaseo.sdk.ParameterSupport.check(model, Map.of("temperature", 1.5));
+		assertEquals(false, report.path("ok").asBoolean());
+		assertEquals("supported", report.path("parameters").get(0).path("status").asText());
+		assertTrue(report.path("parameters").get(0).path("accepted_by").isEmpty());
+	}
 }

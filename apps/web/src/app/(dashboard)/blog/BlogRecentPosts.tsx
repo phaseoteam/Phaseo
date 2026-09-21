@@ -6,6 +6,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 type BlogRecentPost = {
 	slug: string;
@@ -14,7 +15,9 @@ type BlogRecentPost = {
 	coverImage: string;
 	categoryLabel: string;
 	isPreview: boolean;
-	metaParts: string[];
+	author: string | null;
+	publishedAt: string;
+	readingTimeLabel: string;
 };
 
 type BlogRecentPostsProps = {
@@ -50,17 +53,22 @@ function PostImage({
 }
 
 function PostMeta({ post }: { post: BlogRecentPost }) {
+	const parts = [
+		{ key: "author", value: post.author },
+		{ key: "published", value: <DisplayCalendarDate value={post.publishedAt} /> },
+		{ key: "reading-time", value: post.readingTimeLabel },
+	].filter((part) => part.value != null && part.value !== "");
 	return (
 		<span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
-			{post.metaParts.map((part, index) => (
-				<span key={part} className="inline-flex items-center gap-x-1.5">
+			{parts.map((part, index) => (
+				<span key={part.key} className="inline-flex items-center gap-x-1.5">
 					{index > 0 ? (
 						<span
 							className="inline-block h-[5px] w-[5px] rounded-full bg-zinc-400 align-middle dark:bg-zinc-500"
 							aria-hidden="true"
 						/>
 					) : null}
-					<span>{part}</span>
+					<span>{part.value}</span>
 				</span>
 			))}
 		</span>

@@ -5,16 +5,23 @@ import { TrendingUp, TrendingDown, ExternalLink, Sparkles } from "lucide-react";
 import { fetchCreditsTierSummary } from "@/lib/fetchers/internal/fetchCreditsTierSummary";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
 
 function money(amount: number, currency: string = "USD") {
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency,
-		minimumFractionDigits: 0,
-		maximumFractionDigits: 0,
-	}).format(amount);
+	return (
+		<DisplayNumber
+			value={amount}
+			options={{
+				style: "currency",
+				currency,
+				minimumFractionDigits: 0,
+				maximumFractionDigits: 0,
+				notation: "standard",
+			}}
+		/>
+	);
 }
 
 interface Props {
