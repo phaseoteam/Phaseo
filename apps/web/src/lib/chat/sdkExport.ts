@@ -70,9 +70,11 @@ function normalizeRealtimeModel(provider: string | null, value: unknown): string
 
 function redactCredentials(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redactCredentials);
-  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key,
-    /^(api_?key|authorization|access_token|client_secret)$/i.test(key) ? "REPLACE_WITH_YOUR_CREDENTIAL" : redactCredentials(item),
-  ]));
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => !/^session_?id$/i.test(key))
+    .map(([key, item]) => [key,
+      /^(api_?key|authorization|access_token|client_secret)$/i.test(key) ? "REPLACE_WITH_YOUR_CREDENTIAL" : redactCredentials(item),
+    ]));
   return value;
 }
 

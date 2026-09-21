@@ -11,10 +11,11 @@ test("exports the submitted body and selected endpoint without proxy credentials
 });
 
 test("redacts explicit credentials but preserves text and unusual JSON strings", () => {
-  const body = { model: "test", input: 'A newline\nquote " and backslash \\', provider: { api_key: "secret" } };
+  const body = { model: "test", session_id: "private-session", input: 'A newline\nquote " and backslash \\', provider: { api_key: "secret" } };
   const request = sdkRequestFromChat("/api/chat/text", { method: "POST", body: JSON.stringify({ requestBody: body }) })!;
   expect(request.body.input).toBe(body.input);
   expect(request.body.provider).toEqual({ api_key: "REPLACE_WITH_YOUR_CREDENTIAL" });
+  expect(request.body).not.toHaveProperty("session_id");
   expect(sdkCode(request, "python")).toContain("request = {\n");
 });
 

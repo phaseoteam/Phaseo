@@ -66,6 +66,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
 import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
+import { sdkRequestFromTextThread } from "@/components/(chat)/chatSdkRequest";
 import { ChatShortcutReference } from "@/components/(chat)/ChatShortcutReference";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
@@ -89,6 +90,7 @@ import type {
 } from "@/components/(chat)/playground/chat-playground-core";
 import {
 	LOCAL_CHAT_API_BASE_URL,
+	resolveChatApiBaseUrl,
 	STAGING_CHAT_API_BASE_URL,
 } from "@/components/(chat)/playground/chat-playground-core";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
@@ -458,6 +460,10 @@ export function ChatHeader({
 						? customBaseUrl
 						: BASE_URL;
 	const apiTargetValue = apiTargetValueOverride ?? apiTarget;
+	const sdkRequest = useMemo(
+		() => sdkRequestFromTextThread(activeThread, resolveChatApiBaseUrl(apiTarget, baseUrl)),
+		[activeThread, apiTarget, baseUrl],
+	);
 	useEffect(() => {
 		const isPresetAccentColor = ACCENT_COLORS.some(
 			(color) => color.value === personalization.accentColor,
@@ -1719,7 +1725,7 @@ export function ChatHeader({
 						</DropdownMenuContent>
 					</DropdownMenu>
 				) : null}
-				<RoomSdkExport />
+				<RoomSdkExport request={sdkRequest} />
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
