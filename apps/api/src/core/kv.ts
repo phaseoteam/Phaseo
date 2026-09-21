@@ -148,15 +148,14 @@ export async function getKeyVersion(
     const loader = (async () => {
         try {
             const raw = await getCache().get(key, "text");
-            const parsed = raw ? Number(raw) : 0;
-            const normalized = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+            if (raw !== null && !/^(0|[1-9]\d*)$/.test(raw)) throw new Error("Invalid key version");
+            const parsed = raw === null ? 0 : Number(raw);
+            if (!Number.isSafeInteger(parsed) || parsed < 0) throw new Error("Invalid key version");
+            const normalized = parsed;
             if (useL1Cache && readKeyVersionEpoch(key) === epochAtStart) {
                 writeKeyVersionL1(scope, value, normalized, l1TtlMs);
             }
             return normalized;
-        } catch {
-            // Fail open: if KV is unavailable, use version 0 to keep requests serving.
-            return 0;
         } finally {
             if (useL1Cache && keyVersionInflight.get(key) === loader) {
                 keyVersionInflight.delete(key);
@@ -196,4 +195,3 @@ export async function keyVersionToken(
     const version = await getKeyVersion(scope, value, options);
     return `v${version}`;
 }
-

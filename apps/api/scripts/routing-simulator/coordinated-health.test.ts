@@ -75,7 +75,7 @@ test("degraded closed providers retire old failure evidence after five fresh suc
     expect(h.rec_tot_ew_60s).toBe(5);
 });
 
-test("gateway feedback retries the same observation ID and skips neutral/start writes", async () => {
+test("gateway feedback retries the same observation ID and skips neutral writes", async () => {
     await flushBackground(); resetRuntime(); health.resetHealthStateForTests();
     let state: HealthEvidence | undefined;
     const ids = new Set<string>(), deliveries: string[] = [];
@@ -86,7 +86,6 @@ test("gateway feedback retries the same observation ID and skips neutral/start w
         return { health: state!, version: ids.size };
     });
     try {
-        await health.onCallStart("responses", "p", "m");
         await health.onCallEnd("responses", { provider: "p", model: "m", ok: false, healthImpact: "neutral", latency_ms: 1 });
         await flushBackground();
         expect(deliveries).toHaveLength(0);

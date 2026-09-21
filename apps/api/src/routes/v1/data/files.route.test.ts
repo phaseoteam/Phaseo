@@ -56,6 +56,7 @@ vi.mock("@core/feature-flags", () => ({
 }));
 
 vi.mock("@/runtime/env", () => ({
+	getBindingsIfConfigured: () => null,
 	getBindings: () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
@@ -74,6 +75,12 @@ vi.mock("@/runtime/env", () => ({
 			};
 		}),
 		from: vi.fn(() => ({
+			select: () => {
+				const query: any = { eq: () => query, limit: () => query,
+					maybeSingle: async () => ({ data: { credential_mode: "managed_and_byok" }, error: null }),
+					then: (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve) };
+				return query;
+			},
 			update: (patch: Record<string, unknown>) => ({
 				eq: (workspaceColumn: string, workspaceId: string) => ({
 					eq: async (uploadColumn: string, uploadId: string) => {
@@ -149,7 +156,7 @@ describe("filesRoutes", () => {
 			headers: { "content-length": String(100 * 1024 * 1024 + 1) },
 			body: "{}",
 		});
-		expect(response.status).toBe(413);
+		expect(response.status, await response.clone().text()).toBe(413);
 		await expect(response.json()).resolves.toMatchObject({ error: { reason: "batch_file_too_large" } });
 		expect(fetchMock).not.toHaveBeenCalled();
 	});

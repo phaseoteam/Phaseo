@@ -136,6 +136,7 @@ vi.mock("@pipeline/before/sensitiveInfo", () => ({
 }));
 
 vi.mock("@/runtime/env", () => ({
+	getBindingsIfConfigured: () => null,
 	getBindings: () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
@@ -740,7 +741,7 @@ describe("batchRoutes", () => {
 			}),
 		});
 
-		expect(createResponse.status).toBe(200);
+		expect(createResponse.status, await createResponse.clone().text()).toBe(200);
 		const createPayload = await createResponse.json();
 		expect(createPayload).toMatchObject({
 			id: expect.stringMatching(/^batch_[A-Z0-9]{26}$/),
@@ -762,6 +763,7 @@ describe("batchRoutes", () => {
 		const publicBatchId = String(createPayload.id);
 		expect(createPayload.webhook).not.toHaveProperty("secret");
 
+		expect(state.fetchCalls[1]?.url).toBe("https://api.openai.example/v1/files");
 		expect(state.fetchCalls[2]?.url).toBe("https://api.openai.example/v1/batches");
 		expect(state.fetchCalls[2]?.bodyJson).toMatchObject({
 			input_file_id: "file_input_normalized_123",
@@ -839,6 +841,11 @@ describe("batchRoutes", () => {
 				kind: "batch",
 				internalId: publicBatchId,
 				phase: "created",
+			},
+			{
+				workspaceId: "ws_batch_test", kind: "batch", internalId: publicBatchId,
+				phase: "status_changed", previousStatus: "queued", currentStatus: "completed",
+				deliveryKey: "batch.status_changed:queued:completed",
 			},
 			{
 				workspaceId: "ws_batch_test",
@@ -993,6 +1000,11 @@ describe("batchRoutes", () => {
 				kind: "batch",
 				internalId: publicBatchId,
 				phase: "created",
+			},
+			{
+				workspaceId: "ws_batch_test", kind: "batch", internalId: publicBatchId,
+				phase: "status_changed", previousStatus: "queued", currentStatus: "failed",
+				deliveryKey: "batch.status_changed:queued:failed",
 			},
 			{
 				workspaceId: "ws_batch_test",
@@ -2163,6 +2175,11 @@ describe("batchRoutes", () => {
 				kind: "batch",
 				internalId: publicBatchId,
 				phase: "created",
+			},
+			{
+				workspaceId: "ws_batch_test", kind: "batch", internalId: publicBatchId,
+				phase: "status_changed", previousStatus: "in_progress", currentStatus: "completed",
+				deliveryKey: "batch.status_changed:in_progress:completed",
 			},
 			{
 				workspaceId: "ws_batch_test",

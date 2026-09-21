@@ -521,7 +521,7 @@ export async function handleStreamResponse(
 				finishReason: cachedFinishReason ?? result.bill.finish_reason ?? null,
 			});
 			if (info?.aborted || streamFailed || healthImpact === "failure") {
-				const healthUpdate = await onCallEnd(ctx.endpoint, {
+				const healthUpdate = healthContext?.completed ? undefined : await onCallEnd(ctx.endpoint, {
 					observationId: healthContext?.observationId,
 					startedAt: healthContext?.startedAt,
 					probe: isProbe,
@@ -533,9 +533,9 @@ export async function handleStreamResponse(
 					latency_ms: ctx.meta.latency_ms ?? null,
 					generation_ms: ctx.meta.generation_ms ?? null,
 				});
-				if (isProbe && healthImpact !== "neutral" && !healthUpdate?.rateLimited) {
+				if (!healthContext?.completed && isProbe && healthImpact !== "neutral" && !healthUpdate?.rateLimited) {
 					await reportProbeResult(ctx.endpoint, healthProvider, baseModel, healthImpact === "success");
-				} else if (healthImpact === "failure" && !healthUpdate?.rateLimited) {
+				} else if (!healthContext?.completed && healthImpact === "failure" && !healthUpdate?.rateLimited) {
 					await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
 				}
 				const reason = info?.aborted ? "incomplete_stream" : "upstream_failure";
@@ -562,7 +562,7 @@ export async function handleStreamResponse(
                 result.upstream.status >= 200 &&
                 result.upstream.status < 400 &&
                 !info?.aborted;
-            await onCallEnd(ctx.endpoint, {
+            if (!healthContext?.completed) await onCallEnd(ctx.endpoint, {
                 observationId: healthContext?.observationId,
                 startedAt: healthContext?.startedAt,
                 probe: isProbe,
@@ -585,7 +585,7 @@ export async function handleStreamResponse(
                         0
                 ),
             });
-            if (isProbe && healthImpact !== "neutral") {
+            if (!healthContext?.completed && isProbe && healthImpact !== "neutral") {
 				await reportProbeResult(ctx.endpoint, healthProvider, baseModel, healthImpact === "success");
             }
 
@@ -838,6 +838,5 @@ export async function handleStreamResponse(
 export function handlePassthroughFallback(upstream: Response): Response {
     return passthrough(upstream);
 }
-
 
 

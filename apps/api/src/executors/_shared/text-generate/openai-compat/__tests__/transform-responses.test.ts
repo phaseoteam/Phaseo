@@ -1232,14 +1232,19 @@ describe("irToOpenAIResponses", () => {
 });
 
 describe("Alibaba Cloud Responses reasoning request contract", () => {
-	it("maps reasoning effort to the OpenAI-compatible reasoning object", () => {
+	it.each([
+		["minimal", "low"], ["low", "low"], ["medium", "medium"],
+		["high", "xhigh"], ["xhigh", "xhigh"], ["max", "xhigh"],
+	])("maps %s effort to the Responses reasoning object", (effort, expected) => {
 		const request = irToOpenAIResponses({
 			model: "qwen3.8-max-0902",
 			messages: [{ role: "user", content: [{ type: "text", text: "Plan the migration." }] }],
 			stream: false,
-			reasoning: { effort: "high" },
+			reasoning: { effort },
 		} as any, "qwen3.8-max-0902", "alibaba-cloud");
 
-		expect(request.reasoning).toEqual({ effort: "xhigh" });
+		expect(request.reasoning).toEqual({ effort: expected });
+		expect(request.reasoning_effort).toBeUndefined();
+		expect(Array.isArray(request.input_items)).toBe(true);
 	});
 });

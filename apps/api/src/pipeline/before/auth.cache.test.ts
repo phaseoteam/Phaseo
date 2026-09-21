@@ -132,6 +132,157 @@ async function flushBackground(): Promise<void> {
 }
 
 describe("authenticate hot-path caching", () => {
+    // Regression tests cover local races; distributed KV timing is not simulated.
+    it("observes a remote revocation marker after the five-second local marker cache", async () => {
+        vi.useFakeTimers();
+        const now = Date.now();
+        const kid = "REVOCATION1", secret = "revocation_secret";
+        runtime.dbRow.value = { id: "revoke1", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        const { authenticate } = await import("./auth");
+        const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+        expect((await authenticate(request)).ok).toBe(true);
+        await flushBackground();
+        runtime.dbRow.value = { ...runtime.dbRow.value, status: "deleted" };
+        runtime.store.set(`gateway:keyver:kid:${kid}`, "123");
+        expect((await authenticate(request)).ok).toBe(true);
+        vi.setSystemTime(now + 5001);
+        expect(await authenticate(request)).toEqual({ ok: false, reason: "key_not_found_or_revoked" });
+        await flushBackground();
+    });
+
+    it("a refill after the committed deletion cannot cache an active row under the new marker", async () => {
+        vi.useFakeTimers();
+        const now = Date.now();
+        const kid = "REVOCATION2", secret = "revocation_secret";
+        runtime.dbRow.value = { id: "revoke2", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        const { authenticate } = await import("./auth");
+        const { setKeyVersion } = await import("@/core/kv");
+        const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+        expect((await authenticate(request)).ok).toBe(true);
+        await flushBackground();
+        runtime.dbRow.value = { ...runtime.dbRow.value, status: "deleted" };
+        await setKeyVersion("kid", kid, 123);
+        vi.setSystemTime(now + 5001);
+        expect((await authenticate(request)).ok).toBe(false);
+        await flushBackground();
+        expect(JSON.parse(runtime.store.get(`gateway:key:${kid}:v123`)!)).toMatchObject({ status: "deleted" });
+    });
+
+    it("pins a delayed pre-deletion database result to its original cache version", async () => {
+        const kid = "REVOCATION3", secret = "revocation_secret";
+        const active = { id: "revoke3", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        runtime.dbRow.value = active;
+        let release!: (value: { data: KeyRow; error: null }) => void;
+        let started!: () => void;
+        const reading = new Promise<void>(resolve => { started = resolve; });
+        runtime.maybeSingle.mockImplementationOnce(() => { started(); return new Promise(resolve => { release = resolve; }); });
+        const { authenticate } = await import("./auth");
+        const { setKeyVersion } = await import("@/core/kv");
+        const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+        const pending = authenticate(request);
+        await reading;
+        runtime.dbRow.value = { ...active, status: "deleted" };
+        await setKeyVersion("kid", kid, 123);
+        release({ data: active, error: null });
+        expect((await pending).ok).toBe(true);
+        await flushBackground();
+        expect(runtime.store.has(`gateway:key:${kid}:v123`)).toBe(false);
+        expect(JSON.parse(runtime.store.get(`gateway:key:${kid}:v0`)!)).toMatchObject({ status: "active" });
+        expect((await authenticate(request)).ok).toBe(false);
+        await flushBackground();
+    });
+
+    it("ignores a delayed old-version KV write once the new revocation marker is visible", async () => {
+        const kid = "REVOCATION5", secret = "revocation_secret";
+        runtime.dbRow.value = { id: "revoke5", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        let finishWrite!: () => void;
+        runtime.cache.put.mockImplementationOnce((key, value) => new Promise<void>(resolve => {
+            finishWrite = () => { runtime.store.set(key, value); resolve(); };
+        }));
+        const { authenticate } = await import("./auth");
+        const { setKeyVersion } = await import("@/core/kv");
+        const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+        try {
+            expect((await authenticate(request)).ok).toBe(true);
+            runtime.dbRow.value = { ...runtime.dbRow.value, status: "deleted" };
+            await setKeyVersion("kid", kid, 123);
+            expect((await authenticate(request)).ok).toBe(false);
+            finishWrite();
+            await flushBackground();
+            expect(JSON.parse(runtime.store.get(`gateway:key:${kid}:v0`)!)).toMatchObject({ status: "active" });
+            expect((await authenticate(request)).ok).toBe(false);
+        } finally {
+            finishWrite?.();
+            await flushBackground();
+        }
+    });
+
+    it("does not resurrect an old v0 row when the version read fails after rejection", async () => {
+        vi.useFakeTimers();
+        const now = Date.now();
+        const kid = "REVOCATION4", secret = "revocation_secret";
+        runtime.dbRow.value = { id: "revoke4", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        const { authenticate } = await import("./auth");
+        const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+        expect((await authenticate(request)).ok).toBe(true);
+        await flushBackground();
+        runtime.dbRow.value = { ...runtime.dbRow.value, status: "deleted" };
+        runtime.store.set(`gateway:keyver:kid:${kid}`, "123");
+        vi.setSystemTime(now + 5001);
+        expect((await authenticate(request)).ok).toBe(false);
+        await flushBackground();
+        vi.setSystemTime(now + 10002);
+        runtime.cache.get.mockRejectedValueOnce(new Error("KV version read unavailable"));
+        const writes = runtime.cache.put.mock.calls.length;
+        expect((await authenticate(request)).ok).toBe(false);
+        expect(runtime.cache.put).toHaveBeenCalledTimes(writes);
+    });
+
+    it("uses the database without filling caches when the version is unavailable", async () => {
+        const kid = "REVOCATION6", secret = "revocation_secret";
+        runtime.dbRow.value = { id: "revoke6", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        runtime.cache.get.mockRejectedValueOnce(new Error("KV unavailable"));
+        const { authenticate } = await import("./auth");
+        expect((await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`))).ok).toBe(true);
+        await flushBackground();
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+        expect(runtime.cache.put).not.toHaveBeenCalled();
+    });
+
+    it("fails closed if neither the version nor the authoritative database can be read", async () => {
+        runtime.cache.get.mockRejectedValueOnce(new Error("KV unavailable"));
+        runtime.maybeSingle.mockResolvedValueOnce({ data: null, error: { message: "Database unavailable" } as never });
+        const { authenticate } = await import("./auth");
+        expect(await authenticate(buildRequest("phaseo_v1_sk_REVOCATION7_secret"))).toEqual({ ok: false, reason: "db_error" });
+        expect(runtime.cache.put).not.toHaveBeenCalled();
+    });
+
+    it("pins a delayed pepper-migration cache fill to the original version", async () => {
+        const kid = "REVOCATION8", secret = "revocation_secret";
+        runtime.bindings.KEY_PEPPER_PREVIOUS = "previous-pepper";
+        runtime.dbRow.value = { id: "revoke8", workspace_id: "workspace", status: "active",
+            hash: createHmac("sha256", "previous-pepper").update(secret).digest("hex") };
+        let finishUpdate!: () => void;
+        runtime.updateEq.mockImplementationOnce(() => new Promise(resolve => {
+            finishUpdate = () => resolve({ error: null });
+        }));
+        const { authenticate } = await import("./auth");
+        const { setKeyVersion } = await import("@/core/kv");
+        const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+        try {
+            expect((await authenticate(request)).ok).toBe(true);
+            runtime.dbRow.value = { ...runtime.dbRow.value, status: "deleted" };
+            await setKeyVersion("kid", kid, 123);
+            finishUpdate();
+            await flushBackground();
+            expect(runtime.store.has(`gateway:key:${kid}:v123`)).toBe(false);
+            expect((await authenticate(request)).ok).toBe(false);
+        } finally {
+            finishUpdate?.();
+            await flushBackground();
+        }
+    });
+
     it("reuses imported pepper keys while still verifying every supplied secret", async () => {
         const secret = "secret_crypto_cache";
         runtime.dbRow.value = { id: "crypto", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };

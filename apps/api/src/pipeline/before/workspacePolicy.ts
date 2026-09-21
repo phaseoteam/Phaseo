@@ -156,31 +156,35 @@ function writeWorkspacePolicyVersionL1(workspaceId: string, value: number): void
 	});
 }
 
-async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string> {
+function parseWorkspacePolicyVersion(raw: string | null): number {
+	if (raw === null) return 0;
+	const parsed = Number(raw);
+	if (!/^\d+$/.test(raw) || !Number.isSafeInteger(parsed) || parsed < 0) {
+		throw new Error("invalid_workspace_policy_version");
+	}
+	return parsed;
+}
+
+async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string | null> {
 	const cached = readWorkspacePolicyVersionL1(workspaceId);
 	if (cached !== null) return `v${cached}`;
 
 	try {
 		const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
-		const parsed = raw ? Number(raw) : 0;
-		const normalized = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+		const normalized = parseWorkspacePolicyVersion(raw);
 		writeWorkspacePolicyVersionL1(workspaceId, normalized);
 		return `v${normalized}`;
 	} catch {
-		return "v0";
+		// Unknown is not the initial version: old permissions must not be reused.
+		return null;
 	}
 }
 
 export async function bumpWorkspacePolicyVersion(workspaceId: string): Promise<number> {
-	let current = 0;
-	try {
-		const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
-		const parsed = raw ? Number(raw) : 0;
-		current = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
-	} catch {
-		current = 0;
-	}
+	const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
+	const current = parseWorkspacePolicyVersion(raw);
 	const next = current + 1;
+	if (!Number.isSafeInteger(next)) throw new Error("invalid_workspace_policy_version");
 	await getCache().put(workspacePolicyVersionKey(workspaceId), String(next));
 	writeWorkspacePolicyVersionL1(workspaceId, next);
 	return next;
@@ -507,18 +511,21 @@ export async function fetchWorkspacePolicy(args: {
 }): Promise<WorkspacePolicy> {
 	const [workspaceVersionToken, apiKeyVersionToken] = await Promise.all([
 		getWorkspacePolicyVersionToken(args.workspaceId),
-		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: 5_000 }),
+		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: 5_000 }).catch(() => null),
 	]);
-	const versionToken = `${workspaceVersionToken}:${apiKeyVersionToken}`;
-	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
+	// Cache fills stay pinned to markers observed before the database read.
+	// Unknown markers bypass both cache layers, including writes.
+	const versionToken = workspaceVersionToken !== null && apiKeyVersionToken !== null
+		? `${workspaceVersionToken}:${apiKeyVersionToken}` : null;
+	const cached = versionToken === null ? null : readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
 	if (cached) return cached;
 
 	try {
-		const raw = await getCache().get(
+		const raw = versionToken === null ? null : await getCache().get(
 			workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken),
 			"text",
 		);
-		if (raw) {
+		if (raw && versionToken !== null) {
 			const parsed = JSON.parse(raw);
 			if (isWorkspacePolicyLike(parsed)) {
 				writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, parsed);
@@ -647,6 +654,7 @@ export async function fetchWorkspacePolicy(args: {
 		guardrails,
 		dynamicRoute,
 	});
+	if (versionToken === null) return policy;
 	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
 	dispatchBackground(
 		getCache()

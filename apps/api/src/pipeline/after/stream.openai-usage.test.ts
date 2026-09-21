@@ -169,6 +169,17 @@ function baseCtx(): any {
 }
 
 describe("handleStreamResponse OpenAI usage finalization", () => {
+    it("does not count synthetic output for an already completed provider attempt twice", async () => {
+        onCallEndMock.mockReset(); reportProbeResultMock.mockReset(); maybeOpenOnRecentErrorsMock.mockReset();
+        classifyProviderHealthImpactMock.mockReturnValue("success");
+        const upstream = makeEmptySuccessfulOpenAIStream();
+        const response = await handleStreamResponse(baseCtx(), { kind: "stream", stream: upstream.body, upstream,
+            provider: "openai", healthContext: { completed: true, isProbe: true }, usageFinalizer: async () => null,
+            bill: { cost_cents: 0, currency: "USD", usage: null, finish_reason: null } } as any, null);
+        await response.text(); await new Promise(resolve => setTimeout(resolve, 0));
+        expect(onCallEndMock).not.toHaveBeenCalled(); expect(reportProbeResultMock).not.toHaveBeenCalled();
+        expect(maybeOpenOnRecentErrorsMock).not.toHaveBeenCalled();
+    });
     it.each([false, true])("keeps private stream health scoped when failure=%s", async failed => {
         onCallEndMock.mockReset().mockResolvedValue(undefined);
         reportProbeResultMock.mockReset().mockResolvedValue(undefined);

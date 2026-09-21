@@ -15,6 +15,12 @@ const dispatchBackgroundMock = vi.fn();
 const validateTextIRContractMock = vi.fn();
 const prepareServerToolsForTextRequestMock = vi.fn();
 const consumeTextProtocolStreamToIRMock = vi.fn();
+const onCallEndMock = vi.fn();
+
+vi.mock("../execute/health", async importOriginal => ({
+	...await importOriginal<typeof import("../execute/health")>(),
+	onCallEnd: (...args: any[]) => onCallEndMock(...args),
+}));
 
 vi.mock("@protocols/detect", () => ({
 	detectTextProtocol: (...args: any[]) => detectTextProtocolMock(...args),
@@ -327,6 +333,7 @@ describe("runTextGeneratePipeline response cache", () => {
 			result: {
 				kind: "stream",
 				stream: providerStream,
+				healthContext: { observationId: "buffered-attempt", startedAt: 123, isProbe: false, provider: "openai", model: "openai/gpt-5.4-nano" },
 				upstream: new Response(null, { status: 200 }),
 				provider: "openai",
 				generationTimeMs: 4,
@@ -354,6 +361,8 @@ describe("runTextGeneratePipeline response cache", () => {
 
 		expect(doRequestWithIRMock.mock.calls[0]?.[1]).toMatchObject({ stream: true });
 		expect(consumeTextProtocolStreamToIRMock).toHaveBeenCalledOnce();
+		expect(onCallEndMock).toHaveBeenCalledWith("responses", expect.objectContaining({ observationId: "buffered-attempt", ok: true }));
+		await Promise.all(pendingBackground);
 		expect(finalizeRequestMock.mock.calls[0]?.[0]?.exec?.result).toMatchObject({
 			kind: "completed",
 			stream: null,

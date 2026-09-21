@@ -494,6 +494,29 @@ describe("management key routes", () => {
 		});
 	});
 
+	it("publishes revocation versions only after committing the deleted key status", async () => {
+        state.keyRows.push({ id: "key_1", workspace_id: "ws_1", kid: "kid_1", status: "active" });
+        state.setKeyVersion.mockImplementationOnce(async () => {
+            expect(state.updatePayloads[0]).toMatchObject({ status: "deleted" });
+        });
+        const { keysRoutes } = await import("./keys");
+        expect((await keysRoutes.request("https://example.com/key_1", { method: "DELETE" })).status).toBe(200);
+        expect(state.setKeyVersion).toHaveBeenCalledTimes(2);
+        expect(state.updatePayloads[0]).toMatchObject({ status: "deleted" });
+    });
+
+    it("keeps the key deleted but returns failure when a version write fails, and retries invalidation", async () => {
+        state.keyRows.push({ id: "key_1", workspace_id: "ws_1", kid: "kid_1", status: "active" });
+        state.setKeyVersion.mockRejectedValueOnce(new Error("KV unavailable"));
+        const { keysRoutes } = await import("./keys");
+        expect((await keysRoutes.request("https://example.com/key_1", { method: "DELETE" })).status).toBe(500);
+        expect(state.updatePayloads[0]).toMatchObject({ status: "deleted" });
+        state.keyRows.push({ id: "key_1", workspace_id: "ws_1", kid: "kid_1", status: "deleted" });
+        expect((await keysRoutes.request("https://example.com/key_1", { method: "DELETE" })).status).toBe(200);
+        expect(state.setKeyVersion).toHaveBeenCalledTimes(3);
+        expect(state.updatePayloads).toHaveLength(1);
+    });
+
 	it("deletes a key by hash and removes its dependent records", async () => {
 		state.keyRows.push({
 			id: "key_1",

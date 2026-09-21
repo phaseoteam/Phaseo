@@ -8,6 +8,7 @@ import { detectTextProtocol } from "@protocols/detect";
 import type { UnifiedStreamEvent } from "../after/stream-events";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { doRequestWithIR } from "../execute";
+import { reportBufferedStreamHealth } from "../execute/buffered-health";
 import { finalizeRequest, settleNonBillableFailure } from "../after";
 import { handleFailureAudit, handleSuccessAudit } from "../after/audit";
 import { makeHeaders, createResponse } from "../after/http";
@@ -548,6 +549,8 @@ async function handleCachedTextResponse(args: {
 }
 
 async function materializeStreamResultToCompleted(args: {
+	ctx: PipelineContext;
+	signal: AbortSignal;
 	protocol: ReturnType<typeof detectTextProtocol>;
 	requestId: string;
 	model: string;
@@ -559,18 +562,36 @@ async function materializeStreamResultToCompleted(args: {
 		throw new Error("gateway_stream_materialization_missing_body");
 	}
 	const materializeStartedAt = performance.now();
-	const consumed = await consumeTextProtocolStreamToIR({
-		protocol: args.protocol,
-		stream,
-		requestId: args.requestId,
-		model: args.model,
-		provider: args.result.provider,
-		onEvent: args.onEvent,
-	});
+	let streamFailed = false;
+	let consumed;
+	try {
+		consumed = await consumeTextProtocolStreamToIR({
+			protocol: args.protocol,
+			stream,
+			requestId: args.requestId,
+			model: args.model,
+			provider: args.result.provider,
+			startedAtMs: args.ctx.meta.selectedUpstreamFetchStartMs ?? args.ctx.meta.upstreamStartMs,
+			onEvent: event => {
+				if (event.type === "error") streamFailed = true;
+				args.onEvent?.(event);
+			},
+		});
+	} catch (error) {
+		reportBufferedStreamHealth({ ctx: args.ctx, result: args.result, streamFailed,
+			materializationFailed: true, aborted: args.signal.aborted,
+			latencyMs: args.ctx.meta.upstreamHeadersMs ?? 0,
+			generationMs: Math.max(0, performance.now() - materializeStartedAt) });
+		throw error;
+	}
 	const materializedGenerationMs = Math.max(
 		0,
 		Math.round(performance.now() - materializeStartedAt),
 	);
+	reportBufferedStreamHealth({ ctx: args.ctx, result: args.result, response: consumed.ir, streamFailed,
+		latencyMs: consumed.firstFrameMs ?? args.ctx.meta.upstreamHeadersMs ?? 0,
+		generationMs: consumed.totalMs != null && consumed.firstFrameMs != null
+			? Math.max(0, consumed.totalMs - consumed.firstFrameMs) : materializedGenerationMs });
 	return {
 		...args.result,
 		kind: "completed" as const,
@@ -808,6 +829,8 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 		if (exec.result.kind === "stream" && shouldMaterializeInitialStream) {
 			try {
 				exec.result = await materializeStreamResultToCompleted({
+					ctx: pre.ctx,
+					signal: req.signal,
 					protocol,
 					requestId: pre.ctx.requestId,
 					model: pre.ctx.model,
@@ -1092,6 +1115,8 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 				if (followUpResult.kind === "stream") {
 					try {
 						followUpResult = await materializeStreamResultToCompleted({
+							ctx: pre.ctx,
+							signal: req.signal,
 							protocol,
 							requestId: pre.ctx.requestId,
 							model: pre.ctx.model,

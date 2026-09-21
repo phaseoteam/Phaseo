@@ -4,12 +4,17 @@ import type { PipelineContext } from "../before/types";
  * Do not infer this from end-to-end time: retries and provider waits would be included.
  */
 export function buildResponseTimeline(ctx?: PipelineContext | null) {
-	const value = ctx?.meta.timeToUpstreamRequestMs;
-	const startedAt = ctx?.meta.startedAtMs;
+	const value = ctx?.meta?.timeToUpstreamRequestMs;
+	const startedAt = ctx?.meta?.startedAtMs;
 	const valid = typeof value === "number" && Number.isFinite(value) && value >= 0;
+	const cacheStatus = ctx?.meta?.beforeContextCacheStatus;
 	return {
 		version: 1,
 		routing_ms: valid ? Math.round(value) : null,
+		// Classify measured context hits/misses without inferring cache warmth
+		// from request order. Never serialize arbitrary diagnostic values.
+		...(["hit", "miss", "bypass", "credit_refresh"].includes(cacheStatus ?? "")
+			? { context_cache_status: cacheStatus } : {}),
 		// Allows retry intervals to exclude preparation already shown as routing.
 		...(valid && typeof startedAt === "number" && Number.isFinite(startedAt)
 			? { first_dispatch_at_ms: startedAt + value } : {}),
