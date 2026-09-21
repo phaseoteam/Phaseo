@@ -129,9 +129,18 @@ function normalizeConversation(request: SdkRequest) {
   return { messages, reason: null };
 }
 
-export function protocolSwitchSupportReason(request: SdkRequest): string | null { return normalizeConversation(request).reason; }
+const sharedTextKeys = ["model", "temperature", "top_p", "top_k", "stream", "provider", "provider_options", "reasoning", "metadata", "meta", "service_tier", "session_id", "prompt_cache_key", "web_search_options", "plugins"];
+const openAiControlKeys = ["presence_penalty", "frequency_penalty", "seed", "logit_bias", "logprobs", "top_logprobs", "user", "n", "response_format"];
 
-const sharedTextKeys = ["model", "temperature", "top_p", "stream", "provider", "provider_options", "reasoning", "metadata", "meta", "service_tier", "session_id", "prompt_cache_key"];
+export function protocolSwitchSupportReason(request: SdkRequest, protocol?: TextProtocol): string | null {
+  const conversationReason = normalizeConversation(request).reason;
+  if (conversationReason || !protocol || protocol === textProtocolForRequest(request)) return conversationReason;
+  if (protocol === "messages") {
+    const unsupported = openAiControlKeys.filter(key => request.body[key] !== undefined);
+    if (unsupported.length) return `Messages cannot preserve ${unsupported.join(", ")}`;
+  }
+  return null;
+}
 
 export function convertTextProtocol(request: SdkRequest, protocol: TextProtocol): SdkRequest {
   const current = textProtocolForRequest(request);
@@ -140,7 +149,14 @@ export function convertTextProtocol(request: SdkRequest, protocol: TextProtocol)
   const conversation = normalizeConversation(request);
   if (conversation.reason) throw new Error(conversation.reason);
   const body: Record<string, unknown> = {};
-  for (const key of sharedTextKeys) if (request.body[key] !== undefined) body[key] = request.body[key];
+  for (const key of [...sharedTextKeys, ...openAiControlKeys]) if (request.body[key] !== undefined) body[key] = request.body[key];
+  if (protocol === "messages") {
+    delete body.stop;
+    if (request.body.stop !== undefined) body.stop_sequences = request.body.stop;
+  } else {
+    if (request.body.stop !== undefined) body.stop = request.body.stop;
+    else if (request.body.stop_sequences !== undefined) body.stop = request.body.stop_sequences;
+  }
   const tokenLimit = request.body.max_output_tokens ?? request.body.max_completion_tokens ?? request.body.max_tokens;
   const instructions = conversation.messages.filter(message => message.role === "system" || message.role === "developer").map(message => message.text).join("\n\n");
   const turns = conversation.messages.filter(message => message.role === "user" || message.role === "assistant");
@@ -201,17 +217,17 @@ function agentCode(request: SdkRequest, language: AgentLanguage): string {
   const requestOptions = Object.fromEntries(Object.entries(request.body).filter(([key]) => !new Set(["model", "input", "messages", "system", "instructions", "tools", "stream", "temperature", "max_output_tokens", "max_completion_tokens", "max_tokens", "top_p", ...optionKeys]).has(key)));
   if (language === "typescript") {
     const clientOptions = [
-      ...Object.entries(request.body).filter(([key]) => optionKeys.has(key)).map(([key, value]) => `  ${key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())}: ${indent(JSON.stringify(value, null, 2), 2)},`),
+      ...Object.entries(request.body).filter(([key]) => optionKeys.has(key)).map(([key, value]) => `  ${key === "meta" ? "includeMeta" : key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())}: ${indent(JSON.stringify(value, null, 2), 2)},`),
       ...(Object.keys(requestOptions).length ? [`  requestOptions: ${indent(JSON.stringify(requestOptions, null, 2), 2)},`] : []),
     ].join("\n");
     return `// npm install @phaseo/sdk @phaseo/agent-sdk\nimport { createAgent, createGatewayAgentClient } from "@phaseo/agent-sdk";\n\nconst agent = createAgent({\n  id: "request-agent",\n  model: ${JSON.stringify(model)},${instructions ? `\n  instructions: ${JSON.stringify(instructions)},` : ""}${typeof request.body.temperature === "number" ? `\n  temperature: ${request.body.temperature},` : ""}${typeof request.body.max_output_tokens === "number" ? `\n  maxOutputTokens: ${request.body.max_output_tokens},` : ""}${typeof request.body.top_p === "number" ? `\n  topP: ${request.body.top_p},` : ""}\n});\nconst client = createGatewayAgentClient({\n  clientOptions: { apiKey: process.env.PHASEO_API_KEY!${request.baseUrl ? `, baseUrl: ${JSON.stringify(request.baseUrl)}` : ""} },\n${clientOptions}\n});\nconst result = await agent.run({ input: ${JSON.stringify(input)}, client });\nconsole.log(result.output);\n`;
   }
   if (language === "python") {
     const clientOptions = [
-      ...Object.entries(request.body).filter(([key]) => optionKeys.has(key)).map(([key, value]) => `    ${key}=${pythonLiteral(value, 1)},`),
+      ...Object.entries(request.body).filter(([key]) => optionKeys.has(key)).map(([key, value]) => `    ${key === "meta" ? "include_meta" : key}=${pythonLiteral(value, 1)},`),
       ...(Object.keys(requestOptions).length ? [`    request_options=${pythonLiteral(requestOptions, 1)},`] : []),
     ].join("\n");
-    return `# pip install phaseo phaseo-agent-sdk\nfrom phaseo_agent import create_agent, create_gateway_agent_client\n\nagent = create_agent({\n    "id": "request-agent",\n    "model": ${JSON.stringify(model)},${instructions ? `\n    "instructions": ${JSON.stringify(instructions)},` : ""}${typeof request.body.temperature === "number" ? `\n    "temperature": ${request.body.temperature},` : ""}${typeof request.body.max_output_tokens === "number" ? `\n    "max_output_tokens": ${request.body.max_output_tokens},` : ""}${typeof request.body.top_p === "number" ? `\n    "top_p": ${request.body.top_p},` : ""}\n})\nclient = create_gateway_agent_client(\n    client_options={"base_url": ${JSON.stringify(request.baseUrl ?? "https://api.phaseo.app/v1")}},\n${clientOptions}\n)\nresult = agent.run(input=${JSON.stringify(input)}, client=client)\nprint(result.output)\n`;
+    return `# pip install phaseo phaseo-agent-sdk\nimport os\nfrom phaseo_agent import create_agent, create_gateway_agent_client\n\nagent = create_agent({\n    "id": "request-agent",\n    "model": ${JSON.stringify(model)},${instructions ? `\n    "instructions": ${JSON.stringify(instructions)},` : ""}${typeof request.body.temperature === "number" ? `\n    "temperature": ${request.body.temperature},` : ""}${typeof request.body.max_output_tokens === "number" ? `\n    "max_output_tokens": ${request.body.max_output_tokens},` : ""}${typeof request.body.top_p === "number" ? `\n    "top_p": ${request.body.top_p},` : ""}\n})\nclient = create_gateway_agent_client(\n    client_options={\n        "api_key": os.environ["PHASEO_API_KEY"],\n        "base_url": ${JSON.stringify(request.baseUrl ?? "https://api.phaseo.app/v1")},\n    },\n${clientOptions}\n)\nresult = agent.run(input=${JSON.stringify(input)}, client=client)\nprint(result.output)\n`;
   }
   if (language === "go") return `// go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest\npackage main\n\nimport (\n  "context"\n  "fmt"\n  agent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"\n)\n\nfunc main() {\n  runner := agent.CreateAgent(agent.AgentDefinition{ID: "request-agent", Model: ${JSON.stringify(model)}${instructions ? `, Instructions: ${JSON.stringify(instructions)}` : ""}})\n  client, err := agent.CreateGatewayAgentClient(agent.GatewayAgentClientOptions{})\n  if err != nil { panic(err) }\n  result, err := runner.Run(context.Background(), agent.RunOptions{Input: ${JSON.stringify(input)}, Client: client})\n  if err != nil { panic(err) }\n  fmt.Println(result.Output)\n}\n`;
   if (language === "csharp") return `// dotnet add package Phaseo.Sdk\n// dotnet add package Phaseo.AgentSdk\nusing PhaseoAgentSdk;\n\nvar agent = AgentSdk.CreateAgent(new AgentDefinition { Id = "request-agent", Model = ${JSON.stringify(model)}${instructions ? `, Instructions = ${JSON.stringify(instructions)}` : ""} });\nvar result = await agent.Run(new RunOptions { Input = ${JSON.stringify(input)}, Client = AgentSdk.CreateGatewayAgentClient() });\nConsole.WriteLine(result.Output);\n`;
@@ -230,8 +246,8 @@ function genericSdkCode(request: SdkRequest, language: Exclude<SdkLanguage, "typ
   const body = JSON.stringify(request.body, null, 2);
   const endpoint = JSON.stringify(request.endpoint);
   const baseUrl = request.baseUrl ?? "https://api.phaseo.app/v1";
-  if (language === "go") return `// go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3@latest\npackage main\n\nimport (\n  "context"\n  "encoding/json"\n  "fmt"\n  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"\n)\n\nfunc main() {\n  client, err := phaseo.NewPhaseoFromEnv()\n  if err != nil { panic(err) }\n  var payload map[string]any\n  if err := json.Unmarshal([]byte(${JSON.stringify(body)}), &payload); err != nil { panic(err) }\n  response, err := client.Request(context.Background(), "POST", ${endpoint}, nil, nil, payload)\n  if err != nil { panic(err) }\n  fmt.Println(response)\n}\n`;
-  if (language === "csharp") return `// dotnet add package Phaseo.Sdk\nusing System.Text.Json;\nusing PhaseoSdk;\n\nvar client = new Phaseo(apiKey: Environment.GetEnvironmentVariable("PHASEO_API_KEY"), basePath: ${JSON.stringify(baseUrl)});\nvar payload = JsonSerializer.Deserialize<Dictionary<string, object>>(${JSON.stringify(body)})!;\nvar response = await client.RequestWithResponse("POST", ${endpoint}, body: payload);\nConsole.WriteLine(response.Body);\n`;
+  if (language === "go") return `// go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3@latest\npackage main\n\nimport (\n  "context"\n  "encoding/json"\n  "fmt"\n  "os"\n  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"\n)\n\nfunc main() {\n  client := phaseo.NewPhaseo(os.Getenv("PHASEO_API_KEY"), ${JSON.stringify(baseUrl)})\n  var payload map[string]any\n  if err := json.Unmarshal([]byte(${JSON.stringify(body)}), &payload); err != nil { panic(err) }\n  response, err := client.Request(context.Background(), "POST", ${endpoint}, nil, nil, payload)\n  if err != nil { panic(err) }\n  fmt.Println(response)\n}\n`;
+  if (language === "csharp") return `// dotnet add package Phaseo.Sdk\nusing System.Text.Json;\nusing PhaseoSdk;\n\nvar client = new Phaseo(apiKey: Environment.GetEnvironmentVariable("PHASEO_API_KEY"), basePath: ${JSON.stringify(baseUrl)});\nvar payload = JsonSerializer.Deserialize<Dictionary<string, object>>(${JSON.stringify(body)})!;\nvar response = await client.RequestWithResponse("POST", ${endpoint}, body: payload);\nConsole.WriteLine(JsonSerializer.Serialize(response.Data));\n`;
   if (language === "java") return `// Maven: app.phaseo:phaseo-sdk\nimport app.phaseo.sdk.Phaseo;\nimport com.fasterxml.jackson.core.type.TypeReference;\nimport com.fasterxml.jackson.databind.ObjectMapper;\nimport java.util.Map;\n\npublic final class Main {\n  public static void main(String[] args) throws Exception {\n    var client = new Phaseo(System.getenv("PHASEO_API_KEY"), ${JSON.stringify(baseUrl)});\n    var payload = new ObjectMapper().readValue(${JSON.stringify(body)}, new TypeReference<Map<String, Object>>() {});\n    var response = client.request("POST", ${endpoint}, null, null, payload);\n    System.out.println(response);\n  }\n}\n`;
   if (language === "php") return `<?php\n// composer require phaseo/sdk\nrequire "vendor/autoload.php";\nuse Phaseo\\Sdk\\Phaseo;\n\n$client = new Phaseo(apiKey: getenv("PHASEO_API_KEY"), basePath: ${JSON.stringify(baseUrl)});\n$payload = json_decode(${singleQuotedLiteral(body)}, true, flags: JSON_THROW_ON_ERROR);\n$response = $client->requestWithResponse("POST", ${endpoint}, body: $payload);\necho $response->body . PHP_EOL;\n`;
   if (language === "ruby") return `# gem install phaseo_sdk\nrequire "json"\nrequire "phaseo_sdk"\n\nclient = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"), base_path: ${JSON.stringify(baseUrl)})\npayload = JSON.parse(${singleQuotedLiteral(body)})\nresponse = client.request_with_response(method: "POST", path: ${endpoint}, body: payload)\nputs response.body\n`;

@@ -1,4 +1,4 @@
-import { agentSdkSupportReason, convertTextProtocol, sdkCode, sdkRequestFromChat } from "./sdkExport";
+import { agentSdkSupportReason, convertTextProtocol, protocolSwitchSupportReason, sdkCode, sdkRequestFromChat } from "./sdkExport";
 
 test("exports the submitted body and selected endpoint without proxy credentials", () => {
   const request = sdkRequestFromChat("/api/chat/audio", { method: "POST", headers: { Authorization: "secret" }, body: JSON.stringify({
@@ -107,7 +107,15 @@ test("builds runnable TypeScript and Python Agent SDK samples from Responses req
   expect(python).toContain('input="Explain this request briefly."');
   expect(python).toContain('"max_output_tokens": 240');
   expect(python).toContain('"base_url": "https://api.phaseo.app/v1"');
+  expect(python).toContain('"api_key": os.environ["PHASEO_API_KEY"]');
   expect(python).toContain("request_options={");
+});
+
+test("maps gateway metadata flags to the Agent SDK option names", () => {
+  const request = { endpoint: "/responses", body: { model: "phaseo/free", input: "Hello", meta: true } };
+  expect(sdkCode(request, "agent-typescript")).toContain("includeMeta: true");
+  expect(sdkCode(request, "agent-typescript")).not.toContain("\n  meta:");
+  expect(sdkCode(request, "agent-python")).toContain("include_meta=True");
 });
 
 test("only offers Agent SDK samples when a request can be converted safely", () => {
@@ -161,6 +169,14 @@ test.each([
   expect(sdkCode({ endpoint: "/responses", body: { model: "phaseo/free", input: "Hello" } }, sample)).toContain(marker);
 });
 
+test("uses captured base URLs in Go and the C# response payload property", () => {
+  const request = { endpoint: "/responses", baseUrl: "http://localhost:8787/v1", body: { model: "phaseo/free", input: "Hello" } };
+  const go = sdkCode(request, "sdk-go");
+  expect(go).toContain('phaseo.NewPhaseo(os.Getenv("PHASEO_API_KEY"), "http://localhost:8787/v1")');
+  expect(go).not.toContain("NewPhaseoFromEnv");
+  expect(sdkCode(request, "sdk-csharp")).toContain("response.Data");
+});
+
 test.each([
   ["agent-typescript", "createGatewayAgentClient"], ["agent-python", "create_gateway_agent_client"],
   ["agent-go", "CreateGatewayAgentClient"], ["agent-csharp", "AgentSdk.CreateGatewayAgentClient"],
@@ -188,6 +204,30 @@ test("switches text-only requests between Responses, Chat Completions, and Messa
   expect(messages.body.system).toBe("Be concise.");
   expect(messages.body.max_tokens).toBe(64);
   expect(convertTextProtocol(messages, "responses")).toEqual(source);
+});
+
+test("preserves OpenAI text controls and disables incompatible Messages conversions", () => {
+  const source = {
+    endpoint: "/responses",
+    body: {
+      model: "phaseo/free", input: "Hello", presence_penalty: 0.2,
+      frequency_penalty: 0.3, seed: 7, stop: ["DONE"],
+    },
+  };
+  const chat = convertTextProtocol(source, "chat-completions");
+  expect(chat.body).toMatchObject({ presence_penalty: 0.2, frequency_penalty: 0.3, seed: 7, stop: ["DONE"] });
+  expect(protocolSwitchSupportReason(source, "chat-completions")).toBeNull();
+  expect(protocolSwitchSupportReason(source, "messages")).toContain("presence_penalty");
+});
+
+test("maps stop controls between Messages and OpenAI text shapes", () => {
+  const messages = {
+    endpoint: "/messages",
+    body: { model: "phaseo/free", messages: [{ role: "user", content: "Hello" }], max_tokens: 64, stop_sequences: ["DONE"] },
+  };
+  expect(convertTextProtocol(messages, "responses").body.stop).toEqual(["DONE"]);
+  const responses = { endpoint: "/responses", body: { model: "phaseo/free", input: "Hello", stop: ["DONE"] } };
+  expect(convertTextProtocol(responses, "messages").body.stop_sequences).toEqual(["DONE"]);
 });
 
 test("does not silently convert tool-bearing or multimodal protocol requests", () => {

@@ -89,8 +89,9 @@ export function RoomSdkExport() {
   if (!request) return null;
 
   const sourceProtocol = textProtocolForRequest(request);
-  const protocolReason = protocolSwitchSupportReason(request);
-  const activeProtocol = protocolReason ? sourceProtocol : protocol ?? sourceProtocol;
+  const requestedProtocol = protocol ?? sourceProtocol;
+  const requestedProtocolReason = requestedProtocol ? protocolSwitchSupportReason(request, requestedProtocol) : null;
+  const activeProtocol = requestedProtocolReason ? sourceProtocol : requestedProtocol;
   const activeRequest = activeProtocol && sourceProtocol && activeProtocol !== sourceProtocol ? convertTextProtocol(request, activeProtocol) : request;
   const agentSupport = agentSdkSupportReason(activeRequest);
   const selectedIntegration = integrations.find((integration) => integration.id === selection) ?? integrations[0];
@@ -163,8 +164,9 @@ export function RoomSdkExport() {
                 <span className="mr-1 text-xs font-medium text-muted-foreground">API shape</span>
                 <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5" aria-label="Text API shape">
                   {protocolOptions.map((option) => {
-                    const disabled = Boolean(protocolReason && option.id !== sourceProtocol);
-                    return <button key={option.id} type="button" disabled={disabled} title={disabled ? protocolReason ?? undefined : undefined} onClick={() => setProtocol(option.id)} className={cn("rounded-sm px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40", activeProtocol === option.id ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground")}>{option.label}</button>;
+                    const unavailableReason = protocolSwitchSupportReason(request, option.id);
+                    const disabled = Boolean(unavailableReason && option.id !== sourceProtocol);
+                    return <button key={option.id} type="button" disabled={disabled} title={disabled ? unavailableReason ?? undefined : undefined} onClick={() => setProtocol(option.id)} className={cn("rounded-sm px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40", activeProtocol === option.id ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground")}>{option.label}</button>;
                   })}
                 </div>
               </div>
