@@ -195,7 +195,7 @@ describe("buildProviderSections", () => {
 		});
 	});
 
-	test("normalizes duration summaries to a per-second rate", () => {
+	test("normalizes duration summaries to a per-minute rate", () => {
 		const provider = makeProviderPricing();
 		provider.provider_models = [{
 			...provider.provider_models[0],
@@ -232,10 +232,10 @@ describe("buildProviderSections", () => {
 
 		expect(buildProviderTablePriceSummary(sections, "input").primary).toMatchObject({
 			label: "video",
-			price: 0.01,
-			formattedPrice: "$0.01",
-			unitLabel: "Per second",
-			unitShortLabel: "/sec",
+			price: 0.6,
+			formattedPrice: "$0.6",
+			unitLabel: "Per minute",
+			unitShortLabel: "/min",
 		});
 	});
 
@@ -265,9 +265,9 @@ describe("buildProviderSections", () => {
 		expect(sections.otherRules).toHaveLength(1);
 		expect(buildProviderTablePriceSummary(sections, "input").primary).toMatchObject({
 			label: "audio",
-			price: 0.01,
-			unitLabel: "Per second",
-			unitShortLabel: "/sec",
+			price: 0.6,
+			unitLabel: "Per minute",
+			unitShortLabel: "/min",
 		});
 	});
 
@@ -450,10 +450,32 @@ describe("buildProviderSections", () => {
 		]);
 
 		expect(columns.map(({ label, headerUnitLabel }) => `${label} ${headerUnitLabel}`)).toEqual([
-			"Input $/1M",
-			"Input $/image",
-			"Output $/1M",
-			"Output $/MP",
+			"Text Input $/1M",
+			"Image Input $/image",
+			"Image Output $/1M",
+			"Image Output $/MP",
+		]);
+	});
+
+	test("separates text and audio token pricing into modality columns", () => {
+		const provider = makeProviderPricing();
+		const baseRule = provider.pricing_rules[0]!;
+		provider.pricing_rules = [
+			{ ...baseRule, id: "input-text", meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 3, match: [] },
+			{ ...baseRule, id: "input-audio", meter: "input_audio_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 20, match: [] },
+			{ ...baseRule, id: "output-text", meter: "output_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 12, match: [] },
+			{ ...baseRule, id: "output-audio", meter: "output_audio_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 40, match: [] },
+		];
+
+		const columns = buildProviderTablePriceColumns([
+			buildProviderSections(provider, "standard"),
+		]);
+
+		expect(columns.map(({ label, headerUnitLabel }) => `${label} ${headerUnitLabel}`)).toEqual([
+			"Text Input $/1M",
+			"Audio Input $/1M",
+			"Text Output $/1M",
+			"Audio Output $/1M",
 		]);
 	});
 
@@ -467,20 +489,21 @@ describe("buildProviderSections", () => {
 		const sections = buildProviderSections(provider, "standard");
 		const [column] = buildProviderTablePriceColumns([sections]);
 
-		expect(column).toMatchObject({ label: "Output", headerUnitLabel: "$/sec" });
-		expect(buildProviderTablePriceSummaryForColumn(sections, column!)).toMatchObject({
-			primary: { formattedPrice: "$0.06" },
-			secondary: { formattedPrice: "$0.12" },
-			sortValue: 0.06,
+		expect(column).toMatchObject({ label: "Output", headerUnitLabel: "$/min" });
+		const summary = buildProviderTablePriceSummaryForColumn(sections, column!);
+		expect(summary).toMatchObject({
+			primary: { formattedPrice: "$3.6" },
+			secondary: { formattedPrice: "$7.2" },
 		});
+		expect(summary.sortValue).toBeCloseTo(3.6);
 	});
 
 	test.each([
 		["token", 5, 5, "USD per 1M tokens"],
 		["character", 12, 12, "USD per 1M characters"],
 		["pixel", 0.053, 0.053, "USD per 1M pixels"],
-		["second", 1_000, 0.001, "USD per second"],
-		["minute", 60_000, 0.001, "USD per second"],
+		["second", 1_000, 0.06, "USD per minute"],
+		["minute", 60_000, 0.06, "USD per minute"],
 		["request", 2_000, 0.002, "USD per request"],
 		["page", 2_000, 0.002, "USD per page"],
 		["image", 40_000, 0.04, "USD per image"],
@@ -527,6 +550,10 @@ describe("buildProviderSections", () => {
 				unitLabel: "Per request",
 			}),
 		]);
+		expect(
+			buildProviderTablePriceColumns([sections])
+				.map(({ headerUnitLabel }) => headerUnitLabel),
+		).not.toContain("$/request");
 	});
 
 	test("shows only the base conditional context price in the provider table summary", () => {

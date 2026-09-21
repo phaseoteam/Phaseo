@@ -156,6 +156,8 @@ export type ProviderSections = {
 export type ProviderTablePriceCandidate = {
     key: string;
     label: string;
+    modality: Modality;
+    isPrimary: boolean;
     price: number;
     formattedPrice: string;
     unitLabel: string;
@@ -258,8 +260,9 @@ export function normalizePricingHistoryPrice(
     if (["token", "byte", "character", "pixel"].includes(normalizedUnit)) {
         return pricePer1MUnits;
     }
-    if (normalizedUnit === "minute") return pricePer1MUnits / 60_000_000;
-    if (normalizedUnit === "hour") return pricePer1MUnits / 3_600_000_000;
+    if (normalizedUnit === "second") return (pricePer1MUnits / 1_000_000) * 60;
+    if (normalizedUnit === "minute") return pricePer1MUnits / 1_000_000;
+    if (normalizedUnit === "hour") return pricePer1MUnits / 60_000_000;
     return pricePer1MUnits / 1_000_000;
 }
 
@@ -274,9 +277,9 @@ export function formatPricingHistoryUnitLabel(
         byte: "USD per 1M bytes",
         character: "USD per 1M characters",
         pixel: "USD per 1M pixels",
-        second: "USD per second",
-        minute: "USD per second",
-        hour: "USD per second",
+        second: "USD per minute",
+        minute: "USD per minute",
+        hour: "USD per minute",
         image: "USD per image",
         video: "USD per video",
         page: "USD per page",
@@ -1388,6 +1391,8 @@ export function buildProviderSections(
 function createTablePriceCandidate(args: {
     key: string;
     label: string;
+    modality: Modality;
+    isPrimary?: boolean;
     price: number;
     unitLabel: string;
     unit?: UnitClass;
@@ -1402,6 +1407,8 @@ function createTablePriceCandidate(args: {
     return {
         key: args.key,
         label: args.label,
+        modality: args.modality,
+        isPrimary: args.isPrimary ?? true,
         price: normalizedRate.price,
         formattedPrice:
             normalizedRate.formattedPrice ??
@@ -1440,10 +1447,10 @@ function normalizeTablePriceRate(
                 : durationUnit.startsWith("minute")
                     ? quantity * 60
                     : quantity;
-            const normalizedPrice = price / seconds;
+            const normalizedPrice = (price / seconds) * 60;
             return {
                 price: normalizedPrice,
-                unitLabel: "Per second",
+                unitLabel: "Per minute",
                 sortValue: normalizedPrice,
             };
         }
@@ -1527,6 +1534,7 @@ export type ProviderTablePriceDirection =
 export type ProviderTablePriceColumn = {
     key: string;
     direction: ProviderTablePriceDirection;
+    modality: Modality;
     label: string;
     unitLabel: string;
     headerUnitLabel: string;
@@ -1557,9 +1565,10 @@ export function getProviderTablePriceCandidates(
 		if (!tier) return;
 		candidates.push(
 			createTablePriceCandidate({
-				key: `${direction}-${modality}-tokens`,
-				label: modality,
-				price: tier.per1M,
+                key: `${direction}-${modality}-tokens`,
+                label: modality,
+                modality,
+                price: tier.per1M,
 				unitLabel: "Per 1M tokens",
 			}),
 		);
@@ -1590,6 +1599,7 @@ export function getProviderTablePriceCandidates(
                 createTablePriceCandidate({
                     key: `input-image-${index}`,
                     label: "image",
+                    modality: "image",
                     price: row.price,
                     unitLabel: row.unitLabel,
                     unit: row.unit,
@@ -1605,6 +1615,7 @@ export function getProviderTablePriceCandidates(
                 createTablePriceCandidate({
                     key: `input-video-${index}`,
                     label: "video",
+                    modality: "video",
                     price: row.price,
                     unitLabel: row.unitLabel,
                     unit: row.unit,
@@ -1628,6 +1639,7 @@ export function getProviderTablePriceCandidates(
                     createTablePriceCandidate({
                         key: `output-image-${row.quality}-${index}`,
                         label: "image",
+                        modality: "image",
                         price: item.price,
                         unitLabel: "Per image",
                         unit: "image",
@@ -1643,6 +1655,7 @@ export function getProviderTablePriceCandidates(
                 createTablePriceCandidate({
                     key: `output-video-${index}`,
                     label: "video",
+                    modality: "video",
                     price: row.price,
                     unitLabel: row.unitLabel,
                     unit: row.unit,
@@ -1671,6 +1684,12 @@ export function getProviderTablePriceCandidates(
             createTablePriceCandidate({
                 key: `${direction}-usage-${index}`,
                 label: parsed.mod === "other" ? "usage" : parsed.mod,
+                modality: parsed.mod,
+                isPrimary:
+                    parsed.dir === direction &&
+                    parsed.mod !== "other" &&
+                    parsed.unit !== "call" &&
+                    parsed.unit !== "usd",
                 price: row.price,
                 unitLabel: row.unitLabel,
                 unit: row.unit,
@@ -1687,6 +1706,8 @@ export function getProviderTablePriceCandidates(
                 createTablePriceCandidate({
                     key: `input-request-${index}`,
                     label: "request",
+                    modality: "other",
+                    isPrimary: false,
                     price: tier.price,
                     unitLabel: tier.unitLabel ?? "Per request",
                     unit: "call",
@@ -1707,12 +1728,23 @@ const PROVIDER_TABLE_PRICE_DIRECTION_LABELS: Record<ProviderTablePriceDirection,
     cachewrite: "Cache Write",
 };
 
+const PROVIDER_TABLE_MODALITY_ORDER: Modality[] = [
+    "text",
+    "image",
+    "audio",
+    "video",
+    "embeddings",
+    "decisions",
+    "multimodal",
+    "other",
+];
+
 const PROVIDER_TABLE_UNIT_ORDER = [
     "Per 1M tokens",
     "Per 1M characters",
     "Per 1M bytes",
     "Per 1M pixels",
-    "Per second",
+    "Per minute",
     "Per request",
     "Per page",
     "Per image",
@@ -1729,7 +1761,7 @@ export function formatProviderTableHeaderUnit(unitLabelValue: string): string {
         "Per 1M characters": "$/1M chars",
         "Per 1M bytes": "$/1M bytes",
         "Per 1M pixels": "$/MP",
-        "Per second": "$/sec",
+        "Per minute": "$/min",
         "Per request": "$/request",
         "Per page": "$/page",
         "Per image": "$/image",
@@ -1745,28 +1777,59 @@ export function formatProviderTableHeaderUnit(unitLabelValue: string): string {
 export function buildProviderTablePriceColumns(
     sectionsByOffering: ProviderSections[],
 ): ProviderTablePriceColumn[] {
+    const candidatesByDirection = new Map<
+        ProviderTablePriceDirection,
+        ProviderTablePriceCandidate[]
+    >();
+    for (const direction of PROVIDER_TABLE_PRICE_DIRECTIONS) {
+        candidatesByDirection.set(
+            direction,
+            sectionsByOffering.flatMap((sections) =>
+                getProviderTablePriceCandidates(sections, direction)
+                    .filter((candidate) => candidate.isPrimary),
+            ),
+        );
+    }
+    const visibleModalities = new Set(
+        Array.from(candidatesByDirection.values())
+            .flat()
+            .map((candidate) => candidate.modality)
+            .filter((modality) => modality !== "other"),
+    );
+    const showModality = visibleModalities.size > 1;
+
     return PROVIDER_TABLE_PRICE_DIRECTIONS.flatMap((direction) => {
-        const unitLabels = new Set<string>();
-        for (const sections of sectionsByOffering) {
-            for (const candidate of getProviderTablePriceCandidates(sections, direction)) {
-                unitLabels.add(candidate.unitLabel);
-            }
+        const columnKeys = new Map<string, { modality: Modality; unitLabel: string }>();
+        for (const candidate of candidatesByDirection.get(direction) ?? []) {
+            const key = `${candidate.modality}:${candidate.unitLabel}`;
+            columnKeys.set(key, {
+                modality: candidate.modality,
+                unitLabel: candidate.unitLabel,
+            });
         }
-        return Array.from(unitLabels)
+        return Array.from(columnKeys.values())
             .sort((left, right) => {
-                const leftRank = PROVIDER_TABLE_UNIT_ORDER.indexOf(left);
-                const rightRank = PROVIDER_TABLE_UNIT_ORDER.indexOf(right);
+                const leftModalityRank = PROVIDER_TABLE_MODALITY_ORDER.indexOf(left.modality);
+                const rightModalityRank = PROVIDER_TABLE_MODALITY_ORDER.indexOf(right.modality);
+                if (leftModalityRank !== rightModalityRank) {
+                    return leftModalityRank - rightModalityRank;
+                }
+                const leftRank = PROVIDER_TABLE_UNIT_ORDER.indexOf(left.unitLabel);
+                const rightRank = PROVIDER_TABLE_UNIT_ORDER.indexOf(right.unitLabel);
                 if (leftRank !== rightRank) {
                     return (leftRank < 0 ? 999 : leftRank) - (rightRank < 0 ? 999 : rightRank);
                 }
-                return left.localeCompare(right);
+                return left.unitLabel.localeCompare(right.unitLabel);
             })
-            .map((unitLabelValue) => ({
-                key: `${direction}:${unitLabelValue}`,
+            .map(({ modality, unitLabel }) => ({
+                key: `${direction}:${modality}:${unitLabel}`,
                 direction,
-                label: PROVIDER_TABLE_PRICE_DIRECTION_LABELS[direction],
-                unitLabel: unitLabelValue,
-                headerUnitLabel: formatProviderTableHeaderUnit(unitLabelValue),
+                label: showModality
+                    ? `${modalityLabel(modality) ?? "Usage"} ${PROVIDER_TABLE_PRICE_DIRECTION_LABELS[direction]}`
+                    : PROVIDER_TABLE_PRICE_DIRECTION_LABELS[direction],
+                unitLabel,
+                headerUnitLabel: formatProviderTableHeaderUnit(unitLabel),
+                modality,
             }));
     });
 }
@@ -1777,7 +1840,11 @@ export function buildProviderTablePriceSummaryForColumn(
 ): ProviderTablePriceSummary {
     const candidates = sortTablePriceCandidates(
         getProviderTablePriceCandidates(sections, column.direction)
-            .filter((candidate) => candidate.unitLabel === column.unitLabel),
+            .filter((candidate) =>
+                candidate.modality === column.modality &&
+                candidate.isPrimary &&
+                candidate.unitLabel === column.unitLabel,
+            ),
     );
     const primary = candidates[0] ?? null;
     const highest = candidates.at(-1) ?? null;
