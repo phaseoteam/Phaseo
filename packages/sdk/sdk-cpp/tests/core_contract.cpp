@@ -26,7 +26,7 @@ int main() {
   FakeTransport transport;
   transport.responses = {
       {503, {{"Retry-After", "0"}}, ""},
-      {200, {{"X-Request-Id", "req-1"}, {"X-Phaseo-Trace-Url", "https://trace.test/req-1"}}, "{}"},
+      {200, {{"X-Request-Id", "req/1"}}, "{}"},
       {503, {}, ""},
       {429, {{"X-Request-Id", "req-2"}}, "{}"},
   };
@@ -43,8 +43,8 @@ int main() {
 
   auto response = client.request("GET", "/safe");
   assert(response.status == 200);
-  assert(response.request_id() == "req-1");
-  assert(response.trace_url() == "https://trace.test/req-1");
+  assert(response.request_id() == "req/1");
+  assert(response.trace_url() == "https://phaseo.app/settings/usage/logs/requests/req%2F1");
   assert(requests == 2 && retries == 1 && responses == 1);
 
   phaseo::gen::RequestOptions write_options;

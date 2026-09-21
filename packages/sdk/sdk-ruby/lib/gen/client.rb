@@ -13,7 +13,7 @@ module Phaseo
         @headers = headers
         @body = body
         @request_id = headers["x-request-id"] || headers["request-id"]
-        @trace_url = headers["x-phaseo-trace-url"]
+        @trace_url = @request_id.nil? ? nil : "https://phaseo.app/settings/usage/logs/requests/#{URI.encode_www_form_component(@request_id).gsub("+", "%20")}"
       end
     end
 
@@ -26,7 +26,7 @@ module Phaseo
         @response_body = response_body
         @headers = headers
         @request_id = headers["x-request-id"] || headers["request-id"]
-        @trace_url = headers["x-phaseo-trace-url"]
+        @trace_url = @request_id.nil? ? nil : "https://phaseo.app/settings/usage/logs/requests/#{URI.encode_www_form_component(@request_id).gsub("+", "%20")}"
         @retry_after = headers["retry-after"]
         @code = parse_code(response_body)
       end
@@ -100,7 +100,16 @@ module Phaseo
         loop do
           http, req = build_request(method: normalized_method, path:, query:, headers:, body:, options:)
           @on_request&.call(method: normalized_method, path: path, attempt: attempt)
-          response = http.request(req)
+          begin
+            response = http.request(req)
+          rescue Net::OpenTimeout, Net::ReadTimeout, EOFError, IOError, SystemCallError, SocketError => error
+            raise if attempt >= retries
+            delay = retry_delay(nil, attempt)
+            @on_retry&.call(method: normalized_method, path: path, attempt: attempt + 1, error: error, delay: delay)
+            sleep(delay) if delay.positive?
+            attempt += 1
+            next
+          end
           response_headers = response.each_header.to_h
           status_code = response.code.to_i
           if retryable_status?(status_code) && attempt < retries

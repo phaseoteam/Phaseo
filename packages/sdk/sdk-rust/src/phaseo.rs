@@ -379,6 +379,15 @@ fn normalized_path(path: &str) -> String {
     }
 }
 
+fn request_trace_url(request_id: Option<&str>) -> Option<String> {
+    request_id.map(|id| {
+        format!(
+            "https://phaseo.app/settings/usage/logs/requests/{}",
+            url::form_urlencoded::byte_serialize(id.as_bytes()).collect::<String>()
+        )
+    })
+}
+
 fn parse_response(
     result: Result<ureq::Response, ureq::Error>,
 ) -> Result<PhaseoResponse, PhaseoError> {
@@ -387,7 +396,7 @@ fn parse_response(
             let status = response.status();
             let headers = response_headers(&response);
             let request_id = headers.get("x-request-id").cloned();
-            let trace_url = headers.get("x-phaseo-trace-url").cloned();
+            let trace_url = request_trace_url(request_id.as_deref());
             let raw = response.into_string().map_err(|error| PhaseoError {
                 message: error.to_string(),
                 status: Some(status),
@@ -412,6 +421,8 @@ fn parse_response(
         }
         Err(ureq::Error::Status(status, response)) => {
             let headers = response_headers(&response);
+            let request_id = headers.get("x-request-id").cloned();
+            let trace_url = request_trace_url(request_id.as_deref());
             let raw = response.into_string().unwrap_or_default();
             let body = parse_json_body(&raw);
             let message = body
@@ -428,12 +439,8 @@ fn parse_response(
                     .and_then(Value::as_str)
                     .or_else(|| body.get("code").and_then(Value::as_str))
                     .map(Into::into),
-                request_id: headers
-                    .get("x-request-id")
-                    .map(|value| value.clone().into_boxed_str()),
-                trace_url: headers
-                    .get("x-phaseo-trace-url")
-                    .map(|value| value.clone().into_boxed_str()),
+                request_id: request_id.map(String::into_boxed_str),
+                trace_url: trace_url.map(String::into_boxed_str),
                 retry_after: headers
                     .get("retry-after")
                     .map(|value| value.clone().into_boxed_str()),
@@ -542,7 +549,7 @@ mod tests {
         let server = thread::spawn(move || {
             let responses = [
                 "HTTP/1.1 503 Service Unavailable\r\nRetry-After: 0\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
-                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nX-Request-Id: req-rust\r\nX-Phaseo-Trace-Url: https://trace.test/req-rust\r\nContent-Length: 11\r\nConnection: close\r\n\r\n{\"ok\":true}",
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nX-Request-Id: req/rust\r\nContent-Length: 11\r\nConnection: close\r\n\r\n{\"ok\":true}",
                 "HTTP/1.1 503 Service Unavailable\r\nContent-Type: application/json\r\nX-Request-Id: req-rust-error\r\nContent-Length: 44\r\nConnection: close\r\n\r\n{\"error\":{\"code\":\"temporarily_unavailable\"}}",
             ];
             for response in responses {
@@ -604,10 +611,10 @@ mod tests {
                 },
             )
             .unwrap();
-        assert_eq!(read.request_id.as_deref(), Some("req-rust"));
+        assert_eq!(read.request_id.as_deref(), Some("req/rust"));
         assert_eq!(
             read.trace_url.as_deref(),
-            Some("https://trace.test/req-rust")
+            Some("https://phaseo.app/settings/usage/logs/requests/req%2Frust")
         );
 
         let error = client

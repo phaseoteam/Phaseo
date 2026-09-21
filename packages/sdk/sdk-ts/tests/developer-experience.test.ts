@@ -180,6 +180,16 @@ test("HTTP errors remain backwards compatible", () => {
   expect(new PhaseoHttpError({ status: 400, statusText: "Bad request", body: "bad" }).status).toBe(400);
 });
 
+test("request preserves null for successful empty responses", async () => {
+  const { client, mock } = setup([
+    { method: "DELETE", path: "/v1/files/file_1", status: 204 },
+    { method: "GET", path: "/v1/empty", status: 200 },
+  ]);
+  await expect(client.request("DELETE", "/files/file_1")).resolves.toBeNull();
+  await expect(client.request("GET", "/empty")).resolves.toBeNull();
+  mock.assertDone();
+});
+
 test("batch line limits count UTF-8 bytes across split code points and reset per row", async () => {
   const row = JSON.stringify({ response: "🎵".repeat(100) });
   const bytes = new TextEncoder().encode(row);

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use url::form_urlencoded;
 
 #[derive(Debug)]
 pub struct Response {
@@ -12,8 +13,8 @@ impl Response {
 		self.headers.get("x-request-id").or_else(|| self.headers.get("request-id")).map(String::as_str)
 	}
 
-	pub fn trace_url(&self) -> Option<&str> {
-		self.headers.get("x-phaseo-trace-url").map(String::as_str)
+	pub fn trace_url(&self) -> Option<String> {
+		self.request_id().map(|id| format!("https://phaseo.app/settings/usage/logs/requests/{}", form_urlencoded::byte_serialize(id.as_bytes()).collect::<String>()))
 	}
 }
 

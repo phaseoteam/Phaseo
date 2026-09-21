@@ -3,7 +3,7 @@ require_relative "../lib/gen/client"
 
 responses = [
   "HTTP/1.1 503 Service Unavailable\r\nRetry-After: 0\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
-  "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nX-Request-Id: req-1\r\nX-Phaseo-Trace-Url: https://trace.test/req-1\r\nContent-Length: 11\r\nConnection: close\r\n\r\n{\"ok\":true}",
+  "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nX-Request-Id: req/1\r\nContent-Length: 11\r\nConnection: close\r\n\r\n{\"ok\":true}",
   "HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
   "HTTP/1.1 429 Too Many Requests\r\nRetry-After: 2\r\nX-Request-Id: req-2\r\nContent-Type: application/json\r\nContent-Length: 34\r\nConnection: close\r\n\r\n{\"error\":{\"code\":\"rate_limit\"}}"
 ]
@@ -38,10 +38,10 @@ client = Phaseo::Gen::Client.new(
 )
 
 response = client.request_with_response(method: "GET", path: "/safe")
-raise "missing response metadata" unless response.status_code == 200 && response.request_id == "req-1"
-raise "missing trace URL" unless response.trace_url == "https://trace.test/req-1"
+raise "missing response metadata" unless response.status_code == 200 && response.request_id == "req/1"
+raise "missing trace URL" unless response.trace_url == "https://phaseo.app/settings/usage/logs/requests/req%2F1"
 raise "missing parsed body" unless response.body == { "ok" => true }
-raise "hooks did not run" unless events.count { |type, _| type == :request } == 2 && events.any? { |type, _| type == :retry }
+raise "hooks did not run" unless events.count { |type, _| type == :request } == 2 && events.count { |type, _| type == :retry } == 1
 
 begin
   client.request_with_response(
@@ -66,6 +66,29 @@ end
 
 server_thread.join
 raise "missing idempotency header" unless requests[2].downcase.include?("idempotency-key: idem-1")
+
+network_attempts = 0
+network_retries = 0
+fake_http = Object.new
+fake_http.define_singleton_method(:request) do |_request|
+  network_attempts += 1
+  raise Net::ReadTimeout.new("timeout") if network_attempts == 1
+
+  response = Net::HTTPOK.new("1.1", "200", "OK")
+  response.instance_variable_set(:@read, true)
+  response.instance_variable_set(:@body, "{}")
+  response
+end
+network_client = Phaseo::Gen::Client.new(
+  base_url: "http://example.test",
+  max_retries: 1,
+  on_retry: ->(**) { network_retries += 1 }
+)
+network_client.define_singleton_method(:build_request) do |**|
+  [fake_http, Net::HTTP::Get.new(URI("http://example.test/safe"))]
+end
+network_client.request_with_response(method: "GET", path: "/safe")
+raise "transport error was not retried" unless network_attempts == 2 && network_retries == 1
 
 begin
   client.request_with_response(method: "GET", path: "/invalid", options: { max_retries: -1 })

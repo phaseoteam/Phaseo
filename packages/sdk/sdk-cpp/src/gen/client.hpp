@@ -11,6 +11,16 @@
 
 namespace phaseo::gen {
 
+inline std::string encode_trace_id(const std::string& value) {
+	static constexpr char hex[] = "0123456789ABCDEF";
+	std::string encoded;
+	for (unsigned char ch : value) {
+		if (std::isalnum(ch) || ch == '-' || ch == '_' || ch == '.' || ch == '~') encoded.push_back(static_cast<char>(ch));
+		else { encoded.push_back('%'); encoded.push_back(hex[ch >> 4]); encoded.push_back(hex[ch & 0x0F]); }
+	}
+	return encoded;
+}
+
 struct Response {
 	int status = 0;
 	std::map<std::string, std::string> headers;
@@ -22,7 +32,7 @@ struct Response {
 		return std::nullopt;
 	}
 	std::optional<std::string> request_id() const { auto value = header("x-request-id"); return value ? value : header("request-id"); }
-	std::optional<std::string> trace_url() const { return header("x-phaseo-trace-url"); }
+	std::optional<std::string> trace_url() const { auto id = request_id(); return id ? std::optional<std::string>("https://phaseo.app/settings/usage/logs/requests/" + encode_trace_id(*id)) : std::nullopt; }
 };
 
 struct RequestOptions {

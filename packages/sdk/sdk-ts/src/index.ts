@@ -668,7 +668,7 @@ export class Phaseo {
     headers?: Record<string, string>;
     body?: unknown;
   } = {}): Promise<unknown> {
-    return (await this.requestWithResponse(method, path, options)).data;
+    return (await this.requestWithResponse(method, path, options)).data ?? null;
   }
 
   async requestWithResponse(method: string, path: string, options: RequestControls & {

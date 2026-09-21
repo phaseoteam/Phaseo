@@ -74,6 +74,7 @@ function renderModel(model: IRModel): string {
 function renderClient(): string {
 	return [
 		"use std::collections::HashMap;",
+		"use url::form_urlencoded;",
 		"",
 		"#[derive(Debug)]",
 		"pub struct Response {",
@@ -87,8 +88,8 @@ function renderClient(): string {
 		"\t\tself.headers.get(\"x-request-id\").or_else(|| self.headers.get(\"request-id\")).map(String::as_str)",
 		"\t}",
 		"",
-		"\tpub fn trace_url(&self) -> Option<&str> {",
-		"\t\tself.headers.get(\"x-phaseo-trace-url\").map(String::as_str)",
+		"\tpub fn trace_url(&self) -> Option<String> {",
+		"\t\tself.request_id().map(|id| format!(\"https://phaseo.app/settings/usage/logs/requests/{}\", form_urlencoded::byte_serialize(id.as_bytes()).collect::<String>()))",
 		"\t}",
 		"}",
 		"",
