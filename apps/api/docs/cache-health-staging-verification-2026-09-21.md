@@ -5,7 +5,8 @@ Status: pricing repair and local test blockers resolved; PR/CI/review required b
 ## Scope
 
 Clean branch `fix/gateway-production-cache-health-20260921`, based on remote main
-`a4974fa70c42b1e1bfadd01f28ba7295b4de1866`. No experimental request-state,
+`a4974fa70c42b1e1bfadd01f28ba7295b4de1866`, then rebased onto `c2a850fe6`
+before the final staging check. No experimental request-state,
 publication cron, escrow, or accounting projection implementation is included.
 The existing optimized request path still uses authoritative database reads on
 cache misses and uncertainty; it is not the database-free prototype.
@@ -27,7 +28,7 @@ Changes cover:
 ## Remote changes
 
 Only `phaseo-gateway-staging` was deployed. Latest version:
-`447f2339-2a0d-400e-bed4-c3d5122f66f5`.
+`cf9c5f89-690c-4cec-b332-86a38b5e9f12` (rebased release candidate).
 
 With explicit user approval, the missing `cached_read_text_tokens` meter was
 inserted at zero price for the active Laguna XS free SKU in production Supabase.
@@ -88,8 +89,14 @@ malformed staging KV marker were cleaned up and restoration verified.
   in 293 ms but Poolside returned HTTP 500, surfaced as gateway 502. The probe
   stopped and revoked its key. This is not a successful latency sample, and
   its null cost field is not evidence of measured zero cost.
-- Full gateway source suite now **4,407 passed, 0 failed** (578 files).
-  CLI fixture reflects the existing 40 scopes without changing permissions.
+- Final rebased candidate: XS HTTP 200, zero cost on all three requests;
+  dispatch overhead **334, 18, 4 ms** (one context miss, two hits). Request IDs:
+  `90668722-e154-43c6-aeb5-8d84c983523b`, `4f5d7999-ef70-4668-b0ec-71057bdd631e`,
+  `17804d97-3f47-4cfa-9f60-a3763e4eecef`. Disposable key revoked afterward.
+  Both observed latency targets passed; the earlier 621 ms result still stands.
+- Full rebased gateway source suite now **4,417 passed, 0 failed** (578 files).
+  The CLI fixture correction also landed on main; that upstream correction was
+  retained during rebase, without changing permissions.
   Alibaba Responses recognizes `input_items` when mapping reasoning effort;
   six effort mappings and unchanged Chat behavior are tested.
 
@@ -106,10 +113,12 @@ samples do not establish a cold-start or global SLO.
 - Audit regression suite: 17 passed; context bundle/timing: 33 passed.
 - Buffered completion, stream finalization, text/server-tool surfaces: 60 passed.
 - Files/batches fixtures and buffered surface integration: 71 passed.
-- Website deletion regression suite: 6 passed.
+- Website deletion regression suite: 6 passed; full web API source suite: 584 passed.
 - Gateway and web API TypeScript checks: passed.
 - Relevant ESLint checks: no errors; existing large-file warnings remain.
 - Global, EU, US Wrangler dry-run builds: passed.
+- New pricing migration regression and migration history validation: passed.
+- CI secret-boundary validation: 17 tests passed, policy check passed.
 - Native coordinator validation: 103 observations, 101 replay checks, zero
   outbound requests; concurrency, restart, dedupe, stale reports and publication
   retries checked. Coordinated routing simulator: 9 passed.
