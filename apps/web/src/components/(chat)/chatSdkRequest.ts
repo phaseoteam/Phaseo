@@ -26,6 +26,35 @@ function optionalNumber(body: Record<string, unknown>, key: string, value: unkno
 	if (typeof value === "number" && Number.isFinite(value)) body[key] = value;
 }
 
+function persistedMessageContent(message: ChatMessage): unknown | null {
+	if (message.role !== "user") return message.content;
+	const messageContext = asRecord(asRecord(message.meta)?.request_context);
+	const attachmentCount = typeof messageContext?.attachments_count === "number"
+		? messageContext.attachments_count
+		: 0;
+	const attachments = getInlineAttachmentPreviewsFromMeta(message.meta);
+	if (attachmentCount > attachments.length) return null;
+	if (!attachments.length) return message.content;
+
+	const content: Array<Record<string, unknown>> = [];
+	if (!/^\[Attachments?\]/.test(message.content)) {
+		content.push({ type: "input_text", text: message.content });
+	}
+	for (const attachment of attachments) {
+		if (attachment.isImage) content.push({ type: "input_image", image_url: attachment.dataUrl });
+		else if (attachment.isAudio) {
+			content.push({
+				type: "input_audio",
+				input_audio: {
+					data: attachment.dataUrl.includes(",") ? attachment.dataUrl.split(",")[1] ?? "" : attachment.dataUrl,
+					format: attachment.mimeType?.split("/")[1]?.split(";")[0]?.trim() || "wav",
+				},
+			});
+		} else if (attachment.isVideo) content.push({ type: "input_video", url: attachment.dataUrl });
+	}
+	return content;
+}
+
 export function sdkRequestFromTextThread(
 	thread: ChatThread | null,
 	baseUrl?: string,
@@ -42,32 +71,11 @@ export function sdkRequestFromTextThread(
 	if (!model) return null;
 
 	const settings = getEffectiveModelSettings(thread, model);
-	const attachmentCount = typeof context?.attachments_count === "number" ? context.attachments_count : 0;
-	const attachmentPreviews = getInlineAttachmentPreviewsFromMeta(latestUser.meta);
-	if (attachmentCount > attachmentPreviews.length) return null;
-
-	const input: Array<{ role: "system" | "user" | "assistant"; content: unknown }> = thread.messages.slice(0, latestUserIndex + 1).map((message) => ({
-		role: message.role,
-		content: message.content,
-	}));
-	if (attachmentPreviews.length) {
-		const content: Array<Record<string, unknown>> = [];
-		if (!/^\[Attachments?\]/.test(latestUser.content)) {
-			content.push({ type: "input_text", text: latestUser.content });
-		}
-		for (const attachment of attachmentPreviews) {
-			if (attachment.isImage) content.push({ type: "input_image", image_url: attachment.dataUrl });
-			else if (attachment.isAudio) {
-				content.push({
-					type: "input_audio",
-					input_audio: {
-						data: attachment.dataUrl.includes(",") ? attachment.dataUrl.split(",")[1] ?? "" : attachment.dataUrl,
-						format: attachment.mimeType?.split("/")[1]?.split(";")[0]?.trim() || "wav",
-					},
-				});
-			} else if (attachment.isVideo) content.push({ type: "input_video", url: attachment.dataUrl });
-		}
-		input[input.length - 1] = { role: "user", content };
+	const input: Array<{ role: "system" | "user" | "assistant"; content: unknown }> = [];
+	for (const message of thread.messages.slice(0, latestUserIndex + 1)) {
+		const content = persistedMessageContent(message);
+		if (content === null) return null;
+		input.push({ role: message.role, content });
 	}
 	const systemPrompt = settings.systemPrompt?.trim();
 	if (systemPrompt) input.unshift({ role: "system", content: systemPrompt });

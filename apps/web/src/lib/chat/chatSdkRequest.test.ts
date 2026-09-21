@@ -86,6 +86,27 @@ test("suppresses samples when a persisted attachment cannot be reproduced", () =
 	expect(request).toBeNull();
 });
 
+test("reconstructs attachments from earlier user turns", () => {
+	const request = sdkRequestFromTextThread({
+		...thread,
+		messages: [
+			{
+				id: "u-image",
+				role: "user",
+				content: "First turn",
+				createdAt: "2026-09-21T10:00:00Z",
+				meta: {
+					request_context: { attachments_count: 1 },
+					attachment_previews: [{ name: "example.png", mimeType: "image/png", dataUrl: "data:image/png;base64,abc", isImage: true, isAudio: false, isVideo: false }],
+				},
+			},
+			{ id: "a1", role: "assistant", content: "I see it", createdAt: "2026-09-21T10:00:10Z" },
+			{ id: "u2", role: "user", content: "Follow up", createdAt: "2026-09-21T10:01:00Z" },
+		],
+	});
+	expect(JSON.stringify(request?.body.input)).toContain("data:image/png;base64,abc");
+});
+
 test("preserves image-output modalities and disables streaming", () => {
 	const request = sdkRequestFromTextThread({
 		...thread,
