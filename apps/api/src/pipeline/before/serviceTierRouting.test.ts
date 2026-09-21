@@ -539,8 +539,21 @@ describe("applyServiceTierRouting", () => {
             body: { service_tier: "priority" },
             capability: "text.generate",
         });
-        expect(priorityResult.candidates).toHaveLength(0);
-        expect(priorityResult.diagnostics.remappedProviders).toEqual([]);
+		expect(priorityResult.candidates).toHaveLength(1);
+		expect(priorityResult.candidates[0]).toMatchObject({
+			providerId: "xiaomi",
+			apiModelId: "xiaomi/mimo-v2.6-pro",
+			pricingKey: "xiaomi:xiaomi/mimo-v2.6-pro:mimo-v2.6-pro-ultraspeed",
+			providerModelSlug: "mimo-v2.6-pro-ultraspeed",
+		});
+		expect(priorityResult.diagnostics.remappedProviders).toMatchObject([
+			{
+				providerId: "xiaomi",
+				fromApiModelId: "xiaomi/mimo-v2.6-pro",
+				toApiModelId: "mimo-v2.6-pro-ultraspeed",
+				reason: "priority_fast_sibling",
+			},
+		]);
     });
 
     it("does not treat unrelated -highspeed models as priority siblings", async () => {

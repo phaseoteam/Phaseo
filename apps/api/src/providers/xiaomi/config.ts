@@ -7,6 +7,6 @@ export const XIAOMI_OPENAI_COMPAT_CONFIGS = {
 		baseUrl: "https://api.xiaomimimo.com",
 		apiKeyEnv: "XIAOMI_MIMO_API_KEY",
 		baseUrlEnv: "XIAOMI_MIMO_BASE_URL",
-		supportsResponses: false,
+		supportsResponses: true,
 	},
 } satisfies Record<string, OpenAICompatConfig>;
