@@ -141,8 +141,7 @@ export function resolveRuntimeStatsPercentileAfterError(
 		: attemptedPercentile;
 }
 
-type SortOption =
-    | "default"
+type StaticSortOption =
     | "provider"
     | "input"
     | "output"
@@ -151,6 +150,8 @@ type SortOption =
     | "throughput"
     | "latency"
     | "uptime";
+type PriceColumnSortOption = `price:${string}`;
+type SortOption = "default" | StaticSortOption | PriceColumnSortOption;
 type SortDirection = "asc" | "desc";
 type ProviderStatusFilter = "routable" | "preview" | "inactive" | "external";
 type PrivacyFilter = "workspace" | "all" | "zdr" | "no_training";
@@ -169,7 +170,7 @@ type WorkspacePrivacySettings = {
     accountProviderRestrictionMode?: "none" | "allowlist" | "blocklist";
     accountProviderRestrictionProviderIds?: string[];
 };
-const DEFAULT_SORT_DIRECTIONS: Record<Exclude<SortOption, "default">, SortDirection> = {
+const DEFAULT_SORT_DIRECTIONS: Record<StaticSortOption, SortDirection> = {
     provider: "asc",
     input: "asc",
     output: "asc",
@@ -179,17 +180,6 @@ const DEFAULT_SORT_DIRECTIONS: Record<Exclude<SortOption, "default">, SortDirect
     latency: "asc",
     uptime: "desc",
 };
-
-const PROVIDER_TABLE_PRICE_DIRECTIONS: ReadonlyArray<{
-	direction: ProviderTablePriceDirection;
-	label: string;
-	sort: Extract<SortOption, "input" | "output" | "cache_read" | "cache_write">;
-}> = [
-	{ direction: "input", label: "Input", sort: "input" },
-	{ direction: "output", label: "Output", sort: "output" },
-	{ direction: "cached", label: "Cache Read", sort: "cache_read" },
-	{ direction: "cachewrite", label: "Cache Write", sort: "cache_write" },
-];
 
 const EMPTY_RUNTIME_STATS: ProviderRuntimeStatsMap = {};
 const EMPTY_ROUTING_HEALTH: ProviderRoutingStatusMap = {};
@@ -351,6 +341,7 @@ function getPreferredPlan(plans: string[]): string {
 }
 
 function parseSortOption(value: string | null): SortOption {
+    if (value?.startsWith("price:")) return value as PriceColumnSortOption;
     if (value === "pricing" || value === "input") return "input";
     if (value === "provider") return "provider";
     if (value === "output") return "output";
@@ -373,13 +364,35 @@ function getPriceDirectionForSort(
 	return null;
 }
 
+function getPriceColumnForSort(sort: SortOption): ProviderTablePriceColumn | null {
+    if (!sort.startsWith("price:")) return null;
+    const key = sort.slice("price:".length);
+    const [direction, modality, ...unitParts] = key.split(":");
+    if (
+        !["input", "output", "cached", "cachewrite"].includes(direction ?? "") ||
+        !modality ||
+        unitParts.length === 0
+    ) {
+        return null;
+    }
+    return {
+        key,
+        direction: direction as ProviderTablePriceDirection,
+        modality: modality as ProviderTablePriceColumn["modality"],
+        unitLabel: unitParts.join(":"),
+        label: "",
+        headerUnitLabel: "",
+    };
+}
+
 function isSortDirection(value: string | null): value is SortDirection {
     return value === "asc" || value === "desc";
 }
 
 function getDefaultSortDirection(sort: SortOption): SortDirection {
     if (sort === "default") return "desc";
-    return DEFAULT_SORT_DIRECTIONS[sort];
+    if (sort.startsWith("price:")) return "asc";
+    return DEFAULT_SORT_DIRECTIONS[sort as StaticSortOption];
 }
 
 function getProviderDefaultPlan(provider: ProviderPricing): string {
@@ -1224,13 +1237,25 @@ export default function ModelPricingClient({
             });
         }
 
+        const providerPriceColumn = getPriceColumnForSort(sort);
         const providerPriceDirection = getPriceDirectionForSort(sort);
-        if (providerPriceDirection) {
+        if (providerPriceColumn || providerPriceDirection) {
             return list.sort((a, b) => {
                 const statusCmp = byGatewayStatus(a, b);
                 if (statusCmp !== 0) return statusCmp;
-                const aPrice = getProviderSortPrice(a, providerPriceDirection);
-                const bPrice = getProviderSortPrice(b, providerPriceDirection);
+                const getSortPrice = (provider: ProviderPricing) => {
+                    if (!providerPriceColumn) {
+                        return getProviderSortPrice(provider, providerPriceDirection!);
+                    }
+                    const plan = getProviderDefaultPlan(provider);
+                    const sections = buildProviderSections(provider, plan, pricingTimeMs);
+                    return buildProviderTablePriceSummaryForColumn(
+                        sections,
+                        providerPriceColumn,
+                    ).sortValue;
+                };
+                const aPrice = getSortPrice(a);
+                const bPrice = getSortPrice(b);
                 if (aPrice == null && bPrice == null) return withCreatorBias(a, b);
                 if (aPrice == null) return 1;
                 if (bPrice == null) return -1;
@@ -1349,11 +1374,20 @@ export default function ModelPricingClient({
 			if (bValue == null) return -1;
 			return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
 		};
-		const priceFor = (offering: ProviderOffering, direction: ProviderTablePriceDirection) =>
-			buildProviderTablePriceSummary(
-				buildProviderSections(offering.provider, offering.plan, pricingTimeMs),
-				direction,
-			).sortValue;
+		const priceFor = (
+			offering: ProviderOffering,
+			direction: ProviderTablePriceDirection | null,
+			column: ProviderTablePriceColumn | null,
+		) => {
+			const sections = buildProviderSections(
+				offering.provider,
+				offering.plan,
+				pricingTimeMs,
+			);
+			return column
+				? buildProviderTablePriceSummaryForColumn(sections, column).sortValue
+				: buildProviderTablePriceSummary(sections, direction!).sortValue;
+		};
 		return offerings.sort((a, b) => {
 			const fallback = fallbackCompare(a, b);
 			if (sort === "provider") {
@@ -1390,11 +1424,12 @@ export default function ModelPricingClient({
 					fallback,
 				);
 			}
+			const priceColumn = getPriceColumnForSort(sort);
 			const priceDirection = getPriceDirectionForSort(sort);
-			if (!priceDirection) return fallback;
+			if (!priceColumn && !priceDirection) return fallback;
 			return metricCompare(
-				priceFor(a, priceDirection),
-				priceFor(b, priceDirection),
+				priceFor(a, priceDirection, priceColumn),
+				priceFor(b, priceDirection, priceColumn),
 				fallback,
 			);
 		});
@@ -1436,21 +1471,10 @@ export default function ModelPricingClient({
 		);
 		return buildProviderTablePriceColumns(sectionsByOffering).map((column) => ({
 			...column,
-			sort: PROVIDER_TABLE_PRICE_DIRECTIONS.find(({ direction }) => direction === column.direction)!.sort,
+			sort: `price:${column.key}` as PriceColumnSortOption,
 		}));
 	}, [displayedOfferings, pricingTimeMs]);
 	const providerTableMinWidth = 696 + visiblePriceColumns.length * 112;
-	const priceColumnCounts = useMemo(
-		() =>
-			visiblePriceColumns.reduce<Partial<Record<ProviderTablePriceDirection, number>>>(
-				(counts, column) => ({
-					...counts,
-					[column.direction]: (counts[column.direction] ?? 0) + 1,
-				}),
-				{},
-			),
-		[visiblePriceColumns],
-	);
     const providerTableViewportRef = useRef<HTMLDivElement>(null);
     const [providerTableOverflows, setProviderTableOverflows] = useState<boolean | null>(null);
     const [providerTableThumbWidth, setProviderTableThumbWidth] = useState<number | null>(null);
@@ -1676,19 +1700,11 @@ export default function ModelPricingClient({
 	};
 
 	const renderTablePriceHead = (column: (typeof visiblePriceColumns)[number]) => {
-		if (priceColumnCounts[column.direction] === 1) {
-			return renderTableSortHead(
-				column.label,
-				column.sort,
-				"right",
-				column.headerUnitLabel,
-			);
-		}
-
-		return (
-			<div className="text-xs font-medium text-muted-foreground">
-				{column.label} {column.headerUnitLabel}
-			</div>
+		return renderTableSortHead(
+			column.label,
+			column.sort,
+			"right",
+			column.headerUnitLabel,
 		);
 	};
 

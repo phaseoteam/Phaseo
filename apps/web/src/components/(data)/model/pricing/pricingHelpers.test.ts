@@ -479,6 +479,24 @@ describe("buildProviderSections", () => {
 		]);
 	});
 
+	test("keeps media cache meters out of the primary provider table", () => {
+		const provider = makeProviderPricing();
+		const baseRule = provider.pricing_rules[0]!;
+		provider.pricing_rules = [
+			{ ...baseRule, id: "input-text", meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 5, match: [] },
+			{ ...baseRule, id: "output-image", meter: "output_image_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 30, match: [] },
+			{ ...baseRule, id: "cached-text", meter: "cached_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 1.25, match: [] },
+			{ ...baseRule, id: "cached-image", meter: "cached_image_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 2, match: [] },
+		];
+
+		const columns = buildProviderTablePriceColumns([
+			buildProviderSections(provider, "standard"),
+		]);
+
+		expect(columns.map(({ label }) => label)).toContain("Text Cache Read");
+		expect(columns.map(({ label }) => label)).not.toContain("Image Cache Read");
+	});
+
 	test("collapses resolution-dependent video prices into a column range", () => {
 		const provider = makeProviderPricing();
 		const baseRule = provider.pricing_rules[0]!;

@@ -1560,6 +1560,7 @@ export function getProviderTablePriceCandidates(
     const pushTokenCandidate = (
         modality: "text" | "audio" | "image" | "video" | "embeddings" | "decisions",
         tiers?: TokenTier[] | null,
+        isPrimary = true,
     ) => {
 		const tier = getBaseTokenTier(tiers);
 		if (!tier) return;
@@ -1568,6 +1569,7 @@ export function getProviderTablePriceCandidates(
                 key: `${direction}-${modality}-tokens`,
                 label: modality,
                 modality,
+                isPrimary,
                 price: tier.per1M,
 				unitLabel: "Per 1M tokens",
 			}),
@@ -1578,16 +1580,16 @@ export function getProviderTablePriceCandidates(
         pushTokenCandidate("text", sections.textTokens?.cached);
         pushTokenCandidate("decisions", sections.decisionTokens?.cached);
         pushTokenCandidate("embeddings", sections.embeddingTokens?.cached);
-        pushTokenCandidate("image", sections.imageTokens?.cached);
-        pushTokenCandidate("audio", sections.audioTokens?.cached);
-        pushTokenCandidate("video", sections.videoTokens?.cached);
+        pushTokenCandidate("image", sections.imageTokens?.cached, false);
+        pushTokenCandidate("audio", sections.audioTokens?.cached, false);
+        pushTokenCandidate("video", sections.videoTokens?.cached, false);
     } else if (direction === "cachewrite") {
         pushTokenCandidate("text", sections.textTokens?.write);
         pushTokenCandidate("decisions", sections.decisionTokens?.write);
         pushTokenCandidate("embeddings", sections.embeddingTokens?.write);
-        pushTokenCandidate("image", sections.imageTokens?.write);
-        pushTokenCandidate("audio", sections.audioTokens?.write);
-        pushTokenCandidate("video", sections.videoTokens?.write);
+        pushTokenCandidate("image", sections.imageTokens?.write, false);
+        pushTokenCandidate("audio", sections.audioTokens?.write, false);
+        pushTokenCandidate("video", sections.videoTokens?.write, false);
     } else if (direction === "input") {
         pushTokenCandidate("text", sections.textTokens?.in);
         pushTokenCandidate("decisions", sections.decisionTokens?.in);
