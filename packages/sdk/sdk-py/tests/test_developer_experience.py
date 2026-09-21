@@ -4,7 +4,7 @@ import json
 import httpx
 import pytest
 from pydantic import BaseModel
-from phaseo import AsyncPhaseo, Phaseo, PhaseoHTTPError, JobFailedError, JobTimeoutError, parse_output, check_capabilities, batch_results
+from phaseo import AsyncPhaseo, Phaseo, PhaseoHTTPError, JobFailedError, JobTimeoutError, parse_output, check_capabilities, check_parameter_support, batch_results
 from phaseo.testing import MockTransport, job_fixtures
 from phaseo import collect_stream
 
@@ -139,6 +139,177 @@ def test_advertised_parameter_ranges():
         "capabilities": {"parameters": ["duration"], "parameter_details": {"duration": {"minimum": 5, "maximum": 10, "step": 5}}}}]}
     assert check_capabilities(model, parameter_values={"duration": 10})["ok"]
     assert not check_capabilities(model, parameter_values={"duration": 7})["ok"]
+
+
+def test_live_model_parameter_checks_identify_partial_support_and_invalid_values():
+    capabilities = {
+        "ok": True,
+        "id": "openai/gpt-5",
+        "endpoints": [
+            {
+                "id": "openai:responses",
+                "endpoint": "responses",
+                "public_path": "/v1/responses",
+                "provider": {"id": "openai"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature", "top_p"],
+                    "parameter_details": {
+                        "temperature": {"minimum": 0, "maximum": 2},
+                        "top_p": {"minimum": 0, "maximum": 1},
+                    },
+                },
+            },
+            {
+                "id": "azure:responses",
+                "endpoint": "responses",
+                "public_path": "/v1/responses",
+                "provider": {"id": "azure"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature"],
+                    "parameter_details": {"temperature": {"minimum": 0, "maximum": 1}},
+                },
+            },
+        ],
+    }
+    mock = MockTransport([
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+    ])
+    with httpx.Client(transport=mock) as http:
+        with Phaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+            supported = client.models.check_parameters(
+                "openai/gpt-5",
+                {"temperature": 0.7, "top_p": 0.9},
+                endpoint="responses",
+            )
+            assert supported["ok"]
+            assert next(item for item in supported["parameters"] if item["name"] == "top_p")["status"] == "partial"
+            assert [route["provider"] for route in supported["matching_routes"]] == ["openai"]
+
+            invalid = client.models.check_parameters("openai/gpt-5", {"temperature": 3})
+            assert not invalid["ok"]
+            assert "temperature must be at most 2" in " ".join(invalid["issues"])
+
+            unsupported = client.models.check_parameters("openai/gpt-5", {"seed": 42})
+            assert unsupported["parameters"][0]["status"] == "unsupported"
+            assert "seed is not supported" in " ".join(unsupported["issues"])
+    mock.assert_done()
+
+
+def test_parameter_reports_validate_types_preserve_partial_issues_and_omit_unknown_routes():
+    model = {
+        "id": "test/model",
+        "endpoints": [
+            {
+                "id": "wide",
+                "provider": {"id": "wide"},
+                "endpoint": "responses",
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature", "count", "mode"],
+                    "parameter_details": {
+                        "temperature": {"type": "number", "maximum": 2, "step": 0.5},
+                        "count": {"type": "integer"},
+                        "mode": {"values": [1]},
+                    },
+                },
+            },
+            {
+                "id": "narrow",
+                "provider": {"id": "narrow"},
+                "endpoint": "responses",
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature", "count", "mode"],
+                    "parameter_details": {
+                        "temperature": {"type": "number", "maximum": 1, "step": 0.5},
+                        "count": {"type": "integer"},
+                        "mode": {"values": [1]},
+                    },
+                },
+            },
+            {
+                "id": "unknown",
+                "provider": {"id": "unknown"},
+                "endpoint": "responses",
+                "routable": True,
+                "status": "active",
+                "capabilities": {},
+            },
+        ],
+    }
+
+    partial = check_parameter_support(model, {"temperature": 1.5})
+    assert partial["parameters"][0]["status"] == "partial"
+    assert "at most 1" in " ".join(partial["parameters"][0]["issues"])
+    assert partial["parameters"][0]["unsupported_by"] == []
+
+    invalid_type = check_parameter_support(model, {"count": 1.5})
+    assert invalid_type["parameters"][0]["status"] == "unsupported"
+    assert "must be an integer" in " ".join(invalid_type["parameters"][0]["issues"])
+
+    non_finite = check_parameter_support(model, {"temperature": float("inf")})
+    assert "must be finite" in " ".join(non_finite["parameters"][0]["issues"])
+
+    boolean_enum = check_parameter_support(model, {"mode": True})
+    assert "must be one of" in " ".join(boolean_enum["parameters"][0]["issues"])
+
+
+def test_model_capability_lookup_rejects_ambiguous_model_ids_before_requesting():
+    mock = MockTransport([])
+    with httpx.Client(transport=mock) as http:
+        with Phaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+            with pytest.raises(ValueError, match="author/slug format"):
+                client.models.capabilities("author/slug/extra")
+    mock.assert_done()
+
+    async def run():
+        async_mock = MockTransport([])
+        async with httpx.AsyncClient(transport=async_mock) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                with pytest.raises(ValueError, match="author/slug format"):
+                    await client.models.capabilities("author//slug")
+        async_mock.assert_done()
+
+    asyncio.run(run())
+
+
+def test_async_models_parameter_check_uses_the_same_live_report():
+    async def run():
+        capabilities = {
+            "ok": True,
+            "id": "openai/gpt-5",
+            "endpoints": [{
+                "id": "openai:responses",
+                "endpoint": "responses",
+                "public_path": "/v1/responses",
+                "provider": {"id": "openai"},
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature"],
+                    "parameter_details": {"temperature": {"minimum": 0, "maximum": 2}},
+                },
+            }],
+        }
+        mock = MockTransport([
+            {"method": "GET", "path": "/models/openai/gpt-5/endpoints", "json": capabilities},
+        ])
+        async with httpx.AsyncClient(transport=mock) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                report = await client.models.check_parameters("openai/gpt-5", {"temperature": 0.7})
+                assert report["ok"]
+                assert report["parameters"][0]["status"] == "supported"
+        mock.assert_done()
+
+    asyncio.run(run())
 
 
 def test_async_image_edits_use_multipart_and_preserve_file_ownership(tmp_path):

@@ -4,6 +4,8 @@ C++ SDK preview for Phaseo Gateway.
 
 This package currently exposes the generated headers and operation helpers.
 
+`src/phaseo.hpp` adds `GetModelEndpointCapabilities` plus `CheckParameterSupport`. The checker returns route matches and highlights unsupported, partially supported, unknown, and out-of-range values. Because the preview C++ transport returns raw JSON, deserialize the capability response into `ModelEndpointCapabilities` before calling the checker.
+
 ## Status
 
 - Preview SDK

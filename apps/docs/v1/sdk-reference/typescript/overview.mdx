@@ -75,6 +75,21 @@ parameterValues })` checks advertised capabilities and scalar constraints on one
 active provider offer. Missing metadata is reported as unknown. It never changes
 the model or drops parameters, and cannot guarantee a live provider will accept a request.
 
+For model selectors and parameter editors, use live endpoint metadata:
+
+```typescript
+const support = await client.models.checkParameters(
+  "openai/gpt-5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+```
+
+Each parameter is marked `supported`, `partial`, `unsupported`, or `unknown`,
+with provider routes and constraint issues suitable for inline highlighting.
+`client.models.capabilities(modelId)` returns the complete endpoint capability
+response. These explicit checks do not add a discovery request to generation calls.
+
 ## Local testing and website exports
 
 Import `createMockTransport` and `jobFixtures` from `@phaseo/sdk/testing` to inject

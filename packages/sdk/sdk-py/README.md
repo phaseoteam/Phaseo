@@ -57,6 +57,27 @@ Catch `httpx.TransportError` for connection failures.
   output_types=..., endpoints=..., parameters=..., parameter_values=...)` checks
   advertised metadata across a single available provider offer. Unknown facts
   fail preflight; the helper never changes the request or guarantees execution.
+- `models.check_parameters(id, values, endpoint=..., provider=...)` reads live
+  provider endpoint metadata and returns structured support states suitable for
+  highlighting in an editor or model selector.
+
+```python
+support = client.models.check_parameters(
+    "openai/gpt-5",
+    {"temperature": 0.7, "top_p": 0.9},
+    endpoint="responses",
+)
+
+for parameter in support["parameters"]:
+    print(parameter["name"], parameter["status"], parameter["issues"])
+```
+
+Each parameter is marked `supported`, `partial`, `unsupported`, or `unknown`.
+The report includes routes that accept the whole parameter set. Use
+`models.capabilities(id)` for the complete endpoint, provider, constraint,
+routing, and pricing metadata. The async client exposes the same awaitable
+methods. Checks are explicit so normal generation calls do not gain an extra
+network request.
 
 ## Local application tests
 
@@ -189,6 +210,8 @@ for chunk in client.stream_chat(
 - `client.messages.create(...)`
 - `client.stream_chat(...)`, `client.stream_responses(...)`, and `client.stream_message(...)` for parsed streaming chunks with `text`, `usage`, and `reasoning_tokens`
 - `client.models.list(...)`
+- `client.models.capabilities(model_id)`
+- `client.models.check_parameters(model_id, values, endpoint=..., provider=...)`
 - `client.list_organisations(...)` for paginated `/organisations` discovery
 - `client.list_pricing_models(...)` for `/pricing/models` catalogue pricing discovery
 - `client.calculate_pricing(...)` for `/pricing/calculate` usage estimation

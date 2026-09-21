@@ -15,6 +15,7 @@ The local wrapper at `packages/sdk/sdk-go/index.go` currently exposes these meth
 - `CreateSpeech(...)`, `CreateTranscription(...)`, `CreateTranslation(...)`
 - `CreateAnthropicMessage(...)`
 - `GetModels(...)`
+- `GetModelEndpointCapabilities(...)`, `CheckModelParameters(...)`
 - `ListOrganisations(...)`
 - `ListPricingModels(...)`
 - `CalculatePricing(...)`
@@ -53,3 +54,5 @@ if err != nil {
 }
 fmt.Println(models)
 ```
+
+`CheckModelParameters` uses live provider-route metadata to label each parameter as `supported`, `partial`, `unsupported`, or `unknown`, validate advertised values and ranges, and return the routes that accept the complete parameter set.

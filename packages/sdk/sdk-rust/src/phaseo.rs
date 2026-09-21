@@ -129,6 +129,63 @@ impl Phaseo {
         self.post("/responses", request)
     }
 
+    /// Returns live, provider-specific endpoint metadata for a model.
+    pub fn model_endpoint_capabilities(
+        &self,
+        model_id: &str,
+    ) -> Result<PhaseoResponse, PhaseoError> {
+        let mut parts = model_id.trim().splitn(2, '/');
+        let author = parts.next().unwrap_or("");
+        let slug = parts.next().unwrap_or("");
+        if author.is_empty() || slug.is_empty() {
+            return Err(PhaseoError::configuration(
+                "model ID must use author/slug format",
+            ));
+        }
+        let mut url = Url::parse(&self.base_url)
+            .map_err(|_| PhaseoError::configuration("Phaseo base URL must be a valid URL"))?;
+        {
+            let mut segments = url.path_segments_mut().map_err(|_| {
+                PhaseoError::configuration("Phaseo base URL cannot be used for model endpoints")
+            })?;
+            segments
+                .pop_if_empty()
+                .push("models")
+                .push(author)
+                .push(slug)
+                .push("endpoints");
+        }
+        let mut builder = self
+            .agent
+            .get(url.as_str())
+            .set("Authorization", &format!("Bearer {}", self.api_key))
+            .set("X-Phaseo-Client", "phaseo-rust")
+            .set("X-Phaseo-Client-Version", env!("CARGO_PKG_VERSION"))
+            .set(
+                "User-Agent",
+                concat!("phaseo-rust/", env!("CARGO_PKG_VERSION")),
+            );
+        for (name, value) in &self.headers {
+            builder = builder.set(name, value);
+        }
+        parse_response(builder.call())
+    }
+
+    /// Fetches endpoint metadata and evaluates the supplied parameter values.
+    pub fn check_model_parameters(
+        &self,
+        model_id: &str,
+        values: &HashMap<String, Value>,
+        options: &crate::ParameterSupportOptions,
+    ) -> Result<Value, PhaseoError> {
+        let response = self.model_endpoint_capabilities(model_id)?;
+        Ok(crate::check_parameter_support(
+            &response.body,
+            values,
+            options,
+        ))
+    }
+
     pub fn post(&self, path: &str, request: &Value) -> Result<PhaseoResponse, PhaseoError> {
         let url = format!("{}{}", self.base_url, normalized_path(path));
         let mut builder = self

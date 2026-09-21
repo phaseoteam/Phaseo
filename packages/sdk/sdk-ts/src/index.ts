@@ -19,6 +19,7 @@ import type {
   ImagesGenerationRequest,
   ImagesGenerationResponse,
   ListFilesResponse as FileListResponse,
+  ModelEndpointsResponse,
   ModelId as OapiModelId,
   ModerationsRequest,
   ModerationsResponse,
@@ -43,7 +44,17 @@ import * as ops from "./oapi-gen/client/index.js";
 import { PhaseoHttpError, Client } from "./runtime/client.js";
 import { createTransport, trackResponse, type RequestControls } from "./runtime/transport.js";
 import { JobHandle } from "./jobHandle.js";
-import { parseOutput, checkCapabilities, toFile, type OutputSchema, type CapabilityRequirements, type ModelCapabilities } from "./helpers.js";
+import {
+  parseOutput,
+  checkCapabilities,
+  checkParameterSupport,
+  toFile,
+  type OutputSchema,
+  type CapabilityRequirements,
+  type ModelCapabilities,
+  type ParameterSupportOptions,
+  type ParameterSupportReport,
+} from "./helpers.js";
 export { JobHandle } from "./jobHandle.js";
 export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type ResponseMetadata } from "./runtime/transport.js";
 import {
@@ -61,8 +72,18 @@ import { createAndWaitForJob, waitForJob, type JobWaitOptions } from "./jobs.js"
 export { JobFailedError, JobTimeoutError, JobCancelledError, type JobWaitOptions, type JobKind } from "./jobs.js";
 
 export type KnownModelId = GeneratedKnownModelId;
-export { parseOutput, outputText, collectStream, checkCapabilities, batchResults, matchBatchResult, downloadTo, toFile, StructuredOutputError, StreamResponseError } from "./helpers.js";
-export type { OutputSchema, CapabilityRequirements, CapabilityCheck, BatchResult } from "./helpers.js";
+export { parseOutput, outputText, collectStream, checkCapabilities, checkParameterSupport, batchResults, matchBatchResult, downloadTo, toFile, StructuredOutputError, StreamResponseError } from "./helpers.js";
+export type {
+  OutputSchema,
+  CapabilityRequirements,
+  CapabilityCheck,
+  BatchResult,
+  ParameterSupport,
+  ParameterSupportOptions,
+  ParameterSupportReport,
+  ParameterSupportStatus,
+  ParameterRouteReference,
+} from "./helpers.js";
 export type ModelIdLiteral = KnownModelId;
 /**
  * Model identifier in `provider/model` format (for example: `openai/gpt-5.4`).
@@ -358,6 +379,7 @@ export type {
   ModerationsResponse,
   MusicGenerateRequest,
   MusicGenerateResponse,
+  ModelEndpointsResponse,
   OcrRequest,
   OcrResponse,
   ParseRequest,
@@ -445,6 +467,13 @@ export class Phaseo {
 
   readonly models = {
     list: async (params: Record<string, unknown> = {}): Promise<ModelListResponse> => this.getModels(params),
+    capabilities: async (modelId: string, params: Record<string, unknown> = {}): Promise<ModelEndpointsResponse> =>
+      this.getModelEndpointCapabilities(modelId, params),
+    checkParameters: async (
+      modelId: string,
+      parameterValues: Record<string, unknown>,
+      options: ParameterSupportOptions = {},
+    ): Promise<ParameterSupportReport> => this.checkModelParameters(modelId, parameterValues, options),
     getDeprecationInfo: async (modelId: string): Promise<ModelLifecycleInfo | null> =>
       this.getModelDeprecationInfo(modelId),
     validate: async (modelId: string): Promise<{ ok: boolean; info: ModelLifecycleInfo | null; reason?: string }> =>
@@ -603,6 +632,34 @@ export class Phaseo {
     const payload = await this.getModels({ model_id: modelId, limit: 1 });
     const model = (payload as { models?: ModelCapabilities[] }).models?.find(item => (item.id ?? item.model_id) === modelId);
     return model ? checkCapabilities(model, requirements) : { ok: false, issues: [`Model ${modelId} was not found in the catalogue`] };
+  }
+
+  async getModelEndpointCapabilities(
+    modelId: string,
+    params: Record<string, unknown> = {},
+  ): Promise<ModelEndpointsResponse> {
+    const parts = modelId.split("/");
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+      throw new Error("modelId must use author/slug format");
+    }
+    const [author, slug] = parts;
+    return this.telemetry.wrap(
+      "models.capabilities",
+      () => ops.listModelEndpoints(this.client, {
+        path: { author, slug },
+        query: params as any,
+      }),
+      () => ({ model: modelId, ...params }),
+    );
+  }
+
+  async checkModelParameters(
+    modelId: string,
+    parameterValues: Record<string, unknown>,
+    options: ParameterSupportOptions = {},
+  ): Promise<ParameterSupportReport> {
+    const capabilities = await this.getModelEndpointCapabilities(modelId);
+    return checkParameterSupport(capabilities, parameterValues, options);
   }
 
   async request(method: string, path: string, options: {

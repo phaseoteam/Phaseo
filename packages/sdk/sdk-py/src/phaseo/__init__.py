@@ -17,7 +17,7 @@ from gen import operations as ops
 from phaseo_devtools import TelemetryRecorder, create_phaseo_devtools
 from .model_ids import MODEL_IDS, ModelIds
 from .transport import HttpClient, APIResponse, PhaseoHTTPError, request_trace_url
-from .helpers import parse_output, output_text, collect_stream, check_capabilities, batch_results, match_batch_result, StructuredOutputError, StreamResponseError
+from .helpers import parse_output, output_text, collect_stream, check_capabilities, check_parameter_support, batch_results, match_batch_result, StructuredOutputError, StreamResponseError
 from .async_client import AsyncPhaseo, AsyncJobHandle, collect_async_stream, ParsedOutput
 from .media import upload_input, download_to
 from .jobs import (
@@ -207,6 +207,24 @@ class _ModelsResource:
 
     def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._parent.get_models(params)
+
+    def capabilities(self, model_id: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._parent.get_model_endpoint_capabilities(model_id, params)
+
+    def check_parameters(
+        self,
+        model_id: str,
+        parameter_values: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        return self._parent.check_model_parameters(
+            model_id,
+            parameter_values,
+            endpoint=endpoint,
+            provider=provider,
+        )
 
     def get_deprecation_info(self, model_id: str) -> Optional[ModelLifecycleInfo]:
         return self._parent.get_model_deprecation_info(model_id)
@@ -1281,6 +1299,43 @@ class Phaseo:
             call=lambda: ops.listModels(self._client, query=request),
         )
 
+    def get_model_endpoint_capabilities(
+        self,
+        model_id: str,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        if model_id.count("/") != 1:
+            raise ValueError("model_id must use author/slug format")
+        author, slug = model_id.split("/", 1)
+        if not author or not slug:
+            raise ValueError("model_id must use author/slug format")
+        request = params or {}
+        return self._run_traced(
+            endpoint="models.capabilities",
+            request={"model": model_id, **request},
+            call=lambda: ops.listModelEndpoints(
+                self._client,
+                path={"author": author, "slug": slug},
+                query=request,
+            ),
+        )
+
+    def check_model_parameters(
+        self,
+        model_id: str,
+        parameter_values: dict[str, Any],
+        *,
+        endpoint: str | None = None,
+        provider: str | list[str] | None = None,
+    ) -> dict[str, Any]:
+        capabilities = self.get_model_endpoint_capabilities(model_id)
+        return check_parameter_support(
+            capabilities,
+            parameter_values,
+            endpoint=endpoint,
+            provider=provider,
+        )
+
     def list_team_models(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         request = params or {}
         return self._run_traced(
@@ -1843,6 +1898,7 @@ __all__ = [
     "StreamResponseError",
     "batch_results",
     "check_capabilities",
+    "check_parameter_support",
     "collect_async_stream",
     "collect_stream",
     "download_to",

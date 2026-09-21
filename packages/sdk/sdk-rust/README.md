@@ -32,6 +32,19 @@ Set `PHASEO_API_KEY` before running the example. `PHASEO_BASE_URL` can override 
 
 The generated low-level client remains available under `phaseo::gen` for endpoints not yet wrapped by the ergonomic client.
 
+Use `model_endpoint_capabilities` for live provider routes, or `check_model_parameters` to highlight unsupported, partially supported, unknown, and out-of-range values before submitting a request.
+
+```rust
+use phaseo::ParameterSupportOptions;
+use std::collections::HashMap;
+
+let report = client.check_model_parameters(
+    "openai/gpt-5.4",
+    &HashMap::from([("temperature".to_string(), json!(0.7))]),
+    &ParameterSupportOptions { endpoint: Some("responses".into()), providers: vec![] },
+)?;
+```
+
 ## Development
 
 ```bash
