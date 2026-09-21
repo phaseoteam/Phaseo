@@ -3,6 +3,7 @@ import Link from "next/link";
 import { fetchAdminCatalogRecord } from "@/lib/fetchers/internal/fetchAdminCatalog";
 import ModelLegacyEditor from "./ModelLegacyEditor";
 import ModelRevalidationControls from "./ModelRevalidationControls";
+import SendModelDiscordNotificationButton from "./SendModelDiscordNotificationButton";
 
 export default async function EditModelPage({
 	params,
@@ -27,9 +28,12 @@ export default async function EditModelPage({
 
 	return (
 		<div className="container mx-auto space-y-8 py-8">
-			<div>
-				<h1 className="text-2xl font-semibold">{String(row.name || "Edit model")}</h1>
-				<p className="font-mono text-xs text-muted-foreground">{row.model_id}</p>
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+				<div>
+					<h1 className="text-2xl font-semibold">{String(row.name || "Edit model")}</h1>
+					<p className="font-mono text-xs text-muted-foreground">{row.model_id}</p>
+				</div>
+				<SendModelDiscordNotificationButton modelId={modelId} />
 			</div>
 			<ModelLegacyEditor
 				key={`${modelId}:${initialTab ?? "basic"}`}

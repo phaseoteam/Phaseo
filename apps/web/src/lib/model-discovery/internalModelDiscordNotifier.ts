@@ -1,5 +1,6 @@
-// Legacy local/manual embed builder used by the internal notifier test page and discovery scripts.
-// Production private alerts are text-only in apps/api; public catalog embeds have their own Worker module.
+// Legacy local/manual embed helpers retained for compatibility callers.
+// The internal notifier and scheduled public announcements use the public catalog embed builder.
+// Production private alerts are text-only in apps/api.
 export type InternalModelNotificationModel = {
 	modelId: string;
 	modelName: string;

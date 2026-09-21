@@ -102,6 +102,69 @@ const modelNoticeSchema = z.object({
 	markdown: z.string().max(20_000),
 });
 
+const modelAnnouncementSchema = z.object({
+	modelId: z.string().trim().min(3).max(240).regex(/^[a-z0-9][a-z0-9._:/+@-]*$/).refine((value) => value.includes("/")),
+	payload: z.object({
+		content: z.string().max(2_000),
+		allowed_mentions: z.object({
+			parse: z.array(z.string()).max(25),
+			roles: z.array(z.string()).max(25),
+			users: z.array(z.string()).max(25),
+		}),
+		username: z.string().trim().min(1).max(80),
+		avatar_url: z.url().optional(),
+		embeds: z.array(z.record(z.string(), z.unknown())).min(1).max(10),
+	}).optional(),
+	webhookUrl: z.string().trim().optional(),
+});
+
+const modelAnnouncementTestSchema = modelAnnouncementSchema.omit({ modelId: true });
+
+const DISCORD_WEBHOOK_HOSTS = new Set([
+	"discord.com",
+	"discordapp.com",
+	"canary.discord.com",
+	"ptb.discord.com",
+	"canary.discordapp.com",
+	"ptb.discordapp.com",
+]);
+
+function resolveModelAnnouncementWebhookUrl(env: Env, override?: string): string {
+	const rawUrl = override?.trim() || env.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?.trim();
+	if (!rawUrl) throw new Error("DISCORD_WEBHOOK_NEW_MODELS_PUBLIC is not configured");
+	const parsed = new URL(rawUrl);
+	if (parsed.protocol !== "https:" || !DISCORD_WEBHOOK_HOSTS.has(parsed.hostname.toLowerCase())) {
+		throw new Error("Discord webhook URL host is not allowed");
+	}
+	const segments = parsed.pathname.split("/").filter(Boolean);
+	if (segments.length < 4 || segments[0] !== "api" || segments[1] !== "webhooks") {
+		throw new Error("Discord webhook URL path is invalid");
+	}
+	return parsed.toString();
+}
+
+async function sendModelAnnouncementWebhook(
+	env: Env,
+	payload: unknown,
+	webhookUrl?: string,
+): Promise<void> {
+	const response = await fetch(resolveModelAnnouncementWebhookUrl(env, webhookUrl), {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(payload),
+	});
+	if (!response.ok) {
+		const body = await response.text().catch(() => "");
+		throw new Error(`Discord webhook failed with HTTP ${response.status}${body ? `: ${body.slice(0, 300)}` : ""}`);
+	}
+}
+
+function isPublicModelRecord(row: { hidden?: boolean | null; status?: string | null }): boolean {
+	if (row.hidden === true) return false;
+	const status = row.status?.trim().toLowerCase();
+	return !status || !["draft", "disabled", "retired"].includes(status);
+}
+
 const modelAliasesSchema = z.array(z.object({
 	alias_slug: z.string().trim().min(1).max(240).regex(/^[a-z0-9][a-z0-9._:/+@-]*$/),
 	alias_type: z.string().trim().min(1).max(80).default("public"),
@@ -406,7 +469,7 @@ accountModelsRouter.get("/catalog/record", async (c) => {
 		const configs: Record<string, { table: string; select: string; column: string }> = {
 			provider: { table: "v2_providers", select: "api_provider_id:provider_slug,api_provider_name:name,base_url,country_code,subdivision_code,default_execution_regions,default_data_regions,residency_mode,provider_family_slug,offer_scope,offer_label,status,routing_enabled,routable,byok_available,metadata", column: "provider_slug" },
 			benchmark: { table: "v2_benchmarks", select: "id:benchmark_id,name,category,link,ascending_order", column: "benchmark_id" },
-			model: { table: "v2_models", select: "model_id:model_slug,name", column: "model_slug" },
+			model: { table: "v2_models", select: "model_id:model_slug,name,lab_slug,catalogue_status", column: "model_slug" },
 		};
 		const config = configs[resource ?? ""];
 		if (!config) return c.json({ error: "invalid_resource" }, 400, PRIVATE_NO_STORE_HEADERS);
@@ -511,6 +574,69 @@ for (const resource of ["organisations", "providers", "benchmarks", "subscriptio
 
 accountModelsRouter.post("/", async (c) => runCatalogMutation(c, "models", "create", null, await c.req.json().catch(() => null)));
 accountModelsRouter.delete("/catalog/models/:id", async (c) => runCatalogMutation(c, "models", "delete", c.req.param("id"), {}));
+
+accountModelsRouter.post("/catalog/model-announcements", async (c) => {
+	const admin = await requireAdminContext(c.req.raw, c.env);
+	if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+	const parsed = modelAnnouncementSchema.safeParse(await c.req.json().catch(() => null));
+	if (!parsed.success) return c.json({ error: "invalid_model_announcement", issues: parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
+
+	try {
+		const { client } = admin.context;
+		const model = await client
+			.from("v2_models")
+			.select("model_slug,catalogue_status,hidden,status")
+			.eq("model_slug", parsed.data.modelId)
+			.maybeSingle();
+		if (model.error) throw model.error;
+		if (!model.data) return c.json({ error: "model_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+
+		if (parsed.data.payload) {
+			await sendModelAnnouncementWebhook(c.env, parsed.data.payload, parsed.data.webhookUrl);
+		}
+
+		const announcedAt = new Date().toISOString();
+		let stateRecorded = true;
+		try {
+			const { error } = await client.from("model_discovery_public_announcements").upsert({
+				model_slug: model.data.model_slug,
+				status: "announced",
+				announced_at: announcedAt,
+				last_attempt_at: announcedAt,
+				last_error: null,
+				catalogue_status_snapshot: model.data.catalogue_status,
+				public_visibility_snapshot: isPublicModelRecord(model.data),
+				updated_at: announcedAt,
+			}, { onConflict: "model_slug" });
+			if (error) throw error;
+		} catch (error) {
+			stateRecorded = false;
+			console.error("[web-api/account/models] model announcement state update failed", { modelId: parsed.data.modelId, error });
+		}
+
+		return c.json({ success: true, stateRecorded }, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch (error) {
+		console.error("[web-api/account/models] model announcement delivery failed", { modelId: parsed.data.modelId, error });
+		return c.json({ error: "model_announcement_delivery_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+});
+
+accountModelsRouter.post("/catalog/model-announcements/test", async (c) => {
+	const admin = await requireAdminContext(c.req.raw, c.env);
+	if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+	const parsed = modelAnnouncementTestSchema.safeParse(await c.req.json().catch(() => null));
+	if (!parsed.success || !parsed.data.payload) {
+		return c.json({ error: "invalid_model_announcement_test", issues: parsed.success ? [] : parsed.error.issues }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
+
+	try {
+		await sendModelAnnouncementWebhook(c.env, parsed.data.payload, parsed.data.webhookUrl);
+		return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch (error) {
+		console.error("[web-api/account/models] model announcement test delivery failed", { error });
+		return c.json({ error: "model_announcement_delivery_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+});
 
 accountModelsRouter.put("/:modelId/graph", async (c) => {
 	const admin = await requireAdminContext(c.req.raw, c.env);

@@ -963,15 +963,19 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			pending: 0,
 			error: null,
 		};
-		try {
-			publicModelAnnouncements = await runPublicModelAnnouncementCheck({
-				runId,
-				notify: shouldNotify,
-			});
-		} catch (error) {
-			const reason = error instanceof Error ? error.message : String(error);
-			publicModelAnnouncements.error = reason;
-			console.error("[model-discovery] Public model announcement check failed:", reason);
+		// Scheduled release checks run independently each minute so they do not
+		// wait for the slower provider discovery sweep to finish.
+		if (args.trigger !== "scheduled") {
+			try {
+				publicModelAnnouncements = await runPublicModelAnnouncementCheck({
+					runId,
+					notify: shouldNotify,
+				});
+			} catch (error) {
+				const reason = error instanceof Error ? error.message : String(error);
+				publicModelAnnouncements.error = reason;
+				console.error("[model-discovery] Public model announcement check failed:", reason);
+			}
 		}
 
 		let pricingMonitor: PricingMonitorSummary = {

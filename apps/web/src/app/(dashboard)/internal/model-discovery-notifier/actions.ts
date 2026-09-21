@@ -2,12 +2,14 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import {
-	buildWebhookPayload,
-	sendDiscordWebhookPayload,
-	type InternalModelNotificationModel,
-} from "@/lib/model-discovery/internalModelDiscordNotifier";
+import type { InternalModelNotificationModel } from "@/lib/model-discovery/internalModelDiscordNotifier";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
+import {
+	fetchAdminCatalogRecord,
+	sendAdminModelAnnouncement,
+	sendAdminModelAnnouncementTest,
+} from "@/lib/fetchers/internal/fetchAdminCatalog";
+import { buildPublicModelAnnouncementPayload } from "../../../../../../api/src/pipeline/model-discovery/public-model-announcement-discord";
 
 type NotifierTestResult = {
 	ok: boolean;
@@ -120,16 +122,13 @@ function titleCaseFromSlug(raw: string): string {
 function toModelUrlFromId(modelId: string): string {
 	const trimmed = modelId.trim();
 	if (!trimmed) return "https://phaseo.app/models";
-	const parts = trimmed.split("/");
-	if (parts.length < 2) return "https://phaseo.app/models";
-	const organisation = encodeURIComponent(parts[0]);
-	const slug = encodeURIComponent(parts.slice(1).join("/"));
-	return `https://phaseo.app/models/${organisation}/${slug}`;
+	const segments = trimmed.split("/").map((segment) => segment.trim()).filter(Boolean).map(encodeURIComponent);
+	return segments.length > 0 ? `https://phaseo.app/models/${segments.join("/")}` : "https://phaseo.app/models";
 }
 
-function toModelOgUrlFromId(modelId: string): string {
+function toPublicModelImageUrl(modelId: string): string {
 	const segments = modelId.split("/").filter(Boolean).map((segment) => encodeURIComponent(segment));
-	return segments.length > 0 ? `https://phaseo.app/og/models/${segments.join("/")}?discovery=1` : "https://phaseo.app/og.png";
+	return segments.length > 0 ? `https://phaseo.app/og/models/${segments.join("/")}` : "https://phaseo.app/og.png";
 }
 
 function parseModelLine(rawLine: string): InternalModelNotificationModel | null {
@@ -148,7 +147,7 @@ function parseModelLine(rawLine: string): InternalModelNotificationModel | null 
 				.replace(/\/+/g, "/")
 				.replace(/^\/|\/$/g, "") || leftRaw.toLowerCase().replace(/\s+/g, "-");
 		if (!modelName || !modelUrl || !modelId) return null;
-		return { modelId, modelName, modelUrl, imageUrl: toModelOgUrlFromId(modelId) };
+		return { modelId, modelName, modelUrl, imageUrl: toPublicModelImageUrl(modelId) };
 	}
 
 	if (/^https?:\/\//i.test(line)) {
@@ -165,7 +164,7 @@ function parseModelLine(rawLine: string): InternalModelNotificationModel | null 
 			modelId,
 			modelName: titleCaseFromSlug(slug),
 			modelUrl,
-			imageUrl: toModelOgUrlFromId(modelId),
+			imageUrl: toPublicModelImageUrl(modelId),
 		};
 	}
 
@@ -174,7 +173,7 @@ function parseModelLine(rawLine: string): InternalModelNotificationModel | null 
 		modelId,
 		modelName: titleCaseFromSlug(modelId.split("/").at(-1) ?? modelId),
 		modelUrl: toModelUrlFromId(modelId),
-		imageUrl: toModelOgUrlFromId(modelId),
+		imageUrl: toPublicModelImageUrl(modelId),
 	};
 }
 
@@ -211,10 +210,13 @@ export async function testInternalModelDiscoveryNotifierAction(
 			};
 		}
 
-		const payload = buildWebhookPayload(models, trimOrNull(input.roleId), {
+		const payload = buildPublicModelAnnouncementPayload(models, trimOrNull(input.roleId), {
 			discordUserId: trimOrNull(input.userId),
 			includeMentions: true,
 			avatarUrl: null,
+			username: "Phaseo Public Model Discovery",
+			latestModelsUrl: "https://phaseo.app/models",
+			message: "Public model catalog updates detected.",
 			maxModelEmbeds: 10,
 		});
 		const payloadPreview = JSON.stringify(payload, null, 2);
@@ -228,25 +230,7 @@ export async function testInternalModelDiscoveryNotifierAction(
 			};
 		}
 
-		const webhookUrl =
-			trimOrNull(input.webhookUrl) ??
-			trimOrNull(process.env.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC) ??
-			null;
-		if (!webhookUrl) {
-			return {
-				ok: false,
-				message: "Webhook URL missing. Provide one in the form or set DISCORD_WEBHOOK_NEW_MODELS_PUBLIC.",
-				payloadPreview,
-				modelCount: models.length,
-			};
-		}
-
-		await sendDiscordWebhookPayload(webhookUrl, payload, {
-			maxAttempts: 3,
-			timeoutMs: 10_000,
-			retryDelayMs: 750,
-			logger: console,
-		});
+		await sendAdminModelAnnouncementTest(payload, trimOrNull(input.webhookUrl) ?? undefined);
 
 		return {
 			ok: true,
@@ -262,5 +246,59 @@ export async function testInternalModelDiscoveryNotifierAction(
 			payloadPreview: "",
 			modelCount: 0,
 		};
+	}
+}
+
+export async function sendInternalModelAnnouncementAction(
+	rawModelId: string,
+): Promise<{ ok: boolean; message: string }> {
+	try {
+		await requireAdmin();
+
+		const modelId = trimOrNull(rawModelId)?.toLowerCase();
+		if (!modelId || !modelId.includes("/") || !/^[a-z0-9][a-z0-9._:/+@-]*$/.test(modelId)) {
+			return { ok: false, message: "Invalid model ID." };
+		}
+
+		const { row } = await fetchAdminCatalogRecord("model", modelId);
+		if (!row) return { ok: false, message: "Model not found in the catalog." };
+
+		const canonicalModelId = trimOrNull(String(row.model_id ?? ""))?.toLowerCase();
+		if (!canonicalModelId) return { ok: false, message: "Model ID is missing from the catalog record." };
+		const labSlug = (
+			trimOrNull(typeof row.lab_slug === "string" ? row.lab_slug : null) ??
+			canonicalModelId.split("/")[0] ??
+			"phaseo"
+		).toLowerCase();
+		const lab = loadOrganisationMetaMap()[labSlug];
+		const modelName = trimOrNull(typeof row.name === "string" ? row.name : null) ?? canonicalModelId;
+		const nowIso = new Date().toISOString();
+		const payload = buildPublicModelAnnouncementPayload([{
+			modelId: canonicalModelId,
+			modelName,
+			modelUrl: toModelUrlFromId(canonicalModelId),
+			imageUrl: toPublicModelImageUrl(canonicalModelId),
+			creatorId: labSlug,
+			creatorName: lab?.name ?? titleCaseFromSlug(labSlug),
+			creatorColor: lab?.colour,
+			changeSummaryLines: ["Shared by the Phaseo team."],
+		}], null, {
+			username: "Phaseo Public Model Discovery",
+			avatarUrl: "https://phaseo.app/png_logo_light.png",
+			latestModelsUrl: "https://phaseo.app/models",
+			message: "Model announcement from Phaseo.",
+			includeMentions: false,
+			maxModelEmbeds: 1,
+			nowIso,
+		});
+		const result = await sendAdminModelAnnouncement(canonicalModelId, payload);
+		if (result.stateRecorded === false) {
+			return { ok: true, message: "Sent the Discord announcement, but could not save its state." };
+		}
+
+		return { ok: true, message: "Sent a Discord announcement for " + modelName + "." };
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Unknown error";
+		return { ok: false, message: "Discord announcement failed: " + message };
 	}
 }
