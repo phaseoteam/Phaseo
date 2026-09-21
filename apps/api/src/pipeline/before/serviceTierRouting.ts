@@ -60,7 +60,7 @@ const PRIORITY_SIBLING_ROUTES = new Map<string, PrioritySiblingRoute>([
     }],
     ["xiaomi/mimo-v2.6-pro", {
         lookupId: "mimo-v2.6-pro-ultraspeed",
-        requestTiers: ["fast"],
+		requestTiers: ["fast", "priority"],
     }],
 ]);
 
