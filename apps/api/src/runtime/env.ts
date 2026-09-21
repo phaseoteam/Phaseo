@@ -9,6 +9,7 @@ import type { ResponseCacheStore } from "@/core/response-cache";
 
 import { BINDING_KEYS } from "./env.binding-keys";
 import type { GatewayBindings } from "./env.types";
+import { assertSupabaseAllowed } from "./request-state-scope";
 
 export type { GatewayBindings, GatewayRuntime } from "./env.types";
 
@@ -61,7 +62,10 @@ export function configureRuntime(env: GatewayBindings) {
     const bindings = snapshotBindings(env);
     lastBindingsSnapshot = bindings;
 
-    const globalFetch: typeof fetch = (input, init) => fetch(input, init);
+    const globalFetch: typeof fetch = (input, init) => {
+        assertSupabaseAllowed();
+        return fetch(input, init);
+    };
 
     const reusable = cachedSupabase?.url === bindings.SUPABASE_URL && cachedSupabase.key === bindings.SUPABASE_SERVICE_ROLE_KEY;
     const supabaseAdmin = reusable ? cachedSupabase!.client : createClient(bindings.SUPABASE_URL, bindings.SUPABASE_SERVICE_ROLE_KEY, {
@@ -152,6 +156,7 @@ export function getCache(): KVNamespace {
 }
 
 export function getSupabaseAdmin(): SupabaseClient {
+    assertSupabaseAllowed();
     return ensureRuntime().supabase;
 }
 
@@ -170,4 +175,3 @@ export function getByokKey(version: number): string {
     const s = String(raw).trim().replace(/^["']|["']$/g, "");
     return s.startsWith("base64:") ? s.slice(7) : s;
 }
-

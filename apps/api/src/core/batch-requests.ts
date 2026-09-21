@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/runtime/env";
+import { isRequestStateWorkspace, workspaceState } from "./request-state/client";
 
 export type BatchRequestStatus =
 	| "queued"
@@ -128,8 +129,12 @@ export async function saveBatchRequestRows(args: {
 	rows: BatchRequestRowInput[];
 }): Promise<void> {
 	if (!args.workspaceId || !args.batchId || args.rows.length === 0) return;
-	const supabase = getSupabaseAdmin();
 	const payload = args.rows.map((row) => toDbRow(args.workspaceId, args.batchId, row));
+	if (isRequestStateWorkspace(args.workspaceId)) {
+		for (const row of payload) await workspaceState(args.workspaceId).rowPut("gateway_batch_requests", row);
+		return;
+	}
+	const supabase = getSupabaseAdmin();
 	const { error } = await supabase
 		.from("gateway_batch_requests")
 		.upsert(payload, { onConflict: "workspace_id,batch_id,custom_id" });
@@ -146,6 +151,12 @@ export async function listBatchRequestRows(args: {
 	if (!args.workspaceId || !args.batchId) return [];
 	const limit = Math.max(1, Math.min(1000, Math.trunc(args.limit ?? 100)));
 	const offset = Math.max(0, Math.trunc(args.offset ?? 0));
+	if (isRequestStateWorkspace(args.workspaceId)) {
+		const rows = await workspaceState(args.workspaceId).rowList("gateway_batch_requests", {
+			equals: { batch_id: args.batchId, ...(normalizeText(args.status) ? { status: normalizeText(args.status)! } : {}) },
+			order: "request_index", ascending: true, limit, offset });
+		return rows.map(({ row }) => fromDbRow(row));
+	}
 	let query = getSupabaseAdmin()
 		.from("gateway_batch_requests")
 		.select("*")

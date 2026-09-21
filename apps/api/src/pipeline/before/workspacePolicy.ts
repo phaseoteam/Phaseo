@@ -1,4 +1,5 @@
 import { normalizeProviderList } from "@/lib/config/providerAliases";
+import { isRequestStateWorkspace, readPublishedPolicy } from "@core/request-state/client";
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
 import type { PriceCard } from "../pricing";
@@ -505,16 +506,22 @@ export async function fetchWorkspacePolicy(args: {
 	workspaceId: string;
 	apiKeyId: string;
 }): Promise<WorkspacePolicy> {
+	if (isRequestStateWorkspace(args.workspaceId)) return readPublishedPolicy(args);
+	return compileWorkspacePolicy(args);
+}
+
+/** Used only by the control-plane publisher. */
+export async function compileWorkspacePolicy(args: Parameters<typeof fetchWorkspacePolicy>[0], fresh = false): Promise<WorkspacePolicy> {
 	const [workspaceVersionToken, apiKeyVersionToken] = await Promise.all([
 		getWorkspacePolicyVersionToken(args.workspaceId),
 		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: 5_000 }),
 	]);
 	const versionToken = `${workspaceVersionToken}:${apiKeyVersionToken}`;
 	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
-	if (cached) return cached;
+	if (cached && !fresh) return cached;
 
 	try {
-		const raw = await getCache().get(
+		const raw = fresh ? null : await getCache().get(
 			workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken),
 			"text",
 		);

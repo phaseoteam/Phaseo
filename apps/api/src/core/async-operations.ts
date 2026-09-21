@@ -3,6 +3,7 @@
 // How: Store operation records in Supabase with team+kind+internalId identity.
 
 import { getSupabaseAdmin } from "@/runtime/env";
+import { publishedWorkspace, isRequestStateWorkspace, workspaceState } from "./request-state/client";
 
 export type AsyncOperationKind = "video" | "batch" | "music";
 const ASYNC_OPERATION_L1_TTL_MS = 1_000;
@@ -193,6 +194,10 @@ export async function upsertAsyncOperation(args: {
 	if (Object.prototype.hasOwnProperty.call(args, "nextReconcileAt")) {
 		payload.next_reconcile_at = normalizeText(args.nextReconcileAt) ?? null;
 	}
+	if (isRequestStateWorkspace(workspaceId)) {
+		await workspaceState(workspaceId).rowPut("gateway_async_operations", payload);
+		return;
+	}
 
 	const { error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
@@ -209,6 +214,13 @@ export async function listAsyncOperations(args: {
 	statuses?: Array<string | null>;
 	unbilledOnly?: boolean;
 }): Promise<AsyncOperationRecord[]> {
+	const enrolled = publishedWorkspace();
+	if (enrolled) {
+		const rows = await workspaceState(enrolled).rowList("gateway_async_operations", {
+			equals: { kind: args.kind, ...(args.unbilledOnly ? { billed_at: null } : {}) }, statuses: args.statuses,
+			limit: args.limit, offset: args.offset, ascending: true });
+		return rows.map(({ row }) => mapRow(row as AsyncOperationRow)).filter(row => !args.providers?.length || args.providers.includes(row.provider ?? ""));
+	}
 	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.min(500, Math.trunc(args.limit!))) : 100;
 	const offset = Number.isFinite(args.offset) ? Math.max(0, Math.trunc(args.offset!)) : 0;
 	let query = getSupabaseAdmin()
@@ -266,6 +278,8 @@ async function callWebhookDeliveryRpc(name: string, args: {
 	previousStatus?: string | null;
 	currentStatus?: string | null;
 }): Promise<boolean> {
+	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).webhookClaim(
+		name === "claim_gateway_async_webhook_delivery" ? "claim" : name === "complete_gateway_async_webhook_delivery" ? "complete" : "release", args);
 	const params: Record<string, unknown> = {
 		p_workspace_id: args.workspaceId,
 		p_kind: args.kind,
@@ -322,6 +336,15 @@ export function releaseAsyncWebhookDeliveryClaim(args: {
 }
 
 export async function listPendingAsyncWebhookDeliveries(limit = 100): Promise<PendingAsyncWebhookDelivery[]> {
+	const enrolled = publishedWorkspace();
+	if (enrolled) {
+		const rows = await workspaceState(enrolled).rowList("gateway_async_webhook_deliveries", { statuses: ["pending", "claimed"], order: "next_attempt_at", ascending: true, limit: 1000 });
+		return rows.filter(({ row }) => (row.kind === "video" || row.kind === "batch") && row.event_type && row.phase &&
+			(row.status === "pending" ? Date.parse(String(row.next_attempt_at)) <= Date.now() : Date.parse(String(row.claimed_at)) <= Date.now() - 300_000))
+			.slice(0, Math.max(1, Math.min(500, limit))).map(({ row }) => ({ workspaceId: enrolled, kind: row.kind as "video" | "batch",
+				internalId: String(row.internal_id), deliveryKey: String(row.delivery_key), eventType: String(row.event_type), phase: String(row.phase),
+				progress: typeof row.progress === "number" ? row.progress : null, previousStatus: normalizeText(row.previous_status), currentStatus: normalizeText(row.current_status) }));
+	}
 	const normalizedLimit = Number.isFinite(limit) ? Math.max(1, Math.min(500, Math.trunc(limit))) : 100;
 	const now = Date.now();
 	const staleBefore = new Date(now - 300_000).toISOString();
@@ -367,6 +390,7 @@ export async function recordAsyncWebhookDeliveryResult(args: {
 	progress?: number | null;
 	telemetryPatch?: Record<string, unknown>;
 }): Promise<void> {
+	if (isRequestStateWorkspace(args.workspaceId)) return workspaceState(args.workspaceId).webhookResult(args);
 	const { error } = await getSupabaseAdmin().rpc("record_gateway_async_webhook_result", {
 		p_workspace_id: args.workspaceId,
 		p_kind: args.kind,
@@ -391,6 +415,13 @@ export async function discardPendingAsyncWebhookDelivery(args: {
 	deliveryKey: string;
 	reason: string;
 }): Promise<void> {
+	if (isRequestStateWorkspace(args.workspaceId)) {
+		const stub = workspaceState(args.workspaceId);
+		const identity = { kind: args.kind, internal_id: args.internalId, delivery_key: args.deliveryKey };
+		const current = await stub.rowGet("gateway_async_webhook_deliveries", identity);
+		if (current?.row.status === "pending") await stub.rowPatch("gateway_async_webhook_deliveries", identity, { status: "failed", last_error: args.reason }, current.revision);
+		return;
+	}
 	const { error } = await getSupabaseAdmin()
 		.from("gateway_async_webhook_deliveries")
 		.update({ status: "failed", last_error: args.reason, updated_at: new Date().toISOString() })
@@ -408,6 +439,13 @@ export async function markPendingAsyncWebhookDeliveryDelivered(args: {
 	internalId: string;
 	deliveryKey: string;
 }): Promise<void> {
+	if (isRequestStateWorkspace(args.workspaceId)) {
+		const stub = workspaceState(args.workspaceId);
+		const identity = { kind: args.kind, internal_id: args.internalId, delivery_key: args.deliveryKey };
+		const current = await stub.rowGet("gateway_async_webhook_deliveries", identity);
+		if (current?.row.status === "pending") await stub.rowPatch("gateway_async_webhook_deliveries", identity, { status: "delivered", delivered_at: new Date().toISOString() }, current.revision);
+		return;
+	}
 	const nowIso = new Date().toISOString();
 	const { error } = await getSupabaseAdmin()
 		.from("gateway_async_webhook_deliveries")
@@ -429,6 +467,12 @@ export async function claimAsyncOperationsForReconciliation(args: {
 	shardCount?: number;
 	shardIndex?: number;
 }): Promise<AsyncOperationRecord[]> {
+	const enrolled = publishedWorkspace();
+	if (enrolled) {
+		// A workspace is the coordination unit; the staging alarm has one owner.
+		if ((args.shardIndex ?? 0) !== 0) return [];
+		return (await workspaceState(enrolled).claimReconciliation(args)).map(row => mapRow(row as AsyncOperationRow));
+	}
 	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.min(2_000, Math.trunc(args.limit!))) : 100;
 	const leaseSeconds = Number.isFinite(args.leaseSeconds)
 		? Math.max(30, Math.min(3_600, Math.trunc(args.leaseSeconds!)))
@@ -480,6 +524,10 @@ export async function updateAsyncOperationReconciliation(args: {
 		patch.reconcile_locked_at = null;
 		patch.reconcile_locked_by = null;
 	}
+	if (isRequestStateWorkspace(workspaceId)) {
+		await workspaceState(workspaceId).rowPatch("gateway_async_operations", { kind: args.kind, internal_id: internalId }, patch);
+		return;
+	}
 
 	const { error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
@@ -500,6 +548,10 @@ export async function listTeamAsyncOperations(args: {
 	const workspaceId = normalizeText(args.workspaceId);
 	if (!workspaceId) return [];
 	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.min(500, Math.trunc(args.limit!))) : 100;
+	if (isRequestStateWorkspace(workspaceId)) {
+		const rows = await workspaceState(workspaceId).rowList("gateway_async_operations", { equals: { kind: args.kind }, statuses: args.statuses, limit });
+		return rows.map(({ row }) => mapRow(row as AsyncOperationRow));
+	}
 
 	let query = getSupabaseAdmin()
 		.from("gateway_async_operations")
@@ -541,6 +593,10 @@ export async function getAsyncOperation(
 	const workspaceId = normalizeText(workspaceIdRaw);
 	const internalId = normalizeText(internalIdRaw);
 	if (!workspaceId || !internalId) return null;
+	if (isRequestStateWorkspace(workspaceId)) {
+		const result = await workspaceState(workspaceId).rowGet("gateway_async_operations", { kind, internal_id: internalId });
+		return result ? mapRow(result.row as AsyncOperationRow) : null;
+	}
 	const cacheKey = asyncOperationCacheKey(workspaceId, kind, internalId);
 	// Also discard an in-flight read started before the claim was acquired.
 	if (options?.fresh) invalidateAsyncOperationCache(workspaceId, kind, internalId);
@@ -587,6 +643,11 @@ export async function findAsyncOperationByNativeId(
 	const provider = normalizeText(providerRaw);
 	const nativeId = normalizeText(nativeIdRaw);
 	if (!provider || !nativeId) return null;
+	const enrolled = publishedWorkspace();
+	if (enrolled) {
+		const rows = await workspaceState(enrolled).rowList("gateway_async_operations", { equals: { kind, provider, native_id: nativeId }, limit: 2 });
+		return rows.length === 1 ? mapRow(rows[0].row as AsyncOperationRow) : null;
+	}
 
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
@@ -622,6 +683,7 @@ export async function isAsyncOperationBilled(
 	const workspaceId = normalizeText(workspaceIdRaw);
 	const internalId = normalizeText(internalIdRaw);
 	if (!workspaceId || !internalId) return false;
+	if (isRequestStateWorkspace(workspaceId)) return Boolean((await getAsyncOperation(workspaceId, kind, internalId))?.billedAt);
 
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
@@ -642,6 +704,7 @@ export async function markAsyncOperationBilled(
 	const workspaceId = normalizeText(workspaceIdRaw);
 	const internalId = normalizeText(internalIdRaw);
 	if (!workspaceId || !internalId) return false;
+	if (isRequestStateWorkspace(workspaceId)) return workspaceState(workspaceId).rowMarkBilled(kind, internalId);
 
 	const now = new Date().toISOString();
 	const { data, error } = await getSupabaseAdmin()
@@ -679,6 +742,11 @@ export async function setAsyncOperationStatus(args: {
 	if (!workspaceId || !internalId || !status) return;
 
 	const updateNextReconcile = Object.prototype.hasOwnProperty.call(args, "nextReconcileAt");
+	if (isRequestStateWorkspace(workspaceId)) {
+		await workspaceState(workspaceId).rowPatch("gateway_async_operations", { kind: args.kind, internal_id: internalId },
+			{ status, meta: normalizeMeta(args.metaPatch), ...(updateNextReconcile ? { next_reconcile_at: normalizeText(args.nextReconcileAt) } : {}) }, undefined, true);
+		return;
+	}
 	const { error } = await getSupabaseAdmin().rpc("gateway_set_async_operation_status", {
 		p_workspace_id: workspaceId,
 		p_kind: args.kind,
@@ -702,6 +770,10 @@ export async function patchAsyncOperationMeta(args: {
 	const internalId = normalizeText(args.internalId);
 	if (!workspaceId || !internalId) return;
 	if (!args.metaPatch || typeof args.metaPatch !== "object" || Array.isArray(args.metaPatch)) return;
+	if (isRequestStateWorkspace(workspaceId)) {
+		await workspaceState(workspaceId).rowPatch("gateway_async_operations", { kind: args.kind, internal_id: internalId }, { meta: args.metaPatch }, undefined, true);
+		return;
+	}
 
 	const { error } = await getSupabaseAdmin().rpc("gateway_set_async_operation_status", {
 		p_workspace_id: workspaceId,
@@ -744,6 +816,10 @@ export async function patchAsyncOperationIdentity(args: {
 	if (nativeId) patch.native_id = nativeId;
 	if (model) patch.model = model;
 	if (Object.keys(patch).length === 1) return;
+	if (isRequestStateWorkspace(workspaceId)) {
+		await workspaceState(workspaceId).rowPatch("gateway_async_operations", { kind: args.kind, internal_id: internalId }, patch);
+		return;
+	}
 	const { error } = await getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.update(patch)
