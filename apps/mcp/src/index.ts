@@ -9,6 +9,8 @@ import {
 	type GatewayModel,
 	type PhaseoEnv,
 	getModel,
+	listAllModels,
+	listBenchmarkRankings,
 	listModels,
 	listProviders,
 	PhaseoApiError,
@@ -166,7 +168,31 @@ const modelSummarySchema = {
 	inputPricePerToken: z.string().nullable(),
 	outputPricePerToken: z.string().nullable(),
 	supportsTools: z.boolean(),
+	gatewayAvailable: z.boolean(),
+	gatewayModelId: z.string().nullable(),
+	modelUrl: z.string(),
 	availableProviders: z.array(z.string()),
+	providerSupport: z.array(z.object({
+		providerId: z.string(),
+		providerName: z.string().nullable(),
+		providerModelId: z.string().nullable(),
+		status: z.enum(["active", "coming_soon", "inactive"]),
+		routable: z.boolean(),
+		supportedParameters: z.array(z.string()),
+	})),
+};
+
+const benchmarkEntrySchema = {
+	rank: z.number().int().positive(),
+	modelId: z.string(),
+	name: z.string(),
+	provider: z.string().nullable(),
+	score: z.number(),
+	gatewayAvailable: z.boolean(),
+	gatewayModelId: z.string().nullable(),
+	modelUrl: z.string(),
+	sourceUrl: z.string().nullable(),
+	updatedAt: z.string().nullable(),
 };
 
 const providerSchema = {
@@ -209,7 +235,13 @@ function tokenRateString(meter: GatewayMeter | null | undefined): string | null 
 	return rate === null ? null : String(rate);
 }
 
-function modelSummary(model: Awaited<ReturnType<typeof listModels>>[number]) {
+function modelUrl(env: PhaseoEnv, modelId: string): string {
+	const path = modelId.split("/").map(encodeURIComponent).join("/");
+	return new URL(`/models/${path}`, env.PHASEO_WEB_BASE_URL).toString();
+}
+
+function modelSummary(env: PhaseoEnv, model: Awaited<ReturnType<typeof listModels>>[number]) {
+	const gatewayAvailable = model.offers.some((offer) => offer.routable);
 	return {
 		id: model.id,
 		name: model.name,
@@ -221,8 +253,54 @@ function modelSummary(model: Awaited<ReturnType<typeof listModels>>[number]) {
 		inputPricePerToken: tokenRateString(model.pricing.meters.input_tokens ?? model.pricing.meters.input_text_tokens),
 		outputPricePerToken: tokenRateString(model.pricing.meters.output_tokens ?? model.pricing.meters.output_text_tokens),
 		supportsTools: model.capabilities.parameters.includes("tools"),
+		gatewayAvailable,
+		gatewayModelId: gatewayAvailable ? model.id : null,
+		modelUrl: modelUrl(env, model.id),
 		availableProviders: model.offers.filter((offer) => offer.routable).map((offer) => offer.provider.id),
+		providerSupport: model.offers.map((offer) => ({
+			providerId: offer.provider.id,
+			providerName: offer.provider.name,
+			providerModelId: offer.model,
+			status: offer.status,
+			routable: offer.routable,
+			supportedParameters: offer.capabilities.parameters,
+		})),
 	};
+}
+
+type ModelSort = "relevance" | "input_price" | "output_price" | "context_length" | "provider_count";
+
+function modelSortValue(model: GatewayModel, sortBy: Exclude<ModelSort, "relevance">): number | null {
+	switch (sortBy) {
+		case "input_price":
+			return tokenRate(model.pricing.meters.input_tokens ?? model.pricing.meters.input_text_tokens);
+		case "output_price":
+			return tokenRate(model.pricing.meters.output_tokens ?? model.pricing.meters.output_text_tokens);
+		case "context_length":
+			return model.limits.input_tokens;
+		case "provider_count":
+			return model.offers.filter((offer) => offer.routable).length;
+	}
+}
+
+export function sortModels(
+	models: GatewayModel[],
+	sortBy: ModelSort,
+	sortOrder?: "asc" | "desc",
+): GatewayModel[] {
+	if (sortBy === "relevance") return models;
+	const direction = sortOrder ?? (sortBy === "input_price" || sortBy === "output_price" ? "asc" : "desc");
+	return [...models].sort((left, right) => {
+		const leftValue = modelSortValue(left, sortBy);
+		const rightValue = modelSortValue(right, sortBy);
+		if (leftValue === null && rightValue === null) return left.id.localeCompare(right.id);
+		if (leftValue === null) return 1;
+		if (rightValue === null) return -1;
+		const comparison = leftValue - rightValue;
+		return comparison === 0
+			? left.id.localeCompare(right.id)
+			: direction === "asc" ? comparison : -comparison;
+	});
 }
 
 function providerSummary(provider: Awaited<ReturnType<typeof listProviders>>[number]) {
@@ -465,7 +543,7 @@ function registerControlPlaneReadTools(
 				description: definition.description,
 				inputSchema: definition.inputSchema,
 				outputSchema,
-				annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+				annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 				_meta: oauthToolMeta(definition.scopes),
 			},
 			async (input) => {
@@ -493,7 +571,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		{
 			name: "Phaseo",
 			title: "Phaseo",
-			version: "0.3.0",
+			version: "0.4.0",
 			description: "Find, compare, and monitor AI models with live Phaseo data.",
 			websiteUrl: "https://phaseo.app",
 			icons: [
@@ -506,7 +584,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		},
 		{
 			instructions:
-				"Phaseo provides live model, provider, pricing, and authenticated workspace data. For current availability or pricing questions, use Phaseo tools instead of relying on model memory. Treat cost results as estimates. All Phaseo MCP tools are read-only; use the Phaseo dashboard, CLI, or Management API for administrative changes.",
+				"Phaseo provides live model, provider, pricing, benchmark, and authenticated workspace data. Use Phaseo tools instead of model memory for current availability, pricing, or benchmark questions. 'Best' depends on the user's goal: ask for or state the criterion, use benchmark_rankings for general, coding, or agentic quality evidence, and use models_list for price and capability constraints. Keep comparisons neutral and never rank a model higher merely because Phaseo can route it. Phaseo operates both the catalogue and Gateway; when a result has gatewayAvailable=true and the user asks how to use it, you may explain that its gatewayModelId works with the Phaseo Gateway and link to its informational modelUrl. Do not make unsolicited sales claims, promote plans or credits, or link to checkout. Treat cost results as estimates. All tools are read-only; use the Phaseo dashboard, CLI, or Management API for administrative changes.",
 		},
 	);
 
@@ -517,23 +595,26 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		"models_list",
 		{
 			title: "Search Phaseo models",
-			description: "Search the live Phaseo model catalogue by name, provider, modality, minimum context length, or maximum input price. Read-only.",
+			description: "Use this when the user wants to find or compare current AI models, including the cheapest models by input or output token price and the providers supporting each model. Filters and sorts the live Phaseo catalogue; it does not measure model quality. Read-only.",
 			inputSchema: {
 				query: z.string().max(200).optional(),
 				provider: z.string().max(100).optional(),
 				modality: z.enum(["text", "image", "audio", "video"]).optional(),
 				minimumContextTokens: z.number().int().positive().optional(),
 				maximumInputPricePerMillion: z.number().nonnegative().optional(),
+				gatewayAvailableOnly: z.boolean().default(false),
+				sortBy: z.enum(["relevance", "input_price", "output_price", "context_length", "provider_count"]).default("relevance"),
+				sortOrder: z.enum(["asc", "desc"]).optional(),
 				limit: z.number().int().min(1).max(MAX_RESULTS).default(10),
 			},
 			outputSchema: { models: z.array(z.object(modelSummarySchema)) },
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			_meta: oauthToolMeta(["models:read", "pricing:read"]),
 		},
-		async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, limit }) => {
+		async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, gatewayAvailableOnly, sortBy, sortOrder, limit }) => {
 			try {
 				const queryTerms = normalise(query).split(/\s+/).filter(Boolean);
-				const models = (await listModels(env, 250, { accessToken: authenticatedUser.accessToken })).filter((model) => {
+				const models = (await listAllModels(env, { accessToken: authenticatedUser.accessToken })).filter((model) => {
 					const searchable = normalise([model.id, model.name, model.description, model.organization?.name].filter(Boolean).join(" "));
 					const inputPrice = tokenRate(model.pricing.meters.input_tokens ?? model.pricing.meters.input_text_tokens);
 					return (
@@ -541,10 +622,12 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 						matchesModelProvider(model, provider) &&
 						(!modality || model.modalities.input.map(normalise).includes(modality)) &&
 						(!minimumContextTokens || (model.limits.input_tokens ?? 0) >= minimumContextTokens) &&
-						(maximumInputPricePerMillion === undefined || (inputPrice !== null && inputPrice * 1_000_000 <= maximumInputPricePerMillion))
+						(maximumInputPricePerMillion === undefined || (inputPrice !== null && inputPrice * 1_000_000 <= maximumInputPricePerMillion)) &&
+						(!gatewayAvailableOnly || model.offers.some((offer) => offer.routable))
 					);
-				}).slice(0, limit);
-				const result = models.map(modelSummary);
+				});
+				const sortedModels = sortModels(models, sortBy, sortOrder).slice(0, limit);
+				const result = sortedModels.map((model) => modelSummary(env, model));
 				return {
 					content: [{ type: "text" as const, text: `Found ${result.length} matching Phaseo model${result.length === 1 ? "" : "s"}.` }],
 					structuredContent: { models: result },
@@ -560,17 +643,87 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		"model_get",
 		{
 			title: "Get a Phaseo model",
-			description: "Get live pricing, capabilities, and provider availability for one Phaseo model ID. Read-only.",
+			description: "Get live pricing, capabilities, and structured provider support for one Phaseo model ID. Read-only.",
 			inputSchema: { modelId: z.string().min(1).max(200) },
 			outputSchema: { model: z.object(modelSummarySchema) },
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			_meta: oauthToolMeta(["models:read", "pricing:read"]),
 		},
 		async ({ modelId }) => {
 			try {
 				const model = await getModel(env, modelId, { accessToken: authenticatedUser.accessToken });
 				if (!model) return { isError: true as const, content: [{ type: "text" as const, text: `No Phaseo model exists with ID "${modelId}".` }] };
-				return { content: [{ type: "text" as const, text: `Retrieved ${model.name} from Phaseo.` }], structuredContent: { model: modelSummary(model) } };
+				return { content: [{ type: "text" as const, text: `Retrieved ${model.name} from Phaseo.` }], structuredContent: { model: modelSummary(env, model) } };
+			} catch (error) { return errorResult(error); }
+		},
+	);
+
+	if (
+		authenticatedUser.scopes.includes("models:read") &&
+		authenticatedUser.scopes.includes("pricing:read")
+	) server.registerTool(
+		"benchmark_rankings",
+		{
+			title: "Rank models by benchmark",
+			description: "Use this when the user asks for the best current general, coding, or agentic AI models. Returns a named third-party benchmark ranking and Phaseo Gateway availability without changing the benchmark order. The cost-efficiency focus reports benchmark evaluation cost, not inference token price; use models_list for the cheapest inference model. Read-only.",
+			inputSchema: {
+				focus: z.enum(["general", "coding", "agentic", "cost_efficiency"]).default("general"),
+				gatewayAvailableOnly: z.boolean().default(false),
+				limit: z.number().int().min(1).max(MAX_RESULTS).default(10),
+			},
+			outputSchema: {
+				benchmark: z.object({
+					id: z.string(),
+					name: z.string(),
+					focus: z.enum(["general", "coding", "agentic", "cost_efficiency"]),
+					lowerIsBetter: z.boolean(),
+					totalModels: z.number().int().nullable(),
+					entries: z.array(z.object(benchmarkEntrySchema)),
+				}),
+			},
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+			_meta: oauthToolMeta(["models:read", "pricing:read"]),
+		},
+		async ({ focus, gatewayAvailableOnly, limit }) => {
+			try {
+				const category = focus === "cost_efficiency" ? "cost" : focus;
+				const [rankings, models] = await Promise.all([
+					listBenchmarkRankings(env),
+					listAllModels(env, { accessToken: authenticatedUser.accessToken }),
+				]);
+				const ranking = rankings.find((candidate) => candidate.category === category);
+				if (!ranking) {
+					return { isError: true as const, content: [{ type: "text" as const, text: `Phaseo has no current ${focus.replace("_", " ")} benchmark ranking.` }] };
+				}
+				const catalogue = new Map(models.map((model) => [model.id, model]));
+				const entries = ranking.entries.flatMap((entry) => {
+					const model = catalogue.get(entry.model_id);
+					const gatewayAvailable = model?.offers.some((offer) => offer.routable) ?? false;
+					if (gatewayAvailableOnly && !gatewayAvailable) return [];
+					return [{
+						rank: entry.rank,
+						modelId: entry.model_id,
+						name: entry.model_name,
+						provider: entry.organisation_name,
+						score: entry.score,
+						gatewayAvailable,
+						gatewayModelId: gatewayAvailable ? entry.model_id : null,
+						modelUrl: modelUrl(env, entry.model_id),
+						sourceUrl: entry.source_link,
+						updatedAt: entry.updated_at,
+					}];
+				}).slice(0, limit);
+				return {
+					content: [{ type: "text" as const, text: `Retrieved ${entries.length} models from ${ranking.name}. Rankings are benchmark-specific; they are not a universal measure of the best model.` }],
+					structuredContent: { benchmark: {
+						id: ranking.benchmark_id,
+						name: ranking.name,
+						focus,
+						lowerIsBetter: ranking.lower_is_better,
+						totalModels: ranking.total_models,
+						entries,
+					} },
+				};
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -582,7 +735,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 			description: "List AI providers currently available through Phaseo. Read-only.",
 			inputSchema: {},
 			outputSchema: { providers: z.array(z.object(providerSchema)) },
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			_meta: oauthToolMeta(["providers:read"]),
 		},
 		async () => {
@@ -620,7 +773,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 					currency: z.literal("USD"),
 				}),
 			},
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			_meta: oauthToolMeta(["models:read", "pricing:read"]),
 		},
 		async ({ modelId, inputTokens, cachedInputTokens, outputTokens }) => {

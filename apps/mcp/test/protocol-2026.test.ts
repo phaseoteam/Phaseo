@@ -9,10 +9,11 @@ vi.mock("../src/phaseo-api", async (importOriginal) => ({
 	})),
 }));
 
-import worker, { matchesModelProvider, tokenRate } from "../src/index";
+import worker, { matchesModelProvider, sortModels, tokenRate } from "../src/index";
 
 const env = {
 	PHASEO_API_BASE_URL: "https://api.phaseo.app",
+	PHASEO_WEB_BASE_URL: "https://phaseo.app",
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64),
 };
 
@@ -35,6 +36,21 @@ describe("MCP 2026-07-28 transport", () => {
 		expect(tokenRate(meter)).toBe(0.0000025);
 		expect(tokenRate({ ...meter, currency: "EUR" })).toBeNull();
 		expect(tokenRate({ ...meter, currency: null })).toBeNull();
+	});
+
+	it("sorts priced models deterministically and keeps missing prices last", () => {
+		const meter = (price: string | null) => price === null ? null : {
+			provider_id: "provider", unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD",
+		};
+		const models = [
+			{ id: "model/unpriced", pricing: { meters: {} }, limits: { input_tokens: 1 }, offers: [] },
+			{ id: "model/expensive", pricing: { meters: { input_tokens: meter("5") } }, limits: { input_tokens: 1 }, offers: [] },
+			{ id: "model/cheap", pricing: { meters: { input_tokens: meter("1") } }, limits: { input_tokens: 1 }, offers: [] },
+		] as any[];
+
+		expect(sortModels(models, "input_price").map((model) => model.id)).toEqual([
+			"model/cheap", "model/expensive", "model/unpriced",
+		]);
 	});
 
 	it("discovers the server over the modern stateless HTTP protocol", async () => {
@@ -108,7 +124,7 @@ describe("MCP 2026-07-28 transport", () => {
 		expect(response.headers.get("mcp-session-id")).toBeNull();
 		expect(response.headers.get("cache-control")).toBe("no-store");
 		const payload = JSON.parse(body) as { result?: { tools?: Array<{ name: string }> } };
-		expect(payload.result?.tools?.map((tool) => tool.name)).toEqual(["models_list", "model_get", "cost_estimate"]);
+		expect(payload.result?.tools?.map((tool) => tool.name)).toEqual(["models_list", "model_get", "benchmark_rankings", "cost_estimate"]);
 	});
 
 	it("rejects opaque and insecure non-loopback browser origins", async () => {
