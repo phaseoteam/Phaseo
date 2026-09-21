@@ -202,6 +202,7 @@ export function RoomSdkExport() {
                 aria-label={`${activeIntegration.title} ${activeIntegration.group} request sample`}
               >
                 <CodeBlock code={code} language={shikiLanguages[activeIntegration.language]} showLineNumbers tabIndex={0}
+                  aria-label={`${activeIntegration.title} ${activeIntegration.group} request sample`}
                   className={cn("min-h-full border-0 [&>div>div]:overflow-visible [&_pre]:overflow-visible", wrap ? "w-full [&_code]:break-words [&_pre]:whitespace-pre-wrap [&_[data-line]]:whitespace-pre-wrap" : "w-max min-w-full [&_[data-line]]:min-w-max")} />
               </ScrollArea>
             </div>

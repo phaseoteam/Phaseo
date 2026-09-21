@@ -125,6 +125,8 @@ test("only offers Agent SDK samples when a request can be converted safely", () 
     .toBe("Add an input to use the Agent SDK");
   expect(agentSdkSupportReason({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "function" }] } }))
     .toBe("Define function tool handlers to create an agent starter");
+  expect(agentSdkSupportReason({ endpoint: "/messages", body: { messages: [{ role: "user", content: "Hello" }], tools: [{ name: "lookup", input_schema: { type: "object" } }] } }))
+    .toBe("Define function tool handlers to create an agent starter");
   expect(agentSdkSupportReason({ endpoint: "/responses", body: { input: [{ role: "assistant", content: "Earlier reply" }, { role: "user", content: "Continue" }] } }))
     .toBeNull();
   expect(agentSdkSupportReason({ endpoint: "/responses", body: { input: [{ role: "user", content: [{ type: "input_image", image_url: "data:image/png;base64,abc" }] }] } }))

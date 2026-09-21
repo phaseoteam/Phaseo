@@ -201,7 +201,9 @@ export function agentSdkSupportReason(request: SdkRequest): string | null {
 function managedGatewayTools(request: SdkRequest): Array<Record<string, unknown>> | null {
   if (!Array.isArray(request.body.tools)) return [];
   const tools = request.body.tools.filter((tool): tool is Record<string, unknown> => Boolean(tool) && typeof tool === "object");
-  if (tools.some(tool => tool.type === "function" || ("function" in tool && typeof tool.function === "object"))) return null;
+  if (tools.some(tool => tool.type === "function"
+    || ("function" in tool && typeof tool.function === "object")
+    || (typeof tool.name === "string" && "input_schema" in tool))) return null;
   return tools;
 }
 
