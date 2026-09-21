@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { Bot, Check, Code, Copy } from "lucide-react";
 import { CodeBlock } from "@/components/ai-elements/code-block";
@@ -45,6 +45,7 @@ export function RoomSdkExport() {
   const pathname = usePathname();
   const [selection, setSelection] = useState<SdkSample>("sdk-typescript");
   const [notice, setNotice] = useState("");
+  const copyGeneration = useRef(0);
 
   useEffect(() => { sdkExportStore.set(null); }, [pathname]);
 
@@ -56,14 +57,20 @@ export function RoomSdkExport() {
   const code = sdkCode(request, activeIntegration.id);
 
   const selectIntegration = (id: SdkSample) => {
+    copyGeneration.current += 1;
     setSelection(id);
     setNotice("");
   };
 
   const copyCode = () => {
+    const generation = ++copyGeneration.current;
     void navigator.clipboard.writeText(code).then(
-      () => setNotice("Copied"),
-      () => setNotice("Could not copy. Select the code below."),
+      () => {
+        if (copyGeneration.current === generation) setNotice("Copied");
+      },
+      () => {
+        if (copyGeneration.current === generation) setNotice("Could not copy. Select the code below.");
+      },
     );
   };
 

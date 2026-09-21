@@ -117,4 +117,28 @@ test("only offers Agent SDK samples when a request can be converted safely", () 
     .toBe("Add an input to use the Agent SDK");
   expect(agentSdkSupportReason({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "function" }] } }))
     .toBe("Remove request tools to create an agent starter");
+  expect(agentSdkSupportReason({ endpoint: "/responses", body: { input: [{ role: "assistant", content: "Earlier reply" }, { role: "user", content: "Continue" }] } }))
+    .toBe("Start a new turn to create an agent starter");
+  expect(agentSdkSupportReason({ endpoint: "/responses", body: { input: [{ role: "user", content: [{ type: "input_image", image_url: "data:image/png;base64,abc" }] }] } }))
+    .toBe("Use text-only messages to create an agent starter");
+});
+
+test("normalizes a Responses message into runnable Agent SDK input and instructions", () => {
+  const request = {
+    endpoint: "/responses",
+    body: {
+      model: "phaseo/free",
+      instructions: "Follow the house style.",
+      input: [
+        { role: "developer", content: "Be concise." },
+        { role: "user", content: [{ type: "input_text", text: "Summarize this." }] },
+      ],
+    },
+  };
+
+  expect(agentSdkSupportReason(request)).toBeNull();
+  expect(sdkCode(request, "agent-typescript")).toContain('instructions: "Follow the house style.\\n\\nBe concise."');
+  expect(sdkCode(request, "agent-typescript")).toContain('input: "Summarize this."');
+  expect(sdkCode(request, "agent-python")).toContain('"instructions": "Follow the house style.\\n\\nBe concise."');
+  expect(sdkCode(request, "agent-python")).toContain('input="Summarize this."');
 });

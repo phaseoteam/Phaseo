@@ -102,7 +102,45 @@ export function agentSdkSupportReason(request: SdkRequest): string | null {
   if (request.endpoint !== "/responses") return "Available for Responses requests";
   if (request.body.input === undefined) return "Add an input to use the Agent SDK";
   if (Array.isArray(request.body.tools) && request.body.tools.length > 0) return "Remove request tools to create an agent starter";
-  return null;
+  return normalizeAgentInput(request.body.input).reason;
+}
+
+type NormalizedAgentInput = { input?: string; instructions?: string; reason: string | null };
+
+function responseMessageText(content: unknown): string | null {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return null;
+  const text = content.map((part) => {
+    if (!part || typeof part !== "object" || Array.isArray(part)) return null;
+    const record = part as Record<string, unknown>;
+    return record.type === "input_text" && typeof record.text === "string" ? record.text : null;
+  });
+  return text.every((part): part is string => part !== null) ? text.join("\n") : null;
+}
+
+function normalizeAgentInput(value: unknown): NormalizedAgentInput {
+  if (typeof value === "string") return { input: value, reason: null };
+  if (!Array.isArray(value)) return { reason: "Use text input to create an agent starter" };
+
+  const instructions: string[] = [];
+  const userInputs: string[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return { reason: "Use text-only messages to create an agent starter" };
+    }
+    const message = item as Record<string, unknown>;
+    const content = responseMessageText(message.content);
+    if (content === null) return { reason: "Use text-only messages to create an agent starter" };
+    if (message.role === "system" || message.role === "developer") instructions.push(content);
+    else if (message.role === "user") userInputs.push(content);
+    else return { reason: "Start a new turn to create an agent starter" };
+  }
+  if (userInputs.length !== 1) return { reason: "Start with one user message to create an agent starter" };
+  return {
+    input: userInputs[0],
+    ...(instructions.length > 0 ? { instructions: instructions.join("\n\n") } : {}),
+    reason: null,
+  };
 }
 
 function indent(value: string, spaces: number) {
@@ -120,9 +158,14 @@ function agentCode(request: SdkRequest, language: "typescript" | "python"): stri
 
   const body = request.body;
   const model = typeof body.model === "string" ? body.model : "phaseo/free";
-  const input = body.input;
+  const normalizedInput = normalizeAgentInput(body.input);
+  const input = normalizedInput.input!;
   const definitionEntries: Array<[string, unknown]> = [["model", model]];
-  if (typeof body.instructions === "string" && body.instructions.trim()) definitionEntries.push(["instructions", body.instructions]);
+  const instructions = [
+    typeof body.instructions === "string" && body.instructions.trim() ? body.instructions : null,
+    normalizedInput.instructions,
+  ].filter((value): value is string => Boolean(value)).join("\n\n");
+  if (instructions) definitionEntries.push(["instructions", instructions]);
   if (typeof body.temperature === "number") definitionEntries.push(["temperature", body.temperature]);
   if (typeof body.max_output_tokens === "number") definitionEntries.push(["maxOutputTokens", body.max_output_tokens]);
   if (typeof body.top_p === "number") definitionEntries.push(["topP", body.top_p]);
