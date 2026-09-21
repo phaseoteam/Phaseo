@@ -891,6 +891,17 @@ jobs:
                   secret-path: /
                   secret-name: DISCORD_WEBHOOK_NEW_MODELS_PUBLIC
 
+            - name: Load model update Discord role from Infisical
+              if: matrix.target == 'api' || matrix.target == 'web-api'
+              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              with:
+                  method: oidc
+                  identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+                  project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+                  env-slug: prod
+                  secret-path: /
+                  secret-name: DISCORD_ROLE_ID
+
             - name: Deploy API app to Cloudflare
               if: matrix.target == 'api'
               shell: pwsh
@@ -931,6 +942,7 @@ jobs:
               run: |
                   set -euo pipefail
                   printf '%s' "$DISCORD_WEBHOOK_NEW_MODELS_PUBLIC" | pnpm exec wrangler secret put DISCORD_WEBHOOK_NEW_MODELS_PUBLIC --config wrangler.toml
+                  printf '%s' "$DISCORD_ROLE_ID" | pnpm exec wrangler secret put DISCORD_ROLE_ID --config wrangler.toml
                   pnpm exec wrangler deploy --config wrangler.toml
 
             - name: Deploy MCP Worker to Cloudflare

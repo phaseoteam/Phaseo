@@ -477,13 +477,13 @@ export async function runPublicModelAnnouncementCheck(args: {
 								: "Added to the public Phaseo model catalog.",
 						],
 					})),
-					null,
+					readBindingEnv(["DISCORD_ROLE_ID"]),
 					{
 						username: PUBLIC_MODEL_DISCOVERY_USERNAME,
 						avatarUrl: PUBLIC_MODEL_DISCOVERY_AVATAR_URL,
 						latestModelsUrl: PUBLIC_MODELS_URL,
 						message: "Public model catalog updates detected.",
-						includeMentions: false,
+						includeMentions: true,
 						maxModelEmbeds: PUBLIC_ANNOUNCEMENT_BATCH_SIZE,
 					},
 				);

@@ -144,15 +144,18 @@ describe("runPublicModelAnnouncementCheck", () => {
 		);
 		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
 		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+		mocks.bindings.DISCORD_ROLE_ID = "role-model-updates";
 
 		const summary = await runPublicModelAnnouncementCheck({ runId: "run-2", notify: true });
 
 		expect(summary).toMatchObject({ detected: 1, notified: 2, pending: 0, error: null });
 		expect(mocks.sendDiscordWebhookPayload).toHaveBeenCalledTimes(1);
+		const buildRoleId = mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[1];
 		const buildOptions = mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[2] as {
 			includeMentions?: boolean;
 		};
-		expect(buildOptions.includeMentions).toBe(false);
+		expect(buildRoleId).toBe("role-model-updates");
+		expect(buildOptions.includeMentions).toBe(true);
 		const payload = mocks.sendDiscordWebhookPayload.mock.calls[0]?.[1] as { embeds: Array<{ image: { url: string } }> };
 		expect(payload.embeds.map((embed) => embed.image.url)).toEqual([
 			"https://phaseo.app/og/models/openai/gpt-new",
