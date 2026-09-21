@@ -27,7 +27,11 @@ impl Transport for HttpTransport {
             Ok(response) => {
                 let status = response.status();
                 let body = response.into_string().unwrap_or_default();
-                Ok(Response { status, body })
+                Ok(Response {
+                    status,
+                    headers: HashMap::new(),
+                    body,
+                })
             }
             Err(err) => Err(err.to_string()),
         }

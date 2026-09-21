@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "requirements": [
+    "typed request options",
+    "safe GET and HEAD retries only",
+    "per-request idempotency keys",
+    "raw response metadata",
+    "structured HTTP error metadata",
+    "request, response, and retry hooks",
+    "one transport pipeline"
+  ],
+  "surfaces": {
+    "typescript": {
+      "packages/sdk/sdk-ts/src/runtime/transport.ts": ["idempotencyKey", "onRequest", "onResponse", "onRetry"],
+      "packages/sdk/sdk-ts/src/runtime/client.ts": ["RawResponse", "requestWithResponse", "PhaseoHttpError"]
+    },
+    "python": {
+      "packages/sdk/sdk-py/src/phaseo/transport.py": ["class RawResponse", "idempotency_key", "on_request", "on_response", "on_retry", "PhaseoHTTPError"]
+    },
+    "go": {
+      "packages/sdk/sdk-go/src/gen/client.go": ["type RequestOptions struct", "IdempotencyKey", "RequestWithOptions", "OnRetry", "type HTTPError struct"]
+    },
+    "csharp": {
+      "packages/sdk/sdk-csharp/src/gen/Client.cs": ["class RequestOptions", "IdempotencyKey", "SendWithResponseAsync", "_onRetry", "ApiErrorException"]
+    },
+    "java": {
+      "packages/sdk/sdk-java/src/app/phaseo/gen/Client.java": ["class RequestOptions", "idempotencyKey", "requestWithResponse", "setHooks", "class ApiException"]
+    },
+    "php": {
+      "packages/sdk/sdk-php/src/gen/Client.php": ["class Response", "idempotency_key", "requestWithResponse", "setHooks", "class RequestException"]
+    },
+    "ruby": {
+      "packages/sdk/sdk-ruby/lib/gen/client.rb": ["class Response", "idempotency_key", "request_with_response", "on_retry", "class RequestError"]
+    },
+    "rust": {
+      "packages/sdk/sdk-rust/src/gen/client.rs": ["struct RequestOptions", "idempotency_key", "request_with_options"],
+      "packages/sdk/sdk-rust/src/phaseo.rs": ["struct PhaseoResponse", "RequestHook", "RetryHook"]
+    },
+    "cpp": {
+      "packages/sdk/sdk-cpp/src/gen/client.hpp": ["struct RequestOptions", "idempotency_key", "request_with_options", "set_request_hooks", "class RequestError"]
+    }
+  }
+}

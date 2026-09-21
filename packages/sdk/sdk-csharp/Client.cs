@@ -112,6 +112,38 @@ namespace PhaseoSdk
             AsyncJobs = new AsyncJobsResource(this);
         }
 
+		public Phaseo SetTimeout(TimeSpan timeout)
+		{
+			_client.SetTimeout(timeout);
+			return this;
+		}
+
+		public Phaseo SetMaxRetries(int maxRetries)
+		{
+			_client.SetMaxRetries(maxRetries);
+			return this;
+		}
+
+		public Phaseo SetRequestHooks(
+			Action<global::Phaseo.Gen.RequestEvent>? onRequest,
+			Action<global::Phaseo.Gen.ResponseEvent>? onResponse,
+			Action<global::Phaseo.Gen.RetryEvent>? onRetry)
+		{
+			_client.SetHooks(onRequest, onResponse, onRetry);
+			return this;
+		}
+
+		public Task<global::Phaseo.Gen.RawResponse<Dictionary<string, object>>> RequestWithResponse(
+			string method,
+			string path,
+			Dictionary<string, string>? query = null,
+			Dictionary<string, string>? headers = null,
+			object? body = null,
+			global::Phaseo.Gen.RequestOptions? options = null)
+		{
+			return _client.SendWithResponseAsync<Dictionary<string, object>>(method, path, query, headers, body, options);
+		}
+
         public async Task<ModelLifecycleInfo?> GetModelDeprecationInfo(string modelId)
         {
             var normalized = modelId?.Trim();

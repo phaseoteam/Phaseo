@@ -4,7 +4,16 @@ export type RequestControls = {
   timeoutMs?: number;
   /** Retries for GET/HEAD only. Submissions are never retried. */
   maxRetries?: number;
+  /** Sent as Idempotency-Key. Write requests are still never retried automatically. */
+  idempotencyKey?: string;
+  onRequest?: (event: RequestEvent) => void;
+  onResponse?: (event: ResponseEvent) => void;
+  onRetry?: (event: RetryEvent) => void;
 };
+
+export type RequestEvent = { method: string; attempt: number };
+export type ResponseEvent = RequestEvent & { status: number; headers: Headers };
+export type RetryEvent = RequestEvent & { status?: number; delayMs: number; error?: unknown };
 
 export class RequestTimeoutError extends Error {
   constructor() { super("Phaseo request timed out"); this.name = "RequestTimeoutError"; }
@@ -41,15 +50,29 @@ export function createTransport(fetchImpl: typeof fetch, controls: RequestContro
     const cleanup = () => { clearTimeout(timer); for (const signal of signals) signal.removeEventListener("abort", abort); };
     const method = (init.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
     const retries = ["GET", "HEAD"].includes(method) ? maxRetries : 0;
+    let requestHeaders = init.headers;
+    if (controls.idempotencyKey) {
+      if (requestHeaders && !(requestHeaders instanceof Headers) && !Array.isArray(requestHeaders)) {
+        requestHeaders = { ...requestHeaders, "Idempotency-Key": controls.idempotencyKey };
+      } else {
+        const merged = new Headers(input instanceof Request ? input.headers : undefined);
+        new Headers(requestHeaders).forEach((value, key) => merged.set(key, value));
+        merged.set("Idempotency-Key", controls.idempotencyKey);
+        requestHeaders = merged;
+      }
+    }
     try {
       for (let attempt = 0; ; attempt++) {
         controller.signal.throwIfAborted();
+        controls.onRequest?.({ method, attempt });
         let response: Response;
-        try { response = await fetchImpl(input, { ...init, signal: controller.signal }); }
+        try { response = await fetchImpl(input, { ...init, headers: requestHeaders, signal: controller.signal }); }
         catch (error) {
           controller.signal.throwIfAborted();
           if (attempt >= retries || !(error instanceof TypeError)) throw error;
-          await delay(Math.min(250 * 2 ** attempt, 5000), controller.signal);
+          const delayMs = Math.min(250 * 2 ** attempt, 5000);
+          controls.onRetry?.({ method, attempt: attempt + 1, delayMs, error });
+          await delay(delayMs, controller.signal);
           continue;
         }
         if ([408, 429, 500, 502, 503, 504].includes(response.status) && attempt < retries) {
@@ -58,9 +81,11 @@ export function createTransport(fetchImpl: typeof fetch, controls: RequestContro
           const wait = Number.isFinite(seconds) ? Math.max(0, seconds * 1000)
             : retryAfter && Number.isFinite(Date.parse(retryAfter)) ? Math.max(0, Date.parse(retryAfter) - Date.now()) : Math.min(250 * 2 ** attempt, 5000);
           await response.body?.cancel();
+          controls.onRetry?.({ method, attempt: attempt + 1, status: response.status, delayMs: wait });
           await delay(wait, controller.signal);
           continue;
         }
+        controls.onResponse?.({ method, attempt, status: response.status, headers: response.headers });
         if (!response.body) { cleanup(); return response; }
         const reader = response.body.getReader();
         let streamController: ReadableStreamDefaultController<Uint8Array>;

@@ -33,6 +33,26 @@ test("paid POST is never retried and preserves error context", async () => {
   expect(mock.requests).toHaveLength(1);
 });
 
+test("raw responses, idempotency headers, and transport hooks share one request pipeline", async () => {
+  const events: string[] = [];
+  const { client, mock } = setup([
+    { method: "GET", path: "/v1/health", status: 503, headers: { "retry-after": "0" } },
+    { method: "GET", path: "/v1/health", json: { ok: true }, headers: { "x-request-id": "req_raw" } },
+    { method: "POST", path: "/v1/responses", json: { id: "resp_1" } },
+  ]);
+  const raw = await client.requestWithResponse("GET", "/health", {
+    maxRetries: 1,
+    onRequest: event => events.push(`request:${event.attempt}`),
+    onRetry: event => events.push(`retry:${event.attempt}`),
+    onResponse: event => events.push(`response:${event.status}`),
+  });
+  expect(raw).toMatchObject({ data: { ok: true }, status: 200, requestId: "req_raw" });
+  expect(events).toEqual(["request:0", "retry:1", "request:1", "response:200"]);
+  await client.request("POST", "/responses", { body: { model: "test" }, idempotencyKey: "idem-1" });
+  expect(new Headers(mock.requests[2]?.headers).get("idempotency-key")).toBe("idem-1");
+  mock.assertDone();
+});
+
 test("cancellation interrupts a pending response body and releases it", async () => {
   const abort = new AbortController();
   const cancel = vi.fn();
@@ -158,6 +178,16 @@ test("incremental batch parsing joins unicode chunks and retains per-row errors"
 
 test("HTTP errors remain backwards compatible", () => {
   expect(new PhaseoHttpError({ status: 400, statusText: "Bad request", body: "bad" }).status).toBe(400);
+});
+
+test("request preserves null for successful empty responses", async () => {
+  const { client, mock } = setup([
+    { method: "DELETE", path: "/v1/files/file_1", status: 204 },
+    { method: "GET", path: "/v1/empty", status: 200 },
+  ]);
+  await expect(client.request("DELETE", "/files/file_1")).resolves.toBeNull();
+  await expect(client.request("GET", "/empty")).resolves.toBeNull();
+  mock.assertDone();
 });
 
 test("batch line limits count UTF-8 bytes across split code points and reset per row", async () => {

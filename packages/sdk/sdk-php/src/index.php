@@ -105,6 +105,35 @@ class Phaseo
         return $this->client;
     }
 
+    public function setTimeout(float $timeout): self
+    {
+        $this->client->setTimeout($timeout);
+        return $this;
+    }
+
+    public function setMaxRetries(int $maxRetries): self
+    {
+        $this->client->setMaxRetries($maxRetries);
+        return $this;
+    }
+
+    public function setRequestHooks(?callable $onRequest, ?callable $onResponse, ?callable $onRetry): self
+    {
+        $this->client->setHooks($onRequest, $onResponse, $onRetry);
+        return $this;
+    }
+
+    public function requestWithResponse(
+        string $method,
+        string $path,
+        ?array $query = null,
+        ?array $headers = null,
+        mixed $body = null,
+        ?array $options = null
+    ): \Phaseo\Gen\Response {
+        return $this->client->requestWithResponse($method, $path, $query, $headers, $body, $options);
+    }
+
     public function asyncJobs(): AsyncJobsResource
     {
         return $this->asyncJobs;
