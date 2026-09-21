@@ -1613,18 +1613,12 @@ export default function ModelPricingClient({
 		const labelNode = (
 			<span
 				className={cn(
-					"flex flex-col",
-					align === "right" && "items-end",
 					option === "uptime" &&
 						"underline decoration-dotted underline-offset-4",
 				)}
 			>
-				<span>{label}</span>
-				{subLabel ? (
-					<span className="text-[10px] font-normal text-muted-foreground">
-						{subLabel}
-					</span>
-				) : null}
+				{label}
+				{subLabel ? ` ${subLabel}` : ""}
 			</span>
 		);
         const icon = isActive ? (
@@ -1692,9 +1686,8 @@ export default function ModelPricingClient({
 		}
 
 		return (
-			<div className="flex flex-col items-end text-xs font-medium text-muted-foreground">
-				<span>{column.label}</span>
-				<span className="text-[10px] font-normal">{column.headerUnitLabel}</span>
+			<div className="text-xs font-medium text-muted-foreground">
+				{column.label} {column.headerUnitLabel}
 			</div>
 		);
 	};
@@ -1900,7 +1893,7 @@ export default function ModelPricingClient({
 												{renderTableSortHead("Provider", "provider", "left")}
 											</TableHead>
 											{visiblePriceColumns.map((column) => (
-												<TableHead key={column.key} className="h-10 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
+												<TableHead key={column.key} className="h-8 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
 													{renderTablePriceHead(column)}
 												</TableHead>
 											))}
