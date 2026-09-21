@@ -1874,6 +1874,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				avgThroughput: number(value.effective_throughput_tps),
 				avgOutputSpeed: number(value.output_speed_tps),
 				avgLatencyMs: number(value.gateway_ttft_ms),
+				avgEndToEndMs: number(value.gateway_e2e_ms),
 				avgGenerationMs: number(value.provider_duration_ms),
 				avgPhaseoOverheadMs: number(value.phaseo_overhead_ms),
 				avgTpotMs: number(value.tpot_ms),
