@@ -538,7 +538,10 @@ async function loadCimdClient(clientId: string): Promise<OAuthClient | null> {
 		if (!validated.ok) return null;
 		response = await fetch(validated.url, {
 			headers: { Accept: "application/json" },
-			redirect: "error",
+			// Cloudflare Workers does not implement redirect="error". Manual mode
+			// keeps redirects observable so the non-2xx check below rejects them
+			// without following an unvalidated destination.
+			redirect: "manual",
 			signal: AbortSignal.timeout(CIMD_FETCH_TIMEOUT_MS),
 		});
 	} catch {

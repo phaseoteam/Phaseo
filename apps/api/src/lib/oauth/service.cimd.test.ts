@@ -45,7 +45,22 @@ describe("OAuth client ID metadata documents", () => {
 		expect(assertRedirectAllowed(client!, "https://client.example/oauth/callback")).toBe(true);
 		expect(fetchMock).toHaveBeenCalledWith(
 			clientId,
-			expect.objectContaining({ redirect: "error" }),
+			expect.objectContaining({ redirect: "manual" }),
+		);
+	});
+
+	it("rejects CIMD metadata redirects instead of following them", async () => {
+		const clientId = "https://client.example/oauth/client.json";
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, {
+			status: 302,
+			headers: { Location: "https://attacker.example/client.json" },
+		}));
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(loadOAuthClient(clientId)).resolves.toBeNull();
+		expect(fetchMock).toHaveBeenCalledWith(
+			clientId,
+			expect.objectContaining({ redirect: "manual" }),
 		);
 	});
 
