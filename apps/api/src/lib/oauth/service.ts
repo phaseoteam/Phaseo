@@ -489,6 +489,13 @@ function optionalHttpsMetadataUrl(value: unknown): string | null | undefined {
 	}
 }
 
+function supportsPublicCimdClientAuthentication(metadata: Record<string, unknown>): boolean {
+	if (Array.isArray(metadata.token_endpoint_auth_methods_supported)) {
+		return metadata.token_endpoint_auth_methods_supported.map(String).includes("none");
+	}
+	return String(metadata.token_endpoint_auth_method ?? "none") === "none";
+}
+
 async function readResponseTextWithinLimit(response: Response, maximumBytes: number): Promise<string | null> {
 	if (!response.body) return "";
 	const reader = response.body.getReader();
@@ -567,7 +574,7 @@ async function loadCimdClient(clientId: string): Promise<OAuthClient | null> {
 		|| !redirectUris.every(isCimdRedirectUri)
 		|| clientUri === undefined
 		|| logoUri === undefined
-		|| String(metadata.token_endpoint_auth_method ?? "none") !== "none"
+		|| !supportsPublicCimdClientAuthentication(metadata)
 	) return null;
 	const responseTypes = Array.isArray(metadata.response_types) ? metadata.response_types.map(String) : ["code"];
 	const grantTypes = Array.isArray(metadata.grant_types) ? metadata.grant_types.map(String) : ["authorization_code"];
