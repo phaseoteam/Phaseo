@@ -76,10 +76,13 @@ import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { featureLabels } from "@/lib/config/featureLabels";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
 import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
+import { MODEL_TABLE_COLUMNS } from "@/components/monitor/MonitorDataTable";
 import { Logo } from "@/components/Logo";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
 import { Slider } from "@/components/ui/slider";
+import TableSettings from "@/components/(gateway)/usage/TableSettings";
+import { useTablePreferences } from "@/components/(gateway)/usage/useTablePreferences";
 
 type OptionCount = {
 	value: string;
@@ -855,6 +858,21 @@ export default function ModelsTableDisplay({
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const isTable = pathname?.includes("/models/table");
+	const modelTablePreferences = useTablePreferences(
+		"models-table",
+		MODEL_TABLE_COLUMNS,
+	);
+	const modelTableSettings = isTable ? (
+		<TableSettings
+			columns={modelTablePreferences.columns}
+			definitions={MODEL_TABLE_COLUMNS}
+			tableLabel="models"
+			onReset={modelTablePreferences.resetColumns}
+			onChange={modelTablePreferences.updateColumns}
+			density={modelTablePreferences.density}
+			onDensityChange={modelTablePreferences.updateDensity}
+		/>
+	) : null;
 
 	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
 
@@ -1609,7 +1627,10 @@ export default function ModelsTableDisplay({
 							{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
 							{privateFilterButton}
 							{filterButton()}
-							{viewSwitcher}
+							<div className="flex items-center gap-1">
+								{modelTableSettings}
+								{viewSwitcher}
+							</div>
 						</div>
 
 						<div className="relative w-full">
@@ -1653,7 +1674,8 @@ export default function ModelsTableDisplay({
 									{sortSelect(
 										"h-8 w-[12.5rem] rounded-md bg-background text-sm 2xl:w-[13.5rem]",
 									)}
-									{privateFilterButton}
+					{privateFilterButton}
+					{modelTableSettings}
 									{viewSwitcher}
 								</div>
 							</div>
@@ -1665,6 +1687,7 @@ export default function ModelsTableDisplay({
 								<div className="flex shrink-0 items-center justify-end gap-2">
 									{privateFilterButton}
 									{filterButton()}
+									{modelTableSettings}
 									{viewSwitcher}
 								</div>
 							</div>
@@ -1707,6 +1730,7 @@ export default function ModelsTableDisplay({
 						initialModelData={initialModelData}
 						effectiveStatuses={effectiveSelectedStatuses}
 						stickyHeaderOffset={stickyOffsets.tableHeaderTop}
+						modelTablePreferences={isTable ? modelTablePreferences : undefined}
 					/>
 				</div>
 			</section>
