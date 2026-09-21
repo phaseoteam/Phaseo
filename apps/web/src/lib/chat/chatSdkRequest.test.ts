@@ -48,3 +48,48 @@ test("reconstructs the latest saved text request without session identifiers", (
 test("does not offer code until a chat has a user request", () => {
 	expect(sdkRequestFromTextThread({ ...thread, messages: [] })).toBeNull();
 });
+
+test("reconstructs persisted inline attachments", () => {
+	const request = sdkRequestFromTextThread({
+		...thread,
+		messages: [{
+			id: "u-image",
+			role: "user",
+			content: "Describe this",
+			createdAt: "2026-09-21T10:00:00Z",
+			meta: {
+				request_context: { model_id: "openai/gpt-5", attachments_count: 1 },
+				attachment_previews: [{ name: "example.png", mimeType: "image/png", dataUrl: "data:image/png;base64,abc", isImage: true, isAudio: false, isVideo: false }],
+			},
+		}],
+	});
+	expect(request?.body.input).toEqual(expect.arrayContaining([{
+		role: "user",
+		content: [
+			{ type: "input_text", text: "Describe this" },
+			{ type: "input_image", image_url: "data:image/png;base64,abc" },
+		],
+	}]));
+});
+
+test("suppresses samples when a persisted attachment cannot be reproduced", () => {
+	const request = sdkRequestFromTextThread({
+		...thread,
+		messages: [{
+			id: "u-file",
+			role: "user",
+			content: "[Attachment] document.pdf",
+			createdAt: "2026-09-21T10:00:00Z",
+			meta: { request_context: { attachments_count: 1 } },
+		}],
+	});
+	expect(request).toBeNull();
+});
+
+test("preserves image-output modalities and disables streaming", () => {
+	const request = sdkRequestFromTextThread({
+		...thread,
+		settings: { ...thread.settings, imageOutputEnabled: true, stream: true },
+	});
+	expect(request?.body).toMatchObject({ stream: false, modalities: ["text", "image"] });
+});

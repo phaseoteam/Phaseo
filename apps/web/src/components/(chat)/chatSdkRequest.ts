@@ -3,7 +3,9 @@ import {
 	buildServerToolDefinitions,
 	getEffectiveModelSettings,
 	getRequestedChatServiceTier,
+	shouldRequestImageModalities,
 } from "@/components/(chat)/playground/chat-playground-core";
+import { getInlineAttachmentPreviewsFromMeta } from "@/components/(chat)/chatConversationHelpers";
 import type { ChatMessage, ChatThread } from "@/lib/indexeddb/chats";
 import type { SdkRequest } from "@/lib/chat/sdkExport";
 
@@ -40,14 +42,44 @@ export function sdkRequestFromTextThread(
 	if (!model) return null;
 
 	const settings = getEffectiveModelSettings(thread, model);
-	const input: Array<{ role: "system" | "user" | "assistant"; content: string }> = thread.messages.slice(0, latestUserIndex + 1).map((message) => ({
+	const attachmentCount = typeof context?.attachments_count === "number" ? context.attachments_count : 0;
+	const attachmentPreviews = getInlineAttachmentPreviewsFromMeta(latestUser.meta);
+	if (attachmentCount > attachmentPreviews.length) return null;
+
+	const input: Array<{ role: "system" | "user" | "assistant"; content: unknown }> = thread.messages.slice(0, latestUserIndex + 1).map((message) => ({
 		role: message.role,
 		content: message.content,
 	}));
+	if (attachmentPreviews.length) {
+		const content: Array<Record<string, unknown>> = [];
+		if (!/^\[Attachments?\]/.test(latestUser.content)) {
+			content.push({ type: "input_text", text: latestUser.content });
+		}
+		for (const attachment of attachmentPreviews) {
+			if (attachment.isImage) content.push({ type: "input_image", image_url: attachment.dataUrl });
+			else if (attachment.isAudio) {
+				content.push({
+					type: "input_audio",
+					input_audio: {
+						data: attachment.dataUrl.includes(",") ? attachment.dataUrl.split(",")[1] ?? "" : attachment.dataUrl,
+						format: attachment.mimeType?.split("/")[1]?.split(";")[0]?.trim() || "wav",
+					},
+				});
+			} else if (attachment.isVideo) content.push({ type: "input_video", url: attachment.dataUrl });
+		}
+		input[input.length - 1] = { role: "user", content };
+	}
 	const systemPrompt = settings.systemPrompt?.trim();
 	if (systemPrompt) input.unshift({ role: "system", content: systemPrompt });
 
-	const body: Record<string, unknown> = { model, input, meta: true, stream: settings.stream };
+	const wantsImageModalities = Boolean(settings.imageOutputEnabled) || shouldRequestImageModalities(model);
+	const body: Record<string, unknown> = {
+		model,
+		input,
+		meta: true,
+		stream: Boolean(settings.stream) && !wantsImageModalities,
+		...(wantsImageModalities ? { modalities: ["text", "image"] } : {}),
+	};
 	optionalNumber(body, "temperature", settings.temperature);
 	optionalNumber(body, "max_output_tokens", settings.maxOutputTokens);
 	optionalNumber(body, "top_p", settings.topP);
