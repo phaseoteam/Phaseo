@@ -48,8 +48,20 @@ type TierSiblingCapabilityRow = {
     created_at: string | null;
 };
 
-const PRIORITY_SIBLING_API_MODEL_IDS = new Map<string, string>([
-    ["moonshotai/kimi-k2.7-code", "moonshotai/kimi-k2.7-code-highspeed"],
+type PrioritySiblingRoute = {
+    lookupId: string;
+    requestTiers: readonly string[];
+};
+
+const PRIORITY_SIBLING_ROUTES = new Map<string, PrioritySiblingRoute>([
+    ["moonshotai/kimi-k2.7-code", {
+        lookupId: "moonshotai/kimi-k2.7-code-highspeed",
+        requestTiers: ["fast", "priority"],
+    }],
+    ["xiaomi/mimo-v2.6-pro", {
+        lookupId: "mimo-v2.6-pro-ultraspeed",
+        requestTiers: ["fast"],
+    }],
 ]);
 
 const PRIORITY_HIDDEN_SAME_MODEL_KEYS = new Set([
@@ -57,10 +69,16 @@ const PRIORITY_HIDDEN_SAME_MODEL_KEYS = new Set([
 ]);
 
 const PRIORITY_SIBLING_VALUE_IDS = new Set(
-    Array.from(PRIORITY_SIBLING_API_MODEL_IDS.values(), (value) =>
-        value.trim().toLowerCase(),
+    Array.from(PRIORITY_SIBLING_ROUTES.values(), (route) =>
+        route.lookupId.trim().toLowerCase(),
     ),
 );
+
+function getPrioritySiblingRoute(apiModelId: string, requestedTier: string | null): PrioritySiblingRoute | null {
+    const route = PRIORITY_SIBLING_ROUTES.get(apiModelId.trim().toLowerCase()) ?? null;
+    if (!route || !requestedTier || !route.requestTiers.includes(requestedTier)) return null;
+    return route;
+}
 
 function normalizeRequestedServiceTier(body: any): string | null {
     return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? null;
@@ -109,9 +127,14 @@ function isTierSiblingModel(candidate: ProviderCandidate, requestedPlan: Service
 function getTierSiblingApiModelId(
     apiModelId: string,
     requestedPlan: ServiceTierPlan,
+    requestedTier: string | null,
 ): string | null {
     if (requestedPlan === "priority") {
-        return PRIORITY_SIBLING_API_MODEL_IDS.get(apiModelId.trim().toLowerCase()) ?? `${apiModelId}-fast`;
+        const configuredRoute = PRIORITY_SIBLING_ROUTES.get(apiModelId.trim().toLowerCase());
+        if (configuredRoute) {
+            return getPrioritySiblingRoute(apiModelId, requestedTier)?.lookupId ?? null;
+        }
+        return `${apiModelId}-fast`;
     }
     if (requestedPlan === "flex") return `${apiModelId}-flex`;
     return null;
@@ -121,9 +144,10 @@ function getHiddenTierSiblingLookupApiModelId(
     providerId: string,
     apiModelId: string,
     requestedPlan: ServiceTierPlan,
+    requestedTier: string | null,
 ): string | null {
     if (requestedPlan !== "priority") {
-        return getTierSiblingApiModelId(apiModelId, requestedPlan);
+        return getTierSiblingApiModelId(apiModelId, requestedPlan, requestedTier);
     }
 
     const normalizedProviderId = providerId.trim().toLowerCase();
@@ -132,10 +156,14 @@ function getHiddenTierSiblingLookupApiModelId(
         return apiModelId;
     }
 
-    return getTierSiblingApiModelId(apiModelId, requestedPlan);
+    return getTierSiblingApiModelId(apiModelId, requestedPlan, requestedTier);
 }
 
-function supportsRequestedTier(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
+function supportsRequestedTier(
+    candidate: ProviderCandidate,
+    requestedPlan: ServiceTierPlan,
+    requestedTier: string | null,
+): boolean {
     // Mistral publishes reference Priority pricing more broadly than it enables
     // model-specific Priority inference. Require an explicit route capability so
     // catalog-only price metadata cannot make a model routable on that tier.
@@ -147,6 +175,13 @@ function supportsRequestedTier(candidate: ProviderCandidate, requestedPlan: Serv
         return false;
     }
     if (requestedPlan === "priority" || requestedPlan === "flex") {
+        if (
+            requestedPlan === "priority" &&
+            PRIORITY_SIBLING_ROUTES.has(String(candidate.apiModelId ?? "").trim().toLowerCase()) &&
+            !getPrioritySiblingRoute(String(candidate.apiModelId ?? ""), requestedTier)
+        ) {
+            return false;
+        }
         return (
             hasPricingPlan(candidate.pricingCard, requestedPlan) ||
             isTierDedicatedOffer(candidate, requestedPlan) ||
@@ -168,9 +203,10 @@ async function remapToTierSibling(
     candidate: ProviderCandidate,
     capability: string,
     requestedPlan: ServiceTierPlan,
+    requestedTier: string | null,
 ): Promise<ProviderCandidate | null> {
     const apiModelId = String(candidate.apiModelId ?? "").trim();
-    const siblingApiModelId = getTierSiblingApiModelId(apiModelId, requestedPlan);
+    const siblingApiModelId = getTierSiblingApiModelId(apiModelId, requestedPlan, requestedTier);
     if (!apiModelId || !siblingApiModelId) return null;
     if (String(candidate.apiModelId ?? "").trim().toLowerCase() === siblingApiModelId.toLowerCase()) {
         return null;
@@ -280,12 +316,14 @@ async function remapToHiddenTierSibling(
     candidate: ProviderCandidate,
     capability: string,
     requestedPlan: ServiceTierPlan,
+    requestedTier: string | null,
 ): Promise<ProviderCandidate | null> {
     const apiModelId = String(candidate.apiModelId ?? "").trim();
     const siblingLookupApiModelId = getHiddenTierSiblingLookupApiModelId(
         candidate.providerId,
         apiModelId,
         requestedPlan,
+        requestedTier,
     );
     if (!apiModelId || !siblingLookupApiModelId) return null;
 
@@ -444,7 +482,7 @@ export async function applyServiceTierRouting(args: {
             continue;
         }
 
-        const supportsPublicRequestedTier = supportsRequestedTier(candidate, requestedPlan);
+        const supportsPublicRequestedTier = supportsRequestedTier(candidate, requestedPlan, requestedTier);
 
         if (
             supportsPublicRequestedTier &&
@@ -454,6 +492,7 @@ export async function applyServiceTierRouting(args: {
                 candidate,
                 args.capability,
                 requestedPlan,
+                requestedTier,
             );
             if (hiddenSiblingCandidate) {
 				if (args.authorizeRemappedCandidate && !args.authorizeRemappedCandidate(hiddenSiblingCandidate)) {
@@ -470,6 +509,7 @@ export async function applyServiceTierRouting(args: {
                         candidate.providerId,
                         candidate.apiModelId,
                         requestedPlan,
+                        requestedTier,
                     )
                     : null;
                 nextCandidates.push(hiddenSiblingCandidate);
@@ -489,7 +529,7 @@ export async function applyServiceTierRouting(args: {
         }
 
         if (requestedPlan === "priority") {
-            const remappedCandidate = await remapToTierSibling(candidate, args.capability, requestedPlan);
+            const remappedCandidate = await remapToTierSibling(candidate, args.capability, requestedPlan, requestedTier);
             if (remappedCandidate) {
 				if (args.authorizeRemappedCandidate && !args.authorizeRemappedCandidate(remappedCandidate)) {
 					droppedProviders.push({
@@ -511,7 +551,7 @@ export async function applyServiceTierRouting(args: {
             }
         }
         if (requestedPlan === "flex") {
-            const remappedCandidate = await remapToTierSibling(candidate, args.capability, requestedPlan);
+            const remappedCandidate = await remapToTierSibling(candidate, args.capability, requestedPlan, requestedTier);
             if (remappedCandidate) {
 				if (args.authorizeRemappedCandidate && !args.authorizeRemappedCandidate(remappedCandidate)) {
 					droppedProviders.push({
