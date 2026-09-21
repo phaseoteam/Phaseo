@@ -638,12 +638,11 @@ export class Phaseo {
     modelId: string,
     params: Record<string, unknown> = {},
   ): Promise<ModelEndpointsResponse> {
-    const separator = modelId.indexOf("/");
-    if (separator <= 0 || separator === modelId.length - 1) {
+    const parts = modelId.split("/");
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
       throw new Error("modelId must use author/slug format");
     }
-    const author = modelId.slice(0, separator);
-    const slug = modelId.slice(separator + 1);
+    const [author, slug] = parts;
     return this.telemetry.wrap(
       "models.capabilities",
       () => ops.listModelEndpoints(this.client, {

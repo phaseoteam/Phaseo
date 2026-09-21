@@ -4,7 +4,7 @@ import json
 import httpx
 import pytest
 from pydantic import BaseModel
-from phaseo import AsyncPhaseo, Phaseo, PhaseoHTTPError, JobFailedError, JobTimeoutError, parse_output, check_capabilities, batch_results
+from phaseo import AsyncPhaseo, Phaseo, PhaseoHTTPError, JobFailedError, JobTimeoutError, parse_output, check_capabilities, check_parameter_support, batch_results
 from phaseo.testing import MockTransport, job_fixtures
 from phaseo import collect_stream
 
@@ -199,6 +199,86 @@ def test_live_model_parameter_checks_identify_partial_support_and_invalid_values
             assert unsupported["parameters"][0]["status"] == "unsupported"
             assert "seed is not supported" in " ".join(unsupported["issues"])
     mock.assert_done()
+
+
+def test_parameter_reports_validate_types_preserve_partial_issues_and_omit_unknown_routes():
+    model = {
+        "id": "test/model",
+        "endpoints": [
+            {
+                "id": "wide",
+                "provider": {"id": "wide"},
+                "endpoint": "responses",
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature", "count", "mode"],
+                    "parameter_details": {
+                        "temperature": {"type": "number", "maximum": 2, "step": 0.5},
+                        "count": {"type": "integer"},
+                        "mode": {"values": [1]},
+                    },
+                },
+            },
+            {
+                "id": "narrow",
+                "provider": {"id": "narrow"},
+                "endpoint": "responses",
+                "routable": True,
+                "status": "active",
+                "capabilities": {
+                    "parameters": ["temperature", "count", "mode"],
+                    "parameter_details": {
+                        "temperature": {"type": "number", "maximum": 1, "step": 0.5},
+                        "count": {"type": "integer"},
+                        "mode": {"values": [1]},
+                    },
+                },
+            },
+            {
+                "id": "unknown",
+                "provider": {"id": "unknown"},
+                "endpoint": "responses",
+                "routable": True,
+                "status": "active",
+                "capabilities": {},
+            },
+        ],
+    }
+
+    partial = check_parameter_support(model, {"temperature": 1.5})
+    assert partial["parameters"][0]["status"] == "partial"
+    assert "at most 1" in " ".join(partial["parameters"][0]["issues"])
+    assert partial["parameters"][0]["unsupported_by"] == []
+
+    invalid_type = check_parameter_support(model, {"count": 1.5})
+    assert invalid_type["parameters"][0]["status"] == "unsupported"
+    assert "must be an integer" in " ".join(invalid_type["parameters"][0]["issues"])
+
+    non_finite = check_parameter_support(model, {"temperature": float("inf")})
+    assert "must be finite" in " ".join(non_finite["parameters"][0]["issues"])
+
+    boolean_enum = check_parameter_support(model, {"mode": True})
+    assert "must be one of" in " ".join(boolean_enum["parameters"][0]["issues"])
+
+
+def test_model_capability_lookup_rejects_ambiguous_model_ids_before_requesting():
+    mock = MockTransport([])
+    with httpx.Client(transport=mock) as http:
+        with Phaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+            with pytest.raises(ValueError, match="author/slug format"):
+                client.models.capabilities("author/slug/extra")
+    mock.assert_done()
+
+    async def run():
+        async_mock = MockTransport([])
+        async with httpx.AsyncClient(transport=async_mock) as http:
+            async with AsyncPhaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+                with pytest.raises(ValueError, match="author/slug format"):
+                    await client.models.capabilities("author//slug")
+        async_mock.assert_done()
+
+    asyncio.run(run())
 
 
 def test_async_models_parameter_check_uses_the_same_live_report():

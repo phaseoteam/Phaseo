@@ -146,9 +146,26 @@ function routeReference(route: ModelEndpointCapabilityLike): ParameterRouteRefer
   };
 }
 
+function matchesParameterType(value: unknown, expected: unknown): boolean {
+  switch (expected) {
+    case "number": return typeof value === "number";
+    case "integer": return typeof value === "number" && Number.isInteger(value);
+    case "boolean": return typeof value === "boolean";
+    case "string": return typeof value === "string";
+    case "array": return Array.isArray(value);
+    case "object": return value !== null && typeof value === "object" && !Array.isArray(value);
+    case "null": return value === null;
+    default: return true;
+  }
+}
+
 function parameterValueIssues(name: string, value: unknown, detail: Record<string, unknown>): string[] {
   const issues: string[] = [];
   if (detail.supported === false) issues.push(`${name} is unsupported`);
+  if (!matchesParameterType(value, detail.type)) {
+    const article = detail.type === "integer" || detail.type === "object" ? "an" : "a";
+    issues.push(`${name} must be ${article} ${String(detail.type)}`);
+  }
   const allowed = Array.isArray(detail.values) ? detail.values : Array.isArray(detail.enum) ? detail.enum : undefined;
   if (allowed && !allowed.some(item => Object.is(item, value) || JSON.stringify(item) === JSON.stringify(value))) {
     issues.push(`${name} must be one of: ${allowed.map(String).join(", ")}`);
@@ -195,7 +212,6 @@ export function checkParameterSupport(
       const reference = routeReference(route);
       const advertised = route.capabilities?.parameters;
       if (!Array.isArray(advertised)) {
-        unsupportedBy.push(reference);
         continue;
       }
       knownRouteCount += 1;
@@ -216,14 +232,14 @@ export function checkParameterSupport(
       ? "unknown"
       : supportedBy.length === 0
         ? "unsupported"
-        : supportedBy.length === routes.length
+        : acceptedBy.length === 0
+          ? "unsupported"
+          : acceptedBy.length === routes.length
           ? "supported"
           : "partial";
-    const issues = status === "unsupported"
+    const issues = supportedBy.length === 0 && status === "unsupported"
       ? [`${name} is not supported by any matching active route`]
-      : supportedBy.length > 0 && acceptedBy.length === 0
-        ? [...new Set(valueIssues)]
-        : [];
+      : [...new Set(valueIssues)];
     return { name, value, status, supportedBy, acceptedBy, unsupportedBy, constraints, issues };
   });
 

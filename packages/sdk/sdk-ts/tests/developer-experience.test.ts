@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { Phaseo, responseMetadata, RequestTimeoutError, parseOutput, collectStream, checkCapabilities, batchResults, matchBatchResult } from "../src/index.js";
+import { Phaseo, responseMetadata, RequestTimeoutError, parseOutput, collectStream, checkCapabilities, checkParameterSupport, batchResults, matchBatchResult } from "../src/index.js";
 import { createMockTransport } from "../src/testing.js";
 import { PhaseoHttpError } from "../src/runtime/client.js";
 import { JobHandle } from "../src/jobHandle.js";
@@ -245,5 +245,65 @@ test("live model parameter checks identify partial support and invalid values", 
   const unsupported = await client.models.checkParameters("openai/gpt-5", { seed: 42 });
   expect(unsupported.parameters[0]).toMatchObject({ name: "seed", status: "unsupported" });
   expect(unsupported.issues.join(" ")).toContain("seed is not supported");
+  mock.assertDone();
+});
+
+test("parameter reports validate types, preserve partial issues, and omit unknown routes", () => {
+  const model = {
+    id: "test/model",
+    endpoints: [
+      {
+        id: "wide",
+        provider: { id: "wide" },
+        endpoint: "responses",
+        routable: true,
+        status: "active",
+        capabilities: {
+          parameters: ["temperature", "count"],
+          parameter_details: {
+            temperature: { type: "number", maximum: 2 },
+            count: { type: "integer" },
+          },
+        },
+      },
+      {
+        id: "narrow",
+        provider: { id: "narrow" },
+        endpoint: "responses",
+        routable: true,
+        status: "active",
+        capabilities: {
+          parameters: ["temperature", "count"],
+          parameter_details: {
+            temperature: { type: "number", maximum: 1 },
+            count: { type: "integer" },
+          },
+        },
+      },
+      {
+        id: "unknown",
+        provider: { id: "unknown" },
+        endpoint: "responses",
+        routable: true,
+        status: "active",
+        capabilities: {},
+      },
+    ],
+  };
+
+  const partial = checkParameterSupport(model, { temperature: 1.5 });
+  expect(partial.parameters[0]).toMatchObject({ status: "partial" });
+  expect(partial.parameters[0].issues.join(" ")).toContain("at most 1");
+  expect(partial.parameters[0].unsupportedBy).toEqual([]);
+
+  const invalidType = checkParameterSupport(model, { count: 1.5 });
+  expect(invalidType.parameters[0]).toMatchObject({ status: "unsupported" });
+  expect(invalidType.parameters[0].issues.join(" ")).toContain("must be an integer");
+});
+
+test("model capability lookup rejects ambiguous model IDs before requesting", async () => {
+  const { client, mock } = setup([]);
+  await expect(client.models.capabilities("author/slug/extra")).rejects.toThrow("author/slug format");
+  await expect(client.models.capabilities("author//slug")).rejects.toThrow("author/slug format");
   mock.assertDone();
 });

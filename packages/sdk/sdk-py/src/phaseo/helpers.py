@@ -124,24 +124,53 @@ def _parameter_route_reference(route: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def _matches_parameter_type(value: Any, expected: Any) -> bool:
+    if expected == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if expected == "integer":
+        return (
+            isinstance(value, int) and not isinstance(value, bool)
+            or isinstance(value, float) and value.is_integer()
+        )
+    if expected == "boolean":
+        return isinstance(value, bool)
+    if expected == "string":
+        return isinstance(value, str)
+    if expected == "array":
+        return isinstance(value, list)
+    if expected == "object":
+        return isinstance(value, dict)
+    if expected == "null":
+        return value is None
+    return True
+
+
 def _parameter_value_issues(name: str, value: Any, detail: dict[str, Any]) -> list[str]:
     issues: list[str] = []
     if detail.get("supported") is False:
         issues.append(f"{name} is unsupported")
+    if not _matches_parameter_type(value, detail.get("type")):
+        article = "an" if detail.get("type") in {"integer", "object"} else "a"
+        issues.append(f"{name} must be {article} {detail.get('type')}")
     allowed = detail.get("values", detail.get("enum"))
-    if isinstance(allowed, list) and value not in allowed:
+    if isinstance(allowed, list) and not any(
+        item == value and isinstance(item, bool) == isinstance(value, bool)
+        for item in allowed
+    ):
         issues.append(f"{name} must be one of: {', '.join(map(str, allowed))}")
     if isinstance(value, (int, float)) and not isinstance(value, bool):
-        if not math.isfinite(value):
+        is_finite = not isinstance(value, float) or math.isfinite(value)
+        if not is_finite:
             issues.append(f"{name} must be finite")
-        if isinstance(detail.get("minimum"), (int, float)) and value < detail["minimum"]:
-            issues.append(f"{name} must be at least {detail['minimum']}")
-        if isinstance(detail.get("maximum"), (int, float)) and value > detail["maximum"]:
-            issues.append(f"{name} must be at most {detail['maximum']}")
-        if isinstance(detail.get("step"), (int, float)) and detail["step"] > 0:
-            steps = (value - detail.get("minimum", 0)) / detail["step"]
-            if abs(steps - round(steps)) > 1e-8:
-                issues.append(f"{name} must use steps of {detail['step']}")
+        else:
+            if isinstance(detail.get("minimum"), (int, float)) and value < detail["minimum"]:
+                issues.append(f"{name} must be at least {detail['minimum']}")
+            if isinstance(detail.get("maximum"), (int, float)) and value > detail["maximum"]:
+                issues.append(f"{name} must be at most {detail['maximum']}")
+            if isinstance(detail.get("step"), (int, float)) and detail["step"] > 0:
+                steps = (value - detail.get("minimum", 0)) / detail["step"]
+                if abs(steps - round(steps)) > 1e-8:
+                    issues.append(f"{name} must use steps of {detail['step']}")
     return issues
 
 
@@ -185,7 +214,6 @@ def check_parameter_support(
             capabilities = route.get("capabilities") or {}
             advertised = capabilities.get("parameters")
             if not isinstance(advertised, list):
-                unsupported_by.append(reference)
                 continue
             known_route_count += 1
             detail = (capabilities.get("parameter_details") or {}).get(name)
@@ -208,14 +236,16 @@ def check_parameter_support(
             status = "unknown"
         elif not supported_by:
             status = "unsupported"
-        elif len(supported_by) == len(routes):
+        elif not accepted_by:
+            status = "unsupported"
+        elif len(accepted_by) == len(routes):
             status = "supported"
         else:
             status = "partial"
         issues = (
             [f"{name} is not supported by any matching active route"]
-            if status == "unsupported"
-            else list(dict.fromkeys(value_issues)) if supported_by and not accepted_by else []
+            if status == "unsupported" and not supported_by
+            else list(dict.fromkeys(value_issues))
         )
         parameters.append({
             "name": name,

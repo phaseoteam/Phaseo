@@ -346,8 +346,10 @@ class AsyncPhaseo:
         model_id: str,
         params: dict[str, Any] | None = None,
     ) -> APIResponse:
-        author, separator, slug = model_id.partition("/")
-        if not separator or not author or not slug:
+        if model_id.count("/") != 1:
+            raise ValueError("model_id must use author/slug format")
+        author, slug = model_id.split("/", 1)
+        if not author or not slug:
             raise ValueError("model_id must use author/slug format")
         return await self.request(
             "GET",
