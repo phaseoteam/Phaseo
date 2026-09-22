@@ -64,12 +64,28 @@ type PricingSkuRow = {
     provider_model_id: string;
     operation: string;
     service_tier_slug: string | null;
+    status?: string | null;
     currency: string | null;
     effective_from: string | null;
     effective_to: string | null;
     metadata: unknown;
     description: string | null;
 };
+
+export function isCurrentStandardPricingSku(
+    sku: Pick<PricingSkuRow, "status" | "service_tier_slug" | "effective_from" | "effective_to">,
+    nowMs = Date.now(),
+): boolean {
+    if (sku.status && sku.status !== "active") return false;
+    const tier = sku.service_tier_slug?.trim().toLowerCase();
+    if (tier && tier !== "standard") return false;
+
+    const effectiveFrom = sku.effective_from ? Date.parse(sku.effective_from) : Number.NaN;
+    if (Number.isFinite(effectiveFrom) && effectiveFrom > nowMs) return false;
+    const effectiveTo = sku.effective_to ? Date.parse(sku.effective_to) : Number.NaN;
+    if (Number.isFinite(effectiveTo) && effectiveTo <= nowMs) return false;
+    return true;
+}
 
 type PricingMeterRow = {
     sku_meter_id: string;
@@ -1381,10 +1397,10 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     for (const providerModelIdChunk of chunkArray(Array.from(new Set(providerModelIds)), 200)) {
         const { data, error: skuError } = await supabase
             .from("v2_pricing_skus")
-            .select("sku_id,provider_model_id,operation,service_tier_slug,currency,effective_from,effective_to,metadata,description")
+            .select("sku_id,provider_model_id,operation,service_tier_slug,status,currency,effective_from,effective_to,metadata,description")
             .in("provider_model_id", providerModelIdChunk);
         if (skuError) throw new Error(`Failed to load pricing SKUs: ${skuError.message || "unknown error"}`);
-        skuRows.push(...(data ?? []) as PricingSkuRow[]);
+        skuRows.push(...((data ?? []) as PricingSkuRow[]).filter((sku) => isCurrentStandardPricingSku(sku)));
     }
     const skuIds = (skuRows ?? []).map((row) => row.sku_id).filter(Boolean);
     const meterRows: PricingMeterRow[] = [];

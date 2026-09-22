@@ -159,6 +159,15 @@ const controlPlaneReadTools: ReadToolDefinition[] = [
 	},
 ];
 
+const tokenPricingSchema = {
+	inputPricePerToken: z.string().nullable(),
+	outputPricePerToken: z.string().nullable(),
+	inputPricePerMillion: z.number().nonnegative().nullable(),
+	outputPricePerMillion: z.number().nonnegative().nullable(),
+	currency: z.string().nullable(),
+	isFree: z.boolean(),
+};
+
 const modelSummarySchema = {
 	id: z.string(),
 	name: z.string(),
@@ -169,6 +178,11 @@ const modelSummarySchema = {
 	outputModalities: z.array(z.string()),
 	inputPricePerToken: z.string().nullable(),
 	outputPricePerToken: z.string().nullable(),
+	inputPricePerMillion: z.number().nonnegative().nullable(),
+	outputPricePerMillion: z.number().nonnegative().nullable(),
+	inputPriceProviderId: z.string().nullable(),
+	outputPriceProviderId: z.string().nullable(),
+	hasFreeProvider: z.boolean(),
 	supportsTools: z.boolean(),
 	gatewayAvailable: z.boolean(),
 	gatewayModelId: z.string().nullable(),
@@ -181,6 +195,7 @@ const modelSummarySchema = {
 		status: z.enum(["active", "coming_soon", "inactive"]),
 		routable: z.boolean(),
 		supportedParameters: z.array(z.string()),
+		pricing: z.object(tokenPricingSchema),
 	})),
 };
 
@@ -232,9 +247,43 @@ export function matchesModelProvider(
 		|| model.offers.some((offer) => offer.routable && normalise(offer.provider.name).includes(query));
 }
 
-function tokenRateString(meter: GatewayMeter | null | undefined): string | null {
-	const rate = tokenRate(meter);
-	return rate === null ? null : String(rate);
+function tokenMeter(modelOrOffer: { pricing: GatewayModel["pricing"] }, direction: "input" | "output") {
+	return modelOrOffer.pricing.meters[`${direction}_tokens`]
+		?? modelOrOffer.pricing.meters[`${direction}_text_tokens`];
+}
+
+function pricingDetails(modelOrOffer: { pricing: GatewayModel["pricing"] }) {
+	const inputMeter = tokenMeter(modelOrOffer, "input");
+	const outputMeter = tokenMeter(modelOrOffer, "output");
+	const inputRate = tokenRate(inputMeter);
+	const outputRate = tokenRate(outputMeter);
+	return {
+		inputPricePerToken: inputRate === null ? null : String(inputRate),
+		outputPricePerToken: outputRate === null ? null : String(outputRate),
+		inputPricePerMillion: inputRate === null ? null : inputRate * 1_000_000,
+		outputPricePerMillion: outputRate === null ? null : outputRate * 1_000_000,
+		currency: inputMeter?.currency ?? outputMeter?.currency ?? null,
+		isFree: (inputRate === 0 || inputRate === null) && (outputRate === 0 || outputRate === null)
+			&& (inputRate === 0 || outputRate === 0),
+	};
+}
+
+function lowestPaidOffer(model: GatewayModel, direction: "input" | "output") {
+	return model.offers
+		.filter((offer) => offer.routable)
+		.map((offer) => ({ offer, rate: tokenRate(tokenMeter(offer, direction)) }))
+		.filter((entry): entry is { offer: GatewayModel["offers"][number]; rate: number } => entry.rate !== null && entry.rate > 0)
+		.sort((left, right) => left.rate - right.rate)[0] ?? null;
+}
+
+function lowestPaidPrice(model: GatewayModel, direction: "input" | "output") {
+	const offerPrice = lowestPaidOffer(model, direction);
+	if (offerPrice) return { rate: offerPrice.rate, providerId: offerPrice.offer.provider.id };
+	const aggregateMeter = tokenMeter(model, direction);
+	const aggregateRate = tokenRate(aggregateMeter);
+	return aggregateRate !== null && aggregateRate > 0
+		? { rate: aggregateRate, providerId: aggregateMeter?.provider_id ?? null }
+		: null;
 }
 
 function modelUrl(env: PhaseoEnv, modelId: string): string {
@@ -244,6 +293,9 @@ function modelUrl(env: PhaseoEnv, modelId: string): string {
 
 function modelSummary(env: PhaseoEnv, model: Awaited<ReturnType<typeof listModels>>[number]) {
 	const gatewayAvailable = model.offers.some((offer) => offer.routable);
+	const inputPrice = lowestPaidPrice(model, "input");
+	const outputPrice = lowestPaidPrice(model, "output");
+	const routablePricing = model.offers.filter((offer) => offer.routable).map(pricingDetails);
 	return {
 		id: model.id,
 		name: model.name,
@@ -252,8 +304,13 @@ function modelSummary(env: PhaseoEnv, model: Awaited<ReturnType<typeof listModel
 		contextTokens: model.limits.input_tokens,
 		inputModalities: model.modalities.input,
 		outputModalities: model.modalities.output,
-		inputPricePerToken: tokenRateString(model.pricing.meters.input_tokens ?? model.pricing.meters.input_text_tokens),
-		outputPricePerToken: tokenRateString(model.pricing.meters.output_tokens ?? model.pricing.meters.output_text_tokens),
+		inputPricePerToken: inputPrice === null ? null : String(inputPrice.rate),
+		outputPricePerToken: outputPrice === null ? null : String(outputPrice.rate),
+		inputPricePerMillion: inputPrice === null ? null : inputPrice.rate * 1_000_000,
+		outputPricePerMillion: outputPrice === null ? null : outputPrice.rate * 1_000_000,
+		inputPriceProviderId: inputPrice?.providerId ?? null,
+		outputPriceProviderId: outputPrice?.providerId ?? null,
+		hasFreeProvider: routablePricing.some((pricing) => pricing.isFree),
 		supportsTools: model.capabilities.parameters.includes("tools"),
 		gatewayAvailable,
 		gatewayModelId: gatewayAvailable ? model.id : null,
@@ -266,6 +323,7 @@ function modelSummary(env: PhaseoEnv, model: Awaited<ReturnType<typeof listModel
 			status: offer.status,
 			routable: offer.routable,
 			supportedParameters: offer.capabilities.parameters,
+			pricing: pricingDetails(offer),
 		})),
 	};
 }
@@ -275,9 +333,9 @@ type ModelSort = "relevance" | "input_price" | "output_price" | "context_length"
 function modelSortValue(model: GatewayModel, sortBy: Exclude<ModelSort, "relevance">): number | null {
 	switch (sortBy) {
 		case "input_price":
-			return tokenRate(model.pricing.meters.input_tokens ?? model.pricing.meters.input_text_tokens);
+			return lowestPaidPrice(model, "input")?.rate ?? null;
 		case "output_price":
-			return tokenRate(model.pricing.meters.output_tokens ?? model.pricing.meters.output_text_tokens);
+			return lowestPaidPrice(model, "output")?.rate ?? null;
 		case "context_length":
 			return model.limits.input_tokens;
 		case "provider_count":
@@ -597,7 +655,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		"models_list",
 		{
 			title: "Search Phaseo models",
-			description: "Use this when the user wants to find or compare current AI models, including the cheapest models by input or output token price and the providers supporting each model. Filters and sorts the live Phaseo catalogue; it does not measure model quality. Read-only.",
+			description: "Use this when the user wants to find or compare current AI models, including the cheapest paid standard-tier price and provider-by-provider pricing. A free provider is reported explicitly and never presented as if every provider were free. Filters and sorts the live Phaseo catalogue; it does not measure model quality. Read-only.",
 			inputSchema: {
 				query: z.string().max(200).optional(),
 				provider: z.string().max(100).optional(),
@@ -642,7 +700,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		"model_get",
 		{
 			title: "Get a Phaseo model",
-			description: "Get live pricing, capabilities, and structured provider support for one Phaseo model ID. Read-only.",
+			description: "Get live standard-tier pricing, capabilities, and structured provider-by-provider support for one Phaseo model ID. Free offers are identified separately from the lowest paid price. Read-only.",
 			inputSchema: { modelId: z.string().min(1).max(200) },
 			outputSchema: { model: z.object(modelSummarySchema) },
 			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -755,9 +813,10 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		"cost_estimate",
 		{
 			title: "Estimate a Phaseo model cost",
-			description: "Estimate input, cached-input, and output token cost from Phaseo's current listed model pricing. This is an estimate, not a bill. Read-only.",
+			description: "Estimate input, cached-input, and output token cost for one concrete Phaseo provider offer. Optionally select a provider; otherwise the lowest-cost paid routable provider with complete pricing is used. This is an estimate, not a bill. Read-only.",
 			inputSchema: {
 				modelId: z.string().min(1).max(200),
+				providerId: z.string().min(1).max(100).optional(),
 				inputTokens: z.number().int().nonnegative(),
 				cachedInputTokens: z.number().int().nonnegative().default(0),
 				outputTokens: z.number().int().nonnegative(),
@@ -765,6 +824,9 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 			outputSchema: {
 				estimate: z.object({
 					modelId: z.string(),
+					providerId: z.string(),
+					pricingPlan: z.string(),
+					isFree: z.boolean(),
 					inputTokens: z.number().int(),
 					cachedInputTokens: z.number().int(),
 					outputTokens: z.number().int(),
@@ -778,22 +840,39 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			_meta: oauthToolMeta(["models:read", "pricing:read"]),
 		},
-		async ({ modelId, inputTokens, cachedInputTokens, outputTokens }) => {
+		async ({ modelId, providerId, inputTokens, cachedInputTokens, outputTokens }) => {
 			try {
 				const model = await getModel(env, modelId, { accessToken: authenticatedUser.accessToken });
 				if (!model) return { isError: true as const, content: [{ type: "text" as const, text: `No Phaseo model exists with ID "${modelId}".` }] };
-				const inputRate = tokenRate(model.pricing.meters.input_tokens ?? model.pricing.meters.input_text_tokens);
-				const cachedRate = tokenRate(model.pricing.meters.implicit_cached_input_text_tokens ?? model.pricing.meters.cached_read_text_tokens);
-				const outputRate = tokenRate(model.pricing.meters.output_tokens ?? model.pricing.meters.output_text_tokens);
-				if (inputRate === null || outputRate === null || (cachedInputTokens > 0 && cachedRate === null)) {
-					return { isError: true as const, content: [{ type: "text" as const, text: `Phaseo does not currently expose enough token pricing to estimate ${modelId}.` }] };
+				const candidates = model.offers
+					.filter((offer) => offer.routable && (!providerId || offer.provider.id === providerId))
+					.flatMap((offer) => {
+						const inputRate = tokenRate(tokenMeter(offer, "input"));
+						const cachedRate = tokenRate(offer.pricing.meters.implicit_cached_input_text_tokens ?? offer.pricing.meters.cached_read_text_tokens);
+						const outputRate = tokenRate(tokenMeter(offer, "output"));
+						if (inputRate === null || outputRate === null || (cachedInputTokens > 0 && cachedRate === null)) return [];
+						const inputCostUSD = inputTokens * inputRate;
+						const cachedInputCostUSD = cachedInputTokens * (cachedRate ?? 0);
+						const outputCostUSD = outputTokens * outputRate;
+						return [{
+							offer, inputCostUSD, cachedInputCostUSD, outputCostUSD,
+							totalCostUSD: inputCostUSD + cachedInputCostUSD + outputCostUSD,
+							isFree: inputRate === 0 && outputRate === 0 && (cachedInputTokens === 0 || cachedRate === 0),
+						}];
+					});
+				const eligible = providerId ? candidates : candidates.filter((candidate) => !candidate.isFree);
+				const selected = (eligible.length ? eligible : candidates).sort((left, right) => left.totalCostUSD - right.totalCostUSD)[0];
+				if (!selected) {
+					const qualifier = providerId ? ` for provider ${providerId}` : "";
+					return { isError: true as const, content: [{ type: "text" as const, text: `Phaseo does not currently expose enough token pricing to estimate ${modelId}${qualifier}.` }] };
 				}
-				const inputCostUSD = inputTokens * inputRate;
-				const cachedInputCostUSD = cachedInputTokens * (cachedRate ?? 0);
-				const outputCostUSD = outputTokens * outputRate;
-				const totalCostUSD = inputCostUSD + cachedInputCostUSD + outputCostUSD;
-				const estimate = { modelId, inputTokens, cachedInputTokens, outputTokens, inputCostUSD, cachedInputCostUSD, outputCostUSD, totalCostUSD, currency: "USD" as const };
-				return { content: [{ type: "text" as const, text: `Estimated cost for ${model.name}: $${totalCostUSD.toFixed(6)} USD.` }], structuredContent: { estimate } };
+				const estimate = {
+					modelId, providerId: selected.offer.provider.id, pricingPlan: selected.offer.pricing.pricing_plan,
+					isFree: selected.isFree, inputTokens, cachedInputTokens, outputTokens,
+					inputCostUSD: selected.inputCostUSD, cachedInputCostUSD: selected.cachedInputCostUSD,
+					outputCostUSD: selected.outputCostUSD, totalCostUSD: selected.totalCostUSD, currency: "USD" as const,
+				};
+				return { content: [{ type: "text" as const, text: `Estimated cost for ${model.name} through ${selected.offer.provider.name ?? selected.offer.provider.id}: $${selected.totalCostUSD.toFixed(6)} USD.` }], structuredContent: { estimate } };
 			} catch (error) { return errorResult(error); }
 		},
 	);
