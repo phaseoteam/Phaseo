@@ -65,4 +65,50 @@ describe("public update routes", () => {
 			}],
 		});
 	});
+
+	it("uses catalogue availability to break equal lifecycle-date ties", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([
+			{
+				model_slug: "spacex-ai/grok-4.7",
+				name: "Grok 4.7",
+				lab_slug: "spacex-ai",
+				released_at: "2026-09-21T00:00:00Z",
+				created_at: "2026-08-13T00:00:00Z",
+				lab: { lab_slug: "spacex-ai", name: "xAI" },
+			},
+			{
+				model_slug: "xiaomi/mimo-v2.6-flash",
+				name: "MiMo V2.6 Flash",
+				lab_slug: "xiaomi",
+				released_at: "2026-09-21T00:00:00Z",
+				created_at: "2026-09-21T12:00:00Z",
+				lab: { lab_slug: "xiaomi", name: "Xiaomi" },
+			},
+		]), { status: 200 })));
+
+		const [response, cardsResponse] = await Promise.all([
+			app.request(
+				"https://phaseo.app/api/_web/updates/models?limit=5&upcoming_limit=0",
+				{},
+				env,
+			),
+			app.request("https://phaseo.app/api/_web/updates/models/cards?limit=5", {}, env),
+		]);
+
+		expect(response.status).toBe(200);
+		expect(cardsResponse.status).toBe(200);
+		const body = await response.json() as {
+			past: Array<{ model: { model_id: string }; cataloguedAt?: string }>;
+		};
+		const cardsBody = await cardsResponse.json() as { updates: Array<{ title: string }> };
+		expect(body.past.map((event) => event.model.model_id)).toEqual([
+			"xiaomi/mimo-v2.6-flash",
+			"spacex-ai/grok-4.7",
+		]);
+		expect(cardsBody.updates.map((update) => update.title)).toEqual([
+			"MiMo V2.6 Flash",
+			"Grok 4.7",
+		]);
+		expect(body.past.every((event) => event.cataloguedAt === undefined)).toBe(true);
+	});
 });
