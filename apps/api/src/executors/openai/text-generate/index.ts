@@ -62,6 +62,10 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"gpt-5.6-terra-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-6-astra": new Set(["low", "medium", "high", "xhigh", "max"]),
 	"gpt-6-astra-pro": new Set(["low", "medium", "high", "xhigh", "max"]),
+	"gpt-6-luna": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-6-luna-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-6-sol": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-6-sol-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"o1": new Set(["low", "medium", "high"]),
 	"o1-preview": new Set(["low", "medium", "high"]),
 	"o1-mini": new Set(["low", "medium", "high"]),
@@ -422,7 +426,7 @@ function normalizeOpenAIProModelSlug(model?: string | null): {
 } {
 	const normalized = normalizeModelName(model);
 	if (!normalized) return { model: model ?? null, proMode: false };
-	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-astra)-pro$/i);
+	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-(?:sol|luna|astra))-pro$/i);
 	if (!match) return { model: model ?? null, proMode: false };
 	return { model: match[1].toLowerCase(), proMode: true };
 }
