@@ -251,17 +251,48 @@ function isRequiredOnlySchema(schema: OpenAPIV3.SchemaObject): boolean {
 	return hasRequired && !hasType && !hasProperties && !hasAdditionalProperties && !hasCombinators && !hasEnum;
 }
 
+const schemaConstraintKeys = new Set([
+	"$dynamicRef",
+	"$ref",
+	"additionalProperties",
+	"allOf",
+	"anyOf",
+	"const",
+	"contains",
+	"dependentRequired",
+	"dependentSchemas",
+	"else",
+	"enum",
+	"exclusiveMaximum",
+	"exclusiveMinimum",
+	"if",
+	"items",
+	"maxContains",
+	"maximum",
+	"maxItems",
+	"maxLength",
+	"maxProperties",
+	"minContains",
+	"minimum",
+	"minItems",
+	"minLength",
+	"minProperties",
+	"multipleOf",
+	"not",
+	"oneOf",
+	"pattern",
+	"patternProperties",
+	"prefixItems",
+	"properties",
+	"propertyNames",
+	"required",
+	"then",
+	"type",
+	"unevaluatedItems",
+	"unevaluatedProperties",
+	"uniqueItems",
+]);
+
 function isUnconstrainedSchema(schema: OpenAPIV3.SchemaObject): boolean {
-	const annotationKeys = new Set([
-		"deprecated",
-		"description",
-		"example",
-		"examples",
-		"externalDocs",
-		"nullable",
-		"readOnly",
-		"title",
-		"writeOnly",
-	]);
-	return Object.keys(schema).every((key) => annotationKeys.has(key));
+	return Object.keys(schema).every((key) => !schemaConstraintKeys.has(key));
 }

@@ -27,6 +27,24 @@ if (pythonArgs.length === 0) {
 }
 
 const configuredPython = String(process.env.PHASEO_PYTHON ?? "").trim();
+const uvProbe = spawnSync("uv", ["--version"], { stdio: "ignore" });
+const hasUv = !uvProbe.error && uvProbe.status === 0;
+const runWithUv = () => {
+	const requirements = [requiredModule, ...uvRequirements].filter(Boolean);
+	const withArgs = requirements.flatMap((requirement) => ["--with", requirement]);
+	const result = spawnSync("uv", ["run", "--no-project", ...withArgs, "python", ...pythonArgs], {
+		stdio: "inherit",
+	});
+	if (result.error) console.error(result.error.message);
+	process.exit(result.status ?? 1);
+};
+
+// `--with` requests an isolated environment. Prefer uv when it is available so
+// an otherwise usable local interpreter cannot silently ignore those packages.
+if (uvRequirements.length > 0 && hasUv) {
+	runWithUv();
+}
+
 const candidates = configuredPython
 	? [{ command: configuredPython, prefix: [] }]
 	: process.platform === "win32"
@@ -62,16 +80,8 @@ for (const candidate of candidates) {
 	process.exit(result.status ?? 1);
 }
 
-if (requiredModule) {
-	const uvProbe = spawnSync("uv", ["--version"], { stdio: "ignore" });
-	if (!uvProbe.error && uvProbe.status === 0) {
-		const withArgs = [requiredModule, ...uvRequirements].flatMap((requirement) => ["--with", requirement]);
-		const result = spawnSync("uv", ["run", "--no-project", ...withArgs, "python", ...pythonArgs], {
-			stdio: "inherit",
-		});
-		if (result.error) console.error(result.error.message);
-		process.exit(result.status ?? 1);
-	}
+if (requiredModule && hasUv) {
+	runWithUv();
 }
 
 const requirement = requiredModule ? ` with the '${requiredModule}' module` : "";
