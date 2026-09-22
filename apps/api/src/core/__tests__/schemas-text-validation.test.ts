@@ -31,6 +31,16 @@ describe("text request schema validation", () => {
 		expect(messages.success).toBe(true);
 	});
 
+	it("accepts instant reasoning effort on Responses requests", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "inception/mercury-2.5",
+			input: "hello",
+			reasoning: { effort: "instant" },
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
 	it("accepts chat streaming when tools are present", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",

@@ -496,7 +496,7 @@ class ChatCompletionsRequest(TypedDict):
 	provider: NotRequired[Union[Literal["openai", "anthropic", "google-ai-studio", "gemini", "mistral", "x-ai", "xai", "groq", "together"], ProviderRoutingOptions]]
 	provider_options: NotRequired[ProviderOptions]
 	reasoning: NotRequired[ReasoningConfig]
-	reasoning_effort: NotRequired[Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]]
+	reasoning_effort: NotRequired[Literal["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]]
 	response_format: NotRequired[Union[str, Dict[str, Any]]]
 	safety_identifier: NotRequired[Optional[str]]
 	seed: NotRequired[int]
@@ -2212,7 +2212,7 @@ class ProvisioningKeyWithValue(TypedDict):
 	status: NotRequired[Literal["active", "disabled", "revoked"]]
 
 class ReasoningConfig(TypedDict):
-	effort: NotRequired[Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]]
+	effort: NotRequired[Literal["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]]
 	enabled: NotRequired[bool]
 	max_tokens: NotRequired[int]
 	mode: NotRequired[Literal["standard", "pro"]]

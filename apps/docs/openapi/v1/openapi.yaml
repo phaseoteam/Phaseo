@@ -9362,6 +9362,7 @@ components:
           description: OpenAI-compatible alias for `reasoning.effort`.
           enum:
             - none
+            - instant
             - minimal
             - low
             - medium
@@ -9980,6 +9981,7 @@ components:
           type: string
           enum:
             - none
+            - instant
             - minimal
             - low
             - medium

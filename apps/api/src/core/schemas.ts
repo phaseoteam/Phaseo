@@ -304,7 +304,7 @@ export const ResponsesSchema = z.object({
     previous_response_id: z.string().optional(),
 	context_management: OpenAIContextManagementSchema.optional(),
     reasoning: z.object({
-        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
+        effort: z.enum(["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
         mode: z.enum(["standard", "pro"]).nullable().optional(),
         summary: z.enum(["auto", "concise", "detailed"]).nullable().optional(),
 		context: z.enum(["auto", "current_turn", "all_turns"]).nullable().optional(),
