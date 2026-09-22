@@ -112,7 +112,7 @@ function messageText(content: unknown): string | null {
 
 function normalizeConversation(request: SdkRequest, allowTools = false) {
   if (!textProtocolForRequest(request)) return { messages: [] as ConversationMessage[], reason: "Available for text requests" };
-  if (!allowTools && Array.isArray(request.body.tools) && request.body.tools.length > 0) return { messages: [] as ConversationMessage[], reason: "Protocol switching requires a request without tools" };
+  if (!allowTools && managedGatewayTools(request) === null) return { messages: [] as ConversationMessage[], reason: "Protocol switching cannot safely convert function tools" };
   const messages: ConversationMessage[] = [];
   if (typeof request.body.instructions === "string" && request.body.instructions.trim()) messages.push({ role: "system", text: request.body.instructions });
   if (typeof request.body.system === "string" && request.body.system.trim()) messages.push({ role: "system", text: request.body.system });
@@ -131,7 +131,7 @@ function normalizeConversation(request: SdkRequest, allowTools = false) {
   return { messages, reason: null };
 }
 
-const sharedTextKeys = ["model", "temperature", "top_p", "top_k", "stream", "provider", "provider_options", "reasoning", "metadata", "meta", "service_tier", "session_id", "prompt_cache_key", "web_search_options", "plugins"];
+const sharedTextKeys = ["model", "temperature", "top_p", "top_k", "stream", "provider", "provider_options", "reasoning", "metadata", "meta", "service_tier", "session_id", "prompt_cache_key", "web_search_options", "plugins", "tools"];
 const openAiControlKeys = ["presence_penalty", "frequency_penalty", "seed", "logit_bias", "logprobs", "top_logprobs", "user", "n", "response_format", "stream_options"];
 
 export function protocolSwitchSupportReason(request: SdkRequest, protocol?: TextProtocol): string | null {
@@ -203,7 +203,7 @@ export function agentSdkSupportReason(request: SdkRequest): string | null {
 function managedGatewayTools(request: SdkRequest): Array<Record<string, unknown>> | null {
   if (!Array.isArray(request.body.tools)) return [];
   const tools = request.body.tools.filter((tool): tool is Record<string, unknown> => Boolean(tool) && typeof tool === "object");
-  if (tools.some(tool => tool.type === "function"
+  if (tools.length !== request.body.tools.length || tools.some(tool => tool.type === "function"
     || ("function" in tool && typeof tool.function === "object")
     || (typeof tool.name === "string" && "input_schema" in tool))) return null;
   return tools;
