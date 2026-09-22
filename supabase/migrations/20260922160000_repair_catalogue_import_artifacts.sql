@@ -1,7 +1,6 @@
 -- Consolidate duplicate model and lab records introduced by provider catalogue
 -- imports. This migration is intentionally idempotent because the production
 -- data repair was applied before the repository migration was prepared.
--- phaseo:allow-destructive-migration reason: remove three empty duplicate lab rows after explicit dependency checks
 
 create temporary table catalogue_model_artifact_map (
   artifact text primary key,
@@ -163,11 +162,35 @@ from (values
 where provider.provider_slug = family.provider_slug
   and provider.provider_family_slug is distinct from family.provider_family_slug;
 
--- These imported lab aliases are empty and duplicate established canonical labs.
--- The dependency checks make the cleanup safe to re-run and prevent accidental
--- deletion if any of them acquires real catalogue data before deployment.
-delete from public.v2_labs as lab
+-- Catalogue history is append-only, so retire these empty imported aliases
+-- instead of deleting them. Dependency checks prevent hiding a lab that has
+-- acquired real catalogue data before deployment.
+update public.v2_labs as lab
+set status = 'disabled',
+    routable = false,
+    metadata = coalesce(lab.metadata, '{}'::jsonb) || jsonb_build_object(
+      'duplicate_of', case lab.lab_slug
+        when 'mistralai' then 'mistral'
+        when 'ibm-granite' then 'ibm'
+        when 'xai' then 'spacex-ai'
+      end,
+      'catalogue_artifact_repaired_at', coalesce(
+        lab.metadata -> 'catalogue_artifact_repaired_at',
+        to_jsonb(now())
+      )
+    ),
+    updated_at = now()
 where lab.lab_slug in ('mistralai', 'ibm-granite', 'xai')
+  and (
+    lab.status is distinct from 'disabled'
+    or lab.routable is distinct from false
+    or lab.metadata ->> 'duplicate_of' is distinct from case lab.lab_slug
+      when 'mistralai' then 'mistral'
+      when 'ibm-granite' then 'ibm'
+      when 'xai' then 'spacex-ai'
+    end
+    or lab.metadata -> 'catalogue_artifact_repaired_at' is null
+  )
   and not exists (
     select 1 from public.v2_models as model where model.lab_slug = lab.lab_slug
   )
