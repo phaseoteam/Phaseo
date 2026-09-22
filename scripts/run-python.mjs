@@ -60,7 +60,11 @@ const candidates = configuredPython
 
 let interpreterFound = false;
 for (const candidate of candidates) {
-	const probe = spawnSync(candidate.command, [...candidate.prefix, "--version"], { stdio: "ignore" });
+	const probe = spawnSync(candidate.command, [
+		...candidate.prefix,
+		"-c",
+		"import sys; sys.exit(0 if sys.version_info.major == 3 else 1)",
+	], { stdio: "ignore" });
 	if (probe.error || probe.status !== 0) continue;
 	interpreterFound = true;
 	if (requiredModule) {
