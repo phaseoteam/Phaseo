@@ -66,6 +66,10 @@ describe("getChangedSettings", () => {
 			{ ...DEFAULT_SETTINGS, serviceTier: "flex" },
 			"deepseek/deepseek-v4.1-flash",
 		)).toContainEqual({ label: "Service tier", value: "Flex" });
+		expect(getChangedSettings(
+			{ ...DEFAULT_SETTINGS, serviceTier: "priority" },
+			"openai/gpt-5.5",
+		)).toContainEqual({ label: "Service tier", value: "Fast" });
 	});
 });
 

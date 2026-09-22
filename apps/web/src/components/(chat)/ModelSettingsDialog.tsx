@@ -34,7 +34,10 @@ import {
     MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
     normalizeFavoriteModelId,
 } from "@/components/(chat)/playgroundConfig";
+import { REASONING_OPTIONS } from "@/components/(chat)/chatConversationHelpers";
 import { estimatePromptTokenCount } from "@/components/(chat)/playground/chat-playground-core";
+import type { ReasoningEffortSupport } from "@/components/(chat)/playground/reasoningEffortSupport";
+import type { ServiceTierOption } from "@/components/(chat)/playground/serviceTierSupport";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,7 +54,11 @@ import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { ChatModelSettings } from "@/lib/indexeddb/chats";
+import type {
+    ChatModelSettings,
+    ChatReasoningEffort,
+    ChatServiceTier,
+} from "@/lib/indexeddb/chats";
 import { ArrowLeft, CheckIcon, ChevronRight, RotateCcw, SearchIcon, Star } from "lucide-react";
 
 type ModelSettingsDialogProps = {
@@ -70,6 +77,10 @@ type ModelSettingsDialogProps = {
     modelLabel?: string;
     providerOptions: Array<{ id: string; name: string; logoId?: string }>;
     supportedProvidersForModel?: string[];
+    serviceTierOptions?: ServiceTierOption[];
+    serviceTier?: ChatServiceTier | null;
+    reasoningSupport?: ReasoningEffortSupport | null;
+    reasoningEffort?: ChatReasoningEffort | null;
     temperatureValue: number;
     maxTokensValue: number;
     topPValue: number;
@@ -154,6 +165,10 @@ export function ModelSettingsDialog({
     modelLabel,
     providerOptions,
     supportedProvidersForModel,
+    serviceTierOptions,
+    serviceTier,
+    reasoningSupport,
+    reasoningEffort,
     temperatureValue,
     maxTokensValue,
     topPValue,
@@ -352,6 +367,29 @@ export function ModelSettingsDialog({
             : (filteredProviderOptions.find(
                   (provider) => provider.id === providerValue
               )?.name ?? "Auto (Gateway)");
+    const supportedReasoningOptions = reasoningSupport?.supportedValues.length
+        ? REASONING_OPTIONS.filter((option) =>
+              reasoningSupport.supportedValues.includes(option.value)
+          )
+        : [];
+    const selectedReasoningOption = REASONING_OPTIONS.find(
+        (option) => option.value === (reasoningEffort ?? settings.reasoningEffort)
+    );
+    const reasoningStateLabel = settings.reasoningEnabled
+        ? `Selected: ${selectedReasoningOption?.label ?? "Default"}`
+        : "Disabled";
+    const availableServiceTierOptions = serviceTierOptions?.length
+        ? serviceTierOptions
+        : [{ value: "standard" as const, label: "Standard" }];
+    const requestedServiceTier = serviceTier ?? settings.serviceTier ?? "standard";
+    const selectedServiceTier =
+        availableServiceTierOptions.find(
+            (option) => option.value === requestedServiceTier,
+        )?.value ?? availableServiceTierOptions[0]?.value ?? "standard";
+    const selectedServiceTierLabel =
+        availableServiceTierOptions.find(
+            (option) => option.value === selectedServiceTier,
+        )?.label ?? "Standard";
     useEffect(() => {
         if (!modelPickerOpen) {
             setModelPickerListReady(false);
@@ -614,7 +652,7 @@ export function ModelSettingsDialog({
                     >
                 <DialogHeader className="mb-3 space-y-1">
                     <DialogTitle>
-                        Model settings
+                        Model Settings
                         {modelLabel ? ` - ${modelLabel}` : ""}
                     </DialogTitle>
                     <DialogDescription>
@@ -653,6 +691,29 @@ export function ModelSettingsDialog({
                             </div>
                         </div>
                         <div className="grid gap-1.5">
+                            <Label>Service tier</Label>
+                            <Select
+                                value={selectedServiceTier}
+                                disabled={availableServiceTierOptions.length <= 1}
+                                onValueChange={(value) =>
+                                    onUpdate({ serviceTier: value as ChatServiceTier })
+                                }
+                            >
+                                <SelectTrigger className="w-full min-w-0">
+                                    <SelectValue className="min-w-0">
+                                        {selectedServiceTierLabel}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableServiceTierOptions.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-1.5">
                             <Label>Model</Label>
                             <Button
                                 type="button"
@@ -688,6 +749,53 @@ export function ModelSettingsDialog({
                                 </span>
                                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                             </Button>
+                        </div>
+                        <div className="grid gap-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                                <Label>Reasoning</Label>
+                                <span className="text-xs text-muted-foreground">
+                                    {reasoningStateLabel}
+                                </span>
+                            </div>
+                            <div className="rounded-md border border-border bg-muted/20 px-3 py-2">
+                                {supportedReasoningOptions.length > 0 ? (
+                                    <>
+                                        <p className="mb-1.5 text-xs text-muted-foreground">
+                                            Supported efforts
+                                        </p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {supportedReasoningOptions.map((option) => (
+                                                <span
+                                                    key={option.value}
+                                                    className={
+                                                        option.value ===
+                                                        (reasoningEffort ??
+                                                            settings.reasoningEffort)
+                                                            ? "rounded-full border border-foreground bg-foreground px-2 py-0.5 text-xs font-medium text-background"
+                                                            : "rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
+                                                    }
+                                                >
+                                                    {option.label}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        {reasoningSupport?.defaultValue ? (
+                                            <p className="mt-2 text-xs text-muted-foreground">
+                                                Gateway default:{" "}
+                                                {REASONING_OPTIONS.find(
+                                                    (option) =>
+                                                        option.value ===
+                                                        reasoningSupport.defaultValue,
+                                                )?.label ?? reasoningSupport.defaultValue}
+                                            </p>
+                                        ) : null}
+                                    </>
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">
+                                        No enumerated effort values reported for this model.
+                                    </p>
+                                )}
+                            </div>
                         </div>
                         <div className="grid gap-1.5">
                             <Label>Provider</Label>
@@ -741,24 +849,6 @@ export function ModelSettingsDialog({
                                             </div>
                                         </SelectItem>
                                     ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-1.5">
-                            <Label>Service tier</Label>
-                            <Select
-                                value={settings.serviceTier ?? "standard"}
-                                onValueChange={(value) =>
-                                    onUpdate({ serviceTier: value as ChatModelSettings["serviceTier"] })
-                                }
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="standard">Standard</SelectItem>
-                                    <SelectItem value="priority">Priority</SelectItem>
-                                    <SelectItem value="flex">Flex</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

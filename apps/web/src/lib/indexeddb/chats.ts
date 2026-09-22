@@ -59,6 +59,8 @@ export type ChatReasoningEffort =
 	| "xhigh"
 	| "max";
 
+export type ChatServiceTier = "standard" | "priority" | "flex";
+
 export type ChatAdvisorServerToolConfig = {
     name?: string;
     model?: string;
@@ -144,7 +146,7 @@ export type ChatModelSettings = {
     systemPrompt?: string;
     stream: boolean;
     providerId?: string;
-    serviceTier?: "standard" | "priority" | "flex";
+	serviceTier?: ChatServiceTier;
     reasoningEnabled?: boolean;
 	reasoningEffort?: ChatReasoningEffort;
     endpoint?: UnifiedChatEndpoint;

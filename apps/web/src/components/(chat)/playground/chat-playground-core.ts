@@ -14,6 +14,7 @@ import type {
 	ChatThread,
 	UnifiedChatEndpoint,
 } from "@/lib/indexeddb/chats";
+import { getServiceTierLabel } from "@/components/(chat)/playground/serviceTierSupport";
 
 export const DEFAULT_SERVER_TOOLS: ChatServerToolType[] = ["gateway:datetime"];
 const CHARS_PER_APPROXIMATE_TOKEN = 4;
@@ -194,8 +195,8 @@ export const getChangedSettings = (
 				: "Auto (Gateway)",
 		);
 	}
-	if (settings.serviceTier && settings.serviceTier !== defaults.serviceTier) {
-		addChange("Service tier", settings.serviceTier === "priority" ? "Priority" : "Flex");
+	if ((settings.serviceTier ?? defaults.serviceTier) !== defaults.serviceTier) {
+		addChange("Service tier", getServiceTierLabel(settings.serviceTier));
 	}
 	if (settings.reasoningEnabled !== defaults.reasoningEnabled) {
 		addChange(
