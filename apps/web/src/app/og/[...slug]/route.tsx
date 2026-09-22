@@ -300,28 +300,32 @@ export async function GET(
 							</div>
 						) : null}
 
-						{brandLogoSrc ? (
-							<div
-								style={{
-									display: "flex",
-									alignItems: "flex-end",
-									justifyContent: "space-between",
-									marginTop: 88,
-								}}
-							>
-								<img
-									src={brandLogoSrc}
-									alt="Phaseo"
-									width={132}
-									height={27}
-									style={{ objectFit: "contain", objectPosition: "left bottom" }}
-								/>
-								<div style={{ color: "#77736d", fontSize: 18, fontWeight: 600, letterSpacing: 0.2 }}>
-									phaseo.app
-								</div>
-							</div>
-						) : null}
 					</div>
+
+					{brandLogoSrc ? (
+						<div
+							style={{
+								position: "absolute",
+								left: 58,
+								right: 58,
+								bottom: 38,
+								display: "flex",
+								alignItems: "flex-end",
+								justifyContent: "space-between",
+							}}
+						>
+							<img
+								src={brandLogoSrc}
+								alt="Phaseo"
+								width={132}
+								height={27}
+								style={{ objectFit: "contain", objectPosition: "left bottom" }}
+							/>
+							<div style={{ color: "#77736d", fontSize: 18, fontWeight: 600, letterSpacing: 0.2 }}>
+								phaseo.app
+							</div>
+						</div>
+					) : null}
 				</div>
 			</div>
 		),
