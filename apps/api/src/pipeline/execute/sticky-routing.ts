@@ -10,6 +10,9 @@ const STICKY_PREFIX = "gateway:routing:sticky";
 const STICKY_TTL_SECONDS = 15 * 60;
 const SESSION_STICKY_TTL_SECONDS = 24 * 60 * 60;
 const STICKY_L1_MAX_ENTRIES = 1_000;
+// Advisory hints only: refresh active keys at most once a minute per isolate.
+// Remote idle expiry can precede the latest local activity by up to this window.
+const STICKY_WRITE_REFRESH_MS = 60_000;
 const CONTEXT_HASH_VERSION = "v2-opening-anchors";
 const CACHE_AWARE_ROUTING_ENDPOINTS = new Set<Endpoint>([
     "responses",
@@ -37,6 +40,8 @@ type StickyL1Entry = {
 
 const stickyL1 = new Map<string, StickyL1Entry>();
 const stickyL1Inflight = new Map<string, Promise<void>>();
+const stickyWrites = new Map<string, { providerId: string; source: StickyRoutingEntry["source"]; positive: boolean; writtenAtMs: number }>();
+const stickyWriteQueues = new Map<string, Promise<void>>();
 
 function stickyTtlSeconds(value: StickyRoutingEntry | null): number {
     return value?.source === "session_id" ? SESSION_STICKY_TTL_SECONDS : STICKY_TTL_SECONDS;
@@ -55,9 +60,11 @@ function setStickyL1(key: string, value: StickyRoutingEntry | null): void {
 
 function refreshStickyL1(key: string): void {
     if (stickyL1Inflight.has(key)) return;
+    const previous = stickyL1.get(key);
     const refresh = getJson<StickyRoutingEntry>(key)
-        .then((value) => setStickyL1(key, value))
-        .catch(() => setStickyL1(key, null))
+        // A slow KV read must not replace a newer completion's local hint.
+        .then((value) => { if (stickyL1.get(key) === previous) setStickyL1(key, value); })
+        .catch(() => { if (stickyL1.get(key) === previous) setStickyL1(key, null); })
         .finally(() => stickyL1Inflight.delete(key));
     stickyL1Inflight.set(key, refresh);
     dispatchBackground(refresh);
@@ -413,8 +420,9 @@ export async function readStickyRouting(
     contextKey: string
 ): Promise<StickyRoutingEntry | null> {
     const key = buildStickyRoutingKey(workspaceId, endpoint, model, contextKey);
+    const previous = stickyL1.get(key);
     const value = await getJson<StickyRoutingEntry>(key);
-    setStickyL1(key, value);
+    if (stickyL1.get(key) === previous) setStickyL1(key, value);
     return value;
 }
 
@@ -450,12 +458,36 @@ export async function writeStickyRouting(
         createdAt: new Date().toISOString(),
     };
     setStickyL1(key, payload);
-    await putJson(key, payload, stickyTtlSeconds(payload));
+    // Serialize only background writes for this key. Recheck after the prior
+    // write so concurrent completions coalesce and provider changes stay ordered.
+    const previous = stickyWriteQueues.get(key) ?? Promise.resolve();
+    const write = previous.catch(() => {}).then(async () => {
+        const now = Date.now();
+        const persisted = stickyWrites.get(key);
+        const positive = Number.isFinite(cachedReadTokens) && cachedReadTokens > 0;
+        if (persisted && persisted.providerId === providerId && persisted.source === context.source &&
+            persisted.positive === positive && now >= persisted.writtenAtMs &&
+            now - persisted.writtenAtMs < STICKY_WRITE_REFRESH_MS) return;
+
+        // An ambiguous failed write may have reached KV. Never suppress the
+        // next write using an older acknowledgement, even for the old provider.
+        stickyWrites.delete(key);
+        await putJson(key, payload, stickyTtlSeconds(payload));
+        stickyWrites.set(key, { providerId, source: context.source, positive, writtenAtMs: now });
+        if (stickyWrites.size > STICKY_L1_MAX_ENTRIES) {
+            stickyWrites.delete(stickyWrites.keys().next().value!);
+        }
+    });
+    stickyWriteQueues.set(key, write);
+    try { await write; }
+    finally { if (stickyWriteQueues.get(key) === write) stickyWriteQueues.delete(key); }
 }
 
 export function resetStickyRoutingStateForTests(): void {
     stickyL1.clear();
     stickyL1Inflight.clear();
+    stickyWrites.clear();
+    stickyWriteQueues.clear();
 }
 
 export async function maybeWriteStickyRoutingFromUsage(args: {
