@@ -372,11 +372,13 @@ export function ModelSettingsDialog({
               reasoningSupport.supportedValues.includes(option.value)
           )
         : [];
-    const selectedReasoningOption = REASONING_OPTIONS.find(
-        (option) => option.value === (reasoningEffort ?? settings.reasoningEffort)
-    );
+    const selectedReasoningOption =
+        supportedReasoningOptions.find(
+            (option) =>
+                option.value === (reasoningEffort ?? settings.reasoningEffort)
+        );
     const reasoningStateLabel = settings.reasoningEnabled
-        ? `Selected: ${selectedReasoningOption?.label ?? "Default"}`
+        ? `Selected: ${selectedReasoningOption?.label ?? "Select an effort"}`
         : "Disabled";
     const availableServiceTierOptions = serviceTierOptions?.length
         ? serviceTierOptions
@@ -691,29 +693,6 @@ export function ModelSettingsDialog({
                             </div>
                         </div>
                         <div className="grid gap-1.5">
-                            <Label>Service tier</Label>
-                            <Select
-                                value={selectedServiceTier}
-                                disabled={availableServiceTierOptions.length <= 1}
-                                onValueChange={(value) =>
-                                    onUpdate({ serviceTier: value as ChatServiceTier })
-                                }
-                            >
-                                <SelectTrigger className="w-full min-w-0">
-                                    <SelectValue className="min-w-0">
-                                        {selectedServiceTierLabel}
-                                    </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {availableServiceTierOptions.map((option) => (
-                                        <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-1.5">
                             <Label>Model</Label>
                             <Button
                                 type="button"
@@ -752,50 +731,53 @@ export function ModelSettingsDialog({
                         </div>
                         <div className="grid gap-1.5">
                             <div className="flex items-center justify-between gap-2">
-                                <Label>Reasoning</Label>
+                                <Label htmlFor="reasoning-effort">Reasoning</Label>
                                 <span className="text-xs text-muted-foreground">
                                     {reasoningStateLabel}
                                 </span>
                             </div>
-                            <div className="rounded-md border border-border bg-muted/20 px-3 py-2">
-                                {supportedReasoningOptions.length > 0 ? (
-                                    <>
-                                        <p className="mb-1.5 text-xs text-muted-foreground">
-                                            Supported efforts
-                                        </p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {supportedReasoningOptions.map((option) => (
-                                                <span
-                                                    key={option.value}
-                                                    className={
-                                                        option.value ===
-                                                        (reasoningEffort ??
-                                                            settings.reasoningEffort)
-                                                            ? "rounded-full border border-foreground bg-foreground px-2 py-0.5 text-xs font-medium text-background"
-                                                            : "rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
-                                                    }
-                                                >
-                                                    {option.label}
-                                                </span>
-                                            ))}
-                                        </div>
-                                        {reasoningSupport?.defaultValue ? (
-                                            <p className="mt-2 text-xs text-muted-foreground">
-                                                Gateway default:{" "}
-                                                {REASONING_OPTIONS.find(
-                                                    (option) =>
-                                                        option.value ===
-                                                        reasoningSupport.defaultValue,
-                                                )?.label ?? reasoningSupport.defaultValue}
-                                            </p>
-                                        ) : null}
-                                    </>
-                                ) : (
+                            {supportedReasoningOptions.length > 0 ? (
+                                <Select
+                                    value={selectedReasoningOption?.value}
+                                    onValueChange={(value) =>
+                                        onUpdate({
+                                            reasoningEffort: value as ChatReasoningEffort,
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger
+                                        id="reasoning-effort"
+                                        className="w-full min-w-0"
+                                    >
+                                        <SelectValue
+                                            className="min-w-0"
+                                            placeholder="Select an effort"
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {supportedReasoningOptions.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <div className="rounded-md border border-border bg-muted/20 px-3 py-2">
                                     <p className="text-xs text-muted-foreground">
                                         No enumerated effort values reported for this model.
                                     </p>
-                                )}
-                            </div>
+                                </div>
+                            )}
+                            {reasoningSupport?.defaultValue ? (
+                                <p className="text-xs text-muted-foreground">
+                                    Gateway default:{" "}
+                                    {REASONING_OPTIONS.find(
+                                        (option) =>
+                                            option.value === reasoningSupport.defaultValue,
+                                    )?.label ?? reasoningSupport.defaultValue}
+                                </p>
+                            ) : null}
                         </div>
                         <div className="grid gap-1.5">
                             <Label>Provider</Label>
@@ -847,6 +829,29 @@ export function ModelSettingsDialog({
                                                     {provider.name}
                                                 </span>
                                             </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label>Service tier</Label>
+                            <Select
+                                value={selectedServiceTier}
+                                disabled={availableServiceTierOptions.length <= 1}
+                                onValueChange={(value) =>
+                                    onUpdate({ serviceTier: value as ChatServiceTier })
+                                }
+                            >
+                                <SelectTrigger className="w-full min-w-0">
+                                    <SelectValue className="min-w-0">
+                                        {selectedServiceTierLabel}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableServiceTierOptions.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
