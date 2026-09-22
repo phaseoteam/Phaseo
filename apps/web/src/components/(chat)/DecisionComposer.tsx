@@ -362,7 +362,7 @@ export function DecisionComposer({
 							<Plus className="size-3.5" /> Add answer
 						</Button>
 					</div>
-					<ScrollArea className="max-h-36" viewportClassName="pr-2">
+					<ScrollArea className="max-h-36" viewportClassName="max-h-36 pr-2">
 						<div className="grid gap-2 sm:grid-cols-2">
 							{draft.choices.map((choice, index) => (
 								<div key={choice.id} className="flex min-w-0 items-center gap-1.5">
@@ -418,7 +418,7 @@ export function DecisionComposer({
 							<Plus className="size-3.5" /> Add level
 						</Button>
 					</div>
-					<ScrollArea className="max-h-36" viewportClassName="pr-2">
+					<ScrollArea className="max-h-36" viewportClassName="max-h-36 pr-2">
 						<div className="space-y-2">
 							{draft.scoreLevels.map((level, index) => (
 								<div key={level.id} className="flex min-w-0 items-center gap-2">

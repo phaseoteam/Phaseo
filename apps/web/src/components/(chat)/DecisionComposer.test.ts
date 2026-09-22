@@ -60,6 +60,38 @@ describe("DecisionComposer draft helpers", () => {
 		expect(html).not.toContain("overflow-hidden");
 	});
 
+	it("bounds long answer lists inside their scrollable viewport", () => {
+		for (const mode of ["choice", "score"] as const) {
+			const draft = createDefaultDecisionDraft(mode);
+			draft.prompt = "A decision with many options";
+			if (mode === "choice") {
+				draft.choices = Array.from({ length: 10 }, (_, index) => ({
+					id: "choice-" + index,
+					value: "Answer " + (index + 1),
+				}));
+			} else {
+				draft.scoreLevels = Array.from({ length: 10 }, (_, index) => ({
+					id: "score-" + index,
+					value: "Level " + index,
+				}));
+			}
+
+			const html = renderToStaticMarkup(
+				createElement(DecisionComposer, {
+					draft,
+					error: null,
+					historyLoaded: true,
+					isSubmitting: false,
+					onDraftChange: () => undefined,
+					onSubmit: () => undefined,
+				}),
+			);
+
+			expect(html).toContain('class="relative overflow-hidden max-h-36"');
+			expect(html).toContain("max-h-36 pr-2");
+		}
+	});
+
 	it("disables sending until chat history has loaded", () => {
 		const draft = createDefaultDecisionDraft();
 		draft.prompt = "A ready-to-send question";
