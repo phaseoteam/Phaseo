@@ -78,6 +78,20 @@ describe("Phaseo API client", () => {
 		expect(second.searchParams.has("offset")).toBe(false);
 	});
 
+	it("chunks benchmark lookups by aggregate model ID length", async () => {
+		fetchMock.mockImplementation(async () => Response.json({ ok: true, models: [] }));
+		vi.stubGlobal("fetch", fetchMock);
+		const ids = Array.from({ length: 60 }, (_, index) => `${String(index).padStart(3, "0")}/${"x".repeat(196)}`);
+
+		await getModelsByIds(env, ids, { accessToken: "oauth-token" });
+
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		for (const call of fetchMock.mock.calls) {
+			const requestedIds = new URL((call[0] as Request).url).searchParams.get("model_id")?.split(",") ?? [];
+			expect(requestedIds.reduce((total, modelId) => total + modelId.length, 0)).toBeLessThanOrEqual(10_000);
+		}
+	});
+
 	it("redacts upstream 5xx database details", async () => {
 		fetchMock.mockResolvedValue(Response.json({ message: "duplicate key violates constraint private_table_name" }, { status: 500 }));
 		vi.stubGlobal("fetch", fetchMock);

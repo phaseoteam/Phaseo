@@ -36,6 +36,9 @@ type ModelVariantLinks = Record<string, ModelVariantLink>;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
 const MAX_OFFSET = 5000;
+const MAX_EXACT_MODEL_IDS = 250;
+const MAX_MODEL_ID_LENGTH = 200;
+const MAX_MODEL_IDS_TOTAL_LENGTH = 10_000;
 const FREE_ROUTER_MODEL_ID = "phaseo/free";
 const FREE_ROUTER_NAME = "Phaseo Free Router";
 const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "messages"] as const;
@@ -344,16 +347,20 @@ async function buildFreeRouterCatalogueModel(args: {
     apiKeyId: string;
     endpoints: string[];
     catalogue: CatalogueModel[];
+    freeContext?: Awaited<ReturnType<typeof fetchGatewayContext>> | null;
 }): Promise<CatalogueModel | null> {
     if (!canIncludeFreeRouter(args.endpoints)) return null;
 
     try {
-        const freeContext = await fetchGatewayContext({
-            workspaceId: args.workspaceId,
-            apiKeyId: args.apiKeyId,
-            model: FREE_ROUTER_MODEL_ID,
-            endpoint: "text.generate",
-        });
+        const freeContext = args.freeContext === undefined
+            ? await fetchGatewayContext({
+                workspaceId: args.workspaceId,
+                apiKeyId: args.apiKeyId,
+                model: FREE_ROUTER_MODEL_ID,
+                endpoint: "text.generate",
+            })
+            : args.freeContext;
+        if (!freeContext) return null;
         if (!Array.isArray(freeContext.providers) || freeContext.providers.length === 0) {
             return null;
         }
@@ -621,6 +628,7 @@ function filterAndSortModels(
 
 function parseOptionalNonNegativeNumber(raw: string | null): number | null | "invalid" {
     if (raw === null) return null;
+    if (!raw.trim()) return "invalid";
     const value = Number(raw);
     return Number.isFinite(value) && value >= 0 ? value : "invalid";
 }
@@ -812,10 +820,21 @@ export async function handleModels(req: Request) {
         url.searchParams,
         "provider_availability_reason"
     );
-    const modelIds = [
+    const modelIds = Array.from(new Set([
         ...parseMultiValue(url.searchParams, "model_id"),
         ...parseMultiValue(url.searchParams, "id"),
-    ];
+    ]));
+    if (
+        modelIds.length > MAX_EXACT_MODEL_IDS
+        || modelIds.some((modelId) => modelId.length > MAX_MODEL_ID_LENGTH)
+        || modelIds.reduce((total, modelId) => total + modelId.length, 0) > MAX_MODEL_IDS_TOTAL_LENGTH
+    ) {
+        return json(
+            { ok: false, error: "invalid_request", message: "Too many or oversized model identifiers." },
+            400,
+            { "Cache-Control": "no-store" },
+        );
+    }
     const organisationIds = parseMultiValue(url.searchParams, "organisation");
     const inputTypes = parseMultiValueAliases(url.searchParams, ["input_types", "input_modalities"]);
     const outputTypes = parseMultiValueAliases(url.searchParams, ["output_types", "output_modalities"]);
@@ -834,8 +853,30 @@ export async function handleModels(req: Request) {
     }
 
     try {
-        const catalogue = await fetchCatalogue({
-            modelIds,
+        let prefetchedFreeContext: Awaited<ReturnType<typeof fetchGatewayContext>> | null | undefined;
+        let catalogueModelIds = modelIds;
+        let freeRouterModelIds: string[] = [];
+        if (modelIds.includes(FREE_ROUTER_MODEL_ID) && canIncludeFreeRouter(endpoints)) {
+            try {
+                prefetchedFreeContext = await fetchGatewayContext({
+                    workspaceId: auth.value.workspaceId,
+                    apiKeyId: auth.value.apiKeyId,
+                    model: FREE_ROUTER_MODEL_ID,
+                    endpoint: "text.generate",
+                });
+                catalogueModelIds = modelIds.filter((modelId) => modelId !== FREE_ROUTER_MODEL_ID);
+                freeRouterModelIds = Array.from(new Set(
+                    prefetchedFreeContext.providers
+                        .map((provider) => String(provider.apiModelId ?? "").trim())
+                        .filter(Boolean)
+                )).slice(0, MAX_EXACT_MODEL_IDS);
+            } catch {
+                prefetchedFreeContext = null;
+                catalogueModelIds = modelIds.filter((modelId) => modelId !== FREE_ROUTER_MODEL_ID);
+            }
+        }
+        const catalogueArgs = {
+            modelIds: catalogueModelIds,
             endpoints,
             statuses,
             providerIds,
@@ -851,12 +892,22 @@ export async function handleModels(req: Request) {
             params,
             availability: availabilityMode,
 			...(gatewayRegion ? { region: gatewayRegion, textOnly: true } : {}),
-        });
+		};
+        const catalogue = await fetchCatalogue(catalogueArgs);
+        if (freeRouterModelIds.length) {
+            const freeRouterCatalogue = await fetchCatalogue({
+                ...catalogueArgs,
+                modelIds: freeRouterModelIds,
+            });
+            const knownModelIds = new Set(catalogue.map((model) => model.model_id));
+            catalogue.push(...freeRouterCatalogue.filter((model) => !knownModelIds.has(model.model_id)));
+        }
         const freeRouterModel = await buildFreeRouterCatalogueModel({
             workspaceId: auth.value.workspaceId,
             apiKeyId: auth.value.apiKeyId,
             endpoints,
             catalogue,
+            freeContext: prefetchedFreeContext,
         });
         const enrichedCatalogue =
             freeRouterModel && !catalogue.some((model) => model.model_id === freeRouterModel.model_id)

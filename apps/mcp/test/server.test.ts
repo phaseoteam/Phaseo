@@ -287,8 +287,8 @@ describe("Phaseo MCP server metadata", () => {
 		] } });
 	});
 
-	it("continues benchmark availability lookup past the first 250 ranked models", async () => {
-		const entries = Array.from({ length: 251 }, (_, index) => ({
+	it("bounds benchmark availability lookup while scanning past the first 250 models", async () => {
+		const entries = Array.from({ length: 501 }, (_, index) => ({
 			model_id: `lab/model-${index}`,
 			model_name: `Model ${index}`,
 			organisation_id: "lab",
@@ -299,13 +299,13 @@ describe("Phaseo MCP server metadata", () => {
 			updated_at: null,
 		}));
 		const routableModel = {
-			id: "lab/model-250", name: "Model 250", description: null,
+			id: "lab/model-499", name: "Model 499", description: null,
 			organization: { id: "lab", name: "Lab", color: null },
 			modalities: { input: ["text"], output: ["text"] }, limits: { input_tokens: 1, output_tokens: 1 },
 			capabilities: { endpoints: [], parameters: [], parameter_details: {} },
 			availability: { status: "active", provider_count: 1, active_provider_count: 1, coming_soon_provider_count: 0, inactive_provider_count: 0 },
 			pricing: { pricing_plan: "standard", meters: {} }, offers: [{
-				provider: { id: "provider", name: "Provider" }, model: "lab/model-250", status: "active", routable: true,
+				provider: { id: "provider", name: "Provider" }, model: "lab/model-499", status: "active", routable: true,
 				capabilities: { parameters: [], parameter_details: {} }, pricing: { pricing_plan: "standard", meters: {} },
 			}],
 		};
@@ -313,10 +313,10 @@ describe("Phaseo MCP server metadata", () => {
 			const request = input instanceof Request ? input : new Request(input);
 			if (request.url.includes("/api/_web/rankings/benchmarks")) return Response.json({ benchmarks: [{
 				benchmark_id: "coding-v1", name: "Coding Index", category: "coding", benchmark_type: "numerical",
-				lower_is_better: false, total_models: 251, entries,
+				lower_is_better: false, total_models: 501, entries,
 			}] });
 			const ids = new URL(request.url).searchParams.get("model_id")?.split(",") ?? [];
-			return Response.json({ ok: true, models: ids.includes("lab/model-250") ? [routableModel] : [] });
+			return Response.json({ ok: true, models: ids.includes("lab/model-499") ? [routableModel] : [] });
 		});
 		vi.stubGlobal("fetch", fetchMock);
 		const server = createServer(env, {
@@ -335,7 +335,7 @@ describe("Phaseo MCP server metadata", () => {
 
 		expect(fetchMock).toHaveBeenCalledTimes(3);
 		expect(result.structuredContent).toMatchObject({ benchmark: { entries: [
-			{ rank: 251, modelId: "lab/model-250", gatewayAvailable: true },
+			{ rank: 500, modelId: "lab/model-499", gatewayAvailable: true },
 		] } });
 	});
 });

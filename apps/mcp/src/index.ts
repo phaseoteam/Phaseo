@@ -19,6 +19,7 @@ import {
 } from "./phaseo-api";
 
 const MAX_RESULTS = 20;
+const MAX_BENCHMARK_CANDIDATES = 500;
 const MAX_MCP_REQUEST_BODY_BYTES = 1024 * 1024;
 const MCP_CORS_HEADERS = {
 	"Access-Control-Allow-Origin": "*",
@@ -690,7 +691,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 				if (!ranking) {
 					return { isError: true as const, content: [{ type: "text" as const, text: `Phaseo has no current ${focus.replace("_", " ")} benchmark ranking.` }] };
 				}
-				const candidateEntries = ranking.entries;
+				const candidateEntries = ranking.entries.slice(0, MAX_BENCHMARK_CANDIDATES);
 				const models = await getModelsByIds(
 					env,
 					candidateEntries.map((entry) => entry.model_id),

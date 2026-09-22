@@ -205,10 +205,23 @@ export async function getModelsByIds(
 	credentials?: PhaseoCredentials,
 ): Promise<GatewayModel[]> {
 	const models: GatewayModel[] = [];
-	for (let offset = 0; offset < modelIds.length; offset += 250) {
-		const chunk = modelIds.slice(offset, offset + 250);
+	const chunks: string[][] = [];
+	let chunk: string[] = [];
+	let chunkLength = 0;
+	for (const modelId of modelIds) {
+		if (chunk.length >= 250 || (chunk.length > 0 && chunkLength + modelId.length > 10_000)) {
+			chunks.push(chunk);
+			chunk = [];
+			chunkLength = 0;
+		}
+		chunk.push(modelId);
+		chunkLength += modelId.length;
+	}
+	if (chunk.length > 0) chunks.push(chunk);
+
+	for (const modelIdChunk of chunks) {
 		const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", {
-			query: { model_id: chunk.join(","), limit: chunk.length },
+			query: { model_id: modelIdChunk.join(","), limit: modelIdChunk.length },
 			credentials,
 		});
 		if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
