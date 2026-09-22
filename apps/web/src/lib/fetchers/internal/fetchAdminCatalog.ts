@@ -45,17 +45,27 @@ export function recordAdminModelAnnouncement(modelId: string) {
 	return postAdminCatalogPath<{ success: boolean }>("/api/account/models/catalog/model-announcements", { modelId });
 }
 
-export function sendAdminModelAnnouncement(modelId: string, payload: unknown, webhookUrl?: string) {
+export function sendAdminModelAnnouncement(
+	modelId: string,
+	payload: unknown,
+	webhookUrl?: string,
+	includeDefaultRoleMention?: boolean,
+) {
 	return postAdminCatalogPath<{ success: boolean; stateRecorded?: boolean; message?: string }>(
 		"/api/account/models/catalog/model-announcements",
-		{ modelId, payload, webhookUrl },
+		{ modelId, payload, webhookUrl, includeDefaultRoleMention },
 	);
 }
 
-export function sendAdminModelAnnouncementTest(payload: unknown, webhookUrl?: string, modelIds?: string[]) {
+export function sendAdminModelAnnouncementTest(
+	payload: unknown,
+	webhookUrl?: string,
+	modelIds?: string[],
+	includeDefaultRoleMention?: boolean,
+) {
 	return postAdminCatalogPath<{ success: boolean; stateRecorded?: boolean }>(
 		"/api/account/models/catalog/model-announcements/test",
-		{ payload, webhookUrl, modelIds },
+		{ payload, webhookUrl, modelIds, includeDefaultRoleMention },
 	);
 }
 

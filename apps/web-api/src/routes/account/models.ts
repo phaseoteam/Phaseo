@@ -118,12 +118,14 @@ const modelAnnouncementSchema = z.object({
 	modelId: z.string().trim().min(3).max(240).regex(/^[a-z0-9][a-z0-9._:/+@-]*$/).refine((value) => value.includes("/")),
 	payload: modelAnnouncementPayloadSchema.optional(),
 	webhookUrl: z.string().trim().optional(),
+	includeDefaultRoleMention: z.boolean().optional(),
 });
 
 const modelAnnouncementTestSchema = z.object({
 	payload: modelAnnouncementPayloadSchema,
 	modelIds: z.array(z.string().trim().min(3).max(240).regex(/^[a-z0-9][a-z0-9._:/+@-]*$/).refine((value) => value.includes("/"))).max(100).optional(),
 	webhookUrl: z.string().trim().optional(),
+	includeDefaultRoleMention: z.boolean().optional(),
 });
 
 const DISCORD_WEBHOOK_HOSTS = new Set([
@@ -159,10 +161,13 @@ async function sendModelAnnouncementWebhook(
 	env: Env,
 	payload: unknown,
 	webhookUrl?: string,
+	includeDefaultRoleMention = true,
 ): Promise<void> {
 	const parsedPayload = modelAnnouncementPayloadSchema.parse(payload);
 	const defaultRoleId = env.DISCORD_ROLE_ID?.trim();
-	const shouldAddDefaultRole = Boolean(defaultRoleId) && parsedPayload.allowed_mentions.roles.length === 0;
+	const shouldAddDefaultRole = includeDefaultRoleMention
+		&& Boolean(defaultRoleId)
+		&& parsedPayload.allowed_mentions.roles.length === 0;
 	const roleMention = shouldAddDefaultRole ? `<@&${defaultRoleId}>` : null;
 	const payloadWithDefaultRole = shouldAddDefaultRole
 		? {
@@ -648,7 +653,12 @@ accountModelsRouter.post("/catalog/model-announcements", async (c) => {
 		if (!model.data) return c.json({ error: "model_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 
 		if (parsed.data.payload) {
-			await sendModelAnnouncementWebhook(c.env, parsed.data.payload, parsed.data.webhookUrl);
+			await sendModelAnnouncementWebhook(
+				c.env,
+				parsed.data.payload,
+				parsed.data.webhookUrl,
+				parsed.data.includeDefaultRoleMention !== false,
+			);
 		}
 
 		let stateRecorded = true;
@@ -688,7 +698,12 @@ accountModelsRouter.post("/catalog/model-announcements/test", async (c) => {
 	}
 
 	try {
-		await sendModelAnnouncementWebhook(c.env, parsed.data.payload, parsed.data.webhookUrl);
+		await sendModelAnnouncementWebhook(
+			c.env,
+			parsed.data.payload,
+			parsed.data.webhookUrl,
+			parsed.data.includeDefaultRoleMention !== false,
+		);
 		let stateRecorded = true;
 		if (shouldRecordModelAnnouncementState(parsed.data.webhookUrl) && parsed.data.modelIds?.length) {
 			try {
