@@ -106,6 +106,17 @@ export function createDefaultDecisionDraft(
 	};
 }
 
+function isEmptyDecisionDraft(draft: DecisionDraft): boolean {
+	return (
+		!draft.prompt.trim() &&
+		!draft.context.trim() &&
+		draft.choices.length === 2 &&
+		draft.choices.every((choice) => !choice.value.trim()) &&
+		draft.scoreLevels.length === 1 &&
+		!draft.scoreLevels[0]?.value.trim()
+	);
+}
+
 export function validateDecisionDraft(draft: DecisionDraft): string | null {
 	if (!draft.prompt.trim()) return "Enter a question for Jev.";
 	if (draft.mode === "choice") {
@@ -271,7 +282,10 @@ export function DecisionComposer({
 	const scoreViewportRef = useRef<HTMLDivElement | null>(null);
 	const previousChoiceCountRef = useRef(draft.choices.length);
 	const previousScoreCountRef = useRef(draft.scoreLevels.length);
+	const previousDraftRef = useRef(draft);
+	const internalDraftUpdateRef = useRef(false);
 	const updateDraft = (patch: Partial<DecisionDraft>) => {
+		internalDraftUpdateRef.current = true;
 		setHasDraftChanges(true);
 		onDraftChange({ ...draft, ...patch });
 	};
@@ -309,6 +323,17 @@ export function DecisionComposer({
 			document.removeEventListener("pointerdown", handlePointerDown, true);
 		};
 	}, []);
+
+	useEffect(() => {
+		if (previousDraftRef.current === draft) return;
+		const wasInternalUpdate = internalDraftUpdateRef.current;
+		internalDraftUpdateRef.current = false;
+		previousDraftRef.current = draft;
+		if (!wasInternalUpdate && isEmptyDecisionDraft(draft)) {
+			setHasDraftChanges(false);
+			setIsActive(false);
+		}
+	}, [draft]);
 
 	useEffect(() => {
 		const previousCount = previousChoiceCountRef.current;
