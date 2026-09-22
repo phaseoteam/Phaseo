@@ -691,6 +691,14 @@ describe("batchRoutes", () => {
 					return new Response(JSON.stringify({ custom_id: "row-1", method: "POST", url: "/v1/responses", body: { model: "gpt-4.1-mini", max_output_tokens: 16 } }), { status: 200 });
 				}
 				if (url === "https://api.openai.example/v1/files" && method === "POST") {
+					const form = init?.body as FormData;
+					const file = form.get("file") as File;
+					expect(JSON.parse((await file.text()).trim())).toEqual({
+						custom_id: "row-1",
+						method: "POST",
+						url: "/v1/responses",
+						body: { model: "gpt-4.1-mini", max_output_tokens: 16 },
+					});
 					return jsonResponse({ id: "file_input_normalized_123" });
 				}
 				if (url === "https://api.openai.example/v1/batches" && method === "POST") {
@@ -868,11 +876,31 @@ describe("batchRoutes", () => {
 			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 				const url = String(input);
 				const method = String(init?.method ?? "GET").toUpperCase();
+				const bodyText = typeof init?.body === "string" ? init.body : null;
+				let bodyJson: any = null;
+				if (bodyText) {
+					bodyJson = JSON.parse(bodyText);
+				}
+				state.fetchCalls.push({
+					url,
+					method,
+					bodyText,
+					bodyJson,
+					headers: Object.fromEntries(new Headers(init?.headers).entries()),
+				});
 
 				if (url === "https://api.openai.example/v1/files/file_input_fail_123/content" && method === "GET") {
 					return new Response(JSON.stringify({ custom_id: "row-1", method: "POST", url: "/v1/responses", body: { model: "gpt-4.1-mini", max_output_tokens: 16 } }), { status: 200 });
 				}
 				if (url === "https://api.openai.example/v1/files" && method === "POST") {
+					const form = init?.body as FormData;
+					const file = form.get("file") as File;
+					expect(JSON.parse((await file.text()).trim())).toEqual({
+						custom_id: "row-1",
+						method: "POST",
+						url: "/v1/responses",
+						body: { model: "gpt-4.1-mini", max_output_tokens: 16 },
+					});
 					return jsonResponse({ id: "file_input_fail_normalized_123" });
 				}
 				if (url === "https://api.openai.example/v1/batches" && method === "POST") {
@@ -921,6 +949,12 @@ describe("batchRoutes", () => {
 			cancel_url: expect.stringMatching(/^https:\/\/example\.com\/batch_[A-Z0-9]{26}\/cancel$/),
 		});
 		const publicBatchId = String(createPayload.id);
+		expect(state.fetchCalls[2]?.url).toBe("https://api.openai.example/v1/batches");
+		expect(state.fetchCalls[2]?.bodyJson).toMatchObject({
+			input_file_id: "file_input_fail_normalized_123",
+			endpoint: "/v1/responses",
+			completion_window: "24h",
+		});
 
 		const retrieveResponse = await batchRoutes.request(`https://example.com/${publicBatchId}`, {
 			method: "GET",
@@ -2597,6 +2631,14 @@ describe("batchRoutes", () => {
 					return new Response(JSON.stringify({ custom_id: "row-1", method: "POST", url: "/v1/responses", body: { model: "gpt-4.1-mini", max_output_tokens: 16 } }), { status: 200 });
 				}
 				if (url === "https://api.openai.example/v1/files" && method === "POST") {
+					const form = init?.body as FormData;
+					const file = form.get("file") as File;
+					expect(JSON.parse((await file.text()).trim())).toEqual({
+						custom_id: "row-1",
+						method: "POST",
+						url: "/v1/responses",
+						body: { model: "gpt-4.1-mini", max_output_tokens: 16 },
+					});
 					return jsonResponse({ id: "file_input_cancel_normalized_123" });
 				}
 				if (url === "https://api.openai.example/v1/batches" && method === "POST") {
@@ -2644,6 +2686,12 @@ describe("batchRoutes", () => {
 			cancel_url: expect.stringMatching(/^https:\/\/example\.com\/batch_[A-Z0-9]{26}\/cancel$/),
 		});
 		const publicBatchId = String(createPayload.id);
+		expect(state.fetchCalls[2]?.url).toBe("https://api.openai.example/v1/batches");
+		expect(state.fetchCalls[2]?.bodyJson).toMatchObject({
+			input_file_id: "file_input_cancel_normalized_123",
+			endpoint: "/v1/responses",
+			completion_window: "24h",
+		});
 
 		const cancelResponse = await batchRoutes.request(`https://example.com/${publicBatchId}/cancel`, {
 			method: "POST",
