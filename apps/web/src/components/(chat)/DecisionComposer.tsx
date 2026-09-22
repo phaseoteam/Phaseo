@@ -201,7 +201,7 @@ type DecisionComposerProps = {
 	historyLoaded: boolean;
 	isSubmitting: boolean;
 	onDraftChange: (draft: DecisionDraft) => void;
-	onSubmit: () => void;
+	onSubmit: () => void | boolean | Promise<void | boolean>;
 };
 
 function ModeMenu({
@@ -265,8 +265,14 @@ export function DecisionComposer({
 	onSubmit,
 }: DecisionComposerProps) {
 	const [isActive, setIsActive] = useState(false);
+	const [hasDraftChanges, setHasDraftChanges] = useState(false);
 	const composerRef = useRef<HTMLDivElement | null>(null);
+	const choiceViewportRef = useRef<HTMLDivElement | null>(null);
+	const scoreViewportRef = useRef<HTMLDivElement | null>(null);
+	const previousChoiceCountRef = useRef(draft.choices.length);
+	const previousScoreCountRef = useRef(draft.scoreLevels.length);
 	const updateDraft = (patch: Partial<DecisionDraft>) => {
+		setHasDraftChanges(true);
 		onDraftChange({ ...draft, ...patch });
 	};
 	const hasModeDetails =
@@ -280,7 +286,8 @@ export function DecisionComposer({
 		draft.prompt.trim().length >= 96 ||
 		draft.prompt.includes("\n") ||
 		Boolean(draft.context.trim()) ||
-		hasModeDetails;
+		hasModeDetails ||
+		hasDraftChanges;
 
 	useEffect(() => {
 		function handlePointerDown(event: PointerEvent) {
@@ -303,6 +310,38 @@ export function DecisionComposer({
 		};
 	}, []);
 
+	useEffect(() => {
+		const previousCount = previousChoiceCountRef.current;
+		previousChoiceCountRef.current = draft.choices.length;
+		if (draft.mode !== "choice" || draft.choices.length <= previousCount) return;
+
+		const frame = window.requestAnimationFrame(() => {
+			const viewport = choiceViewportRef.current;
+			if (viewport) viewport.scrollTop = viewport.scrollHeight;
+		});
+		return () => window.cancelAnimationFrame(frame);
+	}, [draft.choices.length, draft.mode]);
+
+	useEffect(() => {
+		const previousCount = previousScoreCountRef.current;
+		previousScoreCountRef.current = draft.scoreLevels.length;
+		if (draft.mode !== "score" || draft.scoreLevels.length <= previousCount) return;
+
+		const frame = window.requestAnimationFrame(() => {
+			const viewport = scoreViewportRef.current;
+			if (viewport) viewport.scrollTop = viewport.scrollHeight;
+		});
+		return () => window.cancelAnimationFrame(frame);
+	}, [draft.mode, draft.scoreLevels.length]);
+
+	async function handleSubmit() {
+		const submitted = await onSubmit();
+		if (submitted !== false) {
+			setHasDraftChanges(false);
+			setIsActive(false);
+		}
+	}
+
 	function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
 		if (
 			event.key === "Enter" &&
@@ -310,7 +349,7 @@ export function DecisionComposer({
 			!event.nativeEvent.isComposing
 		) {
 			event.preventDefault();
-			onSubmit();
+			void handleSubmit();
 		}
 	}
 
@@ -362,7 +401,11 @@ export function DecisionComposer({
 							<Plus className="size-3.5" /> Add answer
 						</Button>
 					</div>
-					<ScrollArea className="max-h-36" viewportClassName="max-h-36 pr-2">
+					<ScrollArea
+						className="max-h-36"
+						viewportClassName="max-h-36 pr-2"
+						viewportRef={choiceViewportRef}
+					>
 						<div className="grid gap-2 sm:grid-cols-2">
 							{draft.choices.map((choice, index) => (
 								<div key={choice.id} className="flex min-w-0 items-center gap-1.5">
@@ -418,7 +461,11 @@ export function DecisionComposer({
 							<Plus className="size-3.5" /> Add level
 						</Button>
 					</div>
-					<ScrollArea className="max-h-36" viewportClassName="max-h-36 pr-2">
+					<ScrollArea
+						className="max-h-36"
+						viewportClassName="max-h-36 pr-2"
+						viewportRef={scoreViewportRef}
+					>
 						<div className="space-y-2">
 							{draft.scoreLevels.map((level, index) => (
 								<div key={level.id} className="flex min-w-0 items-center gap-2">
@@ -511,7 +558,7 @@ export function DecisionComposer({
 						type="button"
 						size="icon"
 						className="size-8 rounded-full"
-						onClick={onSubmit}
+						onClick={() => void handleSubmit()}
 						disabled={!historyLoaded || isSubmitting || !draft.prompt.trim()}
 						aria-label={isSubmitting ? "Evaluating decision" : "Send decision"}
 					>
