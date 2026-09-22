@@ -88,6 +88,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const DEFAULT_MODEL_ID = "typesafe/jev-1.13.0";
+const DEFAULT_USER_MESSAGE_ACCENT_COLOR = "#111111";
 const DECISIONS_STORAGE_KEYS = getRoomStorageKeys("decisions");
 
 function readActiveDecisionConversationId(): string | null {
@@ -880,7 +881,11 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 												<MessageContent className="max-w-[min(100%,42rem)] items-end gap-2">
 													<div
 														data-slot="message-panel"
-														className="min-w-0 max-w-full w-fit rounded-md bg-foreground px-4 py-3 text-sm leading-relaxed text-background shadow-sm"
+														className="min-w-0 max-w-full w-fit rounded-md px-4 py-3 text-sm leading-relaxed shadow-sm"
+														style={{
+															backgroundColor: DEFAULT_USER_MESSAGE_ACCENT_COLOR,
+															color: "#ffffff",
+														}}
 													>
 														{editingRunId === run.id ? (
 															<div className="grid gap-3">
