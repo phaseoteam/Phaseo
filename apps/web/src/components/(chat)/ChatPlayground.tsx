@@ -122,6 +122,11 @@ import {
 	getModelReasoningEffortSupport,
 	resolveChatReasoningEffort,
 } from "@/components/(chat)/playground/reasoningEffortSupport";
+import {
+	getModelServiceTierSupport,
+	getServiceTierOptions,
+	resolveChatServiceTier,
+} from "@/components/(chat)/playground/serviceTierSupport";
 
 type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
@@ -1223,6 +1228,17 @@ function ChatPlaygroundContent({
 				effectiveModelSettings.reasoningEffort ?? "medium",
 				reasoningEffortSupport,
 			);
+			const serviceTierSupport = getModelServiceTierSupport({
+				models,
+				modelId: selectedModelId,
+				providerId: effectiveProviderId,
+				requestModelId:
+					effectiveProviderId === "auto" ? null : requestExecutionModelId,
+			});
+			const resolvedServiceTier = resolveChatServiceTier(
+				effectiveModelSettings.serviceTier ?? "standard",
+				serviceTierSupport,
+			);
 			const wantsImageModalities =
 				endpoint === "responses" &&
 				(effectiveModelSettings.imageOutputEnabled ||
@@ -1334,7 +1350,9 @@ function ChatPlaygroundContent({
 				effectiveModelSettings.repetitionPenalty,
 			);
 			setOptionalRequestNumber("seed", effectiveModelSettings.seed);
-			const requestedServiceTier = getRequestedChatServiceTier(effectiveModelSettings);
+			const requestedServiceTier = getRequestedChatServiceTier({
+				serviceTier: resolvedServiceTier,
+			});
 			if (requestedServiceTier) {
 				requestBody.service_tier = requestedServiceTier;
 			}
@@ -4363,6 +4381,63 @@ function ChatPlaygroundContent({
 		activeModelOverrides,
 		modelSettingsModelId,
 	]);
+	const dialogReasoningEffortSupport = useMemo(() => {
+		if (!modelSettingsModelId) return null;
+		const providerId = isProviderSupportedForModel(
+			modelSettingsModelId,
+			dialogModelSettings.providerId,
+		)
+			? dialogModelSettings.providerId
+			: "auto";
+		return getModelReasoningEffortSupport({
+			models,
+			modelId: modelSettingsModelId,
+			providerId,
+			requestModelId:
+				providerId === "auto"
+					? null
+					: resolveRequestModelIdForProvider(modelSettingsModelId, providerId),
+		});
+	}, [
+		dialogModelSettings.providerId,
+		isProviderSupportedForModel,
+		modelSettingsModelId,
+		models,
+		resolveRequestModelIdForProvider,
+	]);
+	const dialogReasoningEffort = resolveChatReasoningEffort(
+		dialogModelSettings.reasoningEffort ?? "medium",
+		dialogReasoningEffortSupport,
+	);
+	const dialogServiceTierSupport = useMemo(() => {
+		if (!modelSettingsModelId) return null;
+		const providerId = isProviderSupportedForModel(
+			modelSettingsModelId,
+			dialogModelSettings.providerId,
+		)
+			? dialogModelSettings.providerId
+			: "auto";
+		return getModelServiceTierSupport({
+			models,
+			modelId: modelSettingsModelId,
+			providerId,
+			requestModelId:
+				providerId === "auto"
+					? null
+					: resolveRequestModelIdForProvider(modelSettingsModelId, providerId),
+		});
+	}, [
+		dialogModelSettings.providerId,
+		isProviderSupportedForModel,
+		modelSettingsModelId,
+		models,
+		resolveRequestModelIdForProvider,
+	]);
+	const dialogServiceTier = resolveChatServiceTier(
+		dialogModelSettings.serviceTier ?? "standard",
+		dialogServiceTierSupport,
+	);
+	const dialogServiceTierOptions = getServiceTierOptions(dialogServiceTierSupport);
 	const temperatureValue = activeModelSettings?.temperature ?? 0.7;
 	const maxTokensValue = activeModelSettings?.maxOutputTokens ?? 800;
 	const topPValue = activeModelSettings?.topP ?? 1;
@@ -4678,6 +4753,10 @@ function ChatPlaygroundContent({
 						? getSupportedProviderIdsForModel(modelSettingsModelId)
 						: undefined
 				}
+				serviceTierOptions={dialogServiceTierOptions}
+				serviceTier={dialogServiceTier}
+				reasoningSupport={dialogReasoningEffortSupport}
+				reasoningEffort={dialogReasoningEffort}
 				temperatureValue={temperatureValue}
 				maxTokensValue={maxTokensValue}
 				topPValue={topPValue}
