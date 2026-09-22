@@ -482,7 +482,6 @@ export async function runPublicModelAnnouncementCheck(args: {
 						username: PUBLIC_MODEL_DISCOVERY_USERNAME,
 						avatarUrl: PUBLIC_MODEL_DISCOVERY_AVATAR_URL,
 						latestModelsUrl: PUBLIC_MODELS_URL,
-						message: "Public model catalog updates detected.",
 						includeMentions: true,
 						maxModelEmbeds: PUBLIC_ANNOUNCEMENT_BATCH_SIZE,
 					},
