@@ -172,7 +172,11 @@ async function sendModelAnnouncementWebhook(
 	const payloadWithDefaultRole = shouldAddDefaultRole
 		? {
 			...parsedPayload,
-			content: [roleMention, parsedPayload.content].filter(Boolean).join("\n"),
+			content: [
+				roleMention,
+				...parsedPayload.allowed_mentions.roles.map((roleId) => `<@&${roleId}>`),
+				...parsedPayload.allowed_mentions.users.map((userId) => `<@${userId}>`),
+			].filter(Boolean).join(" "),
 			allowed_mentions: {
 				...parsedPayload.allowed_mentions,
 				parse: [],

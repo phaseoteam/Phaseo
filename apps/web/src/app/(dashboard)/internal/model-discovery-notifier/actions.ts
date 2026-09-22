@@ -217,7 +217,6 @@ export async function testInternalModelDiscoveryNotifierAction(
 			avatarUrl: null,
 			username: "Phaseo Public Model Discovery",
 			latestModelsUrl: "https://phaseo.app/models",
-			message: "Public model catalog updates detected.",
 			maxModelEmbeds: 10,
 		});
 		const payloadPreview = JSON.stringify(payload, null, 2);
