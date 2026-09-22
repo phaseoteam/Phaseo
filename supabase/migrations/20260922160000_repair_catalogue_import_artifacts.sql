@@ -1,6 +1,7 @@
 -- Consolidate duplicate model and lab records introduced by provider catalogue
 -- imports. This migration is intentionally idempotent because the production
 -- data repair was applied before the repository migration was prepared.
+-- phaseo:allow-destructive-migration reason: remove three empty duplicate lab rows after explicit dependency checks
 
 create temporary table catalogue_model_artifact_map (
   artifact text primary key,
