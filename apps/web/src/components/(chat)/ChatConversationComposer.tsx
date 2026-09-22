@@ -17,6 +17,7 @@ import Link from "next/link";
 import { ThinkingOrb } from "thinking-orbs";
 import { AIGeneratedNotice } from "@/components/(chat)/AIGeneratedNotice";
 import { getChatComposerSendAction } from "@/components/(chat)/chatComposerSendAction";
+import { REASONING_OPTIONS } from "@/components/(chat)/chatConversationHelpers";
 import Image from "next/image";
 import {
 	ArrowLeft,
@@ -1239,14 +1240,14 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 	>(
 		() => [
 			{ value: "none", label: "Default" },
-			...reasoningOptions
+			...REASONING_OPTIONS
 				.filter((option) => option.value !== "none")
 				.map((option) => ({
 					value: option.value,
 					label: option.label,
 				})),
 		],
-		[reasoningOptions],
+		[],
 	);
 	const advisorEnabled = enabledServerToolSet.has("phaseo:advisor");
 	const selectedServerToolCommand = selectedServerToolSettings
@@ -1550,6 +1551,16 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		},
 		[onComposerChange, slashQuery],
 	);
+
+	const returnToMainSlashMenu = useCallback(() => {
+		setSlashMenu("main");
+		setSelectedServerToolSettings(null);
+		setSlashSelectedIndex(0);
+		setCommandSearch("");
+		requestAnimationFrame(() => {
+			textareaRef.current?.focus();
+		});
+	}, [textareaRef]);
 
 	const clearSlashCommand = useCallback(() => {
 		if (slashMenuOpen) {
@@ -2546,12 +2557,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			if (event.key === "Escape") {
 				event.preventDefault();
 				if (slashMenu !== "main") {
-					setSlashMenu("main");
-					setSlashSelectedIndex(0);
-					setCommandSearch("");
-					requestAnimationFrame(() => {
-						textareaRef.current?.focus();
-					});
+					returnToMainSlashMenu();
 				} else {
 					setCommandMenuOpen(false);
 					if (slashQuery !== null) {
@@ -2566,12 +2572,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 				activeSlashSearchValue === ""
 			) {
 				event.preventDefault();
-				setSlashMenu("main");
-				setSlashSelectedIndex(0);
-				setCommandSearch("");
-				requestAnimationFrame(() => {
-					textareaRef.current?.focus();
-				});
+				returnToMainSlashMenu();
 				return true;
 			}
 			if (event.key === "Enter" && !event.shiftKey) {
@@ -2588,6 +2589,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			activeSlashIndex,
 			filteredSlashCommands,
 			onComposerChange,
+			returnToMainSlashMenu,
 			runSlashCommand,
 			activeSlashSearchValue,
 			slashMenu,
@@ -3126,6 +3128,17 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							{showSlashSearch ? (
 								<div className="border-b border-border/70 p-2">
 									<div className="flex h-8 items-center gap-2 rounded-lg bg-muted px-2 text-muted-foreground">
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon-sm"
+											className="h-6 w-6 shrink-0"
+											onClick={returnToMainSlashMenu}
+											aria-label="Back to chat actions"
+											title="Back to chat actions"
+										>
+											<ArrowLeft className="h-3.5 w-3.5" />
+										</Button>
 										<Search className="h-3.5 w-3.5 shrink-0" />
 										<Input
 											ref={slashSearchInputRef}

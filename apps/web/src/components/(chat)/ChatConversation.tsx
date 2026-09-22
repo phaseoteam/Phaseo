@@ -34,6 +34,7 @@ import {
 import {
 	DEFAULT_CHAT_PLACEHOLDER,
 	REASONING_OPTIONS,
+	type ReasoningEffortOption,
 	extensionForAudioMimeType,
 	extractClipboardFiles,
 	getRandomPlaceholder,
@@ -94,6 +95,7 @@ type ChatConversationProps = {
 	onServerToolConfigsChange?: (configs: ChatServerToolConfigs) => void;
 	reasoningEnabled?: boolean;
 	reasoningEffort?: ChatSettings["reasoningEffort"];
+	reasoningOptions?: ReasoningEffortOption[];
 	onReasoningEnabledChange?: (enabled: boolean) => void;
 	onReasoningEffortChange?: (effort: NonNullable<ChatSettings["reasoningEffort"]>) => void;
 	presetPrompt?: string;
@@ -145,6 +147,7 @@ export function ChatConversation({
 	onServerToolConfigsChange,
 	reasoningEnabled = false,
 	reasoningEffort = "medium",
+	reasoningOptions = REASONING_OPTIONS,
 	onReasoningEnabledChange,
 	onReasoningEffortChange,
 	presetPrompt,
@@ -1024,7 +1027,7 @@ export function ChatConversation({
 				reasoningPickerOpen={reasoningPickerOpen}
 				onReasoningPickerOpenChange={setReasoningPickerOpen}
 				reasoningSelection={reasoningSelection}
-				reasoningOptions={REASONING_OPTIONS}
+				reasoningOptions={reasoningOptions}
 				onReasoningSelection={applyReasoningSelection}
 				selectedModelCount={selectedModelCount}
 				selectedModelsHint={selectedModelsHint}

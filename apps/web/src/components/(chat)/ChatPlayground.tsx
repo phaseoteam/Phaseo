@@ -12,6 +12,7 @@ import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { fetchChatWebApi } from "@/lib/web-api/client";
 import { showChatCompletionNotification } from "@/lib/chat/completionNotifications";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
+import { REASONING_OPTIONS } from "@/components/(chat)/chatConversationHelpers";
 import type {
 	ChatMessage,
 	ChatModelSettings,
@@ -115,6 +116,12 @@ import {
 } from "@/components/(chat)/ChatSidebar";
 import { ChatShortcutHelpDialog } from "@/components/(chat)/ChatShortcutReference";
 import { getChatPayloadRequestId } from "@/components/(chat)/chatMessageMetadata";
+import {
+	combineReasoningEffortSupports,
+	filterReasoningEffortOptions,
+	getModelReasoningEffortSupport,
+	resolveChatReasoningEffort,
+} from "@/components/(chat)/playground/reasoningEffortSupport";
 
 type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
@@ -1205,6 +1212,17 @@ function ChatPlaygroundContent({
 				selectedModelId,
 				effectiveProviderId,
 			);
+			const reasoningEffortSupport = getModelReasoningEffortSupport({
+				models,
+				modelId: selectedModelId,
+				providerId: effectiveProviderId,
+				requestModelId:
+					effectiveProviderId === "auto" ? null : requestExecutionModelId,
+			});
+			const resolvedReasoningEffort = resolveChatReasoningEffort(
+				effectiveModelSettings.reasoningEffort ?? "medium",
+				reasoningEffortSupport,
+			);
 			const wantsImageModalities =
 				endpoint === "responses" &&
 				(effectiveModelSettings.imageOutputEnabled ||
@@ -1359,7 +1377,7 @@ function ChatPlaygroundContent({
 			}
 			if (endpoint === "responses" && effectiveModelSettings.reasoningEnabled) {
 				requestBody.reasoning = {
-					effort: effectiveModelSettings.reasoningEffort ?? "medium",
+					effort: resolvedReasoningEffort,
 					summary: resolveChatReasoningSummary(selectedModelId),
 				};
 			}
@@ -2930,6 +2948,31 @@ function ChatPlaygroundContent({
 				setModelPickerOpen(true);
 				return false;
 			}
+			const effectiveModelSettings = getEffectiveModelSettings(
+				activeThread,
+				activeThread.modelId,
+			);
+			const effectiveProviderId = isProviderSupportedForModel(
+				activeThread.modelId,
+				effectiveModelSettings.providerId,
+			)
+				? effectiveModelSettings.providerId
+				: "auto";
+			const requestExecutionModelId = resolveRequestModelIdForProvider(
+				activeThread.modelId,
+				effectiveProviderId,
+			);
+			const reasoningEffortSupport = getModelReasoningEffortSupport({
+				models,
+				modelId: activeThread.modelId,
+				providerId: effectiveProviderId,
+				requestModelId:
+					effectiveProviderId === "auto" ? null : requestExecutionModelId,
+			});
+			const resolvedReasoningEffort = resolveChatReasoningEffort(
+				effectiveModelSettings.reasoningEffort ?? "medium",
+				reasoningEffortSupport,
+			);
 			let inlineAttachmentPreviews: Awaited<
 				ReturnType<typeof prepareInlineAttachmentPreviews>
 			> = [];
@@ -2948,7 +2991,7 @@ function ChatPlaygroundContent({
 					model_id: activeThread.modelId,
 					compare_model_ids: activeThread.settings.compareModelIds ?? [],
 					reasoning_enabled: Boolean(activeThread.settings.reasoningEnabled),
-					reasoning_effort: activeThread.settings.reasoningEffort ?? "medium",
+					reasoning_effort: resolvedReasoningEffort,
 					web_search_enabled: payload.webSearchEnabled,
 					api_server_tools_enabled: payload.apiServerToolsEnabled,
 					server_tools: payload.serverTools,
@@ -3099,10 +3142,13 @@ function ChatPlaygroundContent({
 			activeThread,
 			buildThreadForModel,
 			executeCompletion,
+			isProviderSupportedForModel,
 			isModelCapabilityCompatible,
 			isUnified,
 			isSending,
 			isAuthenticated,
+			models,
+			resolveRequestModelIdForProvider,
 			supportsModelAudioInput,
 			temporaryMode,
 			updateThreadState,
@@ -4094,6 +4140,65 @@ function ChatPlaygroundContent({
 		}
 		return Array.from(new Set(ids));
 	}, [activeCompareModelIds, activeModelId]);
+	const selectedModelReasoningSupports = useMemo(
+		() =>
+			selectedModelIds.map((modelId) => {
+				const modelSettings = activeThread
+					? getEffectiveModelSettings(activeThread, modelId)
+					: DEFAULT_SETTINGS;
+				const providerId = isProviderSupportedForModel(
+					modelId,
+					modelSettings.providerId,
+				)
+					? modelSettings.providerId
+					: "auto";
+				return {
+					modelId,
+					support: getModelReasoningEffortSupport({
+						models,
+						modelId,
+						providerId,
+						requestModelId:
+							providerId === "auto"
+								? null
+								: resolveRequestModelIdForProvider(modelId, providerId),
+					}),
+				};
+			}),
+		[
+			activeThread,
+			isProviderSupportedForModel,
+			models,
+			resolveRequestModelIdForProvider,
+			selectedModelIds,
+		],
+	);
+	const selectedReasoningEffortSupport = useMemo(() => {
+		const combined = combineReasoningEffortSupports(
+			selectedModelReasoningSupports.map((entry) => entry.support),
+		);
+		if (combined?.supportedValues.length) return combined;
+		const primaryModelId = activeThread?.modelId ?? selectedModelIds[0];
+		return (
+			selectedModelReasoningSupports.find(
+				(entry) => entry.modelId === primaryModelId,
+			)?.support ??
+			selectedModelReasoningSupports.find((entry) => entry.support)?.support ??
+			null
+		);
+	}, [activeThread?.modelId, selectedModelIds, selectedModelReasoningSupports]);
+	const reasoningOptions = useMemo(() => {
+		return filterReasoningEffortOptions(
+			REASONING_OPTIONS,
+			selectedReasoningEffortSupport,
+		);
+	}, [selectedReasoningEffortSupport]);
+	const selectedReasoningEffort = resolveChatReasoningEffort(
+		activeThread?.settings.reasoningEffort ??
+			DEFAULT_SETTINGS.reasoningEffort ??
+			"medium",
+		selectedReasoningEffortSupport,
+	);
 	const selectedModelDisplayNameById = useMemo(() => {
 		const labels: Record<string, string> = {};
 		for (const modelId of selectedModelIds) {
@@ -4510,8 +4615,9 @@ function ChatPlaygroundContent({
 						activeThread?.settings.reasoningEnabled ?? false
 					}
 					reasoningEffort={
-						activeThread?.settings.reasoningEffort ?? "medium"
+						selectedReasoningEffort
 					}
+					reasoningOptions={reasoningOptions}
 					onReasoningEnabledChange={(enabled) =>
 						updateActiveSettings({ reasoningEnabled: enabled })
 					}
