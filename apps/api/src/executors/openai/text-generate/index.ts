@@ -426,7 +426,7 @@ function normalizeOpenAIProModelSlug(model?: string | null): {
 } {
 	const normalized = normalizeModelName(model);
 	if (!normalized) return { model: model ?? null, proMode: false };
-	const match = normalized.match(/^(gpt-(?:5\.6|6)-(?:sol|terra|luna)|gpt-6-astra)-pro$/i);
+	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-(?:sol|luna|astra))-pro$/i);
 	if (!match) return { model: model ?? null, proMode: false };
 	return { model: match[1].toLowerCase(), proMode: true };
 }
