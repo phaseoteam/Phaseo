@@ -121,6 +121,15 @@ from catalogue_model_name_fixes as name_fix
 where model.model_slug = name_fix.model_slug
   and model.name is distinct from name_fix.corrected_name;
 
+-- Regional provider offers inherit branding from their provider family. The EU
+-- offer had the legacy metadata value but not the relational family field used
+-- by the public provider/logo payload.
+update public.v2_providers
+set provider_family_slug = 'mistral',
+    updated_at = now()
+where provider_slug = 'mistral-eu'
+  and provider_family_slug is distinct from 'mistral';
+
 -- These imported lab aliases are empty and duplicate established canonical labs.
 -- The dependency checks make the cleanup safe to re-run and prevent accidental
 -- deletion if any of them acquires real catalogue data before deployment.
