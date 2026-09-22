@@ -6,6 +6,9 @@ import yaml from "js-yaml";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
+const goOnly = process.argv.includes("--go-only");
+const cppOnly = process.argv.includes("--cpp-only");
+if (goOnly && cppOnly) throw new Error("Choose only one language-specific output flag.");
 const specPath = path.join(repoRoot, "apps/docs/openapi/v1/openapi.yaml");
 const websiteBase = "https://phaseo.app";
 const goMod = await fs.readFile(path.join(repoRoot, "packages/sdk/sdk-go/go.mod"), "utf8");
@@ -170,7 +173,8 @@ function enrichAliasEntry(id, usedUpperRegistry, usedPascalRegistry) {
 }
 
 async function writeFile(relativePath, contents) {
-	if (process.argv.includes("--go-only") && relativePath !== "packages/sdk/sdk-go/model_ids.go") return;
+	if (goOnly && relativePath !== "packages/sdk/sdk-go/model_ids.go") return;
+	if (cppOnly && relativePath !== "packages/sdk/sdk-cpp/src/gen/model_ids.hpp") return;
 	const fullPath = path.join(repoRoot, relativePath);
 	await fs.mkdir(path.dirname(fullPath), { recursive: true });
 	await fs.writeFile(fullPath, contents, "utf8");

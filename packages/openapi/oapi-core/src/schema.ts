@@ -28,6 +28,10 @@ function toIRSchemaInner(
 	schema: OpenAPIV3.SchemaObject,
 	ctx: SchemaContext
 ): IRSchema {
+	if (isUnconstrainedSchema(schema)) {
+		return { kind: "unknown" };
+	}
+
 	if (schema.enum && schema.enum.length > 0) {
 		return { kind: "enum", values: schema.enum as Array<string | number | boolean | null> };
 	}
@@ -245,4 +249,19 @@ function isRequiredOnlySchema(schema: OpenAPIV3.SchemaObject): boolean {
 		Boolean(schema.oneOf?.length) || Boolean(schema.anyOf?.length) || Boolean(schema.allOf?.length);
 	const hasEnum = Boolean(schema.enum?.length);
 	return hasRequired && !hasType && !hasProperties && !hasAdditionalProperties && !hasCombinators && !hasEnum;
+}
+
+function isUnconstrainedSchema(schema: OpenAPIV3.SchemaObject): boolean {
+	const annotationKeys = new Set([
+		"deprecated",
+		"description",
+		"example",
+		"examples",
+		"externalDocs",
+		"nullable",
+		"readOnly",
+		"title",
+		"writeOnly",
+	]);
+	return Object.keys(schema).every((key) => annotationKeys.has(key));
 }

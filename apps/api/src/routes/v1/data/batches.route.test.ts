@@ -139,6 +139,7 @@ vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
+		OTEL_EXPORT_ENABLED: "false",
 		MOONSHOT_API_KEY: "test-moonshot-key",
 		MOONSHOT_AI_BASE_URL: "https://api.moonshot.example",
 		...(state.googleApiKey ? { GOOGLE_AI_STUDIO_API_KEY: state.googleApiKey } : {}),
@@ -689,12 +690,15 @@ describe("batchRoutes", () => {
 				if (url === "https://api.openai.example/v1/files/file_input_123/content" && method === "GET") {
 					return new Response(JSON.stringify({ custom_id: "row-1", method: "POST", url: "/v1/responses", body: { model: "gpt-4.1-mini", max_output_tokens: 16 } }), { status: 200 });
 				}
+				if (url === "https://api.openai.example/v1/files" && method === "POST") {
+					return jsonResponse({ id: "file_input_normalized_123" });
+				}
 				if (url === "https://api.openai.example/v1/batches" && method === "POST") {
 					return jsonResponse({
 						id: "batch_123",
 						status: "queued",
 						endpoint: "/v1/responses",
-						input_file_id: "file_input_123",
+						input_file_id: "file_input_normalized_123",
 						output_file_id: "file_output_123",
 					});
 				}
@@ -704,7 +708,7 @@ describe("batchRoutes", () => {
 						id: "batch_123",
 						status: "completed",
 						endpoint: "/v1/responses",
-						input_file_id: "file_input_123",
+						input_file_id: "file_input_normalized_123",
 						output_file_id: "file_output_123",
 						error_file_id: "file_error_123",
 					});
@@ -750,9 +754,9 @@ describe("batchRoutes", () => {
 		const publicBatchId = String(createPayload.id);
 		expect(createPayload.webhook).not.toHaveProperty("secret");
 
-		expect(state.fetchCalls[1]?.url).toBe("https://api.openai.example/v1/batches");
-		expect(state.fetchCalls[1]?.bodyJson).toMatchObject({
-			input_file_id: "file_input_123",
+		expect(state.fetchCalls[2]?.url).toBe("https://api.openai.example/v1/batches");
+		expect(state.fetchCalls[2]?.bodyJson).toMatchObject({
+			input_file_id: "file_input_normalized_123",
 			endpoint: "/v1/responses",
 			completion_window: "24h",
 		});
@@ -761,13 +765,17 @@ describe("batchRoutes", () => {
 			sessionId: "session_123",
 			status: "queued",
 			nativeBatchId: "batch_123",
-			inputFileId: "file_input_123",
+			inputFileId: "file_input_normalized_123",
 			outputFileId: "file_output_123",
 			webhook: {
 				endpoint_id: "we_batch_123",
 			},
 		});
 		expect(state.fileMeta.get(fileKey("ws_batch_test", "file_input_123"))).toMatchObject({
+			provider: "openai",
+			status: "uploaded",
+		});
+		expect(state.fileMeta.get(fileKey("ws_batch_test", "file_input_normalized_123"))).toMatchObject({
 			provider: "openai",
 			status: "uploaded",
 		});
@@ -828,6 +836,15 @@ describe("batchRoutes", () => {
 				workspaceId: "ws_batch_test",
 				kind: "batch",
 				internalId: publicBatchId,
+				phase: "status_changed",
+				previousStatus: "queued",
+				currentStatus: "completed",
+				deliveryKey: "batch.status_changed:queued:completed",
+			},
+			{
+				workspaceId: "ws_batch_test",
+				kind: "batch",
+				internalId: publicBatchId,
 				phase: "completed",
 			},
 		]);
@@ -855,12 +872,15 @@ describe("batchRoutes", () => {
 				if (url === "https://api.openai.example/v1/files/file_input_fail_123/content" && method === "GET") {
 					return new Response(JSON.stringify({ custom_id: "row-1", method: "POST", url: "/v1/responses", body: { model: "gpt-4.1-mini", max_output_tokens: 16 } }), { status: 200 });
 				}
+				if (url === "https://api.openai.example/v1/files" && method === "POST") {
+					return jsonResponse({ id: "file_input_fail_normalized_123" });
+				}
 				if (url === "https://api.openai.example/v1/batches" && method === "POST") {
 					return jsonResponse({
 						id: "batch_fail_123",
 						status: "queued",
 						endpoint: "/v1/responses",
-						input_file_id: "file_input_fail_123",
+						input_file_id: "file_input_fail_normalized_123",
 					});
 				}
 
@@ -869,7 +889,7 @@ describe("batchRoutes", () => {
 						id: "batch_fail_123",
 						status: "failed",
 						endpoint: "/v1/responses",
-						input_file_id: "file_input_fail_123",
+						input_file_id: "file_input_fail_normalized_123",
 						error_file_id: "file_error_fail_123",
 					});
 				}
@@ -939,6 +959,15 @@ describe("batchRoutes", () => {
 				kind: "batch",
 				internalId: publicBatchId,
 				phase: "created",
+			},
+			{
+				workspaceId: "ws_batch_test",
+				kind: "batch",
+				internalId: publicBatchId,
+				phase: "status_changed",
+				previousStatus: "queued",
+				currentStatus: "failed",
+				deliveryKey: "batch.status_changed:queued:failed",
 			},
 			{
 				workspaceId: "ws_batch_test",
@@ -2105,6 +2134,15 @@ describe("batchRoutes", () => {
 				workspaceId: "ws_batch_test",
 				kind: "batch",
 				internalId: publicBatchId,
+				phase: "status_changed",
+				previousStatus: "in_progress",
+				currentStatus: "completed",
+				deliveryKey: "batch.status_changed:in_progress:completed",
+			},
+			{
+				workspaceId: "ws_batch_test",
+				kind: "batch",
+				internalId: publicBatchId,
 				phase: "completed",
 			},
 		]);
@@ -2558,12 +2596,15 @@ describe("batchRoutes", () => {
 				if (url === "https://api.openai.example/v1/files/file_input_cancel_123/content" && method === "GET") {
 					return new Response(JSON.stringify({ custom_id: "row-1", method: "POST", url: "/v1/responses", body: { model: "gpt-4.1-mini", max_output_tokens: 16 } }), { status: 200 });
 				}
+				if (url === "https://api.openai.example/v1/files" && method === "POST") {
+					return jsonResponse({ id: "file_input_cancel_normalized_123" });
+				}
 				if (url === "https://api.openai.example/v1/batches" && method === "POST") {
 					return jsonResponse({
 						id: "batch_cancel_123",
 						status: "queued",
 						endpoint: "/v1/responses",
-						input_file_id: "file_input_cancel_123",
+						input_file_id: "file_input_cancel_normalized_123",
 					});
 				}
 
@@ -2572,7 +2613,7 @@ describe("batchRoutes", () => {
 						id: "batch_cancel_123",
 						status: "cancelled",
 						endpoint: "/v1/responses",
-						input_file_id: "file_input_cancel_123",
+						input_file_id: "file_input_cancel_normalized_123",
 					});
 				}
 
@@ -2626,12 +2667,12 @@ describe("batchRoutes", () => {
 				reason: "test",
 			},
 		});
-		expect(state.fetchCalls[2]?.url).toBe("https://api.openai.example/v1/batches/batch_cancel_123/cancel");
-		expect(state.fetchCalls[2]?.bodyJson).toEqual({});
+		expect(state.fetchCalls[3]?.url).toBe("https://api.openai.example/v1/batches/batch_cancel_123/cancel");
+		expect(state.fetchCalls[3]?.bodyJson).toEqual({});
 		expect(state.batchMeta.get(batchKey("ws_batch_test", publicBatchId))).toMatchObject({
 			status: "cancelled",
 			nativeBatchId: "batch_cancel_123",
-			inputFileId: "file_input_cancel_123",
+			inputFileId: "file_input_cancel_normalized_123",
 		});
 		expect(state.webhookEvents).toEqual([
 			{

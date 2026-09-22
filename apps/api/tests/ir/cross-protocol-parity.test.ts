@@ -71,8 +71,8 @@ describe("Cross-Protocol Parity", () => {
 			expect(chatResponse.usage?.completion_tokens).toBe(5);
 			expect(chatResponse.usage?.total_tokens).toBe(15);
 
-			expect(responsesResponse.usage?.prompt_tokens).toBe(10);
-			expect(responsesResponse.usage?.completion_tokens).toBe(5);
+			expect(responsesResponse.usage?.input_tokens).toBe(10);
+			expect(responsesResponse.usage?.output_tokens).toBe(5);
 			expect(responsesResponse.usage?.total_tokens).toBe(15);
 
 			// Anthropic format (same values, different names)
@@ -285,7 +285,7 @@ describe("Cross-Protocol Parity", () => {
 			// Both OpenAI formats should preserve reasoning tokens
 			expect(chatResponse.usage?.reasoning_tokens).toBe(20);
 			expect(chatResponse.usage?.output_tokens_details?.reasoning_tokens).toBe(20);
-			expect(responsesResponse.usage?.reasoning_tokens).toBe(20);
+			expect(responsesResponse.usage?.output_tokens_details?.reasoning_tokens).toBe(20);
 
 			// Anthropic doesn't have reasoning_tokens in their API
 			const anthropicResponse = encodeAnthropicMessagesResponse(irWithReasoning);
@@ -308,8 +308,9 @@ describe("Cross-Protocol Parity", () => {
 
 			// OpenAI formats should preserve cached tokens
 			expect(chatResponse.usage?.input_details?.cached_tokens).toBe(80);
-			expect(responsesResponse.usage?.prompt_tokens).toBe(100);
-			expect(responsesResponse.usage?.completion_tokens).toBe(50);
+			expect(responsesResponse.usage?.input_tokens).toBe(100);
+			expect(responsesResponse.usage?.output_tokens).toBe(50);
+			expect(responsesResponse.usage?.input_tokens_details?.cached_tokens).toBe(80);
 		});
 	});
 
