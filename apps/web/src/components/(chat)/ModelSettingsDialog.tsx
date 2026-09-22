@@ -376,11 +376,9 @@ export function ModelSettingsDialog({
         supportedReasoningOptions.find(
             (option) =>
                 option.value === (reasoningEffort ?? settings.reasoningEffort)
-        ) ?? supportedReasoningOptions[0];
-    const selectedReasoningValue =
-        selectedReasoningOption?.value;
+        );
     const reasoningStateLabel = settings.reasoningEnabled
-        ? `Selected: ${selectedReasoningOption?.label ?? "Default"}`
+        ? `Selected: ${selectedReasoningOption?.label ?? "Select an effort"}`
         : "Disabled";
     const availableServiceTierOptions = serviceTierOptions?.length
         ? serviceTierOptions
@@ -733,24 +731,28 @@ export function ModelSettingsDialog({
                         </div>
                         <div className="grid gap-1.5">
                             <div className="flex items-center justify-between gap-2">
-                                <Label>Reasoning</Label>
+                                <Label htmlFor="reasoning-effort">Reasoning</Label>
                                 <span className="text-xs text-muted-foreground">
                                     {reasoningStateLabel}
                                 </span>
                             </div>
                             {supportedReasoningOptions.length > 0 ? (
                                 <Select
-                                    value={selectedReasoningValue}
+                                    value={selectedReasoningOption?.value}
                                     onValueChange={(value) =>
                                         onUpdate({
                                             reasoningEffort: value as ChatReasoningEffort,
                                         })
                                     }
                                 >
-                                    <SelectTrigger className="w-full min-w-0">
-                                        <SelectValue className="min-w-0">
-                                            {selectedReasoningOption?.label ?? "Default"}
-                                        </SelectValue>
+                                    <SelectTrigger
+                                        id="reasoning-effort"
+                                        className="w-full min-w-0"
+                                    >
+                                        <SelectValue
+                                            className="min-w-0"
+                                            placeholder="Select an effort"
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {supportedReasoningOptions.map((option) => (
@@ -767,8 +769,7 @@ export function ModelSettingsDialog({
                                     </p>
                                 </div>
                             )}
-                            {supportedReasoningOptions.length > 0 &&
-                            reasoningSupport?.defaultValue ? (
+                            {reasoningSupport?.defaultValue ? (
                                 <p className="text-xs text-muted-foreground">
                                     Gateway default:{" "}
                                     {REASONING_OPTIONS.find(
