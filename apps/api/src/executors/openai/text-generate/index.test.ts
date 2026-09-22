@@ -643,6 +643,88 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({ effort: "max" });
 	});
 
+	it("routes GPT-6 Luna Pro through the base model with pro reasoning", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_luna_pro",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6-luna",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6-luna-pro",
+				reasoning: { effort: "max" },
+			}),
+			providerModelSlug: "gpt-6-luna-pro",
+			capabilityParams: {
+				request: {
+					allowlist: ["reasoning.effort", "reasoning.mode", "max_tokens"],
+				},
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6-luna");
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
+			effort: "max",
+			mode: "pro",
+		});
+	});
+
+	it("preserves none effort and pro mode for the canonical GPT-6 Sol slug", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_sol",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-6-sol",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-6-sol",
+				reasoning: { effort: "none", mode: "pro" },
+			}),
+			providerModelSlug: "gpt-6-sol",
+			capabilityParams: {
+				request: {
+					allowlist: ["reasoning.effort", "reasoning.mode", "max_tokens"],
+				},
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-6-sol");
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
+			effort: "none",
+			mode: "pro",
+		});
+	});
+
 	it("preserves pro mode when requested on the canonical GPT-5.6 slug", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.openai.com/v1/responses",
