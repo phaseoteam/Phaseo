@@ -49,6 +49,16 @@ export type ChatServerToolType =
 	| "phaseo:fusion"
 	| "phaseo:subagent";
 
+export type ChatReasoningEffort =
+	| "none"
+	| "instant"
+	| "minimal"
+	| "low"
+	| "medium"
+	| "high"
+	| "xhigh"
+	| "max";
+
 export type ChatAdvisorServerToolConfig = {
     name?: string;
     model?: string;
@@ -57,7 +67,7 @@ export type ChatAdvisorServerToolConfig = {
     maxUses?: number | null;
     maxCompletionTokens?: number | null;
     temperature?: number | null;
-    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	reasoningEffort?: ChatReasoningEffort;
 };
 
 export type ChatSubagentServerToolConfig = {
@@ -66,7 +76,7 @@ export type ChatSubagentServerToolConfig = {
     maxUses?: number | null;
     maxCompletionTokens?: number | null;
     temperature?: number | null;
-    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	reasoningEffort?: ChatReasoningEffort;
 };
 
 export type ChatFusionServerToolConfig = {
@@ -136,7 +146,7 @@ export type ChatModelSettings = {
     providerId?: string;
     serviceTier?: "standard" | "priority" | "flex";
     reasoningEnabled?: boolean;
-    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	reasoningEffort?: ChatReasoningEffort;
     endpoint?: UnifiedChatEndpoint;
     webSearchEnabled?: boolean;
     apiServerToolsEnabled?: boolean;

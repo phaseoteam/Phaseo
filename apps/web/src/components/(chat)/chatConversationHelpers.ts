@@ -1,5 +1,8 @@
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import type { ChatMessage, ChatSettings } from "@/lib/indexeddb/chats";
+import type {
+	ChatMessage,
+	ChatReasoningEffort,
+} from "@/lib/indexeddb/chats";
 
 const AUDIO_RECORDING_MIME_CANDIDATES = [
 	"audio/webm;codecs=opus",
@@ -11,11 +14,14 @@ const AUDIO_RECORDING_MIME_CANDIDATES = [
 
 export const DEFAULT_CHAT_PLACEHOLDER = "Ask anything";
 
-export const REASONING_OPTIONS: Array<{
-	value: NonNullable<ChatSettings["reasoningEffort"]>;
+export type ReasoningEffortOption = {
+	value: ChatReasoningEffort;
 	label: string;
-}> = [
+};
+
+export const REASONING_OPTIONS: ReasoningEffortOption[] = [
 	{ value: "none", label: "None" },
+	{ value: "instant", label: "Instant" },
 	{ value: "minimal", label: "Minimal" },
 	{ value: "low", label: "Low" },
 	{ value: "medium", label: "Medium" },
