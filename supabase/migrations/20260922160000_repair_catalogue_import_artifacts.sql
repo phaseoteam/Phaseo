@@ -55,8 +55,22 @@ set model_slug = excluded.model_slug,
     alias_type = excluded.alias_type,
     enabled = true,
     effective_to = null,
-    metadata = excluded.metadata,
-    updated_at = now();
+    metadata = excluded.metadata || jsonb_build_object(
+      'repaired_at', coalesce(
+        public.v2_model_aliases.metadata -> 'repaired_at',
+        excluded.metadata -> 'repaired_at'
+      )
+    ),
+    updated_at = now()
+where public.v2_model_aliases.model_slug is distinct from excluded.model_slug
+   or public.v2_model_aliases.alias_type is distinct from excluded.alias_type
+   or public.v2_model_aliases.enabled is distinct from true
+   or public.v2_model_aliases.effective_to is not null
+   or public.v2_model_aliases.metadata ->> 'reason'
+      is distinct from excluded.metadata ->> 'reason'
+   or public.v2_model_aliases.metadata ->> 'source'
+      is distinct from excluded.metadata ->> 'source'
+   or public.v2_model_aliases.metadata -> 'repaired_at' is null;
 
 update public.v2_models as model
 set status = 'retired',
@@ -66,11 +80,23 @@ set status = 'retired',
     catalogue_status = 'retired',
     metadata = coalesce(model.metadata, '{}'::jsonb) || jsonb_build_object(
       'consolidated_into', mapping.canonical,
-      'catalogue_artifact_repaired_at', now()
+      'catalogue_artifact_repaired_at', coalesce(
+        model.metadata -> 'catalogue_artifact_repaired_at',
+        to_jsonb(now())
+      )
     ),
     updated_at = now()
 from catalogue_model_artifact_map as mapping
-where model.model_slug = mapping.artifact;
+where model.model_slug = mapping.artifact
+  and (
+    model.status is distinct from 'retired'
+    or model.hidden is distinct from true
+    or model.retired_at is null
+    or model.replacement_model_slug is distinct from mapping.canonical
+    or model.catalogue_status is distinct from 'retired'
+    or model.metadata ->> 'consolidated_into' is distinct from mapping.canonical
+    or model.metadata -> 'catalogue_artifact_repaired_at' is null
+  );
 
 create temporary table catalogue_model_name_fixes (
   model_slug text primary key,
