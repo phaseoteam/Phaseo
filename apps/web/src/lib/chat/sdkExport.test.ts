@@ -305,9 +305,27 @@ test("maps stop controls between Messages and OpenAI text shapes", () => {
   expect(convertTextProtocol(responses, "messages").body.stop_sequences).toEqual(["DONE"]);
 });
 
+test("preserves managed gateway tools when switching text protocols", () => {
+  const tools = [{ type: "gateway:datetime", parameters: { timezones: ["UTC"] } }];
+  const source = { endpoint: "/responses", body: { model: "phaseo/free", input: "What time is it?", tools } };
+
+  expect(protocolSwitchSupportReason(source, "chat-completions")).toBeNull();
+  expect(protocolSwitchSupportReason(source, "messages")).toBeNull();
+  expect(convertTextProtocol(source, "chat-completions").body.tools).toEqual(tools);
+  expect(convertTextProtocol(source, "messages").body.tools).toEqual(tools);
+});
+
 test("does not silently convert tool-bearing or multimodal protocol requests", () => {
   expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "function" }] } }, "messages"))
-    .toThrow("requires a request without tools");
+    .toThrow("cannot safely convert function tools");
+  expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [[]] } }, "messages"))
+    .toThrow("cannot safely convert function tools");
+  expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "phaseo:apply_patch" }] } }, "messages"))
+    .toThrow("cannot safely convert these tools");
+  expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "web_search_20250305" }] } }, "chat-completions"))
+    .toThrow("cannot safely convert these tools");
+  expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "gateway:datetime" }], tool_choice: "required" } }, "messages"))
+    .toThrow("cannot safely convert tool_choice");
   expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: [{ role: "user", content: [{ type: "input_image", image_url: "example" }] }] } }, "messages"))
     .toThrow("requires text-only messages");
 });
