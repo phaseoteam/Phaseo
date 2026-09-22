@@ -318,6 +318,14 @@ test("preserves managed gateway tools when switching text protocols", () => {
 test("does not silently convert tool-bearing or multimodal protocol requests", () => {
   expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "function" }] } }, "messages"))
     .toThrow("cannot safely convert function tools");
+  expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [[]] } }, "messages"))
+    .toThrow("cannot safely convert function tools");
+  expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "phaseo:apply_patch" }] } }, "messages"))
+    .toThrow("cannot safely convert these tools");
+  expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "web_search_20250305" }] } }, "chat-completions"))
+    .toThrow("cannot safely convert these tools");
+  expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: "Hello", tools: [{ type: "gateway:datetime" }], tool_choice: "required" } }, "messages"))
+    .toThrow("cannot safely convert tool_choice");
   expect(() => convertTextProtocol({ endpoint: "/responses", body: { input: [{ role: "user", content: [{ type: "input_image", image_url: "example" }] }] } }, "messages"))
     .toThrow("requires text-only messages");
 });

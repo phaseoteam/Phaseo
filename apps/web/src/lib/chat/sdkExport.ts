@@ -133,10 +133,29 @@ function normalizeConversation(request: SdkRequest, allowTools = false) {
 
 const sharedTextKeys = ["model", "temperature", "top_p", "top_k", "stream", "provider", "provider_options", "reasoning", "metadata", "meta", "service_tier", "session_id", "prompt_cache_key", "web_search_options", "plugins", "tools"];
 const openAiControlKeys = ["presence_penalty", "frequency_penalty", "seed", "logit_bias", "logprobs", "top_logprobs", "user", "n", "response_format", "stream_options"];
+const portableManagedToolTypes = new Set([
+  "phaseo:datetime", "gateway:datetime", "phaseo:web_search", "gateway:web_search",
+  "phaseo:web_fetch", "gateway:web_fetch", "phaseo:advisor", "phaseo:image_generation",
+  "phaseo:subagent", "phaseo:fusion", "phaseo:search_models",
+]);
+
+function protocolToolSupportReason(request: SdkRequest, protocol: TextProtocol): string | null {
+  const tools = managedGatewayTools(request);
+  if (tools === null) return "Protocol switching cannot safely convert function tools";
+  if (tools.some(tool => typeof tool.type !== "string"
+    || !portableManagedToolTypes.has(tool.type)
+    || (tool.type === "phaseo:apply_patch" && protocol !== "responses"))) {
+    return "Protocol switching cannot safely convert these tools";
+  }
+  if (request.body.tool_choice !== undefined) return "Protocol switching cannot safely convert tool_choice";
+  return null;
+}
 
 export function protocolSwitchSupportReason(request: SdkRequest, protocol?: TextProtocol): string | null {
   const conversationReason = normalizeConversation(request).reason;
   if (conversationReason || !protocol || protocol === textProtocolForRequest(request)) return conversationReason;
+  const toolReason = protocolToolSupportReason(request, protocol);
+  if (toolReason) return toolReason;
   if (protocol === "messages") {
     const unsupported = openAiControlKeys.filter(key => request.body[key] !== undefined);
     if (unsupported.length) return `Messages cannot preserve ${unsupported.join(", ")}`;
@@ -148,8 +167,9 @@ export function convertTextProtocol(request: SdkRequest, protocol: TextProtocol)
   const current = textProtocolForRequest(request);
   if (!current) throw new Error("Available for text requests");
   if (current === protocol) return request;
+  const supportReason = protocolSwitchSupportReason(request, protocol);
+  if (supportReason) throw new Error(supportReason);
   const conversation = normalizeConversation(request);
-  if (conversation.reason) throw new Error(conversation.reason);
   const body: Record<string, unknown> = {};
   for (const key of [...sharedTextKeys, ...openAiControlKeys]) if (request.body[key] !== undefined) body[key] = request.body[key];
   if (protocol === "messages") {
@@ -202,7 +222,7 @@ export function agentSdkSupportReason(request: SdkRequest): string | null {
 
 function managedGatewayTools(request: SdkRequest): Array<Record<string, unknown>> | null {
   if (!Array.isArray(request.body.tools)) return [];
-  const tools = request.body.tools.filter((tool): tool is Record<string, unknown> => Boolean(tool) && typeof tool === "object");
+  const tools = request.body.tools.filter((tool): tool is Record<string, unknown> => Boolean(tool) && typeof tool === "object" && !Array.isArray(tool));
   if (tools.length !== request.body.tools.length || tools.some(tool => tool.type === "function"
     || ("function" in tool && typeof tool.function === "object")
     || (typeof tool.name === "string" && "input_schema" in tool))) return null;
