@@ -1,5 +1,11 @@
 # @phaseo/mcp
 
+## 0.4.1
+
+### Patch Changes
+
+- Refresh the MCP server metadata version after expanding model results with paid-price provenance, free-provider availability, and provider-level pricing. This lets clients rediscover the updated `models_list` and `model_get` output contracts.
+
 ## 0.4.0
 
 ### Minor Changes

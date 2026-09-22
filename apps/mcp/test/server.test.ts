@@ -46,6 +46,7 @@ describe("Phaseo MCP server metadata", () => {
 		expect(client.getServerVersion()).toMatchObject({
 			name: "Phaseo",
 			title: "Phaseo",
+			version: "0.4.1",
 			websiteUrl: "https://phaseo.app",
 			icons: [
 				{
@@ -74,8 +75,72 @@ describe("Phaseo MCP server metadata", () => {
 		]);
 		expect(tools.models_list?.outputSchema).toMatchObject({
 			type: "object",
-			properties: { models: { type: "array" } },
+			properties: {
+				models: {
+					type: "array",
+					items: {
+						type: "object",
+						properties: {
+							inputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+							outputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+							inputPriceProviderId: { anyOf: [{ type: "string" }, { type: "null" }] },
+							outputPriceProviderId: { anyOf: [{ type: "string" }, { type: "null" }] },
+							hasFreeProvider: { type: "boolean" },
+							providerSupport: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										pricing: {
+											type: "object",
+											properties: {
+												inputPricePerToken: { anyOf: [{ type: "string" }, { type: "null" }] },
+												outputPricePerToken: { anyOf: [{ type: "string" }, { type: "null" }] },
+												inputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+												outputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
+												currency: { anyOf: [{ type: "string" }, { type: "null" }] },
+												isFree: { type: "boolean" },
+											},
+											required: [
+												"inputPricePerToken", "outputPricePerToken",
+												"inputPricePerMillion", "outputPricePerMillion",
+												"currency", "isFree",
+											],
+										},
+									},
+									required: [
+										"providerId", "providerName", "providerModelId", "status",
+										"routable", "supportedParameters", "pricing",
+									],
+								},
+							},
+						},
+					},
+				},
+			},
 			required: ["models"],
+		});
+		expect(tools.model_get?.outputSchema).toMatchObject({
+			type: "object",
+			properties: {
+				model: {
+					type: "object",
+					properties: {
+						providerSupport: {
+							type: "array",
+							items: {
+								type: "object",
+								properties: { pricing: { type: "object" } },
+								required: [
+									"providerId", "providerName", "providerModelId", "status",
+									"routable", "supportedParameters", "pricing",
+								],
+							},
+						},
+					},
+				},
+			},
+			required: ["model"],
 		});
 		expect(tools.models_list?._meta?.securitySchemes).toEqual([
 			{ type: "oauth2", scopes: ["models:read", "pricing:read"] },
