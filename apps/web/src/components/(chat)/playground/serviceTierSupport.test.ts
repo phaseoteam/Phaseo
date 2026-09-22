@@ -38,13 +38,20 @@ function gatewayModel(
 }
 
 describe("chat service tier support", () => {
-	it("keeps Grok 4.7 on Standard when no service tier is advertised", () => {
+	it("reads Standard and Priority from Grok 4.7 capability metadata", () => {
 		const support = getModelServiceTierSupport({
 			models: [
 				gatewayModel("spacex-ai/grok-4.7", {
 					"text.generate": {
 						reasoning: {
-							effort: { supported_values: ["low", "medium", "high", "xhigh"] },
+							effort: {
+								supported_values: ["low", "medium", "high", "xhigh"],
+							},
+						},
+						service_tier: {
+							param_id: "service_tier",
+							provider_default: "standard",
+							supported_values: ["standard", "priority"],
 						},
 					},
 				}),
@@ -52,9 +59,13 @@ describe("chat service tier support", () => {
 			modelId: "spacex-ai/grok-4.7",
 		});
 
-		expect(support).toEqual({ supportedValues: ["standard"] });
+		expect(support).toEqual({
+			supportedValues: ["standard", "priority"],
+			defaultValue: "standard",
+		});
 		expect(getServiceTierOptions(support)).toEqual([
 			{ value: "standard", label: "Standard" },
+			{ value: "priority", label: "Fast" },
 		]);
 	});
 

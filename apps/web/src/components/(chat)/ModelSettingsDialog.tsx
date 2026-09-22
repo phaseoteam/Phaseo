@@ -378,8 +378,8 @@ export function ModelSettingsDialog({
                 option.value === (reasoningEffort ?? settings.reasoningEffort)
         );
     const reasoningStateLabel = settings.reasoningEnabled
-        ? `Selected: ${selectedReasoningOption?.label ?? "Select an effort"}`
-        : "Disabled";
+        ? (selectedReasoningOption?.label ?? "Select an effort")
+        : "Off";
     const availableServiceTierOptions = serviceTierOptions?.length
         ? serviceTierOptions
         : [{ value: "standard" as const, label: "Standard" }];
@@ -731,7 +731,7 @@ export function ModelSettingsDialog({
                         </div>
                         <div className="grid gap-1.5">
                             <div className="flex items-center justify-between gap-2">
-                                <Label htmlFor="reasoning-effort">Reasoning</Label>
+                                <Label htmlFor="reasoning-effort">Reasoning effort</Label>
                                 <span className="text-xs text-muted-foreground">
                                     {reasoningStateLabel}
                                 </span>
@@ -741,6 +741,7 @@ export function ModelSettingsDialog({
                                     value={selectedReasoningOption?.value}
                                     onValueChange={(value) =>
                                         onUpdate({
+                                            reasoningEnabled: true,
                                             reasoningEffort: value as ChatReasoningEffort,
                                         })
                                     }
