@@ -189,12 +189,26 @@ describe("Phaseo MCP server metadata", () => {
 			} },
 			offers: [{
 				provider: { id: "provider", name: "Provider" }, model: id, status: "active", routable,
-				capabilities: { parameters: [], parameter_details: {} }, pricing: { pricing_plan: "standard", meters: {} },
-			}],
+				capabilities: { parameters: [], parameter_details: {} }, pricing: { pricing_plan: "standard", meters: {
+					input_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD", provider_id: "provider" },
+					output_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: "10", currency: "USD", provider_id: "provider" },
+				} },
+			}, ...(routable ? [{
+				provider: { id: "free-provider", name: "Free Provider" }, model: id, status: "active", routable: true,
+				capabilities: { parameters: [], parameter_details: {} }, pricing: { pricing_plan: "standard", meters: {
+					input_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: "0", currency: "USD", provider_id: "free-provider" },
+					output_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: "0", currency: "USD", provider_id: "free-provider" },
+				} },
+			}] : [])],
 		});
-		const fetchMock = vi.fn().mockResolvedValue(Response.json({ ok: true, models: [
-			model("lab/cheap", "1", false), model("lab/expensive", "5", true),
-		] }));
+		const models = [model("lab/cheap", "1", false), model("lab/expensive", "5", true)];
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const request = input instanceof Request ? input : new Request(input);
+			return Response.json({
+				ok: true,
+				models: request.url.includes("id=lab%2Fexpensive") ? [models[1]] : models,
+			});
+		});
 		vi.stubGlobal("fetch", fetchMock);
 		const server = createServer({ ...env, PHASEO_WEB_BASE_URL: "https://preview.phaseo.test" }, {
 			accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"],
@@ -208,7 +222,7 @@ describe("Phaseo MCP server metadata", () => {
 		const result = await client.callTool({ name: "models_list", arguments: { sortBy: "input_price", limit: 2 } });
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect((fetchMock.mock.calls[0]?.[0] as Request).url).toBe(
-			"https://api.phaseo.app/v1/models?sort_by=input_price&limit=2",
+			"https://api.phaseo.app/v1/models?limit=250",
 		);
 		expect(result.structuredContent).toMatchObject({ models: [
 			{
@@ -227,10 +241,17 @@ describe("Phaseo MCP server metadata", () => {
 			},
 			{
 				id: "lab/expensive",
+				inputPricePerToken: "0.000005",
+				outputPricePerToken: "0.00001",
+				inputPricePerMillion: 5,
+				outputPricePerMillion: 10,
+				inputPriceProviderId: "provider",
+				outputPriceProviderId: "provider",
+				hasFreeProvider: true,
 				modelUrl: "https://preview.phaseo.test/models/lab/expensive",
 				gatewayAvailable: true,
 				gatewayModelId: "lab/expensive",
-				availableProviders: ["provider"],
+				availableProviders: ["provider", "free-provider"],
 				providerSupport: [{
 					providerId: "provider",
 					providerName: "Provider",
@@ -238,9 +259,45 @@ describe("Phaseo MCP server metadata", () => {
 					status: "active",
 					routable: true,
 					supportedParameters: [],
+					pricing: {
+						inputPricePerMillion: 5,
+						outputPricePerMillion: 10,
+						isFree: false,
+					},
+				}, {
+					providerId: "free-provider",
+					providerName: "Free Provider",
+					providerModelId: "lab/expensive",
+					status: "active",
+					routable: true,
+					supportedParameters: [],
+					pricing: {
+						inputPricePerMillion: 0,
+						outputPricePerMillion: 0,
+						isFree: true,
+					},
 				}],
 			},
 		] });
+		const priceFiltered = await client.callTool({
+			name: "models_list",
+			arguments: { maximumInputPricePerMillion: 2, sortBy: "input_price", limit: 2 },
+		});
+		expect((priceFiltered.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id))
+			.toEqual(["lab/cheap"]);
+
+		const estimate = await client.callTool({
+			name: "cost_estimate",
+			arguments: { modelId: "lab/expensive", inputTokens: 1_000_000, cachedInputTokens: 0, outputTokens: 1_000_000 },
+		});
+		expect(estimate.structuredContent).toMatchObject({ estimate: {
+			modelId: "lab/expensive",
+			providerId: "provider",
+			isFree: false,
+			inputCostUSD: 5,
+			outputCostUSD: 10,
+			totalCostUSD: 15,
+		} });
 	});
 
 	it("keeps benchmark order neutral while reporting Gateway availability", async () => {
