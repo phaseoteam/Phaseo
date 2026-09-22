@@ -678,13 +678,18 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 					provider,
 					modality,
 					minimumContextTokens,
-					maximumInputPricePerMillion,
 					gatewayAvailableOnly,
-					sortBy,
-					sortOrder,
-					limit,
+					limit: 250,
 				}, { accessToken: authenticatedUser.accessToken });
-				const result = models.map((model) => modelSummary(env, model));
+				const priceFiltered = maximumInputPricePerMillion === undefined
+					? models
+					: models.filter((model) => {
+						const price = lowestPaidPrice(model, "input")?.rate;
+						return price !== undefined && price * 1_000_000 <= maximumInputPricePerMillion;
+					});
+				const result = sortModels(priceFiltered, sortBy, sortOrder)
+					.slice(0, limit)
+					.map((model) => modelSummary(env, model));
 				return {
 					content: [{ type: "text" as const, text: `Found ${result.length} matching Phaseo model${result.length === 1 ? "" : "s"}.` }],
 					structuredContent: { models: result },

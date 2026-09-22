@@ -222,7 +222,7 @@ describe("Phaseo MCP server metadata", () => {
 		const result = await client.callTool({ name: "models_list", arguments: { sortBy: "input_price", limit: 2 } });
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect((fetchMock.mock.calls[0]?.[0] as Request).url).toBe(
-			"https://api.phaseo.app/v1/models?sort_by=input_price&limit=2",
+			"https://api.phaseo.app/v1/models?limit=250",
 		);
 		expect(result.structuredContent).toMatchObject({ models: [
 			{
@@ -279,6 +279,12 @@ describe("Phaseo MCP server metadata", () => {
 				}],
 			},
 		] });
+		const priceFiltered = await client.callTool({
+			name: "models_list",
+			arguments: { maximumInputPricePerMillion: 2, sortBy: "input_price", limit: 2 },
+		});
+		expect((priceFiltered.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id))
+			.toEqual(["lab/cheap"]);
 
 		const estimate = await client.callTool({
 			name: "cost_estimate",
