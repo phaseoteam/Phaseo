@@ -484,17 +484,17 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		}
 	}
 
-	async function submit() {
-		if (!historyLoaded || isSubmitting) return;
+	async function submit(): Promise<boolean> {
+		if (!historyLoaded || isSubmitting) return false;
 		setError(null);
 		if (modelSettings.selectedProfile?.enabled === false) {
 			setError("Enable this model in settings before sending a decision.");
-			return;
+			return false;
 		}
 		const draftError = validateDecisionDraft(draft);
 		if (draftError) {
 			setError(draftError);
-			return;
+			return false;
 		}
 
 		const { state, questions } = serializeDecisionDraft(draft);
@@ -555,11 +555,12 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				.querySelector<HTMLElement>("[data-decision-question-input='true']")
 				?.blur();
 		});
-		await evaluateRun(runId, {
+		void evaluateRun(runId, {
 			model: runModel,
 			state,
 			questions,
 		}, pendingRun);
+		return true;
 	}
 
 	async function evaluateRun(
@@ -1016,7 +1017,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 							historyLoaded={historyLoaded}
 							isSubmitting={isSubmitting}
 							onDraftChange={setDraft}
-							onSubmit={() => void submit()}
+							onSubmit={submit}
 						/>
 					</RoomComposerSurface>
 				</div>
