@@ -146,7 +146,7 @@ describe("logos", () => {
 	test.each([
 		["alibaba-cn", "Alibaba Cloud", "/logos/alibaba-cloud.svg"],
 		["cloudflare-ai-gateway", "Cloudflare AI Gateway", "/logos/cloudflare.svg"],
-		["github-models", "Github Models", "/logos/github_light.svg"],
+		["github-models", "Github Models", "/social/github_light.svg"],
 		["huggingface", "Hugging Face", "/logos/huggingface.svg"],
 		["kilo", "Kilo Code", "/logos/kilo_light.svg"],
 		["lmstudio", "LM Studio", "/logos/lmstudio_light.svg"],
