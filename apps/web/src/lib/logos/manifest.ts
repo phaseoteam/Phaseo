@@ -223,8 +223,8 @@ export const logoManifest = {
 		dark: "/logos/friendli_dark.svg",
 	},
 	"github-models": {
-		light: "/logos/github_light.svg",
-		dark: "/logos/github_dark.svg",
+		light: "/social/github_light.svg",
+		dark: "/social/github_dark.svg",
 	},
 	gmicloud: {
 		light: "/logos/gmicloud_light.svg",
