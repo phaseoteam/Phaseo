@@ -51,9 +51,14 @@ async function v2SearchIndex(c: Context<{ Bindings: Env }>): Promise<CompactSear
 			.eq("hidden", false)
 			.order("released_at", { ascending: false })
 			.range(from, to)),
-		db.from("v2_labs").select("lab_slug,name").order("name", { ascending: true }),
+		db.from("v2_labs")
+			.select("lab_slug,name")
+			.neq("status", "disabled")
+			.order("name", { ascending: true }),
 		db.from("v2_benchmarks").select("benchmark_id,name,total_models").order("name", { ascending: true }),
-		db.from("v2_providers").select("provider_slug,name,offer_label,offer_scope").order("name", { ascending: true }),
+		db.from("v2_providers")
+			.select("provider_slug,name,offer_label,offer_scope,provider_family_slug")
+			.order("name", { ascending: true }),
 	]);
 	for (const result of [organisationsResult, benchmarksResult, providersResult]) {
 		if (result.error) throw result.error;
@@ -79,7 +84,7 @@ async function v2SearchIndex(c: Context<{ Bindings: Env }>): Promise<CompactSear
 			}),
 			null,
 			`/api-providers/${provider.provider_slug}`,
-			provider.provider_slug,
+			provider.provider_family_slug ?? provider.provider_slug,
 		]),
 		s: [],
 		c: [],
