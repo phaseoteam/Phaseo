@@ -3643,6 +3643,20 @@ class OcrResponse
 {
 }
 
+class OpenAIReasoningConfig
+{
+	/** @var string|null */
+	public $effort;
+	/** @var bool|null */
+	public $enabled;
+	/** @var int|null */
+	public $max_tokens;
+	/** @var string|null */
+	public $mode;
+	/** @var string|null */
+	public $summary;
+}
+
 class OrganisationId { }
 
 class OrganisationIdList { }

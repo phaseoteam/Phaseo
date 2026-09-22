@@ -4,4 +4,4 @@
 "@phaseo/web": patch
 ---
 
-Keep chat reasoning choices compatible with model capabilities and expose the `instant` effort in generated request types for models that explicitly support it.
+Keep chat reasoning choices compatible with model capabilities and expose the `instant` effort only in generated OpenAI-compatible request types.

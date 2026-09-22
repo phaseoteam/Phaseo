@@ -232,6 +232,7 @@
     "models/ObservabilityRuleGroup.ts",
     "models/OcrRequest.ts",
     "models/OcrResponse.ts",
+    "models/OpenAIReasoningConfig.ts",
     "models/OrganisationId.ts",
     "models/OrganisationIdList.ts",
     "models/ParseBlock.ts",

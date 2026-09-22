@@ -2982,6 +2982,17 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     OcrRequest = Struct.new(:debug, :echo_upstream_request, :image, :language, :model, :provider, keyword_init: true)
     OcrResponse = Struct.new(:_unused, keyword_init: true)
+    # @!attribute [rw] effort
+    #   @return [String, nil]
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] max_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] mode
+    #   @return [String, nil]
+    # @!attribute [rw] summary
+    #   @return [String, nil]
+    OpenAIReasoningConfig = Struct.new(:effort, :enabled, :max_tokens, :mode, :summary, keyword_init: true)
     OrganisationId = Object
     OrganisationIdList = Object
     ParseBlock = Object

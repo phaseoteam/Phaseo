@@ -37,7 +37,7 @@ function dispatchProviderHealthBackground(task: () => Promise<unknown>): void {
 }
 
 import { guardCandidates, guardPricingFound, guardAllFailed } from "./guards";
-import { err } from "./http";
+import { err, json } from "./http";
 import { getBaseModel, calculateMaxTries } from "./utils";
 import { rankProviders } from "./providers";
 import { resolveProviderExecutor } from "../../executors";
@@ -95,7 +95,7 @@ import type {
 } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { createUpstreamTimingTracker } from "@executors/_shared/timing/upstream";
-import { normalizeIRForProvider } from "./normalize";
+import { getReasoningEffortAllowlist, normalizeIRForProvider } from "./normalize";
 import { normalizeCapability } from "@/executors";
 import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
@@ -118,6 +118,34 @@ const SINGLE_PROVIDER_FAILURE_RETRIES = 0;
 // Matches the database's per-workspace/provider storage limit. A configured
 // credential must not be silently retained while being impossible to attempt.
 export const MAX_BYOK_CREDENTIAL_ATTEMPTS = BYOK_KEYS_PER_PROVIDER_LIMIT;
+
+function unsupportedReasoningEffortResponse(
+	ctx: PipelineContext,
+	model: string,
+	supportedValues: string[],
+): Response {
+	const supported = Array.from(new Set(supportedValues));
+	const message = `Reasoning effort "instant" is not supported for model "${model}".`;
+	return json({
+		error: "validation_error",
+		reason: "unsupported_param",
+		description: `${message} Supported values: ${supported.join(", ") || "none"}.`,
+		error_type: "user",
+		error_origin: "user",
+		error_operational_kind: "unsupported_param",
+		details: [{
+			message,
+			path: ["reasoning", "effort"],
+			keyword: "unsupported_param",
+			params: {
+				param: "reasoning.effort",
+				value: "instant",
+				supported_values: supported,
+			},
+		}],
+		request_id: ctx.requestId,
+	}, 400);
+}
 
 export type CredentialAttemptPhase = "priority_byok" | "balanced_byok" | "gateway" | "fallback_byok";
 
@@ -468,6 +496,41 @@ export async function doRequestWithIR(
 			});
 		}
 		candidates = filtered;
+
+		// `instant` is a valid public Responses value, but only providers whose
+		// capability metadata (or explicit provider profile) advertises it may
+		// receive the request. Filter unsupported routes before ranking or any
+		// executor work so normalization cannot silently downgrade the value.
+		if (
+			ctx.protocol === "openai.responses" &&
+			(ir as IRChatRequest).reasoning?.effort === "instant"
+		) {
+			const supportedCandidates = candidates.filter((candidate) => {
+				const providerModelSlug = typeof candidate.providerModelSlug === "string"
+					? candidate.providerModelSlug.trim()
+					: "";
+				const modelForReasoning = providerModelSlug || baseModel;
+				return getReasoningEffortAllowlist(
+					candidate.capabilityParams,
+					candidate.providerId,
+					modelForReasoning,
+				).includes("instant");
+			});
+			if (!supportedCandidates.length) {
+				const supportedValues = candidates.flatMap((candidate) => {
+					const providerModelSlug = typeof candidate.providerModelSlug === "string"
+						? candidate.providerModelSlug.trim()
+						: "";
+					return getReasoningEffortAllowlist(
+						candidate.capabilityParams,
+						candidate.providerId,
+						providerModelSlug || baseModel,
+					);
+				});
+				return unsupportedReasoningEffortResponse(ctx, baseModel, supportedValues);
+			}
+			candidates = supportedCandidates;
+		}
 	}
 	if (normalizedCapability === "embeddings") {
 		const filtered = await timing.timer.span("execute_filter_modalities", () =>
