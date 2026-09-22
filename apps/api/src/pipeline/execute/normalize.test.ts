@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { IRChatRequest } from "@core/ir";
-import { normalizeIRForProvider } from "./normalize";
+import { getReasoningEffortAllowlist, normalizeIRForProvider } from "./normalize";
 
 function baseIr(overrides: Partial<IRChatRequest> = {}): IRChatRequest {
 	return {
@@ -62,6 +62,20 @@ describe("normalizeIRForProvider", () => {
 
 		const normalized = normalizeIRForProvider(ir, "openai", "openai.responses");
 		expect(normalized.reasoning?.effort).toBe("minimal");
+	});
+
+	it("does not infer instant support without capability metadata", () => {
+		expect(getReasoningEffortAllowlist(null, "x-ai", "grok-4.7")).not.toContain("instant");
+	});
+
+	it("honors an explicit instant capability value", () => {
+		expect(
+			getReasoningEffortAllowlist(
+				{ reasoning: { values: ["instant", "high"] } },
+				"x-ai",
+				"grok-4.7",
+			),
+		).toEqual(["instant", "high"]);
 	});
 
 	it("preserves OpenAI gpt-5.6 max effort before executor mapping", () => {

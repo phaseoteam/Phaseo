@@ -226,6 +226,7 @@ export type { ObservabilityRule } from "./ObservabilityRule.js";
 export type { ObservabilityRuleGroup } from "./ObservabilityRuleGroup.js";
 export type { OcrRequest } from "./OcrRequest.js";
 export type { OcrResponse } from "./OcrResponse.js";
+export type { OpenAIReasoningConfig } from "./OpenAIReasoningConfig.js";
 export type { OrganisationId } from "./OrganisationId.js";
 export type { OrganisationIdList } from "./OrganisationIdList.js";
 export type { ParseBlock } from "./ParseBlock.js";

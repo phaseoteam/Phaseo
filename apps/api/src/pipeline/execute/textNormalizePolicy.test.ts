@@ -58,6 +58,7 @@ describe("textNormalizePolicy", () => {
 			"high",
 			"xhigh",
 		]);
+		expect(fallbackReasoningEfforts("unknown-provider", "unknown-model")).not.toContain("instant");
 	});
 
 	it("validates reasoning effort enum values", () => {

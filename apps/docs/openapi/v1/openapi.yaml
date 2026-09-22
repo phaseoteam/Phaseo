@@ -9356,12 +9356,13 @@ components:
           items:
             $ref: '#/components/schemas/ChatMessage'
         reasoning:
-          $ref: '#/components/schemas/ReasoningConfig'
+          $ref: '#/components/schemas/OpenAIReasoningConfig'
         reasoning_effort:
           type: string
           description: OpenAI-compatible alias for `reasoning.effort`.
           enum:
             - none
+            - instant
             - minimal
             - low
             - medium
@@ -10004,6 +10005,38 @@ components:
         max_tokens:
           type: integer
           minimum: 0
+    OpenAIReasoningConfig:
+      type: object
+      properties:
+        effort:
+          type: string
+          enum:
+            - none
+            - instant
+            - minimal
+            - low
+            - medium
+            - high
+            - xhigh
+            - max
+          default: medium
+        mode:
+          type: string
+          enum:
+            - standard
+            - pro
+        summary:
+          type: string
+          enum:
+            - auto
+            - concise
+            - detailed
+          default: auto
+        enabled:
+          type: boolean
+        max_tokens:
+          type: integer
+          minimum: 0
     ImageConfig:
       type: object
       properties:
@@ -10316,7 +10349,7 @@ components:
         previous_response_id:
           type: string
         reasoning:
-          $ref: '#/components/schemas/ReasoningConfig'
+          $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
           enum:

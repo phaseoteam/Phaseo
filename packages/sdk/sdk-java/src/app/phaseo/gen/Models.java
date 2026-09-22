@@ -2064,6 +2064,14 @@ public final class Models {
 	public static class OcrResponse {
 	}
 
+	public static class OpenAIReasoningConfig {
+		public Object effort;
+		public Boolean enabled;
+		public Integer max_tokens;
+		public Object mode;
+		public Object summary;
+	}
+
 	public static class OrganisationId {
 	}
 

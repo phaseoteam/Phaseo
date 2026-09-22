@@ -95,10 +95,10 @@ function clampByRange(value: number, range: ParamRange): number {
     return clamp(value, min, max);
 }
 
-function getReasoningEffortAllowlist(
-    capabilityParams: Record<string, any> | null | undefined,
-    providerId: string,
-    model: string,
+export function getReasoningEffortAllowlist(
+	capabilityParams: Record<string, any> | null | undefined,
+	providerId: string,
+	model: string,
 ): ReasoningEffort[] {
     const direct = readParamConfig(capabilityParams, [
         "reasoning.effort",

@@ -10,7 +10,11 @@ export function filterReasoningEffortOptions<T extends { value: ChatReasoningEff
 	options: T[],
 	support: ReasoningEffortSupport | null | undefined,
 ): T[] {
-	if (!support?.supportedValues.length) return options;
+	// Do not assume `instant` is available when capability metadata is missing;
+	// models that explicitly advertise it can still opt in.
+	if (!support?.supportedValues.length) {
+		return options.filter((option) => option.value !== "instant");
+	}
 	const supported = new Set(support.supportedValues);
 	return options.filter((option) => supported.has(option.value));
 }
@@ -202,7 +206,9 @@ export function resolveChatReasoningEffort(
 	effort: ChatReasoningEffort,
 	support: ReasoningEffortSupport | null | undefined,
 ): ChatReasoningEffort {
-	if (!support || support.supportedValues.length === 0) return effort;
+	if (!support || support.supportedValues.length === 0) {
+		return effort === "instant" ? "medium" : effort;
+	}
 	if (support.supportedValues.includes(effort)) return effort;
 	if (support.defaultValue) return support.defaultValue;
 	if (support.supportedValues.includes("medium")) return "medium";

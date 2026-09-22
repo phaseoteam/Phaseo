@@ -5021,6 +5021,25 @@ public sealed class OcrResponse
 {
 }
 
+public sealed class OpenAIReasoningConfig
+{
+	[JsonPropertyName("effort")]
+	public string? Effort { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("max_tokens")]
+	public long? MaxTokens { get; set; }
+
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
+	[JsonPropertyName("summary")]
+	public string? Summary { get; set; }
+
+}
+
 public sealed class OrganisationId { }
 
 public sealed class OrganisationIdList { }

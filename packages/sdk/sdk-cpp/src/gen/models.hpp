@@ -2054,6 +2054,14 @@ struct OcrRequest {
 struct OcrResponse {
 };
 
+struct OpenAIReasoningConfig {
+	std::any effort;
+	std::optional<bool> enabled;
+	std::optional<int> max_tokens;
+	std::any mode;
+	std::any summary;
+};
+
 using OrganisationId = std::any;
 
 using OrganisationIdList = std::any;

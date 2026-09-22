@@ -109,6 +109,7 @@ describe("chat reasoning effort support", () => {
 
 	it("only exposes the effort options supported by the selected model", () => {
 		const options = [
+			{ value: "instant" as const, label: "Instant" },
 			{ value: "low" as const, label: "Low" },
 			{ value: "medium" as const, label: "Medium" },
 			{ value: "high" as const, label: "High" },
@@ -123,5 +124,20 @@ describe("chat reasoning effort support", () => {
 			{ value: "low", label: "Low" },
 			{ value: "high", label: "High" },
 		]);
+	});
+
+	it("does not expose instant when capability metadata is unavailable", () => {
+		const options = [
+			{ value: "instant" as const, label: "Instant" },
+			{ value: "medium" as const, label: "Medium" },
+		];
+
+		expect(filterReasoningEffortOptions(options, null)).toEqual([
+			{ value: "medium", label: "Medium" },
+		]);
+	});
+
+	it("repairs a saved instant effort when capability metadata is unavailable", () => {
+		expect(resolveChatReasoningEffort("instant", null)).toBe("medium");
 	});
 });

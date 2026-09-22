@@ -2055,6 +2055,14 @@ pub struct OcrRequest {
 pub struct OcrResponse {
 }
 
+pub struct OpenAIReasoningConfig {
+	pub effort: Option<String>,
+	pub enabled: Option<bool>,
+	pub max_tokens: Option<i64>,
+	pub mode: Option<String>,
+	pub summary: Option<String>,
+}
+
 pub type OrganisationId = JsonValue;
 
 pub type OrganisationIdList = JsonValue;
