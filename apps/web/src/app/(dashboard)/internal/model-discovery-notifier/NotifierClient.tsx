@@ -27,6 +27,7 @@ export default function NotifierClient() {
 	const [roleId, setRoleId] = useState("");
 	const [userId, setUserId] = useState("");
 	const [webhookUrl, setWebhookUrl] = useState("");
+	const [includeDefaultRoleMention, setIncludeDefaultRoleMention] = useState(true);
 	const [result, setResult] = useState<ActionResult>(null);
 
 	function run(send: boolean) {
@@ -37,6 +38,7 @@ export default function NotifierClient() {
 				roleId,
 				userId,
 				webhookUrl,
+				includeDefaultRoleMention,
 				send,
 			});
 			setResult(response);
@@ -106,6 +108,14 @@ export default function NotifierClient() {
 							/>
 						</div>
 					</div>
+					<label className="flex items-center gap-2 text-sm">
+						<input
+							type="checkbox"
+							checked={includeDefaultRoleMention}
+							onChange={(event) => setIncludeDefaultRoleMention(event.target.checked)}
+						/>
+						<span>Ping the Model Updates role</span>
+					</label>
 					<div className="space-y-2">
 						<div className="text-sm font-medium">Webhook URL Override (optional)</div>
 						<Input

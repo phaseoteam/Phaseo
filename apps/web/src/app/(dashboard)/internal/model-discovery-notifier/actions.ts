@@ -23,6 +23,7 @@ type NotifierTestInput = {
 	roleId?: string;
 	userId?: string;
 	webhookUrl?: string;
+	includeDefaultRoleMention?: boolean;
 	send: boolean;
 };
 
@@ -212,7 +213,7 @@ export async function testInternalModelDiscoveryNotifierAction(
 
 		const payload = buildPublicModelAnnouncementPayload(models, trimOrNull(input.roleId), {
 			discordUserId: trimOrNull(input.userId),
-			includeMentions: true,
+			includeMentions: input.includeDefaultRoleMention !== false,
 			avatarUrl: null,
 			username: "Phaseo Public Model Discovery",
 			latestModelsUrl: "https://phaseo.app/models",
@@ -234,6 +235,7 @@ export async function testInternalModelDiscoveryNotifierAction(
 			payload,
 			trimOrNull(input.webhookUrl) ?? undefined,
 			models.map((model) => model.modelId),
+			input.includeDefaultRoleMention !== false,
 		);
 
 		return {
