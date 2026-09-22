@@ -505,6 +505,12 @@ jobs:
                       name: Generate PHP SDK
                     - sdk: ruby
                       name: Generate Ruby SDK
+                    - sdk: java
+                      name: Generate Java SDK
+                    - sdk: cpp
+                      name: Generate C++ SDK
+                    - sdk: rust
+                      name: Generate Rust SDK
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
               with:
@@ -537,6 +543,9 @@ jobs:
                     csharp) pnpm run openapi:gen:csharp ;;
                     php) pnpm run openapi:gen:php ;;
                     ruby) pnpm run openapi:gen:ruby ;;
+                    java) pnpm run openapi:gen:java ;;
+                    cpp) pnpm run openapi:gen:cpp ;;
+                    rust) pnpm run openapi:gen:rust ;;
                   esac
 
             # --- EXISTING CONSISTENCY CHECK ---
@@ -549,6 +558,9 @@ jobs:
                     csharp) gen_path="packages/sdk/sdk-csharp/src/gen" ; gen_script="openapi:gen:csharp" ;;
                     php) gen_path="packages/sdk/sdk-php/src/gen" ; gen_script="openapi:gen:php" ;;
                     ruby) gen_path="packages/sdk/sdk-ruby/lib/gen" ; gen_script="openapi:gen:ruby" ;;
+                    java) gen_path="packages/sdk/sdk-java/src/app/phaseo/gen" ; gen_script="openapi:gen:java" ;;
+                    cpp) gen_path="packages/sdk/sdk-cpp/src/gen" ; gen_script="openapi:gen:cpp" ;;
+                    rust) gen_path="packages/sdk/sdk-rust/src/gen" ; gen_script="openapi:gen:rust" ;;
                   esac
                   echo "Checking that OpenAPI spec and '${{ matrix.sdk }}' SDK are up to date..."
                   if ! git diff --ignore-cr-at-eol --ignore-space-at-eol --quiet apps/docs/openapi/v1/openapi.yaml $gen_path; then

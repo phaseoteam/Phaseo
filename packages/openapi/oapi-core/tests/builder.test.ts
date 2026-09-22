@@ -110,7 +110,7 @@ test("buildIR reports diagnostics for unsupported schemas", () => {
 		paths: {},
 		components: {
 			schemas: {
-				Weird: { anyOf: [{ type: "string" }, { type: "number" }] }
+				Weird: { not: { type: "string" } }
 			}
 		}
 	};
