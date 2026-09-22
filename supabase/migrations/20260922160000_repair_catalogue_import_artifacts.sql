@@ -121,14 +121,21 @@ from catalogue_model_name_fixes as name_fix
 where model.model_slug = name_fix.model_slug
   and model.name is distinct from name_fix.corrected_name;
 
--- Regional provider offers inherit branding from their provider family. The EU
--- offer had the legacy metadata value but not the relational family field used
--- by the public provider/logo payload.
-update public.v2_providers
-set provider_family_slug = 'mistral',
+-- Regional and specialized provider offers inherit branding from their
+-- provider family. These rows had enough legacy metadata or a direct logo
+-- fallback to identify the family, but were missing the relational field used
+-- by public catalogue payloads.
+update public.v2_providers as provider
+set provider_family_slug = family.provider_family_slug,
     updated_at = now()
-where provider_slug = 'mistral-eu'
-  and provider_family_slug is distinct from 'mistral';
+from (values
+  ('alibaba-cn', 'alibaba'),
+  ('meta-contributor', 'meta'),
+  ('mistral-eu', 'mistral'),
+  ('siliconflow-cn', 'siliconflow')
+) as family(provider_slug, provider_family_slug)
+where provider.provider_slug = family.provider_slug
+  and provider.provider_family_slug is distinct from family.provider_family_slug;
 
 -- These imported lab aliases are empty and duplicate established canonical labs.
 -- The dependency checks make the cleanup safe to re-run and prevent accidental
