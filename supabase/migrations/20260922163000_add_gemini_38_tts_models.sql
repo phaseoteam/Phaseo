@@ -182,24 +182,27 @@ select
     'routing_blocker', 'pricing_not_published',
     'api', jsonb_build_object('formats', jsonb_build_array(), 'endpoint', null, 'deployment', null),
     'regions', jsonb_build_object('data', null, 'execution', null),
-    'availability', source_route.metadata->'availability',
+    'availability', (
+      select route.metadata->'availability'
+      from public.v2_model_provider_routes route
+      where route.provider_model_id = 'google-ai-studio:google/gemini-3.1-flash-tts-preview'
+      limit 1
+    ),
     'service_tiers', jsonb_build_array(),
     'sources', model.metadata->'sources',
     'verification', model.metadata->'verification',
     'legacy_provider_api_model_id', 'google-ai-studio:' || model.model_slug
   ),
   'available',
-  'unsupported',
+  'blocked',
   'public',
   false,
   'managed_and_byok'
 from public.v2_models model
-cross join public.v2_model_provider_routes source_route
 where model.model_slug in (
   'google/gemini-3.8-flash-tts',
   'google/gemini-3.8-flash-lite-tts'
 )
-  and source_route.provider_model_id = 'google-ai-studio:google/gemini-3.1-flash-tts-preview'
 on conflict (provider_model_id) do update set
   provider_model_slug = excluded.provider_model_slug,
   status = excluded.status,
