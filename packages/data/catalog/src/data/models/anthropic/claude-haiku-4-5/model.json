@@ -2,13 +2,13 @@
   "model_id": "anthropic/claude-haiku-4-5",
   "organisation_id": "anthropic",
   "name": "Claude Haiku 4 5",
-  "status": "Available",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Claude Haiku 4.5 is Anthropic's fastest and most cost-effective AI model, offering near-frontier intelligence. It matches the coding and computer-use performance of older flagship models like Sonnet 4, but runs at a fraction of the price.",
   "announced_date": "2025-10-15T17:00:38.000Z",
   "release_date": "2025-10-15T17:00:38.000Z",
   "deprecation_date": null,
-  "retirement_date": null,
+  "retirement_date": "2026-09-22T00:00:00Z",
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
@@ -28,7 +28,10 @@
   ],
   "benchmarks": [],
   "family_id": null,
-  "page_notice": null,
+  "page_notice": {
+    "tone": "info",
+    "markdown": "This duplicate catalogue ID was retired after an import canonicalization error. Use `anthropic/claude-haiku-4.5`."
+  },
   "model_type": null,
   "knowledge_cutoff": null,
   "limits": {
@@ -72,7 +75,7 @@
     "notes": "Available in Requesty's official live catalogue; third-party developer metadata may require further enrichment."
   },
   "last_updated": "2026-08-20T18:19:35.000Z",
-  "removal_date": null,
-  "replacement_model_id": null,
+  "removal_date": "2026-09-22T00:00:00Z",
+  "replacement_model_id": "anthropic/claude-haiku-4.5",
   "license_url": null
 }

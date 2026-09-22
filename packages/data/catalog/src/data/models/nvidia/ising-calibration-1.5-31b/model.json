@@ -1,7 +1,7 @@
 {
   "model_id": "nvidia/ising-calibration-1.5-31b",
   "organisation_id": "nvidia",
-  "name": "Ising Calibration 1 5 31b",
+  "name": "Ising Calibration 1.5 31B",
   "status": "Available",
   "previous_model_id": null,
   "description": "Ising Calibration 1 5 31b is available through NVIDIA's hosted NIM API catalog.",

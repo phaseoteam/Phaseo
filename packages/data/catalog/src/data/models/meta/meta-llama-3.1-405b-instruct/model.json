@@ -1,7 +1,7 @@
 {
   "model_id": "meta/meta-llama-3.1-405b-instruct",
   "organisation_id": "meta",
-  "name": "Meta Llama 3 1 405b Instruct",
+  "name": "Meta Llama 3.1 405B Instruct",
   "status": "Available",
   "previous_model_id": null,
   "description": "A lightweight and ultra-fast variant of Llama 3.3 70B, for use when quick response times are needed most.",

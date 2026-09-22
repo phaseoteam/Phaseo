@@ -858,10 +858,10 @@
     "privacy_comments": "N/A"
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:anthropic/claude-haiku-4-5",
     "provider_model_slug": "anthropic/claude-haiku-4-5",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -1480,10 +1480,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:anthropic/claude-sonnet-4-5",
     "provider_model_slug": "anthropic/claude-sonnet-4-5",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -1552,10 +1552,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:anthropic/claude-sonnet-4-6",
     "provider_model_slug": "anthropic/claude-sonnet-4-6",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -7656,10 +7656,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-haiku-4-5",
     "provider_model_slug": "bedrock/claude-haiku-4-5",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -7728,10 +7728,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-haiku-4-5@ap-northeast-1",
     "provider_model_slug": "bedrock/claude-haiku-4-5@ap-northeast-1",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -7800,10 +7800,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-haiku-4-5@eu-central-1",
     "provider_model_slug": "bedrock/claude-haiku-4-5@eu-central-1",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -7872,10 +7872,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-haiku-4-5@eu-north-1",
     "provider_model_slug": "bedrock/claude-haiku-4-5@eu-north-1",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -7944,10 +7944,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-haiku-4-5@eu-west-1",
     "provider_model_slug": "bedrock/claude-haiku-4-5@eu-west-1",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -8016,10 +8016,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-haiku-4-5@eu-west-3",
     "provider_model_slug": "bedrock/claude-haiku-4-5@eu-west-3",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -8088,10 +8088,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-haiku-4-5@us-east-1",
     "provider_model_slug": "bedrock/claude-haiku-4-5@us-east-1",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -8160,10 +8160,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-haiku-4-5@us-east-2",
     "provider_model_slug": "bedrock/claude-haiku-4-5@us-east-2",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -8232,10 +8232,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-haiku-4-5@us-west-2",
     "provider_model_slug": "bedrock/claude-haiku-4-5@us-west-2",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10176,10 +10176,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-5",
     "provider_model_slug": "bedrock/claude-sonnet-4-5",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10248,10 +10248,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-5@eu-central-1",
     "provider_model_slug": "bedrock/claude-sonnet-4-5@eu-central-1",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10320,10 +10320,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-5@eu-north-1",
     "provider_model_slug": "bedrock/claude-sonnet-4-5@eu-north-1",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10392,10 +10392,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-5@eu-west-1",
     "provider_model_slug": "bedrock/claude-sonnet-4-5@eu-west-1",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10464,10 +10464,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-5@eu-west-3",
     "provider_model_slug": "bedrock/claude-sonnet-4-5@eu-west-3",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10536,10 +10536,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-5@us-east-1",
     "provider_model_slug": "bedrock/claude-sonnet-4-5@us-east-1",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10608,10 +10608,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-5@us-east-2",
     "provider_model_slug": "bedrock/claude-sonnet-4-5@us-east-2",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10680,10 +10680,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-5@us-west-2",
     "provider_model_slug": "bedrock/claude-sonnet-4-5@us-west-2",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10752,10 +10752,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-6",
     "provider_model_slug": "bedrock/claude-sonnet-4-6",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10824,10 +10824,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-6@ap-northeast-1",
     "provider_model_slug": "bedrock/claude-sonnet-4-6@ap-northeast-1",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10896,10 +10896,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-6@eu-central-1",
     "provider_model_slug": "bedrock/claude-sonnet-4-6@eu-central-1",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -10968,10 +10968,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-6@eu-north-1",
     "provider_model_slug": "bedrock/claude-sonnet-4-6@eu-north-1",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -11040,10 +11040,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-6@eu-west-1",
     "provider_model_slug": "bedrock/claude-sonnet-4-6@eu-west-1",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -11112,10 +11112,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-6@eu-west-3",
     "provider_model_slug": "bedrock/claude-sonnet-4-6@eu-west-3",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -11184,10 +11184,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-6@us-east-1",
     "provider_model_slug": "bedrock/claude-sonnet-4-6@us-east-1",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -11256,10 +11256,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-6@us-east-2",
     "provider_model_slug": "bedrock/claude-sonnet-4-6@us-east-2",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -11328,10 +11328,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:bedrock/claude-sonnet-4-6@us-west-2",
     "provider_model_slug": "bedrock/claude-sonnet-4-6@us-west-2",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -25975,10 +25975,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "mistral/mistral-medium-3-5",
+    "api_model_id": "mistral/mistral-medium-3.5",
     "provider_api_model_id": "requesty:mistral/mistral-medium-3-5",
     "provider_model_slug": "mistral/mistral-medium-3-5",
-    "internal_model_id": "mistral/mistral-medium-3-5",
+    "internal_model_id": "mistral/mistral-medium-3.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -28114,10 +28114,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "deepseek/deepseek_v3",
+    "api_model_id": "deepseek/deepseek-v3",
     "provider_api_model_id": "requesty:novita/deepseek/deepseek_v3",
     "provider_model_slug": "novita/deepseek/deepseek_v3",
-    "internal_model_id": "deepseek/deepseek_v3",
+    "internal_model_id": "deepseek/deepseek-v3",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -29890,10 +29890,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "qwen/qwen-2.5-72b-instruct",
+    "api_model_id": "qwen/qwen2.5-72b-instruct",
     "provider_api_model_id": "requesty:novita/qwen/qwen-2.5-72b-instruct",
     "provider_model_slug": "novita/qwen/qwen-2.5-72b-instruct",
-    "internal_model_id": "qwen/qwen-2.5-72b-instruct",
+    "internal_model_id": "qwen/qwen2.5-72b-instruct",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -39376,10 +39376,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:vertex/claude-haiku-4-5",
     "provider_model_slug": "vertex/claude-haiku-4-5",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -39448,10 +39448,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:vertex/claude-haiku-4-5@europe-west1",
     "provider_model_slug": "vertex/claude-haiku-4-5@europe-west1",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -39520,10 +39520,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-haiku-4-5",
+    "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "requesty:vertex/claude-haiku-4-5@us-east5",
     "provider_model_slug": "vertex/claude-haiku-4-5@us-east5",
-    "internal_model_id": "anthropic/claude-haiku-4-5",
+    "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -41032,10 +41032,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:vertex/claude-sonnet-4-5",
     "provider_model_slug": "vertex/claude-sonnet-4-5",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -41104,10 +41104,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:vertex/claude-sonnet-4-5@europe-west1",
     "provider_model_slug": "vertex/claude-sonnet-4-5@europe-west1",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -41176,10 +41176,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-5",
+    "api_model_id": "anthropic/claude-sonnet-4.5",
     "provider_api_model_id": "requesty:vertex/claude-sonnet-4-5@us-east5",
     "provider_model_slug": "vertex/claude-sonnet-4-5@us-east5",
-    "internal_model_id": "anthropic/claude-sonnet-4-5",
+    "internal_model_id": "anthropic/claude-sonnet-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -41248,10 +41248,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:vertex/claude-sonnet-4-6",
     "provider_model_slug": "vertex/claude-sonnet-4-6",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -41320,10 +41320,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:vertex/claude-sonnet-4-6@europe-west1",
     "provider_model_slug": "vertex/claude-sonnet-4-6@europe-west1",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -41392,10 +41392,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-4-6",
+    "api_model_id": "anthropic/claude-sonnet-4.6",
     "provider_api_model_id": "requesty:vertex/claude-sonnet-4-6@us-east5",
     "provider_model_slug": "vertex/claude-sonnet-4-6@us-east5",
-    "internal_model_id": "anthropic/claude-sonnet-4-6",
+    "internal_model_id": "anthropic/claude-sonnet-4.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",

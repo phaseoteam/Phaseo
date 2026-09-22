@@ -1,7 +1,7 @@
 {
   "model_id": "nvidia/llama3-chatqa-1.5-70b",
   "organisation_id": "nvidia",
-  "name": "Llama3 Chatqa 1 5 70b",
+  "name": "Llama 3 ChatQA 1.5 70B",
   "status": "Available",
   "previous_model_id": null,
   "description": "Llama3 Chatqa 1 5 70b is available through NVIDIA's hosted NIM API catalog.",

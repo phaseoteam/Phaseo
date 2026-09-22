@@ -2,13 +2,13 @@
   "model_id": "deepseek/deepseek_v3",
   "organisation_id": "deepseek",
   "name": "Deepseek V3",
-  "status": "Available",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "DeepSeek-V3 is the latest model from the DeepSeek team, building upon the instruction following and coding abilities of the previous versions. Pre-trained on nearly 15 trillion tokens, the reported evaluations reveal that the model outperforms other open-source models and rivals leading closed-source models.",
   "announced_date": "2024-12-26T19:28:40.000Z",
   "release_date": "2024-12-26T19:28:40.000Z",
   "deprecation_date": null,
-  "retirement_date": null,
+  "retirement_date": "2026-09-22T00:00:00Z",
   "license": "Open weights",
   "input_types": "text",
   "output_types": "text",
@@ -28,7 +28,10 @@
   ],
   "benchmarks": [],
   "family_id": null,
-  "page_notice": null,
+  "page_notice": {
+    "tone": "info",
+    "markdown": "This duplicate catalogue ID was retired after an import canonicalization error. Use `deepseek/deepseek-v3`."
+  },
   "model_type": null,
   "knowledge_cutoff": null,
   "limits": {
@@ -71,7 +74,7 @@
     "notes": "Available in Requesty's official live catalogue; third-party developer metadata may require further enrichment."
   },
   "last_updated": "2026-08-20T18:19:35.000Z",
-  "removal_date": null,
-  "replacement_model_id": null,
+  "removal_date": "2026-09-22T00:00:00Z",
+  "replacement_model_id": "deepseek/deepseek-v3",
   "license_url": null
 }

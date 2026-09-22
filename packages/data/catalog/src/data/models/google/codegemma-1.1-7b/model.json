@@ -1,7 +1,7 @@
 {
   "model_id": "google/codegemma-1.1-7b",
   "organisation_id": "google",
-  "name": "Codegemma 1 1 7b",
+  "name": "CodeGemma 1.1 7B",
   "status": "Available",
   "previous_model_id": null,
   "description": "Codegemma 1 1 7b is available through NVIDIA's hosted NIM API catalog.",

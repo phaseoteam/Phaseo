@@ -1,7 +1,7 @@
 {
   "model_id": "nvidia/riva-translate-4b-instruct-v1.1",
   "organisation_id": "nvidia",
-  "name": "Riva Translate 4b Instruct V1 1",
+  "name": "Riva Translate 4B Instruct v1.1",
   "status": "Available",
   "previous_model_id": null,
   "description": "Riva Translate 4b Instruct V1 1 is available through NVIDIA's hosted NIM API catalog.",

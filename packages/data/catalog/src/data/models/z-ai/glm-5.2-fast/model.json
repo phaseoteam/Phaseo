@@ -1,7 +1,7 @@
 {
   "model_id": "z-ai/glm-5.2-fast",
   "organisation_id": "z-ai",
-  "name": "Glm 5 2 Fast",
+  "name": "GLM 5.2 Fast",
   "status": "Available",
   "previous_model_id": null,
   "description": "GLM-5.2 introduces a robust 1M-token context and advanced, multi-effort coding capabilities to significantly enhance performance on long-horizon tasks. Its new IndexShare architecture and improved MTP layer simultaneously boost efficiency by reducing per-token FLOPs and increasing speculative decoding lengths. A 743B-parameter model in Zhipu AI's GLM series, designed to plan, execute, and iterate autonomously on extended, engineering-grade tasks.",

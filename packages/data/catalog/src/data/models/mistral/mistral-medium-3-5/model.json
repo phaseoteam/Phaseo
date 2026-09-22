@@ -2,13 +2,13 @@
   "model_id": "mistral/mistral-medium-3-5",
   "organisation_id": "mistral",
   "name": "Mistral Medium 3 5",
-  "status": "Available",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Mistral Medium 3.5 is a dense 128B instruction following model from Mistral AI. It supports text and image inputs with text output, and is designed for agentic workflows, coding, and complex multi step reasoning. It is particularly strong at reliable multi tool calling and long horizon tasks, with a 256K context window, configurable reasoning effort per request, and a custom vision encoder that handles variable image sizes and aspect ratios. Self hostable on as few as four GPUs and available under open weights.",
   "announced_date": "2026-04-30T17:33:59.000Z",
   "release_date": "2026-04-30T17:33:59.000Z",
   "deprecation_date": null,
-  "retirement_date": null,
+  "retirement_date": "2026-09-22T00:00:00Z",
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
@@ -28,7 +28,10 @@
   ],
   "benchmarks": [],
   "family_id": null,
-  "page_notice": null,
+  "page_notice": {
+    "tone": "info",
+    "markdown": "This duplicate catalogue ID was retired after an import canonicalization error. Use `mistral/mistral-medium-3.5`."
+  },
   "model_type": null,
   "knowledge_cutoff": null,
   "limits": {
@@ -72,7 +75,7 @@
     "notes": "Available in Requesty's official live catalogue; third-party developer metadata may require further enrichment."
   },
   "last_updated": "2026-08-20T18:19:35.000Z",
-  "removal_date": null,
-  "replacement_model_id": null,
+  "removal_date": "2026-09-22T00:00:00Z",
+  "replacement_model_id": "mistral/mistral-medium-3.5",
   "license_url": null
 }

@@ -1,7 +1,7 @@
 {
   "model_id": "nvidia/nemotron-lightning-3.5-30b-a3b",
   "organisation_id": "nvidia",
-  "name": "Nemotron Lightning 3 5 30b A3b",
+  "name": "Nemotron Lightning 3.5 30B A3B",
   "status": "Available",
   "previous_model_id": null,
   "description": "Nemotron-Lightning-3.5-30B-A3B is a 30B-parameter Mixture-of-Experts language model (3B active) from NVIDIA's Nemotron-H family, built on a hybrid Mamba-Transformer architecture for efficient long-context inference. Like other models in the family, it responds to queries by first generating a reasoning trace and then concluding with a final response, with reasoning behavior configurable through a flag in the chat template. It includes a multi-token prediction (MTP) speculative decoding head for low-latency serving.",

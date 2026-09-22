@@ -1,7 +1,7 @@
 {
   "model_id": "mistral/codestral-22b-instruct-v0.1",
   "organisation_id": "mistral",
-  "name": "Codestral 22b Instruct V0 1",
+  "name": "Codestral 22B Instruct v0.1",
   "status": "Available",
   "previous_model_id": null,
   "description": "Codestral 22b Instruct V0 1 is available through NVIDIA's hosted NIM API catalog.",

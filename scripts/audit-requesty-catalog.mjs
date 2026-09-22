@@ -6,8 +6,24 @@ const ROOT = path.resolve(import.meta.dirname, "../packages/data/catalog/src/dat
 const URL = "https://router.requesty.ai/v1/models";
 const CHECKED = "2026-08-24T00:00:00Z";
 const LAB_ALIASES = { alibaba: "qwen", moonshot: "moonshotai", zai: "z-ai", xai: "spacex-ai", thinkingmachines: "thinking-machines", nousresearch: "nous" };
-const MODEL_ALIASES = { "openai/gpt-4o-2024-11-20": "openai/gpt-4o" };
-const title = value => value.replace(/[._-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+const MODEL_ALIASES = {
+  "openai/gpt-4o-2024-11-20": "openai/gpt-4o",
+  "anthropic/claude-haiku-4-5": "anthropic/claude-haiku-4.5",
+  "anthropic/claude-sonnet-4-5": "anthropic/claude-sonnet-4.5",
+  "anthropic/claude-sonnet-4-6": "anthropic/claude-sonnet-4.6",
+  "bytedance/seedance-1-5-pro": "bytedance/seedance-1.5-pro",
+  "deepseek/deepseek_v3": "deepseek/deepseek-v3",
+  "mistral/mistral-medium-3-5": "mistral/mistral-medium-3.5",
+  "qwen/qwen-2.5-72b-instruct": "qwen/qwen2.5-72b-instruct",
+  "qwen/qwen-2.5-coder-32b-instruct": "qwen/qwen2.5-coder-32b-instruct",
+  "qwen/qwen3.5-plus-20260420": "qwen/qwen3.5-plus-2026-04-20",
+  "tencent/hy3-free": "tencent/hy3:free",
+  "upstage/solar-pro4": "upstage/solar-pro-4",
+  "z-ai/glm-4.7-flash-free": "z-ai/glm-4.7-flash:free",
+};
+// Dots are meaningful in model versions (for example 3.5) and must survive
+// display-name formatting. Provider separators remain readable as spaces.
+const title = value => value.replace(/[_-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 const slug = value => value.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-|-$/g, "");
 const json = value => JSON.stringify(value, null, 2) + "\n";
 const safePathParts = value => {

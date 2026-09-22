@@ -2,13 +2,13 @@
   "model_id": "upstage/solar-pro4",
   "organisation_id": "upstage",
   "name": "Upstage: Solar Pro 4",
-  "status": "Available",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Solar Pro 4 is Upstage's cost-efficient large language model, featuring a 524K context window. It is built for long-horizon tasks and agentic workflows, with strong capabilities in office productivity, document-intensive...",
   "announced_date": null,
   "release_date": "2026-08-10",
   "deprecation_date": null,
-  "retirement_date": null,
+  "retirement_date": "2026-09-22T00:00:00Z",
   "license": null,
   "input_types": [
     "text"
@@ -27,7 +27,10 @@
   "details": [],
   "benchmarks": [],
   "family_id": null,
-  "page_notice": null,
+  "page_notice": {
+    "tone": "info",
+    "markdown": "This duplicate catalogue ID was retired after an import canonicalization error. Use `upstage/solar-pro-4`."
+  },
   "model_type": "language",
   "knowledge_cutoff": null,
   "limits": {
@@ -70,7 +73,7 @@
     "notes": "Availability, modalities, limits and parameters verified against OpenRouter's official models API; upstream publisher metadata remains provider-reported."
   },
   "last_updated": "2026-08-24",
-  "removal_date": null,
-  "replacement_model_id": null,
+  "removal_date": "2026-09-22T00:00:00Z",
+  "replacement_model_id": "upstage/solar-pro-4",
   "license_url": null
 }

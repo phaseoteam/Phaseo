@@ -1,7 +1,7 @@
 {
   "model_id": "mistral/mixtral-8x22b-v0.1",
   "organisation_id": "mistral",
-  "name": "Mixtral 8x22b V0 1",
+  "name": "Mixtral 8x22B v0.1",
   "status": "Available",
   "previous_model_id": null,
   "description": "Mixtral 8x22b V0 1 is available through NVIDIA's hosted NIM API catalog.",

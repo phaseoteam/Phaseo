@@ -1,7 +1,7 @@
 {
   "model_id": "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
   "organisation_id": "nvidia",
-  "name": "Llama 3 1 Nemotron Nano Vl 8b V1",
+  "name": "Llama 3.1 Nemotron Nano VL 8B v1",
   "status": "Available",
   "previous_model_id": null,
   "description": "Llama 3 1 Nemotron Nano Vl 8b V1 is available through NVIDIA's hosted NIM API catalog.",

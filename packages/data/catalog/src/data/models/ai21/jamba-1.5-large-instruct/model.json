@@ -1,7 +1,7 @@
 {
   "model_id": "ai21/jamba-1.5-large-instruct",
   "organisation_id": "ai21",
-  "name": "Jamba 1 5 Large Instruct",
+  "name": "Jamba 1.5 Large Instruct",
   "status": "Available",
   "previous_model_id": null,
   "description": "Jamba 1 5 Large Instruct is available through NVIDIA's hosted NIM API catalog.",

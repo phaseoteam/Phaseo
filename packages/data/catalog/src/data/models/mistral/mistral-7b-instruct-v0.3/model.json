@@ -1,7 +1,7 @@
 {
   "model_id": "mistral/mistral-7b-instruct-v0.3",
   "organisation_id": "mistral",
-  "name": "Mistral 7b Instruct V0 3",
+  "name": "Mistral 7B Instruct v0.3",
   "status": "Available",
   "previous_model_id": null,
   "description": "Mistral 7b Instruct V0 3 is available through NVIDIA's hosted NIM API catalog.",
