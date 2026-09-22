@@ -17,6 +17,7 @@ import Link from "next/link";
 import { ThinkingOrb } from "thinking-orbs";
 import { AIGeneratedNotice } from "@/components/(chat)/AIGeneratedNotice";
 import { getChatComposerSendAction } from "@/components/(chat)/chatComposerSendAction";
+import { REASONING_OPTIONS } from "@/components/(chat)/chatConversationHelpers";
 import Image from "next/image";
 import {
 	ArrowLeft,
@@ -1239,14 +1240,14 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 	>(
 		() => [
 			{ value: "none", label: "Default" },
-			...reasoningOptions
+			...REASONING_OPTIONS
 				.filter((option) => option.value !== "none")
 				.map((option) => ({
 					value: option.value,
 					label: option.label,
 				})),
 		],
-		[reasoningOptions],
+		[],
 	);
 	const advisorEnabled = enabledServerToolSet.has("phaseo:advisor");
 	const selectedServerToolCommand = selectedServerToolSettings

@@ -2948,6 +2948,31 @@ function ChatPlaygroundContent({
 				setModelPickerOpen(true);
 				return false;
 			}
+			const effectiveModelSettings = getEffectiveModelSettings(
+				activeThread,
+				activeThread.modelId,
+			);
+			const effectiveProviderId = isProviderSupportedForModel(
+				activeThread.modelId,
+				effectiveModelSettings.providerId,
+			)
+				? effectiveModelSettings.providerId
+				: "auto";
+			const requestExecutionModelId = resolveRequestModelIdForProvider(
+				activeThread.modelId,
+				effectiveProviderId,
+			);
+			const reasoningEffortSupport = getModelReasoningEffortSupport({
+				models,
+				modelId: activeThread.modelId,
+				providerId: effectiveProviderId,
+				requestModelId:
+					effectiveProviderId === "auto" ? null : requestExecutionModelId,
+			});
+			const resolvedReasoningEffort = resolveChatReasoningEffort(
+				effectiveModelSettings.reasoningEffort ?? "medium",
+				reasoningEffortSupport,
+			);
 			let inlineAttachmentPreviews: Awaited<
 				ReturnType<typeof prepareInlineAttachmentPreviews>
 			> = [];
@@ -2966,7 +2991,7 @@ function ChatPlaygroundContent({
 					model_id: activeThread.modelId,
 					compare_model_ids: activeThread.settings.compareModelIds ?? [],
 					reasoning_enabled: Boolean(activeThread.settings.reasoningEnabled),
-					reasoning_effort: activeThread.settings.reasoningEffort ?? "medium",
+					reasoning_effort: resolvedReasoningEffort,
 					web_search_enabled: payload.webSearchEnabled,
 					api_server_tools_enabled: payload.apiServerToolsEnabled,
 					server_tools: payload.serverTools,
@@ -3117,10 +3142,13 @@ function ChatPlaygroundContent({
 			activeThread,
 			buildThreadForModel,
 			executeCompletion,
+			isProviderSupportedForModel,
 			isModelCapabilityCompatible,
 			isUnified,
 			isSending,
 			isAuthenticated,
+			models,
+			resolveRequestModelIdForProvider,
 			supportsModelAudioInput,
 			temporaryMode,
 			updateThreadState,
