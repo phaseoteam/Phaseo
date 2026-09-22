@@ -13,6 +13,7 @@ type QueryResult = {
 
 type QueryState = {
     emptyCapabilityInCalled: boolean;
+    modelInCalls?: Array<{ column: string; values: unknown[] }>;
 };
 
 function buildSupabaseMock(
@@ -91,6 +92,9 @@ function buildSupabaseMock(
                     return query;
                 },
 				in(column: string, values: unknown[]) {
+					if (table === "v2_models") {
+						state.modelInCalls?.push({ column, values });
+					}
 					if (
 						table === "v2_route_capabilities" &&
 						column === "provider_model_id" &&
@@ -206,6 +210,47 @@ describe("publicCatalogueProviderRoute", () => {
             provider_id: "stealth",
             provider_model_slug: "stealth/preview",
         });
+    });
+
+    it("loads bounded variant and successor dependencies for explicit model IDs", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false, modelInCalls: [] };
+        const model = (overrides: Record<string, unknown>) => ({
+            model_id: "test/model-old",
+            base_model_id: "test/model-old",
+            variant_kind: "standard",
+            previous_model_id: null,
+            replacement_model_id: null,
+            name: "Old model",
+            status: "active",
+            organisation_id: null,
+            input_types: ["text"],
+            output_types: ["text"],
+            organisation: null,
+            ...overrides,
+        });
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                { data: [model({})], error: null },
+                { data: [model({ model_id: "test/model-old:free", variant_kind: "free" })], error: null },
+                { data: [model({ model_id: "test/model-next", base_model_id: "test/model-next", previous_model_id: "test/model-old" })], error: null },
+            ],
+            v2_model_details: [{ data: [], error: null }],
+            data_api_provider_models: [{ data: [], error: null }],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [{ data: [], error: null }],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({ modelIds: ["test/model-old"], availability: "all" });
+
+        expect(models).toEqual([]);
+        expect(state.modelInCalls).toEqual([
+            { column: "model_slug", values: ["test/model-old"] },
+            { column: "base_model_slug", values: ["test/model-old"] },
+            { column: "previous_model_slug", values: ["test/model-old"] },
+        ]);
     });
 });
 

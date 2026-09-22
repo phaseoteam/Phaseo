@@ -13692,9 +13692,13 @@ export type ListModelsParams = {
     endpoints?: string[];
     feed?: "json" | "rss" | "atom";
     format?: "json" | "rss" | "atom";
+    gateway_available_only?: boolean;
     input_modalities?: string[];
+    input_modality?: "text" | "image" | "audio" | "video";
     input_types?: string[];
     limit?: number;
+    maximum_input_price_per_million?: number;
+    minimum_context_tokens?: number;
     model_routing_status?: string[];
     offset?: number;
     organisation?:
@@ -13947,7 +13951,16 @@ export type ListModelsParams = {
     provider_availability_reason?: string[];
     provider_availability_status?: string[];
     provider_routing_status?: string[];
+    provider_search?: string;
     provider_status?: string[];
+    search?: string;
+    sort_by?:
+      | "relevance"
+      | "input_price"
+      | "output_price"
+      | "context_length"
+      | "provider_count";
+    sort_order?: "asc" | "desc";
     status?: string[];
     supported_parameters?: string[];
   };

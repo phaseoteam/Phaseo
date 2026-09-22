@@ -192,9 +192,10 @@ describe("Phaseo MCP server metadata", () => {
 				capabilities: { parameters: [], parameter_details: {} }, pricing: { pricing_plan: "standard", meters: {} },
 			}],
 		});
-		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ok: true, models: [
-			model("lab/expensive", "5", true), model("lab/cheap", "1", false),
-		] })));
+		const fetchMock = vi.fn().mockResolvedValue(Response.json({ ok: true, models: [
+			model("lab/cheap", "1", false), model("lab/expensive", "5", true),
+		] }));
+		vi.stubGlobal("fetch", fetchMock);
 		const server = createServer({ ...env, PHASEO_WEB_BASE_URL: "https://preview.phaseo.test" }, {
 			accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"],
 		});
@@ -205,6 +206,10 @@ describe("Phaseo MCP server metadata", () => {
 		await client.connect(clientTransport);
 
 		const result = await client.callTool({ name: "models_list", arguments: { sortBy: "input_price", limit: 2 } });
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect((fetchMock.mock.calls[0]?.[0] as Request).url).toBe(
+			"https://api.phaseo.app/v1/models?sort_by=input_price&limit=2",
+		);
 		expect(result.structuredContent).toMatchObject({ models: [
 			{
 				id: "lab/cheap",
@@ -271,9 +276,66 @@ describe("Phaseo MCP server metadata", () => {
 		await client.connect(clientTransport);
 
 		const result = await client.callTool({ name: "benchmark_rankings", arguments: { focus: "coding", limit: 2 } });
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		const catalogueRequest = fetchMock.mock.calls[1]?.[0] as Request;
+		expect(catalogueRequest.url).toBe(
+			"https://api.phaseo.app/v1/models?model_id=lab%2Ffirst%2Clab%2Fsecond&limit=2",
+		);
 		expect(result.structuredContent).toMatchObject({ benchmark: { entries: [
 			{ rank: 1, modelId: "lab/first", gatewayAvailable: false },
 			{ rank: 2, modelId: "lab/second", gatewayAvailable: true, gatewayModelId: "lab/second" },
+		] } });
+	});
+
+	it("bounds benchmark availability lookup while scanning past the first 250 models", async () => {
+		const entries = Array.from({ length: 501 }, (_, index) => ({
+			model_id: `lab/model-${index}`,
+			model_name: `Model ${index}`,
+			organisation_id: "lab",
+			organisation_name: "Lab",
+			score: 1_000 - index,
+			rank: index + 1,
+			source_link: null,
+			updated_at: null,
+		}));
+		const routableModel = {
+			id: "lab/model-499", name: "Model 499", description: null,
+			organization: { id: "lab", name: "Lab", color: null },
+			modalities: { input: ["text"], output: ["text"] }, limits: { input_tokens: 1, output_tokens: 1 },
+			capabilities: { endpoints: [], parameters: [], parameter_details: {} },
+			availability: { status: "active", provider_count: 1, active_provider_count: 1, coming_soon_provider_count: 0, inactive_provider_count: 0 },
+			pricing: { pricing_plan: "standard", meters: {} }, offers: [{
+				provider: { id: "provider", name: "Provider" }, model: "lab/model-499", status: "active", routable: true,
+				capabilities: { parameters: [], parameter_details: {} }, pricing: { pricing_plan: "standard", meters: {} },
+			}],
+		};
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const request = input instanceof Request ? input : new Request(input);
+			if (request.url.includes("/api/_web/rankings/benchmarks")) return Response.json({ benchmarks: [{
+				benchmark_id: "coding-v1", name: "Coding Index", category: "coding", benchmark_type: "numerical",
+				lower_is_better: false, total_models: 501, entries,
+			}] });
+			const ids = new URL(request.url).searchParams.get("model_id")?.split(",") ?? [];
+			return Response.json({ ok: true, models: ids.includes("lab/model-499") ? [routableModel] : [] });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer(env, {
+			accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"],
+		});
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const result = await client.callTool({
+			name: "benchmark_rankings",
+			arguments: { focus: "coding", gatewayAvailableOnly: true, limit: 1 },
+		});
+
+		expect(fetchMock).toHaveBeenCalledTimes(3);
+		expect(result.structuredContent).toMatchObject({ benchmark: { entries: [
+			{ rank: 500, modelId: "lab/model-499", gatewayAvailable: true },
 		] } });
 	});
 });

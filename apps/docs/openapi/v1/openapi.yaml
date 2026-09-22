@@ -34,6 +34,70 @@ paths:
         routable models; use availability=all to include non-routable
         availability records.
       parameters:
+        - name: search
+          in: query
+          description: >-
+            Case-insensitive search across model ids, names, descriptions, and
+            organisations.
+          schema:
+            type: string
+            maxLength: 200
+        - name: provider_search
+          in: query
+          description: Case-insensitive provider or model-organisation search.
+          schema:
+            type: string
+            maxLength: 100
+        - name: input_modality
+          in: query
+          description: Require a supported input modality.
+          schema:
+            type: string
+            enum:
+              - text
+              - image
+              - audio
+              - video
+        - name: minimum_context_tokens
+          in: query
+          description: Require at least this many input context tokens.
+          schema:
+            type: number
+            minimum: 0
+        - name: maximum_input_price_per_million
+          in: query
+          description: Maximum USD input-token price per million tokens.
+          schema:
+            type: number
+            minimum: 0
+        - name: gateway_available_only
+          in: query
+          description: Return only models with at least one routable gateway offer.
+          schema:
+            type: boolean
+            default: false
+        - name: sort_by
+          in: query
+          description: Field used to order model discovery results.
+          schema:
+            type: string
+            enum:
+              - relevance
+              - input_price
+              - output_price
+              - context_length
+              - provider_count
+            default: relevance
+        - name: sort_order
+          in: query
+          description: >-
+            Optional sort direction. Price sorts default to ascending; other
+            numeric sorts default to descending.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
         - name: endpoints
           in: query
           description: Filter by endpoints

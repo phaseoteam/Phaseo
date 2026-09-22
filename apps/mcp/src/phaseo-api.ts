@@ -158,41 +158,75 @@ export async function readControlPlane(
 	return requestPhaseo<Record<string, unknown>>(env, path, { credentials, query });
 }
 
+export type ModelSearchOptions = {
+	query?: string;
+	provider?: string;
+	modality?: "text" | "image" | "audio" | "video";
+	minimumContextTokens?: number;
+	maximumInputPricePerMillion?: number;
+	gatewayAvailableOnly?: boolean;
+	sortBy?: "relevance" | "input_price" | "output_price" | "context_length" | "provider_count";
+	sortOrder?: "asc" | "desc";
+	limit?: number;
+};
+
 export async function listModels(env: PhaseoEnv, limit = 250, credentials?: PhaseoCredentials): Promise<GatewayModel[]> {
 	const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", { query: { limit }, credentials });
 	if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
 	return payload.models;
 }
 
-export async function listAllModels(env: PhaseoEnv, credentials?: PhaseoCredentials): Promise<GatewayModel[]> {
-	const pageSize = 250;
-	const models: GatewayModel[] = [];
-	const seen = new Set<string>();
-	let offset = 0;
+export async function searchModels(
+	env: PhaseoEnv,
+	options: ModelSearchOptions,
+	credentials?: PhaseoCredentials,
+): Promise<GatewayModel[]> {
+	const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", {
+		query: {
+			search: options.query,
+			provider_search: options.provider,
+			input_modality: options.modality,
+			minimum_context_tokens: options.minimumContextTokens,
+			maximum_input_price_per_million: options.maximumInputPricePerMillion,
+			gateway_available_only: options.gatewayAvailableOnly || undefined,
+			sort_by: options.sortBy,
+			sort_order: options.sortOrder,
+			limit: options.limit ?? 250,
+		},
+		credentials,
+	});
+	if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
+	return payload.models;
+}
 
-	while (true) {
+export async function getModelsByIds(
+	env: PhaseoEnv,
+	modelIds: string[],
+	credentials?: PhaseoCredentials,
+): Promise<GatewayModel[]> {
+	const models: GatewayModel[] = [];
+	const chunks: string[][] = [];
+	let chunk: string[] = [];
+	let chunkLength = 0;
+	for (const modelId of modelIds) {
+		if (chunk.length >= 250 || (chunk.length > 0 && chunkLength + modelId.length > 10_000)) {
+			chunks.push(chunk);
+			chunk = [];
+			chunkLength = 0;
+		}
+		chunk.push(modelId);
+		chunkLength += modelId.length;
+	}
+	if (chunk.length > 0) chunks.push(chunk);
+
+	for (const modelIdChunk of chunks) {
 		const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", {
-			query: { limit: pageSize, offset },
+			query: { model_id: modelIdChunk.join(","), limit: modelIdChunk.length },
 			credentials,
 		});
 		if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
-
-		let added = 0;
-		for (const model of payload.models) {
-			if (seen.has(model.id)) continue;
-			seen.add(model.id);
-			models.push(model);
-			added += 1;
-		}
-
-		offset += payload.models.length;
-		if (
-			payload.models.length < pageSize ||
-			(typeof payload.total === "number" && offset >= payload.total) ||
-			added === 0
-		) break;
+		models.push(...payload.models);
 	}
-
 	return models;
 }
 

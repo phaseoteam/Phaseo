@@ -220,6 +220,77 @@ describe("handleModels", () => {
         });
     });
 
+    it("filters, sorts, and limits model discovery in one catalogue load", async () => {
+        const pricedModel = (id: string, name: string, price: string, contextLength: number) => buildCatalogueModel({
+            model_id: id,
+            base_model_id: id,
+            name,
+            details: { context_length: contextLength },
+            pricing: {
+                pricing_plan: "standard",
+                meters: {
+                    input_tokens: {
+                        unit: "token",
+                        unit_size: 1_000_000,
+                        price_per_unit: price,
+                        currency: "USD",
+                        provider_id: "openai",
+                    },
+                },
+            },
+        });
+        fetchCatalogueMock.mockResolvedValue([
+            pricedModel("openai/expensive-code", "Expensive Code", "5", 200_000),
+            pricedModel("openai/cheap-code", "Cheap Code", "1", 128_000),
+            pricedModel("openai/cheap-vision", "Cheap Vision", "0.5", 128_000),
+        ]);
+
+        const response = await handleModels(new Request(
+            "https://api.example.com/?search=code&provider_search=openai&input_modality=text&minimum_context_tokens=100000&maximum_input_price_per_million=5&gateway_available_only=true&sort_by=input_price&sort_order=asc&limit=1",
+        ));
+        const payload = await response.json() as any;
+
+        expect(response.status).toBe(200);
+        expect(fetchCatalogueMock).toHaveBeenCalledTimes(1);
+        expect(payload.total).toBe(2);
+        expect(payload.models.map((model: any) => model.id)).toEqual(["openai/cheap-code"]);
+    });
+
+    it("rejects invalid model discovery filters before loading the catalogue", async () => {
+        for (const query of ["sort_by=unknown", "maximum_input_price_per_million=%20"]) {
+            const response = await handleModels(new Request(`https://api.example.com/?${query}`));
+            expect(response.status).toBe(400);
+            await expect(response.json()).resolves.toMatchObject({
+                ok: false,
+                error: "invalid_request",
+            });
+        }
+        expect(fetchCatalogueMock).not.toHaveBeenCalled();
+    });
+
+    it("pushes explicit model IDs into the catalogue query", async () => {
+        const response = await handleModels(new Request(
+            "https://api.example.com/?model_id=openai%2Fgpt-4o-mini%2Copenai%2Fgpt-5&limit=2",
+        ));
+
+        expect(response.status).toBe(200);
+        expect(fetchCatalogueMock).toHaveBeenCalledWith(expect.objectContaining({
+            modelIds: ["openai/gpt-4o-mini", "openai/gpt-5"],
+        }));
+    });
+
+    it("rejects oversized exact model ID selections before catalogue work", async () => {
+        const tooMany = Array.from({ length: 251 }, (_, index) => `lab/model-${index}`).join(",");
+        for (const query of [
+            `model_id=${encodeURIComponent(tooMany)}`,
+            `model_id=${"x".repeat(201)}`,
+        ]) {
+            const response = await handleModels(new Request(`https://api.example.com/?${query}`));
+            expect(response.status).toBe(400);
+        }
+        expect(fetchCatalogueMock).not.toHaveBeenCalled();
+    });
+
     it("returns structured Phaseo capabilities and provider offers", async () => {
         const response = await handleModels(
             new Request("https://api.example.com/"),
@@ -587,6 +658,57 @@ describe("handleModels", () => {
                 },
             ],
         });
+    });
+
+    it("loads all bounded free-router dependencies separately from a full exact-ID selection", async () => {
+        const requestedIds = [
+            "phaseo/free",
+            ...Array.from({ length: 249 }, (_, index) => `lab/model-${index}`),
+        ];
+        fetchCatalogueMock
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([
+                buildCatalogueModel({
+                    model_id: "openai/free-model",
+                    providers: [{
+                        api_provider_id: "openai",
+                        api_provider_name: "OpenAI",
+                        endpoints: ["responses"],
+                        params: ["temperature"],
+                    }],
+                }),
+                buildCatalogueModel({
+                    model_id: "google/free-model",
+                    providers: [{
+                        api_provider_id: "google",
+                        api_provider_name: "Google",
+                        endpoints: ["responses"],
+                        params: ["top_p"],
+                    }],
+                }),
+            ]);
+        fetchGatewayContextMock.mockResolvedValue({
+            resolvedModel: "phaseo/free",
+            providers: [
+                { providerId: "openai", apiModelId: "openai/free-model", pricingKey: "openai:free" },
+                { providerId: "google", apiModelId: "google/free-model", pricingKey: "google:free" },
+            ],
+            pricing: {},
+        });
+
+        const response = await handleModels(new Request(
+            `https://api.example.com/?model_id=${encodeURIComponent(requestedIds.join(","))}`,
+        ), "shared");
+
+        expect(response.status).toBe(200);
+        expect(fetchCatalogueMock).toHaveBeenCalledTimes(2);
+        expect(fetchCatalogueMock.mock.calls[1]?.[0]).toEqual(expect.objectContaining({
+            modelIds: ["openai/free-model", "google/free-model"],
+        }));
+        const body = await response.json() as { models: Array<{ id: string; offers: unknown[] }> };
+        expect(body.models).toHaveLength(1);
+        expect(body.models[0]?.id).toBe("phaseo/free");
+        expect(body.models[0]?.offers).toHaveLength(2);
     });
 
     it("skips the free router model when endpoint filters exclude text surfaces", async () => {

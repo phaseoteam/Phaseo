@@ -285,6 +285,7 @@ export type CatalogueModel = {
 };
 
 export type CatalogueFilters = {
+    modelIds?: string[];
     endpoints?: string[];
     providerIds?: string[];
     providerStatuses?: string[];
@@ -1108,15 +1109,44 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const supabase = getSupabaseAdmin();
     const availabilityMode = filter.availability ?? "active";
     const includeNonRoutable = availabilityMode === "all";
+    const modelSelection =
+        "model_id:model_slug, base_model_id:base_model_slug, variant_kind, previous_model_id:previous_model_slug, replacement_model_id:replacement_model_slug, metadata, name, description, release_date:released_at, deprecation_date:deprecated_at, retirement_date:retired_at, status, organisation_id:lab_slug, input_types:input_modalities, output_types:output_modalities, organisation:v2_labs(lab_slug, name, country_code, metadata)";
     const modelQuery = supabase
         .from("v2_models")
-        .select(
-            "model_id:model_slug, base_model_id:base_model_slug, variant_kind, previous_model_id:previous_model_slug, replacement_model_id:replacement_model_slug, metadata, name, description, release_date:released_at, deprecation_date:deprecated_at, retirement_date:retired_at, status, organisation_id:lab_slug, input_types:input_modalities, output_types:output_modalities, organisation:v2_labs(lab_slug, name, country_code, metadata)"
-        )
+        .select(modelSelection)
         .eq("hidden", false);
-    const { data: modelRows, error: modelError } = await modelQuery;
+    if (filter.modelIds?.length) {
+        modelQuery.in("model_slug", filter.modelIds);
+    }
+    const { data: requestedModelRows, error: modelError } = await modelQuery;
     if (modelError) {
         throw new Error(`Failed to load model metadata: ${modelError.message || "unknown error"}`);
+    }
+
+    let modelRows = requestedModelRows ?? [];
+    if (filter.modelIds?.length && modelRows.length) {
+        const dependencyQueries: Array<PromiseLike<{ data: any[] | null; error: any }>> = [];
+        const baseModelIds = Array.from(new Set(modelRows.map((row: any) => row.base_model_id ?? row.model_id).filter(Boolean)));
+        const replacementModelIds = Array.from(new Set(modelRows.map((row: any) => row.replacement_model_id).filter(Boolean)));
+        if (baseModelIds.length) {
+            dependencyQueries.push(supabase.from("v2_models").select(modelSelection).eq("hidden", false).in("base_model_slug", baseModelIds));
+        }
+        dependencyQueries.push(
+            supabase.from("v2_models").select(modelSelection).eq("hidden", false).in("previous_model_slug", filter.modelIds),
+        );
+        if (replacementModelIds.length) {
+            dependencyQueries.push(supabase.from("v2_models").select(modelSelection).eq("hidden", false).in("model_slug", replacementModelIds));
+        }
+        const dependencyResults = await Promise.all(dependencyQueries);
+        const dependencyError = dependencyResults.find((result) => result.error)?.error;
+        if (dependencyError) {
+            throw new Error(`Failed to load model relationship metadata: ${dependencyError.message || "unknown error"}`);
+        }
+        const byModelId = new Map<string, any>();
+        for (const row of [...modelRows, ...dependencyResults.flatMap((result) => result.data ?? [])]) {
+            if (row?.model_id) byModelId.set(row.model_id, row);
+        }
+        modelRows = Array.from(byModelId.values());
     }
 
     const baseModels = new Map<
