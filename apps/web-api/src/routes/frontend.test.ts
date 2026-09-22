@@ -17,7 +17,7 @@ describe("frontend search route", () => {
 			m: [["openai/gpt-test", "GPT Test", "OpenAI", "/models/openai/gpt-test", "openai", "July 2026"]],
 			o: [["openai", "OpenAI", null, "/organisations/openai", "openai"]],
 			b: [],
-			p: [["openai", "OpenAI", null, "/api-providers/openai", "openai"]],
+			p: [["mistral-eu", "Mistral (EU)", null, "/api-providers/mistral-eu", "mistral"]],
 			s: [],
 			c: [],
 		};
@@ -26,7 +26,13 @@ describe("frontend search route", () => {
 			let value: unknown[];
 			if (url.includes("v2_models")) value = [{ model_slug: "openai/gpt-test", name: "GPT Test", lab_slug: "openai", released_at: "2026-07-01", lab: { name: "OpenAI" } }];
 			else if (url.includes("v2_labs")) value = [{ lab_slug: "openai", name: "OpenAI" }];
-			else if (url.includes("v2_providers")) value = [{ provider_slug: "openai", name: "OpenAI" }];
+			else if (url.includes("v2_providers")) value = [{
+				provider_slug: "mistral-eu",
+				provider_family_slug: "mistral",
+				name: "Mistral",
+				offer_label: "EU",
+				offer_scope: "regional",
+			}];
 			else value = [];
 			return new Response(JSON.stringify(value), {
 				status: 200,
@@ -43,6 +49,13 @@ describe("frontend search route", () => {
 
 		expect(response.status).toBe(200);
 		expect(fetchMock).toHaveBeenCalledTimes(4);
+		const requestedUrls = fetchMock.mock.calls.map(([input]) => String(input));
+		expect(requestedUrls.find((url) => url.includes("/v2_labs?"))).toContain(
+			"status=neq.disabled",
+		);
+		expect(requestedUrls.find((url) => url.includes("v2_providers"))).toContain(
+			"provider_family_slug",
+		);
 		expect(response.headers.get("cache-control")).toBe(
 			"public, max-age=0",
 		);
