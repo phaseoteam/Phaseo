@@ -1,6 +1,10 @@
 -- Retire duplicate imported lab aliases after the original repair migration.
 -- phaseo:allow-destructive-migration reason: remove temporary lab deletion guards after the protected migration has completed
 
+alter table public.v2_labs enable trigger catalogue_no_removal;
+drop trigger catalogue_lab_repair_no_removal on public.v2_labs;
+drop function catalogue_private.prevent_lab_removal_during_repair();
+
 delete from public.v2_lab_links
 where platform = 'catalogue-repair-guard'
   and url = 'https://phaseo.app/models'
