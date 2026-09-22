@@ -1,7 +1,7 @@
 {
   "model_id": "meta/llama-3.1-8b-instruct",
   "organisation_id": "meta",
-  "name": "Llama 3.1 8B Instruct",
+  "name": "Llama 3 1 8b Instruct",
   "status": "Available",
   "previous_model_id": null,
   "description": "Meta's latest class of models, Llama 3.1, launched with a variety of sizes and configurations. The 8B instruct-tuned version is particularly fast and efficient. It has demonstrated strong performance in human evaluations, outperforming several leading closed-source models.",

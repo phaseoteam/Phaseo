@@ -2,13 +2,13 @@
   "model_id": "tencent/hy3-free",
   "organisation_id": "tencent",
   "name": "Tencent: Hy3 (Free)",
-  "status": "Retired",
+  "status": "Available",
   "previous_model_id": null,
   "description": "Hy3 is Tencent Hunyuan's production-grade Mixture-of-Experts model — 295B total parameters with only 21B active per pass (192 experts, top-8 routing), the upgraded release built on the Hy3-preview line. It expands RL-training scale and post-training data quality for further gains in reasoning, long-context, and agentic tasks, reaching results comparable to flagship models several times its parameter size. It serves a 256K-token context window (text in, text out) with configurable reasoning effort, and is built for real-world coding, tool use, and multi-step agent workflows at a strong quality-to-cost ratio.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,
-  "retirement_date": "2026-09-22T00:00:00Z",
+  "retirement_date": null,
   "license": null,
   "input_types": null,
   "output_types": null,
@@ -17,10 +17,7 @@
   "details": [],
   "benchmarks": [],
   "family_id": null,
-  "page_notice": {
-    "tone": "info",
-    "markdown": "This duplicate catalogue ID was retired after an import canonicalization error. Use `tencent/hy3:free`."
-  },
+  "page_notice": null,
   "model_type": null,
   "knowledge_cutoff": null,
   "limits": {
@@ -59,7 +56,7 @@
     "notes": "Exact model ID, availability, limits, modalities, description, and pricing metadata verified against OrcaRouter's live official catalogue."
   },
   "last_updated": "2026-08-24T00:00:00Z",
-  "removal_date": "2026-09-22T00:00:00Z",
-  "replacement_model_id": "tencent/hy3:free",
+  "removal_date": null,
+  "replacement_model_id": null,
   "license_url": null
 }

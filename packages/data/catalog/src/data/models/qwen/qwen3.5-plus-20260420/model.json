@@ -2,13 +2,13 @@
   "model_id": "qwen/qwen3.5-plus-20260420",
   "organisation_id": "qwen",
   "name": "Qwen: Qwen3.5 Plus 2026-04-20",
-  "status": "Retired",
+  "status": "Available",
   "previous_model_id": null,
   "description": "Qwen3.5 Plus (April 2026) is a large-scale multimodal language model from Alibaba. It accepts text, image, and video input and produces text output, with a 1M token context window. This...",
   "announced_date": null,
   "release_date": "2026-04-27",
   "deprecation_date": null,
-  "retirement_date": "2026-09-22T00:00:00Z",
+  "retirement_date": null,
   "license": null,
   "input_types": [
     "text",
@@ -29,10 +29,7 @@
   "details": [],
   "benchmarks": [],
   "family_id": null,
-  "page_notice": {
-    "tone": "info",
-    "markdown": "This duplicate catalogue ID was retired after an import canonicalization error. Use `qwen/qwen3.5-plus-2026-04-20`."
-  },
+  "page_notice": null,
   "model_type": "language",
   "knowledge_cutoff": null,
   "limits": {
@@ -77,7 +74,7 @@
     "notes": "Availability, modalities, limits and parameters verified against OpenRouter's official models API; upstream publisher metadata remains provider-reported."
   },
   "last_updated": "2026-08-24",
-  "removal_date": "2026-09-22T00:00:00Z",
-  "replacement_model_id": "qwen/qwen3.5-plus-2026-04-20",
+  "removal_date": null,
+  "replacement_model_id": null,
   "license_url": null
 }

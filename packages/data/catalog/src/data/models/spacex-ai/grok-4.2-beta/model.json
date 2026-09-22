@@ -1,7 +1,7 @@
 {
   "model_id": "spacex-ai/grok-4.2-beta",
   "organisation_id": "spacex-ai",
-  "name": "Grok 4.2 Beta",
+  "name": "Grok 4 2 Beta",
   "status": "Available",
   "previous_model_id": null,
   "description": "Grok 4.20 Beta is xAI's newest flagship model with industry-leading speed and agentic tool calling capabilities. It combines the lowest hallucination rate on the market with strict prompt adherance, delivering consistently precise and truthful responses.",

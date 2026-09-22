@@ -1,7 +1,7 @@
 {
   "model_id": "nvidia/llama-3.1-nemoguard-8b-topic-control",
   "organisation_id": "nvidia",
-  "name": "Llama 3.1 NemoGuard 8B Topic Control",
+  "name": "Llama 3 1 Nemoguard 8b Topic Control",
   "status": "Available",
   "previous_model_id": null,
   "description": "Llama 3 1 Nemoguard 8b Topic Control is available through NVIDIA's hosted NIM API catalog.",

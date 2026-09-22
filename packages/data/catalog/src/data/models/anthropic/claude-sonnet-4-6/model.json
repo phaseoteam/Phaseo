@@ -2,13 +2,13 @@
   "model_id": "anthropic/claude-sonnet-4-6",
   "organisation_id": "anthropic",
   "name": "Claude Sonnet 4 6",
-  "status": "Retired",
+  "status": "Available",
   "previous_model_id": null,
   "description": "Claude Sonnet 4.6 is Anthropic's best coding model in the world, leading on SWE-bench Verified (77.2%) and OSWorld (61.4%). It delivers sustained autonomous performance on complex tasks for over 30 hours—up from seven hours for Opus 4—maintaining focus and reliability throughout the entire software development lifecycle, with enhanced capabilities in tool handling, memory management, and context processing that make it the strongest model for building complex agents.",
   "announced_date": "2026-02-17T15:43:10.000Z",
   "release_date": "2026-02-17T15:43:10.000Z",
   "deprecation_date": null,
-  "retirement_date": "2026-09-22T00:00:00Z",
+  "retirement_date": null,
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
@@ -28,10 +28,7 @@
   ],
   "benchmarks": [],
   "family_id": null,
-  "page_notice": {
-    "tone": "info",
-    "markdown": "This duplicate catalogue ID was retired after an import canonicalization error. Use `anthropic/claude-sonnet-4.6`."
-  },
+  "page_notice": null,
   "model_type": null,
   "knowledge_cutoff": null,
   "limits": {
@@ -75,7 +72,7 @@
     "notes": "Available in Requesty's official live catalogue; third-party developer metadata may require further enrichment."
   },
   "last_updated": "2026-08-20T18:19:35.000Z",
-  "removal_date": "2026-09-22T00:00:00Z",
-  "replacement_model_id": "anthropic/claude-sonnet-4.6",
+  "removal_date": null,
+  "replacement_model_id": null,
   "license_url": null
 }

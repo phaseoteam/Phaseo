@@ -1,7 +1,7 @@
 {
   "model_id": "deepseek/deepseek-coder-6.7b-instruct",
   "organisation_id": "deepseek",
-  "name": "DeepSeek Coder 6.7B Instruct",
+  "name": "Deepseek Coder 6 7b Instruct",
   "status": "Available",
   "previous_model_id": null,
   "description": "Deepseek Coder 6 7b Instruct is available through NVIDIA's hosted NIM API catalog.",

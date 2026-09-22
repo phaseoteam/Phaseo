@@ -1,7 +1,7 @@
 {
   "model_id": "nvidia/llama-3.1-nemotron-51b-instruct",
   "organisation_id": "nvidia",
-  "name": "Llama 3.1 Nemotron 51B Instruct",
+  "name": "Llama 3 1 Nemotron 51b Instruct",
   "status": "Available",
   "previous_model_id": null,
   "description": "Llama 3 1 Nemotron 51b Instruct is available through NVIDIA's hosted NIM API catalog.",

@@ -1,7 +1,7 @@
 {
   "model_id": "nvidia/llama-3.1-nemoguard-8b-content-safety",
   "organisation_id": "nvidia",
-  "name": "Llama 3.1 NemoGuard 8B Content Safety",
+  "name": "Llama 3 1 Nemoguard 8b Content Safety",
   "status": "Available",
   "previous_model_id": null,
   "description": "Llama 3 1 Nemoguard 8b Content Safety is available through NVIDIA's hosted NIM API catalog.",

@@ -1,7 +1,7 @@
 {
   "model_id": "bytedance/seed-2.0-code",
   "organisation_id": "bytedance",
-  "name": "Seed 2.0 Code",
+  "name": "Seed 2 0 Code",
   "status": "Available",
   "previous_model_id": null,
   "description": "A coding model optimized for real-world development environments, with reliable tool use in common IDEs such as Claude Code. It delivers strong front-end performance and supports Skills.",
