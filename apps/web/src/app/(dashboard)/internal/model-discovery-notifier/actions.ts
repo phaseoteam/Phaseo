@@ -213,7 +213,7 @@ export async function testInternalModelDiscoveryNotifierAction(
 
 		const payload = buildPublicModelAnnouncementPayload(models, trimOrNull(input.roleId), {
 			discordUserId: trimOrNull(input.userId),
-			includeMentions: input.includeDefaultRoleMention !== false,
+			includeMentions: true,
 			avatarUrl: null,
 			username: "Phaseo Public Model Discovery",
 			latestModelsUrl: "https://phaseo.app/models",
