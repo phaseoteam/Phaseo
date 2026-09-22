@@ -536,6 +536,95 @@ function toPhaseoModel(
     };
 }
 
+type ModelListSort = "relevance" | "input_price" | "output_price" | "context_length" | "provider_count";
+type ModelListSortOrder = "asc" | "desc";
+type PhaseoModel = ReturnType<typeof toPhaseoModel>;
+
+function normalizeModelSearch(value: string | null | undefined): string {
+    return value?.trim().toLowerCase() ?? "";
+}
+
+function modelTokenRate(model: PhaseoModel, meterNames: string[]): number | null {
+    const meters = model.pricing.meters as Record<string, unknown>;
+    const meter = meterNames.map((name) => meters[name]).find(Boolean);
+    if (!meter || typeof meter !== "object") return null;
+    const record = meter as Record<string, unknown>;
+    if (String(record.currency ?? "").trim().toUpperCase() !== "USD") return null;
+    const price = Number(record.price_per_unit);
+    const unitSize = Number(record.unit_size);
+    if (!Number.isFinite(price) || !Number.isFinite(unitSize) || unitSize <= 0) return null;
+    return price / unitSize;
+}
+
+function modelSortValue(model: PhaseoModel, sortBy: Exclude<ModelListSort, "relevance">): number | null {
+    switch (sortBy) {
+        case "input_price":
+            return modelTokenRate(model, ["input_tokens", "input_text_tokens"]);
+        case "output_price":
+            return modelTokenRate(model, ["output_tokens", "output_text_tokens"]);
+        case "context_length":
+            return model.limits.input_tokens;
+        case "provider_count":
+            return model.offers.filter((offer) => offer.routable).length;
+    }
+}
+
+function filterAndSortModels(
+    models: PhaseoModel[],
+    filters: {
+        search: string;
+        provider: string;
+        inputModality: string;
+        minimumContextTokens: number | null;
+        maximumInputPricePerMillion: number | null;
+        gatewayAvailableOnly: boolean;
+        sortBy: ModelListSort;
+        sortOrder: ModelListSortOrder | null;
+    },
+): PhaseoModel[] {
+    const queryTerms = normalizeModelSearch(filters.search).split(/\s+/).filter(Boolean);
+    const providerQuery = normalizeModelSearch(filters.provider);
+    const filtered = models.filter((model) => {
+        const searchable = normalizeModelSearch([
+            model.id,
+            model.name,
+            model.description,
+            model.organization?.name,
+        ].filter(Boolean).join(" "));
+        const providerMatches = !providerQuery
+            || normalizeModelSearch(model.organization?.name).includes(providerQuery)
+            || model.offers.some((offer) => offer.routable && normalizeModelSearch(offer.provider.name).includes(providerQuery));
+        const inputPrice = modelTokenRate(model, ["input_tokens", "input_text_tokens"]);
+        return queryTerms.every((term) => searchable.includes(term))
+            && providerMatches
+            && (!filters.inputModality || model.modalities.input.map(normalizeModelSearch).includes(filters.inputModality))
+            && (filters.minimumContextTokens === null || (model.limits.input_tokens ?? 0) >= filters.minimumContextTokens)
+            && (filters.maximumInputPricePerMillion === null
+                || (inputPrice !== null && inputPrice * 1_000_000 <= filters.maximumInputPricePerMillion))
+            && (!filters.gatewayAvailableOnly || model.offers.some((offer) => offer.routable));
+    });
+    if (filters.sortBy === "relevance") return filtered;
+    const direction = filters.sortOrder
+        ?? (filters.sortBy === "input_price" || filters.sortBy === "output_price" ? "asc" : "desc");
+    return filtered.sort((left, right) => {
+        const leftValue = modelSortValue(left, filters.sortBy as Exclude<ModelListSort, "relevance">);
+        const rightValue = modelSortValue(right, filters.sortBy as Exclude<ModelListSort, "relevance">);
+        if (leftValue === null && rightValue === null) return left.id.localeCompare(right.id);
+        if (leftValue === null) return 1;
+        if (rightValue === null) return -1;
+        const comparison = leftValue - rightValue;
+        return comparison === 0
+            ? left.id.localeCompare(right.id)
+            : direction === "asc" ? comparison : -comparison;
+    });
+}
+
+function parseOptionalNonNegativeNumber(raw: string | null): number | null | "invalid" {
+    if (raw === null) return null;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= 0 ? value : "invalid";
+}
+
 async function fetchWorkspacePrivateCatalogue(args: {
     workspaceId: string;
     endpoints: string[];
@@ -645,6 +734,33 @@ export async function handleModels(req: Request) {
         );
     }
 
+    const search = url.searchParams.get("search")?.trim() ?? "";
+    const providerSearch = url.searchParams.get("provider_search")?.trim() ?? "";
+    const inputModality = normalizeModelSearch(url.searchParams.get("input_modality"));
+    const minimumContextTokens = parseOptionalNonNegativeNumber(url.searchParams.get("minimum_context_tokens"));
+    const maximumInputPricePerMillion = parseOptionalNonNegativeNumber(url.searchParams.get("maximum_input_price_per_million"));
+    const gatewayAvailableRaw = url.searchParams.get("gateway_available_only");
+    const gatewayAvailableOnly = gatewayAvailableRaw === "true";
+    const sortByRaw = url.searchParams.get("sort_by") ?? "relevance";
+    const sortOrderRaw = url.searchParams.get("sort_order");
+    const validSorts: ModelListSort[] = ["relevance", "input_price", "output_price", "context_length", "provider_count"];
+    if (
+        search.length > 200
+        || providerSearch.length > 100
+        || (inputModality && !["text", "image", "audio", "video"].includes(inputModality))
+        || minimumContextTokens === "invalid"
+        || maximumInputPricePerMillion === "invalid"
+        || (gatewayAvailableRaw !== null && gatewayAvailableRaw !== "true" && gatewayAvailableRaw !== "false")
+        || !validSorts.includes(sortByRaw as ModelListSort)
+        || (sortOrderRaw !== null && sortOrderRaw !== "asc" && sortOrderRaw !== "desc")
+    ) {
+        return json(
+            { ok: false, error: "invalid_request", message: "Invalid model discovery filter." },
+            400,
+            { "Cache-Control": "no-store" },
+        );
+    }
+
     const auth = await guardAuth(req, { allowOAuthJwt: true });
     if (!auth.ok) {
         return (auth as GuardErr).response;
@@ -719,6 +835,7 @@ export async function handleModels(req: Request) {
 
     try {
         const catalogue = await fetchCatalogue({
+            modelIds,
             endpoints,
             statuses,
             providerIds,
@@ -781,7 +898,19 @@ export async function handleModels(req: Request) {
                 },
             };
         });
-        const models = [...privateByModelId.values(), ...mergedPublicModels];
+        const models = filterAndSortModels(
+            [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[],
+            {
+                search,
+                provider: providerSearch,
+                inputModality,
+                minimumContextTokens,
+                maximumInputPricePerMillion,
+                gatewayAvailableOnly,
+                sortBy: sortByRaw as ModelListSort,
+                sortOrder: sortOrderRaw as ModelListSortOrder | null,
+            },
+        );
         const paged = models.slice(offset, offset + limit);
         const headers = cacheHeaders({ ...cacheOptions, varyHeaders: ["Authorization"] });
         if (requestedFormat.format !== "json") {

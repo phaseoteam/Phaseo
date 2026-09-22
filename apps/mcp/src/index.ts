@@ -9,10 +9,11 @@ import {
 	type GatewayModel,
 	type PhaseoEnv,
 	getModel,
-	listAllModels,
+	getModelsByIds,
 	listBenchmarkRankings,
 	listModels,
 	listProviders,
+	searchModels,
 	PhaseoApiError,
 	readControlPlane,
 } from "./phaseo-api";
@@ -613,21 +614,18 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		},
 		async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, gatewayAvailableOnly, sortBy, sortOrder, limit }) => {
 			try {
-				const queryTerms = normalise(query).split(/\s+/).filter(Boolean);
-				const models = (await listAllModels(env, { accessToken: authenticatedUser.accessToken })).filter((model) => {
-					const searchable = normalise([model.id, model.name, model.description, model.organization?.name].filter(Boolean).join(" "));
-					const inputPrice = tokenRate(model.pricing.meters.input_tokens ?? model.pricing.meters.input_text_tokens);
-					return (
-						queryTerms.every((term) => searchable.includes(term)) &&
-						matchesModelProvider(model, provider) &&
-						(!modality || model.modalities.input.map(normalise).includes(modality)) &&
-						(!minimumContextTokens || (model.limits.input_tokens ?? 0) >= minimumContextTokens) &&
-						(maximumInputPricePerMillion === undefined || (inputPrice !== null && inputPrice * 1_000_000 <= maximumInputPricePerMillion)) &&
-						(!gatewayAvailableOnly || model.offers.some((offer) => offer.routable))
-					);
-				});
-				const sortedModels = sortModels(models, sortBy, sortOrder).slice(0, limit);
-				const result = sortedModels.map((model) => modelSummary(env, model));
+				const models = await searchModels(env, {
+					query,
+					provider,
+					modality,
+					minimumContextTokens,
+					maximumInputPricePerMillion,
+					gatewayAvailableOnly,
+					sortBy,
+					sortOrder,
+					limit,
+				}, { accessToken: authenticatedUser.accessToken });
+				const result = models.map((model) => modelSummary(env, model));
 				return {
 					content: [{ type: "text" as const, text: `Found ${result.length} matching Phaseo model${result.length === 1 ? "" : "s"}.` }],
 					structuredContent: { models: result },
@@ -687,16 +685,19 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		async ({ focus, gatewayAvailableOnly, limit }) => {
 			try {
 				const category = focus === "cost_efficiency" ? "cost" : focus;
-				const [rankings, models] = await Promise.all([
-					listBenchmarkRankings(env),
-					listAllModels(env, { accessToken: authenticatedUser.accessToken }),
-				]);
+				const rankings = await listBenchmarkRankings(env);
 				const ranking = rankings.find((candidate) => candidate.category === category);
 				if (!ranking) {
 					return { isError: true as const, content: [{ type: "text" as const, text: `Phaseo has no current ${focus.replace("_", " ")} benchmark ranking.` }] };
 				}
+				const candidateEntries = ranking.entries;
+				const models = await getModelsByIds(
+					env,
+					candidateEntries.map((entry) => entry.model_id),
+					{ accessToken: authenticatedUser.accessToken },
+				);
 				const catalogue = new Map(models.map((model) => [model.id, model]));
-				const entries = ranking.entries.flatMap((entry) => {
+				const entries = candidateEntries.flatMap((entry) => {
 					const model = catalogue.get(entry.model_id);
 					const gatewayAvailable = model?.offers.some((offer) => offer.routable) ?? false;
 					if (gatewayAvailableOnly && !gatewayAvailable) return [];

@@ -285,6 +285,7 @@ export type CatalogueModel = {
 };
 
 export type CatalogueFilters = {
+    modelIds?: string[];
     endpoints?: string[];
     providerIds?: string[];
     providerStatuses?: string[];
@@ -1114,6 +1115,9 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             "model_id:model_slug, base_model_id:base_model_slug, variant_kind, previous_model_id:previous_model_slug, replacement_model_id:replacement_model_slug, metadata, name, description, release_date:released_at, deprecation_date:deprecated_at, retirement_date:retired_at, status, organisation_id:lab_slug, input_types:input_modalities, output_types:output_modalities, organisation:v2_labs(lab_slug, name, country_code, metadata)"
         )
         .eq("hidden", false);
+    if (filter.modelIds?.length) {
+        modelQuery.in("model_slug", filter.modelIds);
+    }
     const { data: modelRows, error: modelError } = await modelQuery;
     if (modelError) {
         throw new Error(`Failed to load model metadata: ${modelError.message || "unknown error"}`);
