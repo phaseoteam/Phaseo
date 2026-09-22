@@ -101,6 +101,7 @@ import type {
 	ModelsPageModel,
 	OptionCount,
 } from "./modelsDisplay.types";
+import { compareModelsByNewest } from "./modelOrdering";
 
 interface ModelsDisplayProps {
 	modelsPageData: ModelsPageData;
@@ -1372,12 +1373,8 @@ function ModelsDisplayContent({
 	);
 
 	const filteredPreparedModels = useMemo(() => {
-		const compareByNewest = (a: PreparedModel, b: PreparedModel) => {
-			const tsA = a.model.primary_timestamp ?? Number.NEGATIVE_INFINITY;
-			const tsB = b.model.primary_timestamp ?? Number.NEGATIVE_INFINITY;
-			if (tsA !== tsB) return tsB - tsA;
-			return (a.model.name ?? "").localeCompare(b.model.name ?? "");
-		};
+		const compareByNewest = (a: PreparedModel, b: PreparedModel) =>
+			compareModelsByNewest(a.model, b.model);
 
 		const filtered = preparedModels.filter((prepared) =>
 			matchesPreparedModel(prepared),
