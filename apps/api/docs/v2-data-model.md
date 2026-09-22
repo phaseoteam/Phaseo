@@ -91,6 +91,9 @@ backfill and consumer cutover are verified.
 - `get_public_models_page_rows()` is the public catalogue contract and now
   delegates to the v2 projection, including catalogue-only models and all
   available service tiers.
+- `get_public_models_page_payload()` preserves lifecycle date ordering and
+  uses `v2_models.created_at` to show more recently catalogued models first
+  when lifecycle dates are equal.
 - `get_v2_public_models_page_rows(region, service_tier)` owns the expensive
   model/provider/variant/capability/pricing joins. The Worker only applies
   pagination, search, and response caching.
