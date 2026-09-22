@@ -43,6 +43,11 @@ const FREE_ROUTER_MODEL_ID = "phaseo/free";
 const FREE_ROUTER_NAME = "Phaseo Free Router";
 const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "messages"] as const;
 
+// Keep the authenticated models API aligned with the public /models catalogue:
+// five minutes fresh, followed by five minutes of stale-while-revalidate.
+const MODEL_CATALOGUE_CACHE_TTL_SECONDS = 5 * 60;
+const MODEL_CATALOGUE_CACHE_STALE_SECONDS = 5 * 60;
+
 function parsePaginationParam(raw: string | null, fallback: number, max: number): number {
     if (!raw) return fallback;
     const parsed = Number(raw);
@@ -794,8 +799,8 @@ export async function handleModels(req: Request) {
 
     const cacheOptions = {
         scope: cacheScope,
-        ttlSeconds: 0,
-        staleSeconds: 0,
+        ttlSeconds: MODEL_CATALOGUE_CACHE_TTL_SECONDS,
+        staleSeconds: MODEL_CATALOGUE_CACHE_STALE_SECONDS,
         varyHeaders: [],
     };
 
@@ -1158,8 +1163,8 @@ export async function handleModelEndpoints(req: Request) {
             200,
             cacheHeaders({
                 scope: "models:endpoints:shared:v1",
-                ttlSeconds: 0,
-                staleSeconds: 0,
+                ttlSeconds: MODEL_CATALOGUE_CACHE_TTL_SECONDS,
+                staleSeconds: MODEL_CATALOGUE_CACHE_STALE_SECONDS,
                 varyHeaders: [],
             }),
         );
