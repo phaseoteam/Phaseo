@@ -17,6 +17,14 @@ export type GatewayModel = {
 	name: string;
 	description: string | null;
 	organization: { id: string; name: string | null; color: string | null } | null;
+	lifecycle: {
+		status: "active" | "deprecated" | "retired" | null;
+		released_at: string | null;
+		deprecated_at: string | null;
+		retires_at: string | null;
+		replacement_id: string | null;
+		message: string | null;
+	};
 	modalities: { input: string[]; output: string[] };
 	limits: { input_tokens: number | null; output_tokens: number | null };
 	capabilities: {
