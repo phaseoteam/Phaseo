@@ -1,26 +1,12 @@
 import { z } from "zod";
 import { dispatchBackground, getBindingsIfConfigured, getCache, getSupabaseAdmin } from "@/runtime/env";
+import { publicCatalogSchema as catalogSchema, isPublicCatalogFresh as fresh, type PublicCatalogSnapshot } from "./publicCatalogSnapshot";
+export { PUBLIC_CATALOG_MAX_AGE_MS, type PublicCatalogSnapshot } from "./publicCatalogSnapshot";
 
-export const PUBLIC_CATALOG_MAX_AGE_MS = 300_000;
-// The database and edge use independent wall clocks. Permit a small lead in
-// checkedAt without changing the source's absolute expiry or re-aging a copy.
-const PUBLIC_CATALOG_CLOCK_SKEW_MS = 1_000;
 const MAX_ENTRIES = 32;
 const MAX_BYTES = 256_000;
 const REFRESH_AFTER_MS = 60_000;
 const record = z.record(z.string(), z.unknown());
-const publicProvider = record.refine(row =>
-    typeof row.provider_id === "string" && typeof row.api_model_id === "string" &&
-    Array.isArray(row.byok_meta) && row.byok_meta.length === 0 &&
-    !["workspace_id", "private_endpoint", "key", "api_key", "enc_value"].some(key => key in row),
-"Public catalog contains invalid or private provider data");
-const catalogSchema = z.object({
-    version: z.literal(1), model: z.string(), resolvedModel: z.string(), endpoints: z.array(z.string()).min(1).max(2),
-    checkedAt: z.number().finite(), expiresAt: z.number().finite(),
-    variants: z.array(z.object({ endpoint: z.string(), providers: z.array(publicProvider), pricing: record }).strict()).min(1).max(2),
-    providerRows: z.array(record), routeModes: z.array(record),
-}).strict();
-export type PublicCatalogSnapshot = z.infer<typeof catalogSchema>;
 export type ContextBundle = {
     variants: { endpoint: string; payload: Record<string, unknown> }[];
     catalog: PublicCatalogSnapshot;
@@ -38,15 +24,6 @@ export const publicCatalogKey = (model: string, endpoints: string[]) =>
 
 export function contextBundleEnabled(): boolean {
     return getBindingsIfConfigured()?.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true";
-}
-
-function fresh(value: PublicCatalogSnapshot, model: string, endpoints: string[]): boolean {
-    const now = Date.now();
-    return value.model === model && value.checkedAt <= now + PUBLIC_CATALOG_CLOCK_SKEW_MS && value.expiresAt > now &&
-        value.expiresAt <= value.checkedAt + PUBLIC_CATALOG_MAX_AGE_MS &&
-        JSON.stringify(value.endpoints) === JSON.stringify(endpoints) &&
-        value.variants.length === endpoints.length &&
-        value.variants.every((variant, index) => variant.endpoint === endpoints[index]);
 }
 
 function remember(key: string, value: PublicCatalogSnapshot): void {
