@@ -179,8 +179,13 @@ export function calculatePricing(
 
     if (card) {
         try {
+			const pricingPlan = derivePricingPlan(body, usage, card);
+			const activePlanRules = card.rules.filter(
+				(rule) => rule.pricing_plan === pricingPlan ||
+					(pricingPlan !== "standard" && rule.pricing_plan === "standard"),
+			);
 			const outputAudioTokens = Number((usageMeters as any)?.output_audio_tokens ?? 0);
-			const hasPaidOutputAudioRule = card.rules.some(
+			const hasPaidOutputAudioRule = activePlanRules.some(
 				(rule) => rule.meter === "output_audio_tokens" && Number(rule.price_per_unit) > 0,
 			);
 			if (
@@ -195,7 +200,7 @@ export function calculatePricing(
 			const cachedReadTokens = Number((usageMeters as any)?.cached_read_text_tokens ?? 0);
 			const inputTokens = Number((usageMeters as any)?.input_tokens);
 			const inputTextTokens = Number((usageMeters as any)?.input_text_tokens);
-			const hasCachedReadRule = card.rules.some(
+			const hasCachedReadRule = activePlanRules.some(
 				(rule) => rule.meter === "cached_read_text_tokens",
 			);
 			if (
@@ -230,7 +235,6 @@ export function calculatePricing(
 					prompt_tokens_details: withoutNestedCachedTokens((usageMeters as any).prompt_tokens_details),
 				};
 			}
-            const pricingPlan = derivePricingPlan(body, usage, card);
             const requestOptions = attachBillingTimestamps(
                 buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
                 meta,
@@ -243,7 +247,11 @@ export function calculatePricing(
 				Number.isFinite(cachedReadTokens) &&
 				cachedReadTokens > 0
 			) {
-				pricedUsage = { ...pricedUsage, cached_read_text_tokens: cachedReadTokens };
+				pricedUsage = {
+					...pricedUsage,
+					input_text_tokens: inputTextTokens,
+					cached_read_text_tokens: cachedReadTokens,
+				};
 			}
 
             const pricingInfo = (pricedUsage as any)?.pricing ?? {};

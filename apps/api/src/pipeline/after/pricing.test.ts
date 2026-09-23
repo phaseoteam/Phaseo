@@ -184,7 +184,21 @@ describe("after/pricing calculatePricing", () => {
 		);
 
 		expect(result.totalNanos).toBe(90_600);
+		expect(result.pricedUsage.input_text_tokens).toBe(8);
 		expect(result.pricedUsage.cached_read_text_tokens).toBe(3);
+	});
+
+	it("ignores speech meters that belong only to an inactive pricing plan", () => {
+		const card: PriceCard = {
+			...TTS_CARD,
+			rules: [
+				TTS_CARD.rules[0],
+				{ ...TTS_CARD.rules[1], pricing_plan: "batch" },
+			],
+		};
+
+		const result = calculatePricing({ input_text_tokens: 1_000 }, card, {});
+		expect(result.totalNanos).toBe(600_000);
 	});
 
     it.each([
