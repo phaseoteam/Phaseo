@@ -27,6 +27,12 @@ the final request-wide StreamSession or protocol-native error architecture.
 - Fifteen focused bridge cases include append-style tool reconstruction, alias
   collision, state bounds, incomplete/failure terminals and after-stage usage.
 
-Poolside live evidence will be recorded after deployment. Free Poolside probes
-do not establish every provider's Responses-wire compatibility or paid billing
-durability. Production is unchanged.
+Staging commit `df4ed1970`, Worker version
+`33fc16ac-41ca-4fda-9708-b01c16cd1560`, passed all twelve free Poolside XS/S
+Chat/Responses/Messages streaming/nonstreaming checks in LHR. Audit rows confirm
+zero charge, and disposable key `fcdcec55-cb45-4d64-a265-9e33f690254b` was revoked.
+Routing milliseconds in probe order were
+`390, 4, 38, 13, 8, 5, 116, 11, 3, 4, 3, 5`; first-model cold/warm distinctions
+are not global latency guarantees. Free Poolside probes do not establish every
+provider's Responses-wire compatibility or paid billing durability. Production
+is unchanged.
