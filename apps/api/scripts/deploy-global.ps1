@@ -10,6 +10,7 @@ $worker = "phaseo-gateway"
 $globalSecretNames = @(
     "DOUBLEWORD_API_KEY",
     "TYPESAFE_API_KEY",
+    "SILICONFLOW_API_KEY",
     "OPENROUTER_API_KEY",
     "DISCORD_WEBHOOK_NEW_MODELS_PUBLIC",
     "DISCORD_ROLE_ID",
