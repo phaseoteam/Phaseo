@@ -309,6 +309,45 @@ export function GenerationDetail({ id }: GenerationDetailProps) {
           </div>
         )}
 
+        {data.error ? (
+          <Panel title="Error Details" icon={AlertTriangle}>
+            <KeyValueList
+              rows={[
+                { label: "Error Code", value: data.error.code ?? data.metadata.error_code ?? "N/A" },
+                { label: "HTTP Status", value: formatMaybeNumber(data.error.status_code ?? data.error.status) },
+                { label: "Request ID", value: data.error.request_id ?? gatewayRequestId ?? "N/A" },
+                { label: "Generation ID", value: data.error.generation_id ?? data.metadata.generation_id ?? "N/A" },
+                { label: "Error Type", value: data.error.error_type ?? data.metadata.error_type ?? "N/A" },
+                { label: "Origin", value: data.error.error_origin ?? data.metadata.error_origin ?? "N/A" },
+                { label: "Retryable", value: data.error.retryable === undefined ? "N/A" : String(data.error.retryable) },
+                { label: "Recommended Action", value: data.error.action ?? data.metadata.action ?? "N/A" },
+                {
+                  label: "Retry After",
+                  value:
+                    data.error.retry_after_seconds === undefined
+                      ? "N/A"
+                      : String(data.error.retry_after_seconds) + "s"
+                }
+              ]}
+            />
+            <div className="flex flex-wrap gap-3 text-sm">
+              {data.error.docs_url ? (
+                <a className="text-primary underline underline-offset-4" href={data.error.docs_url} target="_blank" rel="noreferrer">
+                  Open troubleshooting docs
+                </a>
+              ) : null}
+              {data.error.support_url ? (
+                <a className="text-primary underline underline-offset-4" href={data.error.support_url} target="_blank" rel="noreferrer">
+                  Open support guidance
+                </a>
+              ) : null}
+            </div>
+            {data.error.details ? (
+              <JsonDetails title="Diagnostic Details" value={data.error.details} defaultOpen={false} />
+            ) : null}
+          </Panel>
+        ) : null}
+
         <div className="grid gap-4 lg:grid-cols-2">
           <Panel title="Transport & Runtime" icon={Server}>
             <KeyValueList

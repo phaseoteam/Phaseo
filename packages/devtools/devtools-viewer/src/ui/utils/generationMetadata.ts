@@ -17,6 +17,7 @@ export function getGenerationCorrelationMetadata(entry: DevToolsEntry): {
   return {
     gatewayRequestId: firstNonEmpty(
       entry.metadata?.request_id,
+      entry.error?.request_id,
       responseMetadata.phaseo_request_id,
       response.request_id
     ),
@@ -69,7 +70,11 @@ export function getEntrySearchTerms(entry: DevToolsEntry): string {
     response.output_file_id,
     response.error_file_id,
     request.file_id,
-    response.filename
+    response.filename,
+    entry.error?.code,
+    entry.error?.error_type,
+    entry.error?.error_origin,
+    entry.error?.action
   ]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .join(" ");

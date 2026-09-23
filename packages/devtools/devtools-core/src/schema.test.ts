@@ -706,4 +706,50 @@ describe("DevToolsEntrySchema", () => {
     expect(parsed.metadata.agent_id).toBe("support-agent");
     expect(parsed.metadata.run_status).toBe("completed");
   });
+
+  it("accepts structured gateway error details", () => {
+    const parsed = DevToolsEntrySchema.parse({
+      id: "entry_error_123",
+      type: "responses",
+      timestamp: Date.now(),
+      duration_ms: 120,
+      request: { model: "openai/gpt-5-mini" },
+      response: {
+        request_id: "req_error_123",
+        message: "No eligible provider is available",
+        error_type: "system",
+      },
+      error: {
+        message: "429 Too Many Requests: No eligible provider is available",
+        type: "PhaseoAPIError",
+        code: "provider_unavailable",
+        status: 429,
+        status_code: 429,
+        request_id: "req_error_123",
+        error_type: "system",
+        error_origin: "gateway",
+        retryable: true,
+        action: "Retry with backoff or choose another model",
+        docs_url: "https://phaseo.app/docs/v1/developers/error-handling",
+        retry_after_seconds: 5,
+        details: { failed_providers: ["openai"] },
+      },
+      metadata: {
+        sdk: "python",
+        sdk_version: "2.0.7",
+        stream: false,
+        request_id: "req_error_123",
+        status_code: 429,
+        error_type: "system",
+        error_origin: "gateway",
+        retryable: true,
+        action: "Retry with backoff or choose another model",
+        retry_after_seconds: 5,
+      },
+    });
+
+    expect(parsed.error?.request_id).toBe("req_error_123");
+    expect(parsed.error?.retryable).toBe(true);
+    expect(parsed.metadata.retry_after_seconds).toBe(5);
+  });
 });

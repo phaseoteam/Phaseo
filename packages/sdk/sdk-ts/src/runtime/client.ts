@@ -23,23 +23,34 @@ export type RawResponse<T> = {
 	traceUrl?: string;
 };
 
+export type PhaseoGatewayErrorBody = {
+	code?: unknown;
+	error?: unknown;
+	request_id?: unknown;
+	generation_id?: unknown;
+	status_code?: unknown;
+	error_type?: unknown;
+	error_origin?: unknown;
+	retryable?: unknown;
+	action?: unknown;
+	docs_url?: unknown;
+	support_url?: unknown;
+	retry_after_seconds?: unknown;
+	details?: unknown;
+	message?: unknown;
+	description?: unknown;
+	[key: string]: unknown;
+};
+
 export class PhaseoHttpError extends Error {
 	readonly status: number;
 	readonly statusText: string;
 	readonly body: unknown;
 	readonly headers: Record<string, string>;
-	get requestId(): string | undefined { return this.headers["x-request-id"] ?? this.headers["x-phaseo-request-id"]; }
 	get traceUrl(): string | undefined { return this.requestId ? requestTraceUrl(this.requestId) : undefined; }
-	get code(): string | undefined {
-		const body = this.body as { code?: unknown; error?: { code?: unknown } | string } | null;
-		const code = typeof body?.error === "string" ? body.error : body?.error?.code ?? body?.code;
-		return typeof code === "string" ? code : undefined;
-	}
 	get retryAfterMs(): number | undefined {
-		const value = this.headers["retry-after"];
-		if (!value) return undefined;
-		const ms = Number.isFinite(Number(value)) ? Number(value) * 1000 : Date.parse(value) - Date.now();
-		return Number.isFinite(ms) ? Math.max(0, ms) : undefined;
+		const seconds = this.retryAfterSeconds;
+		return seconds === undefined ? undefined : seconds * 1000;
 	}
 
 	constructor(args: {
@@ -58,6 +69,84 @@ export class PhaseoHttpError extends Error {
 		this.statusText = args.statusText;
 		this.body = args.body;
 		this.headers = Object.fromEntries(Object.entries(args.headers ?? {}).map(([key, value]) => [key.toLowerCase(), value]));
+	}
+
+	private get gatewayBody(): PhaseoGatewayErrorBody {
+		return this.body && typeof this.body === "object" && !Array.isArray(this.body)
+			? this.body as PhaseoGatewayErrorBody
+			: {};
+	}
+
+	private readString(...values: unknown[]): string | undefined {
+		for (const value of values) {
+			if (typeof value === "string" && value.trim()) return value.trim();
+		}
+		return undefined;
+	}
+
+	get requestId(): string | undefined {
+		return this.readString(
+			this.gatewayBody.request_id,
+			this.gatewayBody.requestId,
+			this.headers["x-request-id"],
+			this.headers["x-phaseo-request-id"],
+		);
+	}
+
+	get generationId(): string | undefined {
+		return this.readString(this.gatewayBody.generation_id, this.requestId);
+	}
+
+	get statusCode(): number {
+		return this.status;
+	}
+
+	get code(): string | undefined {
+		const nestedError = this.gatewayBody.error;
+		const nestedCode = nestedError && typeof nestedError === "object" && !Array.isArray(nestedError)
+			? (nestedError as Record<string, unknown>).code
+			: undefined;
+		return this.readString(this.gatewayBody.code, nestedCode, nestedError);
+	}
+
+	get errorType(): string | undefined {
+		return this.readString(this.gatewayBody.error_type);
+	}
+
+	get errorOrigin(): string | undefined {
+		return this.readString(this.gatewayBody.error_origin);
+	}
+
+	get retryable(): boolean | undefined {
+		return typeof this.gatewayBody.retryable === "boolean" ? this.gatewayBody.retryable : undefined;
+	}
+
+	get action(): string | undefined {
+		return this.readString(this.gatewayBody.action);
+	}
+
+	get docsUrl(): string | undefined {
+		return this.readString(this.gatewayBody.docs_url);
+	}
+
+	get supportUrl(): string | undefined {
+		return this.readString(this.gatewayBody.support_url);
+	}
+
+	get retryAfterSeconds(): number | undefined {
+		const bodyValue = this.gatewayBody.retry_after_seconds;
+		if (typeof bodyValue === "number" && Number.isFinite(bodyValue) && bodyValue >= 0) return bodyValue;
+		const value = this.headers["retry-after"];
+		if (!value) return undefined;
+		const seconds = Number(value);
+		if (Number.isFinite(seconds) && seconds >= 0) return seconds;
+		const retryAt = Date.parse(value);
+		if (!Number.isFinite(retryAt)) return undefined;
+		return Math.max(0, Math.ceil((retryAt - Date.now()) / 1000));
+	}
+
+	get details(): unknown {
+		return this.gatewayBody.details;
 	}
 }
 

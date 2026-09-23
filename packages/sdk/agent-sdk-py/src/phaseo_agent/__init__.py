@@ -12,6 +12,10 @@ import uuid
 import threading
 
 from phaseo import Phaseo
+try:
+    from phaseo import PhaseoAPIError
+except ImportError:
+    PhaseoAPIError = None  # type: ignore[assignment,misc]
 
 
 @dataclass
@@ -657,20 +661,42 @@ def _capture_devtools(
             encoding="utf-8",
         )
     run = result.run if result else None
+    error_info = None
+    if error is not None:
+        error_info = {"message": str(error), "type": error.__class__.__name__}
+        if PhaseoAPIError is not None and isinstance(error, PhaseoAPIError):
+            error_info.update(error.to_devtools_error())
+    metadata = {
+        "sdk": "python",
+        "agent_id": definition.id,
+        "run_id": run.id if run else None,
+        "run_status": run.status if run else None,
+        "step_count": len(result.steps) if result else None,
+    }
+    if error_info:
+        for source_key in (
+            "request_id",
+            "generation_id",
+            "code",
+            "error_type",
+            "error_origin",
+            "retryable",
+            "action",
+            "docs_url",
+            "support_url",
+            "retry_after_seconds",
+            "status_code",
+        ):
+            if error_info.get(source_key) is not None:
+                metadata[source_key if source_key != "code" else "error_code"] = error_info[source_key]
     entry = {
         "id": run.id if run else str(uuid.uuid4()),
         "type": operation,
         "timestamp": int(started_at * 1000),
         "request": {"agent_id": definition.id, "tool_count": len(definition.tools)},
         "response": _jsonable(result) if result else None,
-        "error": {"message": str(error)} if error else None,
-        "metadata": {
-            "sdk": "python",
-            "agent_id": definition.id,
-            "run_id": run.id if run else None,
-            "run_status": run.status if run else None,
-            "step_count": len(result.steps) if result else None,
-        },
+        "error": error_info,
+        "metadata": metadata,
     }
     with (directory / "generations.jsonl").open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(entry, default=_jsonable) + "\n")

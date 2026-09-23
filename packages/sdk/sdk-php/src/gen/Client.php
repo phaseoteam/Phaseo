@@ -19,6 +19,7 @@ class RequestException extends \RuntimeException
 	private int $statusCode;
 	private string $responseBody;
 	private array $headers;
+	private array $payload;
 	private ?string $errorCode;
 
 	public function __construct(int $statusCode, string $responseBody, array $headers = [], ?string $message = null)
@@ -27,8 +28,9 @@ class RequestException extends \RuntimeException
 		$this->responseBody = $responseBody;
 		$this->headers = $headers;
 		$decoded = json_decode($responseBody, true);
-		$error = is_array($decoded) ? ($decoded["error"] ?? $decoded) : null;
-		$this->errorCode = is_string($error) ? $error : (is_array($error) && is_string($error["code"] ?? null) ? $error["code"] : null);
+		$this->payload = is_array($decoded) ? $decoded : [];
+		$error = $this->payload["error"] ?? null;
+		$this->errorCode = is_string($this->payload["code"] ?? null) ? $this->payload["code"] : (is_string($error) ? $error : (is_array($error) && is_string($error["code"] ?? null) ? $error["code"] : null));
 		$trimmed = trim($responseBody);
 		parent::__construct($message ?? ($trimmed === "" ? "Request failed: {$statusCode}" : "Request failed: {$statusCode} {$trimmed}"));
 	}
@@ -43,10 +45,21 @@ class RequestException extends \RuntimeException
 		return $this->responseBody;
 	}
 	public function getHeaders(): array { return $this->headers; }
+	public function getPayload(): array { return $this->payload; }
 	public function getErrorCode(): ?string { return $this->errorCode; }
-	public function getRequestId(): ?string { return Response::header($this->headers, "x-request-id") ?? Response::header($this->headers, "x-phaseo-request-id"); }
+	public function getRequestId(): ?string { return $this->payloadString("request_id") ?? Response::header($this->headers, "x-request-id") ?? Response::header($this->headers, "x-phaseo-request-id"); }
+	public function getGenerationId(): ?string { return $this->payloadString("generation_id") ?? $this->getRequestId(); }
+	public function getErrorType(): ?string { return $this->payloadString("error_type"); }
+	public function getErrorOrigin(): ?string { return $this->payloadString("error_origin"); }
+	public function getRetryable(): ?bool { $value = $this->payload["retryable"] ?? null; return is_bool($value) ? $value : null; }
+	public function getAction(): ?string { return $this->payloadString("action"); }
+	public function getDocsUrl(): ?string { return $this->payloadString("docs_url"); }
+	public function getSupportUrl(): ?string { return $this->payloadString("support_url"); }
+	public function getRetryAfterSeconds(): ?float { $value = $this->payload["retry_after_seconds"] ?? null; return is_numeric($value) ? max(0.0, (float) $value) : $this->getRetryAfter(); }
+	public function getDetails() { return $this->payload["details"] ?? null; }
 	public function getTraceUrl(): ?string { $id = $this->getRequestId(); return $id === null ? null : "https://phaseo.app/settings/usage/logs/requests/" . rawurlencode($id); }
 	public function getRetryAfter(): ?float { $value = Response::header($this->headers, "retry-after"); if ($value === null) return null; if (is_numeric($value)) return max(0.0, (float) $value); $timestamp = strtotime($value); return $timestamp === false ? null : max(0.0, $timestamp - time()); }
+	private function payloadString(string $key): ?string { $value = $this->payload[$key] ?? null; return is_string($value) ? $value : null; }
 }
 
 class Client

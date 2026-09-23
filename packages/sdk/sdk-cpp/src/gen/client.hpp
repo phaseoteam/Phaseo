@@ -33,6 +33,12 @@ struct Response {
 	}
 	std::optional<std::string> request_id() const { auto value = header("x-request-id"); return value ? value : header("request-id"); }
 	std::optional<std::string> trace_url() const { auto id = request_id(); return id ? std::optional<std::string>("https://phaseo.app/settings/usage/logs/requests/" + encode_trace_id(*id)) : std::nullopt; }
+	bool ok() const { return status >= 200 && status < 300; }
+	std::optional<long long> retry_after_seconds() const {
+		auto value = header("retry-after");
+		if (!value) return std::nullopt;
+		try { return std::max(0LL, static_cast<long long>(std::stod(*value))); } catch (...) { return std::nullopt; }
+	}
 };
 
 struct RequestOptions {

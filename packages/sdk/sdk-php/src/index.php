@@ -1351,6 +1351,24 @@ final class TelemetryRecorder
         }
         $this->enrichMetadataFromResponse($metadata, $errorResponse);
         $statusCode = $this->extractErrorStatusCode($error);
+        $errorInfo = [
+            "message" => $error->getMessage(),
+            "type" => get_class($error),
+            "status_code" => $statusCode,
+        ];
+        if ($error instanceof \Phaseo\Gen\RequestException) {
+            $errorInfo = array_merge($errorInfo, array_filter([
+                "request_id" => $error->getRequestId(),
+                "generation_id" => $error->getPayload()["generation_id"] ?? null,
+                "error_type" => $error->getErrorType(),
+                "error_origin" => $error->getErrorOrigin(),
+                "retryable" => $error->getRetryable(),
+                "action" => $error->getAction(),
+                "docs_url" => $error->getPayload()["docs_url"] ?? null,
+                "support_url" => $error->getPayload()["support_url"] ?? null,
+                "retry_after_seconds" => $error->getRetryAfterSeconds(),
+            ], static fn ($value) => $value !== null));
+        }
 
         $entry = [
             "id" => $this->newEntryId(),
@@ -1359,10 +1377,7 @@ final class TelemetryRecorder
             "duration_ms" => $durationMs,
             "request" => $this->normalizeJsonValue($request),
             "response" => $this->normalizeJsonValue($errorResponse),
-            "error" => array_filter([
-                "message" => $error->getMessage(),
-                "status_code" => $statusCode,
-            ], static fn ($value) => $value !== null),
+            "error" => $errorInfo,
             "metadata" => $metadata,
         ];
         $this->appendEntry($entry);
@@ -1536,10 +1551,18 @@ final class TelemetryRecorder
 
         foreach ([
             "request_id",
+            "generation_id",
             "session_id",
             "upstream_request_id",
             "native_response_id",
             "status_code",
+            "error_type",
+            "error_origin",
+            "retryable",
+            "action",
+            "docs_url",
+            "support_url",
+            "retry_after_seconds",
             "latency_ms",
             "generation_ms",
             "throughput",

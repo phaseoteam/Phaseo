@@ -80,9 +80,22 @@ export type SdkIdentifier = z.infer<typeof SdkIdentifierSchema>;
  */
 export const ErrorInfoSchema = z.object({
   message: z.string(),
+  type: z.string().optional(),
   code: z.string().optional(),
   status: z.number().optional(),
-  stack: z.string().optional()
+  status_code: z.number().optional(),
+  stack: z.string().optional(),
+  request_id: z.string().optional(),
+  generation_id: z.string().optional(),
+  error_type: z.string().optional(),
+  error_origin: z.string().optional(),
+  retryable: z.boolean().optional(),
+  action: z.string().optional(),
+  docs_url: z.string().optional(),
+  support_url: z.string().optional(),
+  retry_after_seconds: z.number().optional(),
+  details: z.any().optional(),
+  payload: z.any().optional()
 });
 
 export type ErrorInfo = z.infer<typeof ErrorInfoSchema>;
@@ -152,10 +165,19 @@ export const MetadataSchema = z.object({
   model: z.string().optional(),
   provider: z.string().optional(),
   request_id: z.string().optional(),
+  generation_id: z.string().optional(),
   session_id: z.string().optional(),
   upstream_request_id: z.string().optional(),
   native_response_id: z.string().optional(),
   status_code: z.number().optional(),
+  error_code: z.string().optional(),
+  error_type: z.string().optional(),
+  error_origin: z.string().optional(),
+  retryable: z.boolean().optional(),
+  action: z.string().optional(),
+  docs_url: z.string().optional(),
+  support_url: z.string().optional(),
+  retry_after_seconds: z.number().optional(),
   latency_ms: z.number().optional(),
   generation_ms: z.number().optional(),
   throughput: z.number().optional(),

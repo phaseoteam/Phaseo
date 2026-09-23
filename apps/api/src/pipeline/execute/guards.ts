@@ -10,6 +10,7 @@ import type { PipelineTiming } from "./index";
 import type { ProviderCandidate } from "../before/types";
 import { err, json } from "./http";
 import { captureTimingSnapshot } from "./utils";
+import { normalizeGatewayErrorPayload, parseRetryAfterSeconds } from "../error-contract";
 
 export type ExecuteGuardOk<T> = { ok: true; value: T };
 export type ExecuteGuardErr = { ok: false; response: Response };
@@ -484,11 +485,11 @@ export async function guardAllFailed(
     if (geographicAvailabilityStage) {
         captureTimingSnapshot(ctx, timing);
         if (isStealthRequest(ctx)) {
-            return {
-                ok: false,
-                response: json({
+            const response = json(
+                normalizeGatewayErrorPayload({
                     error: "model_region_unavailable",
                     status_code: 403,
+                    error_type: "user",
                     error_origin: "gateway",
                     responsibility: "user",
                     retryable: false,
@@ -499,7 +500,19 @@ export async function guardAllFailed(
                     endpoint: ctx.endpoint,
                     request_country: ctx.meta?.edgeCountry ?? null,
                     request_subdivision: ctx.meta?.edgeRegionCode ?? null,
-                }, 403),
+                },
+                {
+                    statusCode: 403,
+                    requestId: ctx.requestId,
+                    errorType: "user",
+                    errorOrigin: "gateway",
+                }),
+                403,
+            );
+            if (ctx.requestId) response.headers.set("X-Request-Id", ctx.requestId);
+            return {
+                ok: false,
+                response,
             };
         }
         return {
@@ -538,7 +551,7 @@ export async function guardAllFailed(
             .map((entry) => entry?.upstream_rate_limit_headers?.["Retry-After"])
             .find((value): value is string => typeof value === "string") ?? null;
         const keySource = attemptErrors.some((entry) => entry?.key_source === "byok") ? "byok" : "gateway";
-        const response = json(buildSafeStealthUpstreamError({
+        const safePayload = buildSafeStealthUpstreamError({
             status: publicStatus,
             failedStatuses,
             model: ctx.model,
@@ -546,7 +559,20 @@ export async function guardAllFailed(
             requestId: ctx.requestId,
             keySource,
             retryAfter,
-        }), publicStatus);
+        });
+        const response = json(
+            normalizeGatewayErrorPayload(safePayload, {
+                statusCode: publicStatus,
+                requestId: ctx.requestId,
+                errorType: publicStatus >= 500 ? "system" : "user",
+                errorOrigin: "upstream",
+                retryAfterSeconds: parseRetryAfterSeconds(retryAfter),
+            }),
+            publicStatus,
+        );
+        if (ctx.requestId) response.headers.set("X-Request-Id", ctx.requestId);
+        response.headers.set("X-Gateway-Error-Attribution", "upstream");
+        response.headers.set("X-Gateway-Error-Origin", "upstream");
         applyDownstreamRateLimitHeaders(response.headers, retryAfter ? { "Retry-After": retryAfter } : null);
         return {
             ok: false,
@@ -583,5 +609,4 @@ export async function guardAllFailed(
 
     return { ok: false, response: res };
 }
-
 

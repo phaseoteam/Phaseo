@@ -27,6 +27,15 @@ pub struct PhaseoError {
     pub headers: Box<HashMap<String, String>>,
     pub body: Option<Box<Value>>,
     pub code: Option<Box<str>>,
+    pub generation_id: Option<Box<str>>,
+    pub error_type: Option<Box<str>>,
+    pub error_origin: Option<Box<str>>,
+    pub retryable: Option<bool>,
+    pub action: Option<Box<str>>,
+    pub docs_url: Option<Box<str>>,
+    pub support_url: Option<Box<str>>,
+    pub retry_after_seconds: Option<u64>,
+    pub details: Option<Box<Value>>,
     pub request_id: Option<Box<str>>,
     pub trace_url: Option<Box<str>>,
     pub retry_after: Option<Box<str>>,
@@ -40,6 +49,15 @@ impl PhaseoError {
             headers: Box::new(HashMap::new()),
             body: None,
             code: None,
+            generation_id: None,
+            error_type: None,
+            error_origin: None,
+            retryable: None,
+            action: None,
+            docs_url: None,
+            support_url: None,
+            retry_after_seconds: None,
+            details: None,
             request_id: None,
             trace_url: None,
             retry_after: None,
@@ -451,6 +469,15 @@ fn parse_response(
                 headers: Box::new(headers.clone()),
                 body: None,
                 code: None,
+                generation_id: None,
+                error_type: None,
+                error_origin: None,
+                retryable: None,
+                action: None,
+                docs_url: None,
+                support_url: None,
+                retry_after_seconds: None,
+                details: None,
                 request_id: request_id.clone().map(String::into_boxed_str),
                 trace_url: trace_url.clone().map(String::into_boxed_str),
                 retry_after: headers
@@ -469,24 +496,59 @@ fn parse_response(
         }
         Err(ureq::Error::Status(status, response)) => {
             let headers = response_headers(&response);
-            let request_id = headers.get("x-request-id").cloned();
-            let trace_url = request_trace_url(request_id.as_deref());
             let raw = response.into_string().unwrap_or_default();
             let body = parse_json_body(&raw);
+            let request_id = body
+                .get("request_id")
+                .and_then(Value::as_str)
+                .map(str::to_owned)
+                .or_else(|| headers.get("x-request-id").cloned())
+                .or_else(|| headers.get("x-phaseo-request-id").cloned());
+            let trace_url = request_trace_url(request_id.as_deref());
             let message = body
                 .pointer("/error/message")
                 .and_then(Value::as_str)
                 .or_else(|| body.get("message").and_then(Value::as_str))
                 .unwrap_or("Phaseo returned an error")
                 .to_string();
+            let code = body
+                .pointer("/error/code")
+                .and_then(Value::as_str)
+                .or_else(|| body.get("code").and_then(Value::as_str))
+                .or_else(|| body.get("error").and_then(Value::as_str))
+                .map(Into::into);
             Err(PhaseoError {
                 message,
                 status: Some(status),
-                code: body
-                    .pointer("/error/code")
+                code,
+                generation_id: body
+                    .get("generation_id")
                     .and_then(Value::as_str)
-                    .or_else(|| body.get("code").and_then(Value::as_str))
                     .map(Into::into),
+                error_type: body
+                    .get("error_type")
+                    .and_then(Value::as_str)
+                    .map(Into::into),
+                error_origin: body
+                    .get("error_origin")
+                    .and_then(Value::as_str)
+                    .map(Into::into),
+                retryable: body.get("retryable").and_then(Value::as_bool),
+                action: body.get("action").and_then(Value::as_str).map(Into::into),
+                docs_url: body.get("docs_url").and_then(Value::as_str).map(Into::into),
+                support_url: body
+                    .get("support_url")
+                    .and_then(Value::as_str)
+                    .map(Into::into),
+                retry_after_seconds: body
+                    .get("retry_after_seconds")
+                    .and_then(Value::as_u64)
+                    .or_else(|| {
+                        headers
+                            .get("retry-after")
+                            .and_then(|value| value.parse::<u64>().ok())
+                    }),
+                details: body.get("details").cloned().map(Box::new),
                 request_id: request_id.map(String::into_boxed_str),
                 trace_url: trace_url.map(String::into_boxed_str),
                 retry_after: headers
@@ -502,6 +564,15 @@ fn parse_response(
             headers: Box::new(HashMap::new()),
             body: None,
             code: None,
+            generation_id: None,
+            error_type: None,
+            error_origin: None,
+            retryable: None,
+            action: None,
+            docs_url: None,
+            support_url: None,
+            retry_after_seconds: None,
+            details: None,
             request_id: None,
             trace_url: None,
             retry_after: None,

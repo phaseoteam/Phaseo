@@ -74,7 +74,19 @@ export type ErrorInfo = {
   message: string;
   code?: string;
   status?: number;
+  status_code?: number;
   stack?: string;
+  request_id?: string;
+  generation_id?: string;
+  error_type?: string;
+  error_origin?: string;
+  retryable?: boolean;
+  action?: string;
+  docs_url?: string;
+  support_url?: string;
+  retry_after_seconds?: number;
+  details?: unknown;
+  payload?: Record<string, any>;
 };
 
 export type UsageInfo = {
@@ -127,6 +139,14 @@ export type Metadata = {
   upstream_request_id?: string;
   native_response_id?: string;
   status_code?: number;
+  error_code?: string;
+  error_type?: string;
+  error_origin?: string;
+  retryable?: boolean;
+  action?: string;
+  docs_url?: string;
+  support_url?: string;
+  retry_after_seconds?: number;
   latency_ms?: number;
   generation_ms?: number;
   throughput?: number;

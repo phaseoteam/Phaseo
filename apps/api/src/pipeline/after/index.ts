@@ -32,6 +32,7 @@ import { buildCachedResponseRecord } from "@/core/response-cache";
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
+import { normalizeGatewayErrorPayload } from "../error-contract";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -369,13 +370,20 @@ export async function finalizeRequest(args: {
     const status = 502;
     const errorCode = "normalization_failed";
     const errorMessage = "Gateway could not normalize upstream response.";
-    const gatewayErrorPayload = {
+    const gatewayErrorPayload = normalizeGatewayErrorPayload({
         generation_id: ctx.requestId,
         status_code: status,
         error: errorCode,
+        error_type: "system",
+        error_origin: "gateway",
         description: errorMessage,
         upstream_status: result.upstream.status ?? null,
-    };
+    }, {
+        statusCode: status,
+        requestId: ctx.requestId,
+        errorType: "system",
+        errorOrigin: "gateway",
+    });
 
     await handleFailureAudit(
         ctx,
@@ -389,13 +397,9 @@ export async function finalizeRequest(args: {
     );
 
     const headers = makeHeaders(args.timingHeader);
+    if (ctx.requestId) headers.set("X-Request-Id", ctx.requestId);
     return createResponse(
-        {
-            requestId: ctx.requestId,
-            error: errorCode,
-            message: errorMessage,
-            upstreamStatus: result.upstream.status ?? null,
-        },
+        gatewayErrorPayload,
         status,
         headers
     );
@@ -634,4 +638,3 @@ async function handleNonStreamResponse(
     const responseStatus = result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
 }
-

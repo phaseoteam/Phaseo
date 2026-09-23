@@ -17,6 +17,7 @@ import {
 	extractDownstreamRateLimitHeaders,
 } from "../upstream-rate-limit-headers";
 import { buildSafeStealthUpstreamError, isStealthRequest } from "../stealth";
+import { normalizeGatewayErrorPayload, parseRetryAfterSeconds } from "../error-contract";
 
 export type AfterGuardOk<T> = { ok: true; value: T };
 export type AfterGuardErr = { ok: false; response: Response };
@@ -168,6 +169,16 @@ export async function guardUpstreamStatus(
         if (!stealth && ctx.meta?.debug?.return_upstream_response && result.rawResponse) {
             responseBody.upstream_response = result.rawResponse;
         }
+        const normalizedResponseBody = normalizeGatewayErrorPayload(responseBody, {
+            statusCode: upstreamStatus,
+            requestId: generationId,
+            errorType,
+            errorOrigin,
+            retryAfterSeconds: parseRetryAfterSeconds(downstreamRateLimitHeaders["Retry-After"] ?? null),
+        });
+        if (generationId !== "unknown") {
+            headers.set("X-Request-Id", String(generationId));
+        }
 
         await handleFailureAudit(
             ctx,
@@ -177,18 +188,17 @@ export async function guardUpstreamStatus(
             errCode,
             description,
             body,
-            responseBody,
+            normalizedResponseBody,
         );
 
         return {
             ok: false,
-            response: createResponse(responseBody, upstreamStatus, headers)
+            response: createResponse(normalizedResponseBody, upstreamStatus, headers)
         };
     }
 
     return { ok: true, value: undefined };
 }
-
 
 
 

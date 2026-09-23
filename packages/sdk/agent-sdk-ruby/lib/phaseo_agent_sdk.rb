@@ -532,11 +532,34 @@ module PhaseoAgentSdk
       metadata_path = File.join(directory, "metadata.json")
       File.write(metadata_path, JSON.pretty_generate(session_id: SecureRandom.uuid, started_at: (started_at.to_f * 1000).to_i, sdk: "ruby")) unless File.exist?(metadata_path)
       record = result&.run
+      metadata = { sdk: "ruby", agent_id: @definition.id, run_id: record&.id || run_id, run_status: record&.status }
+      error_info = nil
+      if error
+        error_info = { message: error.message, type: error.class.name }
+        if error.respond_to?(:status_code)
+          values = {
+            status_code: error.status_code,
+            request_id: error.respond_to?(:request_id) ? error.request_id : nil,
+            generation_id: error.respond_to?(:generation_id) ? error.generation_id : nil,
+            code: error.respond_to?(:code) ? error.code : nil,
+            error_type: error.respond_to?(:error_type) ? error.error_type : nil,
+            error_origin: error.respond_to?(:error_origin) ? error.error_origin : nil,
+            retryable: error.respond_to?(:retryable) ? error.retryable : nil,
+            action: error.respond_to?(:action) ? error.action : nil,
+            docs_url: error.respond_to?(:docs_url) ? error.docs_url : nil,
+            support_url: error.respond_to?(:support_url) ? error.support_url : nil,
+            retry_after_seconds: error.respond_to?(:retry_after_seconds) ? error.retry_after_seconds : nil,
+            details: error.respond_to?(:details) ? error.details : nil
+          }.compact
+          error_info.merge!(values)
+          metadata.merge!(values)
+        end
+      end
       entry = {
         id: record&.id || run_id || SecureRandom.uuid, type: operation, timestamp: (started_at.to_f * 1000).to_i,
         request: { agent_id: @definition.id, tool_count: @definition.tools.length },
-        response: result ? deep_hash(result) : nil, error: error ? { message: error.message } : nil,
-        metadata: { sdk: "ruby", agent_id: @definition.id, run_id: record&.id || run_id, run_status: record&.status }
+        response: result ? deep_hash(result) : nil, error: error_info,
+        metadata: metadata
       }
       File.open(File.join(directory, "generations.jsonl"), "a") { |file| file.puts(JSON.generate(entry)) }
     end

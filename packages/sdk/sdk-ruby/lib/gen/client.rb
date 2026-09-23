@@ -18,28 +18,45 @@ module Phaseo
     end
 
     class RequestError < StandardError
-      attr_reader :status_code, :response_body, :headers, :code, :request_id, :trace_url, :retry_after
+      attr_reader :status_code, :response_body, :headers, :payload, :code, :request_id, :generation_id, :trace_url, :error_type, :error_origin, :retryable, :action, :docs_url, :support_url, :retry_after, :retry_after_seconds, :details
 
       def initialize(status_code:, response_body:, headers: {}, status_message: nil, message: nil)
         super(message || build_message(status_code, response_body, status_message))
         @status_code = status_code
         @response_body = response_body
         @headers = headers
-        @request_id = headers["x-request-id"] || headers["request-id"]
+        @payload = parse_payload(response_body)
+        @request_id = @payload["request_id"] || headers["x-request-id"] || headers["request-id"]
+        @generation_id = @payload["generation_id"] || @request_id
+        @error_type = @payload["error_type"]
+        @error_origin = @payload["error_origin"]
+        @retryable = @payload["retryable"] if @payload.key?("retryable")
+        @action = @payload["action"]
+        @docs_url = @payload["docs_url"]
+        @support_url = @payload["support_url"]
         @trace_url = @request_id.nil? ? nil : "https://phaseo.app/settings/usage/logs/requests/#{URI.encode_www_form_component(@request_id).gsub("+", "%20")}"
         @retry_after = headers["retry-after"]
+        @retry_after_seconds = @payload["retry_after_seconds"] || (@retry_after.to_f if @retry_after.to_s.match?(/\A\d+(?:\.\d+)?\z/))
+        @details = @payload["details"]
         @code = parse_code(response_body)
       end
 
       private
 
       def parse_code(response_body)
-        parsed = JSON.parse(response_body.to_s)
-        error = parsed.is_a?(Hash) ? parsed["error"] : nil
-        value = error.is_a?(Hash) ? error["code"] : parsed["code"]
+        parsed = parse_payload(response_body)
+        error = parsed["error"]
+        value = parsed["code"] || (error.is_a?(Hash) ? error["code"] : error)
         value.to_s unless value.nil?
       rescue JSON::ParserError, TypeError
         nil
+      end
+
+      def parse_payload(response_body)
+        parsed = JSON.parse(response_body.to_s)
+        parsed.is_a?(Hash) ? parsed : {}
+      rescue JSON::ParserError, TypeError
+        {}
       end
 
       def build_message(status_code, response_body, status_message)

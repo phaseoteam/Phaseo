@@ -125,9 +125,24 @@ final class TelemetryRecorder {
 
 		Map<String, Object> errorInfo = new HashMap<>();
 		errorInfo.put("message", error.getMessage());
+		errorInfo.put("type", error.getClass().getName());
 		Integer statusCode = extractErrorStatusCode(error);
 		if (statusCode != null) {
 			errorInfo.put("status_code", statusCode);
+		}
+		if (error instanceof ApiException apiError) {
+			errorInfo.put("request_id", apiError.getRequestId());
+			errorInfo.put("generation_id", apiError.getGenerationId());
+			errorInfo.put("code", apiError.getCode());
+			errorInfo.put("error_type", apiError.getErrorType());
+			errorInfo.put("error_origin", apiError.getErrorOrigin());
+			errorInfo.put("retryable", apiError.getRetryable());
+			errorInfo.put("action", apiError.getAction());
+			errorInfo.put("docs_url", apiError.getDocsUrl());
+			errorInfo.put("support_url", apiError.getSupportUrl());
+			errorInfo.put("retry_after_seconds", apiError.getRetryAfterSeconds());
+			errorInfo.put("details", apiError.getDetails());
+			errorInfo.entrySet().removeIf(entry -> entry.getValue() == null);
 		}
 
 		Map<String, Object> entry = new HashMap<>();
@@ -292,10 +307,18 @@ final class TelemetryRecorder {
 
 		for (String key : new String[] {
 			"request_id",
+			"generation_id",
 			"session_id",
 			"upstream_request_id",
 			"native_response_id",
 			"status_code",
+			"error_type",
+			"error_origin",
+			"retryable",
+			"action",
+			"docs_url",
+			"support_url",
+			"retry_after_seconds",
 			"latency_ms",
 			"generation_ms",
 			"throughput",

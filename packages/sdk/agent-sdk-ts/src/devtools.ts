@@ -21,9 +21,21 @@ type AgentDevtoolsEntry = {
 	response: Record<string, unknown> | null;
 	error: {
 		message: string;
+		type?: string;
 		code?: string;
 		status?: number;
+		status_code?: number;
 		stack?: string;
+		request_id?: string;
+		generation_id?: string;
+		error_type?: string;
+		error_origin?: string;
+		retryable?: boolean;
+		action?: string;
+		docs_url?: string;
+		support_url?: string;
+		retry_after_seconds?: number;
+		details?: unknown;
 	} | null;
 	metadata: {
 		sdk: "typescript";
@@ -32,7 +44,16 @@ type AgentDevtoolsEntry = {
 		model?: string;
 		provider?: string;
 		request_id?: string;
+		generation_id?: string;
 		native_response_id?: string;
+		error_code?: string;
+		error_type?: string;
+		error_origin?: string;
+		retryable?: boolean;
+		action?: string;
+		docs_url?: string;
+		support_url?: string;
+		retry_after_seconds?: number;
 		agent_id?: string;
 		run_id?: string;
 		run_status?: string;
@@ -73,6 +94,7 @@ export function captureAgentRunDevtools<TInput, TOutput, TContext>(args: {
 	if (!config.enabled) return;
 
 	const latestStep = findLatestStep(args.result?.steps);
+	const devtoolsError = args.error ? toDevtoolsError(args.error) : null;
 	const entry: AgentDevtoolsEntry = {
 		id: args.result?.run.id ?? args.runId ?? randomUUID(),
 		type: args.type,
@@ -95,15 +117,24 @@ export function captureAgentRunDevtools<TInput, TOutput, TContext>(args: {
 					messages: args.result.messages,
 				}
 			: null,
-		error: args.error ? toDevtoolsError(args.error) : null,
+		error: devtoolsError,
 		metadata: {
 			sdk: "typescript",
 			sdk_version: AGENT_SDK_VERSION,
 			stream: false,
 			model: latestStep?.model,
 			provider: latestStep?.provider,
-			request_id: latestStep?.requestId,
+			request_id: latestStep?.requestId ?? devtoolsError?.request_id,
+			generation_id: devtoolsError?.generation_id,
 			native_response_id: latestStep?.nativeResponseId ?? undefined,
+			error_code: devtoolsError?.code,
+			error_type: devtoolsError?.error_type,
+			error_origin: devtoolsError?.error_origin,
+			retryable: devtoolsError?.retryable,
+			action: devtoolsError?.action,
+			docs_url: devtoolsError?.docs_url,
+			support_url: devtoolsError?.support_url,
+			retry_after_seconds: devtoolsError?.retry_after_seconds,
 			agent_id: args.definition.id,
 			run_id: args.result?.run.id ?? args.runId,
 			run_status: args.result?.run.status,
@@ -165,13 +196,42 @@ function countToolCalls(steps: AgentStepRecord[] | undefined) {
 }
 
 function toDevtoolsError(error: unknown) {
+	const gateway = isRecord(error) && error.name === "AgentGatewayError" ? error : null;
 	return {
 		message: error instanceof Error ? error.message : String(error),
-		code: typeof (error as { code?: unknown })?.code === "string" ? (error as { code: string }).code : undefined,
+		type: error instanceof Error ? error.name : undefined,
+		code:
+			readString(gateway?.code) ??
+			(typeof (error as { code?: unknown })?.code === "string"
+				? (error as { code: string }).code
+				: undefined),
 		status:
 			typeof (error as { status?: unknown })?.status === "number"
 				? (error as { status: number }).status
 				: undefined,
+		status_code:
+			typeof (error as { status?: unknown })?.status === "number"
+				? (error as { status: number }).status
+				: undefined,
+		request_id: readString(gateway?.requestId),
+		generation_id: readString(gateway?.generationId),
+		error_type: readString(gateway?.errorType),
+		error_origin: readString(gateway?.errorOrigin),
+		retryable: typeof gateway?.retryable === "boolean" ? gateway.retryable : undefined,
+		action: readString(gateway?.action),
+		docs_url: readString(gateway?.docsUrl),
+		support_url: readString(gateway?.supportUrl),
+		retry_after_seconds:
+			typeof gateway?.retryAfterSeconds === "number" ? gateway.retryAfterSeconds : undefined,
+		details: gateway?.details,
 		stack: error instanceof Error ? error.stack : undefined,
 	};
+}
+
+function isRecord(value: unknown): value is Record<string, any> {
+	return typeof value === "object" && value !== null;
+}
+
+function readString(value: unknown): string | undefined {
+	return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }

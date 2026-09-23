@@ -627,5 +627,40 @@ describe("handleError", () => {
 		expect(payload.error_origin).toBe("gateway");
 		expect(res.headers.get("X-Gateway-Error-Origin")).toBe("gateway");
 	});
-});
 
+	it("keeps the request ID and safe retry headers when re-wrapping an upstream error", async () => {
+		const res = await handleError({
+			stage: "execute",
+			res: new Response(
+				JSON.stringify({
+					error: "upstream_error",
+					description: "The provider is temporarily unavailable.",
+					failed_statuses: [503],
+				}),
+				{
+					status: 502,
+					headers: {
+						"content-type": "application/json",
+						"Retry-After": "15",
+						"X-Phaseo-Upstream-RateLimit-Remaining": "0",
+					},
+				},
+			),
+			endpoint: "responses",
+			ctx: { requestId: "G-RETRY-1", model: "openai/gpt-5-nano" } as any,
+			auditFailure: async () => {},
+		});
+
+		const payload = await res.json();
+		expect(payload).toMatchObject({
+			request_id: "G-RETRY-1",
+			generation_id: "G-RETRY-1",
+			retryable: true,
+			retry_after_seconds: 15,
+			action: expect.stringContaining("backoff"),
+		});
+		expect(res.headers.get("X-Request-Id")).toBe("G-RETRY-1");
+		expect(res.headers.get("Retry-After")).toBe("15");
+		expect(res.headers.get("X-Phaseo-Upstream-RateLimit-Remaining")).toBe("0");
+	});
+});

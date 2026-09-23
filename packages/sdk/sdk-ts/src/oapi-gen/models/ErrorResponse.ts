@@ -1,6 +1,8 @@
 export interface ErrorResponse {
-  attempt_count?: number;
-  description?: string;
+	attempt_count?: number;
+	action?: string;
+	code?: string;
+	description?: string;
   details?: {
     [key: string]: unknown;
   }[];
@@ -9,8 +11,9 @@ export interface ErrorResponse {
     | {
         [key: string]: unknown;
       };
-  error_origin?: "user" | "gateway" | "upstream";
-  error_type?: "user" | "system";
+	error_origin?: "user" | "gateway" | "upstream";
+	error_type?: "user" | "system";
+	docs_url?: string;
   failed_providers?: string[];
   failed_statuses?: number[];
   failure_sample?: {
@@ -26,7 +29,12 @@ export interface ErrorResponse {
     [key: string]: unknown;
   }[];
   generation_id?: string;
-  message?: string;
+	message?: string;
+	retry_after_seconds?: number;
+	retryable?: boolean;
+	request_id?: string;
+	status?: number;
+	support_url?: string;
   missing_pricing_providers?: string[];
   ok?: boolean;
   provider_candidate_diagnostics?: {

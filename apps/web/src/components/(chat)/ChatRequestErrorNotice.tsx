@@ -53,6 +53,11 @@ export type ChatRequestErrorDetails = {
 	errorCode: string | null;
 	requestId: string | null;
 	description: string | null;
+	action?: string;
+	retryable?: boolean;
+	docsUrl?: string | null;
+	supportUrl?: string | null;
+	retryAfterSeconds?: number | null;
 	details: Array<{
 		message: string;
 		path?: string[];
@@ -92,6 +97,13 @@ function buildCopyPayload(error: ChatRequestErrorDetails): string {
 		`Provider: ${error.providerId ?? "auto"}`,
 		`Endpoint: ${error.endpoint}`,
 		`Summary: ${buildSummary(error)}`,
+		error.action ? `Next step: ${error.action}` : null,
+		typeof error.retryable === "boolean"
+			? `Retryable: ${error.retryable ? "yes" : "no"}`
+			: null,
+		error.retryAfterSeconds != null
+			? `Retry after: ${error.retryAfterSeconds} seconds`
+			: null,
 		error.details.length
 			? `Details:\n${error.details
 					.map((detail) => `- ${detail.message}`)
@@ -123,6 +135,7 @@ export function ChatRequestErrorNotice({
 		() => getChatRequestErrorPresentation(error),
 		[error],
 	);
+	const canRetry = error.retryable ?? presentation.canRetry;
 	const isPaymentRequired = presentation.kind === "payment";
 	const isRecoveryState = [
 		"payment",
@@ -132,7 +145,7 @@ export function ChatRequestErrorNotice({
 		"conflict",
 		"rate-limit",
 		"service",
-	].includes(presentation.kind);
+	].includes(presentation.kind) || error.retryable === true;
 
 	const copyDiagnostics = async () => {
 		try {
@@ -217,9 +230,20 @@ export function ChatRequestErrorNotice({
 							>
 								{presentation.description}
 							</p>
+							{error.action ? (
+								<p className="mt-2 text-xs text-muted-foreground">
+									<span className="font-medium text-foreground">Next step:</span>{" "}
+									{error.action}
+								</p>
+							) : null}
+							{error.retryAfterSeconds != null ? (
+								<p className="mt-1 text-xs text-muted-foreground">
+									Retry after {error.retryAfterSeconds} seconds.
+								</p>
+							) : null}
 							{isPaymentRequired ||
 							presentation.kind === "authentication" ||
-							(presentation.canRetry && onRetry) ||
+							(canRetry && onRetry) ||
 							(presentation.canChooseModel && onChooseModel) ? (
 								<div className="mt-3 flex flex-wrap gap-2">
 									{isPaymentRequired ? (
@@ -247,7 +271,7 @@ export function ChatRequestErrorNotice({
 											</Link>
 										</Button>
 									) : null}
-									{presentation.canRetry && onRetry ? (
+									{canRetry && onRetry ? (
 										<Button type="button" size="sm" onClick={onRetry}>
 											<RefreshCw />
 											Try again
@@ -265,6 +289,24 @@ export function ChatRequestErrorNotice({
 									) : null}
 								</div>
 							) : null}
+							<div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+								<a
+									href={error.docsUrl ?? "https://phaseo.app/docs/v1/api-reference/errors"}
+									target="_blank"
+									rel="noreferrer"
+									className="underline underline-offset-2"
+								>
+									Read the error guide
+								</a>
+								<a
+									href={error.supportUrl ?? "https://phaseo.tawk.help/"}
+									target="_blank"
+									rel="noreferrer"
+									className="underline underline-offset-2"
+								>
+									Contact support
+								</a>
+							</div>
 						</div>
 					</div>
 				</BubbleContent>
@@ -320,6 +362,18 @@ export function ChatRequestErrorNotice({
 									<span className="font-medium text-foreground">Request:</span>{" "}
 									{error.requestId ?? "unknown"}
 								</p>
+								{error.action ? (
+									<p>
+										<span className="font-medium text-foreground">Next step:</span>{" "}
+										{error.action}
+									</p>
+								) : null}
+								{typeof error.retryable === "boolean" ? (
+									<p>
+										<span className="font-medium text-foreground">Retryable:</span>{" "}
+										{error.retryable ? "yes" : "no"}
+									</p>
+								) : null}
 								<p className="break-all">
 									<span className="font-medium text-foreground">Model:</span>{" "}
 									{error.modelId}

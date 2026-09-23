@@ -1,0 +1,70 @@
+---
+title: "Error handling"
+description: "Build reliable recovery, logging, and support workflows around Phaseo Gateway errors."
+icon: "triangle-alert"
+---
+
+Treat a failed Gateway request as a structured result, not just a string. Read the HTTP status, stable error code, `retryable` flag, and `action` together.
+
+## The basic client flow
+
+1. Check `response.ok`.
+2. Parse the JSON body when the response is an error.
+3. Store `request_id` and the endpoint/model in your request log.
+4. If `retryable` is `true`, retry a bounded number of times with jitter. Respect `Retry-After`.
+5. If `retryable` is `false`, show or log `action` and change the request or configuration before trying again.
+6. If the issue persists, use `support_url` and include the request ID with a redacted reproduction.
+
+See [Errors and Debugging](../api-reference/errors) for the complete response contract and error-code reference.
+
+## SDK error surfaces
+
+Every maintained SDK exposes the same Gateway fields—status, machine code, request and generation IDs, origin, retryability, action, retry delay, and diagnostic links—through its native error or response type:
+
+| Language | Error surface |
+| --- | --- |
+| TypeScript | `PhaseoHttpError`; the agent SDK uses `AgentGatewayError`. |
+| Python | `PhaseoAPIError`. |
+| Go | `phaseo.GatewayError` (also available as `gen.HTTPError`). |
+| C# | `Phaseo.Gen.ApiErrorException`. |
+| Java | `Client.ApiException`. |
+| PHP | `Phaseo\Gen\RequestException`. |
+| Ruby | `Phaseo::Gen::RequestError`. |
+| Rust | `PhaseoError`. |
+| C++ | `gen::Response`; check `ok()`, `request_id()`, `retry_after_seconds()`, and parse the response body. |
+
+When DevTools is enabled, SDKs record the same information in the entry's `error` object and `metadata`, so a failed request can be searched and diagnosed without reconstructing the HTTP exchange by hand.
+
+In PHP, read the machine code with `getErrorCode()` because `getCode()` is reserved by the base `Exception` class.
+
+## Retry policy
+
+Use retries for temporary capacity, timeout, rate-limit, and provider-service failures. A practical default is three attempts with exponential backoff, jitter, and a maximum delay.
+
+Do not retry the same request for validation, authentication, permission, billing, unsupported-model, or missing-credential errors. Those require a change first.
+
+The response can include `retry_after_seconds`, and the HTTP response can include `Retry-After`. Prefer the server-provided delay when it is present. Keep a total time budget so a request cannot remain pending indefinitely.
+
+## Logging and privacy
+
+Log these fields:
+
+- `request_id` or `generation_id`
+- HTTP status and `error`
+- endpoint and model ID
+- `error_type`, `error_origin`, and `retryable`
+- attempt number and final action
+
+Do not log API keys, authorization headers, provider credentials, raw prompts, uploaded media, or unredacted debug payloads. Store the request ID so the full server-side diagnostic record can be found without copying sensitive content into application logs.
+
+## When provider failover is involved
+
+`upstream_error` can include bounded provider and routing diagnostics. Use `failed_statuses`, `provider_failure_diagnostics`, and `routing_diagnostics` to distinguish a temporary provider failure from a configuration or access problem. Do not hard-code behavior around a provider's human-readable error text.
+
+## Streaming
+
+A stream can fail after the HTTP response has started. Treat an error event or an incomplete stream as a failed request, keep the request ID, and do not persist partial output as a completed answer. Offer a retry only when the error indicates that retrying may succeed.
+
+## Support hand-off
+
+When a problem needs human help, open the [Phaseo Help Center](https://phaseo.tawk.help/). Include the request ID, UTC timestamp, endpoint, model, status, error code, and a minimal reproduction with all secrets and sensitive content removed.

@@ -916,9 +916,62 @@ public sealed class Agent
         foreach (var kind in new[] { "images", "audio", "video" }) Directory.CreateDirectory(Path.Combine(directory, "assets", kind));
         var metadataPath = Path.Combine(directory, "metadata.json");
         if (!File.Exists(metadataPath)) File.WriteAllText(metadataPath, JsonSerializer.Serialize(new { session_id = Guid.NewGuid(), started_at = startedAt.ToUnixTimeMilliseconds(), sdk = "csharp" }, new JsonSerializerOptions { WriteIndented = true }));
-        var entry = new { id = result?.Run.Id ?? runId ?? Guid.NewGuid().ToString("N"), type = operation, timestamp = startedAt.ToUnixTimeMilliseconds(), request = new { agent_id = _definition.Id, tool_count = _definition.Tools.Count }, response = result, error = error is null ? null : new { message = error.Message }, metadata = new { sdk = "csharp", agent_id = _definition.Id, run_id = result?.Run.Id ?? runId, run_status = result?.Run.Status } };
+        var metadata = new Dictionary<string, object?>
+        {
+            ["sdk"] = "csharp",
+            ["agent_id"] = _definition.Id,
+            ["run_id"] = result?.Run.Id ?? runId,
+            ["run_status"] = result?.Run.Status
+        };
+        Dictionary<string, object?>? errorInfo = null;
+        if (error is not null)
+        {
+            errorInfo = new Dictionary<string, object?>
+            {
+                ["message"] = error.Message,
+                ["type"] = error.GetType().FullName ?? error.GetType().Name
+            };
+            if (error is Phaseo.Gen.ApiErrorException apiError)
+            {
+                foreach (var pair in new Dictionary<string, object?>
+                {
+                    ["status_code"] = apiError.StatusCode,
+                    ["request_id"] = ReadApiErrorProperty(apiError, "RequestId"),
+                    ["generation_id"] = ReadApiErrorProperty(apiError, "GenerationId"),
+                    ["code"] = ReadApiErrorProperty(apiError, "Code"),
+                    ["error_type"] = ReadApiErrorProperty(apiError, "ErrorType"),
+                    ["error_origin"] = ReadApiErrorProperty(apiError, "ErrorOrigin"),
+                    ["retryable"] = ReadApiErrorProperty(apiError, "Retryable"),
+                    ["action"] = ReadApiErrorProperty(apiError, "Action"),
+                    ["docs_url"] = ReadApiErrorProperty(apiError, "DocsUrl"),
+                    ["support_url"] = ReadApiErrorProperty(apiError, "SupportUrl"),
+                    ["retry_after_seconds"] = ReadApiErrorProperty(apiError, "RetryAfterSeconds"),
+                    ["details"] = ReadApiErrorProperty(apiError, "Details")
+                })
+                {
+                    if (pair.Value is not null)
+                    {
+                        errorInfo[pair.Key] = pair.Value;
+                        metadata[pair.Key] = pair.Value;
+                    }
+                }
+            }
+        }
+        var entry = new Dictionary<string, object?>
+        {
+            ["id"] = result?.Run.Id ?? runId ?? Guid.NewGuid().ToString("N"),
+            ["type"] = operation,
+            ["timestamp"] = startedAt.ToUnixTimeMilliseconds(),
+            ["request"] = new Dictionary<string, object?> { ["agent_id"] = _definition.Id, ["tool_count"] = _definition.Tools.Count },
+            ["response"] = result,
+            ["error"] = errorInfo,
+            ["metadata"] = metadata
+        };
         File.AppendAllText(Path.Combine(directory, "generations.jsonl"), JsonSerializer.Serialize(entry) + Environment.NewLine);
     }
+
+    private static object? ReadApiErrorProperty(Exception error, string name)
+        => error.GetType().GetProperty(name)?.GetValue(error);
 
     private static string Stringify(object? value)
     {

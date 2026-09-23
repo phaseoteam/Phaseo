@@ -950,6 +950,27 @@ module PhaseoSdk
       metadata[:provider] = provider if provider
       enrich_metadata_from_response!(metadata, error_response)
 
+      error_info = {
+        message: error.message,
+        type: error.class.name,
+        status_code: extract_error_status_code(error)
+      }.compact
+      if error.is_a?(::Phaseo::Gen::RequestError)
+        error_info.merge!(
+          request_id: error.request_id,
+          generation_id: error.generation_id,
+          code: error.code,
+          error_type: error.error_type,
+          error_origin: error.error_origin,
+          retryable: error.retryable,
+          action: error.action,
+          docs_url: error.docs_url,
+          support_url: error.support_url,
+          retry_after_seconds: error.retry_after_seconds,
+          details: error.details
+        ).compact!
+      end
+
       entry = {
         id: new_entry_id,
         type: endpoint,
@@ -957,10 +978,7 @@ module PhaseoSdk
         duration_ms: duration_ms,
         request: normalize_json_value(request),
         response: normalize_json_value(error_response),
-        error: {
-          message: error.message,
-          status_code: extract_error_status_code(error)
-        }.compact,
+        error: error_info,
         metadata: metadata
       }
       append_entry(entry)
@@ -1056,10 +1074,18 @@ module PhaseoSdk
 
       %i[
         request_id
+        generation_id
         session_id
         upstream_request_id
         native_response_id
         status_code
+        error_type
+        error_origin
+        retryable
+        action
+        docs_url
+        support_url
+        retry_after_seconds
         latency_ms
         generation_ms
         throughput

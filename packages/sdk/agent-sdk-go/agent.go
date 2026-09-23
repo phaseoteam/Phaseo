@@ -940,6 +940,45 @@ func emit(handler EventHandler, eventType string, run RunRecord, details map[str
 	}
 }
 
+func agentErrorInfo(runErr error) map[string]any {
+	info := map[string]any{
+		"message": runErr.Error(),
+		"type":    fmt.Sprintf("%T", runErr),
+	}
+	var gatewayErr *gen.HTTPError
+	if !errors.As(runErr, &gatewayErr) {
+		return info
+	}
+	info["status_code"] = gatewayErr.StatusCode
+	payload := map[string]any{}
+	_ = json.Unmarshal(gatewayErr.Body, &payload)
+	values := map[string]string{
+		"request_id":    stringValue(payload["request_id"]),
+		"generation_id": stringValue(payload["generation_id"]),
+		"code":          firstNonEmpty(stringValue(payload["code"]), stringValue(payload["error"])),
+		"error_type":    stringValue(payload["error_type"]),
+		"error_origin":  stringValue(payload["error_origin"]),
+		"action":        stringValue(payload["action"]),
+		"docs_url":      stringValue(payload["docs_url"]),
+		"support_url":   stringValue(payload["support_url"]),
+	}
+	for key, value := range values {
+		if value != "" {
+			info[key] = value
+		}
+	}
+	if value, ok := payload["retryable"].(bool); ok {
+		info["retryable"] = value
+	}
+	if value, ok := payload["retry_after_seconds"].(float64); ok {
+		info["retry_after_seconds"] = int(value)
+	}
+	if details := payload["details"]; details != nil {
+		info["details"] = details
+	}
+	return info
+}
+
 func captureDevtools(definition AgentDefinition, result *RunResult, operation string, started time.Time, config *DevtoolsConfig, runID string, runErr error) {
 	enabled := config != nil && config.Enabled
 	if !enabled {
@@ -962,14 +1001,21 @@ func captureDevtools(definition AgentDefinition, result *RunResult, operation st
 		data, _ := json.MarshalIndent(map[string]any{"session_id": newRunID(), "started_at": started.UnixMilli(), "sdk": "go"}, "", "  ")
 		_ = os.WriteFile(metadataPath, data, 0o644)
 	}
+	metadata := map[string]any{"sdk": "go", "agent_id": definition.ID, "run_id": runID}
 	entry := map[string]any{
 		"id": runID, "type": operation, "timestamp": started.UnixMilli(),
 		"request":  map[string]any{"agent_id": definition.ID, "tool_count": len(definition.Tools)},
 		"response": result,
-		"metadata": map[string]any{"sdk": "go", "agent_id": definition.ID, "run_id": runID},
+		"metadata": metadata,
 	}
 	if runErr != nil {
-		entry["error"] = map[string]any{"message": runErr.Error()}
+		errorInfo := agentErrorInfo(runErr)
+		entry["error"] = errorInfo
+		for _, key := range []string{"request_id", "generation_id", "code", "error_type", "error_origin", "retryable", "action", "docs_url", "support_url", "retry_after_seconds", "status_code"} {
+			if value := errorInfo[key]; value != nil {
+				metadata[key] = value
+			}
+		}
 	}
 	data, _ := json.Marshal(entry)
 	data = append(data, '\n')

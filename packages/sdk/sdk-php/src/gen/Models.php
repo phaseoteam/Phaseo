@@ -1661,12 +1661,16 @@ class ErrorProviderFailureDiagnostics
 
 class ErrorResponse
 {
+	/** @var string|null */
+	public $action;
 	/** @var int|null */
 	public $attempt_count;
 	/** @var string|null */
 	public $description;
 	/** @var array|null */
 	public $details;
+	/** @var string|null */
+	public $docs_url;
 	/** @var string|array<string, mixed> */
 	public $error;
 	/** @var string|null */
@@ -1699,10 +1703,18 @@ class ErrorResponse
 	public $provider_payment_required_support_notice;
 	/** @var string|null */
 	public $reason;
+	/** @var string|null */
+	public $request_id;
+	/** @var int|null */
+	public $retry_after_seconds;
+	/** @var bool|null */
+	public $retryable;
 	/** @var array<string, mixed>|null */
 	public $routing_diagnostics;
 	/** @var int|null */
 	public $status_code;
+	/** @var string|null */
+	public $support_url;
 	/** @var array<string, mixed>|null */
 	public $upstream_error;
 }

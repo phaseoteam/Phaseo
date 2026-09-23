@@ -18,6 +18,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class Client {
 	public static final class RequestOptions {
 		public Duration timeout;
@@ -61,12 +64,19 @@ public class Client {
 		private final int statusCode;
 		private final String responseBody;
 		private final Map<String, List<String>> headers;
+		private final Map<String, Object> payload;
+		private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 		public ApiException(int statusCode, String responseBody, Map<String, List<String>> headers, String message) {
 			super(message);
 			this.statusCode = statusCode;
 			this.responseBody = responseBody;
 			this.headers = headers == null ? Collections.emptyMap() : headers;
+			this.payload = parsePayload(responseBody);
+		}
+
+		public ApiException(int statusCode, String responseBody, Map<String, List<String>> headers) {
+			this(statusCode, responseBody, headers, responseBody == null || responseBody.isBlank() ? "Request failed: " + statusCode : "Request failed: " + statusCode + ": " + responseBody);
 		}
 
 		public int getStatusCode() {
@@ -78,10 +88,22 @@ public class Client {
 		}
 
 		public Map<String, List<String>> getHeaders() { return headers; }
-		public String getRequestId() { return firstHeader(headers, "x-request-id", "x-phaseo-request-id"); }
+		public Map<String, Object> getPayload() { return payload; }
+		public String getRequestId() { return payloadString("request_id", firstHeader(headers, "x-request-id", "x-phaseo-request-id")); }
+		public String getGenerationId() { return payloadString("generation_id", getRequestId()); }
+		public String getErrorType() { return payloadString("error_type", null); }
+		public String getErrorOrigin() { return payloadString("error_origin", null); }
+		public Boolean getRetryable() { Object value = payload.get("retryable"); return value instanceof Boolean booleanValue ? booleanValue : null; }
+		public String getAction() { return payloadString("action", null); }
+		public String getDocsUrl() { return payloadString("docs_url", null); }
+		public String getSupportUrl() { return payloadString("support_url", null); }
+		public Long getRetryAfterSeconds() { Object value = payload.get("retry_after_seconds"); if (value instanceof Number number) return number.longValue(); Long millis = getRetryAfterMillis(); return millis == null ? null : (millis + 999) / 1000; }
+		public Object getDetails() { return payload.get("details"); }
 		public String getTraceUrl() { String id = getRequestId(); return id == null ? null : "https://phaseo.app/settings/usage/logs/requests/" + URLEncoder.encode(id, StandardCharsets.UTF_8).replace("+", "%20"); }
 		public String getCode() { java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\"code\"\\s*:\s*\"([^\"]+)\"").matcher(responseBody == null ? "" : responseBody); return matcher.find() ? matcher.group(1) : null; }
 		public Long getRetryAfterMillis() { return parseRetryAfter(firstHeader(headers, "retry-after")); }
+		private String payloadString(String name, String fallback) { Object value = payload.get(name); return value instanceof String text ? text : fallback; }
+		private static Map<String, Object> parsePayload(String body) { if (body == null || body.isBlank()) return Collections.emptyMap(); try { return OBJECT_MAPPER.readValue(body, new TypeReference<Map<String, Object>>() {}); } catch (Exception ignored) { return Collections.emptyMap(); } }
 	}
 
 	public Client(String baseUrl) {

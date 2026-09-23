@@ -3,6 +3,11 @@ export type ChatErrorPayload = Error & {
 	status?: number;
 	requestId?: string;
 	description?: string;
+	action?: string;
+	retryable?: boolean;
+	docsUrl?: string;
+	supportUrl?: string;
+	retryAfterSeconds?: number;
 	details?: Array<{
 		message: string;
 		path?: string[];
@@ -61,6 +66,19 @@ function normalizeStatus(value: unknown) {
 		: undefined;
 }
 
+function normalizeRetryAfterSeconds(value: unknown) {
+	return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+		? value
+		: undefined;
+}
+
+function firstBoolean(...values: unknown[]) {
+	for (const value of values) {
+		if (typeof value === "boolean") return value;
+	}
+	return undefined;
+}
+
 function firstString(...values: unknown[]) {
 	for (const value of values) {
 		if (typeof value === "string" && value.trim()) {
@@ -84,6 +102,11 @@ function buildChatErrorPayload(args: {
 	code?: string;
 	requestId?: string;
 	description?: string;
+	action?: string;
+	retryable?: boolean;
+	docsUrl?: string;
+	supportUrl?: string;
+	retryAfterSeconds?: number;
 	details?: ChatErrorPayload["details"];
 	routingDiagnostics?: Record<string, unknown> | null;
 	rawPayload?: Record<string, unknown> | null;
@@ -93,6 +116,11 @@ function buildChatErrorPayload(args: {
 	if (args.status != null) requestError.status = args.status;
 	requestError.requestId = args.requestId;
 	requestError.description = args.description;
+	requestError.action = args.action;
+	requestError.retryable = args.retryable;
+	requestError.docsUrl = args.docsUrl;
+	requestError.supportUrl = args.supportUrl;
+	requestError.retryAfterSeconds = args.retryAfterSeconds;
 	requestError.details = args.details;
 	requestError.routingDiagnostics = args.routingDiagnostics ?? null;
 	requestError.rawPayload = args.rawPayload ?? null;
@@ -181,6 +209,33 @@ export function parseChatStreamErrorFrame(
 			response?.id,
 		),
 		description,
+		action: firstString(
+			payload.action,
+			errorObject?.action,
+			response?.action,
+		),
+		retryable: firstBoolean(
+			payload.retryable,
+			errorObject?.retryable,
+			response?.retryable,
+		),
+		docsUrl: firstString(
+			payload.docs_url,
+			payload.docsUrl,
+			errorObject?.docs_url,
+			errorObject?.docsUrl,
+		),
+		supportUrl: firstString(
+			payload.support_url,
+			payload.supportUrl,
+			errorObject?.support_url,
+			errorObject?.supportUrl,
+		),
+		retryAfterSeconds: normalizeRetryAfterSeconds(
+			payload.retry_after_seconds ??
+				errorObject?.retry_after_seconds ??
+				response?.retry_after_seconds,
+		),
 		details: normalizeErrorDetails(payload.details),
 		routingDiagnostics: normalizeRoutingDiagnostics(payload) ?? null,
 		rawPayload,
@@ -193,6 +248,11 @@ export async function parseChatErrorResponse(response: Response) {
 	let errorCode: string | undefined;
 	let errorRequestId: string | undefined;
 	let errorDescription: string | undefined;
+	let errorAction: string | undefined;
+	let errorRetryable: boolean | undefined;
+	let errorDocsUrl: string | undefined;
+	let errorSupportUrl: string | undefined;
+	let errorRetryAfterSeconds: number | undefined;
 	let errorDetails: ChatErrorPayload["details"];
 	let routingDiagnostics: Record<string, unknown> | null | undefined;
 	let rawPayload: Record<string, unknown> | undefined;
@@ -202,8 +262,11 @@ export async function parseChatErrorResponse(response: Response) {
 			const payload = (await response.json()) as Record<string, unknown> | null;
 			if (payload) {
 				rawPayload = payload;
+				const payloadError = isRecord(payload.error) ? payload.error : undefined;
 				if (typeof payload.message === "string") {
 					errorMessage = payload.message;
+				} else if (typeof payloadError?.message === "string") {
+					errorMessage = payloadError.message;
 				} else if (typeof payload.description === "string") {
 					errorMessage = payload.description;
 				} else if (typeof payload.error === "string") {
@@ -211,13 +274,34 @@ export async function parseChatErrorResponse(response: Response) {
 				}
 				if (typeof payload.error === "string") {
 					errorCode = payload.error;
+				} else if (typeof payloadError?.code === "string") {
+					errorCode = payloadError.code;
 				}
 				if (typeof payload.request_id === "string") {
 					errorRequestId = payload.request_id;
+				} else if (typeof payload.generation_id === "string") {
+					errorRequestId = payload.generation_id;
 				}
 				if (typeof payload.description === "string") {
 					errorDescription = payload.description;
 				}
+				errorAction = firstString(payload.action, payloadError?.action);
+				errorRetryable = firstBoolean(payload.retryable, payloadError?.retryable);
+				errorDocsUrl = firstString(
+					payload.docs_url,
+					payload.docsUrl,
+					payloadError?.docs_url,
+					payloadError?.docsUrl,
+				);
+				errorSupportUrl = firstString(
+					payload.support_url,
+					payload.supportUrl,
+					payloadError?.support_url,
+					payloadError?.supportUrl,
+				);
+				errorRetryAfterSeconds = normalizeRetryAfterSeconds(
+					payload.retry_after_seconds ?? payloadError?.retry_after_seconds,
+				);
 				errorDetails = normalizeErrorDetails(payload.details);
 				routingDiagnostics = normalizeRoutingDiagnostics(payload);
 			}
@@ -235,6 +319,11 @@ export async function parseChatErrorResponse(response: Response) {
 		code: errorCode,
 		requestId: errorRequestId,
 		description: errorDescription,
+		action: errorAction,
+		retryable: errorRetryable,
+		docsUrl: errorDocsUrl,
+		supportUrl: errorSupportUrl,
+		retryAfterSeconds: errorRetryAfterSeconds,
 		details: errorDetails,
 		routingDiagnostics: routingDiagnostics ?? null,
 		rawPayload: rawPayload ?? null,

@@ -941,9 +941,11 @@ struct ErrorProviderFailureDiagnostics {
 };
 
 struct ErrorResponse {
+	std::string action;
 	std::optional<int> attempt_count;
 	std::string description;
 	std::vector<std::map<std::string, std::any>> details;
+	std::string docs_url;
 	std::any error;
 	std::any error_origin;
 	std::any error_type;
@@ -960,8 +962,12 @@ struct ErrorResponse {
 	std::string provider_payment_required_provider;
 	std::string provider_payment_required_support_notice;
 	std::string reason;
+	std::string request_id;
+	std::optional<int> retry_after_seconds;
+	std::optional<bool> retryable;
 	std::map<std::string, std::any> routing_diagnostics;
 	std::optional<int> status_code;
+	std::string support_url;
 	std::map<std::string, std::any> upstream_error;
 };
 

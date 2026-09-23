@@ -19,6 +19,8 @@ import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { EXPOSED_UPSTREAM_RATE_LIMIT_HEADERS } from "@pipeline/upstream-rate-limit-headers";
+import { normalizeGatewayErrorPayload, parseRetryAfterSeconds } from "@pipeline/error-contract";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -783,6 +785,19 @@ export async function handleError({
         body?.request_id ??
         body?.requestId ??
         "unknown";
+    if (generationId !== "unknown") {
+        headers.set("X-Request-Id", String(generationId));
+    }
+    for (const headerName of EXPOSED_UPSTREAM_RATE_LIMIT_HEADERS) {
+        const value = res.headers.get(headerName);
+        if (!value) continue;
+        if (headerName.toLowerCase() === "retry-after") {
+            const retryAfterSeconds = parseRetryAfterSeconds(value);
+            if (retryAfterSeconds != null) headers.set(headerName, String(retryAfterSeconds));
+            continue;
+        }
+        headers.set(headerName, value);
+    }
     console.log("Gateway error details", {
         stage,
         endpoint,
@@ -918,7 +933,14 @@ export async function handleError({
             routing: routingDebug,
         };
     }
-    const gatewayErrorPayload = sanitizeForAxiom(errorPayload);
+    const normalizedErrorPayload = normalizeGatewayErrorPayload(errorPayload, {
+        statusCode,
+        requestId: generationId,
+        errorType,
+        errorOrigin,
+        retryAfterSeconds: parseRetryAfterSeconds(res.headers.get("Retry-After")),
+    });
+    const gatewayErrorPayload = sanitizeForAxiom(normalizedErrorPayload);
     const providerResponseHeaders = sanitizeForAxiom(headersToRecord(res.headers));
     const replayRequestPayload = requestPayloadForObservability;
 
@@ -1066,7 +1088,7 @@ export async function handleError({
         errorDetailsJson,
         errorPayload: gatewayErrorPayload,
         requestPayload: replayRequestPayload,
-        gatewayResponse: errorPayload,
+        gatewayResponse: normalizedErrorPayload,
         providerResponse: body ?? null,
         detailMetadata: {
             stage,
@@ -1104,7 +1126,7 @@ export async function handleError({
                 provider: providerForAudit,
                 providerModel: modelForObservability,
                 requestPayload: requestPayloadForObservability,
-                responsePayload: errorPayload,
+                responsePayload: normalizedErrorPayload,
                 providerAttempts: auditArgs.providerAttempts,
                 stream: Boolean(auditArgs.stream),
                 statusCode,
@@ -1159,13 +1181,12 @@ export async function handleError({
         requestPayload: requestPayloadForObservability,
         providerResponse: body,
         providerResponseHeaders: headersToRecord(res.headers),
-        gatewayResponse: errorPayload,
+        gatewayResponse: normalizedErrorPayload,
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     });
-    return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
+    return new Response(JSON.stringify(normalizedErrorPayload), { status: statusCode, headers });
 }
-
 
 
 

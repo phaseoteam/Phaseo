@@ -1,9 +1,15 @@
 export type AgentGatewayErrorBody = {
 	message?: string;
 	error?: unknown;
+	code?: string;
 	reason?: string;
 	error_origin?: string;
 	error_type?: string;
+	action?: string;
+	retryable?: boolean;
+	docs_url?: string;
+	support_url?: string;
+	retry_after_seconds?: number;
 	request_id?: string;
 	generation_id?: string;
 	failed_providers?: string[];
@@ -22,8 +28,14 @@ export type AgentGatewayErrorDetails = {
 	requestId: string | null;
 	generationId: string | null;
 	reason: string | null;
+	code: string | null;
 	errorOrigin: string | null;
 	errorType: string | null;
+	action: string | null;
+	retryable: boolean | null;
+	docsUrl: string | null;
+	supportUrl: string | null;
+	retryAfterSeconds: number | null;
 	failedProviders: string[];
 	failedStatuses: number[];
 	providerFailureDiagnostics: Record<string, unknown> | null;
@@ -60,6 +72,10 @@ function readString(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
+function readNumber(value: unknown): number | undefined {
+	return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
 function headerValue(headers: Record<string, string>, ...keys: string[]): string | undefined {
 	for (const key of keys) {
 		const value = headers[key.toLowerCase()];
@@ -74,7 +90,7 @@ function isGatewayHttpErrorLike(value: unknown): value is AgentGatewayErrorLike 
 		typeof value.status === "number" &&
 		typeof value.statusText === "string" &&
 		"body" in value &&
-		(value.name === "PhaseoHttpError" || value.name === "PhaseoHttpError" || "headers" in value)
+		(value.name === "PhaseoHttpError" || "headers" in value)
 	);
 }
 
@@ -108,8 +124,14 @@ export class AgentGatewayError extends Error {
 	readonly requestId: string | null;
 	readonly generationId: string | null;
 	readonly reason: string | null;
+	readonly code: string | null;
 	readonly errorOrigin: string | null;
 	readonly errorType: string | null;
+	readonly action: string | null;
+	readonly retryable: boolean | null;
+	readonly docsUrl: string | null;
+	readonly supportUrl: string | null;
+	readonly retryAfterSeconds: number | null;
 	readonly failedProviders: string[];
 	readonly failedStatuses: number[];
 	readonly providerFailureDiagnostics: Record<string, unknown> | null;
@@ -147,8 +169,21 @@ export class AgentGatewayError extends Error {
 				null;
 			this.generationId = readString(args.body.generation_id) ?? null;
 			this.reason = readString(args.body.reason) ?? null;
+			this.code =
+				readString(args.body.code) ??
+				readString(args.body.error) ??
+				(isRecord(args.body.error) ? readString(args.body.error.code) : undefined) ??
+				null;
 			this.errorOrigin = readString(args.body.error_origin) ?? null;
 			this.errorType = readString(args.body.error_type) ?? null;
+			this.action = readString(args.body.action) ?? null;
+			this.retryable = typeof args.body.retryable === "boolean" ? args.body.retryable : null;
+			this.docsUrl = readString(args.body.docs_url) ?? null;
+			this.supportUrl = readString(args.body.support_url) ?? null;
+			this.retryAfterSeconds =
+				readNumber(args.body.retry_after_seconds) ??
+				readRetryAfterHeader(this.headers) ??
+				null;
 			this.failedProviders = Array.isArray(args.body.failed_providers)
 				? args.body.failed_providers.filter((value): value is string => typeof value === "string")
 				: [];
@@ -173,8 +208,14 @@ export class AgentGatewayError extends Error {
 				null;
 			this.generationId = null;
 			this.reason = null;
+			this.code = null;
 			this.errorOrigin = null;
 			this.errorType = null;
+			this.action = null;
+			this.retryable = null;
+			this.docsUrl = null;
+			this.supportUrl = null;
+			this.retryAfterSeconds = null;
 			this.failedProviders = [];
 			this.failedStatuses = [];
 			this.providerFailureDiagnostics = null;
@@ -197,6 +238,13 @@ export class AgentGatewayError extends Error {
 	}
 }
 
+function readRetryAfterHeader(headers: Record<string, string>): number | undefined {
+	const value = headerValue(headers, "retry-after");
+	if (!value) return undefined;
+	const seconds = Number(value);
+	return Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : undefined;
+}
+
 export function isAgentGatewayError(error: unknown): error is AgentGatewayError {
 	return error instanceof AgentGatewayError;
 }
@@ -209,8 +257,14 @@ export function toAgentGatewayErrorDetails(error: AgentGatewayError): AgentGatew
 		requestId: error.requestId,
 		generationId: error.generationId,
 		reason: error.reason,
+		code: error.code,
 		errorOrigin: error.errorOrigin,
 		errorType: error.errorType,
+		action: error.action,
+		retryable: error.retryable,
+		docsUrl: error.docsUrl,
+		supportUrl: error.supportUrl,
+		retryAfterSeconds: error.retryAfterSeconds,
 		failedProviders: [...error.failedProviders],
 		failedStatuses: [...error.failedStatuses],
 		providerFailureDiagnostics: error.providerFailureDiagnostics

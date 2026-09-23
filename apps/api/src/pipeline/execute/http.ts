@@ -3,6 +3,8 @@
 // Why: Centralizes execution/failover behavior.
 // How: Standardized execute-stage error response helpers.
 
+import { normalizeGatewayErrorPayload } from "../error-contract";
+
 export type ExecuteErrorCode =
     | "unsupported_model_or_endpoint"
     | "unsupported_modalities"
@@ -42,9 +44,43 @@ export function err(code: ExecuteErrorCode, payload: Record<string, unknown>) {
     const description = FRIENDLY_DESCRIPTIONS[code];
     const body = { error: code, ...payload } as Record<string, unknown>;
     if (description && typeof body.description !== "string") body.description = description;
-    return json(body, STATUS[code]);
+    if (typeof body.status_code !== "number") body.status_code = STATUS[code];
+    if (typeof body.error_type !== "string") {
+        body.error_type = [
+            "provider_payment_required",
+            "provider_capacity_exhausted",
+            "upstream_error",
+        ].includes(code)
+            ? "system"
+            : "user";
+    }
+    if (typeof body.error_origin !== "string") {
+        body.error_origin = [
+            "provider_payment_required",
+            "provider_capacity_exhausted",
+            "upstream_error",
+        ].includes(code)
+            ? "upstream"
+            : "user";
+    }
+    if (typeof body.generation_id !== "string" && typeof body.request_id === "string") {
+        body.generation_id = body.request_id;
+    }
+    return json(
+        normalizeGatewayErrorPayload(body, {
+            statusCode: STATUS[code],
+            errorType: body.error_type as string,
+            errorOrigin: body.error_origin as string,
+            requestId:
+                typeof body.request_id === "string"
+                    ? body.request_id
+                    : typeof body.generation_id === "string"
+                        ? body.generation_id
+                        : null,
+        }),
+        STATUS[code],
+    );
 }
-
 
 
 
