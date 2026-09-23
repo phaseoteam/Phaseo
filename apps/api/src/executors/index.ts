@@ -103,6 +103,7 @@ import { executor as relaceText } from "./relace/text-generate";
 import { executor as sambanovaText } from "./sambanova/text-generate";
 import { executor as sailResearchText } from "./sail-research/text-generate";
 import { executor as siliconflowText } from "./siliconflow/text-generate";
+import { executor as siliconflowDecisions } from "./siliconflow/systemone";
 import { executor as stepfunText } from "./stepfun/text-generate";
 import { executor as veniceText } from "./venice/text-generate";
 import { executor as weightsAndBiasesText } from "./weights-and-biases/text-generate";
@@ -453,7 +454,10 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	relace: { "text.generate": relaceText, rerank: relaceRerank },
 	sambanova: { "text.generate": sambanovaText },
 	"sail-research": { "text.generate": sailResearchText },
-	siliconflow: { "text.generate": siliconflowText },
+	siliconflow: {
+		"text.generate": siliconflowText,
+		"decisions.make": siliconflowDecisions,
+	},
 	stepfun: { "text.generate": stepfunText, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor },
 	together: {
 		"text.generate": togetherText,

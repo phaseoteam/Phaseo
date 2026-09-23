@@ -113,6 +113,9 @@ describe("openAICompatUrl", () => {
 		expect(openAICompatUrl("siliconflow", "/chat/completions")).toBe(
 			"https://api.siliconflow.com/v1/chat/completions",
 		);
+		expect(openAICompatUrl("siliconflow", "/systemone")).toBe(
+			"https://api.siliconflow.com/v1/systemone",
+		);
 		expect(openAICompatHeaders("siliconflow", "test-siliconflow-key")).toEqual(
 			expect.objectContaining({ Authorization: "Bearer test-siliconflow-key" }),
 		);

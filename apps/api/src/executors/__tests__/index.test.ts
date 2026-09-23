@@ -9,6 +9,7 @@ describe("resolveProviderExecutor", () => {
 		expect(executor).toBeTruthy();
 		expect(resolveProviderExecutor("typesafe", "decisions.make")).toBe(executor);
 		expect(resolveProviderExecutor("typesafe", "systemone")).toBe(executor);
+		expect(resolveProviderExecutor("siliconflow", "decisions.make")).toBeTruthy();
 	});
 
 	it("registers every configured OpenAI-wire text provider explicitly", () => {
