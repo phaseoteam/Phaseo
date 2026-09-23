@@ -32,8 +32,7 @@ older source read. No new database object, queue, DO, schedule or binding is add
 - Focused bundle/composition suite: 46 tests pass, including source failure and
   retry, tenant/key boundaries, alias change, lease expiry during a refill,
   unchanged admission deadlines, spending budgets and independent credit denial.
-- Full API source suite: 613 files / 4,847 tests passed before five additional
-  focused cases (all pass separately). Final full-suite result recorded below.
+- Final full API source suite: 613 files / 4,852 tests pass.
 - Type-check, targeted lint and staging dry-run pass; existing context.ts
   large-file warning remains.
 - Native workerd executes the actual context pipeline. Two workspaces share
@@ -54,3 +53,26 @@ counts are not a Cloudflare invoice or a production latency/cost guarantee.
 The no-wallet free staging workspace cannot prove high-balance/paid-accounting
 savings. Durable publication, durable settlement and representative paid/cost,
 failure and regional validation remain production gates.
+
+## Staging evidence
+
+Source `7629d849f`, original staging Worker
+`f42c1519-b87c-4b3c-b95e-5b05be3c0be8`, passed the twelve-case free Poolside
+XS/S matrix twice (Chat, Responses, Messages; streaming and non-streaming), in
+LHR. Both runs verified zero charges and revoked their disposable keys:
+`9d3d01c7-21dc-4e95-80e7-b3a7abb6d120` and
+`618a6b6a-b038-4728-a8ce-7b337899b79f`.
+
+Routing ms: first run `[462,3,51,3,4,4,71,8,4,13,16,4]`; second run
+`[268,4,39,3,3,3,10,7,4,12,11,7]`. These are routing overheads, not complete
+provider-response times. The second run reused already populated public L2 data.
+
+All twelve redacted operation records in the second run were complete, with no
+pending background tasks. Totals: 49 KV reads, 14 KV writes, 24 Supabase table
+reads, 26 mutations, 25 RPCs, 22 health RPCs and four Cache API reads. The prior
+workspace-composition sample recorded 56/18 KV reads/writes, 24/26/26 Supabase
+reads/mutations/RPCs, 22 health RPCs and two Cache API reads/two writes. These are
+small sequential samples with different cache warmth, not a controlled invoice
+reduction. Native fixtures establish the eliminated static-KV category.
+
+Production, balances, bindings and disabled staging schedules are unchanged.
