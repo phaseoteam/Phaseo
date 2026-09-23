@@ -315,10 +315,10 @@ describe("extractUnifiedStreamEvents", () => {
 		).toBe(true);
 	});
 
-	it("maps incomplete responses status to a canonical length stop reason", () => {
+	it.each(["response.completed", "response.incomplete"])("maps %s incomplete status to a canonical length stop reason", (eventName) => {
 		const events = extractUnifiedStreamEvents({
 			protocol: "openai.responses",
-			eventName: "response.completed",
+			eventName,
 			frame: {
 				response: {
 					object: "response",
