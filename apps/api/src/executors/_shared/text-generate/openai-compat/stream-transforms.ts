@@ -154,6 +154,7 @@ export function transformChatStream(
 	const decoder = new TextDecoder();
 	const encoder = new TextEncoder();
 	let buf = "";
+	let sentDone = false;
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
@@ -167,7 +168,12 @@ export function transformChatStream(
 
 					for (const raw of frames) {
 						const { data } = parseSseBlock(raw);
-						if (!data || data === "[DONE]") continue;
+						if (!data || sentDone) continue;
+						if (data === "[DONE]") {
+							controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+							sentDone = true;
+							continue;
+						}
 						let payload: any;
 						try {
 							payload = JSON.parse(data);

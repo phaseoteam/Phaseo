@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execFile } from "node:child_process";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { resolveGatewayApiKeyFromEnv } from "../helpers/gatewayKey";
 import { serializeError } from "./active-providers.live.helpers";
@@ -66,12 +67,13 @@ const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://127.0.0.1:8787/v1";
 const GATEWAY_API_KEY = resolveGatewayApiKeyFromEnv(process.env);
 const LIVE_RUN = (process.env.LIVE_RUN ?? "").trim() === "1";
 const LIVE_MATRIX_RUN = (process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_RUN ?? "0").trim() === "1";
+const LIVE_POOLSIDE_STAGING = process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_POOLSIDE_STAGING === "1";
 const LIVE_MATRIX_INCLUDE_HEAVY = (process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_INCLUDE_HEAVY ?? "0").trim() === "1";
 const LIVE_MATRIX_POLL_ATTEMPTS = Number(process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_POLL_ATTEMPTS ?? "4");
 const LIVE_MATRIX_POLL_DELAY_MS = Number(process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_POLL_DELAY_MS ?? "3000");
 const LIVE_MATRIX_TEXT_MAX_OUTPUT_TOKENS = Number(process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_TEXT_MAX_OUTPUT_TOKENS ?? "24");
 const LIVE_MATRIX_RESULTS_PATH = (process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_RESULTS_PATH ?? "").trim();
-const describeLive = LIVE_RUN && LIVE_MATRIX_RUN ? describe : describe.skip;
+const describeLive = LIVE_RUN && LIVE_MATRIX_RUN && !LIVE_POOLSIDE_STAGING ? describe : describe.skip;
 
 const LIVE_PROVIDER_ALIASES: Record<string, string> = {
     arcee: "arcee-ai",
@@ -820,7 +822,7 @@ const SURFACES: Record<SurfaceId, SurfaceDefinition> = {
 };
 
 async function initializeMatrix() {
-    if (!LIVE_RUN || !LIVE_MATRIX_RUN || !GATEWAY_API_KEY) return;
+    if (!LIVE_RUN || !LIVE_MATRIX_RUN || LIVE_POOLSIDE_STAGING || !GATEWAY_API_KEY) return;
     const catalog = await fetchModelsCatalog();
     discoverSurfaceModels(catalog);
     for (const surfaceId of selectedSurfaces) {
@@ -833,6 +835,35 @@ async function initializeMatrix() {
 }
 
 await initializeMatrix();
+
+describe.skipIf(!LIVE_RUN || !LIVE_MATRIX_RUN || !LIVE_POOLSIDE_STAGING)("Bounded Poolside staging protocol matrix", () => {
+    it("verifies both free models across text protocols with disposable authentication", async () => {
+        const envFiles: unknown = JSON.parse(process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_OPERATOR_ENV_FILES ?? "[]");
+        if (!Array.isArray(envFiles) || envFiles.length !== 2 || !envFiles.every(file => typeof file === "string" && path.isAbsolute(file))) {
+            throw new Error("Provide exactly two absolute operator env-file paths; never inline credentials");
+        }
+        await new Promise<void>((resolve, reject) => {
+            execFile(process.execPath, [path.resolve("scripts/probe-staging-poolside.mjs"), ...envFiles], {
+                timeout: 840_000, maxBuffer: 256_000,
+            }, (error, stdout, stderr) => {
+                // The bounded probe emits only redacted metrics/contract summaries.
+                // Never expose subprocess diagnostics or env-file contents on failure.
+                const events = (stdout + "\n" + stderr).split(/\r?\n/).flatMap(line => {
+                    try {
+                        const event = JSON.parse(line);
+                        return event && typeof event.event === "string" ? [event] : [];
+                    } catch { return []; }
+                });
+                const directory = path.resolve("reports/provider-live");
+                fs.mkdirSync(directory, { recursive: true });
+                fs.writeFileSync(path.join(directory, `poolside-staging-${Date.now()}.json`), JSON.stringify(events, null, 2));
+                for (const event of events) console.log(JSON.stringify(event));
+                if (error) reject(new Error("Bounded Poolside staging matrix failed; inspect redacted report"));
+                else resolve();
+            });
+        });
+    }, 900_000);
+});
 
 describeLive("Provider endpoint live matrix", () => {
     beforeAll(async () => {
