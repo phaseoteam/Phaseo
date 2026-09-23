@@ -859,6 +859,17 @@ jobs:
                   secret-path: /provider-keys
                   secret-name: TYPESAFE_API_KEY
 
+            - name: Load SiliconFlow provider key from Infisical
+              if: matrix.target == 'api'
+              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              with:
+                  method: oidc
+                  identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+                  project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+                  env-slug: prod
+                  secret-path: /operations
+                  secret-name: SILICONFLOW_API_KEY
+
             - name: Load global Cloudflare runtime token from Infisical
               if: matrix.target == 'api'
               uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
