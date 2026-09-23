@@ -766,7 +766,14 @@ function transformResponsesStreamToAnthropic(
 							if (block) stopBlock(block);
 							continue;
 						}
-						if (normalizedEvent === "response.completed") {
+						if (normalizedEvent === "response.failed" || normalizedEvent === "error") {
+							if (!terminalEmitted) {
+								terminalEmitted = true;
+								emit(controller, "error", { type: "error", error: { type: "api_error", message: "Upstream generation failed" } });
+							}
+							continue;
+						}
+						if (normalizedEvent === "response.completed" || normalizedEvent === "response.incomplete") {
 							latestResponse = payload?.response ?? payload;
 							finishMessage(latestResponse);
 							continue;
