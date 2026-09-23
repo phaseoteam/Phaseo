@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
+import type { GatewayPublicationResult } from "@/lib/settings/gatewayPublication";
 
 export type ProviderRestrictionMode = "none" | "allowlist" | "blocklist";
 export type SensitiveInfoAction = "flag" | "redact" | "block";
@@ -67,14 +68,14 @@ function refresh(includePrivacy = false): void {
 
 export async function updateGlobalGuardrailsSettings(payload: GlobalGuardrailsSettingsPayload, expectedWorkspaceId?: string) {
 	const context = await account(expectedWorkspaceId);
-	const result = await fetchAccountWebApi<{ success: true }>("/api/account/settings/guardrails/global", context.accessToken, { method: "PUT", body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }) });
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { success: true }>("/api/account/settings/guardrails/global", context.accessToken, { method: "PUT", body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }) });
 	refresh(true);
 	return result;
 }
 
 export async function createGuardrail(payload: GuardrailUpsertPayload) {
 	const context = await account();
-	const result = await fetchAccountWebApi<{ id?: string }>("/api/account/settings/guardrails", context.accessToken, { method: "POST", body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }) });
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { id?: string }>("/api/account/settings/guardrails", context.accessToken, { method: "POST", body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }) });
 	refresh();
 	return result;
 }
@@ -82,7 +83,7 @@ export async function createGuardrail(payload: GuardrailUpsertPayload) {
 export async function updateGuardrail(id: string, payload: GuardrailUpsertPayload) {
 	if (!id) throw new Error("Missing guardrail id");
 	const context = await account();
-	const result = await fetchAccountWebApi<{ success: true }>(`/api/account/settings/guardrails/${encodeURIComponent(id)}`, context.accessToken, { method: "PUT", body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }) });
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { success: true }>(`/api/account/settings/guardrails/${encodeURIComponent(id)}`, context.accessToken, { method: "PUT", body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }) });
 	refresh();
 	return result;
 }
@@ -90,7 +91,7 @@ export async function updateGuardrail(id: string, payload: GuardrailUpsertPayloa
 export async function deleteGuardrail(id: string) {
 	if (!id) throw new Error("Missing guardrail id");
 	const context = await account();
-	const result = await fetchAccountWebApi<{ success: true }>(`/api/account/settings/guardrails/${encodeURIComponent(id)}`, context.accessToken, { method: "DELETE", body: JSON.stringify({ workspaceId: context.workspaceId }) });
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { success: true }>(`/api/account/settings/guardrails/${encodeURIComponent(id)}`, context.accessToken, { method: "DELETE", body: JSON.stringify({ workspaceId: context.workspaceId }) });
 	refresh();
 	return result;
 }
@@ -98,7 +99,7 @@ export async function deleteGuardrail(id: string) {
 export async function setGuardrailKeys(guardrailId: string, keyIds: string[]) {
 	if (!guardrailId) throw new Error("Missing guardrail id");
 	const context = await account();
-	const result = await fetchAccountWebApi<{ success: true }>(`/api/account/settings/guardrails/${encodeURIComponent(guardrailId)}/keys`, context.accessToken, { method: "PUT", body: JSON.stringify({ keyIds, workspaceId: context.workspaceId }) });
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { success: true }>(`/api/account/settings/guardrails/${encodeURIComponent(guardrailId)}/keys`, context.accessToken, { method: "PUT", body: JSON.stringify({ keyIds, workspaceId: context.workspaceId }) });
 	refresh();
 	return result;
 }
@@ -106,7 +107,7 @@ export async function setGuardrailKeys(guardrailId: string, keyIds: string[]) {
 export async function setGuardrailMembers(guardrailId: string, userIds: string[]) {
 	if (!guardrailId) throw new Error("Missing guardrail id");
 	const context = await account();
-	const result = await fetchAccountWebApi<{ success: true }>(`/api/account/settings/guardrails/${encodeURIComponent(guardrailId)}/members`, context.accessToken, { method: "PUT", body: JSON.stringify({ userIds, workspaceId: context.workspaceId }) });
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { success: true }>(`/api/account/settings/guardrails/${encodeURIComponent(guardrailId)}/members`, context.accessToken, { method: "PUT", body: JSON.stringify({ userIds, workspaceId: context.workspaceId }) });
 	refresh();
 	return result;
 }

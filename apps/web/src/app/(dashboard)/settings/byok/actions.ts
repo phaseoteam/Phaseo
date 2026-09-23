@@ -5,6 +5,7 @@ import { canonicalByokProviderId } from "@/lib/byok/providerIds";
 import { validateProviderKeyFormat } from "@/lib/byok/providerKeyValidation";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
+import type { GatewayPublicationResult } from "@/lib/settings/gatewayPublication";
 
 async function context(): Promise<{ accessToken: string; workspaceId: string }> {
 	const { accessToken, workspaceId } = await getServerAccountContext();
@@ -32,7 +33,7 @@ export async function createByokKeyAction(
 	const format = validateProviderKeyFormat(canonicalProviderId, value);
 	if (!format.ok) throw new Error(format.message);
 	const account = await context();
-	const result = await fetchAccountWebApi<{ id?: string; mode: "created" | "updated" }>(
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { id?: string; mode: "created" | "updated" }>(
 		"/api/account/settings/byok",
 		account.accessToken,
 		{ method: "POST", body: JSON.stringify({ name, providerId: canonicalProviderId, value, enabled, always_use, allowedModelSlugs, allowedApiKeyIds, workspaceId: account.workspaceId }) },
@@ -47,7 +48,7 @@ export async function updateByokKeyAction(
 ) {
 	if (!id) throw new Error("Missing id");
 	const account = await context();
-	const result = await fetchAccountWebApi<{ success: true }>(
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { success: true }>(
 		`/api/account/settings/byok/${encodeURIComponent(id)}`,
 		account.accessToken,
 		{ method: "PUT", body: JSON.stringify(updates) },
@@ -59,7 +60,7 @@ export async function updateByokKeyAction(
 export async function deleteByokKeyAction(id: string) {
 	if (!id) throw new Error("Missing id");
 	const account = await context();
-	const result = await fetchAccountWebApi<{ success: true }>(
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { success: true }>(
 		`/api/account/settings/byok/${encodeURIComponent(id)}`,
 		account.accessToken,
 		{ method: "DELETE" },
@@ -70,7 +71,7 @@ export async function deleteByokKeyAction(id: string) {
 
 export async function updateByokFallbackAction(enabled: boolean) {
 	const account = await context();
-	const result = await fetchAccountWebApi<{ success: true }>(
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { success: true }>(
 		"/api/account/settings/byok-fallback",
 		account.accessToken,
 		{ method: "PUT", body: JSON.stringify({ enabled, workspaceId: account.workspaceId }) },
@@ -82,7 +83,7 @@ export async function updateByokFallbackAction(enabled: boolean) {
 export async function reorderByokKeyAction(id: string, direction: "up" | "down") {
 	if (!id) throw new Error("Missing id");
 	const account = await context();
-	const result = await fetchAccountWebApi<{ success: true }>(
+	const result = await fetchAccountWebApi<GatewayPublicationResult & { success: true }>(
 		`/api/account/settings/byok/${encodeURIComponent(id)}/reorder`,
 		account.accessToken,
 		{ method: "POST", body: JSON.stringify({ direction }) },
