@@ -179,14 +179,80 @@ export function calculatePricing(
 
     if (card) {
         try {
-            const pricingPlan = derivePricingPlan(body, usage, card);
+			const pricingPlan = derivePricingPlan(body, usage, card);
+			const activePlanRules = card.rules.filter(
+				(rule) => rule.pricing_plan === pricingPlan ||
+					(pricingPlan !== "standard" && rule.pricing_plan === "standard"),
+			);
+			const outputAudioTokens = Number((usageMeters as any)?.output_audio_tokens ?? 0);
+			const hasPaidOutputAudioRule = activePlanRules.some(
+				(rule) => rule.meter === "output_audio_tokens" && Number(rule.price_per_unit) > 0,
+			);
+			if (
+				card.endpoint === "audio.speech" &&
+				hasPaidOutputAudioRule &&
+				(!Number.isFinite(outputAudioTokens) || outputAudioTokens <= 0)
+			) {
+				throw new Error("pricing_usage_unmatched:output_audio_tokens");
+			}
+
+			let billableUsage = usageMeters;
+			const cachedReadTokens = Number((usageMeters as any)?.cached_read_text_tokens ?? 0);
+			const inputTokens = Number((usageMeters as any)?.input_tokens);
+			const inputTextTokens = Number((usageMeters as any)?.input_text_tokens);
+			const hasCachedReadRule = activePlanRules.some(
+				(rule) => rule.meter === "cached_read_text_tokens",
+			);
+			if (
+				card.endpoint === "audio.speech" &&
+				!hasCachedReadRule &&
+				Number.isFinite(cachedReadTokens) &&
+				cachedReadTokens > 0 &&
+				Number.isFinite(inputTokens) &&
+				Number.isFinite(inputTextTokens) &&
+				inputTextTokens + cachedReadTokens === inputTokens
+			) {
+				const {
+					cached_read_text_tokens: _cachedReadTextTokens,
+					cache_read_input_tokens: _cacheReadInputTokens,
+					cached_tokens: _cachedTokens,
+					prompt_cache_hit_tokens: _promptCacheHitTokens,
+					cachedInputTokens: _cachedInputTokens,
+					cachedContentTokenCount: _cachedContentTokenCount,
+					cached_read_tokens_are_subset_of_input: _cachedSubsetHint,
+					...usageWithoutCacheReadAliases
+				} = usageMeters;
+				const withoutNestedCachedTokens = (details: unknown) => {
+					if (!details || typeof details !== "object") return details;
+					const { cached_tokens: _nestedCachedTokens, ...rest } = details as Record<string, unknown>;
+					return rest;
+				};
+				billableUsage = {
+					...usageWithoutCacheReadAliases,
+					input_text_tokens: inputTokens,
+					input_tokens_details: withoutNestedCachedTokens((usageMeters as any).input_tokens_details),
+					input_details: withoutNestedCachedTokens((usageMeters as any).input_details),
+					prompt_tokens_details: withoutNestedCachedTokens((usageMeters as any).prompt_tokens_details),
+				};
+			}
             const requestOptions = attachBillingTimestamps(
                 buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
                 meta,
             );
 
             // Step 1: Calculate base pricing (provider costs)
-            pricedUsage = computeBill(usageMeters ?? {}, card, requestOptions, pricingPlan);
+            pricedUsage = computeBill(billableUsage ?? {}, card, requestOptions, pricingPlan);
+			if (
+				billableUsage !== usageMeters &&
+				Number.isFinite(cachedReadTokens) &&
+				cachedReadTokens > 0
+			) {
+				pricedUsage = {
+					...pricedUsage,
+					input_text_tokens: inputTextTokens,
+					cached_read_text_tokens: cachedReadTokens,
+				};
+			}
 
             const pricingInfo = (pricedUsage as any)?.pricing ?? {};
             totalCents = pricingInfo.total_cents ?? 0;

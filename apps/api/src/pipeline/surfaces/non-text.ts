@@ -70,7 +70,7 @@ function isNonTextEndpoint(endpoint: Endpoint): endpoint is NonTextEndpoint {
 		endpoint === "music.generate";
 }
 
-function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefined {
+function decodeUsage(usage: IRUsage | undefined, endpoint: NonTextEndpoint): Record<string, any> | undefined {
 	if (!usage || typeof usage !== "object") return undefined;
 	if ((usage as any).type === "duration" && typeof (usage as any).seconds === "number") {
 		return { type: "duration", seconds: (usage as any).seconds };
@@ -108,6 +108,42 @@ function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefine
 		output_tokens: Number.isFinite(outputTokens) ? outputTokens : 0,
 		total_tokens: Number.isFinite(totalTokens) ? totalTokens : inputTokens + outputTokens,
 	};
+	const cachedInputTokens = Number(
+		(usage as any).cachedInputTokens ??
+		(usage as any).cached_read_text_tokens ??
+		0,
+	);
+	const ext = (usage as any)._ext;
+	const modalityMeters: Array<[string, string]> = [
+		["inputImageTokens", "input_image_tokens"],
+		["inputAudioTokens", "input_audio_tokens"],
+		["inputVideoTokens", "input_video_tokens"],
+		["outputImageTokens", "output_image_tokens"],
+		["outputAudioTokens", "output_audio_tokens"],
+		["outputVideoTokens", "output_video_tokens"],
+	];
+	if (ext && typeof ext === "object") {
+		for (const [irKey, meterKey] of modalityMeters) {
+			const value = ext[irKey];
+			if (typeof value === "number" && Number.isFinite(value)) {
+				output[meterKey] = value;
+			}
+		}
+	}
+	if (Number.isFinite(cachedInputTokens) && cachedInputTokens > 0) {
+		output.cached_read_text_tokens = cachedInputTokens;
+	}
+	if (endpoint === "audio.speech") {
+		const cachedSubset = (usage as any).cachedReadTokensAreSubsetOfInput !== false;
+		output.input_text_tokens = Math.max(
+			0,
+			(Number.isFinite(inputTokens) ? inputTokens : 0) -
+				(cachedSubset && Number.isFinite(cachedInputTokens) ? cachedInputTokens : 0),
+		);
+		if (typeof output.output_audio_tokens !== "number") {
+			output.output_audio_tokens = Number.isFinite(outputTokens) ? outputTokens : 0;
+		}
+	}
 	if ((usage as any).input_tokens_details && typeof (usage as any).input_tokens_details === "object") {
 		output.input_tokens_details = (usage as any).input_tokens_details;
 	}
@@ -135,6 +171,7 @@ function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefine
 		"cached_write_text_tokens",
 		"cached_write_text_tokens_5m",
 		"cached_write_text_tokens_1h",
+		"cached_read_text_tokens",
 		"input_pages",
 		"output_pages",
 		"pages",
@@ -315,7 +352,7 @@ export function encodeNonTextResponse(
 	ir: NonTextIRResponse,
 	requestId: string,
 ): Record<string, any> {
-	const usage = decodeUsage((ir as any).usage);
+	const usage = decodeUsage((ir as any).usage, endpoint);
 
 	switch (endpoint) {
 		case "images.generations":

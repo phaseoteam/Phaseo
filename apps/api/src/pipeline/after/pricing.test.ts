@@ -154,6 +154,53 @@ function activateDeepSeekV4ProPeakWindows(card: PriceCard): PriceCard {
 }
 
 describe("after/pricing calculatePricing", () => {
+	it("fails closed when paid usage produces no pricing line", () => {
+		expect(() => calculatePricing(
+			{ input_tokens: 11, output_tokens: 7, total_tokens: 18 },
+			TTS_CARD,
+			{},
+		)).toThrow("pricing_usage_unmatched");
+	});
+
+	it("fails closed when paid speech output has no usage metadata", () => {
+		expect(() => calculatePricing({}, TTS_CARD, {})).toThrow(
+			"pricing_usage_unmatched:output_audio_tokens",
+		);
+	});
+
+	it("bills cached speech input at the input rate when the card has no cache rule", () => {
+		const result = calculatePricing(
+			{
+				input_tokens: 11,
+				input_text_tokens: 8,
+				cached_read_text_tokens: 3,
+				cached_read_tokens_are_subset_of_input: true,
+				input_tokens_details: { cached_tokens: 3 },
+				output_tokens: 7,
+				output_audio_tokens: 7,
+			},
+			TTS_CARD,
+			{},
+		);
+
+		expect(result.totalNanos).toBe(90_600);
+		expect(result.pricedUsage.input_text_tokens).toBe(8);
+		expect(result.pricedUsage.cached_read_text_tokens).toBe(3);
+	});
+
+	it("ignores speech meters that belong only to an inactive pricing plan", () => {
+		const card: PriceCard = {
+			...TTS_CARD,
+			rules: [
+				TTS_CARD.rules[0],
+				{ ...TTS_CARD.rules[1], pricing_plan: "batch" },
+			],
+		};
+
+		const result = calculatePricing({ input_text_tokens: 1_000 }, card, {});
+		expect(result.totalNanos).toBe(600_000);
+	});
+
     it.each([
         [{}, { service_tier: "priority" }],
         [{ service_tier: "default" }, { service_tier: "fast" }],
@@ -277,6 +324,7 @@ describe("after/pricing calculatePricing", () => {
 	it("falls back to a matching standard rule when the requested plan conditions do not match", () => {
 		const card: PriceCard = {
 			...TTS_CARD,
+			endpoint: "text.generate",
 			rules: [
 				...TTS_CARD.rules,
 				{
