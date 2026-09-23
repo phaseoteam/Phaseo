@@ -1,5 +1,11 @@
 # @phaseo/mcp
 
+## 0.4.2
+
+### Patch Changes
+
+- Expose each model's nullable release date through both `models_list` and `model_get`, preserving `null` when Phaseo does not know the date.
+
 ## 0.4.1
 
 ### Patch Changes

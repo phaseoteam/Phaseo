@@ -46,7 +46,7 @@ describe("Phaseo MCP server metadata", () => {
 		expect(client.getServerVersion()).toMatchObject({
 			name: "Phaseo",
 			title: "Phaseo",
-			version: "0.4.1",
+			version: "0.4.2",
 			websiteUrl: "https://phaseo.app",
 			icons: [
 				{
@@ -81,6 +81,7 @@ describe("Phaseo MCP server metadata", () => {
 					items: {
 						type: "object",
 						properties: {
+							releaseDate: { anyOf: [{ type: "string" }, { type: "null" }] },
 							inputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
 							outputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
 							inputPriceProviderId: { anyOf: [{ type: "string" }, { type: "null" }] },
@@ -115,6 +116,7 @@ describe("Phaseo MCP server metadata", () => {
 								},
 							},
 						},
+						required: expect.arrayContaining(["releaseDate"]),
 					},
 				},
 			},
@@ -126,6 +128,7 @@ describe("Phaseo MCP server metadata", () => {
 				model: {
 					type: "object",
 					properties: {
+						releaseDate: { anyOf: [{ type: "string" }, { type: "null" }] },
 						providerSupport: {
 							type: "array",
 							items: {
@@ -138,6 +141,7 @@ describe("Phaseo MCP server metadata", () => {
 							},
 						},
 					},
+					required: expect.arrayContaining(["releaseDate"]),
 				},
 			},
 			required: ["model"],
@@ -239,11 +243,15 @@ describe("Phaseo MCP server metadata", () => {
 	});
 
 	it("returns the cheapest matching models in price order with factual Gateway availability", async () => {
-		const model = (id: string, price: string, routable: boolean) => ({
+		const model = (id: string, price: string, routable: boolean, releaseDate: string | null) => ({
 			id,
 			name: id,
 			description: null,
 			organization: { id: "lab", name: "Example Lab", color: null },
+			lifecycle: {
+				status: "active", released_at: releaseDate, deprecated_at: null,
+				retires_at: null, replacement_id: null, message: null,
+			},
 			modalities: { input: ["text"], output: ["text"] },
 			limits: { input_tokens: 128_000, output_tokens: 8_000 },
 			capabilities: { endpoints: ["responses"], parameters: ["tools"], parameter_details: {} },
@@ -266,7 +274,10 @@ describe("Phaseo MCP server metadata", () => {
 				} },
 			}] : [])],
 		});
-		const models = [model("lab/cheap", "1", false), model("lab/expensive", "5", true)];
+		const models = [
+			model("lab/cheap", "1", false, null),
+			model("lab/expensive", "5", true, "2026-08-25T00:00:00Z"),
+		];
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const request = input instanceof Request ? input : new Request(input);
 			return Response.json({
@@ -292,6 +303,7 @@ describe("Phaseo MCP server metadata", () => {
 		expect(result.structuredContent).toMatchObject({ models: [
 			{
 				id: "lab/cheap",
+				releaseDate: null,
 				modelUrl: "https://preview.phaseo.test/models/lab/cheap",
 				gatewayAvailable: false,
 				gatewayModelId: null,
@@ -306,6 +318,7 @@ describe("Phaseo MCP server metadata", () => {
 			},
 			{
 				id: "lab/expensive",
+				releaseDate: "2026-08-25T00:00:00Z",
 				inputPricePerToken: "0.000005",
 				outputPricePerToken: "0.00001",
 				inputPricePerMillion: 5,
@@ -350,6 +363,11 @@ describe("Phaseo MCP server metadata", () => {
 		});
 		expect((priceFiltered.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id))
 			.toEqual(["lab/cheap"]);
+		const detail = await client.callTool({ name: "model_get", arguments: { modelId: "lab/expensive" } });
+		expect(detail.structuredContent).toMatchObject({ model: {
+			id: "lab/expensive",
+			releaseDate: "2026-08-25T00:00:00Z",
+		} });
 
 		const estimate = await client.callTool({
 			name: "cost_estimate",

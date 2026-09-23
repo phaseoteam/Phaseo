@@ -173,6 +173,7 @@ const modelSummarySchema = {
 	name: z.string(),
 	description: z.string().nullable(),
 	provider: z.string().nullable(),
+	releaseDate: z.string().nullable(),
 	contextTokens: z.number().int().nullable(),
 	inputModalities: z.array(z.string()),
 	outputModalities: z.array(z.string()),
@@ -301,6 +302,7 @@ function modelSummary(env: PhaseoEnv, model: Awaited<ReturnType<typeof listModel
 		name: model.name,
 		description: model.description,
 		provider: model.organization?.name ?? null,
+		releaseDate: model.lifecycle.released_at,
 		contextTokens: model.limits.input_tokens,
 		inputModalities: model.modalities.input,
 		outputModalities: model.modalities.output,
@@ -631,7 +633,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		{
 			name: "Phaseo",
 			title: "Phaseo",
-			version: "0.4.1",
+			version: "0.4.2",
 			description: "Find, compare, and monitor AI models with live Phaseo data.",
 			websiteUrl: "https://phaseo.app",
 			icons: [
