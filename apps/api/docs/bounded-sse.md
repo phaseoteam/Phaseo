@@ -29,3 +29,9 @@ after-stage framing, session outcomes/commitment, protocol-native error events
 and durable settlement remain to be migrated/tested. In particular, the legacy
 after-stage can still swallow an adapter error; adapter propagation alone is
 not an end-to-end failure guarantee. No production rollout is claimed.
+
+Staging source `c699e41d2`, version `b29cfb54-ee5f-4cf3-a792-b9591c07f406`:
+12/12 free Poolside XS/S protocol cases passed with successful zero-charge audit
+rows and disposable key `b1a181fd-cc32-43d0-8040-76dc3d6b75e2` revoked. LHR
+routing times: 452, 44, 52, 4, 5, 10, 108, 7, 6, 19, 16, 5 ms. This verifies
+healthy provider compatibility; deterministic tests exercise malformed framing.
