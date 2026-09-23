@@ -251,8 +251,8 @@ function isWorkspacePolicyLike(value: unknown): value is WorkspacePolicy {
 
 type PolicySnapshot = { workspaceId: string; apiKeyId: string; version: string; checkedAtMs: number; expiresAtMs: number; policy: WorkspacePolicy };
 
-function parsePolicySnapshot(raw: string, args: { workspaceId: string; apiKeyId: string }, version: string): PolicySnapshot | null {
-	if (raw.length > WORKSPACE_POLICY_MAX_CHARS) return null;
+function parsePolicySnapshot(raw: string, args: { workspaceId: string; apiKeyId: string }, version: string, fromSource = false): PolicySnapshot | null {
+	if (!fromSource && raw.length > WORKSPACE_POLICY_MAX_CHARS) return null;
 	try {
 		const value = JSON.parse(raw) as PolicySnapshot;
 		const now = Date.now();
@@ -523,7 +523,9 @@ async function fetchPolicyLease(args: { workspaceId: string; apiKeyId: string },
 		const expiresAtMs = checkedAtMs + WORKSPACE_POLICY_KV_TTL_SECONDS * 1000;
 		if (expiresAtMs <= Date.now()) throw new Error("workspace_policy_source_lease_expired");
 		const value = JSON.stringify({ ...args, version: versionToken, checkedAtMs, expiresAtMs, policy } satisfies PolicySnapshot);
-		if (value.length > WORKSPACE_POLICY_MAX_CHARS) throw new Error("workspace_policy_snapshot_too_large");
+		// The cache limit is not a new configuration limit. Large authoritative
+		// policies remain usable but never acquire an L1/KV entry.
+		if (value.length > WORKSPACE_POLICY_MAX_CHARS) return { value, expiresAtMs: 0 };
 		// Publication is advisory acceleration, not mutation acknowledgement.
 		// The original source deadline is preserved even if KV arrives late.
 		dispatchBackground(getCache().put(workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken), value,
@@ -537,7 +539,9 @@ async function fetchPolicyLease(args: { workspaceId: string; apiKeyId: string },
 		if (attempt >= 1) throw new Error("workspace_policy_changed_during_request");
 		return fetchPolicyLease(args, attempt + 1);
 	}
-	const parsed = parsePolicySnapshot(raw, args, versionToken);
+	// Every KV value has already passed the bounded decoder above; only a fresh
+	// source result can exceed the admission limit at this point.
+	const parsed = parsePolicySnapshot(raw, args, versionToken, true);
 	if (!parsed) throw new Error("workspace_policy_source_lease_expired");
 	// Parse per request: callers cannot mutate another request's nested rules.
 	return parsed.policy;

@@ -248,4 +248,19 @@ describe("workspace policy freshness", () => {
         for (const resolve of finish) resolve(null);
         await Promise.all(pending);
     });
+
+    it("preserves large authoritative policies without caching them", async () => {
+        const { fetchWorkspacePolicy } = await import("./workspacePolicy");
+        const large = "m".repeat(120_001);
+        state.from.mockImplementation((table: string) => {
+            const result = { data: table === "workspace_settings"
+                ? { model_restriction_mode: "blocklist", model_restriction_model_ids: [large] } : null, error: null };
+            const query = { select: () => query, eq: () => query, maybeSingle: async () => result,
+                then: (resolve: (value: typeof result) => unknown) => Promise.resolve(result).then(resolve) };
+            return query;
+        });
+        expect((await fetchWorkspacePolicy(args)).blockedApiModels).toEqual([large]);
+        expect((await fetchWorkspacePolicy(args)).blockedApiModels).toEqual([large]);
+        expect(state.from).toHaveBeenCalledTimes(8); expect(state.put).not.toHaveBeenCalled();
+    });
 });

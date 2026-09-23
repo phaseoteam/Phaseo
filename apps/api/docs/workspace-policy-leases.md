@@ -8,7 +8,8 @@ revalidation. This bounds stale policy independently of eventually consistent
 KV version markers; it is not an instantaneous global-revocation guarantee.
 
 The previous count-only map is replaced by a 4 MiB / 2,000-entry bounded LRU,
-with a 256 KiB per-entry ceiling and 32 concurrent refills. Workspace version
+with a 256 KiB per-entry ceiling and 32 concurrent refills. Oversized authoritative
+policies remain usable without caching; this is not a new policy-size limit. Workspace version
 reads are also coalesced and limited to 32. Requests receive separately parsed
 objects so nested rule mutation cannot affect another request. There is no SWR
 for authorization. Unavailable or malformed version markers still require
@@ -27,4 +28,8 @@ Validation: 605 source test files / 4,727 tests pass; typecheck, focused lint,
 Worker dry-run and native Workers tests pass. Native 32-request cold burst makes
 three KV reads (workspace marker, key marker, policy), four source queries and
 one KV publication; the immediate warm request makes no external operations.
-Local mutation revalidation passes. Staging validation pending.
+Local mutation revalidation passes. Commit `bc4539e16` deployed to staging Worker
+`dcb4a67e-c8c2-443a-83e7-a7fd547e1fdf`: twelve free Poolside checks, protocol
+terminals and zero-charge audits pass; disposable key revoked. First routing
+overhead 361 ms, remaining 3–119 ms in LHR. Not a global latency guarantee.
+The oversized-policy follow-up passes all 53 focused tests; staging recheck pending.
