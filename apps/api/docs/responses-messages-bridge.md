@@ -26,5 +26,10 @@ classification. The module remains a protocol adapter, with no storage calls.
   warning); staging dry-run passes.
 - Native Workers harness passes all three migrated bridge directions including
   blocked-read cancellation and reader release.
-- Live evidence will follow staging deployment. Production is unchanged; the
-  complete lifecycle/settlement plan and other native provider parsers remain.
+- Staging build d90019e5e, Worker version 4d5b43f6-696c-4958-a2db-4340a07bd464:
+  all twelve Poolside XS/S protocol/streaming-mode checks passed in LHR. Audits
+  verified zero charges and disposable key 2e28008c-3248-44d6-a655-41081f831c35
+  was revoked. Routing milliseconds: 464, 4, 87, 3, 6, 4, 121, 17, 17, 5, 58, 14.
+  These are routing measurements, not total provider latency or global evidence.
+- Production is unchanged; the complete lifecycle/settlement plan and other
+  native provider parsers remain.
