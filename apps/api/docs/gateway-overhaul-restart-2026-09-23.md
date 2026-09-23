@@ -87,3 +87,23 @@ completion-outcome work; inspection alone does not establish a runtime failure.
 - Old tests/results are reference evidence only until rerun on the actual new
   candidate. No API regression tests or live probes were run in this new checkout
   during the baseline-only restart.
+
+## Implementation ledger — September 23
+
+- Reproduced the delayed policy-version read and early health-completion failures
+  with failing tests; fixed both in the owning PR layer. Added coverage for reads
+  during a pending/failed policy publication. Upstream buffered transport errors
+  now produce failure evidence, without classifying callback bugs as transport.
+- Rebased the native stack onto main `12aca197c`, preserving main's normalized
+  batch-file behavior. Removed three duplicated webhook expectations introduced
+  by the rebase; all 58 batch-route tests pass.
+- Focused policy/health/materialization tests: 49 pass. Typecheck passes.
+- Full source suite: 4,448 pass, eight fail before the three batch corrections.
+  The remaining five failures are in unchanged main files: one batch-capability
+  allowlist expectation, two announcement update expectations, one model-filter
+  expectation, and one private-model HTTP cache expectation. Do not call the full
+  gate green until these are investigated and rerun.
+- No new staging deployment or live baseline measurement yet. Production remains
+  unchanged. Subsequent instrumentation must attribute operations to the request,
+  including concurrent requests and background work; isolate-wide counters are
+  not valid per-request cost evidence.
