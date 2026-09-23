@@ -24,5 +24,9 @@ break. No new external operations or Cloudflare resources are introduced.
 - Typecheck, scoped ESLint and staging dry-run pass.
 - Native bridge harness validates both directions: terminal detection, split
   framing, no eager reads, blocked-read cancellation and reader release.
-- Full unscoped integration suite is not claimed green. Live staging evidence
-  will follow deployment; production is unchanged.
+- Full unscoped integration suite is not claimed green; production is unchanged.
+- Staging `230f4cc91`, Worker `a26db316-0013-40e3-b56f-8f6ee1a4053c`:
+  all twelve Poolside XS/S streaming/nonstreaming Chat/Responses/Messages checks
+  pass in LHR, with zero-charge audit verification and disposable key
+  `460c33a4-0f02-471d-bf01-4687ac282c7f` revoked. Routing milliseconds in order:
+  `330, 2, 52, 4, 6, 2, 105, 16, 19, 5, 6, 18`.
