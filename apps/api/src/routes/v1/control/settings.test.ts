@@ -30,7 +30,7 @@ function supabase() {
 }
 
 vi.mock("@/runtime/env", () => ({ getSupabaseAdmin: () => supabase() }));
-vi.mock("@/core/kv", () => ({ setKeyVersion: async (_kind: string, id: string) => { state.invalidations.push(id); } }));
+vi.mock("@/core/workspace-publication", () => ({ publishWorkspaceMutation: async (id: string) => { state.invalidations.push(id); } }));
 vi.mock("@/pipeline/before/workspacePolicy", () => ({ bumpWorkspacePolicyVersion: async () => 1 }));
 vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: async () => ({ ok: true, value: { workspaceId: "workspace_1", userId: "user_1", requestId: "request_1" } }) }));
 vi.mock("./route-helpers", () => ({
@@ -62,7 +62,7 @@ describe("workspace settings management", () => {
 		});
 		expect(response.status).toBe(200);
 		expect(state.patch).toMatchObject({ workspace_id: "workspace_1", routing_mode: "latency", response_healing_enabled: true, response_healing_locked: true });
-		expect(state.invalidations).toContain("key_1");
+		expect(state.invalidations).toEqual(["workspace_1"]);
 		expect(state.audits[0]).toMatchObject({ action: "routing.policy.updated" });
 	});
 

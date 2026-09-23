@@ -87,9 +87,12 @@ export async function loadPrivateRouteRow(args: { workspaceId: string; model: st
     return data as PrivateRouteRow | null;
 }
 
-export async function invalidatePrivateRoutes(workspaceId: string): Promise<void> {
+export async function invalidatePrivateRoutes(workspaceId: string, options?: { requirePublication: boolean }): Promise<void> {
     entries.delete(workspaceId);
     // Other locations may retain a copy, but its absolute age is still enforced.
     try { await getCache().delete(privateRouteCacheKey(workspaceId)); }
-    catch { console.warn("private_route_cache_invalidation_failed", { workspaceId }); }
+    catch {
+        console.warn("private_route_cache_invalidation_failed", { workspaceId });
+        if (options?.requirePublication) throw new Error("private_route_cache_invalidation_failed");
+    }
 }

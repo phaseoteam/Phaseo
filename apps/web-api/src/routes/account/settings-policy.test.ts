@@ -36,22 +36,22 @@ describe("account policy settings routes", () => {
 			guardrails: [{ id: "guardrail-1", name: "Team Safety", provider: { mode: "blocklist", ids: ["openai"] } }],
 		});
 	});
-	it("invalidates every active key after response-healing policy changes", async () => {
+	it("publishes one workspace invalidation after response-healing policy changes", async () => {
 		const invalidated: string[] = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const request = input instanceof Request ? input : new Request(input, init);
 			const url = request.url;
-			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
-			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
-			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
-			if (url.includes("workspace_settings")) return new Response(JSON.stringify([]), { status: 200 });
-			if (url.includes("/keys?")) return new Response(JSON.stringify([{ id: "key-1" }, { id: "key-2" }]), { status: 200 });
-			if (url.includes("/v1/keys/") && url.endsWith("/invalidate")) {
+			if (url === "https://gateway.example.com/v1/workspaces/workspace-1/invalidate") {
 				invalidated.push(url);
 				expect(request.headers.get("authorization")).toBe("Bearer control-key");
 				expect(request.headers.get("x-control-secret")).toBe("control-secret");
 				return new Response(null, { status: 204 });
 			}
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
+			if (url.includes("workspace_settings")) return new Response(JSON.stringify([]), { status: 200 });
+			if (url.includes("/keys?")) throw new Error("Workspace publication must not enumerate keys");
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 
@@ -68,8 +68,7 @@ describe("account policy settings routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(invalidated).toEqual([
-			"https://gateway.example.com/v1/keys/key-1/invalidate",
-			"https://gateway.example.com/v1/keys/key-2/invalidate",
+			"https://gateway.example.com/v1/workspaces/workspace-1/invalidate",
 		]);
 	});
 

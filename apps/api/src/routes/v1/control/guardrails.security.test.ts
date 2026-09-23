@@ -98,8 +98,8 @@ vi.mock("@/pipeline/before/guards", () => ({
 	})),
 }));
 
-vi.mock("@/pipeline/before/workspacePolicy", () => ({
-	bumpWorkspacePolicyVersion: vi.fn(async (workspaceId: string) => {
+vi.mock("@/core/workspace-publication", () => ({
+	publishWorkspaceMutation: vi.fn(async (workspaceId: string) => {
 		state.policyVersionBumps.push(workspaceId);
 		return 1;
 	}),

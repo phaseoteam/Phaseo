@@ -10,6 +10,7 @@ import { getTextMany, keyVersionToken } from "@/core/kv";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { creditAdmissionLeases } from "@/core/credit-admission-leases";
 import { contextLeases, encodeContextLease } from "./contextLeaseCache";
+import { getWorkspacePolicyVersionToken } from "./workspacePolicy";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
 import { loadPrivateRouteRow } from "./privateModelCache";
@@ -1130,15 +1131,22 @@ export async function fetchGatewayContext(args: {
     const isPreset = args.model.startsWith("@");
     const useContextBundle = !isPreset && !args.includeTestingMode && !isFreeRouterModel(args.model) &&
         ["responses", "chat.completions", "messages", "text.generate"].includes(args.endpoint) && contextBundleEnabled();
-    const shouldUseCache = !args.disableCache;
+    let shouldUseCache = !args.disableCache;
     const needsVersionToken = shouldUseCache;
     let versionToken = "v0";
     if (needsVersionToken) {
         const keyVersionStartedAt = performance.now();
-        versionToken = await keyVersionToken("id", args.apiKeyId, {
-            useL1Cache: true,
-            l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS,
-        });
+        const options = { useL1Cache: true, l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS };
+        const [keyVersion, workspaceVersion] = await Promise.all([
+            keyVersionToken("id", args.apiKeyId, options),
+            getWorkspacePolicyVersionToken(args.workspaceId),
+        ]);
+        // The initial workspace version preserves existing cache keys during
+        // rollout. One workspace publication then fences every key's context.
+        // Unknown publication state bypasses both cache reads and fills. It
+        // must never alias the initial version and reuse old permissions.
+        shouldUseCache = workspaceVersion !== null;
+        versionToken = workspaceVersion === "v0" ? keyVersion : `${keyVersion}:w${workspaceVersion}`;
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
     }
     const testingModeCacheSegment = args.includeTestingMode ? "testing" : "default";

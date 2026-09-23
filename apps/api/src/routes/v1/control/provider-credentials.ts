@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { setKeyVersion } from "@/core/kv";
+import { publishWorkspaceMutation } from "@/core/workspace-publication";
 import {
 	canonicalProviderId,
 	encryptProviderCredential,
@@ -71,13 +71,6 @@ async function authorize(req: Request, capability: string) {
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError };
 	return { auth: auth.value };
-}
-
-async function invalidateWorkspaceKeys(workspaceId: string) {
-	const { data, error } = await getSupabaseAdmin().from("keys").select("id").eq("workspace_id", workspaceId).neq("status", "deleted");
-	if (error) throw error;
-	const version = Date.now();
-	await Promise.all((data ?? []).map((row) => setKeyVersion("id", String(row.id), version)));
 }
 
 async function findCredential(workspaceId: string, id: string): Promise<ProviderCredentialRow | null> {
@@ -159,7 +152,7 @@ async function handleCreate(req: Request) {
 		if (error || !data) throw error ?? new Error("Provider credential was not created");
 		const created = data as unknown as ProviderCredentialRow;
 		await Promise.all([
-			invalidateWorkspaceKeys(auth.workspaceId),
+			publishWorkspaceMutation(auth.workspaceId),
 			recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 				workspaceId: auth.workspaceId, actorUserId: auth.userId, action: "provider_credential.created",
 				targetType: "provider_credential", targetId: created.id, targetName: name,
@@ -226,7 +219,7 @@ async function handleUpdate(req: Request) {
 		if (error || !data) throw error ?? new Error("Provider credential was not updated");
 		const updated = data as unknown as ProviderCredentialRow;
 		await Promise.all([
-			invalidateWorkspaceKeys(auth.workspaceId),
+			publishWorkspaceMutation(auth.workspaceId),
 			recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 				workspaceId: auth.workspaceId, actorUserId: auth.userId, action: "provider_credential.updated",
 				targetType: "provider_credential", targetId: id, targetName: String(updated.name ?? existing.name ?? ""),
@@ -251,7 +244,7 @@ async function handleDelete(req: Request) {
 		const { error } = await getSupabaseAdmin().from("byok_keys").delete().eq("workspace_id", auth.workspaceId).eq("id", id);
 		if (error) throw error;
 		await Promise.all([
-			invalidateWorkspaceKeys(auth.workspaceId),
+			publishWorkspaceMutation(auth.workspaceId),
 			recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 				workspaceId: auth.workspaceId, actorUserId: auth.userId, action: "provider_credential.deleted",
 				targetType: "provider_credential", targetId: id, targetName: existing.name,
@@ -282,7 +275,7 @@ async function handleReorder(req: Request) {
 		if (error) throw error;
 		if (data !== true) return json({ error: "bad_request", message: "key_ids must contain every credential in the selected group exactly once" }, 400, { "Cache-Control": "no-store" });
 		await Promise.all([
-			invalidateWorkspaceKeys(auth.workspaceId),
+			publishWorkspaceMutation(auth.workspaceId),
 			recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 				workspaceId: auth.workspaceId, actorUserId: auth.userId, action: "provider_credential.reordered",
 				targetType: "provider_credential_group", targetId: `${providerId}:${routingMode}`,
