@@ -32,4 +32,7 @@ Local mutation revalidation passes. Commit `bc4539e16` deployed to staging Worke
 `dcb4a67e-c8c2-443a-83e7-a7fd547e1fdf`: twelve free Poolside checks, protocol
 terminals and zero-charge audits pass; disposable key revoked. First routing
 overhead 361 ms, remaining 3–119 ms in LHR. Not a global latency guarantee.
-The oversized-policy follow-up passes all 53 focused tests; staging recheck pending.
+The oversized-policy follow-up `d685f1bd3` passes 4,728 source tests / 605 files
+and 53 focused tests. Staging version `9030ee9c-513d-454f-9c4f-5101a242afbe`
+passes the twelve free checks again; key revoked. Routing samples: first 376 ms,
+remaining 2–129 ms in LHR. Production unchanged.
