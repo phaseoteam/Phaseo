@@ -78,11 +78,8 @@ describe("google-ai-studio stream transform", () => {
 			},
 		]);
 
-		const output = await readStreamText(transformStream(upstream, baseArgs()));
-
-		expect(output).toContain("event: response.failed");
-		expect(output).toContain("google_empty_response");
-		expect(output).toContain("data: [DONE]");
+		await expect(readStreamText(transformStream(upstream, baseArgs())))
+			.rejects.toMatchObject({ code: "google_empty_response", origin: "provider" });
 	});
 
 	it("emits chat tool_call deltas from Interactions function_call steps", async () => {
