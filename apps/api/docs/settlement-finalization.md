@@ -29,3 +29,16 @@ Durable Object, queue or scheduled operations. It is **not crash-durable retry**
 the existing exhausted-retry logging behavior remains, and financial recovery
 after process loss is still an open rollout requirement. Free Poolside regression
 checks cannot establish paid-ledger correctness or paid-request cost.
+
+## Staging verification
+
+Source `2389c2690`, original staging Worker version
+`2fe59954-87bc-4dc5-8ea8-a966b6597a5d`: twelve free Poolside XS/S checks across
+Chat, Responses and Messages, streaming and nonstreaming, pass in LHR. Audits
+verify zero charges; disposable key `b9043c5e-fda1-4ff7-ab0e-565f809c8882` was
+revoked. Routing milliseconds: 538, 4, 29, 4, 3, 4, 69, 10, 11, 12, 6, 4.
+These are routing measurements, not total generation times or a global SLO.
+
+All 613 source files / 4,856 tests pass, along with typecheck, targeted lint,
+native Workers fixtures and staging dry-run. No new resource, migration,
+schedule, production deployment or real wallet operation was introduced.
