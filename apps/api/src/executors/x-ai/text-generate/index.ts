@@ -192,6 +192,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		args,
 		"responses",
 		selectedDispatchAtMs,
+		undefined, keyInfo.source,
 	);
 	if (rawResponse && typeof rawResponse === "object") {
 		quirks.normalizeResponse?.({ response: rawResponse, ir: irRequest });
@@ -243,7 +244,6 @@ export const executor: ProviderExecutor = async (execArgs: ExecutorExecuteArgs) 
 	const processed = cherryPickIRParams(normalized, execArgs.capabilityParams);
 	return executeXAi({ ...execArgs, ir: processed });
 };
-
 
 
 

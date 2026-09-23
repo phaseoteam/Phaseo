@@ -422,6 +422,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				args,
 				"chat",
 				selectedDispatchAtMs,
+				undefined, keyInfo.source,
 			);
 			const fallback = applyGoogleOutputTokenFallback(irResponse);
 			if (fallback.applied) {
@@ -787,7 +788,6 @@ export const executor: ProviderExecutor = buildTextExecutor({
 	postprocess,
 	transformStream,
 });
-
 
 
 

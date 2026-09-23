@@ -889,6 +889,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		args,
 		route,
 		selectedDispatchAtMs,
+		undefined, keyInfo.source,
 	);
 
 	if (ir) {

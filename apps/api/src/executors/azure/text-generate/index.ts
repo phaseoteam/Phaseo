@@ -125,7 +125,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
-	const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(res, args, route, selectedDispatchAtMs);
+	const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(res, args, route, selectedDispatchAtMs, undefined, keyInfo.source);
 	const usageMeters = normalizeTextUsageForPricing(usage);
 	if (usageMeters) {
 		bill.usage = usageMeters;
