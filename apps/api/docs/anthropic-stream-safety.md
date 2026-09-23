@@ -42,5 +42,11 @@ monotonic sequence numbers.
 - Installed Anthropic SDK reconstructs a native tool call and its cache usage.
 - Native Workers harness verifies pull-driven consumption, reader release,
   terminal usage, incomplete status, Unicode/CRLF and truncated-stream rejection.
-- Full-source and staging gates pending. Poolside probes validate shared gateway
-  regressions, not actual paid Anthropic/Bedrock/Vertex provider behavior.
+- Full source gate: 602 files / 4,688 tests pass; typecheck, focused lint, native
+  Workers test and staging build pass. The final Vertex native-path wiring and
+  shared stop-reason mapping also pass the 110-test affected-provider suite.
+- Staging f08d4c3d4, Worker c56ba66e-ba83-4b88-b47a-fb61b2407ea8: all twelve free
+  Poolside XS/S protocol/audit cases pass. Routing milliseconds:
+  `[647,7,48,5,4,8,95,6,2,19,47,20]`, all LHR. Disposable key
+  e0f34d83-40d7-4d14-bdae-e2c691d0cedd was revoked. Poolside probes validate shared
+  gateway regressions, not actual paid Anthropic/Bedrock/Vertex behavior.
