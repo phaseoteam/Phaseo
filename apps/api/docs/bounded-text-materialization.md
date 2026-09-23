@@ -24,5 +24,10 @@ This intentionally removes false-success behavior for truncated responses.
 Validation: 604 source test files / 4,701 tests pass; typecheck, focused lint and
 Worker dry-run pass. Native Workers tests cover one-byte Unicode/CRLF, final
 usage, JSON fallback, truncated-output rejection and source-reader release.
-Staging validation pending. Provider parity declarations, retries before client
+Deployed commit `4010e57a4` to staging Worker version
+`02edb664-9f74-4d10-b180-132739a8ceff`. All twelve free Poolside checks across
+Chat/Responses/Messages and both streaming modes passed with zero-charge audits;
+the disposable key was revoked. Routing overhead was 388 ms for the first request
+and 4–124 ms for the remaining requests in LHR (not a global latency guarantee).
+Provider parity declarations, retries before client
 commitment, remaining native parsers and durable settlement remain plan items.
