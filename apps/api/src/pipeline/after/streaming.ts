@@ -393,7 +393,17 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     const nativeTerminal = ["response.completed", "response.incomplete", "response.failed", "message_stop", "error"].includes(nativeType)
                         || json?.object === "error" || (json?.error && typeof json.error === "object") || json?.object === "chat.completion"
                         || (json?.object === "response" && ["completed", "incomplete", "failed"].includes(json?.status));
-                    if (nativeTerminal) { sawWireTerminal = true; break; }
+                    if (nativeTerminal) {
+                        sawWireTerminal = true;
+                        // Compatibility adapters may finish with a full Chat snapshot.
+                        // It is authoritative, but Chat SSE clients still need DONE.
+                        // Stop here so an upstream marker cannot be forwarded twice.
+                        if (json?.object === "chat.completion" && ctx.protocol === "openai.chat.completions" && !downstreamClosed) {
+                            try { await writer.write(enc.encode("data: [DONE]\n\n")); }
+                            catch { downstreamClosed = true; ctx.meta.downstreamDisconnected = true; }
+                        }
+                        break;
+                    }
                     failureOrigin = "provider";
             }
             if (!sawWireTerminal) { failureOrigin = "provider"; throw new SseProtocolError("sse_missing_terminal"); }
@@ -435,7 +445,6 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     // Do not add custom gateway headers; everything important is in-body now.
     return new Response(ts.readable, { status: upstream.status, headers });
 }
-
 
 
 
