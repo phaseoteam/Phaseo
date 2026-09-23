@@ -44,6 +44,13 @@ alone cannot guarantee that all provider spending will be recoverable.
 - Local PGlite existing credit-headroom tests pass: grants, idempotency, cumulative
   spending, $10/10% boundaries, reserved funds, top-up and workspace isolation.
   Queued PGlite calls are not real multi-connection lock-contention evidence.
-- Full source and live staging gates pending. The no-wallet free test workspace
-  does not demonstrate the high-balance optimization; native/fixture evidence is
-  deliberately distinguished from live free-model compatibility checks.
+- Full source gate: 601 files / 4,675 tests pass; typecheck and focused lint pass
+  (existing context.ts max-lines warning remains).
+- Staging commit ac6b4ca98, Worker e4c55712-a1f1-4799-beec-da4507b26cfa: all twelve
+  Poolside XS/S protocol/audit checks pass with zero charge. Routing milliseconds:
+  `[682,13,42,11,5,11,117,9,4,32,11,9]`, all LHR. Disposable key
+  925e3f1f-2780-40e1-9a16-b887d84538e2 was revoked after testing.
+- The no-wallet free test workspace does not demonstrate the high-balance
+  optimization; native/fixture evidence is deliberately distinguished from live
+  free-model compatibility checks. No paid traffic, wallet edits or production
+  deployment were performed.
