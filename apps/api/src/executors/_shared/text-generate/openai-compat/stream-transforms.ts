@@ -1,5 +1,6 @@
 import type { ExecutorExecuteArgs } from "@executors/types";
 import type { IRChatResponse, IRContentPart } from "@core/ir";
+import { readSseEvents, sseReadable, SseProtocolError } from "@core/sse";
 import { openAIResponsesToIR } from "./transform";
 import { openAIChatToIR } from "./transform-chat";
 import { getProviderQuirks } from "./quirks";
@@ -150,47 +151,21 @@ export function transformChatStream(
 	args: ExecutorExecuteArgs,
 	state: StreamAdapterState,
 ): ReadableStream<Uint8Array> {
-	const reader = stream.getReader();
-	const decoder = new TextDecoder();
 	const encoder = new TextEncoder();
-	let buf = "";
-	let sentDone = false;
-
-	return new ReadableStream<Uint8Array>({
-		async start(controller) {
-			try {
-				while (true) {
-					const { value, done } = await reader.read();
-					if (done) break;
-					buf += decoder.decode(value, { stream: true });
-					const frames = buf.split(/\n\n/);
-					buf = frames.pop() ?? "";
-
-					for (const raw of frames) {
-						const { data } = parseSseBlock(raw);
-						if (!data || sentDone) continue;
-						if (data === "[DONE]") {
-							controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-							sentDone = true;
-							continue;
-						}
-						let payload: any;
-						try {
-							payload = JSON.parse(data);
-						} catch {
-							continue;
-						}
-
-						applyStreamQuirks(payload, state, args.providerId);
-						controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-					}
-				}
-			} catch (err) {
-				console.error("openai compat chat stream transform failed:", err);
-			} finally {
-				controller.close();
+	return sseReadable(async function* (signal) {
+		for await (const { data } of readSseEvents(stream, { signal })) {
+			if (!data) continue;
+			if (data === "[DONE]") {
+				yield encoder.encode("data: [DONE]\n\n");
+				return;
 			}
-		},
+			let payload: any;
+			try { payload = JSON.parse(data); }
+			catch { throw new SseProtocolError("sse_invalid_json"); }
+			applyStreamQuirks(payload, state, args.providerId);
+			yield encoder.encode(`data: ${JSON.stringify(payload)}\n\n`);
+		}
+		throw new SseProtocolError("sse_missing_terminal");
 	});
 }
 
