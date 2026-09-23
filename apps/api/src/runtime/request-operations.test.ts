@@ -1,8 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 import { RequestOperations, withRequestOperations, countOperation, instrumentKv,
-    countSupabaseOperation, markProviderDispatch, shouldSampleOperations } from "./request-operations";
+    countSupabaseOperation, markProviderDispatch, shouldSampleOperations, recordStreamObservation } from "./request-operations";
+import { StreamSession, observeStreamOutcome } from "@/pipeline/after/stream-session";
 
 describe("request operations", () => {
+    it("isolates stream observations, strips extra fields and preserves the first terminal outcome", () => {
+        const a = new RequestOperations(), b = new RequestOperations();
+        const session = new StreamSession(() => 0);
+        const observation = { ...observeStreamOutcome(session.finish(null, { aborted: false, sawFinalUsage: false })), secret: "private" };
+        withRequestOperations(a, () => { recordStreamObservation(observation); recordStreamObservation({ ...observation, state: "FAILED" }); });
+        observation.durationMs = 123;
+        expect(a.snapshot()).toMatchObject({ stream: { state: "COMPLETED", durationMs: 0 } });
+        expect(JSON.stringify(a.snapshot())).not.toContain("private");
+        expect(b.snapshot()).not.toHaveProperty("stream");
+    });
     it("isolates interleaved requests and preserves their async background context", async () => {
         const a = new RequestOperations(), b = new RequestOperations();
         let release!: () => void;

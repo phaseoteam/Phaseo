@@ -7,13 +7,17 @@ const { build } = wranglerRequire("esbuild");
 const { Miniflare } = wranglerRequire("miniflare");
 const root = fileURLToPath(new URL("../", import.meta.url));
 const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", platform: "browser", write: false,
+    external: ["node:async_hooks"],
     plugins: [{ name: "background-test-runtime", setup(builder) {
         builder.onResolve({ filter: /^@\/runtime\/env$/ }, () => ({ path: "test-runtime", namespace: "test-runtime" }));
         builder.onLoad({ filter: /.*/, namespace: "test-runtime" }, () => ({ contents: "export function dispatchBackground(promise) { void promise.catch(() => undefined); }", loader: "js" }));
     } }],
     stdin: { resolveDir: root, loader: "ts", contents: `
         import { createPricedStreamSession } from './src/pipeline/after/streaming';
+        import { RequestOperations, withRequestOperations } from './src/runtime/request-operations';
         export default { async fetch(request) {
+            const metrics = new RequestOperations();
+            return withRequestOperations(metrics, async () => {
             const mode = new URL(request.url).pathname;
             const terminal = 'data: {"object":"chat.completion.chunk","choices":[{"finish_reason":"stop"}],"usage":{"total_tokens":5}}\\r\\n\\r\\n';
             const source = new Response(terminal + (['/success', '/cancel'].includes(mode) ? 'data: [DONE]\\r\\n\\r\\n' : ''));
@@ -31,10 +35,11 @@ const bundle = await build({ absWorkingDir: root, bundle: true, format: "esm", p
             } catch (failure) { error = failure.message; }
             const outcome = await session.completion;
             await Promise.resolve();
-            return Response.json({ outcomes, outcome, initialState, text, error, released: !source.body.locked });
+            return Response.json({ outcomes, outcome, metrics: metrics.snapshot(), initialState, text, error, released: !source.body.locked });
+            });
         }};
     ` } });
-const runtime = new Miniflare({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: "2025-10-01" });
+const runtime = new Miniflare({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: "2025-10-01", compatibilityFlags: ["nodejs_compat"] });
 try {
     for (const mode of ["success", "truncated", "gateway", "cancel"]) {
         const result = await (await runtime.dispatchFetch(`https://stream.example/${mode}`)).json();
@@ -42,6 +47,13 @@ try {
         assert.equal(result.initialState, "PRE_COMMIT");
         assert.equal(result.outcome.state, mode === "success" ? "COMPLETED" : mode === "cancel" ? "CANCELLED" : "FAILED");
         assert.equal(result.outcome.committed, mode !== "gateway");
+        assert.equal(result.metrics.stream.state, result.outcome.state);
+        assert.equal(result.metrics.stream.committed, result.outcome.committed);
+        assert.equal(result.metrics.stream.finishReason, "stop");
+        assert.equal(result.metrics.stream.firstOutputObservedMs, null);
+        assert.ok(result.metrics.stream.durationMs >= 0);
+        assert.deepEqual(result.metrics.total, {});
+        assert.ok(!JSON.stringify(result.metrics).includes("total_tokens"));
         if (mode === "success") {
             assert.equal(result.error, undefined); assert.match(result.text, /\[DONE\]/);
             assert.deepEqual(result.outcomes[0], { usage: { total_tokens: 5 }, info: { aborted: false, sawFinalUsage: true } });
