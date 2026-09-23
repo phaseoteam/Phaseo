@@ -1,6 +1,7 @@
 -- Serialize delete-and-recompute refreshes for each provider/model/day key.
 -- Without this lock, concurrent attempt inserts can both delete and then race
 -- to insert the same v2_public_provider_health_daily primary key.
+-- phaseo:allow-destructive-migration reason: Deletes only the targeted derived daily health row before rebuilding it from authoritative request facts and attempts; source request and billing data remain intact.
 create or replace function public.refresh_v2_provider_health_for_attempt()
 returns trigger
 language plpgsql
