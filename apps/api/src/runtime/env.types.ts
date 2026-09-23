@@ -1,6 +1,7 @@
 // Purpose: Runtime environment type definitions.
 
 export type GatewayBindings = {
+    GATEWAY_OPERATION_SAMPLE_RATE?: string;
     GATEWAY_CONTEXT_BUNDLE_ENABLED?: string;
     GATEWAY_PUBLIC_CATALOG_TARGETS?: string;
     SUPABASE_URL: string;

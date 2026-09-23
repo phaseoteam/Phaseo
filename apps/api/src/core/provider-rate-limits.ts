@@ -3,6 +3,7 @@
 // How: Loads configuration from Supabase and coordinates fixed-window counters in a Durable Object.
 
 import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
+import { countOperation } from "@/runtime/request-operations";
 import { dispatchBackground, getBindings, getCache, getSupabaseAdmin } from "@/runtime/env";
 import type { PipelineContext } from "@pipeline/before/types";
 
@@ -278,7 +279,12 @@ type ProviderRateLimitStub = {
 function getStub(providerId: string): ProviderRateLimitStub | null {
 	const namespace = getBindings().PROVIDER_RATE_LIMITS;
 	if (!namespace) return null;
-	return namespace.getByName(`managed:${providerId}`) as unknown as ProviderRateLimitStub;
+	const stub = namespace.getByName(`managed:${providerId}`) as unknown as ProviderRateLimitStub;
+	return {
+		admit: (...args) => { countOperation("quotaRpc"); return stub.admit(...args); },
+		reconcileTokens: (...args) => { countOperation("quotaRpc"); return stub.reconcileTokens(...args); },
+		recordTokens: (...args) => { countOperation("quotaRpc"); return stub.recordTokens(...args); },
+	};
 }
 
 export async function admitManagedProvider(
