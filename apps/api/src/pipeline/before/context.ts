@@ -1659,7 +1659,6 @@ export async function fetchGatewayContext(args: {
             const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
 			const credentialModeByProvider = new Map<string, GatewayProviderSnapshot["credentialMode"]>();
             const routingStatusByProvider = new Map<string, RoutingStatus>();
-            const externalRoutingOverrideByProvider = new Map<string, boolean>();
             const providerFamilyByProvider = new Map<string, string | null>();
             const offerScopeByProvider = new Map<string, GatewayProviderSnapshot["offerScope"]>();
             const offerLabelByProvider = new Map<string, string | null>();
@@ -1692,10 +1691,6 @@ export async function fetchGatewayContext(args: {
                         providerId,
                         normalizeProviderStatus(row.status),
                     );
-					externalRoutingOverrideByProvider.set(
-						providerId,
-						normalizeProviderStatus(row.status) === "external" && row.routable === true,
-					);
 					credentialModeByProvider.set(providerId, row.credential_mode === "byok_only" ? "byok_only" : "managed_and_byok");
                     routingStatusByProvider.set(
                         providerId,
@@ -1829,7 +1824,6 @@ export async function fetchGatewayContext(args: {
                             ? "not_ready"
                             : normalizeProviderStatus(provider.providerStatus)),
                     externalRoutingOverride:
-                        externalRoutingOverrideByProvider.get(provider.providerId) ??
                         provider.externalRoutingOverride ??
                         false,
                     providerRoutingStatus:

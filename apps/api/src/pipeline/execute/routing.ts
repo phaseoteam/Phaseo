@@ -42,7 +42,7 @@ type ProviderStatus = ProviderRolloutStatus;
 type CapabilityStatus = CapabilityRoutingStatus;
 
 const ROUTING_ALGORITHM_VERSION = "provider-score-v8";
-// External providers are available only as explicit provider-level overrides;
+// External providers are available only as explicit provider-model route overrides;
 // keep them behind non-external providers and retain the score penalty within
 // the fallback pool.
 const EXTERNAL_PROVIDER_ROUTING_MULTIPLIER = 0.1;

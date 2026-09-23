@@ -23,6 +23,7 @@ type ProviderModelRow = {
     output_modalities?: unknown;
     effective_from?: string | null;
     effective_to?: string | null;
+    external_routing_override?: boolean;
 };
 
 export const STEALTH_PROVIDER_IDENTITY = "stealth";
@@ -1244,7 +1245,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         let { data, error: providerError }: { data: any[] | null; error: any } = await supabase
             .from("v2_model_provider_routes")
             .select(
-                "provider_model_id, provider_slug, model_slug, provider_model_slug, is_stealth, routing_enabled, status, input_modalities, output_modalities, effective_from, effective_to"
+                "provider_model_id, provider_slug, model_slug, provider_model_slug, is_stealth, routing_enabled, status, input_modalities, output_modalities, effective_from, effective_to, metadata"
             )
             .in("model_slug", modelIdChunk);
 
@@ -1265,6 +1266,8 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             output_modalities: row.output_modalities,
             effective_from: row.effective_from ?? null,
             effective_to: row.effective_to ?? null,
+            external_routing_override:
+                row.metadata?.external_routing_override === true,
         })) as ProviderModelRow[];
         providerRows.push(...chunkRows);
     }
@@ -1566,7 +1569,8 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                 if (!cap.capability_id) continue;
                 const providerStatus = normalizeProviderStatus(providerDetails?.status);
                 const providerRoutingStatus = normalizeRoutingStatus(providerDetails?.routing_status);
-                const externalRoutingOverride = providerStatus === "external" && providerDetails?.routable === true;
+                const externalRoutingOverride =
+                    providerStatus === "external" && row.external_routing_override === true;
                 const modelRoutingStatus = normalizeRoutingStatus(row.routing_status);
                 const capabilityStatus = normalizeCapabilityStatusForPublicCatalogue(cap.capability_id, cap.status);
                 const effectiveFrom = cap.effective_from ?? row.effective_from ?? null;
