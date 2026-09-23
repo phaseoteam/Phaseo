@@ -1,9 +1,10 @@
 # Shared workspace runtime cache
 
 The reader/publication increment is gated by
-`GATEWAY_WORKSPACE_RUNTIME_ENABLED=true`. It is **not enabled** in staging or
-production configuration. Install the additive workspace runtime read contract
-only with explicit shared-database approval before testing this flag.
+`GATEWAY_WORKSPACE_RUNTIME_ENABLED=true`. Following explicit approval, the
+additive read contract was applied as migration `20260923221019` and this flag
+is enabled in the original staging configuration for validation. Production
+configuration remains disabled. Staging schedules remain disabled.
 
 ## Data and ordering
 
@@ -91,8 +92,9 @@ production configuration. No flat dollar saving is claimed by this layer.
 The final source suite passed 612 files / 4,829 tests, including the actual
 context pipeline and bounded-KV-transport case. Focused and native suites also
 pass. These are local/native
-fixtures, **not** live validation of the new RPC-backed path. The migration and
-feature activation await authorization; production has not been deployed.
+fixtures, **not** live validation of the new RPC-backed path. The migration was
+subsequently authorized and applied; staging activation is recorded separately
+below. Production has not been deployed.
 
 ## Disabled-gate staging regression
 
