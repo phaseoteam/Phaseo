@@ -34,6 +34,7 @@ import {
 	Trophy,
 } from "lucide-react";
 import { DEFAULT_SEARCH_CAPABILITIES, getGlobalNavigationItems, isSearchDestinationEnabled, type SearchCapabilities } from "@/components/header/Search/Search.navigation";
+import documentationPages from "./Search.docs.generated.json";
 import {
 	EXTERNAL_RESOURCE_ITEMS,
 	getContextItems,
@@ -122,6 +123,7 @@ type SearchResultCategory = {
 		| "countries"
 		| "subscriptionPlans"
 		| "context"
+		| "documentation"
 		| "models"
 		| "navigation"
 		| "organisations"
@@ -293,6 +295,7 @@ const EMPTY_WORKSPACE_ITEMS: PaletteItem[] = [];
 
 const ACTION_SEARCH_INDEX = createSearchIndex(GLOBAL_ACTION_ITEMS);
 const RESOURCE_SEARCH_INDEX = createSearchIndex(EXTERNAL_RESOURCE_ITEMS);
+const DOCUMENTATION_SEARCH_INDEX = createSearchIndex(documentationPages);
 
 function getIndexedMatchScore<T extends SearchableItem>(
 	indexedItem: IndexedSearchItem<T>,
@@ -955,6 +958,9 @@ export default function Search({
 		const resources = includesScope("resources")
 			? filterAndSortIndexed(RESOURCE_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
 			: [];
+		const documentation = includesScope("resources")
+			? filterAndSortIndexed(DOCUMENTATION_SEARCH_INDEX, searchTerm, resultLimit)
+			: [];
 		const models = includesScope("models") && searchIndex
 			? filterAndSortIndexed(searchIndex.models, searchTerm, resultLimit, showAllWhenScoped)
 			: [];
@@ -993,6 +999,11 @@ export default function Search({
 				name: "resources" as const,
 				items: resources,
 				score: getFirstResultScore(RESOURCE_SEARCH_INDEX, resources, searchTerm),
+			},
+			{
+				name: "documentation" as const,
+				items: documentation,
+				score: getFirstResultScore(DOCUMENTATION_SEARCH_INDEX, documentation, searchTerm),
 			},
 			{
 				name: "models" as const,
@@ -1062,7 +1073,7 @@ export default function Search({
 		return [
 			{
 				key: "nearby",
-				heading: pathname.startsWith("/settings") ? "Settings" : "In this area",
+				heading: pathname.startsWith("/settings") ? "Settings" : "In This Area",
 				items: nearbyPages,
 				type: "navigation" as const,
 			},
@@ -1079,13 +1090,13 @@ export default function Search({
 			},
 			{
 				key: "context",
-				heading: "On this page",
+				heading: "On This Page",
 				items: contextItems,
 				type: "context" as const,
 			},
 			{
 				key: "quick-actions",
-				heading: "Quick actions",
+				heading: "Quick Actions",
 				items: GLOBAL_ACTION_ITEMS.slice(0, 7),
 				type: "action" as const,
 			},
@@ -1108,7 +1119,7 @@ export default function Search({
 				items: searchData?.apiProviders ?? [],
 			},
 		].filter((category) => category.items.length > 0).sort((left, right) => {
-			const order = ["pinned", "context", "nearby", "quick-actions", "workspaces", "models", "apiProviders", "resources"];
+			const order = ["models", "pinned", "context", "nearby", "quick-actions", "workspaces", "apiProviders", "resources"];
 			return order.indexOf(left.key) - order.indexOf(right.key);
 		});
 	}, [capabilities, navigationItems, pathname, contextItems, hasQuery, pinnedItems, searchData, workspaceItems]);
@@ -1340,9 +1351,10 @@ export default function Search({
 											countries: { heading: "Countries", type: undefined, showSubtitle: true },
 											subscriptionPlans: { heading: "Subscription Plans", type: undefined, showSubtitle: true },
 											actions: { heading: "Actions", type: "action" as const, showSubtitle: true },
-											context: { heading: "On this page", type: "context" as const, showSubtitle: true },
+											context: { heading: "On This Page", type: "context" as const, showSubtitle: true },
 											navigation: { heading: "Navigation", type: "navigation" as const, showSubtitle: true },
-											resources: { heading: "External resources", type: "resource" as const, showSubtitle: true },
+											resources: { heading: "External Resources", type: "resource" as const, showSubtitle: true },
+											documentation: { heading: "Documentation", type: "resource" as const, showSubtitle: true },
 											workspaces: { heading: "Workspaces", type: "workspace" as const, showSubtitle: true },
 											models: { heading: "Models", type: undefined, showSubtitle: false },
 											apiProviders: { heading: "API Providers", type: undefined, showSubtitle: true },
