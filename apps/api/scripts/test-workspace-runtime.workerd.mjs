@@ -12,7 +12,10 @@ const bundle = await build({ absWorkingDir:root,bundle:true,format:"esm",platfor
         const scope = new AsyncLocalStorage();
         const cache = new WorkspaceRuntimeCache(() => {
             const origin = scope.getStore().ORIGIN;
-            return {get: async key => (await origin.fetch('https://source/'+encodeURIComponent(key))).json(),
+            return {get: async key => {
+                    const raw = await (await origin.fetch('https://source/'+encodeURIComponent(key))).json();
+                    return raw === null ? null : new Response(raw).body;
+                },
                 put: async (key, raw) => {await (await origin.fetch('https://source/'+encodeURIComponent(key),{method:'PUT',body:raw})).text();}};
         });
         const fixture = workspaceId => ({version:1,workspaceId,checkedAtMs:Date.now(),expiresAtMs:Date.now()+60000,

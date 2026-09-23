@@ -13,7 +13,11 @@ function setup() {
     const data = new Map<string, string>();
     const get = vi.fn(async (key: string) => data.get(key) ?? null);
     const put = vi.fn(async (key: string, raw: string) => { data.set(key, raw); });
-    const cache = new WorkspaceRuntimeCache(() => ({ get, put }) as unknown as KVNamespace);
+    const cache = new WorkspaceRuntimeCache(() => ({ get: async (key: string, type: string) => {
+        expect(type).toBe("stream");
+        const raw = await get(key);
+        return raw === null ? null : new Response(raw).body;
+    }, put }) as unknown as KVNamespace);
     return { cache, data, get, put };
 }
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(1_000_000); });
@@ -123,5 +127,19 @@ describe("shared workspace runtime cache", () => {
         for (let i = 0; i < 200; i++) await cache.publish(fixture(), workspace, `v${i}`);
         expect(cache.stats().entries).toBeLessThanOrEqual(128);
         expect(cache.stats().bytes).toBeLessThanOrEqual(4 * 1024 * 1024);
+    });
+
+    it("cancels an oversized KV transport without buffering the whole value", async () => {
+        let pulled = 0, cancelled = false;
+        const get = vi.fn(async () => new ReadableStream<Uint8Array>({
+            pull(controller) { pulled++; controller.enqueue(new Uint8Array(64 * 1024)); },
+            cancel() { cancelled = true; },
+        }, {highWaterMark:0}));
+        const cache = new WorkspaceRuntimeCache(() => ({get,put:vi.fn()}) as unknown as KVNamespace);
+        expect(await cache.read(workspace,"v1")).toBeNull();
+        expect(get).toHaveBeenCalledExactlyOnceWith(expect.any(String),"stream");
+        expect(pulled).toBe(5);
+        expect(cancelled).toBe(true);
+        expect(cache.stats()).toMatchObject({entries:0,pending:0});
     });
 });

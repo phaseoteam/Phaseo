@@ -1,4 +1,5 @@
 import { L1Cache } from "@/runtime/cache/l1";
+import { readStreamTextWithLimit } from "@/core/bounded-stream";
 import {
     decodeWorkspaceRuntimeCache, isWorkspaceRuntimeFresh, workspaceRuntimeSchema,
     WORKSPACE_RUNTIME_MAX_CACHE_BYTES, type WorkspaceRuntimeSnapshot,
@@ -33,7 +34,10 @@ export class WorkspaceRuntimeCache {
         if (!key) return null;
         try {
             const raw = await this.local.getOrLoad(key, async () => {
-                const raw = await this.store().get(key, "text");
+                // Bound transport buffering too: a corrupt KV value may be much
+                // larger than the entry size we accept into L1.
+                const stream = await this.store().get(key, "stream");
+                const raw = stream ? await readStreamTextWithLimit(stream, WORKSPACE_RUNTIME_MAX_CACHE_BYTES) : null;
                 const snapshot = raw ? decodeWorkspaceRuntimeCache(raw, workspaceId) : null;
                 return { value: snapshot ? raw : null,
                     expiresAtMs: snapshot ? Math.min(snapshot.expiresAtMs, Date.now() + WORKSPACE_RUNTIME_L1_MS) : 0 };

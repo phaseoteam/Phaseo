@@ -34,6 +34,8 @@ from a failed database save. Publication is not yet backed by a durable outbox.
 - Cache entry: 256 KiB conservative UTF-16 accounting; source data larger than
   that stays functional but uncached. Required oversized publication reports a
   refresh failure rather than silently claiming success.
+  KV transport is streamed with a 256 KiB byte limit and cancelled on overflow,
+  so rejected values cannot be buffered up to KV's much larger value limit.
 - Source lease: 60 seconds, with at most one second of DB/Worker clock lead.
   KV's minimum 60-second retention never extends the embedded source expiry.
 - Both cached context segments carry the workspace deadline; settings and BYOK
@@ -49,6 +51,12 @@ KV is eventually consistent, and the existing numeric generation bump is not a
 cross-isolate transaction. This does **not** promise instantaneous global
 invalidation or solve concurrent generation collisions; absolute source expiry
 remains the backstop. Neither a new Durable Object nor a timer is introduced.
+Cloudflare also limits writes to the same key to one per second: racing isolates
+can still receive 429s, which advisory fills absorb and required publications
+report. This is not a global writer lock. See the current
+[write API](https://developers.cloudflare.com/kv/api/write-key-value-pairs/),
+[limits](https://developers.cloudflare.com/kv/platform/limits/) and
+[consistency guidance](https://developers.cloudflare.com/kv/concepts/how-kv-works/).
 
 ## Cost limits and remaining work
 
@@ -80,7 +88,24 @@ production configuration. No flat dollar saving is claimed by this layer.
 - API type-check, targeted lint and staging dry-run pass. Data, pricing and
   gateway validations pass with existing catalog warnings.
 
-The source suite passed 612 files / 4,827 tests, followed by an additional actual
-context-pipeline test passing in the focused suite. These are local/native
+The source suite passed 612 files / 4,828 tests, including the actual context
+pipeline. The subsequent bounded-KV-transport case passes with its focused and
+native suite. These are local/native
 fixtures, **not** live validation of the new RPC-backed path. The migration and
 feature activation await authorization; production has not been deployed.
+
+## Disabled-gate staging regression
+
+Source `170154e4d`, staging Worker version
+`c9aa9784-4a34-4903-907f-42d1199c62c5`: twelve Poolside XS/S free-model requests
+passed across Chat, Responses and Messages, streaming/non-streaming, in LHR.
+All twelve recorded charges were zero; disposable key
+`836d8c49-dccc-460a-b899-3459d510f6e0` was revoked by the harness.
+
+Routing overhead in request order was
+`[630, 4, 88, 3, 4, 3, 103, 12, 13, 5, 3, 12]` ms. First requests per model were
+630/103 ms; the ten follow-ups were 3–88 ms. These are small, single-location
+routing samples, not end-to-end provider latency or a global percentile claim.
+The new workspace flag remained absent/disabled. This verifies rollback-path
+compatibility, **not** the new source RPCs, full-path cost savings, or permission
+to enable production.
