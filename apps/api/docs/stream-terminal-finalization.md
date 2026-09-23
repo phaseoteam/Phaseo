@@ -30,3 +30,9 @@ Remaining: request-wide StreamSession/commit/retry integration, remaining eager
 protocol bridges, protocol-native postcommit error events, shared nonstreaming
 execution, durable idempotent settlement and production evidence gates. Stream
 abort is now observable, but is not yet the planned protocol-native error frame.
+
+Staging source `689199433`, version `ade79ae2-3bda-450a-b92e-ceb2b03339c2`:
+all twelve free Poolside XS/S protocol cases and successful zero-charge audits
+passed; disposable key `98c80e36-1d32-427e-9702-8592b6bb9b05` revoked. LHR
+routing: 695, 79, 40, 9, 5, 8, 109, 32, 11, 10, 6, 17 ms. These are healthy
+staging protocol checks, not global fault/latency or paid-accounting evidence.
