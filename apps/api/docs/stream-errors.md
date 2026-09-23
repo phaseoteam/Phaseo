@@ -34,8 +34,12 @@ is not a claim that every high-level SDK helper throws on that event.
   fetch, not paid providers, and make exactly one upstream request.
 - Existing failed-stream tests still require no charge and one failure audit.
   Native Workers commitment, truncation and cancellation tests pass.
-- All 599 source files / 4,644 tests pass. Typecheck, scoped lint and staging
-  dry-run pass. Live staging evidence will follow deployment. No production change.
+- All 599 source files / 4,644 tests pass. Typecheck, scoped lint and staging dry-run pass.
+- Staging build c986b8423, Worker 87e9159f-6290-4592-bae2-67f8fd828883:
+  twelve Poolside XS/S protocol/mode checks passed in LHR with zero-cost audits.
+  Disposable key df1156ce-d09e-4b2c-b15b-643a04594420 was revoked.
+  Routing milliseconds: 442, 2, 3, 3, 2, 3, 93, 3, 3, 17, 3, 13.
+  Production is unchanged; these are not global latency/paid-settlement evidence.
 
 Remaining: request-wide retry/financial policy, cancellation usage recovery and
 durable settlement. Retry eligibility never authorizes replay after commitment.
