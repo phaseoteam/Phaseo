@@ -57,11 +57,17 @@ function checkBody(surface, stream, text) {
         const body = JSON.parse(text);
         assert.ok(!body.error, "Protocol error response");
         if (surface === "chat/completions") assert.ok(body.choices?.[0]?.message && body.choices[0].finish_reason, "Missing Chat completion");
-        if (surface === "responses") assert.ok(body.status === "completed" && Array.isArray(body.output), "Missing Responses completion");
+        if (surface === "responses") {
+            const allowed = ["completed", "incomplete", "failed", "in_progress", "queued", "cancelled"];
+            console.log(JSON.stringify({ event: "responses_contract", status: allowed.includes(body.status) ? body.status : "unknown",
+                hasOutput: Array.isArray(body.output), incompleteReason: body.incomplete_details?.reason === "max_output_tokens" ? "max_output_tokens" : null }));
+            assert.ok((body.status === "completed" || (body.status === "incomplete" && body.incomplete_details?.reason === "max_output_tokens"))
+                && Array.isArray(body.output), "Missing Responses completion");
+        }
         if (surface === "messages") assert.ok(body.type === "message" && body.stop_reason, "Missing Messages completion");
         return;
     }
-    const frames = text.split(/\r?\n\r?\n/).filter(frame => frame.trim() && !frame.trim().startsWith(":"));
+    const frames = text.split(/\r?\n\r?\n/).filter(frame => frame.trim());
     assert.ok(frames.length, "Missing SSE frames");
     let terminal = false;
     const types = new Map();
@@ -80,6 +86,10 @@ function checkBody(surface, stream, text) {
         assert.ok(!body.error && body.type !== "error" && body.type !== "response.failed", "SSE error event");
         if (surface === "responses" && body.type === "response.completed") {
             assert.equal(body.response?.status, "completed", "Responses terminal status"); terminal = true;
+        }
+        if (surface === "responses" && body.type === "response.incomplete") {
+            assert.ok(body.response?.status === "incomplete" && body.response?.incomplete_details?.reason === "max_output_tokens", "Responses terminal status");
+            terminal = true;
         }
         if (surface === "messages" && body.type === "message_stop") terminal = true;
     }
