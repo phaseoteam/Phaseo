@@ -166,7 +166,14 @@ describe("runPublicModelAnnouncementCheck", () => {
 		]);
 		expect(supabase.updates.map((entry) => entry.values)).toEqual([
 			{
+				catalogue_status_snapshot: "available",
+				public_visibility_snapshot: true,
+				last_run_id: "run-2",
+				updated_at: expect.any(String),
+			},
+			{
 				status: "announced",
+				catalogue_status_snapshot: "available",
 				last_run_id: "run-2",
 				announced_at: expect.any(String),
 				last_attempt_at: expect.any(String),
@@ -198,6 +205,12 @@ describe("runPublicModelAnnouncementCheck", () => {
 		expect(summary).toMatchObject({ detected: 1, notified: 1, pending: 0, error: null });
 		expect(supabase.upserts).toHaveLength(0);
 		expect(supabase.updates.map((entry) => entry.values)).toEqual([
+			{
+				catalogue_status_snapshot: "available",
+				public_visibility_snapshot: true,
+				last_run_id: "run-3",
+				updated_at: expect.any(String),
+			},
 			expect.objectContaining({ status: "pending", last_run_id: "run-3" }),
 			expect.objectContaining({ status: "announced", claim_run_id: null }),
 		]);

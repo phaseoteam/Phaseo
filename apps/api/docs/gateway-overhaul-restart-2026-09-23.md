@@ -107,3 +107,8 @@ completion-outcome work; inspection alone does not establish a runtime failure.
   unchanged. Subsequent instrumentation must attribute operations to the request,
   including concurrent requests and background work; isolate-wide counters are
   not valid per-request cost evidence.
+- Investigated the five unchanged-main failures: expected fixtures lagged the
+  explicit Xiaomi batch allowlist, announcement observation writes, model-ID
+  filter, and merged catalogue HTTP TTL change (#2509). Updated assertions only;
+  kept exact event cardinality and private/Authorization cache isolation checks.
+  All 45 tests in those four files now pass; no runtime behavior was changed.
