@@ -11,11 +11,12 @@ import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { creditAdmissionLeases } from "@/core/credit-admission-leases";
 import { contextLeases, encodeContextLease } from "./contextLeaseCache";
 import { getWorkspacePolicyVersionToken } from "./workspacePolicy";
-import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
 import { loadPrivateRouteRow } from "./privateModelCache";
 import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
-import { workspaceRuntimeEnabled } from "./workspaceRuntime";
+import { workspaceRuntimeEnabled, workspaceRuntimeCache, fetchWorkspaceRuntime, refillWorkspaceRuntime } from "./workspaceRuntime";
+import { composeWorkspaceRuntime, workspaceTeamSettings } from "./workspaceRuntimeContext";
+import { isWorkspaceRuntimeFresh, type WorkspaceRuntimeSnapshot } from "./workspaceRuntimeSnapshot";
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
@@ -1089,6 +1090,9 @@ export async function fetchGatewayContext(args: {
         privateModelMs: null,
     };
     const privateStartedAt = performance.now();
+    let separateWorkspaceRuntime = false;
+    let workspaceVersionToken: string | null = null;
+    let requestWorkspace: WorkspaceRuntimeSnapshot | undefined;
     const privateModelLoad = loadWorkspacePrivateModel(args).then(
         value => ({ ok: true as const, value }),
         error => ({ ok: false as const, error }),
@@ -1101,6 +1105,24 @@ export async function fetchGatewayContext(args: {
         if (privateResult.ok === false) throw privateResult.error;
         const privateModel = privateResult.value;
         const startedAt = performance.now();
+        if (separateWorkspaceRuntime) {
+            const workspaceStarted = performance.now();
+            let snapshot = requestWorkspace;
+            if (!snapshot || !isWorkspaceRuntimeFresh(snapshot, args.workspaceId)) {
+                snapshot = workspaceVersionToken === null ? undefined
+                    : (await workspaceRuntimeCache.read(args.workspaceId, workspaceVersionToken)) ?? undefined;
+                telemetry.workspaceCacheStatus = snapshot ? "hit" : workspaceVersionToken === null ? "bypass" : "miss";
+                if (!snapshot) {
+                    snapshot = workspaceVersionToken === null ? await fetchWorkspaceRuntime(args.workspaceId)
+                        : await refillWorkspaceRuntime(args.workspaceId, workspaceVersionToken);
+                    if (workspaceVersionToken !== null) {
+                        dispatchBackground(workspaceRuntimeCache.publish(snapshot, args.workspaceId, workspaceVersionToken).catch(() => false));
+                    }
+                }
+            }
+            value = await composeWorkspaceRuntime(value, snapshot);
+            telemetry.workspaceReadMs = round3((telemetry.workspaceReadMs ?? 0) + performance.now() - workspaceStarted);
+        }
 		if (privateModel) {
 			value = {
 				...value,
@@ -1116,6 +1138,9 @@ export async function fetchGatewayContext(args: {
 		}
 
         const hydrated = await hydrateByokKeys(value, args.workspaceId, args.model, args.apiKeyId);
+        if (separateWorkspaceRuntime && (hydrated.workspaceRuntimeExpiresAt ?? 0) <= Date.now()) {
+            throw new Error("workspace_runtime_composition_expired");
+        }
         return {
             ...hydrated,
             contextTelemetry: {
@@ -1132,10 +1157,10 @@ export async function fetchGatewayContext(args: {
     const isPreset = args.model.startsWith("@");
     const useContextBundle = !isPreset && !args.includeTestingMode && !isFreeRouterModel(args.model) &&
         ["responses", "chat.completions", "messages", "text.generate"].includes(args.endpoint) && contextBundleEnabled();
+    separateWorkspaceRuntime = useContextBundle && workspaceRuntimeEnabled();
     let shouldUseCache = !args.disableCache;
     const needsVersionToken = shouldUseCache;
     let versionToken = "v0";
-    let workspaceVersionToken: string | null = null;
     if (needsVersionToken) {
         const keyVersionStartedAt = performance.now();
         const options = { useL1Cache: true, l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS };
@@ -1152,7 +1177,7 @@ export async function fetchGatewayContext(args: {
         versionToken = workspaceVersion === "v0" ? keyVersion : `${keyVersion}:w${workspaceVersion}`;
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
     }
-    const testingModeCacheSegment = `${args.includeTestingMode ? "testing" : "default"}${useContextBundle && workspaceRuntimeEnabled() ? ":runtime-v1" : ""}`;
+    const testingModeCacheSegment = `${args.includeTestingMode ? "testing" : "default"}${separateWorkspaceRuntime ? ":runtime-v2" : ""}`;
     const dynamicCacheKey = `${DYNAMIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;
     const creditCacheKey = gatewayCreditCacheKey(args.workspaceId);
     const staticCacheKey = isPreset
@@ -1300,6 +1325,7 @@ export async function fetchGatewayContext(args: {
         if (textContextCapabilities) {
             if (useContextBundle) {
                 contextBundle = await loadTextContextBundle({ ...args, workspaceVersionToken });
+                requestWorkspace = contextBundle.workspaceRuntime;
                 rpcTotalMs += contextBundle.rpcMs;
                 telemetry.catalogReadMs = round3(contextBundle.catalogReadMs);
                 telemetry.catalogCacheStatus = contextBundle.cacheStatus;
@@ -1625,65 +1651,8 @@ export async function fetchGatewayContext(args: {
                 throw new Error(`workspace_billing_enrichment_failed:${teamResult?.error?.message ?? "missing"}`);
             }
 
-            const rawBillingMode = String(teamResult.data.billing_mode ?? "").trim().toLowerCase();
-            if (rawBillingMode !== "wallet" && rawBillingMode !== "invoice") {
-                throw new Error("workspace_billing_mode_invalid");
-            }
-            const cacheAwareRoutingEnabled = (
-                settingsResult.data as Record<string, unknown>
-            ).cache_aware_routing_enabled;
-            const dataContributionFeatureEnabled =
-                settingsResult.data.data_contribution_enabled === true &&
-                await isDataContributionAccessEnabled({ workspaceId: args.workspaceId });
-            const responseHealingEnabled =
-                settingsResult.data.response_healing_enabled === true;
-            const responseHealingLocked =
-                settingsResult.data.response_healing_locked === true;
-            const responseHealingMode =
-                settingsResult.data.response_healing_mode === "strict"
-                    ? "strict"
-                    : "safe";
-            parsed.teamSettings = {
-                routingMode: settingsResult.data.routing_mode ?? null,
-                byokFallbackEnabled: settingsResult.data.byok_fallback_enabled === true,
-                betaChannelEnabled: settingsResult.data.beta_channel_enabled === true,
-                alphaChannelEnabled: settingsResult.data.alpha_channel_enabled === true,
-                cacheAwareRoutingEnabled:
-                    typeof cacheAwareRoutingEnabled === "boolean"
-                        ? cacheAwareRoutingEnabled
-                        : null,
-                privacyZdrOnly: settingsResult.data.privacy_zdr_only === true,
-                privacyEnablePaidMayTrain:
-                    settingsResult.data.privacy_enable_paid_may_train === true,
-                privacyEnableFreeMayTrain:
-                    settingsResult.data.privacy_enable_free_may_train === true,
-                privacyEnableInputOutputLogging:
-                    settingsResult.data.privacy_enable_input_output_logging === true,
-                ioLoggingEnabled: settingsResult.data.io_logging_enabled === true,
-                ioLoggingIncludeProviderPayloads:
-                    settingsResult.data.io_logging_include_provider_payloads === true,
-                dataContributionEnabled:
-                    dataContributionFeatureEnabled,
-                dataContributionPolicyVersion:
-                    settingsResult.data.data_contribution_policy_version ?? null,
-                dataContributionSampleRateBps:
-                    Number(settingsResult.data.data_contribution_sample_rate_bps ?? 10000),
-                dataContributionClassifierSampleRateBps:
-                    Number(settingsResult.data.data_contribution_classifier_sample_rate_bps ?? 1000),
-                dataContributionDiscountBps:
-                    Number(settingsResult.data.data_contribution_discount_bps ?? 100),
-                defaultPlugins:
-                    responseHealingEnabled || responseHealingLocked
-                        ? [{
-                            id: "response-healing",
-                            enabled: responseHealingEnabled,
-                            config: { mode: responseHealingMode },
-                            ...(responseHealingLocked ? { preventOverrides: true } : {}),
-                        }]
-                        : null,
-                billingMode: rawBillingMode,
-            };
-
+            parsed.teamSettings = separateWorkspaceRuntime ? null
+                : await workspaceTeamSettings(settingsResult.data, teamResult.data.billing_mode, args.workspaceId);
             const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
 			const credentialModeByProvider = new Map<string, GatewayProviderSnapshot["credentialMode"]>();
             const routingStatusByProvider = new Map<string, RoutingStatus>();
@@ -1943,7 +1912,7 @@ export async function fetchGatewayContext(args: {
         if (shouldUseCache) {
             const cacheWriteStartedAt = performance.now();
             try {
-                const split = splitContextForCache(parsed);
+                const split = splitContextForCache(parsed, { separateWorkspace: separateWorkspaceRuntime });
                 const dynamicTtl = clampTtl(computeAdaptiveTtlForDynamic(parsed));
                 const pricingAwareStaticTtl = computeStaticTtl(parsed);
                 const staticTtl = pricingAwareStaticTtl === null
