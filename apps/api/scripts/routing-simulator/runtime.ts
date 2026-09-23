@@ -1,5 +1,6 @@
 // This module replaces the Worker environment through an exact Vite alias.
 // It never imports production bindings, reads credentials, or opens a socket.
+import { healthBatcher } from "../../src/pipeline/execute/health-batcher";
 const store = new Map<string, { value: string; expires: number }>();
 let coordinator: ((event: import("../../src/pipeline/execute/health-evidence").HealthObservation) => Promise<import("../../src/pipeline/execute/health-evidence").HealthReceipt | null>) | undefined;
 let snapshot: (() => import("../../src/pipeline/execute/health-evidence").HealthSnapshot) | undefined;
@@ -32,9 +33,11 @@ export function resetRuntime() {
 export function dispatchBackground(task: Promise<unknown>) { background.push(task); }
 export function getBindings() {
   return coordinator ? { ROUTING_HEALTH: { idFromName: (name: string) => name, get: () => ({ observe: coordinator!,
+    observeBatch: async (events: Parameters<NonNullable<typeof coordinator>>[0][]) => Promise.all(events.map(event => coordinator!(event))),
     getSnapshot: async () => structuredClone(snapshot?.() ?? { version: 0, publishedAt: 0, providers: {} }) }) } } : {};
 }
 export async function flushBackground() {
+  await healthBatcher.flushQueued();
   while (background.length) await Promise.all(background.splice(0));
 }
 export function getCache() {

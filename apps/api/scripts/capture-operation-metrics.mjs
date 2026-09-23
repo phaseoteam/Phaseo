@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const wrangler = join(dirname(require.resolve("wrangler/package.json")), "bin/wrangler.js");
 const child = spawn(process.execPath, [wrangler, "tail", "phaseo-gateway-staging", "--format", "json", "--search", "gateway_operations"],
     { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
-const allowed = new Set(["kvRead", "kvWrite", "kvDelete", "kvList", "supabaseRead", "supabaseMutation", "supabaseRpc", "healthRpc", "quotaRpc", "cacheRead", "cacheWrite"]);
+const allowed = new Set(["kvRead", "kvWrite", "kvDelete", "kvList", "supabaseRead", "supabaseMutation", "supabaseRpc", "healthRpc", "healthDropped", "quotaRpc", "cacheRead", "cacheWrite"]);
 const counts = value => Object.fromEntries(Object.entries(value ?? {}).filter(([key, count]) => allowed.has(key) && Number.isSafeInteger(count) && count >= 0));
 let buffer = "", depth = 0, quoted = false, escaped = false, events = 0, envelopes = 0, stderrBytes = 0;
 function emit(raw) {
