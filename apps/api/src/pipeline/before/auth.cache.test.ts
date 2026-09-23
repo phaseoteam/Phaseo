@@ -132,6 +132,120 @@ async function flushBackground(): Promise<void> {
 }
 
 describe("authenticate hot-path caching", () => {
+    it("coalesces a 32-request cold burst and performs no external work on the immediate warm path", async () => {
+        const kid = "BURSTCACHE1", secret = "burst_secret";
+        runtime.dbRow.value = { id: "burst-key", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        const { authenticate } = await import("./auth");
+        const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+        expect((await Promise.all(Array.from({ length: 32 }, () => authenticate(request)))).every(result => result.ok)).toBe(true);
+        await flushBackground();
+        expect(runtime.cache.get).toHaveBeenCalledTimes(2);
+        expect(runtime.cache.put).toHaveBeenCalledTimes(1);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+        expect(runtime.updateEq).toHaveBeenCalledTimes(1);
+        expect((await authenticate(request)).ok).toBe(true); await flushBackground();
+        expect(runtime.cache.get).toHaveBeenCalledTimes(2); expect(runtime.cache.put).toHaveBeenCalledTimes(1);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1); expect(runtime.updateEq).toHaveBeenCalledTimes(1);
+        expect([...runtime.store.values()].join()).not.toContain(secret);
+    });
+
+    it("does not extend an old KV row's source lease when copying it into a fresh isolate", async () => {
+        vi.useFakeTimers(); const now = Date.now();
+        const kid = "SOURCELEASE1", secret = "source_secret";
+        const active = { id: "source-key", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        runtime.store.set(`gateway:key:${kid}:v0`, JSON.stringify({ ...active, auth_source_at_ms: now - 59_000 }));
+        runtime.dbRow.value = { ...active, status: "deleted" };
+        const { authenticate } = await import("./auth"); const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+        expect((await authenticate(request)).ok).toBe(true); await flushBackground();
+        vi.setSystemTime(now + 1001);
+        expect(await authenticate(request)).toEqual({ ok: false, reason: "key_not_found_or_revoked" });
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(["legacy", "future", "expired"])("rejects %s serving metadata even when KV retains an active row", async kind => {
+        const kid = "SOURCELEASE2", secret = "source_secret";
+        const active = { id: "source-key", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        const source = kind === "legacy" ? {} : { auth_source_at_ms: Date.now() + (kind === "future" ? 60_000 : -61_000) };
+        runtime.store.set(`gateway:key:${kid}:v0`, JSON.stringify({ ...active, ...source }));
+        runtime.dbRow.value = { ...active, status: "deleted" };
+        const { authenticate } = await import("./auth");
+        expect(await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`))).toEqual({ ok: false, reason: "key_not_found_or_revoked" });
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+    });
+
+    it("never grants a validated credential lease to a different supplied secret or a bypassed-cache request", async () => {
+        const kid = "LEASESECRET1", secret = "correct_secret";
+        runtime.dbRow.value = { id: "secret-key", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        const { authenticate } = await import("./auth");
+        expect((await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`))).ok).toBe(true);
+        expect(await authenticate(buildRequest(`phaseo_v1_sk_${kid}_wrong_secret`))).toEqual({ ok: false, reason: "invalid_secret" });
+        runtime.dbRow.value = { ...runtime.dbRow.value, status: "deleted" };
+        expect(await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: false }))
+            .toEqual({ ok: false, reason: "key_not_found_or_revoked" });
+        await flushBackground();
+    });
+
+    it("invalidates validated decisions when the active pepper changes", async () => {
+        const kid = "LEASEPEPPER1", secret = "pepper_secret";
+        runtime.dbRow.value = { id: "pepper-key", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        const { authenticate } = await import("./auth"); const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+        expect((await authenticate(request)).ok).toBe(true);
+        runtime.bindings.KEY_PEPPER_ACTIVE = "a-new-active-pepper";
+        expect(await authenticate(request)).toEqual({ ok: false, reason: "invalid_secret" });
+        await flushBackground();
+    });
+
+    it("bounds a validated decision by key expiry and rejects malformed expiry", async () => {
+        vi.useFakeTimers(); const now = Date.now();
+        const kid = "LEASEEXPIRY1", secret = "expiry_secret";
+        runtime.dbRow.value = { id: "expiry-key", workspace_id: "workspace", status: "active", hash: hashSecret(secret), expires_at: new Date(now + 1000).toISOString() };
+        const { authenticate } = await import("./auth"); const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+        expect((await authenticate(request)).ok).toBe(true); await flushBackground();
+        vi.setSystemTime(now + 1001);
+        expect(await authenticate(request)).toEqual({ ok: false, reason: "key_expired" });
+        runtime.dbRow.value.expires_at = "not-a-date";
+        expect(await authenticate(request, { useKvCache: false })).toEqual({ ok: false, reason: "key_expired" });
+    });
+
+    it("does not admit a database result delayed beyond the source lease", async () => {
+        vi.useFakeTimers(); const now = Date.now();
+        runtime.maybeSingle.mockImplementationOnce(async () => {
+            vi.setSystemTime(now + 60_001);
+            return { data: { id: "delayed-key", workspace_id: "workspace", status: "active", hash: hashSecret("secret") }, error: null };
+        });
+        const { authenticate } = await import("./auth");
+        expect(await authenticate(buildRequest("phaseo_v1_sk_DELAYEDSOURCE_secret"))).toEqual({ ok: false, reason: "db_error" });
+        expect(runtime.cache.put).not.toHaveBeenCalled();
+    });
+
+    it("coalesces last-used timestamps but retries a failed write and writes again after its window", async () => {
+        vi.useFakeTimers(); const now = Date.now();
+        runtime.dbRow.value = { id: "touch-key", workspace_id: "workspace", status: "active", hash: hashSecret("secret") };
+        runtime.updateEq.mockResolvedValueOnce({ error: { message: "unavailable" } } as any);
+        const { authenticate } = await import("./auth"); const request = buildRequest("phaseo_v1_sk_LASTUSEDCACHE_secret");
+        expect((await authenticate(request)).ok).toBe(true); await flushBackground();
+        expect((await authenticate(request)).ok).toBe(true); await flushBackground();
+        expect((await authenticate(request)).ok).toBe(true); await flushBackground();
+        expect(runtime.updateEq).toHaveBeenCalledTimes(2);
+        vi.setSystemTime(now + 60_001);
+        expect((await authenticate(request)).ok).toBe(true); await flushBackground();
+        expect(runtime.updateEq).toHaveBeenCalledTimes(3);
+    });
+
+    it("rechecks internal-request authorization on every validated-cache hit", async () => {
+        const kid = "INTERNALLEASE", secret = "internal_secret";
+        runtime.dbRow.value = { id: "internal-key", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
+        (runtime.bindings as any).GATEWAY_INTERNAL_TEST_TOKEN = "x".repeat(128);
+        try {
+            const { authenticate } = await import("./auth"); const ordinary = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+            const trusted = new Request(ordinary, { headers: { authorization: ordinary.headers.get("authorization")!, "x-phaseo-internal-token": "x".repeat(128) } });
+            expect(await authenticate(trusted)).toMatchObject({ ok: true, internal: true });
+            expect(await authenticate(ordinary)).toMatchObject({ ok: true, internal: false });
+            expect(await authenticate(trusted)).toMatchObject({ ok: true, internal: true });
+            await flushBackground(); expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+        } finally { delete (runtime.bindings as any).GATEWAY_INTERNAL_TEST_TOKEN; }
+    });
+
     // Regression tests cover local races; distributed KV timing is not simulated.
     it("observes a remote revocation marker after the five-second local marker cache", async () => {
         vi.useFakeTimers();
@@ -362,7 +476,7 @@ describe("authenticate hot-path caching", () => {
         };
 
         await runtime.cache.put(`gateway:keyver:kid:${kid}`, "7");
-        await runtime.cache.put(`gateway:key:${kid}:v7`, JSON.stringify(row));
+        await runtime.cache.put(`gateway:key:${kid}:v7`, JSON.stringify({ ...row, auth_source_at_ms: Date.now() }));
 
         const { authenticate } = await import("./auth");
         const first = await authenticate(buildRequest(token), { useKvCache: true });
