@@ -1,4 +1,5 @@
 -- Expose non-standard Gemini 3.8 TTS pricing through tier-filtered catalogue queries.
+-- phaseo:allow-production-history-backfill reason: Applied directly to production before migration 20260923170000 merged; this file records the existing production history.
 
 insert into public.v2_route_variants (
   variant_id,

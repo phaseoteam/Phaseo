@@ -1,4 +1,5 @@
 -- Publish Gemini 3.8 TTS availability and official Google pricing.
+-- phaseo:allow-production-history-backfill reason: Applied directly to production before migration 20260923170000 merged; this file records the existing production history.
 
 create temporary table _gemini_38_tts_prices (
   model_slug text not null,
