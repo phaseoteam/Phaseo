@@ -111,3 +111,56 @@ routing samples, not end-to-end provider latency or a global percentile claim.
 The new workspace flag remained absent/disabled. This verifies rollback-path
 compatibility, **not** the new source RPCs, full-path cost savings, or permission
 to enable production.
+
+## Enabled-reader staging validation
+
+After explicit shared-database approval, migration `20260923221019` was applied
+and staging source `ff296cd21` deployed as Worker
+`d5f0be83-0531-420b-8fe5-97abbb355f0e` with the reader enabled. Production Worker
+configuration and wallet balances were not changed; staging crons remain empty.
+Live role checks confirmed invoker/empty-search-path behavior and execute access
+only for the service role. The security advisor reported no findings referencing
+either new function. An actual v2 RPC invocation with the revoked disposable key
+rejected with `api_key_inactive`, including when both cached payloads were omitted.
+
+All twelve free Poolside XS/S checks passed across Chat, Responses and Messages,
+streaming/non-streaming, with zero charges verified in request logs. Routing
+overhead was `[390, 29, 35, 10, 3, 5, 137, 13, 8, 7, 4, 14]` ms in LHR:
+first per model 390/137 ms; ten follow-ups 3–35 ms, median 9 ms, mean 12.8 ms.
+These measure routing, not provider response time or a global latency percentile.
+All twelve operation records completed with zero pending background work, and
+all six stream records had completed state and final usage.
+
+The disposable key `cab54e07-26f1-4d76-ac16-34b7ac181981` was revoked. With no KV
+revocation publication, malformed auth-only probes first rejected at 45,982 ms
+and rejected again at 51,770 ms. This checks source expiry in one location, not
+instantaneous global revocation. No provider was invoked by these auth probes.
+
+### Operation-count comparison
+
+The table excludes auth-only probes and compares the twelve matched provider
+requests with the historical stream-observations run (`889e0be80`). It is not a
+controlled simultaneous A/B: isolate placement, cache age and background timing
+can differ. The new path is functional but this sample does **not** show a total
+operation reduction.
+
+| Total operations across 12 requests | Historical run | Enabled reader |
+| --- | ---: | ---: |
+| KV reads | 49 | 59 |
+| KV writes | 16 | 18 |
+| Health RPCs | 22 | 22 |
+| Supabase reads | 24 | 24 |
+| Supabase mutations | 26 | 26 |
+| Supabase RPCs | 26 | 26 |
+| Cache API reads / writes | 2 / 2 | 2 / 2 |
+
+Only the two first-model requests recorded a context RPC before dispatch. The
+ten follow-ups recorded no Supabase reads/RPCs in that bucket, though one included
+an advisory mutation. Timing buckets include concurrent background work and do
+not prove which operation blocked routing. RPC counts do not measure database
+query cost or rows read. No invoice-level saving is inferred from these counts.
+
+The enabled run and redacted per-request operation records are retained in
+`evidence/workspace-runtime-staging-2026-09-23.json`. The rollout gate remains
+staging-only until composition separation, representative cost checks and the
+remaining production-safety gates are complete.
