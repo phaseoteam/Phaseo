@@ -256,6 +256,7 @@ const providerSchema = z
         pricing_key: z.string().nullable().optional(),
         provider_status: z.string().nullable().optional(),
         provider_routing_status: z.string().nullable().optional(),
+        external_routing_override: z.boolean().optional().default(false),
         model_status: z.string().nullable().optional(),
         capability_status: z.string().nullable().optional(),
         residency_mode: z
@@ -328,6 +329,7 @@ const providerSchema = z
         pricingKey: provider.pricing_key ?? null,
         providerStatus: (provider.provider_status ?? null) as GatewayProviderSnapshot["providerStatus"],
         providerRoutingStatus: (provider.provider_routing_status ?? null) as GatewayProviderSnapshot["providerRoutingStatus"],
+        externalRoutingOverride: provider.external_routing_override === true,
         modelRoutingStatus: (provider.model_status ?? null) as GatewayProviderSnapshot["modelRoutingStatus"],
         capabilityStatus: (provider.capability_status ?? null) as GatewayProviderSnapshot["capabilityStatus"],
         residencyMode: (provider.residency_mode ?? null) as GatewayProviderSnapshot["residencyMode"],

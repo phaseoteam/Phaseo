@@ -458,6 +458,7 @@ begin
       m.api_model_id,
       m.provider_model_slug,
       m.routing_status as model_status,
+      coalesce((m.metadata->>'external_routing_override')::boolean, false) as external_routing_override,
       m.input_modalities,
       m.output_modalities,
       p.prompt_training_policy,
@@ -478,7 +479,7 @@ begin
       select provider_model_id as provider_api_model_id, provider_slug as provider_id,
         model_slug as api_model_id, model_slug as model_id, provider_model_slug,
         routing_enabled as is_active_gateway, status as routing_status,
-        input_modalities, output_modalities, effective_from, effective_to
+        input_modalities, output_modalities, effective_from, effective_to, metadata
       from public.v2_model_provider_routes
     ) m
     join (
@@ -499,6 +500,10 @@ begin
       and c.capability_id = gateway_fetch_request_context.endpoint
       and c.status in ('active', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
       and m.is_active_gateway
+      and (
+        p.status <> 'external'
+        or coalesce((m.metadata->>'external_routing_override')::boolean, false)
+      )
       and (m.effective_from is null or m.effective_from <= now() at time zone 'utc')
       and (m.effective_to   is null or (now() at time zone 'utc') < m.effective_to)
     order by m.provider_api_model_id, coalesce(c.updated_at, c.created_at) desc
@@ -512,6 +517,7 @@ begin
           'pricing_key', pr.provider_id,
           'provider_model_slug', pr.provider_model_slug,
           'model_status', pr.model_status,
+          'external_routing_override', pr.external_routing_override,
           'input_modalities', pr.input_modalities,
           'output_modalities', pr.output_modalities,
           'prompt_training_policy', coalesce(pr.prompt_training_policy, 'unknown'),

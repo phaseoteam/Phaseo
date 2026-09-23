@@ -466,14 +466,18 @@ export async function fetchGatewayMonitorRows(
 	);
 	const monitorRouteIds = [...new Set(rows.map((row) => String(row.provider_api_model_id ?? "").trim()).filter(Boolean))];
 	const stealthRouteIds = new Set<string>();
+	const externalOverrideRouteIds = new Set<string>();
 	for (let offset = 0; offset < monitorRouteIds.length; offset += 200) {
 		const result = await client
 			.from("v2_model_provider_routes")
-			.select("provider_model_id")
-			.in("provider_model_id", monitorRouteIds.slice(offset, offset + 200))
-			.eq("is_stealth", true);
+			.select("provider_model_id,is_stealth,metadata")
+			.in("provider_model_id", monitorRouteIds.slice(offset, offset + 200));
 		if (result.error) throw result.error;
-		for (const route of result.data ?? []) stealthRouteIds.add(String(route.provider_model_id));
+		for (const route of result.data ?? []) {
+			const routeId = String(route.provider_model_id);
+			if (route.is_stealth === true) stealthRouteIds.add(routeId);
+			if (route.metadata?.external_routing_override === true) externalOverrideRouteIds.add(routeId);
+		}
 	}
 	for (const row of rows) {
 		if (!stealthRouteIds.has(String(row.provider_api_model_id ?? ""))) continue;
@@ -507,7 +511,10 @@ export async function fetchGatewayMonitorRows(
 		// The /models catalogue describes Phaseo availability. External catalogue
 		// providers remain available on model detail pages, but must not inflate
 		// this page's provider counts or hover lists.
-		if (providerStatusesById.get(normalizedProviderId) === "external") continue;
+		if (
+			providerStatusesById.get(normalizedProviderId) === "external" &&
+			!externalOverrideRouteIds.has(String(row.provider_api_model_id ?? ""))
+		) continue;
 		const apiModelId = String(row.api_model_id ?? "").trim();
 		const providerModelId = String(
 			row.provider_api_model_id ?? row.provider_model_slug ?? apiModelId,
