@@ -8,6 +8,7 @@ import { getProviderResidencyMetadata } from "@/lib/config/providerResidency";
 import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { getTextMany, keyVersionToken } from "@/core/kv";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
+import { creditAdmissionLeases } from "@/core/credit-admission-leases";
 import { contextLeases, encodeContextLease } from "./contextLeaseCache";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
@@ -1058,7 +1059,15 @@ export async function fetchGatewayContext(args: {
     const supabase = getSupabaseAdmin();
     const cache = getCache();
     async function persistCredit(value: CreditContextSnapshot, ttl: number): Promise<void> {
-        const write = cache.put(gatewayCreditCacheKey(args.workspaceId), JSON.stringify(value), { expirationTtl: ttl }).catch(() => undefined);
+        if (!creditAdmissionLeases.canPublish(args.workspaceId, sourceCheckedAtMs)) return;
+        const raw = encodeContextLease(value, ttl, sourceCheckedAtMs);
+        const write = cache.put(gatewayCreditCacheKey(args.workspaceId), raw, { expirationTtl: ttl }).then(() => {
+            // A concurrent charge/hold may invalidate while the KV put is pending.
+            // Do not repopulate local credit from that pre-mutation source.
+            if (creditAdmissionLeases.canPublish(args.workspaceId, sourceCheckedAtMs)) {
+                creditAdmissionLeases.remember(args.workspaceId, raw);
+            }
+        }).catch(() => undefined);
         if (args.onCreditCacheWrite) {
             args.onCreditCacheWrite(write);
             dispatchBackground(write);
@@ -1144,11 +1153,11 @@ export async function fetchGatewayContext(args: {
     if (shouldUseCache) {
         const cacheReadStartedAt = performance.now();
         try {
-            const [leasedValues, creditValues] = await Promise.all([
+            const [leasedValues, creditRaw] = await Promise.all([
                 contextLeases.read([dynamicCacheKey, staticCacheKey], getTextMany),
-                getTextMany([creditCacheKey]),
+                creditAdmissionLeases.read(args.workspaceId, async () => (await getTextMany([creditCacheKey]))[creditCacheKey] ?? null),
             ]);
-            const cachedValues = { ...leasedValues, ...creditValues };
+            const cachedValues = { ...leasedValues, [creditCacheKey]: creditRaw };
             const dynamicCachedRaw = cachedValues[dynamicCacheKey] ?? null;
             const staticCachedRaw = cachedValues[staticCacheKey] ?? null;
             const creditCachedRaw = cachedValues[creditCacheKey] ?? null;
