@@ -2282,6 +2282,9 @@ public sealed class ErrorProviderFailureDiagnostics
 
 public sealed class ErrorResponse
 {
+	[JsonPropertyName("action")]
+	public string? Action { get; set; }
+
 	[JsonPropertyName("attempt_count")]
 	public long? AttemptCount { get; set; }
 
@@ -2290,6 +2293,9 @@ public sealed class ErrorResponse
 
 	[JsonPropertyName("details")]
 	public List<Dictionary<string, object>>? Details { get; set; }
+
+	[JsonPropertyName("docs_url")]
+	public string? DocsUrl { get; set; }
 
 	[JsonPropertyName("error")]
 	public object Error { get; set; }
@@ -2339,11 +2345,23 @@ public sealed class ErrorResponse
 	[JsonPropertyName("reason")]
 	public string? Reason { get; set; }
 
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
+	[JsonPropertyName("retry_after_seconds")]
+	public long? RetryAfterSeconds { get; set; }
+
+	[JsonPropertyName("retryable")]
+	public bool? Retryable { get; set; }
+
 	[JsonPropertyName("routing_diagnostics")]
 	public Dictionary<string, object>? RoutingDiagnostics { get; set; }
 
 	[JsonPropertyName("status_code")]
 	public long? StatusCode { get; set; }
+
+	[JsonPropertyName("support_url")]
+	public string? SupportUrl { get; set; }
 
 	[JsonPropertyName("upstream_error")]
 	public Dictionary<string, object>? UpstreamError { get; set; }

@@ -58,7 +58,7 @@ import {
 } from "./helpers.js";
 export { JobHandle } from "./jobHandle.js";
 export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
-export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
+export { PhaseoHttpError, type RawResponse, type PhaseoGatewayErrorBody } from "./runtime/client.js";
 export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type RequestEvent, type ResponseEvent, type RetryEvent, type ResponseMetadata } from "./runtime/transport.js";
 import {
   TelemetryCapture,

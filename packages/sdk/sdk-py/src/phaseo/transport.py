@@ -50,12 +50,55 @@ class PhaseoHTTPError(httpx.HTTPStatusError):
         except ValueError:
             self.body = response.text
         self.status = response.status_code
-        self.request_id = response.headers.get("x-request-id") or response.headers.get("x-phaseo-request-id")
+        payload = self.body if isinstance(self.body, dict) else {}
+        nested_error = payload.get("error") if isinstance(payload.get("error"), dict) else {}
+        self.status_code = response.status_code
+        self.request_id = payload.get("request_id") or response.headers.get("x-request-id") or response.headers.get("x-phaseo-request-id")
+        self.generation_id = payload.get("generation_id") or self.request_id
         self.trace_url = request_trace_url(self.request_id) if self.request_id else None
-        error = self.body.get("error", self.body) if isinstance(self.body, dict) else {}
-        self.code = error.get("code") if isinstance(error, dict) else error if isinstance(error, str) else None
+        error = payload.get("error", payload)
+        self.code = payload.get("code") or (error.get("code") if isinstance(error, dict) else error if isinstance(error, str) else None)
+        self.error_type = payload.get("error_type")
+        self.error_origin = payload.get("error_origin")
+        self.retryable = payload.get("retryable") if isinstance(payload.get("retryable"), bool) else None
+        self.action = payload.get("action")
+        self.docs_url = payload.get("docs_url")
+        self.support_url = payload.get("support_url")
+        self.retry_after_seconds = _retry_after_seconds(payload.get("retry_after_seconds"), response.headers.get("retry-after"))
+        self.details = payload.get("details")
         self.retry_after = retry_after(response)
-        super().__init__(f"Phaseo request failed ({self.status}): {self.code or response.reason_phrase}", request=response.request, response=response)
+        message = payload.get("message") or payload.get("description") or self.code or response.reason_phrase
+        super().__init__(f"Phaseo request failed ({self.status}): {message}", request=response.request, response=response)
+
+    def to_devtools_error(self) -> dict[str, Any]:
+        return {
+            "message": str(self),
+            "type": self.__class__.__name__,
+            "code": self.code,
+            "status": self.status_code,
+            "status_code": self.status_code,
+            "request_id": self.request_id,
+            "generation_id": self.generation_id,
+            "error_type": self.error_type,
+            "error_origin": self.error_origin,
+            "retryable": self.retryable,
+            "action": self.action,
+            "docs_url": self.docs_url,
+            "support_url": self.support_url,
+            "retry_after_seconds": self.retry_after_seconds,
+            "details": self.details,
+        }
+
+
+def _retry_after_seconds(value: Any, header: str | None) -> int | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return max(0, int(value))
+    if header:
+        try:
+            return max(0, int(float(header.strip())))
+        except ValueError:
+            return None
+    return None
 
 
 def retry_after(response: httpx.Response) -> float | None:

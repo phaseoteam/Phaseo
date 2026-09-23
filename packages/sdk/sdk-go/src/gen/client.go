@@ -84,6 +84,7 @@ type HTTPError struct {
 	Headers    http.Header
 	Body       []byte
 	Code       string
+	Payload    map[string]any
 }
 
 func (e *HTTPError) Error() string {
@@ -100,10 +101,50 @@ func (e *HTTPError) RequestID() string {
 	if e == nil {
 		return ""
 	}
+	if value := e.payloadString("request_id"); value != "" {
+		return value
+	}
 	if value := e.Headers.Get("X-Request-Id"); value != "" {
 		return value
 	}
 	return e.Headers.Get("X-Phaseo-Request-Id")
+}
+
+func (e *HTTPError) GenerationID() string { return e.payloadString("generation_id") }
+func (e *HTTPError) ErrorType() string    { return e.payloadString("error_type") }
+func (e *HTTPError) ErrorOrigin() string  { return e.payloadString("error_origin") }
+func (e *HTTPError) Action() string       { return e.payloadString("action") }
+func (e *HTTPError) DocsURL() string      { return e.payloadString("docs_url") }
+func (e *HTTPError) SupportURL() string   { return e.payloadString("support_url") }
+func (e *HTTPError) Retryable() bool {
+	value, ok := e.payloadValue("retryable").(bool)
+	return ok && value
+}
+func (e *HTTPError) RetryAfterSeconds() *int {
+	if value, ok := e.payloadValue("retry_after_seconds").(float64); ok {
+		seconds := int(value)
+		return &seconds
+	}
+	if value := e.Headers.Get("Retry-After"); value != "" {
+		if seconds, err := strconv.Atoi(value); err == nil {
+			if seconds < 0 {
+				seconds = 0
+			}
+			return &seconds
+		}
+	}
+	return nil
+}
+func (e *HTTPError) Details() any { return e.payloadValue("details") }
+func (e *HTTPError) payloadValue(name string) any {
+	if e == nil {
+		return nil
+	}
+	return e.Payload[name]
+}
+func (e *HTTPError) payloadString(name string) string {
+	value, _ := e.payloadValue(name).(string)
+	return value
 }
 
 func (e *HTTPError) TraceURL() string {
@@ -233,7 +274,7 @@ func (c *Client) RequestWithOptions(method string, path string, query map[string
 			c.OnResponse(ResponseEvent{RequestEvent: event, StatusCode: resp.StatusCode, RequestID: response.RequestID(), Elapsed: time.Since(started)})
 		}
 		if resp.StatusCode >= 400 {
-			return nil, &HTTPError{StatusCode: resp.StatusCode, Status: resp.Status, Headers: resp.Header.Clone(), Body: data, Code: errorCode(data)}
+			return nil, &HTTPError{StatusCode: resp.StatusCode, Status: resp.Status, Headers: resp.Header.Clone(), Body: data, Code: errorCode(data), Payload: errorPayload(data)}
 		}
 		return response, nil
 	}
@@ -247,10 +288,7 @@ func DecodeJSON[T any](data []byte, out *T) error {
 }
 
 func errorCode(data []byte) string {
-	var body map[string]any
-	if json.Unmarshal(data, &body) != nil {
-		return ""
-	}
+	body := errorPayload(data)
 	if value, ok := body["code"].(string); ok {
 		return value
 	}
@@ -263,6 +301,14 @@ func errorCode(data []byte) string {
 		}
 	}
 	return ""
+}
+
+func errorPayload(data []byte) map[string]any {
+	var body map[string]any
+	if json.Unmarshal(data, &body) != nil {
+		return map[string]any{}
+	}
+	return body
 }
 
 func retryableStatus(status int) bool {

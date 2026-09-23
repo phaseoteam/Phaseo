@@ -942,9 +942,11 @@ public final class Models {
 	}
 
 	public static class ErrorResponse {
+		public String action;
 		public Integer attempt_count;
 		public String description;
 		public java.util.List<Object> details;
+		public String docs_url;
 		public Object error;
 		public Object error_origin;
 		public Object error_type;
@@ -961,8 +963,12 @@ public final class Models {
 		public String provider_payment_required_provider;
 		public String provider_payment_required_support_notice;
 		public String reason;
+		public String request_id;
+		public Integer retry_after_seconds;
+		public Boolean retryable;
 		public Object routing_diagnostics;
 		public Integer status_code;
+		public String support_url;
 		public Object upstream_error;
 	}
 

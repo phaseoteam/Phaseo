@@ -156,6 +156,35 @@ namespace PhaseoSdk
             }
             EnrichMetadataFromResponse(metadata, errorResponse);
             var statusCode = ExtractErrorStatusCode(ex);
+            var errorInfo = new Dictionary<string, object?>
+            {
+                ["message"] = ex.Message,
+                ["type"] = ex.GetType().FullName ?? ex.GetType().Name,
+                ["status_code"] = statusCode
+            };
+            if (ex is ApiErrorException apiError)
+            {
+                foreach (var pair in new Dictionary<string, object?>
+                {
+                    ["request_id"] = apiError.RequestId,
+                    ["generation_id"] = apiError.GenerationId,
+                    ["code"] = apiError.Code,
+                    ["error_type"] = apiError.ErrorType,
+                    ["error_origin"] = apiError.ErrorOrigin,
+                    ["retryable"] = apiError.Retryable,
+                    ["action"] = apiError.Action,
+                    ["docs_url"] = apiError.DocsUrl,
+                    ["support_url"] = apiError.SupportUrl,
+                    ["retry_after_seconds"] = apiError.RetryAfterSeconds,
+                    ["details"] = apiError.Details
+                })
+                {
+                    if (pair.Value is not null)
+                    {
+                        errorInfo[pair.Key] = pair.Value;
+                    }
+                }
+            }
 
             var entry = new Dictionary<string, object?>
             {
@@ -165,11 +194,7 @@ namespace PhaseoSdk
                 ["duration_ms"] = durationMs,
                 ["request"] = Normalize(request),
                 ["response"] = errorResponse.Count > 0 ? errorResponse : null,
-                ["error"] = new Dictionary<string, object?>
-                {
-                    ["message"] = ex.Message,
-                    ["status_code"] = statusCode
-                },
+                ["error"] = errorInfo,
                 ["metadata"] = metadata
             };
 
@@ -349,10 +374,18 @@ namespace PhaseoSdk
             foreach (var key in new[]
             {
                 "request_id",
+                "generation_id",
                 "session_id",
                 "upstream_request_id",
                 "native_response_id",
                 "status_code",
+                "error_type",
+                "error_origin",
+                "retryable",
+                "action",
+                "docs_url",
+                "support_url",
+                "retry_after_seconds",
                 "latency_ms",
                 "generation_ms",
                 "throughput",

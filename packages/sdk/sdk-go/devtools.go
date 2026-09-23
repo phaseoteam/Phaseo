@@ -158,6 +158,7 @@ func (t *telemetryRecorder) captureError(endpoint string, request any, err error
 		"response":    normalizeForJSON(errorResponse),
 		"error": map[string]any{
 			"message": err.Error(),
+			"type":    fmt.Sprintf("%T", err),
 		},
 		"metadata": map[string]any{
 			"sdk":         "go",
@@ -167,6 +168,24 @@ func (t *telemetryRecorder) captureError(endpoint string, request any, err error
 	}
 	if statusCode := extractErrorStatusCode(err); statusCode != nil {
 		entry["error"].(map[string]any)["status_code"] = statusCode
+	}
+	if payload := extractErrorResponse(err); len(payload) > 0 {
+		for source, target := range map[string]string{
+			"request_id":          "request_id",
+			"generation_id":       "generation_id",
+			"code":                "code",
+			"error_type":          "error_type",
+			"error_origin":        "error_origin",
+			"retryable":           "retryable",
+			"action":              "action",
+			"docs_url":            "docs_url",
+			"support_url":         "support_url",
+			"retry_after_seconds": "retry_after_seconds",
+		} {
+			if value := payload[source]; value != nil {
+				entry["error"].(map[string]any)[target] = value
+			}
+		}
 	}
 	t.enrichMetadata(entry, request, nil, errorResponse)
 	t.appendEntry(entry)
@@ -214,6 +233,11 @@ func (t *telemetryRecorder) enrichMetadata(entry map[string]any, request any, re
 	}
 	if nativeResponseID := firstNonEmptyString(toString(responseMap["native_response_id"])); nativeResponseID != "" {
 		metadata["native_response_id"] = nativeResponseID
+	}
+	for _, key := range []string{"generation_id", "error_type", "error_origin", "retryable", "action", "docs_url", "support_url", "retry_after_seconds"} {
+		if value := responseMap[key]; value != nil {
+			metadata[key] = value
+		}
 	}
 	if finishReason := firstNonEmptyString(toString(responseMap["finish_reason"]), toString(responseMap["stop_reason"])); finishReason != "" {
 		metadata["finish_reason"] = finishReason

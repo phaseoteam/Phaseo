@@ -741,11 +741,35 @@ final class Agent
         foreach (["images", "audio", "video"] as $kind) { @mkdir("{$directory}/assets/{$kind}", 0777, true); }
         if (!file_exists("{$directory}/metadata.json")) { file_put_contents("{$directory}/metadata.json", json_encode(["session_id" => bin2hex(random_bytes(8)), "started_at" => (int)($startedAt * 1000), "sdk" => "php"], JSON_PRETTY_PRINT)); }
         $record = $result?->run;
+        $metadata = ["sdk" => "php", "agent_id" => $this->definition->id, "run_id" => $record?->id ?? $runId, "run_status" => $record?->status];
+        $errorInfo = null;
+        if ($error !== null) {
+            $errorInfo = ["message" => $error->getMessage(), "type" => $error::class];
+            if ($error instanceof \Phaseo\Gen\RequestException) {
+                $values = [
+                    "status_code" => $error->getStatusCode(),
+                    "request_id" => method_exists($error, "getRequestId") ? $error->getRequestId() : null,
+                    "generation_id" => method_exists($error, "getGenerationId") ? $error->getGenerationId() : null,
+                    "code" => method_exists($error, "getErrorCode") ? $error->getErrorCode() : null,
+                    "error_type" => method_exists($error, "getErrorType") ? $error->getErrorType() : null,
+                    "error_origin" => method_exists($error, "getErrorOrigin") ? $error->getErrorOrigin() : null,
+                    "retryable" => method_exists($error, "getRetryable") ? $error->getRetryable() : null,
+                    "action" => method_exists($error, "getAction") ? $error->getAction() : null,
+                    "docs_url" => method_exists($error, "getDocsUrl") ? $error->getDocsUrl() : null,
+                    "support_url" => method_exists($error, "getSupportUrl") ? $error->getSupportUrl() : null,
+                    "retry_after_seconds" => method_exists($error, "getRetryAfterSeconds") ? $error->getRetryAfterSeconds() : null,
+                    "details" => method_exists($error, "getDetails") ? $error->getDetails() : null,
+                ];
+                $values = array_filter($values, static fn ($value): bool => $value !== null);
+                $errorInfo = array_merge($errorInfo, $values);
+                $metadata = array_merge($metadata, $values);
+            }
+        }
         $entry = [
             "id" => $record?->id ?? $runId ?? bin2hex(random_bytes(8)), "type" => $operation,
             "timestamp" => (int)($startedAt * 1000), "request" => ["agent_id" => $this->definition->id, "tool_count" => count($this->definition->tools)],
-            "response" => $result, "error" => $error ? ["message" => $error->getMessage()] : null,
-            "metadata" => ["sdk" => "php", "agent_id" => $this->definition->id, "run_id" => $record?->id ?? $runId, "run_status" => $record?->status],
+            "response" => $result, "error" => $errorInfo,
+            "metadata" => $metadata,
         ];
         file_put_contents("{$directory}/generations.jsonl", json_encode($entry, JSON_UNESCAPED_SLASHES) . PHP_EOL, FILE_APPEND);
     }

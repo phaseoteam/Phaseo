@@ -17,6 +17,7 @@ from gen import operations as ops
 from phaseo_devtools import TelemetryRecorder, create_phaseo_devtools
 from .model_ids import MODEL_IDS, ModelIds
 from .transport import HttpClient, APIResponse, PhaseoHTTPError, RawResponse, RequestHook, request_trace_url
+from .errors import PhaseoAPIError
 from .helpers import parse_output, output_text, collect_stream, check_capabilities, check_parameter_support, batch_results, match_batch_result, StructuredOutputError, StreamResponseError
 from .async_client import AsyncPhaseo, AsyncJobHandle, collect_async_stream, ParsedOutput
 from .media import upload_input, download_to
@@ -1973,6 +1974,7 @@ __all__ = [
     "AsyncJobHandle",
     "JobHandle",
     "PhaseoHTTPError",
+    "PhaseoAPIError",
     "RawResponse",
     "StructuredOutputError",
     "StreamResponseError",

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any, Dict, Optional
+
+from phaseo.errors import PhaseoAPIError
 
 
 class Client:
@@ -28,13 +31,14 @@ class Client:
 			payload = json.dumps(body).encode("utf-8")
 			request_headers["Content-Type"] = "application/json"
 		req = urllib.request.Request(url, data=payload, headers=request_headers, method=method.upper())
-		with urllib.request.urlopen(req) as resp:
-			raw = resp.read().decode("utf-8")
-			if resp.headers.get_content_type() == "application/x-ndjson":
-				return raw
-			if not raw:
-				return None
-			try:
-				return json.loads(raw)
-			except json.JSONDecodeError:
-				return raw
+		try:
+			with urllib.request.urlopen(req) as resp:
+				raw = resp.read().decode("utf-8")
+		except urllib.error.HTTPError as error:
+			raise PhaseoAPIError.from_urllib(error) from error
+		if not raw:
+			return None
+		try:
+			return json.loads(raw)
+		except json.JSONDecodeError:
+			return raw

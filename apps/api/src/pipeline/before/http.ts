@@ -3,6 +3,8 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Builds standardized error responses for before-stage failures.
 
+import { normalizeGatewayErrorPayload } from "../error-contract";
+
 export type ErrorCode =
     | "unauthorised"
     | "invalid_json"
@@ -131,9 +133,21 @@ export function err(code: ErrorCode, payload: Record<string, unknown>) {
     if (providerFailureDiagnostics) {
         body.provider_failure_diagnostics = providerFailureDiagnostics;
     }
-    return json(body, STATUS[code]);
+    return json(
+        normalizeGatewayErrorPayload(body, {
+            statusCode: STATUS[code],
+            errorType: body.error_type as string,
+            errorOrigin: body.error_origin as string,
+            requestId:
+                typeof body.request_id === "string"
+                    ? body.request_id
+                    : typeof body.generation_id === "string"
+                        ? body.generation_id
+                        : null,
+        }),
+        STATUS[code],
+    );
 }
-
 
 
 

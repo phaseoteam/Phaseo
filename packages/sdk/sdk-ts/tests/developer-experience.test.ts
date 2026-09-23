@@ -180,6 +180,36 @@ test("HTTP errors remain backwards compatible", () => {
   expect(new PhaseoHttpError({ status: 400, statusText: "Bad request", body: "bad" }).status).toBe(400);
 });
 
+test("HTTP errors expose the structured Gateway recovery contract", () => {
+  const error = new PhaseoHttpError({
+    status: 429,
+    statusText: "Too Many Requests",
+    body: {
+      error: "provider_capacity_exhausted",
+      request_id: "G-TS-1",
+      generation_id: "G-TS-1",
+      error_type: "system",
+      error_origin: "upstream",
+      retryable: true,
+      action: "Wait, then retry with bounded exponential backoff.",
+      docs_url: "https://phaseo.app/docs/v1/api-reference/errors",
+      support_url: "https://phaseo.tawk.help/",
+      retry_after_seconds: 15,
+      details: [{ message: "All eligible providers are temporarily at capacity." }],
+    },
+    headers: { "X-Request-Id": "G-TS-HEADER" },
+  });
+
+  expect(error.code).toBe("provider_capacity_exhausted");
+  expect(error.requestId).toBe("G-TS-1");
+  expect(error.generationId).toBe("G-TS-1");
+  expect(error.errorType).toBe("system");
+  expect(error.errorOrigin).toBe("upstream");
+  expect(error.retryable).toBe(true);
+  expect(error.retryAfterSeconds).toBe(15);
+  expect(error.details).toEqual([{ message: "All eligible providers are temporarily at capacity." }]);
+});
+
 test("request preserves null for successful empty responses", async () => {
   const { client, mock } = setup([
     { method: "DELETE", path: "/v1/files/file_1", status: 204 },

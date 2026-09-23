@@ -1,4 +1,4 @@
-import { DevToolsWriter, type DevToolsEntry, type EndpointType, type DevToolsConfig } from "./core.js";
+import { DevToolsWriter, type DevToolsEntry, type EndpointType, type DevToolsConfig, type ErrorInfo } from "./core.js";
 import { randomUUID } from "crypto";
 
 /**
@@ -133,12 +133,7 @@ export class TelemetryCapture {
           duration_ms: duration,
           request: getRequest(),
           response: errorResponse,
-          error: {
-            message: error instanceof Error ? error.message : String(error),
-            code: (error as any).code,
-            status: (error as any).status,
-            stack: error instanceof Error ? error.stack : undefined
-          },
+          error: extractErrorInfo(error, errorResponse),
           metadata: {
             ...errorMetadata
           }
@@ -187,14 +182,7 @@ export class TelemetryCapture {
         duration_ms: duration,
         request: getRequest(),
         response: error ? errorResponse : { chunks: chunks.length },
-        error: error
-          ? {
-              message: error.message,
-              code: (error as any).code,
-              status: (error as any).status,
-              stack: error.stack
-            }
-          : null,
+        error: error ? extractErrorInfo(error, errorResponse) : null,
         metadata: {
           stream: true,
           chunk_count: chunks.length,
@@ -339,9 +327,19 @@ function extractErrorMetadata(
   response: Record<string, any> | null
 ): Partial<DevToolsEntry["metadata"]> {
   const shared = extractGatewayMetadata(response);
+  const info = extractErrorInfo(error, response);
   return {
     ...shared,
-    status_code: asFiniteNumber((error as any)?.status) ?? shared.status_code,
+    request_id: info.request_id ?? shared.request_id,
+    error_code: info.code,
+    error_type: info.error_type,
+    error_origin: info.error_origin,
+    retryable: info.retryable,
+    action: info.action,
+    docs_url: info.docs_url,
+    support_url: info.support_url,
+    retry_after_seconds: info.retry_after_seconds,
+    status_code: info.status_code ?? shared.status_code,
     finish_reason: firstNonEmpty(
       response?.finish_reason,
       response?.error?.code,
@@ -349,6 +347,30 @@ function extractErrorMetadata(
     ),
     pricing_lines: shared.pricing_lines,
     provider_attempts: shared.provider_attempts
+  };
+}
+
+function extractErrorInfo(error: unknown, response: Record<string, any> | null): ErrorInfo {
+  const source = (error && typeof error === "object" ? error : {}) as Record<string, any>;
+  const payload = response ?? {};
+  const nestedError = payload.error && typeof payload.error === "object" ? payload.error : {};
+  return {
+    message: error instanceof Error ? error.message : String(error),
+    code: firstNonEmpty(source.code, payload.code, typeof payload.error === "string" ? payload.error : undefined, nestedError.code),
+    status: asFiniteNumber(source.status ?? payload.status_code),
+    status_code: asFiniteNumber(payload.status_code ?? source.status),
+    stack: error instanceof Error ? error.stack : undefined,
+    request_id: firstNonEmpty(source.requestId, source.request_id, payload.request_id, payload.requestId, payload.generation_id, source.headers?.["x-request-id"]),
+    generation_id: firstNonEmpty(source.generationId, source.generation_id, payload.generation_id),
+    error_type: firstNonEmpty(source.errorType, source.error_type, payload.error_type),
+    error_origin: firstNonEmpty(source.errorOrigin, source.error_origin, payload.error_origin),
+    retryable: typeof source.retryable === "boolean" ? source.retryable : typeof payload.retryable === "boolean" ? payload.retryable : undefined,
+    action: firstNonEmpty(source.action, payload.action),
+    docs_url: firstNonEmpty(source.docsUrl, source.docs_url, payload.docs_url),
+    support_url: firstNonEmpty(source.supportUrl, source.support_url, payload.support_url),
+    retry_after_seconds: asFiniteNumber(source.retryAfterSeconds ?? source.retry_after_seconds ?? payload.retry_after_seconds),
+    details: payload.details,
+    payload: response ?? undefined,
   };
 }
 

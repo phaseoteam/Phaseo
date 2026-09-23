@@ -19,6 +19,7 @@ const defaultBaseURL = "https://api.phaseo.app/v1"
 
 type ChatCompletionsRequest = gen.ChatCompletionsRequest
 type ResponsesRequest = gen.ResponsesRequest
+type GatewayError = gen.HTTPError
 
 type PhaseoLogLevel string
 

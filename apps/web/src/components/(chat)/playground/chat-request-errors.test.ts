@@ -44,6 +44,11 @@ describe("parseChatStreamErrorFrame", () => {
 		const error = parseChatStreamErrorFrame({
 			error: "upstream_error",
 			description: "Provider failed.",
+			action: "Retry with bounded exponential backoff.",
+			retryable: true,
+			docs_url: "https://phaseo.app/docs/v1/api-reference/errors",
+			support_url: "https://phaseo.tawk.help/",
+			retry_after_seconds: 10,
 			generation_id: "gen_123",
 			routing_diagnostics: {
 				finalCandidateCount: 1,
@@ -54,6 +59,10 @@ describe("parseChatStreamErrorFrame", () => {
 		expect(error?.message).toBe("Provider failed.");
 		expect(error?.code).toBe("upstream_error");
 		expect(error?.requestId).toBe("gen_123");
+		expect(error?.action).toBe("Retry with bounded exponential backoff.");
+		expect(error?.retryable).toBe(true);
+		expect(error?.retryAfterSeconds).toBe(10);
+		expect(error?.docsUrl).toBe("https://phaseo.app/docs/v1/api-reference/errors");
 		expect(error?.routingDiagnostics).toEqual({
 			finalCandidateCount: 1,
 		});

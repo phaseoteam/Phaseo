@@ -38,6 +38,7 @@ function dispatchProviderHealthBackground(task: () => Promise<unknown>): void {
 
 import { guardCandidates, guardPricingFound, guardAllFailed } from "./guards";
 import { err, json } from "./http";
+import { normalizeGatewayErrorPayload } from "../error-contract";
 import { getBaseModel, calculateMaxTries } from "./utils";
 import { rankProviders } from "./providers";
 import { resolveProviderExecutor } from "../../executors";
@@ -126,7 +127,7 @@ function unsupportedReasoningEffortResponse(
 ): Response {
 	const supported = Array.from(new Set(supportedValues));
 	const message = `Reasoning effort "instant" is not supported for model "${model}".`;
-	return json({
+	return json(normalizeGatewayErrorPayload({
 		error: "validation_error",
 		reason: "unsupported_param",
 		description: `${message} Supported values: ${supported.join(", ") || "none"}.`,
@@ -144,7 +145,12 @@ function unsupportedReasoningEffortResponse(
 			},
 		}],
 		request_id: ctx.requestId,
-	}, 400);
+	}, {
+		statusCode: 400,
+		requestId: ctx.requestId,
+		errorType: "user",
+		errorOrigin: "user",
+	}), 400);
 }
 
 export type CredentialAttemptPhase = "priority_byok" | "balanced_byok" | "gateway" | "fallback_byok";
@@ -1000,12 +1006,27 @@ async function attemptProviderWithIR(
 				provider: healthProvider, model: baseModel, ok: false,
 				healthImpact: "neutral", latency_ms: Math.round(performance.now() - attemptStartedAt),
 			}));
-			return { ok: false, response: new Response(JSON.stringify({
-				error: reservationDenial.code, reason: reservationDenial.reason,
-				error_type: "user", error_origin: "user",
+			const response = new Response(JSON.stringify(normalizeGatewayErrorPayload({
+				error: reservationDenial.code,
+				reason: reservationDenial.reason,
+				error_type: "user",
+				error_origin: "user",
 				description: "The video request was rejected by your credit or spending limits before provider submission.",
 				request_id: ctx.requestId,
-			}), { status: reservationDenial.status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }) };
+			}, {
+				statusCode: reservationDenial.status,
+				requestId: ctx.requestId,
+				errorType: "user",
+				errorOrigin: "user",
+			})), {
+				status: reservationDenial.status,
+				headers: {
+					"Content-Type": "application/json",
+					"Cache-Control": "no-store",
+					...(ctx.requestId ? { "X-Request-Id": ctx.requestId } : {}),
+				},
+			});
+			return { ok: false, response };
 		}
 		const selectedUpstreamTiming = upstreamTracker.timing.timingFor(executorResult.upstream);
 		executorResult.timing = {

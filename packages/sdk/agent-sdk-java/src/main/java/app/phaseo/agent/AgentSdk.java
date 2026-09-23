@@ -1,5 +1,6 @@
 package app.phaseo.agent;
 
+import app.phaseo.gen.Client.ApiException;
 import app.phaseo.sdk.Phaseo;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -352,14 +353,44 @@ public final class AgentSdk {
       String directory = config != null ? config.directory() : first(System.getenv("PHASEO_DEVTOOLS_DIR"), ".phaseo-devtools");
       try {
         for (String kind : List.of("images", "audio", "video")) Files.createDirectories(Path.of(directory, "assets", kind));
-        Path metadata = Path.of(directory, "metadata.json");
-        if (!Files.exists(metadata)) JSON.writeValue(metadata.toFile(), Map.of("session_id", UUID.randomUUID().toString(), "started_at", started.toEpochMilli(), "sdk", "java"));
+        Path metadataPath = Path.of(directory, "metadata.json");
+        if (!Files.exists(metadataPath)) JSON.writeValue(metadataPath.toFile(), Map.of("session_id", UUID.randomUUID().toString(), "started_at", started.toEpochMilli(), "sdk", "java"));
         Map<String, Object> entry = new LinkedHashMap<>();
         entry.put("id", result == null ? runId : result.run().id()); entry.put("type", operation); entry.put("timestamp", started.toEpochMilli());
         entry.put("request", Map.of("agent_id", definition.id(), "tool_count", definition.tools().size())); entry.put("response", result);
-        entry.put("error", error == null ? null : Map.of("message", error.getMessage())); entry.put("metadata", Map.of("sdk", "java", "agent_id", definition.id(), "run_id", runId));
+        Map<String, Object> metadata = new LinkedHashMap<>(Map.of("sdk", "java", "agent_id", definition.id(), "run_id", runId));
+        Map<String, Object> errorInfo = null;
+        if (error != null) {
+          errorInfo = new LinkedHashMap<>();
+          errorInfo.put("message", error.getMessage());
+          errorInfo.put("type", error.getClass().getName());
+          if (error instanceof ApiException apiError) {
+            Map<String, Object> values = new LinkedHashMap<>();
+            values.put("status_code", apiError.getStatusCode());
+            values.put("request_id", readApiErrorProperty(apiError, "getRequestId"));
+            values.put("generation_id", readApiErrorProperty(apiError, "getGenerationId"));
+            values.put("code", readApiErrorProperty(apiError, "getCode"));
+            values.put("error_type", readApiErrorProperty(apiError, "getErrorType"));
+            values.put("error_origin", readApiErrorProperty(apiError, "getErrorOrigin"));
+            values.put("retryable", readApiErrorProperty(apiError, "getRetryable"));
+            values.put("action", readApiErrorProperty(apiError, "getAction"));
+            values.put("docs_url", readApiErrorProperty(apiError, "getDocsUrl"));
+            values.put("support_url", readApiErrorProperty(apiError, "getSupportUrl"));
+            values.put("retry_after_seconds", readApiErrorProperty(apiError, "getRetryAfterSeconds"));
+            values.put("details", readApiErrorProperty(apiError, "getDetails"));
+            values.entrySet().removeIf(item -> item.getValue() == null);
+            errorInfo.putAll(values);
+            metadata.putAll(values);
+          }
+        }
+        entry.put("error", errorInfo); entry.put("metadata", metadata);
         Files.writeString(Path.of(directory, "generations.jsonl"), JSON.writeValueAsString(entry) + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
       } catch (IOException ignored) { }
+    }
+
+    private static Object readApiErrorProperty(ApiException error, String method) {
+      try { return error.getClass().getMethod(method).invoke(error); }
+      catch (ReflectiveOperationException ignored) { return null; }
     }
   }
 

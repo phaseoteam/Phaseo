@@ -137,10 +137,33 @@ class TelemetryRecorder:
         )
         error_response = self._extract_error_response(error)
         entry["response"] = error_response
-        entry["error"] = {
-            "message": str(error),
-            "type": error.__class__.__name__,
-        }
+        error_info = getattr(error, "to_devtools_error", None)
+        entry["error"] = (
+            error_info()
+            if callable(error_info)
+            else {
+                "message": str(error),
+                "type": error.__class__.__name__,
+                "status": self._extract_error_status_code(error),
+            }
+        )
+        if isinstance(entry["error"], Mapping):
+            for source_key, metadata_key in (
+                ("request_id", "request_id"),
+                ("generation_id", "generation_id"),
+                ("status_code", "status_code"),
+                ("code", "error_code"),
+                ("error_type", "error_type"),
+                ("error_origin", "error_origin"),
+                ("retryable", "retryable"),
+                ("action", "action"),
+                ("docs_url", "docs_url"),
+                ("support_url", "support_url"),
+                ("retry_after_seconds", "retry_after_seconds"),
+            ):
+                value = entry["error"].get(source_key)
+                if value is not None:
+                    entry["metadata"][metadata_key] = value
         if status_code is None:
             entry["metadata"]["status_code"] = self._extract_error_status_code(error)
         self._append_entry(entry)
@@ -183,10 +206,19 @@ class TelemetryRecorder:
         if isinstance(response, Mapping):
             for key in (
                 "request_id",
+                "generation_id",
                 "session_id",
                 "upstream_request_id",
                 "native_response_id",
                 "status_code",
+                "error_code",
+                "error_type",
+                "error_origin",
+                "retryable",
+                "action",
+                "docs_url",
+                "support_url",
+                "retry_after_seconds",
                 "latency_ms",
                 "generation_ms",
                 "throughput",

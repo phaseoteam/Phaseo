@@ -838,9 +838,12 @@ class ErrorProviderFailureDiagnostics(TypedDict):
 	provider: NotRequired[Optional[str]]
 
 class ErrorResponse(TypedDict):
+	action: NotRequired[str]
 	attempt_count: NotRequired[int]
+	code: NotRequired[str]
 	description: NotRequired[str]
 	details: NotRequired[List[OcrResponse]]
+	docs_url: NotRequired[str]
 	error: Union[str, OcrResponse]
 	error_origin: NotRequired[Literal["user", "gateway", "upstream"]]
 	error_type: NotRequired[Literal["user", "system"]]
@@ -857,8 +860,12 @@ class ErrorResponse(TypedDict):
 	provider_payment_required_provider: NotRequired[str]
 	provider_payment_required_support_notice: NotRequired[str]
 	reason: NotRequired[str]
+	request_id: NotRequired[str]
+	retry_after_seconds: NotRequired[int]
+	retryable: NotRequired[bool]
 	routing_diagnostics: NotRequired[ErrorRoutingDiagnostics]
 	status_code: NotRequired[int]
+	support_url: NotRequired[str]
 	upstream_error: NotRequired[ErrorUpstreamError]
 
 class ErrorRoutingDiagnostics(TypedDict):

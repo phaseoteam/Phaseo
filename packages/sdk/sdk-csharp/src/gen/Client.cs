@@ -38,7 +38,17 @@ public sealed class ApiErrorException : Exception
 	public int StatusCode { get; }
 	public string ResponseBody { get; }
 	public Dictionary<string, string> Headers { get; }
-	public string? RequestId => Header("x-request-id") ?? Header("x-phaseo-request-id");
+	public Dictionary<string, object?> Payload { get; }
+	public string? RequestId => PayloadString("request_id") ?? Header("x-request-id") ?? Header("x-phaseo-request-id");
+	public string? GenerationId => PayloadString("generation_id") ?? RequestId;
+	public string? ErrorType => PayloadString("error_type");
+	public string? ErrorOrigin => PayloadString("error_origin");
+	public bool? Retryable => PayloadBool("retryable");
+	public string? Action => PayloadString("action");
+	public string? DocsUrl => PayloadString("docs_url");
+	public string? SupportUrl => PayloadString("support_url");
+	public long? RetryAfterSeconds => PayloadLong("retry_after_seconds") ?? RetryAfterHeaderSeconds();
+	public object? Details => Payload.TryGetValue("details", out var value) ? value : null;
 	public string? TraceUrl => RequestId is null ? null : "https://phaseo.app/settings/usage/logs/requests/" + Uri.EscapeDataString(RequestId);
 	public string? Code { get; }
 	public TimeSpan? RetryAfter { get; }
@@ -49,8 +59,41 @@ public sealed class ApiErrorException : Exception
 		StatusCode = statusCode;
 		ResponseBody = responseBody;
 		Headers = headers ?? new Dictionary<string, string>();
+		Payload = ParsePayload(responseBody);
 		Code = ParseCode(responseBody);
 		RetryAfter = ParseRetryAfter(Header("retry-after"));
+	}
+	private string? PayloadString(string name)
+	{
+		if (!Payload.TryGetValue(name, out var value) || value is null) return null;
+		if (value is string text) return text;
+		if (value is JsonElement element && element.ValueKind == JsonValueKind.String) return element.GetString();
+		return value.ToString();
+	}
+	private bool? PayloadBool(string name)
+	{
+		if (!Payload.TryGetValue(name, out var value) || value is null) return null;
+		if (value is bool boolean) return boolean;
+		if (value is JsonElement element && (element.ValueKind == JsonValueKind.True || element.ValueKind == JsonValueKind.False)) return element.GetBoolean();
+		return null;
+	}
+	private long? PayloadLong(string name)
+	{
+		if (!Payload.TryGetValue(name, out var value) || value is null) return null;
+		if (value is long number) return number;
+		if (value is int integer) return integer;
+		if (value is JsonElement element && element.ValueKind == JsonValueKind.Number && element.TryGetInt64(out var parsed)) return parsed;
+		return long.TryParse(value.ToString(), out var fallback) ? fallback : null;
+	}
+	private long? RetryAfterHeaderSeconds()
+	{
+		var retryAfter = RetryAfter;
+		return retryAfter is null ? null : (long)Math.Ceiling(Math.Max(0, retryAfter.Value.TotalSeconds));
+	}
+	private static Dictionary<string, object?> ParsePayload(string body)
+	{
+		try { return JsonSerializer.Deserialize<Dictionary<string, object?>>(body) ?? new Dictionary<string, object?>(); }
+		catch (JsonException) { return new Dictionary<string, object?>(); }
 	}
 	private string? Header(string name) { foreach (var pair in Headers) if (string.Equals(pair.Key, name, StringComparison.OrdinalIgnoreCase)) return pair.Value; return null; }
 	private static string? ParseCode(string body) { try { using var json = JsonDocument.Parse(body); var root = json.RootElement; if (root.TryGetProperty("code", out var code) && code.ValueKind == JsonValueKind.String) return code.GetString(); if (root.TryGetProperty("error", out var error)) { if (error.ValueKind == JsonValueKind.String) return error.GetString(); if (error.ValueKind == JsonValueKind.Object && error.TryGetProperty("code", out code) && code.ValueKind == JsonValueKind.String) return code.GetString(); } } catch (JsonException) { } return null; }

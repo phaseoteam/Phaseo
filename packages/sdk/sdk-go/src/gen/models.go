@@ -1613,9 +1613,12 @@ type ErrorProviderFailureDiagnostics struct {
 }
 
 type ErrorResponse struct {
+	Action *string `json:"action,omitempty"`
 	AttemptCount *int `json:"attempt_count,omitempty"`
+	Code *string `json:"code,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Details *[]map[string]interface{} `json:"details,omitempty"`
+	DocsUrl *string `json:"docs_url,omitempty"`
 	Error interface{} `json:"error"`
 	ErrorOrigin *string `json:"error_origin,omitempty"`
 	ErrorType *string `json:"error_type,omitempty"`
@@ -1632,8 +1635,12 @@ type ErrorResponse struct {
 	ProviderPaymentRequiredProvider *string `json:"provider_payment_required_provider,omitempty"`
 	ProviderPaymentRequiredSupportNotice *string `json:"provider_payment_required_support_notice,omitempty"`
 	Reason *string `json:"reason,omitempty"`
+	RequestId *string `json:"request_id,omitempty"`
+	RetryAfterSeconds *int `json:"retry_after_seconds,omitempty"`
+	Retryable *bool `json:"retryable,omitempty"`
 	RoutingDiagnostics *map[string]interface{} `json:"routing_diagnostics,omitempty"`
 	StatusCode *int `json:"status_code,omitempty"`
+	SupportUrl *string `json:"support_url,omitempty"`
 	UpstreamError *map[string]interface{} `json:"upstream_error,omitempty"`
 }
 
