@@ -1,6 +1,11 @@
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 
-export type GatewayStatusFilter = "active" | "coming_soon" | "not_active";
+export type GatewayStatusFilter =
+	| "active"
+	| "coming_soon"
+	| "not_active"
+	| "deprecated"
+	| "retired";
 
 export type OptionCount = {
 	value: string;
@@ -80,7 +85,14 @@ export type ModelsPageModel = Omit<
 	"gateway_status"
 > & {
 	description?: string | null;
-	gateway_status?: "active" | "coming_soon" | "inactive" | "not_listed" | null;
+	gateway_status?:
+		| "active"
+		| "coming_soon"
+		| "inactive"
+		| "not_listed"
+		| "deprecated"
+		| "retired"
+		| null;
 	gateway_tiers?: string[];
 	router_requests_30d?: number | null;
 	router_spend_nanos_30d?: number | null;

@@ -105,6 +105,41 @@ describe("fetchModelsPageCatalogue", () => {
 });
 
 describe("buildModelsPageFacets", () => {
+	it("keeps deprecated and retired models out of the not-active bucket", () => {
+		const rows = attachModelsPageVariants([
+			{
+				model_id: "example/unsupported",
+				status: "active",
+				gateway_provider_details: [],
+			},
+			{
+				model_id: "example/deprecated",
+				status: "deprecated",
+				deprecation_date: "2026-09-01T00:00:00Z",
+				gateway_provider_details: [],
+			},
+			{
+				model_id: "example/retired",
+				status: "retired",
+				retirement_date: "2026-09-01T00:00:00Z",
+				gateway_provider_details: [],
+			},
+		]);
+
+		expect(rows.map((row) => row.gateway_status)).toEqual([
+			"not_active",
+			"deprecated",
+			"retired",
+		]);
+		expect(buildModelsPageFacets(rows).statusCounts).toEqual({
+			active: 0,
+			coming_soon: 0,
+			not_active: 1,
+			deprecated: 1,
+			retired: 1,
+		});
+	});
+
 	it("groups transcription aliases under the canonical audio_stt modality", () => {
 		const facets = buildModelsPageFacets([
 			{

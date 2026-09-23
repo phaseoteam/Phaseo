@@ -768,11 +768,15 @@ async function fetchTargetedModelOverview(
 	const lab = labResult.data as Record<string, unknown> | null;
 	const catalogueStatus = String(model.catalogue_status ?? model.status ?? "unknown");
 	const normalizedCatalogueStatus = catalogueStatus.toLowerCase();
-	const gatewayStatus = ["draft", "announced"].includes(normalizedCatalogueStatus)
-		? "coming_soon"
-		: ["active", "available"].includes(normalizedCatalogueStatus)
-			? "active"
-			: "not_active";
+	const gatewayStatus = normalizedCatalogueStatus === "retired"
+		? "retired"
+		: normalizedCatalogueStatus === "deprecated"
+			? "deprecated"
+			: ["draft", "announced"].includes(normalizedCatalogueStatus)
+				? "coming_soon"
+				: ["active", "available"].includes(normalizedCatalogueStatus)
+					? "active"
+					: "not_active";
 
 	return {
 		model_id: model.model_slug,

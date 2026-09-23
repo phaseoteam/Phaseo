@@ -5,7 +5,13 @@ import type {
 import { fetchModelsPageData, fetchModelsPageDataV2 } from "./models";
 
 const facets: ModelsFilterFacets = {
-	statusCounts: { active: 2, coming_soon: 0, not_active: 0 },
+	statusCounts: {
+		active: 2,
+		coming_soon: 0,
+		not_active: 0,
+		deprecated: 0,
+		retired: 0,
+	},
 	endpointOptions: [],
 	inputModalityOptions: [],
 	outputModalityOptions: [],
