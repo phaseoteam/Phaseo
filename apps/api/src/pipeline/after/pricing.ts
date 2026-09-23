@@ -179,6 +179,37 @@ export function calculatePricing(
 
     if (card) {
         try {
+			const outputAudioTokens = Number((usageMeters as any)?.output_audio_tokens ?? 0);
+			const hasPaidOutputAudioRule = card.rules.some(
+				(rule) => rule.meter === "output_audio_tokens" && Number(rule.price_per_unit) > 0,
+			);
+			if (
+				card.endpoint === "audio.speech" &&
+				hasPaidOutputAudioRule &&
+				(!Number.isFinite(outputAudioTokens) || outputAudioTokens <= 0)
+			) {
+				throw new Error("pricing_usage_unmatched:output_audio_tokens");
+			}
+
+			let billableUsage = usageMeters;
+			const cachedReadTokens = Number((usageMeters as any)?.cached_read_text_tokens ?? 0);
+			const inputTokens = Number((usageMeters as any)?.input_tokens);
+			const inputTextTokens = Number((usageMeters as any)?.input_text_tokens);
+			const hasCachedReadRule = card.rules.some(
+				(rule) => rule.meter === "cached_read_text_tokens",
+			);
+			if (
+				card.endpoint === "audio.speech" &&
+				!hasCachedReadRule &&
+				Number.isFinite(cachedReadTokens) &&
+				cachedReadTokens > 0 &&
+				Number.isFinite(inputTokens) &&
+				Number.isFinite(inputTextTokens) &&
+				inputTextTokens + cachedReadTokens === inputTokens
+			) {
+				const { cached_read_text_tokens: _ignoredCachedMeter, ...usageWithoutCachedMeter } = usageMeters;
+				billableUsage = { ...usageWithoutCachedMeter, input_text_tokens: inputTokens };
+			}
             const pricingPlan = derivePricingPlan(body, usage, card);
             const requestOptions = attachBillingTimestamps(
                 buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
@@ -186,7 +217,14 @@ export function calculatePricing(
             );
 
             // Step 1: Calculate base pricing (provider costs)
-            pricedUsage = computeBill(usageMeters ?? {}, card, requestOptions, pricingPlan);
+            pricedUsage = computeBill(billableUsage ?? {}, card, requestOptions, pricingPlan);
+			if (
+				billableUsage !== usageMeters &&
+				Number.isFinite(cachedReadTokens) &&
+				cachedReadTokens > 0
+			) {
+				pricedUsage = { ...pricedUsage, cached_read_text_tokens: cachedReadTokens };
+			}
 
             const pricingInfo = (pricedUsage as any)?.pricing ?? {};
             totalCents = pricingInfo.total_cents ?? 0;

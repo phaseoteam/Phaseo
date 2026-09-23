@@ -55,8 +55,12 @@ describe("google audio.speech executor", () => {
 					],
 					usageMetadata: {
 						promptTokenCount: 11,
+						cachedContentTokenCount: 3,
 						candidatesTokenCount: 7,
 						totalTokenCount: 18,
+						promptTokensDetails: [{ modality: "TEXT", tokenCount: 11 }],
+						cacheTokensDetails: [{ modality: "TEXT", tokenCount: 3 }],
+						candidatesTokensDetails: [{ modality: "AUDIO", tokenCount: 7 }],
 					},
 				}),
 				onRequest: (call) => {
@@ -86,6 +90,8 @@ describe("google audio.speech executor", () => {
 		expect((result as any).ir?.audio?.data).toBe("QUJDREVGRw==");
 		expect((result as any).ir?.audio?.mimeType).toBe("audio/wav");
 		expect((result as any).ir?.usage?.totalTokens).toBe(18);
+		expect((result as any).ir?.usage?.cachedInputTokens).toBe(3);
+		expect((result as any).ir?.usage?._ext?.outputAudioTokens).toBe(7);
 	});
 
 	it("supports OpenAI-style voice object and config.google.voice_name fallback", async () => {
