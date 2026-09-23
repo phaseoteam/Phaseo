@@ -1595,10 +1595,13 @@ function ModelsDisplayContent({
 			if (statuses.length > 0) {
 				params.set(
 					"statuses",
-					statuses
-						.map((status) =>
-							status === "not_active" ? "inactive" : status,
-						)
+					Array.from(new Set(statuses.map((status) =>
+							status === "not_active" ||
+							status === "deprecated" ||
+							status === "retired"
+								? "inactive"
+								: status,
+						)))
 						.join(","),
 				);
 			} else {
