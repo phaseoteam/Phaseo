@@ -36,11 +36,13 @@ export type HealthEvidence = ProviderHealth & {
 };
 
 export type HealthSnapshot = {
+    /** Changes on coordinator restart; revisions are comparable only within it. */
+    generation?: string;
     version: number;
     publishedAt: number;
     providers: Record<string, HealthEvidence>;
 };
-export type HealthReceipt = { health: HealthEvidence; version: number };
+export type HealthReceipt = { health: HealthEvidence; version: number; generation?: string };
 
 export function emptyHealth(endpoint: Endpoint, model: string, provider: string): HealthEvidence {
     return {
