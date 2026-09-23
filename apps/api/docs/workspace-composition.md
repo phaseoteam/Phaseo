@@ -37,8 +37,7 @@ does not join these reads: it must fetch its own post-commit source.
 - Native workerd: 32 simultaneous cold compositions use one source read, one KV
   read and one KV write; 20 further warm compositions add zero external calls.
   Tenant separation, source ownership and stripping private configuration pass.
-- Full source suite: 613 files / 4,838 tests passed before the two additional
-  refill tests, which also passed in the focused suite. Type-check and targeted
+- Final source suite: 613 files / 4,841 tests passed. Type-check and targeted
   lint passed with the existing large-file warning in context.ts.
 
 This removes one cause of coupled refills; it does not complete catalog
@@ -64,3 +63,9 @@ This verifies compatibility across expiry, not the high-balance refill saving.
 That saving is demonstrated by the local pipeline/native fixtures, not yet a
 representative paid production workload. Test key
 `0cb850f8-6622-4d22-b56f-5d66f69e43cc` was revoked. No balances were edited.
+
+After the bounded contribution-gate follow-up, source `c78a561a0` was deployed
+as Worker `38c949e2-e30f-4520-80b4-bdb395d5e3b1`. The twelve-case matrix passed
+again with zero charges, routing ms `[293,4,28,3,4,4,126,5,4,14,18,4]`, and
+disposable key `e1058c86-0df0-4df5-b9e5-1dc117dc31b4` revoked. The test workspace
+does not opt into contribution; external-gate coalescing is covered locally.
