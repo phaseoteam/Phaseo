@@ -41,7 +41,12 @@ import { hasPassedLifecycleDate } from "@/lib/models/modelLifecycle";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
-	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;
+	gateway_status?:
+		| ModelCardType["gateway_status"]
+		| "coming_soon"
+		| "deprecated"
+		| "retired"
+		| null;
 	router_requests_30d?: number | null;
 	router_spend_nanos_30d?: number | null;
 };

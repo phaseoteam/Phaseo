@@ -4,7 +4,12 @@ import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
-	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;
+	gateway_status?:
+		| ModelCardType["gateway_status"]
+		| "coming_soon"
+		| "deprecated"
+		| "retired"
+		| null;
 	router_requests_30d?: number | null;
 	router_spend_nanos_30d?: number | null;
 };

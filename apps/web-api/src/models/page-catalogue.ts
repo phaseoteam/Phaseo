@@ -17,7 +17,13 @@ type WeeklyMetricRow = {
 };
 
 export type ModelsPageFacets = {
-	statusCounts: { active: number; coming_soon: number; not_active: number };
+	statusCounts: {
+		active: number;
+		coming_soon: number;
+		not_active: number;
+		deprecated: number;
+		retired: number;
+	};
 	endpointOptions: OptionCount[];
 	inputModalityOptions: OptionCount[];
 	outputModalityOptions: OptionCount[];
@@ -157,7 +163,6 @@ function providerDetails(value: unknown): Row[] {
 
 function withoutExternalProviders(row: Row): Row {
 	const details = providerDetails(row.gateway_provider_details);
-	if (details.length === 0) return row;
 	const visibleDetails = details.filter((detail) => {
 		const status = String(detail.status ?? "").trim().toLowerCase();
 		const accessScope = String(detail.access_scope ?? "public").trim().toLowerCase();
@@ -174,6 +179,16 @@ function withoutExternalProviders(row: Row): Row {
 	const activeProviderNames = strings(
 		visibleDetails.filter((detail) => detail.is_active === true).map((detail) => detail.name),
 	);
+	const lifecycleStatus = String(row.status ?? "").trim().toLowerCase();
+	const gatewayStatus = lifecycleStatus === "retired"
+		? "retired"
+		: lifecycleStatus === "deprecated"
+			? "deprecated"
+			: activeProviderNames.length > 0
+				? "active"
+				: String(row.gateway_status ?? "") === "coming_soon"
+					? "coming_soon"
+					: "not_active";
 	return {
 		...row,
 		gateway_provider_details: visibleDetails,
@@ -181,9 +196,7 @@ function withoutExternalProviders(row: Row): Row {
 		gateway_active_provider_names: activeProviderNames,
 		gateway_provider_count: providerNames.length,
 		gateway_active_provider_count: activeProviderNames.length,
-		gateway_status: activeProviderNames.length > 0
-			? "active"
-			: String(row.gateway_status ?? "") === "coming_soon" ? "coming_soon" : "not_active",
+		gateway_status: gatewayStatus,
 	};
 }
 
@@ -270,11 +283,25 @@ function creator(row: Row): string {
 }
 
 export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
-	const statusCounts = { active: 0, coming_soon: 0, not_active: 0 };
+	const statusCounts = {
+		active: 0,
+		coming_soon: 0,
+		not_active: 0,
+		deprecated: 0,
+		retired: 0,
+	};
 	const creatorCounts = new Map<string, number>();
 	const yearCounts = new Map<string, number>();
 	for (const row of rows) {
-		const status = row.gateway_status === "active" ? "active" : row.gateway_status === "coming_soon" ? "coming_soon" : "not_active";
+		const status = row.gateway_status === "active"
+			? "active"
+			: row.gateway_status === "coming_soon"
+				? "coming_soon"
+				: row.gateway_status === "deprecated"
+					? "deprecated"
+					: row.gateway_status === "retired"
+						? "retired"
+						: "not_active";
 		statusCounts[status] += 1;
 		const creatorName = creator(row);
 		if (creatorName) creatorCounts.set(creatorName, (creatorCounts.get(creatorName) ?? 0) + 1);

@@ -346,6 +346,8 @@ function toGatewayStatusFilter(value: string): GatewayStatusFilter | null {
 	if (normalized === "coming_soon" || normalized === "comingsoon") {
 		return "coming_soon";
 	}
+	if (normalized === "deprecated") return "deprecated";
+	if (normalized === "retired") return "retired";
 	if (
 		normalized === "not_active" ||
 		normalized === "inactive" ||
@@ -370,6 +372,8 @@ function getGatewayStatusBucket(
 ): GatewayStatusFilter {
 	if (status === "active") return "active";
 	if (status === "coming_soon") return "coming_soon";
+	if (status === "deprecated") return "deprecated";
+	if (status === "retired") return "retired";
 	return "not_active";
 }
 
@@ -1449,6 +1453,8 @@ function ModelsDisplayContent({
 			active: 0,
 			coming_soon: 0,
 			not_active: 0,
+			deprecated: 0,
+			retired: 0,
 		};
 		for (const prepared of statusSource) {
 			statusCounts[prepared.status] += 1;
@@ -1617,6 +1623,14 @@ function ModelsDisplayContent({
 			value: "not_active",
 			count: dynamicSidebarCounts.statusCounts.not_active,
 		},
+		{
+			value: "deprecated",
+			count: dynamicSidebarCounts.statusCounts.deprecated,
+		},
+		{
+			value: "retired",
+			count: dynamicSidebarCounts.statusCounts.retired,
+		},
 	];
 	const endpointOptions = useMemo(
 		() =>
@@ -1685,7 +1699,15 @@ function ModelsDisplayContent({
 		...(hasInteractedWithStatuses
 			? selectedStatuses.map((value) => ({
 					key: `status-${value}`,
-					label: value === "active" ? "Status: Active" : value === "coming_soon" ? "Status: Coming Soon" : "Status: Not Active",
+					label: value === "active"
+						? "Status: Active"
+						: value === "coming_soon"
+							? "Status: Coming Soon"
+							: value === "deprecated"
+								? "Status: Deprecated"
+								: value === "retired"
+									? "Status: Retired"
+									: "Status: Not Active",
 					onRemove: () => {
 						const next = without(selectedStatuses, value);
 						setSelectedStatuses(next);
@@ -1849,6 +1871,8 @@ function ModelsDisplayContent({
 						labelForValue={(value) => {
 							if (value === "active") return "Active On Gateway";
 							if (value === "coming_soon") return "Coming Soon";
+							if (value === "deprecated") return "Deprecated";
+							if (value === "retired") return "Retired";
 							return "Not Active";
 						}}
 						iconForValue={(value) => {
