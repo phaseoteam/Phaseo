@@ -22,6 +22,7 @@ import {
 	ArrowDown,
 	ArrowUp,
 	ArrowUpRight,
+	BookOpen,
 	Bolt,
 	Building2,
 	Compass,
@@ -433,12 +434,12 @@ function SearchBrowseRow({
 				className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left outline-hidden"
 			>
 				<SearchBrowseIcon item={item} type={type} />
-				<div className="min-w-0 flex flex-1 items-baseline gap-2">
-					<span className="truncate font-medium text-foreground">
+				<div className="min-w-0 flex flex-1 items-baseline gap-2 overflow-hidden">
+					<span className="max-w-full shrink-0 truncate font-medium text-foreground" title={item.title}>
 						{item.title}
 					</span>
 					{showSubtitle && item.subtitle ? (
-						<span className="min-w-0 truncate text-xs text-muted-foreground">
+						<span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
 							{item.subtitle}
 						</span>
 					) : null}
@@ -531,6 +532,14 @@ function SearchBrowseIcon({
 		return (
 			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
 				{effectiveType === "context" ? <Sparkles className="size-3" /> : <Bolt className="size-3" />}
+			</div>
+		);
+	}
+
+	if (item.href?.startsWith("https://phaseo.app/docs/")) {
+		return (
+			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
+				<BookOpen className="size-3" />
 			</div>
 		);
 	}
