@@ -24,13 +24,18 @@ import {
 	Table2 as TableIcon,
 	Layers3,
 	SlidersHorizontal,
+	Archive,
 	Activity,
 	ArrowDownCircle,
 	ArrowUpDown,
 	BadgeAlert,
+	Ban,
 	Binary,
+	CalendarClock,
 	Captions,
 	CircleDot,
+	CircleCheck,
+	CircleMinus,
 	Database,
 	FileText,
 	Headphones,
@@ -1879,9 +1884,11 @@ function ModelsDisplayContent({
 							return "Not Active";
 						}}
 						iconForValue={(value) => {
-							if (value === "active") return Activity;
-							if (value === "coming_soon") return Sparkles;
-							return Database;
+							if (value === "active") return CircleCheck;
+							if (value === "coming_soon") return CalendarClock;
+							if (value === "not_active") return CircleMinus;
+							if (value === "deprecated") return Ban;
+							return Archive;
 						}}
 					/>
 				</AccordionContent>
