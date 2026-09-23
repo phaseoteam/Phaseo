@@ -174,6 +174,8 @@ describe("after/pricing calculatePricing", () => {
 				input_tokens: 11,
 				input_text_tokens: 8,
 				cached_read_text_tokens: 3,
+				cached_read_tokens_are_subset_of_input: true,
+				input_tokens_details: { cached_tokens: 3 },
 				output_tokens: 7,
 				output_audio_tokens: 7,
 			},

@@ -207,8 +207,28 @@ export function calculatePricing(
 				Number.isFinite(inputTextTokens) &&
 				inputTextTokens + cachedReadTokens === inputTokens
 			) {
-				const { cached_read_text_tokens: _ignoredCachedMeter, ...usageWithoutCachedMeter } = usageMeters;
-				billableUsage = { ...usageWithoutCachedMeter, input_text_tokens: inputTokens };
+				const {
+					cached_read_text_tokens: _cachedReadTextTokens,
+					cache_read_input_tokens: _cacheReadInputTokens,
+					cached_tokens: _cachedTokens,
+					prompt_cache_hit_tokens: _promptCacheHitTokens,
+					cachedInputTokens: _cachedInputTokens,
+					cachedContentTokenCount: _cachedContentTokenCount,
+					cached_read_tokens_are_subset_of_input: _cachedSubsetHint,
+					...usageWithoutCacheReadAliases
+				} = usageMeters;
+				const withoutNestedCachedTokens = (details: unknown) => {
+					if (!details || typeof details !== "object") return details;
+					const { cached_tokens: _nestedCachedTokens, ...rest } = details as Record<string, unknown>;
+					return rest;
+				};
+				billableUsage = {
+					...usageWithoutCacheReadAliases,
+					input_text_tokens: inputTokens,
+					input_tokens_details: withoutNestedCachedTokens((usageMeters as any).input_tokens_details),
+					input_details: withoutNestedCachedTokens((usageMeters as any).input_details),
+					prompt_tokens_details: withoutNestedCachedTokens((usageMeters as any).prompt_tokens_details),
+				};
 			}
             const pricingPlan = derivePricingPlan(body, usage, card);
             const requestOptions = attachBillingTimestamps(
