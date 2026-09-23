@@ -17,8 +17,6 @@ export function reportBufferedStreamHealth(args: {
 }): void {
     const health = args.result.healthContext;
     if (!health || health.completed) return;
-    // A later synthetic client stream must not report this provider attempt again.
-    health.completed = true;
     const impact = classifyProviderHealthImpact({
         upstreamStatus: args.result.upstream.status,
         credentialSource: args.result.keySource,
@@ -28,10 +26,12 @@ export function reportBufferedStreamHealth(args: {
         // An unknown parser/callback exception is not provider health evidence.
         failureOrigin: args.materializationFailed && !args.streamFailed ? "gateway" : undefined,
     });
-    if (impact === "neutral") return;
+    if (impact === "neutral") { health.completed = true; return; }
     let release: () => void;
     try { release = ensureRuntimeForBackground(); }
     catch { console.warn("routing_health_buffered_runtime_unavailable"); return; }
+    // Claim only after acquisition. A failed acquisition must remain retryable.
+    health.completed = true;
     dispatchBackground((async () => {
         try {
             const update = await onCallEnd(args.ctx.endpoint, {

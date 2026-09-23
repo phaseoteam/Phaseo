@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const state = vi.hoisted(() => ({ end: vi.fn(), probe: vi.fn(), breaker: vi.fn(), release: vi.fn(), tasks: [] as Promise<unknown>[] }));
+const state = vi.hoisted(() => ({ end: vi.fn(), probe: vi.fn(), breaker: vi.fn(), release: vi.fn(), acquire: vi.fn(), tasks: [] as Promise<unknown>[] }));
 vi.mock("@/runtime/env", () => ({
-    ensureRuntimeForBackground: () => state.release,
+    ensureRuntimeForBackground: state.acquire,
     dispatchBackground: (task: Promise<unknown>) => state.tasks.push(task),
 }));
 vi.mock("./health", async importOriginal => ({
@@ -19,9 +19,20 @@ function fixture() {
 }
 beforeEach(() => {
     vi.clearAllMocks(); state.tasks = [];
+    state.acquire.mockReset().mockReturnValue(state.release);
     state.end.mockResolvedValue({ rateLimited: false });
 });
 describe("buffered stream health completion", () => {
+    it("allows another reporter to retry when acquiring the background runtime fails", async () => {
+        const args = fixture();
+        state.acquire.mockImplementationOnce(() => { throw new Error("runtime unavailable"); });
+        reportBufferedStreamHealth(args);
+        expect(args.result.healthContext.completed).not.toBe(true);
+        reportBufferedStreamHealth(args);
+        await Promise.all(state.tasks);
+        expect(state.end).toHaveBeenCalledOnce();
+        expect(args.result.healthContext.completed).toBe(true);
+    });
     it("reports one scoped success with per-attempt timing and usage, without waiting for delivery", async () => {
         const args = fixture();
         let complete!: (value: unknown) => void;

@@ -82,7 +82,19 @@ type WorkspacePolicyL1Entry = {
 };
 
 const workspacePolicyL1 = new Map<string, WorkspacePolicyL1Entry>();
-const workspacePolicyVersionL1 = new Map<string, { value: number; expiresAt: number }>();
+type PolicyVersionState = { value: number; expiresAt: number; epoch: object; pendingBumps: number };
+const workspacePolicyVersionL1 = new Map<string, PolicyVersionState>();
+
+function policyVersionState(workspaceId: string): PolicyVersionState {
+	let state = workspacePolicyVersionL1.get(workspaceId);
+	if (!state) state = { value: 0, expiresAt: 0, epoch: {}, pendingBumps: 0 };
+	workspacePolicyVersionL1.delete(workspaceId);
+	workspacePolicyVersionL1.set(workspaceId, state);
+	while (workspacePolicyVersionL1.size > WORKSPACE_POLICY_L1_MAX_ENTRIES) {
+		workspacePolicyVersionL1.delete(workspacePolicyVersionL1.keys().next().value!);
+	}
+	return state;
+}
 
 export type WorkspacePolicyDiagnostics = {
 	resolvedModel: string;
@@ -142,18 +154,13 @@ function workspacePolicyKvKey(workspaceId: string, apiKeyId: string, versionToke
 function readWorkspacePolicyVersionL1(workspaceId: string): number | null {
 	const entry = workspacePolicyVersionL1.get(workspaceId);
 	if (!entry) return null;
-	if (entry.expiresAt <= Date.now()) {
-		workspacePolicyVersionL1.delete(workspaceId);
-		return null;
-	}
+	if (entry.pendingBumps || entry.expiresAt <= Date.now()) return null;
 	return entry.value;
 }
 
-function writeWorkspacePolicyVersionL1(workspaceId: string, value: number): void {
-	workspacePolicyVersionL1.set(workspaceId, {
-		value,
-		expiresAt: Date.now() + ttlWithJitter(WORKSPACE_POLICY_VERSION_L1_TTL_MS),
-	});
+function writeWorkspacePolicyVersionL1(state: PolicyVersionState, value: number): void {
+	state.value = value;
+	state.expiresAt = Date.now() + ttlWithJitter(WORKSPACE_POLICY_VERSION_L1_TTL_MS);
 }
 
 function parseWorkspacePolicyVersion(raw: string | null): number {
@@ -168,11 +175,16 @@ function parseWorkspacePolicyVersion(raw: string | null): number {
 async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string | null> {
 	const cached = readWorkspacePolicyVersionL1(workspaceId);
 	if (cached !== null) return `v${cached}`;
+	const state = policyVersionState(workspaceId);
+	const epoch = state.epoch;
+	if (state.pendingBumps) return null;
 
 	try {
 		const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
 		const normalized = parseWorkspacePolicyVersion(raw);
-		writeWorkspacePolicyVersionL1(workspaceId, normalized);
+		// An evicted or superseded read cannot restore or serve old permissions.
+		if (workspacePolicyVersionL1.get(workspaceId) !== state || state.epoch !== epoch || state.pendingBumps) return null;
+		writeWorkspacePolicyVersionL1(state, normalized);
 		return `v${normalized}`;
 	} catch {
 		// Unknown is not the initial version: old permissions must not be reused.
@@ -181,13 +193,19 @@ async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<stri
 }
 
 export async function bumpWorkspacePolicyVersion(workspaceId: string): Promise<number> {
-	const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
-	const current = parseWorkspacePolicyVersion(raw);
-	const next = current + 1;
-	if (!Number.isSafeInteger(next)) throw new Error("invalid_workspace_policy_version");
-	await getCache().put(workspacePolicyVersionKey(workspaceId), String(next));
-	writeWorkspacePolicyVersionL1(workspaceId, next);
-	return next;
+	const state = policyVersionState(workspaceId);
+	const epoch = state.epoch = {};
+	state.expiresAt = 0;
+	state.pendingBumps++;
+	try {
+		const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
+		const current = parseWorkspacePolicyVersion(raw);
+		const next = current + 1;
+		if (!Number.isSafeInteger(next)) throw new Error("invalid_workspace_policy_version");
+		await getCache().put(workspacePolicyVersionKey(workspaceId), String(next));
+		if (workspacePolicyVersionL1.get(workspaceId) === state && state.epoch === epoch) writeWorkspacePolicyVersionL1(state, next);
+		return next;
+	} finally { state.pendingBumps--; }
 }
 
 function isStringArrayOrNull(value: unknown): value is string[] | null {

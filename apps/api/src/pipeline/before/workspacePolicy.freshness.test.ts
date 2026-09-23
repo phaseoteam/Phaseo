@@ -2,16 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
     values: new Map<string, string>(), failVersion: false, from: vi.fn(),
-    put: vi.fn(), keyVersion: vi.fn(),
+    put: vi.fn(), keyVersion: vi.fn(), get: vi.fn(),
 }));
 vi.mock("@/runtime/env", () => ({
     getCache: () => ({
-        get: async (key: string) => {
-            if (state.failVersion && key === "gateway:workspace-policy-version:workspace-freshness") {
-                throw new Error("version unavailable");
-            }
-            return state.values.get(key) ?? null;
-        },
+        get: state.get,
         put: state.put,
     }),
     getSupabaseAdmin: () => ({ from: state.from }),
@@ -22,6 +17,10 @@ vi.mock("@/core/kv", () => ({ keyVersionToken: state.keyVersion }));
 beforeEach(() => {
     vi.resetModules(); vi.useFakeTimers(); vi.setSystemTime(new Date("2026-09-20T12:00:00Z"));
     state.values.clear(); state.failVersion = false;
+    state.get.mockReset().mockImplementation(async (key: string) => {
+        if (state.failVersion && key === marker) throw new Error("version unavailable");
+        return state.values.get(key) ?? null;
+    });
     state.from.mockReset().mockImplementation(() => { throw new Error("Unexpected source read"); });
     state.put.mockReset().mockImplementation(async (key: string, value: string) => { state.values.set(key, value); });
     state.keyVersion.mockReset().mockResolvedValue("v0");
@@ -51,6 +50,40 @@ function mockSource(errorTable?: string) {
 }
 
 describe("workspace policy freshness", () => {
+    it("does not restore an old marker or permissions when a read finishes after a bump", async () => {
+        const { buildWorkspacePolicy, fetchWorkspacePolicy, bumpWorkspacePolicyVersion } = await import("./workspacePolicy");
+        state.values.set(marker, "0");
+        state.values.set(`${cache}v0:v0`, JSON.stringify(buildWorkspacePolicy({})));
+        state.values.set(`${cache}v1:v0`, JSON.stringify(buildWorkspacePolicy({ globalSettings: restrictedSettings })));
+        let finish!: (value: string) => void;
+        state.get.mockImplementationOnce(() => new Promise<string>(resolve => { finish = resolve; }));
+        const oldRead = fetchWorkspacePolicy(args);
+        expect(await bumpWorkspacePolicyVersion(args.workspaceId)).toBe(1);
+        mockSource();
+        finish("0");
+        expect((await oldRead).blockedApiModels).toContain("lab/restricted");
+        expect((await fetchWorkspacePolicy(args)).blockedApiModels).toContain("lab/restricted");
+    });
+
+    it("bypasses cached permissions while publication is pending and after a failed bump", async () => {
+        const { buildWorkspacePolicy, fetchWorkspacePolicy, bumpWorkspacePolicyVersion } = await import("./workspacePolicy");
+        state.values.set(`${cache}v0:v0`, JSON.stringify(buildWorkspacePolicy({})));
+        await fetchWorkspacePolicy(args);
+        let reject!: (error: Error) => void;
+        state.put.mockImplementationOnce(() => new Promise((_resolve, no) => { reject = no; }));
+        const bump = bumpWorkspacePolicyVersion(args.workspaceId);
+        const failure = expect(bump).rejects.toThrow("publish failed");
+        await Promise.resolve();
+        mockSource();
+        expect((await fetchWorkspacePolicy(args)).blockedApiModels).toContain("lab/restricted");
+        reject(new Error("publish failed")); await failure;
+        // Failure does not renew the old local lease. The next marker read must
+        // really go to KV (global propagation remains a separate TTL policy).
+        state.get.mockClear();
+        await fetchWorkspacePolicy(args);
+        expect(state.get).toHaveBeenCalledWith(marker, "text");
+    });
+
     it.each(["unavailable", "malformed", "key-version"])("uses uncached source policy when the version is %s", async (failure) => {
         const { buildWorkspacePolicy, fetchWorkspacePolicy } = await import("./workspacePolicy");
         const permissive = buildWorkspacePolicy({ globalSettings: null, guardrails: [], dynamicRoute: null });
