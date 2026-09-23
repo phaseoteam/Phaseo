@@ -25,5 +25,10 @@ work. The existing best-effort background finalizer is not crash-durable.
 - Existing 24 streaming tests pass without changing their billing assertions.
 - Native Workers tests cover terminal usage, truncation, gateway mapping failure,
   delivery commitment and cancellation with recovered usage.
-- All 596 source files / 4,625 tests, typecheck, scoped lint and staging dry-run
-  pass. Live staging results will follow deployment. Production is unchanged.
+- All 596 source files / 4,625 tests, typecheck, scoped lint and staging dry-run pass.
+- Staging build a2c292023, Worker deef821c-dc6a-41a5-ae9c-bbf4c4738f10:
+  twelve Poolside XS/S protocol/mode checks passed in LHR; twelve audits verified
+  zero cost and disposable key f4febdb5-656a-48e2-b032-9fef8383231d was revoked.
+  Routing milliseconds: 600, 3, 65, 7, 4, 4, 158, 13, 3, 13, 11, 4.
+  These are not total provider latency, paid-accounting or global SLO evidence.
+  Production is unchanged.
