@@ -4,7 +4,7 @@ const state = vi.hoisted(() => ({
     rpc: vi.fn(), from: vi.fn(), get: vi.fn(), put: vi.fn(), background: [] as Promise<unknown>[],
 }));
 vi.mock("@/runtime/env", () => ({
-    getBindingsIfConfigured: () => ({ GATEWAY_CONTEXT_BUNDLE_ENABLED: "true" }),
+    getBindingsIfConfigured: () => ({ GATEWAY_CONTEXT_BUNDLE_ENABLED: "true", GATEWAY_PUBLIC_BASE_URL: "https://staging.example" }),
     getCache: () => ({ get: state.get, put: state.put }),
     getSupabaseAdmin: () => ({ rpc: state.rpc, from: state.from }),
     dispatchBackground: (promise: Promise<unknown>) => { state.background.push(promise); },
@@ -44,8 +44,20 @@ beforeEach(() => {
     state.rpc.mockReset().mockImplementation(async (_name, params) => result(params.workspace_id, params.include_catalog));
     state.from.mockReset().mockImplementation((table: string) => { throw new Error(`Unexpected table: ${table}`); });
     state.background = [];
+    vi.stubGlobal("caches", { default: {
+        match: async () => {
+            const raw = await state.get();
+            if (!raw) return undefined;
+            const { createPublicRoutingSnapshot } = await import("./publicCatalogSnapshot");
+            return Response.json(await createPublicRoutingSnapshot(JSON.parse(raw)));
+        },
+        put: async (key: string, response: Response) => {
+            const value = await response.json() as { catalog: unknown };
+            return state.put(key, JSON.stringify(value.catalog), { expirationTtl: Number(response.headers.get("cache-control")!.split("=")[1]) });
+        },
+    } });
 });
-afterEach(() => { vi.useRealTimers(); });
+afterEach(async () => { await Promise.all(state.background); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("shared public catalog and private context composition", () => {
     it("accepts a small database clock lead without re-aging the catalog", async () => {
@@ -58,6 +70,7 @@ describe("shared public catalog and private context composition", () => {
         const { loadTextContextBundle } = await import("./contextBundle");
         expect((await loadTextContextBundle(args)).catalog).toEqual(value);
         expect(state.rpc).toHaveBeenCalledTimes(1);
+        await Promise.all(state.background);
         expect(JSON.parse(state.put.mock.calls[0][1]).expiresAt).toBe(value.expiresAt);
     });
 
@@ -72,61 +85,61 @@ describe("shared public catalog and private context composition", () => {
         expect(state.put).not.toHaveBeenCalled();
     });
 
-    it("refreshes a valid local snapshot without waiting and uses the replacement after the old deadline", async () => {
+    it("rechecks L2 after the 30-second local lease and observes a replacement", async () => {
         const old = catalog();
         const { loadTextContextBundle } = await import("./contextBundle");
         state.get.mockResolvedValue(JSON.stringify(old));
         await loadTextContextBundle(args);
         vi.setSystemTime(Date.now() + 120_000);
         const replacement = catalog();
-        let finish!: (value: string) => void;
-        state.get.mockReturnValue(new Promise<string>(resolve => { finish = resolve; }));
-        expect((await loadTextContextBundle(args)).catalog.checkedAt).toBe(old.checkedAt);
-        await loadTextContextBundle(args);
+        state.get.mockResolvedValue(JSON.stringify(replacement));
+        expect((await loadTextContextBundle(args)).catalog.checkedAt).toBe(replacement.checkedAt);
         expect(state.get).toHaveBeenCalledTimes(2);
-        finish(JSON.stringify(replacement)); await Promise.all(state.background);
         vi.setSystemTime(old.expiresAt + 1);
         state.get.mockResolvedValue(JSON.stringify(replacement));
         expect((await loadTextContextBundle(args)).catalog.checkedAt).toBe(replacement.checkedAt);
         expect(state.rpc.mock.calls.every(call => call[1].include_catalog === false)).toBe(true);
     });
 
-    it("does not serve expired data after a failed background refresh", async () => {
+    it("reloads the source rather than serving stale data when L2 fails after the local lease", async () => {
         const old = catalog();
         const { loadTextContextBundle } = await import("./contextBundle");
         state.get.mockResolvedValue(JSON.stringify(old));
         await loadTextContextBundle(args);
         vi.setSystemTime(Date.now() + 60_000);
-        state.get.mockRejectedValue(new Error("KV unavailable"));
+        state.get.mockRejectedValue(new Error("Cache API unavailable"));
         await loadTextContextBundle(args); await Promise.all(state.background);
         vi.setSystemTime(old.expiresAt);
         await loadTextContextBundle(args);
-        expect(state.rpc.mock.calls.map(call => call[1].include_catalog)).toEqual([false, false, true]);
+        expect(state.rpc.mock.calls.map(call => call[1].include_catalog)).toEqual([false, true, true]);
     });
 
-    it("does not roll a fresh local publication back to an older KV replica", async () => {
+    it("does not deliver a late L2 read that a newer local publication overtook", async () => {
         const old = catalog();
         const { loadTextContextBundle, publishPublicCatalog } = await import("./contextBundle");
         await publishPublicCatalog(old);
         vi.setSystemTime(Date.now() + 60_000);
         let finish!: (value: string) => void;
         state.get.mockReturnValue(new Promise<string>(resolve => { finish = resolve; }));
-        await loadTextContextBundle(args);
+        const pending = loadTextContextBundle(args);
+        await vi.waitFor(() => expect(state.get).toHaveBeenCalledTimes(1));
         const replacement = catalog();
         await publishPublicCatalog(replacement);
-        finish(JSON.stringify(old)); await Promise.all(state.background);
+        finish(JSON.stringify(old));
+        expect((await pending).catalog.checkedAt).toBe(replacement.checkedAt);
         expect((await loadTextContextBundle(args)).catalog.checkedAt).toBe(replacement.checkedAt);
     });
 
     it("uses one RPC on a cold request and shares only public data with another workspace", async () => {
         const { loadTextContextBundle } = await import("./contextBundle");
         const a = await loadTextContextBundle(args);
+        await Promise.all(state.background);
         const b = await loadTextContextBundle({ ...args, workspaceId: "workspace-b", apiKeyId: "key-b" });
         expect(state.rpc.mock.calls.map(call => call[1].include_catalog)).toEqual([true, false]);
         expect(a.variants[0].payload.providers).toEqual(expect.arrayContaining([expect.objectContaining({ byok_meta: [expect.objectContaining({ id: "workspace-a-key" })] })]));
         expect(b.variants[0].payload.providers).toEqual(expect.arrayContaining([expect.objectContaining({ byok_meta: [expect.objectContaining({ id: "workspace-b-key" })] })]));
         expect(b.settings.routing_mode).toBe("price");
-        const published = state.put.mock.calls.find(call => call[0].startsWith("gateway:public-catalog"))![1];
+        const published = state.put.mock.calls.find(call => call[0].includes("/__gateway-cache/public-catalog/"))![1];
         expect(published).not.toContain("workspace-a"); expect(published).not.toContain("fingerprint"); expect(published).not.toContain("key-a");
         expect(state.rpc).toHaveBeenCalledTimes(2);
     });
@@ -134,12 +147,13 @@ describe("shared public catalog and private context composition", () => {
     it("does not let one request mutate the public snapshot used by later requests", async () => {
         const { loadTextContextBundle } = await import("./contextBundle");
         const first = await loadTextContextBundle(args);
+        await Promise.all(state.background);
         (first.variants[0].payload.providers as { provider_id: string }[])[0].provider_id = "mutated";
         const next = await loadTextContextBundle(args);
         expect((next.variants[0].payload.providers as { provider_id: string }[])[0].provider_id).toBe("test");
     });
 
-    it("rejects stale KV copies and re-age attempts after absolute expiry", async () => {
+    it("rejects stale edge copies and re-age attempts after absolute expiry", async () => {
         const stale = catalog(Date.now() + 1000);
         const { loadTextContextBundle } = await import("./contextBundle");
         state.get.mockResolvedValue(JSON.stringify(stale));
@@ -186,11 +200,12 @@ describe("shared public catalog and private context composition", () => {
         expect(state.put).not.toHaveBeenCalled();
     });
 
-    it("checks pricing deadlines even when they are below the KV TTL minimum", async () => {
+    it("checks pricing deadlines and uses an L2 TTL below the old KV minimum", async () => {
         state.rpc.mockImplementationOnce(async () => { const r = result(); r.data.catalog = catalog(Date.now() + 2000); return r; });
         const { loadTextContextBundle } = await import("./contextBundle");
         await loadTextContextBundle(args);
-        expect(state.put.mock.calls[0][2].expirationTtl).toBe(60);
+        await Promise.all(state.background);
+        expect(state.put.mock.calls[0][2].expirationTtl).toBe(2);
         vi.setSystemTime(Date.now() + 2001);
         await loadTextContextBundle(args);
         expect(state.rpc.mock.calls[1][1].include_catalog).toBe(true);
@@ -202,6 +217,7 @@ describe("shared public catalog and private context composition", () => {
         const { loadTextContextBundle } = await import("./contextBundle");
         expect((await loadTextContextBundle(args)).variants).toHaveLength(2);
         expect(state.background).toHaveLength(1);
+        await vi.waitFor(() => expect(state.put).toHaveBeenCalledTimes(1));
         finish(); await Promise.all(state.background);
     });
 
