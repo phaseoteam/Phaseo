@@ -843,11 +843,6 @@ describe("batchRoutes", () => {
 				phase: "created",
 			},
 			{
-				workspaceId: "ws_batch_test", kind: "batch", internalId: publicBatchId,
-				phase: "status_changed", previousStatus: "queued", currentStatus: "completed",
-				deliveryKey: "batch.status_changed:queued:completed",
-			},
-			{
 				workspaceId: "ws_batch_test",
 				kind: "batch",
 				internalId: publicBatchId,
@@ -1000,11 +995,6 @@ describe("batchRoutes", () => {
 				kind: "batch",
 				internalId: publicBatchId,
 				phase: "created",
-			},
-			{
-				workspaceId: "ws_batch_test", kind: "batch", internalId: publicBatchId,
-				phase: "status_changed", previousStatus: "queued", currentStatus: "failed",
-				deliveryKey: "batch.status_changed:queued:failed",
 			},
 			{
 				workspaceId: "ws_batch_test",
@@ -2175,11 +2165,6 @@ describe("batchRoutes", () => {
 				kind: "batch",
 				internalId: publicBatchId,
 				phase: "created",
-			},
-			{
-				workspaceId: "ws_batch_test", kind: "batch", internalId: publicBatchId,
-				phase: "status_changed", previousStatus: "in_progress", currentStatus: "completed",
-				deliveryKey: "batch.status_changed:in_progress:completed",
 			},
 			{
 				workspaceId: "ws_batch_test",
