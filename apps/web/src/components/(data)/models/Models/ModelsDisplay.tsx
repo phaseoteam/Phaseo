@@ -29,6 +29,7 @@ import {
 	ArrowDownCircle,
 	ArrowUpDown,
 	BadgeAlert,
+	Ban,
 	Binary,
 	CalendarClock,
 	Captions,
@@ -45,7 +46,6 @@ import {
 	SearchX,
 	Sparkles,
 	Speech,
-	TriangleAlert,
 	Type as TypeIcon,
 	ImageIcon,
 	Video,
@@ -1887,7 +1887,7 @@ function ModelsDisplayContent({
 							if (value === "active") return CircleCheck;
 							if (value === "coming_soon") return CalendarClock;
 							if (value === "not_active") return CircleMinus;
-							if (value === "deprecated") return TriangleAlert;
+							if (value === "deprecated") return Ban;
 							return Archive;
 						}}
 					/>
