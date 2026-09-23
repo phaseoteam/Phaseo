@@ -631,7 +631,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		{
 			name: "Phaseo",
 			title: "Phaseo",
-			version: "0.4.0",
+			version: "0.4.1",
 			description: "Find, compare, and monitor AI models with live Phaseo data.",
 			websiteUrl: "https://phaseo.app",
 			icons: [
