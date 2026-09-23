@@ -41,3 +41,11 @@ context/private-model tests also pass.
 32 concurrent requests coalesce to one KV read, one DB read and one KV fill;
 the next warm request performs zero external operations, and local deletion is
 observed. The actual mounted workspace-publication native test also passes.
+
+Source `88ed63cd7`: 607 gateway source files / 4,747 tests, typecheck, focused
+lint and Worker dry-run pass. Staging version
+`159927b5-095d-4a3b-80e6-054a1be16e3d` passed twelve free Poolside probes across
+two models and three streaming/non-streaming protocols, all zero-charge, with
+disposable-key revocation verified. LHR routing measurements were
+`[366,5,37,4,4,5,122,9,5,9,24,15]` ms. These public-model probes are regression
+evidence, not live private-credential revocation tests or global SLO evidence.
