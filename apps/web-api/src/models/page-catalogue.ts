@@ -162,6 +162,12 @@ function providerDetails(value: unknown): Row[] {
 }
 
 function withoutExternalProviders(row: Row): Row {
+	const lifecycleStatus = String(row.status ?? "").trim().toLowerCase();
+	if (!Array.isArray(row.gateway_provider_details)) {
+		return lifecycleStatus === "retired" || lifecycleStatus === "deprecated"
+			? { ...row, gateway_status: lifecycleStatus }
+			: row;
+	}
 	const details = providerDetails(row.gateway_provider_details);
 	const visibleDetails = details.filter((detail) => {
 		const status = String(detail.status ?? "").trim().toLowerCase();
@@ -179,7 +185,6 @@ function withoutExternalProviders(row: Row): Row {
 	const activeProviderNames = strings(
 		visibleDetails.filter((detail) => detail.is_active === true).map((detail) => detail.name),
 	);
-	const lifecycleStatus = String(row.status ?? "").trim().toLowerCase();
 	const gatewayStatus = lifecycleStatus === "retired"
 		? "retired"
 		: lifecycleStatus === "deprecated"
