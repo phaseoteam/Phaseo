@@ -13,7 +13,7 @@ import { contextLeases, encodeContextLease } from "./contextLeaseCache";
 import { getWorkspacePolicyVersionToken } from "./workspacePolicy";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
 import { loadPrivateRouteRow } from "./privateModelCache";
-import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
+import { contextBundleEnabled, loadTextContextBundle, parseContextBundleVariant, type CachedContextAdmission, type ContextBundle } from "./contextBundle";
 import { workspaceRuntimeEnabled, workspaceRuntimeCache, fetchWorkspaceRuntime, refillWorkspaceRuntime } from "./workspaceRuntime";
 import { composeWorkspaceRuntime, workspaceTeamSettings } from "./workspaceRuntimeContext";
 import { isWorkspaceRuntimeFresh, type WorkspaceRuntimeSnapshot } from "./workspaceRuntimeSnapshot";
@@ -1093,6 +1093,7 @@ export async function fetchGatewayContext(args: {
     let separateWorkspaceRuntime = false;
     let workspaceVersionToken: string | null = null;
     let requestWorkspace: WorkspaceRuntimeSnapshot | undefined;
+    let cachedAdmission: CachedContextAdmission | undefined;
     const privateModelLoad = loadWorkspacePrivateModel(args).then(
         value => ({ ok: true as const, value }),
         error => ({ ok: false as const, error }),
@@ -1141,6 +1142,8 @@ export async function fetchGatewayContext(args: {
         if (separateWorkspaceRuntime && (hydrated.workspaceRuntimeExpiresAt ?? 0) <= Date.now()) {
             throw new Error("workspace_runtime_composition_expired");
         }
+        if (cachedAdmission && cachedAdmission.expiresAtMs <= Date.now()) throw new Error("cached_admission_expired");
+        if (separateWorkspaceRuntime && (hydrated.publicCatalogExpiresAt ?? 0) <= Date.now()) throw new Error("public_catalog_composition_expired");
         return {
             ...hydrated,
             contextTelemetry: {
@@ -1177,7 +1180,7 @@ export async function fetchGatewayContext(args: {
         versionToken = workspaceVersion === "v0" ? keyVersion : `${keyVersion}:w${workspaceVersion}`;
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
     }
-    const testingModeCacheSegment = `${args.includeTestingMode ? "testing" : "default"}${separateWorkspaceRuntime ? ":runtime-v2" : ""}`;
+    const testingModeCacheSegment = `${args.includeTestingMode ? "testing" : "default"}${separateWorkspaceRuntime ? ":runtime-v3" : ""}`;
     const dynamicCacheKey = `${DYNAMIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;
     const creditCacheKey = gatewayCreditCacheKey(args.workspaceId);
     const staticCacheKey = isPreset
@@ -1190,7 +1193,7 @@ export async function fetchGatewayContext(args: {
         const cacheReadStartedAt = performance.now();
         try {
             const [leasedValues, creditRaw] = await Promise.all([
-                contextLeases.read([dynamicCacheKey, staticCacheKey], getTextMany),
+                contextLeases.read(separateWorkspaceRuntime ? [dynamicCacheKey] : [dynamicCacheKey, staticCacheKey], getTextMany),
                 creditAdmissionLeases.read(args.workspaceId, async () => (await getTextMany([creditCacheKey]))[creditCacheKey] ?? null),
             ]);
             const cachedValues = { ...leasedValues, [creditCacheKey]: creditRaw };
@@ -1198,11 +1201,15 @@ export async function fetchGatewayContext(args: {
             const staticCachedRaw = cachedValues[staticCacheKey] ?? null;
             const creditCachedRaw = cachedValues[creditCacheKey] ?? null;
             telemetry.cacheReadMs = round3(performance.now() - cacheReadStartedAt);
-            if (dynamicCachedRaw && staticCachedRaw) {
+            if (dynamicCachedRaw && (staticCachedRaw || separateWorkspaceRuntime)) {
                 const dynamicParsed = JSON.parse(dynamicCachedRaw);
-                const staticParsed = JSON.parse(staticCachedRaw);
+                const admissionExpiresAtMs: number = dynamicParsed.cacheLease?.expiresAtMs;
+                const staticParsed = separateWorkspaceRuntime
+                    ? { workspaceId: args.workspaceId, providers: [], pricing: {} }
+                    : JSON.parse(staticCachedRaw!);
                 if (
 					isDynamicContextLike(dynamicParsed) &&
+                    (!separateWorkspaceRuntime || (Number.isSafeInteger(admissionExpiresAtMs) && admissionExpiresAtMs > Date.now())) &&
                     dynamicParsed.workspaceId === args.workspaceId && staticParsed.workspaceId === args.workspaceId &&
 					isStaticContextLike(staticParsed) &&
 					!hasConfiguredKeyLimits(dynamicParsed.keyLimit)
@@ -1215,7 +1222,7 @@ export async function fetchGatewayContext(args: {
 					if (creditCachedRaw) {
 						try {
 							const creditParsed = JSON.parse(creditCachedRaw);
-							creditContext = isCreditContextLike(creditParsed) ? creditParsed : null;
+							creditContext = isCreditContextLike(creditParsed) && creditParsed.workspaceId === args.workspaceId ? creditParsed : null;
 						} catch {
 							creditContext = null;
 						}
@@ -1250,7 +1257,12 @@ export async function fetchGatewayContext(args: {
                         credit: creditContext,
                         endpoint: args.endpoint,
                     });
-					return finishContext({
+                    if (separateWorkspaceRuntime) {
+                        cachedAdmission = { apiKeyId: args.apiKeyId, expiresAtMs: admissionExpiresAtMs, value: {
+                            workspaceId: merged.workspaceId, key: merged.key, keyLimit: merged.keyLimit, credit: merged.credit,
+                            teamEnrichment: merged.teamEnrichment, keyEnrichment: merged.keyEnrichment,
+                        } };
+                    } else return finishContext({
                         ...merged,
                         contextTelemetry: {
                             ...telemetry,
@@ -1268,7 +1280,7 @@ export async function fetchGatewayContext(args: {
 
     // Deferred persistence belongs to this request's billing barrier. Do not
     // share another request's loader/I/O when that barrier is in use.
-    const inflightKey = shouldUseCache && !args.onCreditCacheWrite ? compositionCacheKey : null;
+    const inflightKey = shouldUseCache && !cachedAdmission && !args.onCreditCacheWrite ? compositionCacheKey : null;
     if (inflightKey) {
 		const inflight = contextInflight.get(inflightKey);
 		if (inflight) {
@@ -1324,7 +1336,7 @@ export async function fetchGatewayContext(args: {
         let contextBundle: ContextBundle | null = null;
         if (textContextCapabilities) {
             if (useContextBundle) {
-                contextBundle = await loadTextContextBundle({ ...args, workspaceVersionToken });
+                contextBundle = await loadTextContextBundle({ ...args, workspaceVersionToken, cachedAdmission });
                 requestWorkspace = contextBundle.workspaceRuntime;
                 rpcTotalMs += contextBundle.rpcMs;
                 telemetry.catalogReadMs = round3(contextBundle.catalogReadMs);
@@ -1333,7 +1345,8 @@ export async function fetchGatewayContext(args: {
                 telemetry.workspaceReadMs = contextBundle.workspaceReadMs === undefined ? undefined : round3(contextBundle.workspaceReadMs);
             }
             const variants = contextBundle
-                ? contextBundle.variants.map(variant => ({ candidateCapability: variant.endpoint, parsed: contextSchema.parse(variant.payload) }))
+                ? contextBundle.variants.map(variant => ({ candidateCapability: variant.endpoint, parsed: contextBundle!.admission
+                    ? parseContextBundleVariant(contextBundle!, variant) : contextSchema.parse(variant.payload) }))
                 : await Promise.all(
                 textContextCapabilities.map(async (candidateCapability) => ({
                     candidateCapability,
@@ -1909,7 +1922,7 @@ export async function fetchGatewayContext(args: {
         parsed.endpoint = args.endpoint as any;
 
         // Compute adaptive TTLs and write split cache entries.
-        if (shouldUseCache) {
+        if (shouldUseCache && !cachedAdmission) {
             const cacheWriteStartedAt = performance.now();
             try {
                 const split = splitContextForCache(parsed, { separateWorkspace: separateWorkspaceRuntime });
@@ -1930,7 +1943,7 @@ export async function fetchGatewayContext(args: {
                         ? []
                         : [writeSegment(dynamicCacheKey, split.dynamic, dynamicTtl)]),
                 ];
-                if (staticTtl !== null) {
+                if (staticTtl !== null && !separateWorkspaceRuntime) {
                     backgroundCacheWrites.push(
                         writeSegment(staticCacheKey, split.static, staticTtl),
                     );
