@@ -51,3 +51,11 @@ external database/provider request. No production data is touched by it.
 
 The website must be deployed only after the gateway route is available. No live
 website deployment or database migration is part of this increment.
+
+PR #2559 validation: gateway 607 files / 4,742 tests; web API 96 files / 645
+tests; both typechecks, focused lint, staging dry-run and native Workers check
+pass. Source `e68ced826` deployed to staging version
+`d395f959-29f1-4ac2-aceb-4e996231b725`. Twelve free Poolside probes passed with
+zero-charge audit records and disposable-key revocation verified. LHR routing
+times were `[775,3,5,4,4,4,115,4,15,5,15,10]` ms. First-per-model measurements
+were 775/115 ms; this does not establish a cold-start SLO or global performance.
