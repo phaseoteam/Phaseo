@@ -168,6 +168,7 @@ describe("stealth provider filters", () => {
 			}]));
 			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([{
 				provider_model_id: "stealth:preview",
+				is_stealth: true,
 			}]));
 			return new Response(JSON.stringify([]));
 		}));
