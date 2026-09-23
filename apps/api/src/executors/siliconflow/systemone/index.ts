@@ -11,7 +11,7 @@ import { upstreamTestHeaders } from "@providers/shared/testing";
 import { decodeTypeSafeSystemOneResponse } from "@protocols/typesafe-systemone/decode";
 import { getBindings } from "@/runtime/env";
 
-function malformedResponse(args: ExecutorExecuteArgs, upstream: Response): ExecutorResult {
+function malformedResponse(args: ExecutorExecuteArgs, upstream: Response, rawResponse: unknown): ExecutorResult {
 	return {
 		kind: "completed",
 		upstream: new Response(
@@ -30,6 +30,7 @@ function malformedResponse(args: ExecutorExecuteArgs, upstream: Response): Execu
 			currency: "USD",
 			upstream_id: upstream.headers.get("x-request-id"),
 		},
+		rawResponse,
 	};
 }
 
@@ -76,7 +77,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
-	const payload = await upstream.clone().json().catch(() => null);
+	const rawBody = await upstream.clone().text();
+	let payload: unknown = null;
+	try {
+		payload = JSON.parse(rawBody);
+	} catch {
+		// Preserve malformed non-JSON bodies in internal diagnostics too.
+	}
 	const answers = payload && typeof payload === "object" && !Array.isArray(payload)
 		? (payload as Record<string, unknown>).answers
 		: undefined;
@@ -92,7 +99,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		typeof outputTokens !== "number" || !Number.isSafeInteger(outputTokens) || outputTokens < 0 ||
 		!Number.isSafeInteger(inputTokens + outputTokens)
 	) {
-		return malformedResponse(args, upstream);
+		return malformedResponse(args, upstream, payload ?? (rawBody || null));
 	}
 
 	const responseIr = decodeTypeSafeSystemOneResponse(payload, ir.model) as IRDecisionsResponse;

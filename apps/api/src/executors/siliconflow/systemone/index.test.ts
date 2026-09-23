@@ -77,15 +77,32 @@ describe("SiliconFlow System One executor", () => {
 	});
 
 	it("fails closed when input-token usage is missing", async () => {
+		const malformedPayload = { model: "Kev-4b", answers: { returns: { answer: "yes" } }, usage: {} };
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.siliconflow.com/v1/systemone",
-			response: jsonResponse({ model: "Kev-4b", answers: { returns: { answer: "yes" } }, usage: {} }),
+			response: jsonResponse(malformedPayload),
 		}]);
 
 		try {
 			const result = await executor(buildArgs());
 			expect(result.upstream.status).toBe(502);
 			expect(result.bill.usage).toBeUndefined();
+			expect(result.rawResponse).toEqual(malformedPayload);
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it("retains a non-JSON success body for internal diagnostics", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.siliconflow.com/v1/systemone",
+			response: new Response("unexpected upstream body"),
+		}]);
+
+		try {
+			const result = await executor(buildArgs());
+			expect(result.upstream.status).toBe(502);
+			expect(result.rawResponse).toBe("unexpected upstream body");
 		} finally {
 			mock.restore();
 		}
