@@ -1,5 +1,6 @@
 -- Keep the public catalogue limited to canonical, independently described
 -- models while retaining provider discoveries for later editorial review.
+-- phaseo:allow-production-history-backfill reason: Applied directly to production before migration 20260923170000 merged; this file records the existing production history.
 
 with alias_targets(alias_slug, model_slug) as (
   values
