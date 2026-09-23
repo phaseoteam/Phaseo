@@ -909,6 +909,10 @@ pub struct EndpointCatalogueResponse {
 }
 
 pub struct ErrorFailureSampleItem {
+	pub normalized_error_action: Option<Option<String>>,
+	pub normalized_error_code: Option<Option<String>>,
+	pub normalized_error_help_url: Option<Option<String>>,
+	pub normalized_error_message: Option<Option<String>>,
 	pub provider: Option<Option<String>>,
 	pub retryable: Option<Option<bool>>,
 	pub status: Option<Option<i64>>,
@@ -942,16 +946,21 @@ pub struct ErrorProviderFailureDiagnostics {
 }
 
 pub struct ErrorResponse {
+	pub action: Option<String>,
 	pub attempt_count: Option<i64>,
+	pub category: Option<String>,
 	pub description: Option<String>,
 	pub details: Option<Vec<HashMap<String, String>>>,
+	pub docs_url: Option<String>,
 	pub error: String,
+	pub error_code: Option<String>,
 	pub error_origin: Option<String>,
 	pub error_type: Option<String>,
 	pub failed_providers: Option<Vec<String>>,
 	pub failed_statuses: Option<Vec<i64>>,
 	pub failure_sample: Option<Vec<HashMap<String, String>>>,
 	pub generation_id: Option<String>,
+	pub help_url: Option<String>,
 	pub message: Option<String>,
 	pub missing_pricing_providers: Option<Vec<String>>,
 	pub ok: Option<bool>,
@@ -961,8 +970,12 @@ pub struct ErrorResponse {
 	pub provider_payment_required_provider: Option<String>,
 	pub provider_payment_required_support_notice: Option<String>,
 	pub reason: Option<String>,
+	pub request_id: Option<String>,
+	pub retry_after_seconds: Option<i64>,
+	pub retryable: Option<bool>,
 	pub routing_diagnostics: Option<HashMap<String, String>>,
 	pub status_code: Option<i64>,
+	pub support_url: Option<String>,
 	pub upstream_error: Option<HashMap<String, String>>,
 }
 

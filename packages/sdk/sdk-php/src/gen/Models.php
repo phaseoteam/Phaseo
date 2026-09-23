@@ -1604,6 +1604,14 @@ class EndpointCatalogueResponse
 class ErrorFailureSampleItem
 {
 	/** @var string|null */
+	public $normalized_error_action;
+	/** @var string|null */
+	public $normalized_error_code;
+	/** @var string|null */
+	public $normalized_error_help_url;
+	/** @var string|null */
+	public $normalized_error_message;
+	/** @var string|null */
 	public $provider;
 	/** @var bool|null */
 	public $retryable;
@@ -1661,14 +1669,22 @@ class ErrorProviderFailureDiagnostics
 
 class ErrorResponse
 {
+	/** @var string|null */
+	public $action;
 	/** @var int|null */
 	public $attempt_count;
+	/** @var string|null */
+	public $category;
 	/** @var string|null */
 	public $description;
 	/** @var array|null */
 	public $details;
+	/** @var string|null */
+	public $docs_url;
 	/** @var string|array<string, mixed> */
 	public $error;
+	/** @var string|null */
+	public $error_code;
 	/** @var string|null */
 	public $error_origin;
 	/** @var string|null */
@@ -1681,6 +1697,8 @@ class ErrorResponse
 	public $failure_sample;
 	/** @var string|null */
 	public $generation_id;
+	/** @var string|null */
+	public $help_url;
 	/** @var string|null */
 	public $message;
 	/** @var array|null */
@@ -1699,10 +1717,18 @@ class ErrorResponse
 	public $provider_payment_required_support_notice;
 	/** @var string|null */
 	public $reason;
+	/** @var string|null */
+	public $request_id;
+	/** @var int|null */
+	public $retry_after_seconds;
+	/** @var bool|null */
+	public $retryable;
 	/** @var array<string, mixed>|null */
 	public $routing_diagnostics;
 	/** @var int|null */
 	public $status_code;
+	/** @var string|null */
+	public $support_url;
 	/** @var array<string, mixed>|null */
 	public $upstream_error;
 }

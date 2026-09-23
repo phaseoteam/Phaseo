@@ -9,6 +9,7 @@ import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { executeOpenAIWire } from "@executors/_shared/text-generate/openai-compat";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
+import { withNovitaError } from "@executors/novita/error-mapping";
 import type { ProviderExecutor } from "../../types";
 
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
@@ -20,7 +21,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const emptyDoneBehavior = model === "mindai/macaron-v1-tall" || model === "mindai/macaron-v1-venti"
 		? "length"
 		: undefined;
-	return executeOpenAIWire(args, { emptyDoneBehavior });
+	return withNovitaError(await executeOpenAIWire(args, { emptyDoneBehavior }), args.ir.model);
 }
 
 export function postprocess(ir: any): any {
@@ -37,4 +38,3 @@ export const executor: ProviderExecutor = buildTextExecutor({
 	postprocess,
 	transformStream,
 });
-

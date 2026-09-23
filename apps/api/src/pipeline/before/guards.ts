@@ -285,6 +285,22 @@ type GuardAuthOptions = {
     allowOAuthJwt?: boolean;
 };
 
+function authenticationFailure(req: Request, reason: string, requestId: string): Response {
+    const unavailableReasons = new Set([
+        "db_error",
+        "server_misconfig_missing_pepper",
+        "oauth_jwks_unavailable",
+        "oauth_not_configured",
+    ]);
+    if (unavailableReasons.has(reason)) {
+        return err("gateway_error", { reason, request_id: requestId });
+    }
+    const publicReason = reason === "missing_or_invalid_authorization_header"
+        ? req.headers.has("authorization") ? "invalid_authorization_header" : "missing_authorization_header"
+        : reason;
+    return err("unauthorised", { reason: publicReason, request_id: requestId });
+}
+
 export async function guardAuth(req: Request, options: GuardAuthOptions = {}): Promise<GuardResult<{
     requestId: string;
     workspaceId: string;
@@ -306,7 +322,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
     });
     if (!auth.ok) {
         const reason = (auth as AuthFailure).reason;
-        return { ok: false, response: err("unauthorised", { reason, request_id: requestId }) };
+        return { ok: false, response: authenticationFailure(req, reason, requestId) };
     }
     return {
         ok: true,
@@ -345,7 +361,7 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
     const auth = await authenticateManagement(req, { useKvCache: options.useKvCache });
     if (!auth.ok) {
         const reason = (auth as AuthFailure).reason;
-        return { ok: false, response: err("unauthorised", { reason, request_id: requestId }) };
+        return { ok: false, response: authenticationFailure(req, reason, requestId) };
     }
     return {
         ok: true,
@@ -451,10 +467,11 @@ export async function guardContext(args: {
         });
 
         if (!context.key.ok) {
+            const reason = context.key.reason ?? "key_invalid";
             return {
                 ok: false,
-                response: err("unauthorised", {
-                    reason: context.key.reason ?? "key_invalid",
+                response: err(reason === "db_error" ? "gateway_error" : "unauthorised", {
+                    reason,
                     request_id: args.requestId,
                     workspace_id: args.workspaceId,
                 }),

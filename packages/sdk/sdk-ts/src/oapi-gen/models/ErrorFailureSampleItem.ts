@@ -1,4 +1,8 @@
 export interface ErrorFailureSampleItem {
+  normalized_error_action?: string | null;
+  normalized_error_code?: string | null;
+  normalized_error_help_url?: string | null;
+  normalized_error_message?: string | null;
   provider?: string | null;
   retryable?: boolean | null;
   status?: number | null;

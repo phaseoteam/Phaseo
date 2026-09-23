@@ -19,6 +19,15 @@ import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { detectProtocol, type Protocol } from "@protocols/detect";
+import { encodeProtocolErrorResponse } from "@protocols/errors";
+import {
+    EXPOSED_UPSTREAM_RATE_LIMIT_HEADERS,
+} from "@pipeline/upstream-rate-limit-headers";
+import {
+    normalizeGatewayErrorPayload,
+    parseRetryAfterSeconds,
+} from "@pipeline/error-contract";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -164,6 +173,10 @@ function toExecuteFailureSample(
     provider: string | null;
     type: string | null;
     status: number | null;
+    normalized_error_code?: string;
+    normalized_error_message?: string;
+    normalized_error_action?: string;
+    normalized_error_help_url?: string;
     upstream_error_code: string | null;
     upstream_error_message: string | null;
     upstream_error_description: string | null;
@@ -179,6 +192,18 @@ function toExecuteFailureSample(
             provider: typeof e.provider === "string" ? e.provider : null,
             type: typeof e.type === "string" ? e.type : null,
             status: Number.isFinite(status) ? status : null,
+            ...(typeof e.normalized_error_code === "string"
+                ? { normalized_error_code: e.normalized_error_code }
+                : {}),
+            ...(typeof e.normalized_error_message === "string"
+                ? { normalized_error_message: e.normalized_error_message }
+                : {}),
+            ...(typeof e.normalized_error_action === "string"
+                ? { normalized_error_action: e.normalized_error_action }
+                : {}),
+            ...(typeof e.normalized_error_help_url === "string"
+                ? { normalized_error_help_url: e.normalized_error_help_url }
+                : {}),
             upstream_error_code:
                 typeof e.upstream_error_code === "string" ? e.upstream_error_code : null,
             upstream_error_message:
@@ -218,6 +243,10 @@ function buildErrorDetails(body: unknown, ctx?: PipelineContext) {
                 status: e.status ?? null,
                 status_text: e.status_text ?? null,
                 code: e.code ?? null,
+                normalized_error_code: e.normalized_error_code ?? null,
+                normalized_error_message: e.normalized_error_message ?? null,
+                normalized_error_action: e.normalized_error_action ?? null,
+                normalized_error_help_url: e.normalized_error_help_url ?? null,
                 key_source: e.key_source ?? null,
                 byok_key_id: e.byok_key_id ?? null,
                 upstream_url: e.upstream_url ?? null,
@@ -245,6 +274,10 @@ function buildErrorDetails(body: unknown, ctx?: PipelineContext) {
                 duration_ms: e.duration_ms ?? null,
                 status: e.status ?? null,
                 status_text: e.status_text ?? null,
+                normalized_error_code: e.normalized_error_code ?? null,
+                normalized_error_message: e.normalized_error_message ?? null,
+                normalized_error_action: e.normalized_error_action ?? null,
+                normalized_error_help_url: e.normalized_error_help_url ?? null,
                 retryable: e.retryable ?? null,
                 key_source: e.key_source ?? null,
                 byok_key_id: e.byok_key_id ?? null,
@@ -278,7 +311,7 @@ function buildErrorDetails(body: unknown, ctx?: PipelineContext) {
 
 // Helper to extract error code from a response body
 export function extractErrorCode(body: any, fallback: string): string {
-    const e = body?.error ?? body?.code ?? body?.error_code ?? body?.type;
+    const e = body?.error_code ?? body?.code ?? body?.error ?? body?.type;
     if (typeof e === "string") return e;
     if (typeof e === "number") return String(e);
     if (e && typeof e === "object") {
@@ -671,6 +704,14 @@ export async function handleError({
     console.log(`Handling ${stage} error for endpoint ${endpoint}: status ${res.status}`);
 
     const body = await safeJson(res);
+    const requestPath = (() => {
+        try {
+            return req?.url ? new URL(req.url).pathname : undefined;
+        } catch {
+            return undefined;
+        }
+    })();
+    const protocol = (ctx?.protocol as Protocol | undefined) ?? detectProtocol(endpoint, requestPath);
     const debugHeader = req?.headers.get("x-gateway-debug");
     const debugRequested = (() => {
         if (!debugHeader) return false;
@@ -783,6 +824,22 @@ export async function handleError({
         body?.request_id ??
         body?.requestId ??
         "unknown";
+    if (generationId !== "unknown") {
+        headers.set("X-Request-Id", String(generationId));
+        if (protocol === "anthropic.messages") {
+            headers.set("request-id", String(generationId));
+        }
+    }
+    for (const headerName of EXPOSED_UPSTREAM_RATE_LIMIT_HEADERS) {
+        const value = res.headers.get(headerName);
+        if (!value) continue;
+        if (headerName.toLowerCase() === "retry-after") {
+            const retryAfterSeconds = parseRetryAfterSeconds(value);
+            if (retryAfterSeconds != null) headers.set(headerName, String(retryAfterSeconds));
+            continue;
+        }
+        headers.set(headerName, value);
+    }
     console.log("Gateway error details", {
         stage,
         endpoint,
@@ -819,12 +876,23 @@ export async function handleError({
         error_origin: errorOrigin,
         description: fallbackDescription,
     };
+    for (const field of ["message", "action", "help_url", "category"] as const) {
+        if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+    }
+    if (typeof body?.retryable === "boolean") errorPayload.retryable = body.retryable;
     if (operationalKind) {
         errorPayload.error_operational_kind = operationalKind;
     }
     if (
         stage === "execute" &&
-        (errCode === "upstream_error" || errCode === "provider_payment_required")
+        (
+            errCode === "upstream_error" ||
+            errCode === "provider_payment_required" ||
+            errCode === "provider_capacity_exhausted" ||
+            errCode === "provider_request_rejected" ||
+            errCode === "provider_feature_unsupported" ||
+            errCode === "provider_service_unavailable"
+        )
     ) {
         if (typeof body?.reason === "string") errorPayload.reason = body.reason;
         const attemptCount = Number(body?.attempt_count ?? NaN);
@@ -918,7 +986,14 @@ export async function handleError({
             routing: routingDebug,
         };
     }
-    const gatewayErrorPayload = sanitizeForAxiom(errorPayload);
+    const normalizedErrorPayload = normalizeGatewayErrorPayload(errorPayload, {
+        statusCode,
+        requestId: generationId,
+        errorType,
+        errorOrigin,
+        retryAfterSeconds: parseRetryAfterSeconds(res.headers.get("Retry-After")),
+    });
+    const gatewayErrorPayload = sanitizeForAxiom(normalizedErrorPayload);
     const providerResponseHeaders = sanitizeForAxiom(headersToRecord(res.headers));
     const replayRequestPayload = requestPayloadForObservability;
 
@@ -1066,7 +1141,7 @@ export async function handleError({
         errorDetailsJson,
         errorPayload: gatewayErrorPayload,
         requestPayload: replayRequestPayload,
-        gatewayResponse: errorPayload,
+        gatewayResponse: normalizedErrorPayload,
         providerResponse: body ?? null,
         detailMetadata: {
             stage,
@@ -1104,7 +1179,7 @@ export async function handleError({
                 provider: providerForAudit,
                 providerModel: modelForObservability,
                 requestPayload: requestPayloadForObservability,
-                responsePayload: errorPayload,
+                responsePayload: normalizedErrorPayload,
                 providerAttempts: auditArgs.providerAttempts,
                 stream: Boolean(auditArgs.stream),
                 statusCode,
@@ -1159,16 +1234,12 @@ export async function handleError({
         requestPayload: requestPayloadForObservability,
         providerResponse: body,
         providerResponseHeaders: headersToRecord(res.headers),
-        gatewayResponse: errorPayload,
+        gatewayResponse: normalizedErrorPayload,
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     });
-    return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
+    return new Response(
+        JSON.stringify(encodeProtocolErrorResponse(protocol, normalizedErrorPayload)),
+        { status: statusCode, headers },
+    );
 }
-
-
-
-
-
-
-

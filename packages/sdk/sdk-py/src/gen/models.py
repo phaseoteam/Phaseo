@@ -809,6 +809,10 @@ class EndpointCatalogueResponse(TypedDict):
 	sample_models: List[str]
 
 class ErrorFailureSampleItem(TypedDict):
+	normalized_error_action: NotRequired[Optional[str]]
+	normalized_error_code: NotRequired[Optional[str]]
+	normalized_error_help_url: NotRequired[Optional[str]]
+	normalized_error_message: NotRequired[Optional[str]]
 	provider: NotRequired[Optional[str]]
 	retryable: NotRequired[Optional[bool]]
 	status: NotRequired[Optional[int]]
@@ -838,16 +842,21 @@ class ErrorProviderFailureDiagnostics(TypedDict):
 	provider: NotRequired[Optional[str]]
 
 class ErrorResponse(TypedDict):
+	action: NotRequired[str]
 	attempt_count: NotRequired[int]
+	category: NotRequired[Literal["authentication", "model", "unsupported_feature", "invalid_request", "rate_limit", "billing", "provider_unavailable", "internal"]]
 	description: NotRequired[str]
 	details: NotRequired[List[OcrResponse]]
+	docs_url: NotRequired[str]
 	error: Union[str, OcrResponse]
+	error_code: NotRequired[str]
 	error_origin: NotRequired[Literal["user", "gateway", "upstream"]]
 	error_type: NotRequired[Literal["user", "system"]]
 	failed_providers: NotRequired[List[str]]
 	failed_statuses: NotRequired[List[int]]
 	failure_sample: NotRequired[List[ErrorFailureSampleItem]]
 	generation_id: NotRequired[str]
+	help_url: NotRequired[str]
 	message: NotRequired[str]
 	missing_pricing_providers: NotRequired[List[str]]
 	ok: NotRequired[bool]
@@ -857,8 +866,12 @@ class ErrorResponse(TypedDict):
 	provider_payment_required_provider: NotRequired[str]
 	provider_payment_required_support_notice: NotRequired[str]
 	reason: NotRequired[str]
+	request_id: NotRequired[str]
+	retry_after_seconds: NotRequired[int]
+	retryable: NotRequired[bool]
 	routing_diagnostics: NotRequired[ErrorRoutingDiagnostics]
 	status_code: NotRequired[int]
+	support_url: NotRequired[str]
 	upstream_error: NotRequired[ErrorUpstreamError]
 
 class ErrorRoutingDiagnostics(TypedDict):

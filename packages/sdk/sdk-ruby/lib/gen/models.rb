@@ -1300,6 +1300,14 @@ module Phaseo
     # @!attribute [rw] sample_models
     #   @return [Array<String>]
     EndpointCatalogueResponse = Struct.new(:data, :endpoints, :ok, :sample_models, keyword_init: true)
+    # @!attribute [rw] normalized_error_action
+    #   @return [String, nil]
+    # @!attribute [rw] normalized_error_code
+    #   @return [String, nil]
+    # @!attribute [rw] normalized_error_help_url
+    #   @return [String, nil]
+    # @!attribute [rw] normalized_error_message
+    #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [String, nil]
     # @!attribute [rw] retryable
@@ -1318,7 +1326,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] upstream_payload_preview
     #   @return [String, nil]
-    ErrorFailureSampleItem = Struct.new(:provider, :retryable, :status, :type, :upstream_error_code, :upstream_error_description, :upstream_error_message, :upstream_error_param, :upstream_payload_preview, keyword_init: true)
+    ErrorFailureSampleItem = Struct.new(:normalized_error_action, :normalized_error_code, :normalized_error_help_url, :normalized_error_message, :provider, :retryable, :status, :type, :upstream_error_code, :upstream_error_description, :upstream_error_message, :upstream_error_param, :upstream_payload_preview, keyword_init: true)
     # @!attribute [rw] candidateCount
     #   @return [Integer, nil]
     # @!attribute [rw] droppedMissingAdapter
@@ -1346,14 +1354,22 @@ module Phaseo
     # @!attribute [rw] provider
     #   @return [String, nil]
     ErrorProviderFailureDiagnostics = Struct.new(:category, :hint, :provider, keyword_init: true)
+    # @!attribute [rw] action
+    #   @return [String, nil]
     # @!attribute [rw] attempt_count
     #   @return [Integer, nil]
+    # @!attribute [rw] category
+    #   @return [String, nil]
     # @!attribute [rw] description
     #   @return [String, nil]
     # @!attribute [rw] details
     #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] docs_url
+    #   @return [String, nil]
     # @!attribute [rw] error
     #   @return [String, Hash{String => Object}]
+    # @!attribute [rw] error_code
+    #   @return [String, nil]
     # @!attribute [rw] error_origin
     #   @return [String, nil]
     # @!attribute [rw] error_type
@@ -1365,6 +1381,8 @@ module Phaseo
     # @!attribute [rw] failure_sample
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] generation_id
+    #   @return [String, nil]
+    # @!attribute [rw] help_url
     #   @return [String, nil]
     # @!attribute [rw] message
     #   @return [String, nil]
@@ -1384,13 +1402,21 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] reason
     #   @return [String, nil]
+    # @!attribute [rw] request_id
+    #   @return [String, nil]
+    # @!attribute [rw] retry_after_seconds
+    #   @return [Integer, nil]
+    # @!attribute [rw] retryable
+    #   @return [Boolean, nil]
     # @!attribute [rw] routing_diagnostics
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] status_code
     #   @return [Integer, nil]
+    # @!attribute [rw] support_url
+    #   @return [String, nil]
     # @!attribute [rw] upstream_error
     #   @return [Hash{String => Object}, nil]
-    ErrorResponse = Struct.new(:attempt_count, :description, :details, :error, :error_origin, :error_type, :failed_providers, :failed_statuses, :failure_sample, :generation_id, :message, :missing_pricing_providers, :ok, :provider_candidate_diagnostics, :provider_enablement, :provider_failure_diagnostics, :provider_payment_required_provider, :provider_payment_required_support_notice, :reason, :routing_diagnostics, :status_code, :upstream_error, keyword_init: true)
+    ErrorResponse = Struct.new(:action, :attempt_count, :category, :description, :details, :docs_url, :error, :error_code, :error_origin, :error_type, :failed_providers, :failed_statuses, :failure_sample, :generation_id, :help_url, :message, :missing_pricing_providers, :ok, :provider_candidate_diagnostics, :provider_enablement, :provider_failure_diagnostics, :provider_payment_required_provider, :provider_payment_required_support_notice, :reason, :request_id, :retry_after_seconds, :retryable, :routing_diagnostics, :status_code, :support_url, :upstream_error, keyword_init: true)
     # @!attribute [rw] filterStages
     #   @return [Array<Hash{String => Object}>, nil]
     ErrorRoutingDiagnostics = Struct.new(:filterStages, keyword_init: true)

@@ -232,7 +232,7 @@ describe("handleError", () => {
 			},
 		});
 			const payload = await res.json();
-			expect(payload.error).toBe("upstream_error");
+			expect(payload.error.code).toBe("upstream_error");
 			expect(payload.error_origin).toBe("upstream");
 			expect(payload.reason).toBe("all_candidates_failed");
 			expect(payload.attempt_count).toBe(1);
@@ -394,7 +394,7 @@ describe("handleError", () => {
 			},
 		});
 			const payload = await res.json();
-			expect(payload.error).toBe("unsupported_model_or_endpoint");
+			expect(payload.error.code).toBe("unsupported_model_or_endpoint");
 			expect(payload.error_type).toBe("system");
 			expect(payload.error_origin).toBe("gateway");
 			expect(payload.error_operational_kind).toBe("gateway_provider_availability_gap");
@@ -622,10 +622,73 @@ describe("handleError", () => {
 			auditFailure: async () => { },
 		});
 		const payload = await res.json();
-		expect(payload.error).toBe("pipeline_execution_error");
+		expect(payload.error.code).toBe("pipeline_execution_error");
 		expect(payload.error_type).toBe("system");
 		expect(payload.error_origin).toBe("gateway");
 		expect(res.headers.get("X-Gateway-Error-Origin")).toBe("gateway");
 	});
-});
 
+	it("preserves provider feature guidance through the final Responses envelope", async () => {
+		const helpUrl = "https://phaseo.app/models/inclusionai/ling-3.0-flash-fin";
+		const res = await handleError({
+			stage: "execute",
+			res: new Response(JSON.stringify({
+				error: "provider_feature_unsupported",
+				status_code: 400,
+				message: "Structured outputs are not supported by this model.",
+				action: `Review supported parameters here: ${helpUrl}`,
+				help_url: helpUrl,
+				failure_sample: [{ provider: "novita", status: 400, upstream_error_code: "INVALID_REQUEST_BODY", upstream_error_message: "model features structured outputs not support" }],
+			}), { status: 400, headers: { "content-type": "application/json" } }),
+			endpoint: "responses",
+			ctx: { requestId: "G-NOVITA-1", model: "inclusionai/ling-3.0-flash-fin" } as any,
+			auditFailure: async () => {},
+		});
+		const payload = await res.json();
+		expect(res.status).toBe(400);
+		expect(payload).toMatchObject({
+			error_code: "provider_feature_unsupported",
+			category: "unsupported_feature",
+			message: "Structured outputs are not supported by this model.",
+			action: `Review supported parameters here: ${helpUrl}`,
+			help_url: helpUrl,
+			error: { type: "invalid_request_error", code: "provider_feature_unsupported" },
+		});
+	});
+
+	it("keeps the request ID and safe retry headers when re-wrapping an upstream error", async () => {
+		const res = await handleError({
+			stage: "execute",
+			res: new Response(
+				JSON.stringify({
+					error: "upstream_error",
+					description: "The provider is temporarily unavailable.",
+					failed_statuses: [503],
+				}),
+				{
+					status: 502,
+					headers: {
+						"content-type": "application/json",
+						"Retry-After": "15",
+						"X-Phaseo-Upstream-RateLimit-Remaining": "0",
+					},
+				},
+			),
+			endpoint: "responses",
+			ctx: { requestId: "G-RETRY-1", model: "openai/gpt-5-nano" } as any,
+			auditFailure: async () => {},
+		});
+
+		const payload = await res.json();
+		expect(payload).toMatchObject({
+			request_id: "G-RETRY-1",
+			generation_id: "G-RETRY-1",
+			retryable: true,
+			retry_after_seconds: 15,
+			action: expect.stringContaining("Retry once"),
+		});
+		expect(res.headers.get("X-Request-Id")).toBe("G-RETRY-1");
+		expect(res.headers.get("Retry-After")).toBe("15");
+		expect(res.headers.get("X-Phaseo-Upstream-RateLimit-Remaining")).toBe("0");
+	});
+});

@@ -4,8 +4,8 @@ import type { PipelineContext } from "../before/types";
  * Do not infer this from end-to-end time: retries and provider waits would be included.
  */
 export function buildResponseTimeline(ctx?: PipelineContext | null) {
-	const value = ctx?.meta.timeToUpstreamRequestMs;
-	const startedAt = ctx?.meta.startedAtMs;
+	const value = ctx?.meta?.timeToUpstreamRequestMs;
+	const startedAt = ctx?.meta?.startedAtMs;
 	const valid = typeof value === "number" && Number.isFinite(value) && value >= 0;
 	return {
 		version: 1,

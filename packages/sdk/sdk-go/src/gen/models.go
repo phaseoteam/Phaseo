@@ -1580,6 +1580,10 @@ type EndpointCatalogueResponse struct {
 }
 
 type ErrorFailureSampleItem struct {
+	NormalizedErrorAction *string `json:"normalized_error_action,omitempty"`
+	NormalizedErrorCode *string `json:"normalized_error_code,omitempty"`
+	NormalizedErrorHelpUrl *string `json:"normalized_error_help_url,omitempty"`
+	NormalizedErrorMessage *string `json:"normalized_error_message,omitempty"`
 	Provider *string `json:"provider,omitempty"`
 	Retryable *bool `json:"retryable,omitempty"`
 	Status *int `json:"status,omitempty"`
@@ -1613,16 +1617,21 @@ type ErrorProviderFailureDiagnostics struct {
 }
 
 type ErrorResponse struct {
+	Action *string `json:"action,omitempty"`
 	AttemptCount *int `json:"attempt_count,omitempty"`
+	Category *string `json:"category,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Details *[]map[string]interface{} `json:"details,omitempty"`
+	DocsUrl *string `json:"docs_url,omitempty"`
 	Error interface{} `json:"error"`
+	ErrorCode *string `json:"error_code,omitempty"`
 	ErrorOrigin *string `json:"error_origin,omitempty"`
 	ErrorType *string `json:"error_type,omitempty"`
 	FailedProviders *[]string `json:"failed_providers,omitempty"`
 	FailedStatuses *[]int `json:"failed_statuses,omitempty"`
 	FailureSample *[]map[string]interface{} `json:"failure_sample,omitempty"`
 	GenerationId *string `json:"generation_id,omitempty"`
+	HelpUrl *string `json:"help_url,omitempty"`
 	Message *string `json:"message,omitempty"`
 	MissingPricingProviders *[]string `json:"missing_pricing_providers,omitempty"`
 	Ok *bool `json:"ok,omitempty"`
@@ -1632,8 +1641,12 @@ type ErrorResponse struct {
 	ProviderPaymentRequiredProvider *string `json:"provider_payment_required_provider,omitempty"`
 	ProviderPaymentRequiredSupportNotice *string `json:"provider_payment_required_support_notice,omitempty"`
 	Reason *string `json:"reason,omitempty"`
+	RequestId *string `json:"request_id,omitempty"`
+	RetryAfterSeconds *int `json:"retry_after_seconds,omitempty"`
+	Retryable *bool `json:"retryable,omitempty"`
 	RoutingDiagnostics *map[string]interface{} `json:"routing_diagnostics,omitempty"`
 	StatusCode *int `json:"status_code,omitempty"`
+	SupportUrl *string `json:"support_url,omitempty"`
 	UpstreamError *map[string]interface{} `json:"upstream_error,omitempty"`
 }
 

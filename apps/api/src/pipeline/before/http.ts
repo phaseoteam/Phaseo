@@ -3,6 +3,8 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Builds standardized error responses for before-stage failures.
 
+import { normalizeGatewayErrorPayload } from "../error-contract";
+
 export type ErrorCode =
     | "unauthorised"
     | "invalid_json"
@@ -112,15 +114,8 @@ const STATUS: Record<ErrorCode, number> = {
     unsupported_model_or_endpoint: 400,
 };
 
-const FRIENDLY_DESCRIPTIONS: Partial<Record<ErrorCode, string>> = {
-    unsupported_model_or_endpoint:
-        "Unsupported model or endpoint. Please check https://phaseo.app/models for your model id, or the API Reference at https://phaseo.app/docs/v1/api-reference for valid endpoints.",
-};
-
 export function err(code: ErrorCode, payload: Record<string, unknown>) {
-    const description = FRIENDLY_DESCRIPTIONS[code];
     const body = { error: code, ...payload } as Record<string, unknown>;
-    if (description) body.description = description;
     if (typeof body.status_code !== "number") body.status_code = STATUS[code];
     if (typeof body.error_type !== "string") body.error_type = defaultErrorType(code);
     if (typeof body.error_origin !== "string") body.error_origin = defaultErrorOrigin(code);
@@ -131,10 +126,21 @@ export function err(code: ErrorCode, payload: Record<string, unknown>) {
     if (providerFailureDiagnostics) {
         body.provider_failure_diagnostics = providerFailureDiagnostics;
     }
-    return json(body, STATUS[code]);
+    return json(
+        normalizeGatewayErrorPayload(body, {
+            statusCode: STATUS[code],
+            errorType: body.error_type as string,
+            errorOrigin: body.error_origin as string,
+            requestId:
+                typeof body.request_id === "string"
+                    ? body.request_id
+                    : typeof body.generation_id === "string"
+                        ? body.generation_id
+                        : null,
+        }),
+        STATUS[code],
+    );
 }
-
-
 
 
 

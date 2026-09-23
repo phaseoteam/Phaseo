@@ -32,6 +32,7 @@ import type { ByokKeyMeta } from "@pipeline/before/types";
 import type { Endpoint } from "@core/types";
 import type { DebugOptions, RequestBetaOptions } from "@core/types";
 import type { Protocol } from "@protocols/detect";
+import type { ProviderErrorIR } from "./provider-error-types";
 
 export type UpstreamFetchPhase = "provider" | "auth" | "preflight" | "media" | "poll";
 
@@ -176,6 +177,8 @@ export type ExecutorStreamingResult = {
 	};
 };
 
-export type ExecutorResult = ExecutorCompletedResult | ExecutorStreamingResult;
+export type ExecutorResult = (ExecutorCompletedResult | ExecutorStreamingResult) & {
+	providerError?: ProviderErrorIR;
+};
 
 export type ProviderExecutor = (args: ExecutorExecuteArgs) => Promise<ExecutorResult>;
