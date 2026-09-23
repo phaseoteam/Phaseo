@@ -88,9 +88,9 @@ production configuration. No flat dollar saving is claimed by this layer.
 - API type-check, targeted lint and staging dry-run pass. Data, pricing and
   gateway validations pass with existing catalog warnings.
 
-The source suite passed 612 files / 4,828 tests, including the actual context
-pipeline. The subsequent bounded-KV-transport case passes with its focused and
-native suite. These are local/native
+The final source suite passed 612 files / 4,829 tests, including the actual
+context pipeline and bounded-KV-transport case. Focused and native suites also
+pass. These are local/native
 fixtures, **not** live validation of the new RPC-backed path. The migration and
 feature activation await authorization; production has not been deployed.
 
