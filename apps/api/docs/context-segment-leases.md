@@ -30,3 +30,12 @@ lint (existing context file-length warning) and staging dry-run pass. Native
 Workers: 32 simultaneous same-workspace reads perform one source call for two
 keys; warm reads perform zero; another workspace remains isolated. No production
 deployment or invoice-based cost claim.
+
+Staging source `1b8bdd390`, version `54943fb9-3d20-406c-9ef0-2fedc278f276`:
+all twelve Poolside XS/S protocol cases passed with successful zero-charge audit
+rows; disposable key `1f011591-2d8e-4857-b600-76109cd49f31` revoked. LHR routing:
+552, 39, 37, 7, 4, 6, 126, 16, 11, 6, 6, 18 ms. Twelve complete operation records
+show the immediate warm XS Chat request used one KV read (credit), compared with
+the previous recurring three segment reads. Other cases use 2–11 KV reads as
+protocol/model/isolate/version caches differ. Supabase accounting/background
+operations remain. This is not a universal one-read or zero-control-plane claim.
