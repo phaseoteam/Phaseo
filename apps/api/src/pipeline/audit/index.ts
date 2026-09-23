@@ -48,6 +48,12 @@ function cachedInputTokensAreSubset(usage: unknown): boolean {
     );
 }
 
+function asJsonObject(value: unknown): Record<string, unknown> {
+    return value && typeof value === "object" && !Array.isArray(value)
+        ? value as Record<string, unknown>
+        : {};
+}
+
 type CanonicalServiceTier = "standard" | "priority" | "flex" | "batch";
 
 function canonicalServiceTier(value: unknown): CanonicalServiceTier | null {
@@ -340,6 +346,8 @@ async function upsertV2RequestFact(args: {
     labels?: RequestLabel[] | null;
 }) {
 	const serviceTier = resolveAuditServiceTiers(args);
+	const routingDiagnostics = asJsonObject(args.routingDiagnostics);
+	const routingAlgorithm = asJsonObject(routingDiagnostics.algorithm);
 	const publicRoutedModel = (() => {
 		const requested = args.requestedModel.trim();
 		const routed = args.routedModel?.trim() ?? "";
@@ -375,7 +383,9 @@ async function upsertV2RequestFact(args: {
         const status = Number(attempt.status);
         const latency = Number(attempt.latency_ms ?? attempt.duration_ms);
         return {
-            attempt_number: Number(attempt.attempt_number ?? index + 1),
+            // The persisted relation keys attempts by sequence. Use array order
+            // so duplicate or missing caller numbers cannot abort the whole RPC.
+            attempt_number: index + 1,
             provider: typeof attempt.provider === "string" ? attempt.provider : null,
             provider_model_id: toProviderModelId(attempt.provider, attempt.provider_model_slug),
             provider_api_model_id:
@@ -588,14 +598,17 @@ async function upsertV2RequestFact(args: {
             pricing_lines: pricingLines,
             routing_decisions: [...rankedDecisions, ...excludedDecisions],
             routing_trace: {
-                algorithm: (args.routingDiagnostics as any)?.algorithm ?? null,
-                model: (args.routingDiagnostics as any)?.model ?? args.requestedModel,
-                endpoint: (args.routingDiagnostics as any)?.endpoint ?? args.endpoint,
-                priority: (args.routingDiagnostics as any)?.priority ?? null,
-                routing_mode: (args.routingDiagnostics as any)?.routingMode ?? null,
-                requested_routing: (args.routingDiagnostics as any)?.requestedRouting ?? null,
-                sticky_routing: (args.routingDiagnostics as any)?.stickyRouting ?? null,
-                final_candidate_count: (args.routingDiagnostics as any)?.finalCandidateCount ?? rankedDecisions.length,
+                algorithm: {
+                    ...routingAlgorithm,
+                    poolBounds: asJsonObject(routingAlgorithm.poolBounds),
+                },
+                model: routingDiagnostics.model ?? args.requestedModel,
+                endpoint: routingDiagnostics.endpoint ?? args.endpoint,
+                priority: routingDiagnostics.priority ?? null,
+                routing_mode: routingDiagnostics.routingMode ?? null,
+                requested_routing: asJsonObject(routingDiagnostics.requestedRouting),
+                sticky_routing: asJsonObject(routingDiagnostics.stickyRouting),
+                final_candidate_count: routingDiagnostics.finalCandidateCount ?? rankedDecisions.length,
             },
             safe_metadata: {
                 provider: args.provider ?? null,
