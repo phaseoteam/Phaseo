@@ -1,5 +1,6 @@
 // Explicit operator-only probe: staging, two verified free Poolside routes,
-// twelve requests, <=16 requested output tokens, disposable key, no wallet edits.
+// twelve requests (fourteen with expiry check), <=16 requested output tokens,
+// disposable key, no wallet edits.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createHmac, randomBytes, randomUUID } from "node:crypto";
@@ -11,6 +12,7 @@ const database = "https://xansbgjaduxypzsmjwct.supabase.co/rest/v1/";
 const gateway = "https://api-staging.phaseo.app";
 const workspace = "72528cb6-603a-4e70-853f-709ef81b4851";
 const models = ["poolside/laguna-xs-2.1:free", "poolside/laguna-s-2.1:free"];
+const checkWorkspaceExpiry = process.env.LIVE_PROVIDER_ENDPOINT_MATRIX_WORKSPACE_REFRESH === "1";
 async function query(path, method = "GET", body) {
     const response = await fetch(database + path, { method, signal: AbortSignal.timeout(15_000),
         headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
@@ -144,8 +146,16 @@ try {
         prefix: kid.slice(0, 6), status: "active", scopes: "[]", created_by: target.owner_user_id,
         expires_at: new Date(Date.now() + 15 * 60_000).toISOString() });
     created = true;
-    console.log(JSON.stringify({ event: "temporary_key_created", keyId: id, maximumRequests: 12 }));
-    for (const model of models) for (const surface of ["chat/completions", "responses", "messages"]) for (const stream of [false, true]) {
+    console.log(JSON.stringify({ event: "temporary_key_created", keyId: id, maximumRequests: checkWorkspaceExpiry ? 14 : 12 }));
+    const cases = models.flatMap(model => ["chat/completions", "responses", "messages"].flatMap(surface =>
+        [false, true].map(stream => ({ model, surface, stream, afterWorkspaceExpiry: false }))));
+    if (checkWorkspaceExpiry) cases.push(...models.map(model => ({ model, surface: "chat/completions", stream: false, afterWorkspaceExpiry: true })));
+    for (const { model, surface, stream, afterWorkspaceExpiry } of cases) {
+        if (afterWorkspaceExpiry && records.length === 12) {
+            console.log(JSON.stringify({ event: "workspace_source_expiry_wait", waitMs: 61_000 }));
+            // Harness delay only. The Worker has no timer or periodic refresh.
+            await new Promise(resolve => setTimeout(resolve, 61_000));
+        }
         const body = { model, stream, provider: { only: ["poolside"], allow_fallbacks: false },
             ...(surface === "responses" ? { input: "Reply with the word hello.", max_output_tokens: 16 }
                 : { messages: [{ role: "user", content: "Reply with the word hello." }], max_tokens: 16 }) };
@@ -154,7 +164,7 @@ try {
             headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "anthropic-version": "2023-06-01" },
             body: JSON.stringify(body) });
         const payload = await readBounded(response, start);
-        const record = { model, surface, stream, status: response.status, requestId: response.headers.get("x-request-id"),
+        const record = { model, surface, stream, afterWorkspaceExpiry, status: response.status, requestId: response.headers.get("x-request-id"),
             colo: response.headers.get("cf-ray")?.split("-").at(-1), firstBodyByteMs: payload.firstByteMs,
             totalMs: Math.round(performance.now() - start), bytes: payload.bytes };
         records.push(record);

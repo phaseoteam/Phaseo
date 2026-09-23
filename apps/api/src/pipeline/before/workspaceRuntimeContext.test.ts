@@ -58,4 +58,20 @@ describe("independent workspace composition", () => {
             defaultPlugins: [{ id: "response-healing", enabled: false, preventOverrides: true, config: { mode: "strict" } }] });
         await expect(workspaceTeamSettings({}, "invalid", workspaceId)).rejects.toThrow("billing_mode_invalid");
     });
+
+    it("does not turn warm opted-in requests into repeated external feature-gate calls", async () => {
+        const source = snapshot(); source.settings.data_contribution_enabled = true;
+        const value = context();
+        // Use a distinct workspace so this test never depends on another lease.
+        source.workspaceId = value.workspaceId = "10000000-0000-4000-8000-000000000007";
+        await Promise.all(Array.from({ length: 32 }, () => composeWorkspaceRuntime(value, source)));
+        expect(gate).toHaveBeenCalledTimes(1);
+        source.settings.data_contribution_enabled = false;
+        expect((await composeWorkspaceRuntime(value, source)).teamSettings?.dataContributionEnabled).toBe(false);
+        expect(gate).toHaveBeenCalledTimes(1);
+        vi.setSystemTime(Date.now() + 30_000);
+        source.settings.data_contribution_enabled = true;
+        await composeWorkspaceRuntime(value, source);
+        expect(gate).toHaveBeenCalledTimes(2);
+    });
 });

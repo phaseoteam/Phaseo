@@ -1,10 +1,11 @@
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
+import { L1Cache } from "@/runtime/cache/l1";
 import { byokMetaSchema } from "./schemas";
 import { isWorkspaceRuntimeFresh, type WorkspaceRuntimeSnapshot } from "./workspaceRuntimeSnapshot";
 import type { GatewayContextData, TeamSettings } from "./types";
 
 /** Keep the legacy source and snapshot paths on one settings translation. */
-export async function workspaceTeamSettings(settings: Record<string, any>, billingMode: unknown, workspaceId: string): Promise<TeamSettings> {
+export async function workspaceTeamSettings(settings: Record<string, any>, billingMode: unknown, workspaceId: string, contributionAccess?: boolean): Promise<TeamSettings> {
     const rawBillingMode = String(billingMode ?? "").trim().toLowerCase();
     if (rawBillingMode !== "wallet" && rawBillingMode !== "invoice") {
         throw new Error("workspace_billing_mode_invalid");
@@ -14,7 +15,7 @@ export async function workspaceTeamSettings(settings: Record<string, any>, billi
     ).cache_aware_routing_enabled;
     const dataContributionFeatureEnabled =
         settings.data_contribution_enabled === true &&
-        await isDataContributionAccessEnabled({ workspaceId: workspaceId });
+        (contributionAccess ?? await isDataContributionAccessEnabled({ workspaceId }));
     const responseHealingEnabled =
         settings.response_healing_enabled === true;
     const responseHealingLocked =
@@ -68,9 +69,19 @@ export async function workspaceTeamSettings(settings: Record<string, any>, billi
 
 /** Overlay current private configuration after reading independent cache segments.
  * Never merge financial/key admission from a workspace snapshot. */
+const contributionAccessLeases = new L1Cache<boolean>({ namespace: "workspace-contribution-access", maxEntries: 512,
+    maxBytes: 128 * 1024, maxEntryBytes: 512, maxPending: 32, sizeOf: (_value, key) => key.length * 2 + 64 });
+
 export async function composeWorkspaceRuntime(value: GatewayContextData, snapshot: WorkspaceRuntimeSnapshot): Promise<GatewayContextData> {
     if (!isWorkspaceRuntimeFresh(snapshot, value.workspaceId)) throw new Error("workspace_runtime_composition_expired");
-    const teamSettings = await workspaceTeamSettings(snapshot.settings, snapshot.billingMode, value.workspaceId);
+    // Consent itself always comes from this snapshot. The independent external
+    // rollout decision must not become a Statsig network call on every request.
+    const contributionAccess = snapshot.settings.data_contribution_enabled === true
+        ? await contributionAccessLeases.getOrLoad(value.workspaceId, async () => ({
+            value: await isDataContributionAccessEnabled({ workspaceId: value.workspaceId }),
+            expiresAtMs: Math.min(snapshot.expiresAtMs, Date.now() + 30_000),
+        })) : false;
+    const teamSettings = await workspaceTeamSettings(snapshot.settings, snapshot.billingMode, value.workspaceId, contributionAccess);
     if (!isWorkspaceRuntimeFresh(snapshot, value.workspaceId)) throw new Error("workspace_runtime_composition_expired");
     return {
         ...value, teamSettings, workspaceRuntimeExpiresAt: snapshot.expiresAtMs,
@@ -80,4 +91,3 @@ export async function composeWorkspaceRuntime(value: GatewayContextData, snapsho
         })),
     };
 }
-

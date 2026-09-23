@@ -11,6 +11,9 @@ Attached private models are added afterwards so their credentials are not
 overwritten by public-provider BYOK references. Financial/key decisions never
 come from the workspace snapshot. The existing settings transformation is shared
 with the legacy path, preserving consent, healing locks and billing mode.
+Opted-in workspaces reuse a bounded, coalesced 30-second feature-gate decision,
+never beyond the requesting snapshot's source expiry. Disabling consent in the
+snapshot immediately skips this gate; it cannot restore consent from the cache.
 
 Workspace source expiry is checked before/after asynchronous consent gating and
 after credential hydration. Expired source failures reject instead of using
@@ -43,3 +46,21 @@ composition separation. Public provider/pricing data is still duplicated in
 workspace-specific static KV entries. Credit refresh and authoritative limits
 remain independent. Native fixture counts are not production invoice savings.
 No new database migration, durable object, schedule or production flag is added.
+
+## Staging evidence
+
+Source `8b76670b8`, Worker `28f19897-089c-4059-9427-e2c4074b57b1` passed twelve
+zero-charge Poolside XS/S requests in LHR across Chat/Responses/Messages and both
+streaming modes. Routing ms: `[400,4,23,4,3,4,94,12,3,8,16,14]`. First requests
+per model were 400/94 ms; ten follow-ups were 3–23 ms. All twelve operation
+records completed with zero pending background tasks. Test key
+`dcbea48b-5357-4721-8422-02d9abd7c864` was revoked.
+
+A separate 14-request probe added two requests after a 61-second pause. All
+fourteen passed and charged zero; the resumed requests routed in 233/26 ms.
+The first resumed request still fetched admission: this existing test workspace
+has no wallet, so its admission lease independently expires after 60 seconds.
+This verifies compatibility across expiry, not the high-balance refill saving.
+That saving is demonstrated by the local pipeline/native fixtures, not yet a
+representative paid production workload. Test key
+`0cb850f8-6622-4d22-b56f-5d66f69e43cc` was revoked. No balances were edited.
