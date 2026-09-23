@@ -50,7 +50,8 @@ try {
             assert.deepEqual(result.outcome.usage, { total_tokens: 5 });
             assert.deepEqual(result.outcome.finalInfo, { aborted: false, sawFinalUsage: true });
         } else {
-            assert.ok(result.error);
+            if (mode === "gateway") assert.ok(result.error);
+            else { assert.equal(result.error, undefined); assert.match(result.text, /sse_missing_terminal/); assert.doesNotMatch(result.text, /\[DONE\]/); }
             assert.deepEqual(result.outcomes[0].info, { aborted: true, sawFinalUsage: false,
                 failureOrigin: mode === "gateway" ? "gateway" : "provider" });
         }

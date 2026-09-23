@@ -1,4 +1,5 @@
 // One delivery commitment and one accounting outcome per stream. No IO or output retention.
+import type { GatewayStreamError } from "@core/stream-error";
 export type StreamFinalInfo = {
 	aborted: boolean;
 	sawFinalUsage: boolean;
@@ -16,6 +17,7 @@ export type StreamOutcome<Usage = unknown> = Readonly<{
 	downstreamDisconnected: boolean;
 	usage: Usage | null;
 	finalInfo: Readonly<StreamFinalInfo>;
+	error: GatewayStreamError | null;
 }>;
 
 export class StreamSession<Usage = unknown> {
@@ -44,13 +46,13 @@ export class StreamSession<Usage = unknown> {
 		if (!this.outcome) this.disconnected = true;
 	}
 
-	finish(usage: Usage | null, info: StreamFinalInfo, providerError = false): StreamOutcome<Usage> {
+	finish(usage: Usage | null, info: StreamFinalInfo, error: GatewayStreamError | null = null): StreamOutcome<Usage> {
 		if (this.outcome) return this.outcome;
-		const state = info.aborted || providerError ? "FAILED" : this.disconnected ? "CANCELLED" : "COMPLETED";
+		const state = info.aborted || error ? "FAILED" : this.disconnected ? "CANCELLED" : "COMPLETED";
 		this.current = state;
 		this.outcome = Object.freeze({
 			state, committed: this.committed, deliveredFrames: this.frames, deliveredBytes: this.bytes,
-			downstreamDisconnected: this.disconnected, usage, finalInfo: Object.freeze({ ...info }),
+			downstreamDisconnected: this.disconnected, usage, finalInfo: Object.freeze({ ...info }), error,
 		});
 		this.resolve(this.outcome);
 		return this.outcome;
