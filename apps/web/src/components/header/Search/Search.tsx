@@ -959,7 +959,7 @@ export default function Search({
 			? filterAndSortIndexed(RESOURCE_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
 			: [];
 		const documentation = includesScope("resources")
-			? filterAndSortIndexed(DOCUMENTATION_SEARCH_INDEX, searchTerm, resultLimit)
+			? filterAndSortIndexed(DOCUMENTATION_SEARCH_INDEX, searchTerm, resultLimit, showAllWhenScoped)
 			: [];
 		const models = includesScope("models") && searchIndex
 			? filterAndSortIndexed(searchIndex.models, searchTerm, resultLimit, showAllWhenScoped)
