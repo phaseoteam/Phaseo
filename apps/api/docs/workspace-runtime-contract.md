@@ -4,7 +4,7 @@ This additive contract separates shared workspace settings and enabled BYOK
 credential references from model catalog data and key-specific admission. It is
 the contract stage, not an enabled cache or a completed publication migration.
 
-`20260923222000_gateway_workspace_runtime_snapshot.sql` adds two read-only RPCs:
+`20260923221019_gateway_workspace_runtime_snapshot.sql` adds two read-only RPCs:
 
 - `gateway_fetch_workspace_runtime(uuid)`: an explicit allowlist of routing,
   privacy, logging, contribution, healing and automatic-routing settings;
@@ -50,3 +50,12 @@ enable and test a separate Worker reader increment on staging. Until then the
 existing bundle remains in use. Rollback is to keep the reader disabled; neither
 dropping functions nor changing customer rows is needed. This stage makes no
 latency, KV savings, live deployment or instantaneous invalidation claim.
+
+On 2026-09-23, explicit approval was received and the two functions were applied
+to the shared database as migration `20260923221019`. Live permission checks
+confirmed service-role-only execution, security-invoker behavior and an empty
+search path. The legacy bundle and key-admission definitions remained unchanged.
+A read-only service-role transaction verified the test workspace's schema,
+identity, 60-second source lease and exclusion of financial authority. No table
+data or production Worker configuration was changed. Reader activation and its
+staging evidence are tracked in `workspace-runtime-cache.md`.

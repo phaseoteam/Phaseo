@@ -19,7 +19,7 @@ const bundle = (workspace = wsA, key = keyA, includeWorkspace = true, includeCat
 try {
     await db.exec(await readFile(new URL('./fixtures/context-bundle-before.sql', import.meta.url), 'utf8'));
     await db.exec(await readFile(new URL('../migrations/20260916121303_gateway_context_bundle.sql', import.meta.url), 'utf8'));
-    const migration = await readFile(new URL('../migrations/20260923222000_gateway_workspace_runtime_snapshot.sql', import.meta.url), 'utf8');
+    const migration = await readFile(new URL('../migrations/20260923221019_gateway_workspace_runtime_snapshot.sql', import.meta.url), 'utf8');
     const legacyBefore = await one("select pg_get_functiondef('public.gateway_fetch_request_context_bundle(uuid,text,text,uuid,boolean)'::regprocedure) as value");
     await db.exec(migration);
     await db.exec(migration);
