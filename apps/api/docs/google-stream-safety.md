@@ -27,6 +27,9 @@ Cross-protocol Responses compatibility still accumulates bounded snapshots.
 
 Validation: 605 source files / 4,716 tests pass; typecheck, focused lint (existing
 file-length warning), Worker dry-run and native Workers framing/usage/truncation/
-cancellation checks pass. Staging checks pending. No production deployment or
+cancellation checks pass. Commit `caa4c0d23` deployed to staging version
+`556d4184-2578-4032-8710-508749f09fcf`: twelve free Poolside checks and zero-charge
+audits pass; disposable key revoked. First routing overhead 426 ms, remaining
+4–131 ms in LHR, not a global latency guarantee. No production deployment or
 paid Google request is authorized by this stage. Poolside checks are gateway
 regression evidence, not live Google-provider validation.
