@@ -61,8 +61,61 @@ describe("key version safety", () => {
         const pending = getKeyVersion("kid", "key", { useL1Cache: true });
         await setKeyVersion("kid", "key", 123);
         release("0");
-        await pending;
+        await expect(pending).rejects.toThrow("Key version changed during read");
         await expect(getKeyVersion("kid", "key", { useL1Cache: true })).resolves.toBe(123);
+    });
+
+    it("fences warm reads during a pending publication", async () => {
+        const { getKeyVersion, setKeyVersion } = await import("./kv");
+        await getKeyVersion("kid", "key", { useL1Cache: true });
+        let release!: () => void;
+        runtime.cache.put.mockImplementationOnce(() => new Promise<void>(resolve => { release = resolve; }));
+        const writing = setKeyVersion("kid", "key", 42);
+        const reading = getKeyVersion("kid", "key", { useL1Cache: true });
+        let settled = false;
+        void reading.then(() => { settled = true; });
+        await Promise.resolve();
+        expect(settled).toBe(false);
+        release();
+        await writing;
+        await expect(reading).resolves.toBe(42);
+    });
+
+    it("fails closed after publication failure until a successful retry", async () => {
+        const { getKeyVersion, setKeyVersion } = await import("./kv");
+        await getKeyVersion("id", "key", { useL1Cache: true });
+        runtime.cache.put.mockRejectedValueOnce(new Error("publication failed"));
+        await expect(setKeyVersion("id", "key", 42)).rejects.toThrow("publication failed");
+        await expect(getKeyVersion("id", "key", { useL1Cache: true })).rejects.toThrow("publication failed");
+        await expect(getKeyVersion("id", "key")).rejects.toThrow("publication failed");
+        await setKeyVersion("id", "key", 43);
+        await expect(getKeyVersion("id", "key", { useL1Cache: true })).resolves.toBe(43);
+    });
+
+    it("does not allow overlapping publications to reorder KV writes", async () => {
+        const { setKeyVersion } = await import("./kv");
+        let release!: () => void;
+        runtime.cache.put.mockImplementationOnce(() => new Promise<void>(resolve => { release = resolve; }));
+        const writing = setKeyVersion("id", "key", 42);
+        await expect(setKeyVersion("id", "key", 43)).rejects.toThrow("already pending");
+        release();
+        await writing;
+    });
+
+    it("bounds all active reads and releases capacity after source failures", async () => {
+        const { getKeyVersion } = await import("./kv");
+        const releases: Array<() => void> = [];
+        for (let i = 0; i < 128; i++) {
+            runtime.cache.get.mockImplementationOnce(() => new Promise((_, reject) => {
+                releases.push(() => reject(new Error("source failed")));
+            }));
+        }
+        const reads = Array.from({ length: 128 }, (_, i) => getKeyVersion("id", `key-${i}`));
+        const settled = Promise.allSettled(reads);
+        await expect(getKeyVersion("id", "overflow")).rejects.toThrow("capacity exceeded");
+        for (const release of releases) release();
+        expect((await settled).every(result => result.status === "rejected")).toBe(true);
+        await expect(getKeyVersion("id", "recovered")).resolves.toBe(0);
     });
 });
 
