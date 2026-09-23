@@ -17,12 +17,9 @@ import {
 import { dispatchBackground } from "@/runtime/env";
 import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
 import { readSseEvents, SseProtocolError } from "@core/sse";
+import { StreamSession, type StreamFinalInfo, type StreamOutcome } from "./stream-session";
 
-export type StreamFinalInfo = {
-    aborted: boolean;
-    sawFinalUsage: boolean;
-    failureOrigin?: "provider" | "gateway";
-};
+export type { StreamFinalInfo } from "./stream-session";
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -48,6 +45,8 @@ type PassthroughWithPricingOpts = {
      * You can compute pricing & persist inside (prefer fire-and-forget in caller).
      */
     onFinalUsage?: (usageRaw: any, info: StreamFinalInfo) => Promise<void> | void;
+    /** Shared terminal outcome for health, accounting and audit consumers. */
+    onCompletion?: (outcome: StreamOutcome<any>) => Promise<void> | void;
     /**
      * Called once with the final snapshot frame (if detected).
      */
@@ -68,7 +67,15 @@ type PassthroughWithPricingOpts = {
  *  - detecting the final snapshot frame with `usage` to trigger onFinalUsage
  */
 export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): Promise<Response> {
-    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, timingHeader, ctx, provider } = opts;
+    return (await createPricedStreamSession(opts)).response;
+}
+
+export async function createPricedStreamSession(opts: PassthroughWithPricingOpts): Promise<{
+    response: Response;
+    session: StreamSession<any>;
+}> {
+    const { upstream, rewriteFrame, onFinalUsage, onCompletion, onFinalSnapshot, onStreamEvent, timingHeader, ctx, provider } = opts;
+    const session = new StreamSession<any>();
     const cancellationPolicy = getProviderStreamCancellationPolicy(provider);
     const providerMetadata = ctx.providers?.find((candidate) => candidate.providerId === provider);
     ctx.meta.streamCancellationSupport =
@@ -95,6 +102,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     void writer.closed.catch(() => {
         if (upstreamFailed) return;
         downstreamClosed = true;
+        session.disconnect();
         ctx.meta.downstreamDisconnected = true;
     });
 
@@ -138,29 +146,24 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         );
     };
 
-    // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional)
-    const writeJson = async (obj: unknown, eventName?: string | null) => {
+    const writeFrame = async (frame: string) => {
         if (downstreamClosed) return;
-        const prefix = eventName ? `event: ${eventName}\n` : "";
-        const line = `${prefix}data: ${JSON.stringify(obj)}\n\n`;
+        const bytes = enc.encode(frame);
         try {
-            await writer.write(enc.encode(line));
+            await writer.write(bytes);
+            session.delivered(bytes.byteLength);
         } catch {
             downstreamClosed = true;
+            session.disconnect();
             ctx.meta.downstreamDisconnected = true;
         }
     };
+    // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional).
+    const writeJson = (obj: unknown, eventName?: string | null) =>
+        writeFrame(`${eventName ? `event: ${eventName}\n` : ""}data: ${JSON.stringify(obj)}\n\n`);
 
-    let finalUsageSettled = false;
-    const finalizeUsage = (
-        usage: any,
-        info: StreamFinalInfo,
-    ) => {
-        if (finalUsageSettled) return;
-        finalUsageSettled = true;
-
-        if (!onFinalUsage) return;
-
+    if (onFinalUsage || onCompletion) dispatchBackground(session.completion.then(async outcome => {
+        const { usage, finalInfo: info } = outcome;
         if (info.aborted) {
             console.warn("[gateway] Streaming response did not finish successfully", {
                 requestId: ctx.requestId,
@@ -178,20 +181,23 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             });
         }
 
-        recordCompletionTiming();
-        dispatchBackground(
-            Promise.resolve().then(() => onFinalUsage(usage, info)).catch((err) => {
+        // Consumers observe the same settled outcome; a consumer failure cannot
+        // rewrite it or prevent another registered consumer from running.
+        await Promise.all([
+            onFinalUsage && Promise.resolve().then(() => onFinalUsage(usage, info)),
+            onCompletion && Promise.resolve().then(() => onCompletion(outcome)),
+        ].map(task => Promise.resolve(task).catch((err) => {
                 console.error("passthroughWithPricing onFinalUsage error:", err, {
                     requestId: ctx.requestId,
                     workspaceId: ctx.workspaceId,
                 });
-            }),
-        );
-    };
+            })));
+    }));
 
     const streamPump = (async () => {
         if (!upstream.body) {
-            finalizeUsage(null, { aborted: true, sawFinalUsage: false });
+            recordCompletionTiming();
+            session.finish(null, { aborted: true, sawFinalUsage: false });
             try { await writer.close(); } catch { }
             return;
         }
@@ -202,6 +208,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         let finalUsageCandidate: any = null;
         let failure: unknown;
         let failed = false;
+        let providerError = false;
         let failureOrigin: "provider" | "gateway" = "provider";
         let chunkReceivedAt = performance.now();
 
@@ -215,8 +222,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     if (dataStr === "[DONE]") {
                         sawWireTerminal = true;
                         if (!downstreamClosed && ctx.protocol === "openai.chat.completions") {
-                            try { await writer.write(enc.encode("data: [DONE]\n\n")); }
-                            catch { downstreamClosed = true; ctx.meta.downstreamDisconnected = true; }
+                            await writeFrame("data: [DONE]\n\n");
                         }
                         break;
                     }
@@ -234,6 +240,8 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         eventName,
                         frame: json,
                     });
+                    providerError ||= events.some(event => event.type === "error"
+                        || (event.type === "snapshot" && String(event.payload?.status).toLowerCase() === "failed"));
                     const containsGeneratedOutput = events.some((event) =>
                         (event.type === "delta_text" && event.text.length > 0) ||
                         (event.type === "delta_tool" && Boolean(
@@ -399,8 +407,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         // It is authoritative, but Chat SSE clients still need DONE.
                         // Stop here so an upstream marker cannot be forwarded twice.
                         if (json?.object === "chat.completion" && ctx.protocol === "openai.chat.completions" && !downstreamClosed) {
-                            try { await writer.write(enc.encode("data: [DONE]\n\n")); }
-                            catch { downstreamClosed = true; ctx.meta.downstreamDisconnected = true; }
+                            await writeFrame("data: [DONE]\n\n");
                         }
                         break;
                     }
@@ -412,13 +419,12 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             upstreamFailed = true;
             failure = error;
         } finally {
-            if (!finalUsageSettled) {
-                finalizeUsage(finalUsageCandidate ?? lastSeenUsage, {
+            recordCompletionTiming();
+            session.finish(finalUsageCandidate ?? lastSeenUsage, {
                     aborted: failed || !sawWireTerminal,
                     sawFinalUsage: !failed && sawWireTerminal && Boolean(finalUsageCandidate ?? lastSeenUsage),
                     ...(failed ? { failureOrigin } : {}),
-                });
-            }
+                }, providerError);
             if (!downstreamClosed) {
                 try {
                     if (failed) await writer.abort(failure);
@@ -443,8 +449,6 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     }
 
     // Do not add custom gateway headers; everything important is in-body now.
-    return new Response(ts.readable, { status: upstream.status, headers });
+    return { response: new Response(ts.readable, { status: upstream.status, headers }), session };
 }
-
-
 
