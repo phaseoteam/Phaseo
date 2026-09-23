@@ -7,6 +7,9 @@
 	},
 	"packageManager": "pnpm@10.33.0",
 	"scripts": {
+		"predev": "node scripts/generate-docs-search.mjs",
+		"prebuild": "node scripts/generate-docs-search.mjs",
+		"docs:search:index": "node scripts/generate-docs-search.mjs",
 		"dev": "node --max-http-header-size=32768 ./node_modules/next/dist/bin/next dev --turbopack --port 3100",
 		"build": "next build",
 		"start": "next start --port 3100",
