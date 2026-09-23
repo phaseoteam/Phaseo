@@ -2,6 +2,9 @@
 // Why: Responses API expects specific event names and structure
 // How: Parse Anthropic events and emit normalized Responses API events
 
+import { readSseEvents, sseReadable, SseProtocolError } from "@/core/sse";
+import { classifyStreamProviderError } from "@/core/stream-error";
+
 /**
  * Transform Anthropic Messages API streaming to OpenAI Responses API streaming format
  *
@@ -23,10 +26,12 @@
 export function createAnthropicToResponsesStreamTransformer(
 	requestId: string,
 	model: string,
-): TransformStream<Uint8Array, Uint8Array> {
-	const decoder = new TextDecoder();
+	credentialSource?: "gateway" | "byok",
+): ReadableWritablePair<Uint8Array, Uint8Array> {
 	const encoder = new TextEncoder();
-	let buf = "";
+	const input = new TransformStream<Uint8Array, Uint8Array>();
+	let admittedChars = 0, sequence = 0;
+	let terminal = false;
 
 	// Track state for building output items
 	let messageId: string | null = null;
@@ -50,35 +55,30 @@ export function createAnthropicToResponsesStreamTransformer(
 	let createdEmitted = false;
 
 	const emitEvent = (
-		controller: TransformStreamDefaultController<Uint8Array>,
+		controller: { enqueue(chunk: Uint8Array): void },
 		eventName: string,
 		payload: any,
 	) => {
-		controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`));
+		controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify({ ...payload, type: eventName, sequence_number: sequence++ })}\n\n`));
 	};
 
-	return new TransformStream<Uint8Array, Uint8Array>({
-		async transform(chunk, controller) {
-			buf += decoder.decode(chunk, { stream: true });
-			const frames = buf.split(/\n\n/);
-			buf = frames.pop() ?? "";
-
-			for (const raw of frames) {
-				// Parse SSE frame
-				const lines = raw.split("\n");
-				let data = "";
-				for (const line of lines) {
-					const l = line.replace(/\r$/, "");
-					if (l.startsWith("data:")) data += l.slice(5).trimStart();
-				}
-				if (!data || data === "[DONE]") continue;
+	return { writable: input.writable, readable: sseReadable(async function* (signal) {
+			for await (const event of readSseEvents(input.readable, { signal })) {
+				const data = event.data;
+				admittedChars += data.length;
+				// Compatibility snapshots require output accumulation, but it is bounded.
+				if (admittedChars > 4 * 1024 * 1024) throw new SseProtocolError("sse_state_too_large");
+				const frames: Uint8Array[] = [];
+				const controller = { enqueue(chunk: Uint8Array) { frames.push(chunk); } };
 
 				let payload: any;
 				try {
 					payload = JSON.parse(data);
 				} catch {
-					continue;
+					throw new SseProtocolError("sse_invalid_json");
 				}
+				if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new SseProtocolError("sse_invalid_json");
+				if (payload?.type === "error") throw classifyStreamProviderError(payload, credentialSource);
 
 				// Handle different Anthropic event types
 				if (payload.type === "message_start") {
@@ -92,6 +92,7 @@ export function createAnthropicToResponsesStreamTransformer(
 						emitEvent(controller, "response.created", {
 							response: {
 								id: requestId,
+								object: "response", status: "in_progress", output: [],
 								created_at: createdAt,
 								model: model,
 							},
@@ -102,6 +103,9 @@ export function createAnthropicToResponsesStreamTransformer(
 				} else if (payload.type === "content_block_start") {
 					const index = payload.index;
 					const block = payload.content_block;
+					if (!Number.isInteger(index) || index < 0 || index >= 128 || contentBlocks.has(index) || !block) {
+						throw new SseProtocolError("sse_invalid_tool_delta");
+					}
 
 					// Initialize content block tracking
 					const itemId = `item_${requestId}_${index}`;
@@ -115,7 +119,7 @@ export function createAnthropicToResponsesStreamTransformer(
 						text: block.type === "thinking" ? (block.thinking || "") : (block.text || ""),
 						signature: block.signature,
 						name: block.name || "",
-						input: "",
+						input: block.input && Object.keys(block.input).length ? JSON.stringify(block.input) : "",
 					});
 
 					// For tool_use blocks, emit output_item.added for function_call
@@ -127,7 +131,7 @@ export function createAnthropicToResponsesStreamTransformer(
 								id: itemId,
 								call_id: block.id,
 								name: block.name || "",
-								arguments: "",
+								arguments: contentBlocks.get(index)?.input ?? "",
 							},
 						});
 					}
@@ -138,8 +142,7 @@ export function createAnthropicToResponsesStreamTransformer(
 					const block = contentBlocks.get(index);
 
 					if (!block) {
-						console.warn(`[anthropic-stream] content_block_delta for unknown index ${index}`);
-						continue;
+						throw new SseProtocolError("sse_invalid_tool_delta");
 					}
 
 					if (delta.type === "text_delta") {
@@ -268,6 +271,8 @@ export function createAnthropicToResponsesStreamTransformer(
 
 					// Build usage object
 					const responseUsage = usage ? {
+						...usage,
+						cached_read_tokens_are_subset_of_input: false,
 						input_tokens: usage.input_tokens || 0,
 						output_tokens: usage.output_tokens || 0,
 						total_tokens: (usage.input_tokens || 0) + (usage.output_tokens || 0),
@@ -279,7 +284,7 @@ export function createAnthropicToResponsesStreamTransformer(
 					} : undefined;
 
 					// Emit response.completed
-					emitEvent(controller, "response.completed", {
+					emitEvent(controller, status === "incomplete" ? "response.incomplete" : "response.completed", {
 						response: {
 							id: requestId,
 							object: "response",
@@ -298,13 +303,11 @@ export function createAnthropicToResponsesStreamTransformer(
 							nativeResponseId: messageId,
 						},
 					});
+					terminal = true;
 				}
+				for (const frame of frames) yield frame;
+				if (terminal) return;
 			}
-		},
-
-		flush(controller) {
-			// If there's any remaining buffer, ignore it
-			// All complete events should have been processed
-		},
-	});
+			throw new SseProtocolError("sse_missing_terminal");
+		}) };
 }
