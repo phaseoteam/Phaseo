@@ -56,4 +56,18 @@ coalesced. No financial write was removed or weakened.
 - Native Workers cache/source test: 32 concurrent requests share one metadata
   source fetch, one authoritative fetch, one publication and one timestamp write;
   the next warm hit performs no external operation and a distinct key is isolated.
-- Full source/staging gates are pending. Production is unchanged.
+- Full source gate: 600 files / 4,660 tests pass; typecheck, focused lint, native
+  Workers harness and staging build pass.
+- Staging commit 7840cd6c0, Worker ed134992-0c06-402f-8966-ce48687eff49:
+  twelve Poolside XS/S requests across Chat/Responses/Messages, streamed and
+  non-streamed, all pass with zero-charge audits. Routing milliseconds:
+  `[505,4,36,4,5,4,107,6,4,13,12,6]`. All probes used LHR.
+- Disposable key aa58e993-08be-432f-b681-c0a71a4a64fb was revoked in DB without
+  publishing a KV marker. Malformed JSON probes (cannot invoke a provider)
+  first returned 401 at 50,821 ms, then again at 56,194 ms. This tests the
+  remaining source lease, not a global SLA or normal mutation publication.
+- Redacted operation tail: immediate warm Chat request used one KV read,
+  one Supabase read, two mutations and two RPCs total; pre-dispatch counters
+  contained only the KV read. The former per-request advisory mutation is absent.
+  Counts are not CPU/duration/invoice measurements, and other protocols have
+  additional operations. Production is unchanged.
