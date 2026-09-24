@@ -839,7 +839,7 @@ jobs:
 
             - name: Load Doubleword provider key from Infisical
               if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us'
-              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
@@ -850,7 +850,7 @@ jobs:
 
             - name: Load TypeSafe provider key from Infisical
               if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us'
-              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
@@ -861,7 +861,7 @@ jobs:
 
             - name: Load SiliconFlow provider key from Infisical
               if: matrix.target == 'api'
-              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
@@ -872,7 +872,7 @@ jobs:
 
             - name: Load global Cloudflare runtime token from Infisical
               if: matrix.target == 'api'
-              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
@@ -883,7 +883,7 @@ jobs:
 
             - name: Load global Cloudflare account ID from Infisical
               if: matrix.target == 'api'
-              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
@@ -894,7 +894,7 @@ jobs:
 
             - name: Load global OpenRouter key from Infisical
               if: matrix.target == 'api'
-              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
@@ -905,7 +905,7 @@ jobs:
 
             - name: Load public model discovery webhook from Infisical
               if: matrix.target == 'api' || matrix.target == 'web-api'
-              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
@@ -916,7 +916,7 @@ jobs:
 
             - name: Load model update Discord role from Infisical
               if: matrix.target == 'api' || matrix.target == 'web-api'
-              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
@@ -936,7 +936,7 @@ jobs:
 
             - name: Load regional gateway secrets from Infisical
               if: matrix.target == 'api-eu' || matrix.target == 'api-us'
-              uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db # v1.0.17
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
               with:
                   method: oidc
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
