@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -27,6 +28,7 @@ import {
 	MessageSquare,
 	MessageSquareMore,
 	Sun,
+	Sparkles,
 	Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -54,6 +56,12 @@ import { useDisplayPreferences } from "@/components/providers/DisplayPreferences
 import type { DisplayPreferences } from "@/lib/displayPreferences";
 import type { InternalAuthHeaderUser } from "@/lib/fetchers/internal/authTypes";
 import { WorkspaceCombobox } from "./WorkspaceCombobox";
+import { setActionDockEnabled, useActionDockEnabled } from "@/lib/actionDockPreferences";
+
+const PhaseoActionDock = dynamic(
+	() => import("@/components/action-dock/PhaseoActionDock").then((module) => module.PhaseoActionDock),
+	{ ssr: false },
+);
 
 interface HeaderProps {
 	isLoggedIn: boolean;
@@ -104,6 +112,8 @@ export default function HeaderClient({
 	);
 	const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 	const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+	const canUseActionDock = providerMode || userRole?.toLocaleLowerCase() === "admin";
+	const actionDockEnabled = useActionDockEnabled(user?.id);
 
 	useEffect(() => {
 		setActiveTeamId(currentTeamId ?? teams[0]?.id);
@@ -344,12 +354,24 @@ export default function HeaderClient({
 								</DropdownMenuItem>
 							) : null}
 
-								<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
-									<Link href="/settings/account" prefetch={false}>
-										<Settings className="h-4 w-4" />
+							<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
+								<Link href="/settings/account" prefetch={false}>
+									<Settings className="h-4 w-4" />
 									<span>Settings</span>
 								</Link>
 							</DropdownMenuItem>
+							{user?.id && canUseActionDock && !actionDockEnabled ? (
+								<DropdownMenuItem
+									className="cursor-pointer rounded-lg text-sm"
+										onClick={() => {
+										setActionDockEnabled(user.id, true);
+										setIsMobileNavOpen(false);
+									}}
+								>
+									<Sparkles className="h-4 w-4" />
+									<span>Turn on Phaseo action dock</span>
+								</DropdownMenuItem>
+							) : null}
 
 							<DropdownMenuSeparator />
 
@@ -548,6 +570,14 @@ export default function HeaderClient({
 						onSignOut={handleSignOut}
 						initialActiveTeamId={currentTeamId}
 					/>
+					{user?.id && canUseActionDock ? (
+						<PhaseoActionDock
+							key={user.id}
+							userId={user.id}
+							userRole={userRole}
+							providerMode={providerMode}
+						/>
+					) : null}
 				</>
 			) : (
 				<Link href="/sign-up">

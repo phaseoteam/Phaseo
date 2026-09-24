@@ -76,6 +76,7 @@ import {
 	wasAwayLongEnough,
 } from "./Search.freshness";
 import { compareSearchCategories, searchContextScore } from "@/components/header/Search/Search.ranking";
+import { useSearchShortcutLabel } from "./SearchShortcut";
 
 interface Props {
 	className?: string;
@@ -669,6 +670,7 @@ export default function Search({
 	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: Props) {
 	const router = useRouter();
+	const shortcutLabel = useSearchShortcutLabel();
 	const pathname = usePathname() ?? "/";
 	const { resolvedTheme, setTheme } = useTheme();
 	const navigationItems = useMemo(() => getGlobalNavigationItems(capabilities), [capabilities]);
@@ -1344,7 +1346,7 @@ export default function Search({
 				type="button"
 				onClick={() => setOpen(true)}
 				className={cn(
-					"relative flex h-9 w-full min-w-0 items-center justify-start rounded-lg border border-border bg-background pl-8 pr-2 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground lg:pl-9 lg:pr-12",
+					"relative flex h-9 w-full min-w-0 items-center justify-start rounded-lg border border-border bg-background pl-8 pr-2 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground lg:pl-9 lg:pr-14",
 				)}
 				aria-label="Open global search"
 			>
@@ -1354,7 +1356,7 @@ export default function Search({
 					<span className="hidden truncate sm:inline">Search Phaseo</span>
 				</span>
 				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline-flex">
-					Ctrl K
+					{shortcutLabel}
 				</span>
 			</button>
 

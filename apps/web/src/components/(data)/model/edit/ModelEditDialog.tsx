@@ -29,6 +29,8 @@ import ProvidersTab from "./tabs/ProvidersTab"
 interface ModelEditDialogProps {
   modelId: string
   tab?: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export interface ModelData {
@@ -65,8 +67,13 @@ const TAB_HELPERS = {
   providers: "Configure provider mappings and capabilities",
 } as const
 
-export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) {
-  const [open, setOpen] = useState(false)
+export default function ModelEditDialog({ modelId, tab, open: controlledOpen, onOpenChange }: ModelEditDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen ?? internalOpen
+  const setOpen = useCallback((nextOpen: boolean) => {
+    if (controlledOpen === undefined) setInternalOpen(nextOpen)
+    onOpenChange?.(nextOpen)
+  }, [controlledOpen, onOpenChange])
   const [model, setModel] = useState<ModelData | null>(null)
   const [providers, setProviders] = useState<Array<{ id: string; name: string }>>([])
   const [detailRows, setDetailRows] = useState<Array<{ id?: string; detail_name: string; detail_value: string }>>([])
@@ -162,11 +169,11 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      {controlledOpen === undefined ? <DialogTrigger asChild>
         <Button variant="outline" size="icon-sm">
           <Pencil className="h-4 w-4" />
         </Button>
-      </DialogTrigger>
+      </DialogTrigger> : null}
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Model</DialogTitle>
