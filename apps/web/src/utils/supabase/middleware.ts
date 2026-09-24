@@ -42,13 +42,13 @@ export async function updateSession(request: NextRequest) {
 
     const [
         { data: { user } },
-        { data: { session } },
+        { data: { session }, error: sessionError },
     ] = await Promise.all([
         supabase.auth.getUser(),
         supabase.auth.getSession(),
     ])
 
-    if (!user && request.cookies.has(ACTIVE_WORKSPACE_COOKIE_NAME)) {
+    if (!user && !session && !sessionError && request.cookies.has(ACTIVE_WORKSPACE_COOKIE_NAME)) {
         request.cookies.delete(ACTIVE_WORKSPACE_COOKIE_NAME)
         responseCookies.set(ACTIVE_WORKSPACE_COOKIE_NAME, {
             name: ACTIVE_WORKSPACE_COOKIE_NAME,
