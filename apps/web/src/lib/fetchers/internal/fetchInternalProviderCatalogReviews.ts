@@ -49,6 +49,7 @@ export type InternalProviderApplication = {
 	review_status: "setup" | "awaiting_approval" | "approved" | "paused" | "rejected" | "needs_changes";
 	review_reason: string | null;
 	technical_ready: boolean;
+	approval_blockers?: Array<"endpoint" | "adapter" | "credentials" | "probe">;
 	created_at: string;
 	updated_at: string;
 };

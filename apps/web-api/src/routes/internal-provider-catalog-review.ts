@@ -23,8 +23,19 @@ async function adminUser(c: any) {
 	return !role.error && String(role.data?.role ?? "").toLowerCase() === "admin" ? user : null;
 }
 
+type ProviderApprovalBlocker = "endpoint" | "adapter" | "credentials" | "probe";
+
+function providerApprovalBlockers(provider: any, hasPassedProbe: boolean): ProviderApprovalBlocker[] {
+	const blockers: ProviderApprovalBlocker[] = [];
+	if (!provider?.base_url) blockers.push("endpoint");
+	if (provider?.metadata?.adapter_ready !== true) blockers.push("adapter");
+	if (provider?.metadata?.credentials_ready !== true) blockers.push("credentials");
+	if (!hasPassedProbe) blockers.push("probe");
+	return blockers;
+}
+
 function providerTechnicallyReady(provider: any, hasPassedProbe: boolean): boolean {
-	return Boolean(provider?.base_url && provider?.metadata?.adapter_ready === true && provider?.metadata?.credentials_ready === true && hasPassedProbe);
+	return providerApprovalBlockers(provider, hasPassedProbe).length === 0;
 }
 
 async function markProviderAwaitingApprovalIfReady(client: any, providerSlug: string) {
@@ -103,22 +114,26 @@ internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c)
 		const authUser = await client.auth.admin.getUserById(userId);
 		if (!authUser.error && authUser.data.user?.email) authUsers.set(userId, authUser.data.user.email);
 	}));
-	const providers = selfServeProviders.map((provider: any) => ({
-		provider_slug: provider.provider_slug,
-		name: provider.name,
-		status: provider.status,
-		routable: provider.routable === true,
-		routing_enabled: provider.routing_enabled === true,
-		base_url: provider.base_url ?? null,
-		contact_user_id: contactUserIds.get(String(provider.provider_slug)) ?? null,
-		contact_email: authUsers.get(contactUserIds.get(String(provider.provider_slug)) ?? "") ?? null,
-		website_url: typeof provider.metadata?.website_url === "string" ? provider.metadata.website_url : null,
-		review_status: String(provider.metadata?.self_serve?.provider_review_status ?? "awaiting_approval"),
-		review_reason: typeof provider.metadata?.self_serve?.provider_review_reason === "string" ? provider.metadata.self_serve.provider_review_reason : null,
-		technical_ready: providerTechnicallyReady(provider, passedProviders.has(String(provider.provider_slug))),
-		created_at: provider.created_at,
-		updated_at: provider.updated_at,
-	}));
+	const providers = selfServeProviders.map((provider: any) => {
+		const approvalBlockers = providerApprovalBlockers(provider, passedProviders.has(String(provider.provider_slug)));
+		return {
+			provider_slug: provider.provider_slug,
+			name: provider.name,
+			status: provider.status,
+			routable: provider.routable === true,
+			routing_enabled: provider.routing_enabled === true,
+			base_url: provider.base_url ?? null,
+			contact_user_id: contactUserIds.get(String(provider.provider_slug)) ?? null,
+			contact_email: authUsers.get(contactUserIds.get(String(provider.provider_slug)) ?? "") ?? null,
+			website_url: typeof provider.metadata?.website_url === "string" ? provider.metadata.website_url : null,
+			review_status: String(provider.metadata?.self_serve?.provider_review_status ?? "awaiting_approval"),
+			review_reason: typeof provider.metadata?.self_serve?.provider_review_reason === "string" ? provider.metadata.self_serve.provider_review_reason : null,
+			technical_ready: approvalBlockers.length === 0,
+			approval_blockers: approvalBlockers,
+			created_at: provider.created_at,
+			updated_at: provider.updated_at,
+		};
+	});
 	return c.json({ providers }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
