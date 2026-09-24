@@ -28,14 +28,14 @@ describe("provider onboarding account status", () => {
 			if (url.includes("/rest/v1/provider_onboarding_submissions")) {
 				return new Response(JSON.stringify([{
 					id: "submission-1", provider_slug: "provider-test", provider_name: "Provider Test", website_url: "https://provider.test", logo_url: null, catalog_url: null,
-					application_type: "claim", provider_review_status: providerReviewStatus,
+					application_type: "claim", submitted_by: PROVIDER_USER_ID, provider_review_status: providerReviewStatus,
 					provider_review_reason: providerReviewStatus === "needs_changes" ? "Please clarify model ownership." : null,
 					status: "submitted", model_count: 0, validation_summary: { valid: true },
 					submitted_at: "2026-09-24T00:00:00Z", created_at: "2026-09-24T00:00:00Z",
 				}]), { status: 200 });
 			}
 			if (url.includes("/rest/v1/provider_account_links")) {
-				return new Response(JSON.stringify([{ provider_slug: "provider-test", workspace_id: "provider-workspace", role: "owner", status: providerLinkStatus, verified_at: null }]), { status: 200 });
+				return new Response(JSON.stringify([{ provider_slug: "provider-test", workspace_id: "provider-workspace", role: "owner", status: providerLinkStatus, linked_by: PROVIDER_USER_ID, verified_at: null }]), { status: 200 });
 			}
 			if (url.includes("/rest/v1/provider_catalog_events")) return new Response("[]", { status: 200 });
 			if (url.includes("/rest/v1/v2_providers")) {
@@ -164,6 +164,7 @@ describe("provider onboarding account status", () => {
 
 	it("allows an incumbent owner to rotate a secret while keeping an unapproved claimant locked", async () => {
 		let linkStatus: "pending" | "active" = "pending";
+		let applicationSubmitter = PROVIDER_USER_ID;
 		let sourceUpdates = 0;
 		const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const request = input instanceof Request ? input : null;
@@ -179,10 +180,10 @@ describe("provider onboarding account status", () => {
 			if (url.includes("/rest/v1/workspace_members")) return respond([{ workspace_id: "provider-workspace", role: "owner" }]);
 			if (url.includes("/rest/v1/workspaces")) return respond([]);
 			if (url.includes("/rest/v1/provider_account_links")) return respond([{
-				provider_slug: "provider-test", workspace_id: "provider-workspace", role: "owner", status: linkStatus,
+				provider_slug: "provider-test", workspace_id: "provider-workspace", role: "owner", status: linkStatus, linked_by: PROVIDER_USER_ID,
 			}]);
 			if (url.includes("/rest/v1/provider_onboarding_submissions")) return respond([{
-				application_type: "claim", provider_review_status: "awaiting_approval",
+				application_type: "claim", submitted_by: applicationSubmitter, provider_review_status: "awaiting_approval",
 			}]);
 			if (url.includes("/rest/v1/v2_providers")) return respond([{ metadata: { website_url: "https://provider.test" } }]);
 			if (url.includes("/rest/v1/provider_catalog_sources") && String(method).toUpperCase() === "PATCH") {
@@ -205,6 +206,7 @@ describe("provider onboarding account status", () => {
 		expect(sourceUpdates).toBe(0);
 
 		linkStatus = "active";
+		applicationSubmitter = "claimant-user";
 		const incumbentResponse = await rotate();
 		expect(incumbentResponse.status).toBe(200);
 		expect(sourceUpdates).toBe(1);

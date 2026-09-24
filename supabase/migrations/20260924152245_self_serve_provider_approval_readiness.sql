@@ -42,7 +42,10 @@ update public.provider_onboarding_submissions submission
 set application_type = 'claim'
 where exists (
   select 1 from public.provider_account_links link
-  where link.provider_slug = submission.provider_slug and link.proof_method = 'domain_file'
+  where link.provider_slug = submission.provider_slug
+    and link.proof_method = 'domain_file'
+    and link.linked_by = submission.submitted_by
+    and link.created_at <= submission.created_at
 );
 
 update public.provider_onboarding_submissions submission
@@ -69,9 +72,16 @@ set metadata = coalesce(provider.metadata, '{}'::jsonb) - 'self_serve',
 where coalesce(provider.metadata, '{}'::jsonb) ? 'self_serve'
   and exists (
     select 1
-    from public.provider_onboarding_submissions submission
-    where submission.provider_slug = provider.provider_slug
-      and submission.application_type = 'claim'
+    from public.provider_onboarding_submissions claim
+    where claim.provider_slug = provider.provider_slug
+      and claim.application_type = 'claim'
+      and not exists (
+        select 1
+        from public.provider_onboarding_submissions earlier
+        where earlier.provider_slug = claim.provider_slug
+          and earlier.application_type = 'new'
+          and (earlier.created_at, earlier.id) < (claim.created_at, claim.id)
+      )
   );
 
 create index if not exists provider_onboarding_submissions_review_queue_idx
@@ -635,6 +645,10 @@ begin
         and (route.effective_from is null or route.effective_from <= reviewed_at_value)
         and (route.effective_to is null or route.effective_to > reviewed_at_value)
         and not route.is_stealth
+        and not exists (
+          select 1 from public.v2_model_provider_routes stealth_route
+          where stealth_route.model_slug = route.model_slug and stealth_route.is_stealth
+        )
         and coalesce((select (p.metadata ->> 'adapter_ready')::boolean from public.v2_providers p where p.provider_slug = route.provider_slug), false)
         and coalesce((select (p.metadata ->> 'credentials_ready')::boolean from public.v2_providers p where p.provider_slug = route.provider_slug), false)
         and exists (select 1 from public.v2_providers p where p.provider_slug = route.provider_slug and nullif(trim(p.base_url), '') is not null)

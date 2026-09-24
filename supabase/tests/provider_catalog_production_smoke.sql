@@ -127,6 +127,16 @@ begin
   end if;
 
   if position(
+    'stealth_route.model_slug = route.model_slug'
+    in pg_get_functiondef('public.set_self_serve_provider_review(text,text,text,uuid)'::regprocedure)
+  ) = 0 or position(
+    'and stealth_route.is_stealth'
+    in pg_get_functiondef('public.set_self_serve_provider_review(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Provider approval can activate a route hidden by another provider’s stealth route';
+  end if;
+
+  if position(
     'release_scheduled'
     in pg_get_functiondef('public.activate_due_provider_catalog_releases()'::regprocedure)
   ) = 0 then
