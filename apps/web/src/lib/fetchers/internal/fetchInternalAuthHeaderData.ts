@@ -3,22 +3,36 @@ import { createClient } from "@/utils/supabase/server";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { cookies } from "next/headers";
 
-export async function fetchInternalAuthHeaderData(): Promise<InternalAuthHeaderData> {
+type FetchInternalAuthHeaderDataOptions = {
+	query?: string;
+	limit?: number;
+	offset?: number;
+};
+
+export async function fetchInternalAuthHeaderData(
+	options: FetchInternalAuthHeaderDataOptions = {},
+): Promise<InternalAuthHeaderData> {
 	const [supabase, cookieStore] = await Promise.all([createClient(), cookies()]);
 	const { data } = await supabase.auth.getSession();
 	const activeWorkspaceId = String(
 		cookieStore.get("activeWorkspaceId")?.value ?? "",
 	).trim();
-	const options = activeWorkspaceId
+	const searchParams = new URLSearchParams();
+	if (options.query?.trim()) searchParams.set("q", options.query.trim());
+	if (typeof options.limit === "number") searchParams.set("limit", String(options.limit));
+	if (typeof options.offset === "number") searchParams.set("offset", String(options.offset));
+	const serializedSearch = searchParams.toString();
+	const path = `/api/account/auth/header${serializedSearch ? `?${serializedSearch}` : ""}` as const;
+	const requestOptions = activeWorkspaceId
 		? { headers: { Cookie: `activeWorkspaceId=${encodeURIComponent(activeWorkspaceId)}` } }
 		: undefined;
 	let lastError: unknown;
 	for (let attempt = 0; attempt < 2; attempt += 1) {
 		try {
 			return await fetchAccountWebApi<InternalAuthHeaderData>(
-				"/api/account/auth/header",
+				path,
 				data.session?.access_token,
-				options,
+				requestOptions,
 			);
 		} catch (error) {
 			lastError = error;

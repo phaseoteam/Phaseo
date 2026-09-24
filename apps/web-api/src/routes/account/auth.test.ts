@@ -190,6 +190,83 @@ describe("account auth routes", () => {
 		});
 	});
 
+	it("returns a bounded, searchable workspace page", async () => {
+		let workspaceQuery = "";
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/auth/v1/user")) {
+				return new Response(JSON.stringify({ id: "user-1", email: "user@example.com" }), { status: 200 });
+			}
+			if (url.includes("users?")) {
+				return new Response(JSON.stringify([{
+					default_workspace_id: "workspace-1",
+					role: "member",
+					display_name: "Test User",
+				}]), { status: 200 });
+			}
+			if (url.includes("provider_account_links")) return new Response("[]", { status: 200 });
+			if (url.includes("workspace_members")) {
+				workspaceQuery = url;
+				return new Response(JSON.stringify([
+					{ workspace_id: "workspace-1", workspaces: { id: "workspace-1", name: "Acme" } },
+					{ workspace_id: "workspace-2", workspaces: { id: "workspace-2", name: "Acme Labs" } },
+					{ workspace_id: "workspace-3", workspaces: { id: "workspace-3", name: "Acme Research" } },
+				]), { status: 200 });
+			}
+			return new Response("[]", { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/account/auth/header?q=Acme&limit=2&offset=0",
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		const payload = await response.json() as { teams: Array<{ id: string; name: string }>; teamsHasMore: boolean };
+		expect(payload.teams).toEqual([
+			{ id: "workspace-1", name: "Acme" },
+			{ id: "workspace-2", name: "Acme Labs" },
+		]);
+		expect(payload.teamsHasMore).toBe(true);
+		const parsedWorkspaceQuery = new URL(workspaceQuery);
+		expect(parsedWorkspaceQuery.searchParams.get("workspaces.name")).toContain("Acme");
+	});
+
+	it("records workspace access only for an authorized member", async () => {
+		const requests: Array<{ url: string; method: string; body: string }> = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			const method = String(init?.method ?? "GET");
+			if (url.includes("/auth/v1/user")) {
+				return new Response(JSON.stringify({ id: "user-1", email: "user@example.com" }), { status: 200 });
+			}
+			if (url.includes("workspace_members") && method === "PATCH") {
+				requests.push({ url, method, body: String(init?.body ?? "") });
+				return new Response("[]", { status: 200 });
+			}
+			if (url.includes("workspace_members")) {
+				return new Response(JSON.stringify({ workspace_id: "workspace-1" }), { status: 200 });
+			}
+			return new Response("[]", { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/account/auth/workspace-accessed",
+			{
+				method: "POST",
+				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				body: JSON.stringify({ workspaceId: "workspace-1" }),
+			},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toEqual({ ok: true });
+		expect(requests).toHaveLength(1);
+		expect(JSON.parse(requests[0]!.body)).toEqual({ last_accessed_at: expect.any(String) });
+	});
+
 	it("normalizes authenticated Statsig profile flags", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);

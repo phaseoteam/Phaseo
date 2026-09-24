@@ -13,7 +13,6 @@ describe("workspace search", () => {
 		).toEqual({
 			id: "workspace:workspace/id",
 			title: "Production",
-			subtitle: "Workspace settings",
 			href: "/settings/workspaces/settings",
 			workspaceId: "workspace/id",
 			persistable: false,

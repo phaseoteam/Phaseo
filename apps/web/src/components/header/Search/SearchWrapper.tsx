@@ -15,12 +15,11 @@ const Search = dynamic(() => import("./Search"), {
 
 interface SearchWrapperProps {
 	className?: string;
-	mobileGhost?: boolean;
 	capabilities?: SearchCapabilities;
 	accountQueryScope?: AccountQueryScope | null;
 }
 
-export function SearchWrapper({ className, mobileGhost, capabilities, accountQueryScope }: SearchWrapperProps) {
+export function SearchWrapper({ className, capabilities, accountQueryScope }: SearchWrapperProps) {
 	const [activated, setActivated] = useState(false);
 
 	useEffect(() => {
@@ -38,7 +37,6 @@ export function SearchWrapper({ className, mobileGhost, capabilities, accountQue
 		return (
 			<Search
 				className={className}
-				mobileGhost={mobileGhost}
 				capabilities={capabilities}
 				accountQueryScope={accountQueryScope}
 				initiallyOpen
@@ -52,15 +50,16 @@ export function SearchWrapper({ className, mobileGhost, capabilities, accountQue
 				type="button"
 				onClick={() => setActivated(true)}
 				className={cn(
-					"relative flex size-9 items-center justify-center rounded-lg border border-border bg-background px-0 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground xl:w-full xl:justify-start xl:pl-9 xl:pr-12",
-					mobileGhost &&
-						"border-transparent bg-transparent hover:border-transparent hover:bg-accent xl:border-border xl:bg-background xl:hover:border-border",
+					"relative flex h-9 w-full min-w-0 items-center justify-start rounded-lg border border-border bg-background pl-8 pr-2 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground lg:pl-9 lg:pr-12",
 				)}
-				aria-label="Open command palette"
+				aria-label="Open global search"
 			>
-				<SearchIcon className="pointer-events-none absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground xl:left-3 xl:translate-x-0" />
-				<span className="hidden truncate font-medium xl:inline">Search</span>
-				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground xl:inline-flex">
+				<SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground lg:left-3" />
+				<span className="min-w-0 flex-1 truncate font-medium">
+					<span className="sm:hidden">Search</span>
+					<span className="hidden truncate sm:inline">Search Phaseo</span>
+				</span>
+				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline-flex">
 					Ctrl K
 				</span>
 			</button>

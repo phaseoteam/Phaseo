@@ -43,12 +43,19 @@ import {
 	parsePaletteQuery,
 } from "./Search.commands";
 import {
+	addRecentItem,
+	clearRecentItems,
+	invalidateRecentItemsCache,
 	invalidatePinnedItemsCache,
 	PINNED_STORAGE_KEY,
+	RECENT_STORAGE_KEY,
+	readRecentItems,
 	readPinnedItems,
 	togglePinnedItem,
+	writeRecentItems,
 	writePinnedItems,
 } from "./Search.storage";
+import { getTypoMatchScore } from "./Search.matching";
 import type { PaletteItem } from "./Search.types";
 import { fetchWorkspaceSearchItems } from "./Search.workspaces";
 import { SwapTeam } from "@/app/(dashboard)/actions";
@@ -72,7 +79,6 @@ import { compareSearchCategories, searchContextScore } from "@/components/header
 
 interface Props {
 	className?: string;
-	mobileGhost?: boolean;
 	initiallyOpen?: boolean;
 	capabilities?: SearchCapabilities;
 	accountQueryScope?: AccountQueryScope | null;
@@ -96,6 +102,7 @@ type DefaultSearchCategory = {
 	items: SearchableItem[];
 	type?: SearchRowType;
 	showSubtitle?: boolean;
+	clearable?: boolean;
 };
 
 type DefaultBrowseRow =
@@ -103,6 +110,7 @@ type DefaultBrowseRow =
 			type: "heading";
 			key: string;
 			heading: string;
+			clearable?: boolean;
 	}
 	| {
 			type: "item";
@@ -146,6 +154,7 @@ type IndexedSearchItem<T extends SearchableItem> = {
 	titleLower: string;
 	normalizedId: string;
 	normalizedTitle: string;
+	searchTokens: string[];
 	keywordBlob: string;
 };
 
@@ -210,6 +219,10 @@ function createSearchIndex<T extends SearchableItem>(
 		titleLower: item.title.toLowerCase(),
 		normalizedId: normalizeSearchTerm(item.id),
 		normalizedTitle: normalizeSearchTerm(item.title),
+		searchTokens: Array.from(new Set([
+			...normalizeSearchTerm(item.title).split(" "),
+			...item.id.split(/[\s/.:_-]+/).map(normalizeSearchTerm),
+		].filter(Boolean))),
 		keywordBlob: buildSearchKeywords(item)
 			.map((keyword) => keyword.toLowerCase())
 			.join(" "),
@@ -349,7 +362,7 @@ function getIndexedMatchScore<T extends SearchableItem>(
 		return 400;
 	}
 
-	return 0;
+	return getTypoMatchScore(indexedItem, normalizedTerm);
 }
 
 function filterAndSortIndexed<T extends SearchableItem>(
@@ -525,6 +538,8 @@ function SearchBrowseIcon({
 				? "context"
 				: item.id.startsWith("resource-")
 					? "resource"
+					: item.workspaceId
+						? "workspace"
 					: "default";
 	const effectiveType = type === "default" ? persistedType : type;
 
@@ -649,22 +664,24 @@ function SearchEmptyState({
 
 export default function Search({
 	className,
-	mobileGhost = false,
 	initiallyOpen = false,
 	capabilities = DEFAULT_SEARCH_CAPABILITIES,
 	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: Props) {
-	const navigationItems = useMemo(() => getGlobalNavigationItems(capabilities), [capabilities]);
-	const navigationSearchIndex = useMemo(() => createSearchIndex(navigationItems), [navigationItems]);
-	const keyboardShortcutItems = useMemo(() => [
-		...navigationItems,
-		...GLOBAL_ACTION_ITEMS,
-		...EXTERNAL_RESOURCE_ITEMS,
-	].filter((item) => item.shortcut), [navigationItems]);
 	const router = useRouter();
 	const pathname = usePathname() ?? "/";
 	const { resolvedTheme, setTheme } = useTheme();
+	const navigationItems = useMemo(() => getGlobalNavigationItems(capabilities), [capabilities]);
+	const navigationSearchIndex = useMemo(() => createSearchIndex(navigationItems), [navigationItems]);
+	const contextItems = useMemo(() => getContextItems(pathname), [pathname]);
+	const keyboardShortcutItems = useMemo(() => [
+		...navigationItems,
+		...contextItems.filter((item) => item.shortcut),
+		...GLOBAL_ACTION_ITEMS,
+		...EXTERNAL_RESOURCE_ITEMS,
+	].filter((item) => item.shortcut), [contextItems, navigationItems]);
 	const listRef = useRef<HTMLDivElement>(null);
+	const searchInputRef = useRef<HTMLInputElement>(null);
 	const queryUpdateTimeoutRef = useRef<number | null>(null);
 	const inputValueRef = useRef("");
 	const awaySinceRef = useRef<number | null>(null);
@@ -699,18 +716,25 @@ export default function Search({
 		: null;
 	const [scrollViewport, setScrollViewport] = useState<HTMLDivElement | null>(null);
 	const [pinnedItems, setPinnedItems] = useState<PaletteItem[]>([]);
-	const contextItems = useMemo(() => getContextItems(pathname), [pathname]);
+	const [recentItems, setRecentItems] = useState<PaletteItem[]>([]);
 
 	useEffect(() => {
 		setPinnedItems(readPinnedItems());
+		setRecentItems(readRecentItems());
 
 		function onStorage(event: StorageEvent) {
 			if (
 				event.storageArea !== window.localStorage ||
-				(event.key !== PINNED_STORAGE_KEY && event.key !== null)
+				(event.key !== PINNED_STORAGE_KEY && event.key !== RECENT_STORAGE_KEY && event.key !== null)
 			) return;
-			invalidatePinnedItemsCache();
-			setPinnedItems(readPinnedItems());
+			if (event.key === PINNED_STORAGE_KEY || event.key === null) {
+				invalidatePinnedItemsCache();
+				setPinnedItems(readPinnedItems());
+			}
+			if (event.key === RECENT_STORAGE_KEY || event.key === null) {
+				invalidateRecentItemsCache();
+				setRecentItems(readRecentItems());
+			}
 		}
 
 		window.addEventListener("storage", onStorage);
@@ -800,12 +824,17 @@ export default function Search({
 
 	const handleSelect = useCallback((item: SearchableItem) => {
 		if (item.action) {
-			switch (item.action) {
+				switch (item.action) {
 				case "copy-current-url":
 					void navigator.clipboard.writeText(window.location.href);
 					break;
 				case "copy-text":
-					if (item.actionValue) void navigator.clipboard.writeText(item.actionValue);
+					if (item.actionValue && navigator.clipboard?.writeText) {
+						const label = item.title.replace(/^Copy\s+/u, "");
+						void navigator.clipboard.writeText(item.actionValue)
+							.then(() => toast.success(`${label} copied`, { position: "bottom-right" }))
+							.catch(() => toast.error(`Unable to copy ${label.toLowerCase()}`, { position: "bottom-right" }));
+					}
 					break;
 				case "theme-dark":
 					setTheme("dark");
@@ -831,6 +860,9 @@ export default function Search({
 					if (!result?.ok) {
 						throw new Error(result?.error ?? "Failed to switch workspace");
 					}
+					setRecentItems((currentItems) =>
+						writeRecentItems(addRecentItem(currentItems, item)),
+					);
 					clearAccountQueryScope(queryClient, scope);
 					router.push("/settings/workspaces/settings");
 					router.refresh();
@@ -852,6 +884,9 @@ export default function Search({
 			window.open(item.href, "_blank", "noopener,noreferrer");
 			return;
 		}
+		setRecentItems((currentItems) =>
+			writeRecentItems(addRecentItem(currentItems, item)),
+		);
 		router.push(item.href);
 	}, [queryClient, resolvedTheme, router, scope, setTheme]);
 
@@ -860,6 +895,12 @@ export default function Search({
 			const nextItems = togglePinnedItem(currentItems, item);
 			return writePinnedItems(nextItems);
 		});
+	}, []);
+
+	const handleClearRecentItems = useCallback(() => {
+		setRecentItems(clearRecentItems());
+		setActiveRowIndex(0);
+		searchInputRef.current?.focus();
 	}, []);
 
 	useEffect(() => {
@@ -1081,6 +1122,17 @@ export default function Search({
 			.slice(0, 8);
 		return [
 			{
+				key: "recent",
+				heading: "Recent",
+				items: recentItems.filter((item) =>
+					item.workspaceId
+						? workspaceItems.some((workspace) => workspace.workspaceId === item.workspaceId)
+						: isSearchDestinationEnabled(item.href, capabilities),
+				),
+				showSubtitle: false,
+				clearable: true,
+			},
+			{
 				key: "nearby",
 				heading: pathname.startsWith("/settings") ? "Settings" : "In This Area",
 				items: nearbyPages,
@@ -1114,7 +1166,7 @@ export default function Search({
 				heading: "Workspaces",
 				items: workspaceItems,
 				type: "workspace" as const,
-				showSubtitle: true,
+				showSubtitle: false,
 			},
 			{
 				key: "resources",
@@ -1128,10 +1180,10 @@ export default function Search({
 				items: searchData?.apiProviders ?? [],
 			},
 		].filter((category) => category.items.length > 0).sort((left, right) => {
-			const order = ["models", "pinned", "context", "nearby", "quick-actions", "workspaces", "apiProviders", "resources"];
+			const order = ["recent", "models", "pinned", "context", "nearby", "quick-actions", "workspaces", "apiProviders", "resources"];
 			return order.indexOf(left.key) - order.indexOf(right.key);
 		});
-	}, [capabilities, navigationItems, pathname, contextItems, hasQuery, pinnedItems, searchData, workspaceItems]);
+	}, [capabilities, navigationItems, pathname, contextItems, hasQuery, pinnedItems, recentItems, searchData, workspaceItems]);
 
 	const defaultBrowseRows = useMemo<DefaultBrowseRow[]>(() => {
 		if (hasQuery) return [];
@@ -1142,6 +1194,7 @@ export default function Search({
 					type: "heading",
 					key: `${category.key}-heading`,
 					heading: category.heading,
+					clearable: category.clearable,
 				},
 				...category.items.map((item) => ({
 					type: "item" as const,
@@ -1291,15 +1344,16 @@ export default function Search({
 				type="button"
 				onClick={() => setOpen(true)}
 				className={cn(
-					"relative flex size-9 items-center justify-center rounded-lg border border-border bg-background px-0 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground xl:w-full xl:justify-start xl:pl-9 xl:pr-12",
-					mobileGhost &&
-						"border-transparent bg-transparent hover:border-transparent hover:bg-accent xl:border-border xl:bg-background xl:hover:border-border",
+					"relative flex h-9 w-full min-w-0 items-center justify-start rounded-lg border border-border bg-background pl-8 pr-2 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground lg:pl-9 lg:pr-12",
 				)}
-				aria-label="Open command palette"
+				aria-label="Open global search"
 			>
-				<SearchIcon className="pointer-events-none absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground xl:left-3 xl:translate-x-0" />
-				<span className="hidden truncate font-medium xl:inline">Search</span>
-				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground xl:inline-flex">
+				<SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground lg:left-3" />
+				<span className="min-w-0 flex-1 truncate font-medium">
+					<span className="sm:hidden">Search</span>
+					<span className="hidden truncate sm:inline">Search Phaseo</span>
+				</span>
+				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline-flex">
 					Ctrl K
 				</span>
 			</button>
@@ -1319,6 +1373,7 @@ export default function Search({
 								<SearchIcon className="size-4 shrink-0 opacity-50" />
 							</InputGroupAddon>
 							<InputGroupInput
+								ref={searchInputRef}
 								key={open ? "global-search-open" : "global-search-closed"}
 								onChange={(event) => handleQueryChange(event.currentTarget.value)}
 								onKeyDown={handleSearchKeyDown}
@@ -1425,8 +1480,19 @@ export default function Search({
 												style={{ transform: `translateY(${virtualRow.start}px)` }}
 											>
 												{row.type === "heading" ? (
-													<div className="flex h-[30px] items-center px-2 text-xs font-medium text-muted-foreground">
-														{row.heading}
+													<div className="flex h-[30px] items-center justify-between px-2 text-xs font-medium text-muted-foreground">
+														<span>{row.heading}</span>
+														{row.clearable ? (
+															<button
+																type="button"
+																aria-label="Clear recent items"
+																onMouseDown={(event) => event.preventDefault()}
+																onClick={handleClearRecentItems}
+																className="rounded-sm text-[11px] font-normal text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+															>
+																Clear
+															</button>
+														) : null}
 													</div>
 												) : row.type === "separator" ? (
 													<div className="my-1 h-px bg-border/50" />

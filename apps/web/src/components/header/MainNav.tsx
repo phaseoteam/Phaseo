@@ -8,7 +8,6 @@ const LINKS = [
 	{ href: "/models", label: "Models" },
 	{ href: "/chat", label: "Chat" },
 	{ href: "/compare", label: "Compare" },
-	{ href: "/api-providers", label: "Providers" },
 	{ href: "/apps", label: "Apps" },
 	{ href: "/rankings", label: "Rankings" },
 ];
@@ -41,5 +40,4 @@ export default function MainNav() {
 		</nav>
 	);
 }
-
 

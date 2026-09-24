@@ -11,7 +11,7 @@ import { connection } from "next/server";
 import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
 import { toAccountQueryScope } from "@/lib/query/queryKeys";
 
-export async function SearchWithCapabilities(props: { className?: string; mobileGhost?: boolean }) {
+export async function SearchWithCapabilities(props: { className?: string }) {
 	// Capability flags can consult request-scoped clients which read the clock.
 	// Explicitly opt this boundary into request time so Cache Components does not
 	// attempt to evaluate those values during prerendering.
@@ -23,7 +23,7 @@ export async function SearchWithCapabilities(props: { className?: string; mobile
 		videoApiFlag().catch(() => false),
 		realtimeVoiceFlag().catch(() => false),
 		catalogueGamesEnabled().catch(() => false),
-		fetchInternalAuthHeaderData().catch(() => null),
+		fetchInternalAuthHeaderData({ limit: 1 }).catch(() => null),
 	]);
 
 	return (

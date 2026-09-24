@@ -18,6 +18,7 @@ export type InternalAuthHeaderData = {
 	isLoggedIn: boolean;
 	user?: InternalAuthHeaderUser;
 	teams: Array<{ id: string; name: string }>;
+	teamsHasMore?: boolean;
 	displayPreferences?: DisplayPreferences;
 	currentTeamId?: string;
 	userRole?: string;
