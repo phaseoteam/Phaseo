@@ -3,6 +3,7 @@
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
+import type { SettingsProviderOnboardingInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { setActiveWorkspaceCookieOrThrow } from "@/utils/workspaceCookie";
 
 export async function activateProviderAccountAction(): Promise<void> {
@@ -16,6 +17,14 @@ async function accessToken(): Promise<string> {
 	const context = await getServerAccountContext();
 	if (!context.accessToken) throw new Error("Your session has expired. Sign in again to continue.");
 	return context.accessToken;
+}
+
+export async function fetchProviderCatalogLinksAction() {
+	const { catalogProviders } = await fetchAccountWebApi<Pick<SettingsProviderOnboardingInitialData, "catalogProviders">>(
+		"/api/account/settings/provider-onboarding",
+		await accessToken(),
+	);
+	return catalogProviders.map(({ provider_slug, role, status }) => ({ provider_slug, role, status }));
 }
 
 export type ProviderCatalogPreview = {

@@ -19,6 +19,7 @@ import {
 	Moon,
 	Monitor,
 	MessageSquareMore,
+	Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +40,7 @@ import { isPublicDataPathname } from "@/lib/publicDataRoutes";
 import { clearAccountQueryScope } from "@/lib/query/invalidation";
 import { toAccountQueryScope } from "@/lib/query/queryKeys";
 import { WorkspaceCombobox } from "./WorkspaceCombobox";
+import { setActionDockEnabled, useActionDockEnabled } from "@/lib/actionDockPreferences";
 
 interface TeamSwitcherProps {
 	user?: any;
@@ -73,6 +75,8 @@ export default function TeamSwitcher({
 	);
 	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 	const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+	const canUseActionDock = providerMode || userRole?.toLocaleLowerCase() === "admin";
+	const actionDockEnabled = useActionDockEnabled(user?.id);
 
 	const currentTheme =
 		theme === "light" || theme === "dark" || theme === "system"
@@ -247,13 +251,23 @@ export default function TeamSwitcher({
 						asChild
 						className="cursor-pointer rounded-lg"
 					>
-						<Link
-							href="/settings/account"
-						>
+						<Link href="/settings/account">
 							<Settings className="h-4 w-4" />
 							<span>Settings</span>
 						</Link>
 					</DropdownMenuItem>
+					{user?.id && canUseActionDock && !actionDockEnabled ? (
+						<DropdownMenuItem
+							className="cursor-pointer rounded-lg"
+							onClick={() => {
+								setActionDockEnabled(user.id, true);
+								setIsProfileMenuOpen(false);
+							}}
+						>
+							<Sparkles className="h-4 w-4" />
+							<span>Turn on Phaseo action dock</span>
+						</DropdownMenuItem>
+					) : null}
 
 					<DropdownMenuSeparator />
 
