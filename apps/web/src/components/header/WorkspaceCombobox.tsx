@@ -211,7 +211,10 @@ export function WorkspaceCombobox({
 								<CommandEmpty>No workspaces available.</CommandEmpty>
 							) : null}
 							{(!isSearching || (!isDebouncing && !isLoading && !isSearchingError)) && listedWorkspaces.length > 0 ? (
-								<CommandGroup heading={isSearching ? "Search results" : undefined} className="flex flex-col gap-1 p-2">
+								<CommandGroup
+									heading={isSearching ? "Search results" : undefined}
+									className="flex flex-col gap-1 p-2 [&_[cmdk-group-items]]:flex [&_[cmdk-group-items]]:flex-col [&_[cmdk-group-items]]:gap-1"
+								>
 									{listedWorkspaces.map((workspace) => {
 										const isActive = workspace.id === activeWorkspaceId;
 										return (
