@@ -48,6 +48,15 @@ export async function updateSession(request: NextRequest) {
         supabase.auth.getSession(),
     ])
 
+    if (!user && request.cookies.has(ACTIVE_WORKSPACE_COOKIE_NAME)) {
+        request.cookies.delete(ACTIVE_WORKSPACE_COOKIE_NAME)
+        responseCookies.set(ACTIVE_WORKSPACE_COOKIE_NAME, {
+            name: ACTIVE_WORKSPACE_COOKIE_NAME,
+            value: '',
+            options: { path: '/', maxAge: 0 },
+        })
+    }
+
     if (user && !request.cookies.has(ACTIVE_WORKSPACE_COOKIE_NAME)) {
         const { data: userRow, error } = await supabase
             .from('users')
