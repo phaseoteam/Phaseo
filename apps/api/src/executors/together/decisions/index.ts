@@ -41,6 +41,7 @@ function resultResponse(status: number, error: string, message: string, requestI
 function validationFailure(args: ExecutorExecuteArgs, message: string): ExecutorResult {
 	return {
 		kind: "completed",
+		terminal: true,
 		upstream: resultResponse(400, "unsupported_decision_request", message, args.requestId),
 		bill: { cost_cents: 0, currency: "USD" },
 	};
@@ -55,9 +56,11 @@ function malformedResponse(
 	captureRequest: boolean,
 	mappedRequests: Array<{ questionId: string; request: Record<string, unknown> }>,
 	timing: { latencyMs: number; upstreamRequestCount: number },
+	terminal: boolean,
 ): ExecutorResult {
 	return {
 		kind: "completed",
+		...(terminal ? { terminal: true } : {}),
 		upstream: resultResponse(
 			502,
 			"invalid_together_tev_response",
@@ -311,6 +314,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				captureRequest,
 				mappedRequests,
 				{ latencyMs, upstreamRequestCount },
+				upstreamRequestCount > 1,
 			);
 		}
 		return {
@@ -324,6 +328,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			},
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
+			...(upstreamRequestCount > 1 ? { terminal: true } : {}),
 			...(captureRequest ? { mappedRequest: JSON.stringify(mappedRequests) } : {}),
 			rawResponse: { responses: rawResponses },
 			timing: { latencyMs, generationMs: latencyMs, upstreamRequestCount },

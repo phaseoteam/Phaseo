@@ -958,6 +958,7 @@ async function attemptProviderWithIR(
 				try {
 					const nextResult = await executor(buildExecutorArgs());
 					const shouldRetryStatus =
+						!("terminal" in nextResult && nextResult.terminal) &&
 						allowSingleProviderRetry &&
 						!nextResult.upstream.ok &&
 						shouldRetrySingleProviderStatus(nextResult.upstream.status);
@@ -1153,6 +1154,7 @@ async function attemptProviderWithIR(
 			});
 		}
 		if (!executorResult.upstream.ok) {
+			const terminalFailure = "terminal" in executorResult && executorResult.terminal === true;
 			const upstreamFailure = await readUpstreamFailurePayload(executorResult);
 			const payloadUsage = upstreamFailure.payload && typeof upstreamFailure.payload === "object"
 				? (upstreamFailure.payload as Record<string, unknown>).usage
@@ -1163,6 +1165,9 @@ async function attemptProviderWithIR(
 				usageCandidates: [executorResult.bill?.usage, payloadUsage, upstreamFailure.payload],
 				upstreamRequestCount: upstreamTiming.upstreamRequestCount,
 			});
+			if (terminalFailure && upstreamTiming.upstreamRequestCount === 0) {
+				await releaseManagedProviderReservation(providerRateLimitReservation);
+			}
 			const upstreamSummary = extractUpstreamErrorSummary(
 				upstreamFailure.payload,
 				executorResult.upstream.headers,
@@ -1232,6 +1237,9 @@ async function attemptProviderWithIR(
 				upstream_media_count: executorResult.timing?.upstreamMediaCount ?? null,
 				retry_delay_ms: executorResult.timing?.transientRetryDelayMs ?? null,
 			});
+			if (terminalFailure) {
+				return { ok: false, response: executorResult.upstream };
+			}
 			return {
 				ok: false,
 				stopFallback: normalizedCapability === "video.generate" && (
