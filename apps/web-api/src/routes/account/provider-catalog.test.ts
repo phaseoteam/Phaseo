@@ -72,6 +72,19 @@ describe("provider catalog onboarding", () => {
 		expect(result.preview.valid).toBe(true);
 	});
 
+	it("uses manual redirects and rejects catalog redirects without following them", async () => {
+		let redirectMode: RequestRedirect | undefined;
+		let fetchCalls = 0;
+		await expect(fetchAndValidateProviderCatalog("https://acme.example/models.json", async (_input, init) => {
+			fetchCalls += 1;
+			redirectMode = init?.redirect;
+			return new Response(null, { status: 302, headers: { location: "https://other.example/models.json" } });
+		})).rejects.toThrow("Catalog URL redirected. Use the final HTTPS URL directly.");
+
+		expect(redirectMode).toBe("manual");
+		expect(fetchCalls).toBe(1);
+	});
+
 	it("normalizes provider route lifecycle fields", () => {
 		const model = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", availability: "deprecated", available_from: "2026-01-01T00:00:00Z", deprecated_at: "2026-08-01T00:00:00Z", shutdown_at: "2026-10-01T00:00:00Z", capabilities: ["text.generate"] }] }).models[0];
 		expect(model).toMatchObject({ availability: "deprecated", availableFrom: "2026-01-01T00:00:00.000Z", deprecatedAt: "2026-08-01T00:00:00.000Z", shutdownAt: "2026-10-01T00:00:00.000Z" });

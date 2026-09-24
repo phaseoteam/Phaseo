@@ -319,10 +319,11 @@ export async function fetchAndValidateProviderCatalog(url: string, fetcher: type
 	const response = await fetcher(parsed.url, {
 		method: "GET",
 		headers: { accept: "application/json", ...(validators?.etag ? { "if-none-match": validators.etag } : {}), ...(validators?.lastModified ? { "if-modified-since": validators.lastModified } : {}) },
-		redirect: "error",
+		redirect: "manual",
 		signal: AbortSignal.timeout(15_000),
 	});
 	if (response.status === 304) return { notModified: true, etag: response.headers.get("etag") ?? validators?.etag ?? null, lastModified: response.headers.get("last-modified") ?? validators?.lastModified ?? null };
+	if (response.status >= 300 && response.status < 400) throw new Error("Catalog URL redirected. Use the final HTTPS URL directly.");
 	if (!response.ok) throw new Error(`Catalog returned HTTP ${response.status}.`);
 	const contentLength = Number(response.headers.get("content-length") ?? 0);
 	if (contentLength > MAX_BODY_BYTES) throw new Error("Catalog is larger than the 5 MB limit.");
