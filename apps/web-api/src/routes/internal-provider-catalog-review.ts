@@ -5,6 +5,7 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { stageApprovedProviderRoute } from "./account/provider-catalog-reconciliation";
+import { syncProviderCatalog } from "./account/provider-catalog-sync";
 
 const decisionSchema = z.object({
 	decision: z.enum(["approved", "rejected", "needs_changes"]),
@@ -23,30 +24,15 @@ async function adminUser(c: any) {
 	return !role.error && String(role.data?.role ?? "").toLowerCase() === "admin" ? user : null;
 }
 
-type ProviderApprovalBlocker = "endpoint" | "adapter" | "credentials" | "probe";
+type ProviderRouteBlocker = "endpoint" | "adapter" | "credentials" | "probe";
 
-function providerApprovalBlockers(provider: any, hasPassedProbe: boolean): ProviderApprovalBlocker[] {
-	const blockers: ProviderApprovalBlocker[] = [];
-	if (!provider?.base_url) blockers.push("endpoint");
+function providerRouteBlockers(provider: any, hasPassedProbe: boolean): ProviderRouteBlocker[] {
+	const blockers: ProviderRouteBlocker[] = [];
+	if (typeof provider?.base_url !== "string" || !provider.base_url.trim()) blockers.push("endpoint");
 	if (provider?.metadata?.adapter_ready !== true) blockers.push("adapter");
 	if (provider?.metadata?.credentials_ready !== true) blockers.push("credentials");
 	if (!hasPassedProbe) blockers.push("probe");
 	return blockers;
-}
-
-function providerTechnicallyReady(provider: any, hasPassedProbe: boolean): boolean {
-	return providerApprovalBlockers(provider, hasPassedProbe).length === 0;
-}
-
-async function markProviderAwaitingApprovalIfReady(client: any, providerSlug: string) {
-	const [provider, candidate] = await Promise.all([
-		client.from("v2_providers").select("provider_slug,base_url,metadata").eq("provider_slug", providerSlug).maybeSingle(),
-		client.from("provider_catalog_route_candidates").select("run_id").eq("provider_slug", providerSlug).in("status", ["probe_passed", "promoted"]).limit(1),
-	]);
-	if (provider.error || candidate.error || !provider.data || !providerTechnicallyReady(provider.data, Boolean(candidate.data?.length))) return;
-	const selfServe = provider.data.metadata?.self_serve;
-	if (!selfServe || ["approved", "paused", "rejected"].includes(String(selfServe.provider_review_status))) return;
-	await client.from("v2_providers").update({ metadata: { ...provider.data.metadata, self_serve: { ...selfServe, provider_review_status: "awaiting_approval", ready_for_review_at: new Date().toISOString() } }, updated_at: new Date().toISOString() }).eq("provider_slug", providerSlug);
 }
 
 function decodedModelSlug(value: string): string {
@@ -94,42 +80,77 @@ internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c)
 	const user = await adminUser(c);
 	if (!user) return c.json({ error: "unauthorized" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const client = getDataClient(c.env);
-	const result = await client.from("v2_providers")
+	const [selfServeResult, submissionsResult] = await Promise.all([
+		client.from("v2_providers")
 		.select("provider_slug,name,status,routable,routing_enabled,base_url,metadata,created_at,updated_at")
 		.contains("metadata", { self_serve: {} })
-		.order("created_at", { ascending: false }).limit(100);
-	if (result.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const selfServeProviders = result.data ?? [];
-	const providerSlugs = selfServeProviders.map((provider: any) => provider.provider_slug);
-	const [candidateResult, submissionsResult] = await Promise.all([
-		providerSlugs.length ? client.from("provider_catalog_route_candidates").select("provider_slug,status").in("provider_slug", providerSlugs).in("status", ["probe_passed", "promoted"]) : Promise.resolve({ data: [], error: null }),
-		providerSlugs.length ? client.from("provider_onboarding_submissions").select("provider_slug,submitted_by,created_at").in("provider_slug", providerSlugs).order("created_at", { ascending: false }) : Promise.resolve({ data: [], error: null }),
+		.order("created_at", { ascending: false }).limit(100),
+		client.from("provider_onboarding_submissions")
+			.select("provider_slug,submitted_by,provider_name,website_url,catalog_url,catalog_mode,application_type,model_count,validation_summary,submitted_at,created_at,provider_review_status,provider_review_reason")
+			.order("created_at", { ascending: false }).limit(500),
 	]);
-	if (candidateResult.error || submissionsResult.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (selfServeResult.error || submissionsResult.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const latestSubmissionByProvider = new Map<string, any>();
+	for (const submission of submissionsResult.data ?? []) {
+		const slug = String(submission.provider_slug);
+		if (!latestSubmissionByProvider.has(slug)) latestSubmissionByProvider.set(slug, submission);
+	}
+	const selfServeProviders = selfServeResult.data ?? [];
+	const submittedSlugs = [...latestSubmissionByProvider.keys()];
+	const submittedProvidersResult = submittedSlugs.length
+		? await client.from("v2_providers").select("provider_slug,name,status,routable,routing_enabled,base_url,metadata,created_at,updated_at").in("provider_slug", submittedSlugs)
+		: { data: [], error: null };
+	if (submittedProvidersResult.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const providersBySlug = new Map<string, any>();
+	for (const provider of [...selfServeProviders, ...(submittedProvidersResult.data ?? [])]) providersBySlug.set(String(provider.provider_slug), provider);
+	const reviewProviders = [...providersBySlug.values()];
+	const providerSlugs = reviewProviders.map((provider: any) => String(provider.provider_slug));
+	const [candidateResult, sourcesResult, ownershipResult] = await Promise.all([
+		providerSlugs.length ? client.from("provider_catalog_route_candidates").select("provider_slug,status").in("provider_slug", providerSlugs).in("status", ["probe_passed", "promoted"]) : Promise.resolve({ data: [], error: null }),
+		providerSlugs.length ? client.from("provider_catalog_sources").select("provider_slug,management_mode,catalog_url,last_success_at").in("provider_slug", providerSlugs) : Promise.resolve({ data: [], error: null }),
+		providerSlugs.length ? client.from("provider_account_links").select("provider_slug,proof_method,proof_subject,verified_at").in("provider_slug", providerSlugs).in("status", ["pending", "active"]).order("verified_at", { ascending: false, nullsFirst: false }) : Promise.resolve({ data: [], error: null }),
+	]);
+	if (candidateResult.error || sourcesResult.error || ownershipResult.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const passedProviders = new Set((candidateResult.data ?? []).map((candidate: any) => String(candidate.provider_slug)));
 	const contactUserIds = new Map<string, string>();
-	for (const submission of submissionsResult.data ?? []) if (submission.submitted_by && !contactUserIds.has(String(submission.provider_slug))) contactUserIds.set(String(submission.provider_slug), String(submission.submitted_by));
+	for (const [slug, submission] of latestSubmissionByProvider) if (submission.submitted_by) contactUserIds.set(slug, String(submission.submitted_by));
+	const catalogSourcesByProvider = new Map((sourcesResult.data ?? []).map((source: any) => [String(source.provider_slug), source]));
+	const ownershipByProvider = new Map((ownershipResult.data ?? []).map((link: any) => [String(link.provider_slug), link]));
 	const authUsers = new Map<string, string>();
 	await Promise.all([...new Set(contactUserIds.values())].map(async (userId) => {
 		const authUser = await client.auth.admin.getUserById(userId);
 		if (!authUser.error && authUser.data.user?.email) authUsers.set(userId, authUser.data.user.email);
 	}));
-	const providers = selfServeProviders.map((provider: any) => {
-		const approvalBlockers = providerApprovalBlockers(provider, passedProviders.has(String(provider.provider_slug)));
+	const providers = reviewProviders.map((provider: any) => {
+		const routeBlockers = providerRouteBlockers(provider, passedProviders.has(String(provider.provider_slug)));
+		const latestSubmission = latestSubmissionByProvider.get(String(provider.provider_slug));
+		const catalogSource = catalogSourcesByProvider.get(String(provider.provider_slug));
+		const ownership = ownershipByProvider.get(String(provider.provider_slug));
+		const reviewStatus = latestSubmission?.provider_review_status ?? provider.metadata?.self_serve?.provider_review_status ?? "awaiting_approval";
+		const reviewReason = latestSubmission?.provider_review_reason ?? provider.metadata?.self_serve?.provider_review_reason ?? null;
+		const pendingClaim = latestSubmission?.application_type === "claim" && reviewStatus !== "approved";
 		return {
 			provider_slug: provider.provider_slug,
-			name: provider.name,
+			name: pendingClaim ? latestSubmission.provider_name : provider.name,
+			application_type: latestSubmission?.application_type ?? "new",
 			status: provider.status,
 			routable: provider.routable === true,
 			routing_enabled: provider.routing_enabled === true,
 			base_url: provider.base_url ?? null,
 			contact_user_id: contactUserIds.get(String(provider.provider_slug)) ?? null,
 			contact_email: authUsers.get(contactUserIds.get(String(provider.provider_slug)) ?? "") ?? null,
-			website_url: typeof provider.metadata?.website_url === "string" ? provider.metadata.website_url : null,
-			review_status: String(provider.metadata?.self_serve?.provider_review_status ?? "awaiting_approval"),
-			review_reason: typeof provider.metadata?.self_serve?.provider_review_reason === "string" ? provider.metadata.self_serve.provider_review_reason : null,
-			technical_ready: approvalBlockers.length === 0,
-			approval_blockers: approvalBlockers,
+			ownership_proof_method: ownership?.proof_method ?? null,
+			ownership_proof_subject: ownership?.proof_subject ?? null,
+			ownership_verified_at: ownership?.verified_at ?? null,
+			website_url: pendingClaim ? latestSubmission.website_url : typeof provider.metadata?.website_url === "string" ? provider.metadata.website_url : latestSubmission?.website_url ?? null,
+			catalog_mode: pendingClaim ? latestSubmission.catalog_mode : catalogSource?.management_mode ?? latestSubmission?.catalog_mode ?? (latestSubmission?.catalog_url ? "remote" : "managed"),
+			catalog_url: pendingClaim ? latestSubmission.catalog_url : catalogSource?.catalog_url ?? latestSubmission?.catalog_url ?? null,
+			application_model_count: typeof latestSubmission?.model_count === "number" ? latestSubmission.model_count : null,
+			submitted_at: latestSubmission?.submitted_at ?? latestSubmission?.created_at ?? null,
+			review_status: String(reviewStatus),
+			review_reason: typeof reviewReason === "string" ? reviewReason : null,
+			technical_ready: routeBlockers.length === 0,
+			route_blockers: routeBlockers,
 			created_at: provider.created_at,
 			updated_at: provider.updated_at,
 		};
@@ -146,11 +167,6 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/providers/:provider
 	const providerSlug = c.req.param("providerSlug").trim().toLowerCase();
 	const client = getDataClient(c.env);
 	if (parsed.data.decision === "approved") {
-		const [provider, candidate] = await Promise.all([
-			client.from("v2_providers").select("provider_slug,base_url,metadata").eq("provider_slug", providerSlug).maybeSingle(),
-			client.from("provider_catalog_route_candidates").select("run_id").eq("provider_slug", providerSlug).in("status", ["probe_passed", "promoted"]).limit(1),
-		]);
-		if (provider.error || candidate.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		const contact = await client.from("provider_onboarding_submissions").select("submitted_by").eq("provider_slug", providerSlug).not("submitted_by", "is", null).order("created_at", { ascending: false }).limit(1);
 		if (contact.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		const contactUserId = contact.data?.[0]?.submitted_by ? String(contact.data[0].submitted_by) : null;
@@ -158,9 +174,8 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/providers/:provider
 		const contactUser = await client.auth.admin.getUserById(contactUserId);
 		if (contactUser.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		if (!contactUser.data.user?.email) return c.json({ error: "provider_contact_required" }, 409, PRIVATE_NO_STORE_HEADERS);
-		if (!providerTechnicallyReady(provider.data, Boolean(candidate.data?.length))) return c.json({ error: "provider_not_ready_for_approval" }, 409, PRIVATE_NO_STORE_HEADERS);
 	}
-	const result = await client.rpc("set_self_serve_provider_review", {
+	const result = await client.rpc("review_provider_application", {
 		p_provider_slug: providerSlug,
 		p_decision: parsed.data.decision,
 		p_reason: parsed.data.reason ?? null,
@@ -169,6 +184,11 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/providers/:provider
 	if (result.error) {
 		if (result.error.message.includes("self_serve_provider_not_found")) return c.json({ error: "provider_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 		return c.json({ error: "provider_review_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+	if (parsed.data.decision === "approved" && (result.data as any)?.applicationType === "claim") {
+		c.executionCtx.waitUntil(syncProviderCatalog(c.env, providerSlug, "manual").catch((error) => {
+			console.error("provider_claim_catalog_initial_sync_failed", { providerSlug, errorType: error instanceof Error ? error.name : "UnknownError" });
+		}));
 	}
 	return c.json({ ok: true, provider: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
@@ -257,7 +277,6 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/candidates/:runId/m
 	if (updated.error) return c.json({ error: "probe_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!updated.data) return c.json({ error: "route_candidate_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	await client.from("provider_catalog_sync_models").update({ route_projection_status: parsed.data.passed ? "probe_passed" : "failed", route_projection_error: parsed.data.passed ? null : String(parsed.data.summary.reason ?? "Endpoint probe failed").slice(0, 500) }).eq("run_id", runId).eq("model_slug", modelSlug);
-	if (parsed.data.passed) await markProviderAwaitingApprovalIfReady(client, String(updated.data.provider_slug));
 	return c.json({ ok: true, candidate: updated.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

@@ -220,7 +220,21 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 	}
 	const client = getDataClient(c.env);
 	try {
-		if (!await providerAccess(client, user.id, parsedSlug.data)) return errorResponse(c, "forbidden", 403);
+		const access = await providerAccess(client, user.id, parsedSlug.data);
+		if (!access) return errorResponse(c, "forbidden", 403);
+		if (!access.isAdmin) {
+			const [provider, application] = await Promise.all([
+				client.from("v2_providers").select("metadata").eq("provider_slug", parsedSlug.data).maybeSingle(),
+				client.from("provider_onboarding_submissions").select("provider_review_status").eq("provider_slug", parsedSlug.data).order("created_at", { ascending: false }).limit(1),
+			]);
+			if (provider.error) throw provider.error;
+			if (application.error) throw application.error;
+			const selfServe = provider.data?.metadata?.self_serve;
+			const reviewStatus = application.data?.[0]?.provider_review_status ?? selfServe?.provider_review_status;
+			if (reviewStatus && reviewStatus !== "approved") {
+				return errorResponse(c, "provider_application_not_approved", 409);
+			}
+		}
 		const source = await client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at").eq("provider_slug", parsedSlug.data).maybeSingle();
 		if (source.error) throw source.error;
 		if (!source.data) return errorResponse(c, "provider_catalog_source_not_found", 404);

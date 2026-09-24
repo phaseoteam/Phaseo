@@ -39,17 +39,25 @@ export type InternalProviderCatalogReview = {
 export type InternalProviderApplication = {
 	provider_slug: string;
 	name: string;
+	application_type: "new" | "claim";
 	status: string;
 	routable: boolean;
 	routing_enabled: boolean;
 	base_url: string | null;
 	contact_user_id: string | null;
 	contact_email: string | null;
+	ownership_proof_method: string | null;
+	ownership_proof_subject: string | null;
+	ownership_verified_at: string | null;
 	website_url: string | null;
+	catalog_mode?: "managed" | "remote" | null;
+	catalog_url?: string | null;
+	application_model_count?: number | null;
+	submitted_at?: string | null;
 	review_status: "setup" | "awaiting_approval" | "approved" | "paused" | "rejected" | "needs_changes";
 	review_reason: string | null;
 	technical_ready: boolean;
-	approval_blockers?: Array<"endpoint" | "adapter" | "credentials" | "probe">;
+	route_blockers?: Array<"endpoint" | "adapter" | "credentials" | "probe">;
 	created_at: string;
 	updated_at: string;
 };

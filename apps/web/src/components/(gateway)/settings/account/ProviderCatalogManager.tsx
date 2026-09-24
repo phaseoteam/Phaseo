@@ -19,7 +19,7 @@ import {
 	type ProviderManagedCatalogModel,
 } from "@/app/(dashboard)/settings/account/providers/actions";
 
-type ProviderLink = { provider_slug: string; role: string; status: "pending" | "active" };
+type ProviderLink = { provider_slug: string; role: string; status: "pending" | "active"; canManageCatalog?: boolean };
 type Price = ProviderManagedCatalogModel["pricing"][number] & { amountDraft?: string; quantityDraft?: string };
 type EditableModel = Omit<ProviderManagedCatalogModel, "pricing"> & {
 	pricing: Price[];
@@ -100,7 +100,8 @@ function Section({ title, description, children }: { title: string; description?
 export default function ProviderCatalogManager({ providers }: { providers: ProviderLink[] }) {
 	const queryClient = useQueryClient();
 	const availableProviders = providers.filter((provider) => provider.status === "active" || provider.status === "pending");
-	const [providerSlug, setProviderSlug] = React.useState(availableProviders[0]?.provider_slug ?? "");
+	const manageableProviders = availableProviders.filter((provider) => provider.canManageCatalog !== false);
+	const [providerSlug, setProviderSlug] = React.useState(manageableProviders[0]?.provider_slug ?? "");
 	const [models, setModels] = React.useState<EditableModel[]>([]);
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
 	const [activePanel, setActivePanel] = React.useState<"details" | "pricing" | "release">("details");
@@ -256,11 +257,12 @@ export default function ProviderCatalogManager({ providers }: { providers: Provi
 	}
 
 	if (!availableProviders.length) return null;
+	if (!manageableProviders.length) return <section className="rounded-xl border border-dashed border-border/80 px-5 py-6"><p className="text-sm font-medium">Catalog editing opens after provider approval</p><p className="mt-1 text-sm text-muted-foreground">Your application and catalog are in review. You’ll be able to manage models here once Phaseo approves the provider.</p></section>;
 	return <section className="space-y-5">
 		<div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-4">
 			<div className="min-w-0"><h2 className="text-base font-semibold">Catalog</h2><p className="mt-0.5 truncate text-xs text-muted-foreground">{providerSlug}</p></div>
 			<div className="flex items-center gap-2">
-				{availableProviders.length > 1 ? <select aria-label="Provider" className={selectClass} value={providerSlug} disabled={loading || saving} onChange={(event) => { if (dirty && !window.confirm("Discard unsaved changes?")) return; setSelectedIndex(0); setProviderSlug(event.target.value); }}>{availableProviders.map((provider) => <option key={provider.provider_slug} value={provider.provider_slug}>{provider.provider_slug}</option>)}</select> : null}
+				{manageableProviders.length > 1 ? <select aria-label="Provider" className={selectClass} value={providerSlug} disabled={loading || saving} onChange={(event) => { if (dirty && !window.confirm("Discard unsaved changes?")) return; setSelectedIndex(0); setProviderSlug(event.target.value); }}>{manageableProviders.map((provider) => <option key={provider.provider_slug} value={provider.provider_slug}>{provider.provider_slug}</option>)}</select> : null}
 				<Button type="button" variant="outline" size="sm" disabled={loading || saving} onClick={() => { if (!dirty || window.confirm("Discard unsaved changes and reload?")) void loadCatalog(providerSlug); }}><RefreshCw className="mr-1.5 size-3.5" />Reload</Button>
 			</div>
 		</div>

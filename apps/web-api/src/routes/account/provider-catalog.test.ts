@@ -98,6 +98,17 @@ describe("provider catalog onboarding", () => {
 		expect(model.pricing).toEqual([{ meterKey: "input_tokens", modality: "text", direction: "input", unit: "token", unitQuantity: 1_000_000, priceNanos: 250_000_000, displayLabel: "Input tokens", displayUnit: "1M tokens" }]);
 	});
 
+	it("rejects negative prices and non-positive price quantities", () => {
+		const preview = normalizeProviderCatalog({ data: [{
+			id: "acme/atlas-1",
+			capabilities: ["text.generate"],
+			pricing: [{ meter_key: "input_tokens", modality: "text", direction: "input", unit: "token", unit_quantity: 0, price_nanos: -1, display_label: "Input", display_unit: "token" }],
+		}] });
+
+		expect(preview.valid).toBe(false);
+		expect(preview.issues).toContainEqual({ path: "data[0].pricing[0]", message: "Pricing meter fields are invalid." });
+	});
+
 	it("rejects duplicate and unregistered pricing meters before submission", async () => {
 		const preview = normalizeProviderCatalog({ data: [{
 			id: "acme/atlas-1",

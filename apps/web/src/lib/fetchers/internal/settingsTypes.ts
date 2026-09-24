@@ -342,8 +342,14 @@ export type ProviderOnboardingSubmission = {
 	id: string;
 	provider_slug: string;
 	provider_name: string;
-	catalog_url: string;
+	website_url: string;
+	logo_url: string | null;
+	catalog_url: string | null;
+	application_type: "new" | "claim";
+	catalog_mode: "managed" | "remote";
 	status: string;
+	provider_review_status: string;
+	provider_review_reason: string | null;
 	model_count: number;
 	validation_summary: Record<string, unknown> | null;
 	submitted_at: string | null;
@@ -364,6 +370,8 @@ export type SettingsProviderOnboardingInitialData = {
 		provider_slug: string;
 		name?: string;
 		operatingStatus?: string;
+		provider_review_status?: string | null;
+		canManageCatalog?: boolean;
 		workspace_id: string;
 		role: string;
 		status: "pending" | "active";
@@ -374,7 +382,7 @@ export type SettingsProviderOnboardingInitialData = {
 		provider_slug: string;
 		status: string;
 		delivery_mode: "polling" | "webhook_and_polling";
-		catalog_url: string;
+		catalog_url: string | null;
 		webhookUrl: string;
 		webhookConfigured: boolean;
 		last_success_at: string | null;

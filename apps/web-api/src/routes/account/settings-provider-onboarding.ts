@@ -335,7 +335,7 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 	catch { return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); }
 	const [submissions, links, events, role] = await Promise.all([
 		client.from("provider_onboarding_submissions")
-			.select("id,provider_slug,provider_name,catalog_url,status,model_count,validation_summary,submitted_at,created_at")
+			.select("id,provider_slug,provider_name,website_url,logo_url,catalog_url,catalog_mode,application_type,status,model_count,validation_summary,submitted_at,created_at,provider_review_status,provider_review_reason")
 			.eq("submitted_by", user.id)
 			.order("created_at", { ascending: false })
 			.limit(20),
@@ -348,6 +348,18 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 		client.from("users").select("role").eq("user_id", user.id).maybeSingle(),
 	]);
 	if (submissions.error || links.error || events.error || role.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const submittedProviderSlugs = uniqueStringValues((submissions.data ?? []).map((submission: any) => submission.provider_slug));
+	const submissionProviders = submittedProviderSlugs.length
+		? await client.from("v2_providers").select("provider_slug,metadata").in("provider_slug", submittedProviderSlugs)
+		: { data: [], error: null };
+	if (submissionProviders.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const reviewStateByProvider = new Map((submissionProviders.data ?? []).map((provider: any) => {
+		const selfServe = provider.metadata?.self_serve;
+		return [String(provider.provider_slug), {
+			status: typeof selfServe?.provider_review_status === "string" ? selfServe.provider_review_status : "awaiting_approval",
+			reason: typeof selfServe?.provider_review_reason === "string" ? selfServe.provider_review_reason : null,
+		}];
+	}));
 	const linkedSlugs = (links.data ?? []).map((link) => String(link.provider_slug));
 	const isAdmin = String(role.data?.role ?? "").toLowerCase() === "admin";
 	const catalogProviderSources = isAdmin
@@ -355,14 +367,34 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 		: { data: links.data ?? [], error: null };
 	if (catalogProviderSources.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const catalogSlugs = (catalogProviderSources.data ?? []).map((provider) => String(provider.provider_slug));
-	const providers = catalogSlugs.length
-		? await client.from("v2_providers").select("provider_slug,name,status,routable,routing_enabled").in("provider_slug", catalogSlugs)
-		: { data: [], error: null };
-	if (providers.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const sources = catalogSlugs.length
-		? await client.from("provider_catalog_sources").select("provider_slug,status,delivery_mode,catalog_url,last_success_at,last_polled_at,last_catalog_sha256,consecutive_failures,last_error,etag,last_modified,next_poll_at,webhook_secret_hash").in("provider_slug", catalogSlugs)
-		: { data: [], error: null };
+	const [providers, sources, catalogApplications] = await Promise.all([
+		catalogSlugs.length
+			? client.from("v2_providers").select("provider_slug,name,status,routable,routing_enabled,metadata").in("provider_slug", catalogSlugs)
+			: Promise.resolve({ data: [], error: null }),
+		catalogSlugs.length
+			? client.from("provider_catalog_sources").select("provider_slug,status,delivery_mode,management_mode,catalog_url,last_success_at,last_polled_at,last_catalog_sha256,consecutive_failures,last_error,etag,last_modified,next_poll_at,webhook_secret_hash").in("provider_slug", catalogSlugs)
+			: Promise.resolve({ data: [], error: null }),
+		catalogSlugs.length
+			? client.from("provider_onboarding_submissions").select("provider_slug,application_type,catalog_mode,provider_review_status,provider_review_reason,created_at").in("provider_slug", catalogSlugs).order("created_at", { ascending: false })
+			: Promise.resolve({ data: [], error: null }),
+	]);
+	if (providers.error || catalogApplications.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (sources.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const sourceByProvider = new Map((sources.data ?? []).map((source: any) => [String(source.provider_slug), source]));
+	const latestCatalogApplicationByProvider = new Map<string, any>();
+	for (const application of catalogApplications.data ?? []) {
+		const slug = String(application.provider_slug);
+		if (!latestCatalogApplicationByProvider.has(slug)) latestCatalogApplicationByProvider.set(slug, application);
+	}
+	const submissionsWithReview = (submissions.data ?? []).map((submission: any) => {
+		const fallbackReview = reviewStateByProvider.get(String(submission.provider_slug));
+		return {
+			...submission,
+			catalog_mode: submission.catalog_mode ?? sourceByProvider.get(String(submission.provider_slug))?.management_mode ?? (submission.catalog_url ? "remote" : "managed"),
+			provider_review_status: submission.provider_review_status ?? fallbackReview?.status ?? "awaiting_approval",
+			provider_review_reason: submission.provider_review_reason ?? fallbackReview?.reason ?? null,
+		};
+	});
 	const reviewRuns = catalogSlugs.length
 		? await client.from("provider_catalog_sync_runs").select("id,provider_slug,trigger,status,review_status,review_summary,model_count,error_message,created_at,completed_at").in("provider_slug", catalogSlugs).order("created_at", { ascending: false }).limit(20)
 		: { data: [], error: null };
@@ -380,11 +412,28 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 		linkedProviders: links.data ?? [],
 		catalogProviders: (catalogProviderSources.data ?? []).map((provider) => ({
 			provider_slug: String(provider.provider_slug),
-			name: providers.data?.find((row) => row.provider_slug === provider.provider_slug)?.name ?? provider.provider_slug,
+			name: providers.data?.find((row: any) => row.provider_slug === provider.provider_slug)?.name ?? provider.provider_slug,
+			provider_review_status: (() => {
+				const selfServe = providers.data?.find((row: any) => row.provider_slug === provider.provider_slug)?.metadata?.self_serve;
+				return latestCatalogApplicationByProvider.get(String(provider.provider_slug))?.provider_review_status
+					?? (typeof selfServe?.provider_review_status === "string" ? selfServe.provider_review_status : null);
+			})(),
+			canManageCatalog: isAdmin || (() => {
+				const selfServe = providers.data?.find((row: any) => row.provider_slug === provider.provider_slug)?.metadata?.self_serve;
+				const application = latestCatalogApplicationByProvider.get(String(provider.provider_slug));
+				if (application) return application.provider_review_status === "approved";
+				return !selfServe || selfServe.provider_review_status === "approved";
+			})(),
 			operatingStatus: (() => {
-				const state = providers.data?.find((row) => row.provider_slug === provider.provider_slug);
+				const state = providers.data?.find((row: any) => row.provider_slug === provider.provider_slug);
 				if (!state) return "Status unavailable";
-				if (state.status === "not_ready") return "In review";
+				const reviewStatus = latestCatalogApplicationByProvider.get(String(provider.provider_slug))?.provider_review_status ?? state.metadata?.self_serve?.provider_review_status;
+				if (reviewStatus === "needs_changes") return "Changes requested";
+				if (reviewStatus === "rejected") return "Rejected";
+				if (reviewStatus === "paused") return "Paused";
+				if (reviewStatus && reviewStatus !== "approved") return "Application in review";
+				if (state.status === "not_ready" && reviewStatus !== "approved") return "In review";
+				if (reviewStatus === "approved" && !(state.routable && state.routing_enabled)) return "Approved · route setup";
 				if (state.status === "retired") return "Retired";
 				return state.routable && state.routing_enabled ? "Active" : "Paused";
 			})(),
@@ -393,7 +442,7 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 			status: "active" as const,
 			verified_at: null,
 		})),
-		submissions: submissions.data ?? [],
+		submissions: submissionsWithReview,
 		syncSources: (sources.data ?? []).map(({ webhook_secret_hash, ...source }) => ({ ...source, webhookConfigured: Boolean(webhook_secret_hash), webhookUrl: providerCatalogWebhookUrl(c.env, String(source.provider_slug), c.req.url) })),
 		reviewRevisions: (reviewRuns.data ?? []).map((run) => ({ ...run, models: modelsByRun.get(String(run.id)) ?? [] })),
 		events: events.data ?? [],
@@ -472,9 +521,7 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 	const websiteHost = hostFromUrl(input.websiteUrl);
 	const contactHost = user.email?.split("@").at(-1)?.toLowerCase() ?? "";
 	if (!contactHost) return responseError(c, "Sign in with a provider email address before enrolling.");
-	if (!sameOrSubdomain(contactHost, websiteHost) && !sameOrSubdomain(websiteHost, contactHost)) {
-		return responseError(c, "Use a provider email address on the organisation website domain.");
-	}
+	const contactDomainMatchesWebsite = sameOrSubdomain(contactHost, websiteHost) || sameOrSubdomain(websiteHost, contactHost);
 	if (input.catalogMode === "remote" && !input.catalogUrl) return responseError(c, "Enter a catalog URL or choose to manage models in Phaseo.");
 	const catalogHost = input.catalogUrl ? hostFromUrl(input.catalogUrl) : websiteHost;
 	if (input.catalogMode === "remote" && !sameOrSubdomain(catalogHost, websiteHost)) {
@@ -519,23 +566,22 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 	const existingMetadata = existing.data?.metadata && typeof existing.data.metadata === "object" && !Array.isArray(existing.data.metadata)
 		? existing.data.metadata as Record<string, unknown>
 		: {};
-	const link = await client.from("provider_account_links")
-		.select("workspace_id,role,status")
+	const providerLinks = await client.from("provider_account_links")
+		.select("workspace_id,role,status,linked_by")
 		.eq("provider_slug", input.providerSlug)
 		.in("status", ["pending", "active"])
-		.maybeSingle();
-	if (link.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		.order("status", { ascending: true })
+		.limit(20);
+	if (providerLinks.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const userWorkspaceIds = await accessibleWorkspaceIds(client, user.id).catch(() => []);
 	const userManageableWorkspaceIds = await manageableWorkspaceIds(client, user.id).catch(() => []);
-	if (link.data && !userWorkspaceIds.includes(String(link.data.workspace_id))) {
-		return responseError(c, "This provider profile is already controlled by another provider workspace. Contact Phaseo to resolve the ownership conflict.", 409);
-	}
-	if (link.data && !userManageableWorkspaceIds.includes(String(link.data.workspace_id))) return c.json({ error: "provider_workspace_admin_required" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const link = (providerLinks.data ?? []).find((providerLink) => userWorkspaceIds.includes(String(providerLink.workspace_id))) ?? null;
+	if (link && !userManageableWorkspaceIds.includes(String(link.workspace_id))) return c.json({ error: "provider_workspace_admin_required" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const ownsPendingEnrollment = existingSourcePreflight.data?.created_by === user.id
 		&& existing.data?.routable === false && existing.data?.routing_enabled === false
 		&& (existingMetadata.self_serve as { last_submitted_by?: unknown } | undefined)?.last_submitted_by === user.id;
 	let verifiedClaimChallengeId: string | null = null;
-	if (existing.data && !link.data && !ownsPendingEnrollment) {
+	if (existing.data && !link && !ownsPendingEnrollment) {
 		const existingWebsite = typeof existingMetadata.website_url === "string" ? existingMetadata.website_url : typeof existingMetadata.link === "string" ? existingMetadata.link : null;
 		if (!existingWebsite) return responseError(c, "This existing provider has no verified ownership domain and must be claimed through manual verification.", 409);
 		try {
@@ -546,6 +592,9 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		if (challenge.error) return c.json({ error: "claim_verification_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		if (!challenge.data || challenge.data.domain !== hostFromUrl(existingWebsite) || !await verifyClaimFile(challenge.data.domain, challenge.data.token_hash)) return responseError(c, "The provider ownership token could not be verified.", 409);
 		verifiedClaimChallengeId = String(challenge.data.id);
+	}
+	if (!contactDomainMatchesWebsite && !verifiedClaimChallengeId && !link && !ownsPendingEnrollment) {
+		return responseError(c, "Use a provider email address on the organisation website domain, or verify the existing provider domain.");
 	}
 	try {
 		if (!await reserveProviderSubmissionSlot(authenticatedClient, user.id)) {
@@ -562,7 +611,7 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		catalog_url: input.catalogUrl ?? null,
 		self_serve: {
 			status: "submitted",
-			provider_review_status: "setup",
+			provider_review_status: "awaiting_approval",
 			catalog_sha256: catalog.sha256,
 			last_submitted_by: user.id,
 			last_submitted_at: new Date().toISOString(),
@@ -596,26 +645,37 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/submit", asyn
 		p_webhook_secret_hash: encryptedWebhookSecret?.webhook_secret_hash ?? null,
 	});
 	if (enrollment.error || !enrollment.data) {
+		if (enrollment.error?.message.includes("provider_claim_already_pending")) {
+			return responseError(c, "Another ownership claim for this provider is already awaiting review.", 409);
+		}
 		console.error("provider_enrollment_transaction_failed", { providerSlug: input.providerSlug, error: enrollment.error?.message ?? "empty result" });
 		return c.json({ error: "provider_enrollment_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
-	const enrollmentData = enrollment.data as { provider: any; submission: any; providerWorkspaceId: string };
-	if (catalog.preview.modelCount > 0) c.executionCtx.waitUntil(syncProviderCatalog(c.env, input.providerSlug, "manual", String(enrollmentData.submission.id)).catch((error) => {
+	const enrollmentData = enrollment.data as { provider: any; submission: any; providerWorkspaceId: string; applicationType?: string };
+	const safeSubmission = { ...(enrollmentData.submission ?? {}) };
+	delete safeSubmission.pending_webhook_secret_ciphertext;
+	delete safeSubmission.pending_webhook_secret_iv;
+	delete safeSubmission.pending_webhook_secret_hash;
+	const applicationType = enrollmentData.applicationType === "claim" ? "claim" : "new";
+	if (catalog.preview.modelCount > 0 && applicationType !== "claim") c.executionCtx.waitUntil(syncProviderCatalog(c.env, input.providerSlug, "manual", String(enrollmentData.submission.id)).catch((error) => {
 		console.error("provider_catalog_initial_sync_failed", { providerSlug: input.providerSlug, error: error instanceof Error ? error.message : String(error) });
 	}));
 
 	return c.json({
 		ok: true,
 		provider: enrollmentData.provider,
-		submission: enrollmentData.submission,
+		submission: safeSubmission,
 		preview: publicPreview(catalog.preview),
 		catalogSync: {
 			deliveryMode: "webhook_and_polling",
 			webhookUrl: providerCatalogWebhookUrl(c.env, input.providerSlug, c.req.url),
 			webhookSecret,
 		},
+		applicationType,
 		providerWorkspaceId: enrollmentData.providerWorkspaceId,
-		message: "Provider profile submitted for Phaseo approval. You can stage and test models while public routing remains disabled.",
+		message: applicationType === "claim"
+			? "Provider claim submitted for Phaseo approval. The existing provider and catalog stay unchanged until the claim is approved."
+			: "Provider profile submitted for Phaseo approval. Public routing remains disabled until separate model and route checks are complete.",
 	}, 201, PRIVATE_NO_STORE_HEADERS);
 });
 
@@ -630,6 +690,15 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/webhook/rotat
 	const link = await client.from("provider_account_links").select("provider_slug,workspace_id,role,status").eq("provider_slug", providerSlug).in("workspace_id", workspaceIds.length ? workspaceIds : ["00000000-0000-0000-0000-000000000000"]).in("status", ["pending", "active"]).in("role", ["owner", "admin"]).maybeSingle();
 	if (link.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!link.data) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const [application, provider] = await Promise.all([
+		client.from("provider_onboarding_submissions").select("provider_review_status").eq("provider_slug", providerSlug).order("created_at", { ascending: false }).limit(1),
+		client.from("v2_providers").select("metadata").eq("provider_slug", providerSlug).maybeSingle(),
+	]);
+	if (application.error || provider.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const reviewStatus = application.data?.[0]?.provider_review_status ?? provider.data?.metadata?.self_serve?.provider_review_status;
+	if (reviewStatus && reviewStatus !== "approved") {
+		return responseError(c, "provider_application_not_approved", 409);
+	}
 	const source = await client.from("provider_catalog_sources").select("provider_slug").eq("provider_slug", providerSlug).maybeSingle();
 	if (source.error) return c.json({ error: "provider_sync_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!source.data) return c.json({ error: "provider_sync_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);

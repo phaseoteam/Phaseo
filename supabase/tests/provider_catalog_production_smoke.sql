@@ -97,10 +97,106 @@ begin
   end if;
 
   if position(
+    'provider_review_status'
+    in pg_get_functiondef('public.promote_provider_catalog_candidate(uuid,text)'::regprocedure)
+  ) = 0 then
+    raise exception 'Candidate promotion does not check self-serve provider approval';
+  end if;
+
+  if not exists (
+    select 1 from pg_trigger
+    where tgrelid = 'public.v2_providers'::regclass
+      and tgname = 'enforce_self_serve_provider_review_routing'
+      and not tgisinternal
+  ) then
+    raise exception 'Provider-level routing is not fenced by application approval';
+  end if;
+
+  if position(
+    'review_status is distinct from ''approved'''
+    in pg_get_functiondef('public.enforce_self_serve_provider_approval()'::regprocedure)
+  ) = 0 then
+    raise exception 'Route-level approval guard does not fail closed for missing or unapproved decisions';
+  end if;
+
+  if position(
+    'cardinality(activated_ids) > 0'
+    in pg_get_functiondef('public.set_self_serve_provider_review(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Provider approval can enable routing without an activated route';
+  end if;
+
+  if position(
     'release_scheduled'
     in pg_get_functiondef('public.activate_due_provider_catalog_releases()'::regprocedure)
   ) = 0 then
     raise exception 'Scheduled provider release function is missing its release gate';
+  end if;
+
+  if position(
+    'provider_review_status'
+    in pg_get_functiondef('public.activate_due_provider_catalog_releases()'::regprocedure)
+  ) = 0 then
+    raise exception 'Scheduled release does not check self-serve provider approval';
+  end if;
+
+  if position(
+    'pending_webhook_secret_ciphertext'
+    in pg_get_functiondef('public.complete_provider_enrollment(uuid,text,text,jsonb,text,text,text,text,text,jsonb,jsonb,integer,text,text,uuid,text,text,text)'::regprocedure)
+  ) = 0 then
+    raise exception 'Provider enrollment does not stage claim webhook credentials';
+  end if;
+
+  if position(
+    'provider_claim_proof_required'
+    in pg_get_functiondef('public.complete_provider_enrollment(uuid,text,text,jsonb,text,text,text,text,text,jsonb,jsonb,integer,text,text,uuid,text,text,text)'::regprocedure)
+  ) = 0 or position(
+    'else ''pending'' end'
+    in pg_get_functiondef('public.complete_provider_enrollment(uuid,text,text,jsonb,text,text,text,text,text,jsonb,jsonb,integer,text,text,uuid,text,text,text)'::regprocedure)
+  ) = 0 then
+    raise exception 'Verified provider claims do not stage ownership links for review';
+  end if;
+
+  if position(
+    'application_type'
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Provider application review does not handle existing-provider claims';
+  end if;
+
+  if position(
+    'provider_review_status = p_decision'
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Provider application review does not persist decisions for account and catalog gates';
+  end if;
+
+  if position(
+    'pending_webhook_secret_ciphertext'
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Claim approval does not transfer staged webhook credentials';
+  end if;
+
+  if position(
+    '- ''self_serve'''
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Claim approval does not preserve public provider visibility';
+  end if;
+
+  if position(
+    'claim_previously_approved'
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Claim review does not distinguish initial claims from later provider actions';
+  end if;
+
+  if position(
+    'status = ''revoked'''
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Claim approval does not transfer or revoke the prior ownership link';
   end if;
 
   begin
