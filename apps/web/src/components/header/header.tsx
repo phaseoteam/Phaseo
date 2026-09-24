@@ -75,11 +75,11 @@ export default function Header() {
 			<div className="flex min-w-0 justify-center lg:shrink-0">
 				<Suspense
 					fallback={
-						<Skeleton className="h-9 w-[clamp(6rem,23vw,12rem)] xl:w-[var(--site-header-search-width-xl,14rem)]" />
+						<Skeleton className="h-9 w-[clamp(6rem,23vw,12rem)] max-[22rem]:w-9 xl:w-[var(--site-header-search-width-xl,14rem)]" />
 					}
 				>
 					<SearchWrapper
-						className="h-9 w-[clamp(6rem,23vw,12rem)] xl:w-[var(--site-header-search-width-xl,14rem)]"
+						className="h-9 w-[clamp(6rem,23vw,12rem)] max-[22rem]:w-9 xl:w-[var(--site-header-search-width-xl,14rem)]"
 					/>
 				</Suspense>
 			</div>
