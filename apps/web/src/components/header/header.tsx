@@ -23,7 +23,7 @@ async function GatedSettingsSidebarTrigger() {
 
 export default function Header() {
 	const headerContent = (
-		<div className="grid h-[var(--site-header-height,4rem)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center max-[22rem]:grid-cols-[auto_auto_1fr] max-[22rem]:gap-x-2 lg:flex lg:gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+		<div className="grid h-[var(--site-header-height,4rem)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center max-[22rem]:grid-cols-[auto_auto_1fr] max-[22rem]:gap-x-2 max-[19.375rem]:grid-cols-[auto_minmax(0,1fr)] lg:flex lg:gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
 			<div className="flex min-w-0 items-center gap-[var(--site-header-left-gap,1.25rem)] overflow-hidden lg:shrink-0">
 				<Suspense fallback={null}>
 					<GatedSettingsSidebarTrigger />
@@ -72,7 +72,7 @@ export default function Header() {
 				</div>
 			</div>
 
-			<div className="flex min-w-0 justify-center lg:shrink-0">
+			<div className="flex min-w-0 justify-center max-[19.375rem]:hidden lg:shrink-0">
 				<Suspense
 					fallback={
 						<Skeleton className="h-9 w-[clamp(6rem,23vw,12rem)] max-[25rem]:w-9 xl:w-[var(--site-header-search-width-xl,14rem)]" />
