@@ -6,6 +6,7 @@ export type ActionDockCorner = "top-left" | "top-right" | "bottom-left" | "botto
 
 const STORAGE_PREFIX = "phaseo-action-dock-v1";
 const PREFERENCE_EVENT = "phaseo-action-dock-preference-change";
+const enabledOverrides = new Map<string, boolean>();
 const CORNERS: readonly ActionDockCorner[] = [
 	"top-left",
 	"top-right",
@@ -37,6 +38,8 @@ export function saveActionDockCorner(userId: string, corner: ActionDockCorner) {
 }
 
 export function isActionDockDisabled(userId: string): boolean {
+	const enabledOverride = enabledOverrides.get(userId);
+	if (enabledOverride !== undefined) return !enabledOverride;
 	try {
 		return window.localStorage.getItem(storageKey(userId, "enabled")) === "false";
 	} catch {
@@ -45,6 +48,7 @@ export function isActionDockDisabled(userId: string): boolean {
 }
 
 export function setActionDockEnabled(userId: string, enabled: boolean) {
+	enabledOverrides.set(userId, enabled);
 	try {
 		window.localStorage.setItem(storageKey(userId, "enabled"), String(enabled));
 	} catch {
@@ -80,12 +84,9 @@ export function useActionDockEnabled(userId?: string) {
 			) {
 				return;
 			}
-			if (
-				event instanceof StorageEvent &&
-				event.key !== null &&
-				event.key !== storageKey(userId, "enabled")
-			) {
-				return;
+			if (event instanceof StorageEvent) {
+				if (event.key !== null && event.key !== storageKey(userId, "enabled")) return;
+				enabledOverrides.delete(userId);
 			}
 			onChange();
 		};

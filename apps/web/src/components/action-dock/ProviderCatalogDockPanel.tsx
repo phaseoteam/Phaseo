@@ -6,7 +6,7 @@ import ProviderCatalogManager from "@/components/(gateway)/settings/account/Prov
 import { Button } from "@/components/ui/button";
 import { fetchProviderCatalogLinksAction } from "@/app/(dashboard)/settings/account/providers/actions";
 
-export function ProviderCatalogDockPanel({ userId }: { userId: string }) {
+export function ProviderCatalogDockPanel({ userId, onDirtyChange }: { userId: string; onDirtyChange?: (dirty: boolean) => void }) {
 	const query = useQuery({
 		queryKey: ["providerCatalogLinks", userId],
 		queryFn: fetchProviderCatalogLinksAction,
@@ -29,5 +29,5 @@ export function ProviderCatalogDockPanel({ userId }: { userId: string }) {
 		return <p className="px-4 py-10 text-center text-sm text-muted-foreground">No provider catalogs are available for this account.</p>;
 	}
 
-	return <ProviderCatalogManager providers={query.data} />;
+	return <ProviderCatalogManager providers={query.data} onDirtyChange={onDirtyChange} />;
 }

@@ -97,7 +97,7 @@ function Section({ title, description, children }: { title: string; description?
 	return <section className="grid gap-5 border-t border-border/70 py-6 lg:grid-cols-[170px_minmax(0,1fr)]"><div><h3 className="text-sm font-medium">{title}</h3>{description ? <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p> : null}</div><div className="min-w-0">{children}</div></section>;
 }
 
-export default function ProviderCatalogManager({ providers }: { providers: ProviderLink[] }) {
+export default function ProviderCatalogManager({ providers, onDirtyChange }: { providers: ProviderLink[]; onDirtyChange?: (dirty: boolean) => void }) {
 	const queryClient = useQueryClient();
 	const availableProviders = providers.filter((provider) => provider.status === "active" || provider.status === "pending");
 	const [providerSlug, setProviderSlug] = React.useState(availableProviders[0]?.provider_slug ?? "");
@@ -114,6 +114,7 @@ export default function ProviderCatalogManager({ providers }: { providers: Provi
 	const [saving, setSaving] = React.useState(false);
 	const [dirty, setDirty] = React.useState(false);
 	const [stale, setStale] = React.useState(false);
+	React.useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 	const requestVersion = React.useRef(0);
 	const chosenZone = timeZone ?? browserZone;
 	const zoneValid = validTimeZone(chosenZone);

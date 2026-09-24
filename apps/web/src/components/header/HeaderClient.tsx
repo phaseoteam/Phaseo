@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -55,8 +56,12 @@ import { useDisplayPreferences } from "@/components/providers/DisplayPreferences
 import type { DisplayPreferences } from "@/lib/displayPreferences";
 import type { InternalAuthHeaderUser } from "@/lib/fetchers/internal/authTypes";
 import { WorkspaceCombobox } from "./WorkspaceCombobox";
-import { PhaseoActionDock } from "@/components/action-dock/PhaseoActionDock";
 import { setActionDockEnabled, useActionDockEnabled } from "@/lib/actionDockPreferences";
+
+const PhaseoActionDock = dynamic(
+	() => import("@/components/action-dock/PhaseoActionDock").then((module) => module.PhaseoActionDock),
+	{ ssr: false },
+);
 
 interface HeaderProps {
 	isLoggedIn: boolean;
@@ -565,7 +570,7 @@ export default function HeaderClient({
 						onSignOut={handleSignOut}
 						initialActiveTeamId={currentTeamId}
 					/>
-					{user?.id ? (
+					{user?.id && canUseActionDock ? (
 						<PhaseoActionDock
 							key={user.id}
 							userId={user.id}

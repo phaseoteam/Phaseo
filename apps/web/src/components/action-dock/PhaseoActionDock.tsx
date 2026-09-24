@@ -238,6 +238,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 	const [corner, setCorner] = useState<ActionDockCorner>(() => readActionDockCorner(userId));
 	const [open, setOpen] = useState(false);
 	const [view, setView] = useState<DockView>("actions");
+	const [providerCatalogDirty, setProviderCatalogDirty] = useState(false);
 	const [modelEditOpen, setModelEditOpen] = useState(false);
 	const [editingModelId, setEditingModelId] = useState<string | null>(null);
 	const [hiddenForSession, setHiddenForSession] = useState(
@@ -283,8 +284,10 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 
 	const modelId = useMemo(() => {
 		if (!pathname.startsWith("/models/")) return null;
-		const id = pathname.slice("/models/".length).replace(/\/$/, "");
-		return id.includes("/") ? decodeURIComponent(id) : null;
+		const [organisationId, modelSlug] = pathname.slice("/models/".length).split("/");
+		return organisationId && modelSlug
+			? decodeURIComponent(`${organisationId}/${modelSlug}`)
+			: null;
 	}, [pathname]);
 	const isPhaseoAdmin = userRole?.toLocaleLowerCase() === "admin";
 	const dockLabel = providerMode
@@ -296,6 +299,21 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 		() => pathname.split("/").filter(Boolean),
 		[pathname],
 	);
+	const confirmProviderCatalogDiscard = useCallback(() => {
+		if (!providerCatalogDirty) return true;
+		const confirmed = window.confirm("Discard unsaved provider catalog changes?");
+		if (confirmed) setProviderCatalogDirty(false);
+		return confirmed;
+	}, [providerCatalogDirty]);
+	const changeView = useCallback((nextView: DockView) => {
+		if (view === "provider-catalog" && nextView !== view && !confirmProviderCatalogDiscard()) return;
+		setView(nextView);
+	}, [confirmProviderCatalogDiscard, view]);
+	const closeDock = useCallback(() => {
+		if (view === "provider-catalog" && !confirmProviderCatalogDiscard()) return;
+		setOpen(false);
+		setView("actions");
+	}, [confirmProviderCatalogDiscard, view]);
 
 	const pageActions = useMemo<DockAction[]>(() => {
 		const actions: DockAction[] = [];
@@ -522,8 +540,8 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 			<Popover
 				open={open}
 				onOpenChange={(nextOpen) => {
-					setOpen(nextOpen);
-					if (!nextOpen) setView("actions");
+					if (nextOpen) setOpen(true);
+					else closeDock();
 				}}
 			>
 				<PopoverTrigger asChild>
@@ -662,7 +680,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 						<>
 							<div className="flex items-center justify-between border-b px-2.5 py-2">
 								<div className="flex min-w-0 items-center gap-1.5">
-									<Button variant="ghost" size="icon-sm" aria-label="Back to actions" className="size-8 shrink-0 rounded-lg" onClick={() => setView("actions")}>
+								<Button variant="ghost" size="icon-sm" aria-label="Back to actions" className="size-8 shrink-0 rounded-lg" onClick={() => changeView("actions")}>
 										<ChevronLeft className="size-4" />
 									</Button>
 									<div className="min-w-0">
@@ -670,7 +688,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 										<p className="truncate text-xs text-muted-foreground">{pageLabel(pathname)}</p>
 									</div>
 								</div>
-								<Button variant="ghost" size="icon-sm" aria-label="Close action dock" className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={() => setOpen(false)}>
+								<Button variant="ghost" size="icon-sm" aria-label="Close action dock" className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={closeDock}>
 									<X className="size-4" />
 								</Button>
 							</div>
@@ -711,7 +729,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 						<>
 							<div className="flex items-center justify-between border-b px-2.5 py-2">
 								<div className="flex min-w-0 items-center gap-1.5">
-									<Button variant="ghost" size="icon-sm" aria-label="Back to actions" className="size-8 shrink-0 rounded-lg" onClick={() => setView("actions")}>
+									<Button variant="ghost" size="icon-sm" aria-label="Back to actions" className="size-8 shrink-0 rounded-lg" onClick={() => changeView("actions")}>
 										<ChevronLeft className="size-4" />
 									</Button>
 									<div className="min-w-0">
@@ -719,13 +737,13 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 										<p className="truncate text-xs text-muted-foreground">Edit your models, pricing, and release details</p>
 									</div>
 								</div>
-								<Button variant="ghost" size="icon-sm" aria-label="Close action dock" className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={() => setOpen(false)}>
+								<Button variant="ghost" size="icon-sm" aria-label="Close action dock" className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={closeDock}>
 									<X className="size-4" />
 								</Button>
 							</div>
 							<ScrollArea className="max-h-[min(38rem,calc(100dvh-8rem))]" viewportClassName="max-h-[inherit]">
 								<div className="px-4 py-2">
-									<ProviderCatalogDockPanel userId={userId} />
+									<ProviderCatalogDockPanel userId={userId} onDirtyChange={setProviderCatalogDirty} />
 								</div>
 							</ScrollArea>
 						</>
@@ -733,7 +751,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 						<>
 							<div className="flex items-center justify-between border-b px-2.5 py-2">
 								<div className="flex min-w-0 items-center gap-1.5">
-									<Button variant="ghost" size="icon-sm" aria-label="Back to actions" className="size-8 shrink-0 rounded-lg" onClick={() => setView("actions")}>
+									<Button variant="ghost" size="icon-sm" aria-label="Back to actions" className="size-8 shrink-0 rounded-lg" onClick={() => changeView("actions")}>
 										<ChevronLeft className="size-4" />
 									</Button>
 									<div className="min-w-0">
@@ -741,7 +759,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 										<p className="truncate text-xs text-muted-foreground">Search the full model catalog</p>
 									</div>
 								</div>
-								<Button variant="ghost" size="icon-sm" aria-label="Close action dock" className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={() => setOpen(false)}>
+								<Button variant="ghost" size="icon-sm" aria-label="Close action dock" className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={closeDock}>
 									<X className="size-4" />
 								</Button>
 							</div>
