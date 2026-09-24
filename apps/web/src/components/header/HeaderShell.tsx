@@ -14,7 +14,7 @@ export default function HeaderShell({ children }: HeaderShellProps) {
 		"--site-header-control-h": "2.25rem",
 		"--site-header-nav-px": "0.5rem",
 		"--site-header-search-width": "10.75rem",
-		"--site-header-search-width-xl": "12.75rem",
+		"--site-header-search-width-xl": "14rem",
 	};
 
 	return (
