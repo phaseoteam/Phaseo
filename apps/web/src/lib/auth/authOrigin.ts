@@ -17,13 +17,73 @@ export function configuredAuthOriginsFromEnv(
 	return [...new Set(candidates)];
 }
 
+type PreviewRequestHeaders = {
+	originHeader?: string | null;
+	hostHeader?: string | null;
+};
+
+function resolvePreviewRequestOrigin(
+	requestHeaders: PreviewRequestHeaders,
+): string | null {
+	const host = requestHeaders.hostHeader?.split(",")[0]?.trim();
+	if (!host) return null;
+
+	const originHeader = requestHeaders.originHeader?.trim();
+
+	try {
+		const requestUrl = new URL(`https://${host}`);
+		if (
+			requestUrl.username ||
+			requestUrl.password ||
+			requestUrl.pathname !== "/" ||
+			requestUrl.search ||
+			requestUrl.hash
+		) {
+			return null;
+		}
+
+		if (!originHeader) {
+			// Server Actions are same-origin checked by Next.js. Preserve the
+			// forwarded public hostname instead of switching to Vercel's
+			// deployment-specific hostname.
+			return requestUrl.origin;
+		}
+
+		const origin = new URL(originHeader);
+		if (
+			origin.protocol !== "https:" ||
+			origin.username ||
+			origin.password ||
+			origin.pathname !== "/" ||
+			origin.search ||
+			origin.hash ||
+			origin.host.toLowerCase() !== requestUrl.host.toLowerCase()
+		) {
+			return null;
+		}
+		return origin.origin;
+	} catch {
+		return null;
+	}
+}
+
 export function resolveVercelPreviewAuthOrigin(
 	env: NodeJS.ProcessEnv = process.env,
+	requestHeaders?: PreviewRequestHeaders,
 ): string | null {
 	if (env.VERCEL_ENV !== "preview") return null;
 
+	if (requestHeaders) {
+		const requestOrigin = resolvePreviewRequestOrigin(requestHeaders);
+		if (requestOrigin) return requestOrigin;
+
+		if (requestHeaders.originHeader?.trim() || requestHeaders.hostHeader?.trim()) {
+			return null;
+		}
+	}
+
 	const deploymentUrl = String(
-		env.NEXT_PUBLIC_VERCEL_URL ?? env.VERCEL_URL ?? "",
+		env.VERCEL_URL ?? env.NEXT_PUBLIC_VERCEL_URL ?? "",
 	).trim();
 	if (!deploymentUrl) return null;
 
@@ -72,9 +132,28 @@ export async function resolveAuthOrigin(
 ): Promise<string> {
 	const configuredOrigins = configuredAuthOriginsFromEnv(env);
 	const isDev = env.NODE_ENV !== "production";
-	const vercelPreviewOrigin = resolveVercelPreviewAuthOrigin(env);
 
-	if (vercelPreviewOrigin) return vercelPreviewOrigin;
+	if (env.VERCEL_ENV === "preview") {
+		const headerStore = await headers();
+		const originHeader = headerStore.get("origin");
+		const hostHeader =
+			headerStore.get("x-forwarded-host") ?? headerStore.get("host");
+		const previewOrigin = resolveVercelPreviewAuthOrigin(env, {
+			originHeader,
+			hostHeader,
+		});
+
+		if (previewOrigin) return previewOrigin;
+		if (originHeader || hostHeader) {
+			throw new Error(
+				"Could not resolve a safe preview origin for the auth callback.",
+			);
+		}
+
+		const deploymentOrigin = resolveVercelPreviewAuthOrigin(env);
+		if (deploymentOrigin) return deploymentOrigin;
+		throw new Error("A Vercel deployment URL is required for preview auth redirects.");
+	}
 
 	if (!isDev) {
 		if (configuredOrigins.length > 0) return configuredOrigins[0]!;

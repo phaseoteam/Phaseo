@@ -43,6 +43,51 @@ describe("auth origin helpers", () => {
 		).toBe("https://preview-branch.vercel.app");
 	});
 
+	it("keeps preview auth callbacks on the request hostname", () => {
+		expect(
+			resolveVercelPreviewAuthOrigin(
+				{
+					NODE_ENV: "production",
+					VERCEL_ENV: "preview",
+					VERCEL_URL: "phaseo-deployment.vercel.app",
+				} as NodeJS.ProcessEnv,
+				{
+					originHeader: "https://phaseo-branch.vercel.app",
+					hostHeader: "phaseo-branch.vercel.app",
+				},
+			),
+		).toBe("https://phaseo-branch.vercel.app");
+	});
+
+	it("uses the forwarded preview hostname when Origin is unavailable", () => {
+		expect(
+			resolveVercelPreviewAuthOrigin(
+				{
+					NODE_ENV: "production",
+					VERCEL_ENV: "preview",
+					VERCEL_URL: "phaseo-deployment.vercel.app",
+				} as NodeJS.ProcessEnv,
+				{ hostHeader: "phaseo-branch.vercel.app" },
+			),
+		).toBe("https://phaseo-branch.vercel.app");
+	});
+
+	it("rejects a preview origin that does not match the request host", () => {
+		expect(
+			resolveVercelPreviewAuthOrigin(
+				{
+					NODE_ENV: "production",
+					VERCEL_ENV: "preview",
+					VERCEL_URL: "phaseo-deployment.vercel.app",
+				} as NodeJS.ProcessEnv,
+				{
+					originHeader: "https://attacker.example",
+					hostHeader: "phaseo-deployment.vercel.app",
+				},
+			),
+		).toBeNull();
+	});
+
 	it("never uses an arbitrary URL for preview auth callbacks", () => {
 		expect(
 			resolveVercelPreviewAuthOrigin({
