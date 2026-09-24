@@ -72,14 +72,14 @@ export default function OtherInfo({
 			key: "license",
 			label: "License",
 			value:
-				license && license.trim().length > 0 && licenseUrl ? (
+				licenseUrl ? (
 					<Link
 						href={licenseUrl}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="mt-1 inline-flex min-w-0 items-center gap-1 text-sm font-semibold underline decoration-transparent underline-offset-2 hover:decoration-current"
 					>
-						<span className="truncate">{license}</span>
+						<span className="truncate">{license?.trim() || "View license"}</span>
 						<ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
 					</Link>
 				) : license && license.trim().length > 0 ? (
