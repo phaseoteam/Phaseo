@@ -399,8 +399,9 @@ export async function guardPricingFound(
 
 export async function guardAllFailed(
     ctx: PipelineContext,
-    timing: PipelineTiming
-): Promise<ExecuteGuardResult<never>> {
+    timing: PipelineTiming,
+    options: { redactUpstreamPayloadPreview?: boolean } = {},
+): Promise<ExecuteGuardErr> {
     if (timing.internal.adapterMarked && timing.timer.snapshot().adapter_roundtrip_ms === undefined) {
         timing.timer.between("adapter_roundtrip_ms", "adapter_start");
     }
@@ -442,7 +443,7 @@ export async function guardAllFailed(
         upstream_error_param:
             typeof entry?.upstream_error_param === "string" ? entry.upstream_error_param : null,
         upstream_payload_preview:
-            typeof entry?.upstream_payload_preview === "string"
+            !options.redactUpstreamPayloadPreview && typeof entry?.upstream_payload_preview === "string"
                 ? entry.upstream_payload_preview
                 : null,
         retryable:
@@ -583,5 +584,3 @@ export async function guardAllFailed(
 
     return { ok: false, response: res };
 }
-
-

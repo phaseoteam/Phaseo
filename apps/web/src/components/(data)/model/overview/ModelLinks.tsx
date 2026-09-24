@@ -183,6 +183,8 @@ export default function ModelLinks({ model, showEmpty = false }: ModelLinksProps
 	return (
 		<div className="overflow-hidden rounded-lg border border-border/70 bg-card sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:border-0 sm:bg-transparent xl:grid-cols-3">
 			{links.map((link) => {
+				const icon = getIconForLink(link, model);
+				const isWeightsLink = getPlatformKey(link) === "weights_link";
 				return (
 					<Link
 						key={link.url}
@@ -192,10 +194,12 @@ export default function ModelLinks({ model, showEmpty = false }: ModelLinksProps
 						className="group grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 px-3 py-3 transition-colors last:border-b-0 hover:bg-muted/35 sm:rounded-lg sm:border sm:bg-card sm:last:border-b sm:hover:bg-muted/30"
 					>
 						<div className="flex h-8 w-8 items-center justify-center rounded-md border border-border/70 bg-muted/20 text-muted-foreground">
-							<ModelLinkFavicon
-								url={link.url}
-								fallback={getIconForLink(link, model)}
-							/>
+							{isWeightsLink ? icon : (
+								<ModelLinkFavicon
+									url={link.url}
+									fallback={icon}
+								/>
+							)}
 						</div>
 						<div className="min-w-0">
 							<div className="truncate text-sm font-medium text-foreground">

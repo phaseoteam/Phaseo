@@ -110,6 +110,10 @@ export type Bill = {
 export type ExecutorCompletedResult = {
 	kind: "completed";
 	allowEmptySuccess?: boolean;
+	// Stop retries and fallback when the executor cannot safely replay the request.
+	terminal?: boolean;
+	// Return a locally generated client error directly instead of treating it as an upstream failure.
+	localClientError?: boolean;
 	ir?:
 		| IRChatResponse
 		| IREmbeddingsResponse

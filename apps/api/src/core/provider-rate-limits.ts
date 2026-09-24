@@ -119,6 +119,56 @@ function serializedInputTokenUpperBound(body: unknown): number | null {
 	}
 }
 
+function decisionsTokenReservation(args: {
+	body: unknown;
+	requestedMaxOutputTokens?: number | null;
+	providerMaxInputTokens?: number | null;
+	providerMaxOutputTokens?: number | null;
+}): number | null {
+	if (!args.body || typeof args.body !== "object" || Array.isArray(args.body)) return null;
+	const body = args.body as Record<string, unknown>;
+	const questions = body.questions;
+	if (!questions || typeof questions !== "object" || Array.isArray(questions)) return null;
+	const questionEntries = Object.entries(questions as Record<string, unknown>);
+	if (questionEntries.length === 0 || questionEntries.length > 128) return null;
+
+	const outputUpperBound =
+		positiveSafeInteger(args.requestedMaxOutputTokens) ??
+		positiveSafeInteger(args.providerMaxOutputTokens);
+	if (outputUpperBound == null) return null;
+
+	let reservation = 0;
+	for (const [, questionValue] of questionEntries) {
+		if (!questionValue || typeof questionValue !== "object" || Array.isArray(questionValue)) return null;
+		const question = questionValue as Record<string, unknown>;
+		const criteria = question.criteria;
+		const options = criteria && typeof criteria === "object"
+			? Array.isArray(criteria)
+				? criteria
+				: Object.entries(criteria as Record<string, unknown>).map(([key, description], index) => ({
+					label: String.fromCharCode(65 + index),
+					key,
+					description,
+				}))
+			: criteria;
+		const userContent = { state: body.state, question: question.instructions, options };
+		const inputUpperBound = containsUnboundedTokenInput(userContent)
+			? positiveSafeInteger(args.providerMaxInputTokens)
+			: serializedInputTokenUpperBound(userContent);
+		// Tev adds a fixed system prompt and one chat message per choice request.
+		const perRequestOverhead = 192 + outputUpperBound;
+		if (
+			inputUpperBound == null ||
+			inputUpperBound > Number.MAX_SAFE_INTEGER - perRequestOverhead ||
+			reservation > Number.MAX_SAFE_INTEGER - inputUpperBound - perRequestOverhead
+		) {
+			return null;
+		}
+		reservation += inputUpperBound + perRequestOverhead;
+	}
+	return reservation;
+}
+
 export function estimateProviderTokenReservation(args: {
 	capability: string;
 	body: unknown;
@@ -131,6 +181,7 @@ export function estimateProviderTokenReservation(args: {
 		: serializedInputTokenUpperBound(args.body);
 	if (inputUpperBound == null) return null;
 
+	if (args.capability === "decisions.make") return decisionsTokenReservation(args);
 	if (args.capability === "embeddings" || args.capability === "moderations") return inputUpperBound;
 	if (args.capability !== "text.generate") return null;
 	const outputUpperBound =
@@ -270,8 +321,8 @@ export async function settleFailedManagedProviderReservation(args: {
 	status: number;
 	usageCandidates: unknown[];
 	upstreamRequestCount: number;
-}): Promise<void> {
-	if (!args.reservation) return;
+}): Promise<boolean> {
+	if (!args.reservation) return false;
 	const tokens = args.usageCandidates.reduce<number>(
 		(max, usage) => Math.max(max, resolveCanonicalTokenUsage(usage).totalTokens),
 		0,
@@ -286,14 +337,16 @@ export async function settleFailedManagedProviderReservation(args: {
 				error: error instanceof Error ? error.message : String(error),
 			});
 		}
-		return;
+		return true;
 	}
 
 	// Release only statuses that unambiguously reject the request before inference.
 	// Throttling, conflicts, timeouts, and server errors may follow provider work.
 	if (args.upstreamRequestCount === 1 && PRE_INFERENCE_REJECTION_STATUSES.has(args.status)) {
 		await releaseManagedProviderReservation(args.reservation);
+		return true;
 	}
+	return false;
 }
 
 export async function recordManagedProviderTokensOnce(args: {

@@ -41,6 +41,7 @@ import { executor as googleAiStudioVideo } from "./google/video-generate";
 import { executor as deepinfraText } from "./deepinfra/text-generate";
 import { executor as ioNetText } from "./io-net/text-generate";
 import { executor as togetherText } from "./together/text-generate";
+import { executor as togetherDecisions } from "./together/decisions";
 import { executor as canopyWaveText } from "./canopy-wave/text-generate";
 import { executor as tensorixText } from "./tensorix/text-generate";
 import { executor as basetenText } from "./baseten/text-generate";
@@ -461,6 +462,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	stepfun: { "text.generate": stepfunText, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor },
 	together: {
 		"text.generate": togetherText,
+		"decisions.make": togetherDecisions,
 		embeddings: openaiEmbeddings,
 		"image.generate": nonTextAdapterExecutor,
 		"audio.speech": nonTextAdapterExecutor,
