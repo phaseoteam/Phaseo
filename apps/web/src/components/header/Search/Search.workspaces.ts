@@ -15,7 +15,6 @@ export function createWorkspaceSearchItem(
 	return {
 		id: `workspace:${workspace.id}`,
 		title: workspace.name,
-		subtitle: "Workspace settings",
 		href: "/settings/workspaces/settings",
 		workspaceId: workspace.id,
 		persistable: false,

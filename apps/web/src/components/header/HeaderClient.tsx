@@ -10,7 +10,6 @@ import {
 	Logs,
 	Boxes,
 	BookOpenText,
-	Check,
 	CreditCard,
 	Key as KeyIcon,
 	LifeBuoy,
@@ -45,7 +44,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CurrentUserAvatar } from "@/components/ui/current-user-avatar";
 import { getSupportAvailability } from "@/lib/support/schedule";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
@@ -55,6 +53,7 @@ import { toAccountQueryScope } from "@/lib/query/queryKeys";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import type { DisplayPreferences } from "@/lib/displayPreferences";
 import type { InternalAuthHeaderUser } from "@/lib/fetchers/internal/authTypes";
+import { WorkspaceCombobox } from "./WorkspaceCombobox";
 
 interface HeaderProps {
 	isLoggedIn: boolean;
@@ -104,9 +103,7 @@ export default function HeaderClient({
 		currentTeamId ?? teams[0]?.id,
 	);
 	const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-	const [isMobileTeamDialogOpen, setIsMobileTeamDialogOpen] = useState(false);
 	const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-	const activeTeam = teams.find((team) => team.id === activeWorkspaceId) ?? teams[0];
 
 	useEffect(() => {
 		setActiveTeamId(currentTeamId ?? teams[0]?.id);
@@ -266,13 +263,18 @@ export default function HeaderClient({
 
 		return (
 			<>
+			<div className="flex items-center gap-1">
+				{!providerMode && teams.length > 0 ? (
+					<WorkspaceCombobox
+						workspaces={teams}
+						activeWorkspaceId={activeWorkspaceId}
+						triggerVariant="icon"
+						onSelect={(workspace) => handleTeamSwitch(workspace.id, workspace.name)}
+					/>
+				) : null}
 			<DropdownMenu
 				open={isMobileNavOpen}
-				onOpenChange={(open) => {
-					const nextOpen = Boolean(open);
-					setIsMobileNavOpen(nextOpen);
-					if (!nextOpen) setIsMobileTeamDialogOpen(false);
-				}}
+				onOpenChange={(open) => setIsMobileNavOpen(Boolean(open))}
 			>
 				<DropdownMenuTrigger asChild>
 					<Button
@@ -302,90 +304,6 @@ export default function HeaderClient({
 								<DropdownMenuSeparator />
 							</>
 						)}
-						{isLoggedIn && !providerMode && teams.length > 0 && (
-							<>
-								<Popover
-									modal={false}
-									open={isMobileTeamDialogOpen}
-									onOpenChange={(open) =>
-										setIsMobileTeamDialogOpen(Boolean(open))
-									}
-								>
-									<PopoverTrigger asChild>
-										<button
-											type="button"
-											className={cn(
-												"relative flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm outline-hidden transition-colors",
-												"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-												isMobileTeamDialogOpen && "bg-accent text-accent-foreground",
-											)}
-										>
-											<Users className="h-4 w-4" />
-											<span className="min-w-0 flex-1 truncate">
-												{activeTeam?.name ?? "Workspace"}
-											</span>
-											<ChevronDown
-												className={cn(
-													"ml-auto h-4 w-4 text-zinc-500 transition-transform",
-													isMobileTeamDialogOpen && "rotate-180",
-												)}
-											/>
-										</button>
-									</PopoverTrigger>
-									<PopoverContent
-										side="bottom"
-										align="start"
-										sideOffset={6}
-										className="w-56 gap-0 rounded-lg p-1"
-									>
-										{teams.slice(0, 5).map((team) => {
-											const isActive = team.id === activeWorkspaceId;
-											return (
-												<button
-													key={team.id}
-													type="button"
-													className={cn(
-														"flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-hidden transition-colors",
-														"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-														isActive && "bg-accent text-accent-foreground",
-													)}
-													onClick={() => {
-														void handleTeamSwitch(team.id, team.name).then((ok) => {
-															if (ok) setIsMobileTeamDialogOpen(false);
-														});
-													}}
-												>
-													<span
-														className={cn(
-															"truncate",
-															isActive && "text-foreground",
-														)}
-													>
-														{team.name}
-													</span>
-													{isActive && <Check className="ml-auto h-4 w-4 text-primary" />}
-												</button>
-											);
-										})}
-										<DropdownMenuSeparator />
-										<Link
-											href="/settings/workspaces/settings"
-											prefetch={false}
-											className={cn(
-												"flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-hidden transition-colors",
-												"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-											)}
-											onClick={() => setIsMobileTeamDialogOpen(false)}
-										>
-											<Users className="h-4 w-4" />
-											<span>Manage Workspaces</span>
-										</Link>
-									</PopoverContent>
-								</Popover>
-								<DropdownMenuSeparator />
-							</>
-						)}
-
 					{navLinks.map(({ href, label, icon: Icon }) => {
 						const isActive =
 							pathname === href || pathname.startsWith(href + "/");
@@ -417,12 +335,14 @@ export default function HeaderClient({
 								</Link>
 							</DropdownMenuItem>
 
-							<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
-								<Link href={providerMode ? "/settings/provider/models" : "/settings/workspaces/settings"} prefetch={false}>
-									<Users className="h-4 w-4" />
-									<span>{providerMode ? "Manage catalog" : "Workspaces"}</span>
-								</Link>
-							</DropdownMenuItem>
+							{providerMode ? (
+								<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
+									<Link href="/settings/provider/models" prefetch={false}>
+										<Users className="h-4 w-4" />
+										<span>Manage catalog</span>
+									</Link>
+								</DropdownMenuItem>
+							) : null}
 
 								<DropdownMenuItem asChild className="cursor-pointer rounded-lg text-sm">
 									<Link href="/settings/account" prefetch={false}>
@@ -605,6 +525,7 @@ export default function HeaderClient({
 					)}
 				</DropdownMenuContent>
 			</DropdownMenu>
+			</div>
 			<ProductFeedbackDialog
 				open={isFeedbackOpen}
 				onOpenChange={setIsFeedbackOpen}

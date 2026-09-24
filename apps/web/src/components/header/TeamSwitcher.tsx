@@ -11,13 +11,10 @@ import {
 	Key as KeyIcon,
 	Activity,
 	Logs,
-	Check,
 	Settings,
 	LifeBuoy,
-	Users,
 	Lock,
 	FlaskConical,
-	ChevronDown,
 	Sun,
 	Moon,
 	Monitor,
@@ -41,6 +38,7 @@ import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButt
 import { isPublicDataPathname } from "@/lib/publicDataRoutes";
 import { clearAccountQueryScope } from "@/lib/query/invalidation";
 import { toAccountQueryScope } from "@/lib/query/queryKeys";
+import { WorkspaceCombobox } from "./WorkspaceCombobox";
 
 interface TeamSwitcherProps {
 	user?: any;
@@ -73,11 +71,9 @@ export default function TeamSwitcher({
 	const [activeWorkspaceId, setActiveTeamId] = useState<string | undefined>(() =>
 		getInitialTeamId(initialActiveTeamId)
 	);
-	const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
 	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 	const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
-	const activeTeam = teams.find((t) => t.id === activeWorkspaceId) ?? teams[0];
 	const currentTheme =
 		theme === "light" || theme === "dark" || theme === "system"
 			? theme
@@ -106,138 +102,50 @@ export default function TeamSwitcher({
 	}, [supportIsOpen, minutesUntilNextWindow]);
 
 	useEffect(() => {
-		setIsTeamMenuOpen(false);
 		setIsProfileMenuOpen(false);
 	}, [pathname]);
 
+	async function handleWorkspaceSelect(team: { id: string; name: string }) {
+		if (team.id === activeWorkspaceId) return true;
+
+		const previous = activeWorkspaceId;
+		setActiveTeamId(team.id);
+		const switchPromise = SwapTeam(team.id).then((result) => {
+			if (!result?.ok) throw new Error("Failed to switch workspace");
+			clearAccountQueryScope(
+				queryClient,
+				toAccountQueryScope({ userId: user?.id, workspaceId: previous }),
+			);
+			router.refresh();
+			return result;
+		});
+		toast.promise(switchPromise, {
+			loading: "Switching workspace...",
+			success: `Switched to ${team.name} workspace`,
+			error: `Failed to switch to ${team.name} workspace, please try again`,
+		});
+		try {
+			await switchPromise;
+			return true;
+		} catch {
+			setActiveTeamId(previous);
+			return false;
+		}
+	}
+
 	return (
 		<div className="flex items-center gap-2">
-			{/* Workspace Dropdown */}
-			{providerMode ? <Button asChild variant="ghost"><Link href="/settings/provider/models">Manage catalog</Link></Button> : <DropdownMenu open={isTeamMenuOpen} onOpenChange={setIsTeamMenuOpen}>
-				<DropdownMenuTrigger asChild>
-					<Button
-						variant="ghost"
-						aria-label="Open workspace switcher"
-						className={cn(
-							"inline-flex h-[var(--site-header-control-h,2.25rem)] items-center gap-2 rounded-lg px-3 leading-none cursor-pointer",
-							"border border-transparent text-[13px] font-medium text-foreground",
-							"transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
-							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:focus-visible:ring-zinc-600/50"
-						)}
-					>
-						<span
-							className="max-w-32 truncate text-sm font-medium select-none"
-							title={activeTeam ? activeTeam.name : undefined}
-						>
-							{activeTeam ? activeTeam.name : "Personal Workspace"}
-						</span>
-						<ChevronDown
-							className={cn(
-								"h-4 w-4 text-zinc-500 transition-transform",
-								isTeamMenuOpen && "rotate-180"
-							)}
-						/>
-					</Button>
-				</DropdownMenuTrigger>
-
-				<DropdownMenuContent
-					align="end"
-					className="w-56 rounded-lg"
-				>
-					<div>
-						{teams.slice(0, 10).map((t) => {
-							const isActive = t.id === activeWorkspaceId;
-							return (
-								<DropdownMenuItem
-									key={t.id}
-									className={cn(
-										"cursor-pointer rounded-lg",
-										isActive && "bg-accent text-accent-foreground"
-									)}
-									closeOnClick={!isActive}
-									onClick={() => {
-										if (isActive) {
-											if (
-												typeof navigator === "undefined" ||
-												!navigator?.clipboard?.writeText
-											) {
-												toast.error("Clipboard is not available.", {
-													position: "bottom-right",
-												});
-												return;
-											}
-											void navigator.clipboard
-												.writeText(t.id)
-												.then(() => {
-													toast.success("Workspace UUID copied to clipboard.", {
-														position: "bottom-right",
-													});
-												})
-												.catch(() => {
-													toast.error("Failed to copy workspace UUID.", {
-														position: "bottom-right",
-													});
-												});
-											return;
-										}
-										const previous = activeWorkspaceId;
-										setActiveTeamId(t.id);
-										toast.promise(SwapTeam(t.id), {
-											loading: "Switching workspace...",
-											success: (res) => {
-												if (res?.ok) {
-													clearAccountQueryScope(
-														queryClient,
-														toAccountQueryScope({
-															userId: user?.id,
-															workspaceId: previous,
-														}),
-													);
-													router.refresh();
-													return `Switched to ${t.name} workspace`;
-												}
-												setActiveTeamId(previous);
-												throw new Error("Failed to switch workspace");
-											},
-											error: () => {
-												setActiveTeamId(previous);
-												return `Failed to switch to ${t.name} workspace, please try again`;
-											},
-										});
-									}}
-								>
-									<span
-										className={cn(
-											"truncate",
-											isActive && "text-foreground"
-										)}
-									>
-										{t.name}
-									</span>
-									{isActive && (
-										<Check className="ml-auto h-4 w-4 text-primary" />
-									)}
-								</DropdownMenuItem>
-							);
-						})}
-						{teams.length > 0 ? (
-							<DropdownMenuSeparator />
-						) : null}
-						<DropdownMenuItem
-							asChild
-							className="cursor-pointer rounded-lg"
-						>
-							<Link
-								href="/settings/workspaces/settings"
-								className="flex w-full items-center"
-							>
-								<Users className="mr-2 h-4 w-4" />
-								<span>Manage Workspaces</span>
-							</Link>
-						</DropdownMenuItem>
-					</div>
-				</DropdownMenuContent>
-			</DropdownMenu>}
+			{providerMode ? (
+				<Button asChild variant="ghost">
+					<Link href="/settings/provider/models">Manage catalog</Link>
+				</Button>
+			) : (
+				<WorkspaceCombobox
+					workspaces={teams}
+					activeWorkspaceId={activeWorkspaceId}
+					onSelect={handleWorkspaceSelect}
+				/>
+			)}
 
 			{/* Profile Dropdown */}
 			<DropdownMenu
@@ -332,18 +240,6 @@ export default function TeamSwitcher({
 						>
 							<FlaskConical className="h-4 w-4" />
 							<span>Experiments</span>
-						</Link>
-					</DropdownMenuItem>
-
-					<DropdownMenuItem
-						asChild
-						className="cursor-pointer rounded-lg"
-					>
-						<Link
-							href={providerMode ? "/settings/provider/models" : "/settings/workspaces/settings"}
-						>
-							<Users className="h-4 w-4" />
-							<span>{providerMode ? "Manage catalog" : "Workspaces"}</span>
 						</Link>
 					</DropdownMenuItem>
 

@@ -6,6 +6,7 @@ import {
 } from "@/utils/serverActionAuth";
 import { setActiveWorkspaceCookie } from "@/utils/workspaceCookie";
 import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export type WorkspaceSwitchResult =
     | { ok: true }
@@ -17,11 +18,24 @@ export async function setActiveWorkspaceAction(workspaceId: string): Promise<Wor
             return { ok: false, error: 'workspaceId required' };
         }
         const { supabase, user } = await requireAuthenticatedUser();
-        if ((await fetchInternalAuthHeaderData()).providerMode) {
+        if ((await fetchInternalAuthHeaderData({ limit: 1 })).providerMode) {
             return { ok: false, error: "Provider accounts manage their catalog without switching workspaces." };
         }
         await requireWorkspaceMembership(supabase, user.id, workspaceId);
         await setActiveWorkspaceCookie(workspaceId);
+
+        const { data: { session } } = await supabase.auth.getSession();
+		if (session?.access_token) {
+			try {
+				await fetchAccountWebApi<{ ok: boolean }>(
+					"/api/account/auth/workspace-accessed",
+					session.access_token,
+					{ method: "POST", body: JSON.stringify({ workspaceId }) },
+				);
+			} catch {
+				// Recency is advisory and must not block a workspace switch.
+			}
+		}
 
         return { ok: true };
     } catch (error) {
