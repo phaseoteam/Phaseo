@@ -321,8 +321,8 @@ export async function settleFailedManagedProviderReservation(args: {
 	status: number;
 	usageCandidates: unknown[];
 	upstreamRequestCount: number;
-}): Promise<void> {
-	if (!args.reservation) return;
+}): Promise<boolean> {
+	if (!args.reservation) return false;
 	const tokens = args.usageCandidates.reduce<number>(
 		(max, usage) => Math.max(max, resolveCanonicalTokenUsage(usage).totalTokens),
 		0,
@@ -337,14 +337,16 @@ export async function settleFailedManagedProviderReservation(args: {
 				error: error instanceof Error ? error.message : String(error),
 			});
 		}
-		return;
+		return true;
 	}
 
 	// Release only statuses that unambiguously reject the request before inference.
 	// Throttling, conflicts, timeouts, and server errors may follow provider work.
 	if (args.upstreamRequestCount === 1 && PRE_INFERENCE_REJECTION_STATUSES.has(args.status)) {
 		await releaseManagedProviderReservation(args.reservation);
+		return true;
 	}
+	return false;
 }
 
 export async function recordManagedProviderTokensOnce(args: {

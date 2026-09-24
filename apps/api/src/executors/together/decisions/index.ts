@@ -42,6 +42,7 @@ function validationFailure(args: ExecutorExecuteArgs, message: string): Executor
 	return {
 		kind: "completed",
 		terminal: true,
+		localClientError: true,
 		upstream: resultResponse(400, "unsupported_decision_request", message, args.requestId),
 		bill: { cost_cents: 0, currency: "USD" },
 	};

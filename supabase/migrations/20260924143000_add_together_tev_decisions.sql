@@ -142,7 +142,7 @@ select
       and variant.variant_key = 'global:standard'
   ),
   jsonb_build_object(
-    'source_url', 'https://www.linkedin.com/company/togethercomputer',
+    'source_url', 'https://api.together.ai/models/together/Tev1-4B-experimental',
     'pricing_basis', 'Together AI published serverless pricing',
     'price_per_million_input_tokens_usd', 0.042,
     'price_per_million_output_tokens_usd', 0

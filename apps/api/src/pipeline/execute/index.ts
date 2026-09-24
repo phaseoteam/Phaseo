@@ -1159,13 +1159,13 @@ async function attemptProviderWithIR(
 			const payloadUsage = upstreamFailure.payload && typeof upstreamFailure.payload === "object"
 				? (upstreamFailure.payload as Record<string, unknown>).usage
 				: null;
-			await settleFailedManagedProviderReservation({
+			const reservationHandled = await settleFailedManagedProviderReservation({
 				reservation: providerRateLimitReservation,
 				status: executorResult.upstream.status,
 				usageCandidates: [executorResult.bill?.usage, payloadUsage, upstreamFailure.payload],
 				upstreamRequestCount: upstreamTiming.upstreamRequestCount,
 			});
-			if (terminalFailure && upstreamTiming.upstreamRequestCount === 0) {
+			if (terminalFailure && upstreamTiming.upstreamRequestCount === 0 && !reservationHandled) {
 				await releaseManagedProviderReservation(providerRateLimitReservation);
 			}
 			const upstreamSummary = extractUpstreamErrorSummary(
@@ -1238,7 +1238,10 @@ async function attemptProviderWithIR(
 				retry_delay_ms: executorResult.timing?.transientRetryDelayMs ?? null,
 			});
 			if (terminalFailure) {
-				return { ok: false, response: executorResult.upstream };
+				if ("localClientError" in executorResult && executorResult.localClientError) {
+					return { ok: false, response: executorResult.upstream };
+				}
+				return guardAllFailed(ctx, timing, { redactUpstreamPayloadPreview: true });
 			}
 			return {
 				ok: false,
