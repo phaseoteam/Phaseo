@@ -10,6 +10,7 @@ import { dispatchBackground, ensureRuntimeForBackground, getSupabaseAdmin } from
 import { BYOK_KEYS_PER_PROVIDER_LIMIT } from "@/core/byok";
 import { getProviderPricingKey } from "../before/context.shared";
 import { selectVideoProviderOptions } from "@core/video-provider-options";
+import { normalizeProviderErrorCode } from "@executors/provider-error-normalization";
 
 export type PipelineTiming = {
 	timer: Timer;
@@ -227,6 +228,13 @@ function normalizeUpstreamErrorCode(value: unknown): string | null {
 	return truncateAttemptText(withoutSuffix, 120);
 }
 
+function normalizeUpstreamReason(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	if (!/^[a-z0-9_.:-]{2,120}$/i.test(trimmed)) return null;
+	return normalizeUpstreamErrorCode(trimmed);
+}
+
 function extractUpstreamErrorSummary(
 	payload: unknown,
 	upstreamHeaders?: Headers | null,
@@ -260,10 +268,15 @@ function extractUpstreamErrorSummary(
 		namedExceptionEntry && typeof namedExceptionEntry[1] === "object"
 			? (namedExceptionEntry[1] as Record<string, unknown>)
 			: null;
+	const metadata =
+		obj.metadata && typeof obj.metadata === "object" && !Array.isArray(obj.metadata)
+			? (obj.metadata as Record<string, unknown>)
+			: null;
 	const fallbackCode =
 		awsHeaderErrorType ??
 		normalizeUpstreamErrorCode(obj.__type) ??
 		(namedExceptionEntry ? normalizeUpstreamErrorCode(namedExceptionEntry[0]) : null) ??
+		normalizeUpstreamReason(obj.reason) ??
 		normalizeUpstreamErrorCode(obj.status) ??
 		(typeof obj.error === "string"
 			? obj.error
@@ -275,11 +288,11 @@ function extractUpstreamErrorSummary(
 	const fallbackType =
 		awsHeaderErrorType ??
 		normalizeUpstreamErrorCode(obj.__type) ??
-		typeof obj.error_type === "string"
+		(typeof obj.error_type === "string"
 			? obj.error_type
 			: typeof obj.type === "string"
 				? obj.type
-				: null;
+			: null);
 	const fallbackMessage = truncateAttemptText(
 		typeof namedExceptionBody?.message === "string"
 			? namedExceptionBody.message
@@ -288,7 +301,11 @@ function extractUpstreamErrorSummary(
 	const fallbackDescription = truncateAttemptText(
 		typeof namedExceptionBody?.description === "string"
 			? namedExceptionBody.description
-			: (typeof obj.description === "string" ? obj.description : null),
+			: typeof obj.description === "string"
+				? obj.description
+				: typeof metadata?.detail === "string"
+					? metadata.detail
+					: null,
 	);
 	const rawParam = truncateAttemptText(
 		typeof innerError?.param === "string"
@@ -327,72 +344,77 @@ async function readUpstreamFailurePayload(result: {
 	upstream: Response;
 	rawResponse?: unknown;
 }): Promise<{ payload: unknown; payload_preview: string | null }> {
-	if (result.rawResponse !== undefined) {
-		const rawPreview = truncateAttemptText(
-			typeof result.rawResponse === "string"
-				? result.rawResponse
-				: JSON.stringify(result.rawResponse),
-		);
-		return { payload: result.rawResponse, payload_preview: rawPreview };
-	}
-
+	let responsePayload: unknown;
+	let responsePreview: string | null = null;
 	try {
 		const clone = result.upstream.clone();
 		if (!clone.body) {
-			return { payload: null, payload_preview: null };
-		}
-		const reader = clone.body.getReader();
-		const chunks: Uint8Array[] = [];
-		let totalBytes = 0;
-		let truncated = false;
-		try {
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				if (!value) continue;
-				const remaining = MAX_UPSTREAM_ERROR_BODY_BYTES - totalBytes;
-				if (remaining <= 0) {
-					truncated = true;
-					await reader.cancel("upstream_error_body_limit");
-					break;
+		} else {
+			const reader = clone.body.getReader();
+			const chunks: Uint8Array[] = [];
+			let totalBytes = 0;
+			let truncated = false;
+			try {
+				while (true) {
+					const { done, value } = await reader.read();
+					if (done) break;
+					if (!value) continue;
+					const remaining = MAX_UPSTREAM_ERROR_BODY_BYTES - totalBytes;
+					if (remaining <= 0) {
+						truncated = true;
+						await reader.cancel("upstream_error_body_limit");
+						break;
+					}
+					chunks.push(value.byteLength <= remaining ? value : value.slice(0, remaining));
+					totalBytes += Math.min(value.byteLength, remaining);
+					if (value.byteLength > remaining) {
+						truncated = true;
+						await reader.cancel("upstream_error_body_limit");
+						break;
+					}
 				}
-				chunks.push(value.byteLength <= remaining ? value : value.slice(0, remaining));
-				totalBytes += Math.min(value.byteLength, remaining);
-				if (value.byteLength > remaining) {
-					truncated = true;
-					await reader.cancel("upstream_error_body_limit");
-					break;
+			} finally {
+				reader.releaseLock();
+			}
+			const bytes = new Uint8Array(totalBytes);
+			let offset = 0;
+			for (const chunk of chunks) {
+				bytes.set(chunk, offset);
+				offset += chunk.byteLength;
+			}
+			const text = new TextDecoder().decode(bytes);
+			if (text) {
+				const previewSuffix = truncated ? "...[upstream error body truncated]" : "";
+				try {
+					responsePayload = JSON.parse(text);
+					responsePreview = `${truncateAttemptText(JSON.stringify(responsePayload)) ?? ""}${previewSuffix}` || null;
+				} catch {
+					responsePayload = text;
+					responsePreview = `${truncateAttemptText(text) ?? ""}${previewSuffix}` || null;
 				}
 			}
-		} finally {
-			reader.releaseLock();
-		}
-		const bytes = new Uint8Array(totalBytes);
-		let offset = 0;
-		for (const chunk of chunks) {
-			bytes.set(chunk, offset);
-			offset += chunk.byteLength;
-		}
-		const text = new TextDecoder().decode(bytes);
-		if (!text) {
-			return { payload: null, payload_preview: null };
-		}
-		const previewSuffix = truncated ? "...[upstream error body truncated]" : "";
-		try {
-			const parsed = JSON.parse(text);
-			return {
-				payload: parsed,
-				payload_preview: `${truncateAttemptText(JSON.stringify(parsed)) ?? ""}${previewSuffix}` || null,
-			};
-		} catch {
-			return {
-				payload: text,
-				payload_preview: `${truncateAttemptText(text) ?? ""}${previewSuffix}` || null,
-			};
 		}
 	} catch {
-		return { payload: null, payload_preview: null };
+		// An executor may have consumed the response while parsing its own payload.
 	}
+
+	if (responsePayload != null) {
+		return { payload: responsePayload, payload_preview: responsePreview };
+	}
+	if (result.rawResponse !== undefined && result.rawResponse !== null) {
+		let rawPreview: string | null = null;
+		try {
+			rawPreview = truncateAttemptText(
+				typeof result.rawResponse === "string"
+					? result.rawResponse
+					: JSON.stringify(result.rawResponse),
+			);
+		} catch {
+			rawPreview = null;
+		}
+		return { payload: result.rawResponse, payload_preview: rawPreview };
+	}
+	return { payload: responsePayload ?? null, payload_preview: responsePreview };
 }
 
 function getProviderAttempts(ctx: PipelineContext): ProviderAttemptLog[] {
@@ -1153,6 +1175,8 @@ async function attemptProviderWithIR(
 			});
 		}
 		if (!executorResult.upstream.ok) {
+			// All provider/capability executors converge here with the original Response,
+			// so status and vendor-code normalization applies across the executor registry.
 			const upstreamFailure = await readUpstreamFailurePayload(executorResult);
 			const payloadUsage = upstreamFailure.payload && typeof upstreamFailure.payload === "object"
 				? (upstreamFailure.payload as Record<string, unknown>).usage
@@ -1167,6 +1191,11 @@ async function attemptProviderWithIR(
 				upstreamFailure.payload,
 				executorResult.upstream.headers,
 			);
+			const normalizedErrorCode = executorResult.providerError?.code ?? normalizeProviderErrorCode({
+				status: executorResult.upstream.status,
+				code: upstreamSummary.upstream_error_code,
+				type: upstreamSummary.upstream_error_type,
+			});
 			const effectiveKeySource = executorResult.keySource ?? credentialLog.key_source;
 			const upstreamRateLimitHeaders = extractDownstreamRateLimitHeaders(
 				executorResult.upstream.headers,
@@ -1184,6 +1213,10 @@ async function attemptProviderWithIR(
 				attempt_number: attemptNumber,
 				type: "upstream_non_2xx",
 				status: executorResult.upstream.status,
+				normalized_error_code: normalizedErrorCode,
+				normalized_error_message: executorResult.providerError?.message ?? null,
+				normalized_error_action: executorResult.providerError?.action ?? null,
+				normalized_error_help_url: executorResult.providerError?.helpUrl ?? null,
 				status_text: executorResult.upstream.statusText || null,
 				upstream_url: sanitizeUrlForLogging(executorResult.upstream.url || null),
 				key_source: effectiveKeySource,
@@ -1207,6 +1240,10 @@ async function attemptProviderWithIR(
 				duration_ms: durationMs,
 				status: executorResult.upstream.status,
 				status_text: executorResult.upstream.statusText || null,
+				normalized_error_code: normalizedErrorCode,
+				normalized_error_message: executorResult.providerError?.message ?? null,
+				normalized_error_action: executorResult.providerError?.action ?? null,
+				normalized_error_help_url: executorResult.providerError?.helpUrl ?? null,
 				key_source: executorResult.keySource ?? credentialLog.key_source,
 				byok_key_id: executorResult.byokKeyId ?? credentialLog.byok_key_id,
 				upstream_url: sanitizeUrlForLogging(executorResult.upstream.url || null),
@@ -1333,6 +1370,30 @@ async function attemptProviderWithIR(
 		}
 		console.error(`Executor execution failed for ${candidate.providerId}:`, err);
 		const message = err instanceof Error ? err.message : String(err);
+		const errorRecord = err && typeof err === "object" ? (err as Record<string, unknown>) : {};
+		const errorResponse = errorRecord.response && typeof errorRecord.response === "object"
+			? (errorRecord.response as Record<string, unknown>)
+			: null;
+		const errorPayload =
+			errorResponse?.data ??
+			errorResponse?.body ??
+			errorRecord.data ??
+			errorRecord.body ??
+			errorRecord;
+		const thrownSummary = extractUpstreamErrorSummary(errorPayload);
+		const thrownStatusValue = Number(
+			errorRecord.status ?? errorRecord.statusCode ?? errorResponse?.status ?? NaN,
+		);
+		const thrownStatus = Number.isFinite(thrownStatusValue) ? thrownStatusValue : null;
+		const thrownErrorCode =
+			thrownSummary.upstream_error_code ??
+			(typeof errorRecord.code === "string" ? errorRecord.code : null);
+		const normalizedErrorCode = normalizeProviderErrorCode({
+			status: thrownStatus,
+			code: thrownErrorCode,
+			type: thrownSummary.upstream_error_type,
+		});
+		const thrownErrorMessage = thrownSummary.upstream_error_message ?? message;
 		const stackPreview = truncateAttemptText(
 			err instanceof Error ? err.stack : null,
 			ATTEMPT_PREVIEW_LIMIT * 3,
@@ -1345,11 +1406,14 @@ async function attemptProviderWithIR(
 			provider_model_slug: providerModelSlug ?? null,
 			attempt_number: attemptNumber,
 			type: (err as any)?.retryable === true ? "retryable_error" : "error",
+			status: thrownStatus,
+			normalized_error_code: normalizedErrorCode,
 			retryable: (err as any)?.retryable === true,
-			upstream_error_code: typeof (err as any)?.code === "string" ? (err as any).code : null,
-			upstream_error_message: message,
-			upstream_error_description: stackPreview,
-			message,
+			upstream_error_code: thrownErrorCode,
+			upstream_error_type: thrownSummary.upstream_error_type,
+			upstream_error_message: thrownErrorMessage,
+			upstream_error_description: thrownSummary.upstream_error_description ?? stackPreview,
+			message: thrownErrorMessage,
 		});
 		recordProviderAttempt(ctx, {
 			...credentialLog,
@@ -1362,10 +1426,13 @@ async function attemptProviderWithIR(
 			outcome: (err as any)?.retryable === true ? "retryable_error" : "error",
 			type: (err as any)?.retryable === true ? "retryable_error" : "error",
 			duration_ms: Math.round(performance.now() - attemptStartedAt),
+			status: thrownStatus,
+			normalized_error_code: normalizedErrorCode,
 			retryable: (err as any)?.retryable === true,
-			upstream_error_code: typeof (err as any)?.code === "string" ? (err as any).code : null,
-			upstream_error_message: message,
-			upstream_error_description: stackPreview,
+			upstream_error_code: thrownErrorCode,
+			upstream_error_type: thrownSummary.upstream_error_type,
+			upstream_error_message: thrownErrorMessage,
+			upstream_error_description: thrownSummary.upstream_error_description ?? stackPreview,
 			was_probe: isProbe,
 		});
 		const errorHealthImpact = classifyProviderHealthImpact({

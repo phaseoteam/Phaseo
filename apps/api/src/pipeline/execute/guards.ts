@@ -10,6 +10,10 @@ import type { PipelineTiming } from "./index";
 import type { ProviderCandidate } from "../before/types";
 import { err, json } from "./http";
 import { captureTimingSnapshot } from "./utils";
+import {
+    normalizeGatewayErrorPayload,
+    parseRetryAfterSeconds,
+} from "../error-contract";
 
 export type ExecuteGuardOk<T> = { ok: true; value: T };
 export type ExecuteGuardErr = { ok: false; response: Response };
@@ -39,6 +43,45 @@ function normalizeText(value: unknown, max = 180): string | null {
 function normalizeStatus(value: unknown): number | null {
     const status = Number(value ?? NaN);
     return Number.isFinite(status) ? status : null;
+}
+
+function normalizedProviderErrorCode(entry: Record<string, unknown>): string {
+    const normalizedCode = typeof entry.normalized_error_code === "string"
+        ? entry.normalized_error_code.trim().toLowerCase()
+        : "";
+    if (normalizedCode) return normalizedCode;
+    return typeof entry.upstream_error_code === "string"
+        ? entry.upstream_error_code.trim().toUpperCase().replace(/[\s-]+/g, "_")
+        : "";
+}
+
+function hasProviderErrorCode(entry: Record<string, unknown>, codes: readonly string[]): boolean {
+    return codes.includes(normalizedProviderErrorCode(entry));
+}
+
+function isProviderBalanceError(entry: Record<string, unknown>): boolean {
+    return normalizedProviderErrorCode(entry) === "provider_payment_required" ||
+        normalizeStatus(entry.status) === 402 ||
+        hasProviderErrorCode(entry, ["NOT_ENOUGH_BALANCE", "INSUFFICIENT_BALANCE", "INSUFFICIENT_FUNDS"]);
+}
+
+function isProviderRateLimitError(entry: Record<string, unknown>): boolean {
+    return normalizedProviderErrorCode(entry) === "provider_capacity_exhausted" ||
+        entry.type === "provider_rate_limited" ||
+        normalizeStatus(entry.status) === 429 ||
+        hasProviderErrorCode(entry, ["RATE_LIMIT_EXCEEDED", "TOKEN_LIMIT_EXCEEDED"]);
+}
+
+function isProviderUnavailableError(entry: Record<string, unknown>): boolean {
+    return normalizedProviderErrorCode(entry) === "provider_service_unavailable" ||
+        normalizeStatus(entry.status) === 503 ||
+        hasProviderErrorCode(entry, ["SERVICE_NOT_AVAILABLE", "SERVICE_UNAVAILABLE", "SERVER_IS_OVERLOADED"]);
+}
+
+function isProviderRequestRejected(entry: Record<string, unknown>): boolean {
+    const status = normalizeStatus(entry.status);
+    return normalizedProviderErrorCode(entry) === "provider_request_rejected" ||
+        status === 400 || status === 422;
 }
 
 function failureHintFromStatuses(statuses: number[]): string | null {
@@ -71,6 +114,7 @@ export function classifyProviderFailureDiagnostics(
 
     const provider = normalizeText(primary?.provider, 60);
     const status = normalizeStatus(primary?.status);
+    const normalizedCode = normalizeText(primary?.normalized_error_code, 80)?.toLowerCase() ?? null;
     const upstreamCode = normalizeText(primary?.upstream_error_code, 160)?.toLowerCase() ?? null;
     const haystack = [
         upstreamCode,
@@ -82,6 +126,22 @@ export function classifyProviderFailureDiagnostics(
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
+
+    if (normalizedCode === "provider_capacity_exhausted") {
+        return {
+            category: "rate_limited",
+            hint: "The provider is rate limiting this request. Retry with backoff or another provider.",
+            provider,
+        };
+    }
+
+    if (normalizedCode === "provider_service_unavailable") {
+        return {
+            category: "server_error",
+            hint: "The provider returned a server-side failure. Retrying later may succeed.",
+            provider,
+        };
+    }
 
     if (
         upstreamCode === "google-vertex_project_missing" ||
@@ -429,6 +489,18 @@ export async function guardAllFailed(
         provider: typeof entry?.provider === "string" ? entry.provider : null,
         type: typeof entry?.type === "string" ? entry.type : null,
         status: Number.isFinite(Number(entry?.status)) ? Number(entry?.status) : null,
+        ...(typeof entry?.normalized_error_code === "string"
+            ? { normalized_error_code: entry.normalized_error_code }
+            : {}),
+        ...(typeof entry?.normalized_error_message === "string"
+            ? { normalized_error_message: entry.normalized_error_message }
+            : {}),
+        ...(typeof entry?.normalized_error_action === "string"
+            ? { normalized_error_action: entry.normalized_error_action }
+            : {}),
+        ...(typeof entry?.normalized_error_help_url === "string"
+            ? { normalized_error_help_url: entry.normalized_error_help_url }
+            : {}),
         upstream_error_code:
             typeof entry?.upstream_error_code === "string" ? entry.upstream_error_code : null,
         upstream_error_message:
@@ -461,34 +533,52 @@ export async function guardAllFailed(
             Number(stage?.afterCount ?? 0) === 0
         )
         : null;
-	const allProviderCapacityLimited = attemptErrors.length > 0 && attemptErrors.every(
-		(entry) => entry?.type === "provider_rate_limited",
-	);
-	if (allProviderCapacityLimited) {
-		captureTimingSnapshot(ctx, timing);
-		const retryAfter = attemptErrors
-			.map((entry) => Number(entry?.upstream_rate_limit_headers?.["Retry-After"] ?? NaN))
-			.filter((value) => Number.isFinite(value) && value > 0)
-			.sort((a, b) => a - b)[0] ?? null;
-		const response = err("provider_capacity_exhausted", {
-			reason: "all_candidates_rate_limited",
-			description: "All eligible providers are temporarily at capacity.",
-			model: ctx.model,
-			endpoint: ctx.endpoint,
-			request_id: ctx.requestId,
-			failed_providers: !isStealthRequest(ctx) && failedProviders.length ? failedProviders : null,
-		});
-		if (retryAfter != null) response.headers.set("Retry-After", String(retryAfter));
-		return { ok: false, response };
-	}
+    const allProviderCapacityLimited = attemptErrors.length > 0 && attemptErrors.every(
+        (entry) => isProviderRateLimitError(entry),
+    );
+    const allProviderFeaturesUnsupported = attemptErrors.length > 0 && attemptErrors.every(
+        (entry) => entry.normalized_error_code === "provider_feature_unsupported",
+    );
+    const allProviderRequestsRejected = attemptErrors.length > 0 && attemptErrors.every((entry) => {
+        return isProviderRequestRejected(entry);
+    });
+    const allProviderServicesUnavailable = attemptErrors.length > 0 && attemptErrors.every(
+        (entry) => isProviderUnavailableError(entry),
+    );
+    if (allProviderCapacityLimited) {
+        captureTimingSnapshot(ctx, timing);
+        const retryAfter = attemptErrors
+            .map((entry) => {
+                const value = entry?.upstream_rate_limit_headers?.["Retry-After"];
+                return typeof value === "string" ? parseRetryAfterSeconds(value) : null;
+            })
+            .filter((value): value is number => value != null)
+            .sort((a, b) => a - b)[0] ?? null;
+        const isStealth = isStealthRequest(ctx);
+        const response = err("provider_capacity_exhausted", {
+            reason: "all_candidates_rate_limited",
+            description: "All attempted upstream routes were rate limited.",
+            model: ctx.model,
+            endpoint: ctx.endpoint,
+            request_id: ctx.requestId,
+            attempt_count: attemptErrors.length || null,
+            failed_providers: !isStealth && failedProviders.length ? failedProviders : null,
+            failed_statuses: !isStealth && failedStatuses.length ? failedStatuses : null,
+            retry_after_seconds: retryAfter,
+            failure_sample: !isStealth && failureSample.length ? failureSample : null,
+            provider_failure_diagnostics: !isStealth ? providerFailureDiagnostics : null,
+        });
+        if (retryAfter != null) response.headers.set("Retry-After", String(retryAfter));
+        return { ok: false, response };
+    }
     if (geographicAvailabilityStage) {
         captureTimingSnapshot(ctx, timing);
         if (isStealthRequest(ctx)) {
-            return {
-                ok: false,
-                response: json({
+            const response = json(
+                normalizeGatewayErrorPayload({
                     error: "model_region_unavailable",
                     status_code: 403,
+                    error_type: "user",
                     error_origin: "gateway",
                     responsibility: "user",
                     retryable: false,
@@ -499,7 +589,20 @@ export async function guardAllFailed(
                     endpoint: ctx.endpoint,
                     request_country: ctx.meta?.edgeCountry ?? null,
                     request_subdivision: ctx.meta?.edgeRegionCode ?? null,
-                }, 403),
+                }, {
+                    statusCode: 403,
+                    requestId: ctx.requestId,
+                    errorType: "user",
+                    errorOrigin: "gateway",
+                }),
+                403,
+            );
+            if (ctx.requestId) response.headers.set("X-Request-Id", ctx.requestId);
+            response.headers.set("X-Gateway-Error-Attribution", "user");
+            response.headers.set("X-Gateway-Error-Origin", "gateway");
+            return {
+                ok: false,
+                response,
             };
         }
         return {
@@ -516,12 +619,12 @@ export async function guardAllFailed(
             }),
         };
     }
-    const hasUpstreamPaymentRequired = failedStatuses.includes(402);
+    const hasUpstreamPaymentRequired = failedStatuses.includes(402) || attemptErrors.some(isProviderBalanceError);
     const paymentRequiredProvider = hasUpstreamPaymentRequired
-        ? (attemptErrors.find((entry) => Number(entry?.status ?? NaN) === 402)?.provider ?? null)
+        ? (attemptErrors.find(isProviderBalanceError)?.provider ?? null)
         : null;
     const paymentRequiredDescription = hasUpstreamPaymentRequired
-        ? `Oops, we forgot to pay our provider bills${typeof paymentRequiredProvider === "string" ? ` (${paymentRequiredProvider})` : ""}. Please let us know on GitHub or Discord if you see this error.`
+        ? `The selected provider account${typeof paymentRequiredProvider === "string" ? ` (${paymentRequiredProvider})` : ""} has insufficient balance to complete this request. Try another provider or contact support.`
         : buildAllCandidatesFailedDescription({
             attemptErrors,
             failedProviders,
@@ -538,7 +641,7 @@ export async function guardAllFailed(
             .map((entry) => entry?.upstream_rate_limit_headers?.["Retry-After"])
             .find((value): value is string => typeof value === "string") ?? null;
         const keySource = attemptErrors.some((entry) => entry?.key_source === "byok") ? "byok" : "gateway";
-        const response = json(buildSafeStealthUpstreamError({
+        const safePayload = buildSafeStealthUpstreamError({
             status: publicStatus,
             failedStatuses,
             model: ctx.model,
@@ -546,40 +649,86 @@ export async function guardAllFailed(
             requestId: ctx.requestId,
             keySource,
             retryAfter,
-        }), publicStatus);
+        });
+        const response = json(
+            normalizeGatewayErrorPayload(safePayload, {
+                statusCode: publicStatus,
+                requestId: ctx.requestId,
+                errorType: publicStatus >= 500 ? "system" : "user",
+                errorOrigin: "upstream",
+                retryAfterSeconds: parseRetryAfterSeconds(retryAfter),
+            }),
+            publicStatus,
+        );
+        if (ctx.requestId) response.headers.set("X-Request-Id", ctx.requestId);
+        response.headers.set("X-Gateway-Error-Attribution", "upstream");
+        response.headers.set("X-Gateway-Error-Origin", "upstream");
         applyDownstreamRateLimitHeaders(response.headers, retryAfter ? { "Retry-After": retryAfter } : null);
         return {
             ok: false,
             response,
         };
     }
-    const res = err(hasUpstreamPaymentRequired ? "provider_payment_required" : "upstream_error", {
+    const finalRateLimitHeaders = [...attemptErrors]
+        .reverse()
+        .map((entry) => entry?.upstream_rate_limit_headers)
+        .find((value): value is Record<string, unknown> => Boolean(value) && typeof value === "object");
+    const finalRetryAfter =
+        typeof finalRateLimitHeaders?.["Retry-After"] === "string"
+            ? parseRetryAfterSeconds(finalRateLimitHeaders["Retry-After"])
+            : null;
+    const errorCode = hasUpstreamPaymentRequired
+        ? "provider_payment_required"
+        : allProviderFeaturesUnsupported
+            ? "provider_feature_unsupported"
+        : allProviderRequestsRejected
+            ? "provider_request_rejected"
+            : allProviderServicesUnavailable
+                ? "provider_service_unavailable"
+                : "upstream_error";
+    const res = err(errorCode, {
         reason: hasUpstreamPaymentRequired
             ? "upstream_provider_payment_required"
-            : "all_candidates_failed",
-        description: paymentRequiredDescription,
+            : allProviderFeaturesUnsupported
+                ? "provider_feature_unsupported"
+            : allProviderRequestsRejected
+                ? "provider_rejected_request"
+                : allProviderServicesUnavailable
+                    ? "provider_service_unavailable"
+                    : "all_candidates_failed",
+        description: hasUpstreamPaymentRequired
+            ? paymentRequiredDescription
+            : allProviderFeaturesUnsupported
+                ? "The requested feature is not supported by this model on the selected provider."
+            : allProviderRequestsRejected
+                ? buildAllCandidatesFailedDescription({ attemptErrors, failedProviders, failedStatuses, model: ctx.model, endpoint: ctx.endpoint })
+                : allProviderServicesUnavailable
+                    ? "The selected provider service is temporarily unavailable. Retry later or select another provider."
+                    : buildAllCandidatesFailedDescription({ attemptErrors, failedProviders, failedStatuses, model: ctx.model, endpoint: ctx.endpoint }),
+        ...(allProviderFeaturesUnsupported ? {
+            message: attemptErrors[0]?.normalized_error_message,
+            action: attemptErrors[0]?.normalized_error_action,
+            help_url: attemptErrors[0]?.normalized_error_help_url,
+        } : {}),
         model: ctx.model,
         endpoint: ctx.endpoint,
         request_id: ctx.requestId,
         attempt_count: attemptErrors.length || null,
         failed_providers: failedProviders.length ? failedProviders : null,
         failed_statuses: failedStatuses.length ? failedStatuses : null,
+        retry_after_seconds: finalRetryAfter,
         failure_sample: failureSample.length ? failureSample : null,
         provider_payment_required_provider:
             typeof paymentRequiredProvider === "string" ? paymentRequiredProvider : null,
         provider_payment_required_support_notice: hasUpstreamPaymentRequired
-            ? "Please let us know on GitHub or Discord if you see this error."
+            ? "Contact Phaseo support if the issue persists."
             : null,
         routing_diagnostics: routingDiagnostics,
         provider_enablement: providerEnablement,
         provider_candidate_diagnostics: candidateBuild,
         provider_failure_diagnostics: providerFailureDiagnostics,
     });
-	const finalRateLimitHeaders = [...attemptErrors]
-		.reverse()
-		.map((entry) => entry?.upstream_rate_limit_headers)
-		.find((value): value is Record<string, unknown> => Boolean(value) && typeof value === "object");
-	applyDownstreamRateLimitHeaders(res.headers, finalRateLimitHeaders);
+    applyDownstreamRateLimitHeaders(res.headers, finalRateLimitHeaders);
 
     return { ok: false, response: res };
 }

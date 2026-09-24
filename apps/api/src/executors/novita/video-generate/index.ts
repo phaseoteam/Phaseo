@@ -7,6 +7,7 @@ import { reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { saveVideoJobMeta, setVideoJobStatus } from "@core/video-jobs";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
+import { withNovitaError } from "../error-mapping";
 
 const emptyBill = { cost_cents: 0, currency: "USD", usage: undefined as any, upstream_id: undefined, finish_reason: null };
 
@@ -84,7 +85,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		} else {
 			await setVideoJobStatus(args.workspaceId, args.requestId, "pending", { submissionState: "unknown" });
 		}
-		return { kind: "completed", ir: undefined, bill: { ...emptyBill }, upstream: response, keySource: key.source, byokKeyId: key.byokId };
+		return withNovitaError(
+			{ kind: "completed", ir: undefined, bill: { ...emptyBill }, upstream: response, keySource: key.source, byokKeyId: key.byokId },
+			ir.model,
+		);
 	}
 	const result = await response.clone().json().catch(() => null) as any;
 	const nativeId = typeof result?.id === "string" ? result.id : typeof result?.task_id === "string" ? result.task_id : undefined;

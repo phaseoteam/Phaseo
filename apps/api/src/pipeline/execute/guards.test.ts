@@ -72,7 +72,7 @@ describe("guardAllFailed", () => {
 
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload).toEqual({
+		expect(payload).toMatchObject({
 			error: "upstream_billing_required",
 			status_code: 402,
 			error_origin: "upstream",
@@ -84,6 +84,11 @@ describe("guardAllFailed", () => {
 			model: "stealth/test-model-20260827",
 			endpoint: "responses",
 			failed_statuses: [402],
+		});
+		expect(payload).toMatchObject({
+			message: expect.any(String),
+			docs_url: "https://phaseo.app/docs/v1/api-reference/errors",
+			support_url: "https://phaseo.tawk.help/",
 		});
 		expect(JSON.stringify(payload)).not.toMatch(/openai|billing_secret|failure_sample|provider_payment/i);
 	});
@@ -110,11 +115,11 @@ describe("guardAllFailed", () => {
 		const payload = await result.response.json();
 		expect(payload.error).toBe("provider_payment_required");
 		expect(payload.reason).toBe("upstream_provider_payment_required");
-		expect(String(payload.description)).toContain("forgot to pay our provider bills");
+		expect(String(payload.description)).toContain("provider account");
 		expect(String(payload.description)).toContain("openai");
-		expect(String(payload.description)).toContain("GitHub or Discord");
+		expect(String(payload.description)).toContain("insufficient balance");
 		expect(payload.provider_payment_required_provider).toBe("openai");
-		expect(String(payload.provider_payment_required_support_notice)).toContain("GitHub or Discord");
+		expect(String(payload.provider_payment_required_support_notice)).toContain("Phaseo support");
 		expect(payload.failed_statuses).toEqual([402]);
 	});
 
@@ -147,7 +152,7 @@ describe("guardAllFailed", () => {
 		expect(String(payload.description)).toContain("failure_sample");
 	});
 
-	it("uses retry metadata from the final attempted provider without exposing it in the body", async () => {
+	it("uses the earliest provider retry time without exposing rate-limit headers in the body", async () => {
 		const ctx: any = {
 			model: "minimax/minimax-m2.7:free",
 			endpoint: "chat.completions",
@@ -172,7 +177,7 @@ describe("guardAllFailed", () => {
 		expect(result.ok).toBe(false);
 		if (result.ok) return;
 
-		expect(result.response.headers.get("Retry-After")).toBe("20");
+		expect(result.response.headers.get("Retry-After")).toBe("5");
 		const payload = await result.response.json();
 		expect(JSON.stringify(payload)).not.toContain("upstream_rate_limit_headers");
 	});

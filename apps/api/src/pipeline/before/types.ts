@@ -438,6 +438,7 @@ export type ParamRoutingDiagnostics = {
     filteringStages: Array<{
         stage:
             | "param_support"
+            | "reasoning_effort"
             | "param_preference"
             | "provider_docs"
             | "response_format"
@@ -496,6 +497,10 @@ export type ProviderAttemptLog = {
     status?: number | null;
     status_text?: string | null;
     retryable?: boolean | null;
+    normalized_error_code?: string | null;
+    normalized_error_message?: string | null;
+    normalized_error_action?: string | null;
+    normalized_error_help_url?: string | null;
     key_source?: "gateway" | "byok" | null;
     byok_key_id?: string | null;
     credential_phase?: "priority_byok" | "balanced_byok" | "gateway" | "fallback_byok";
@@ -533,7 +538,6 @@ export type WorkspacePolicy = {
 	privacyEnableFreeMayTrain?: boolean;
 	privacyEnableInputOutputLogging?: boolean;
 	privacyZdrOnly?: boolean;
-	accountPolicyApplied?: boolean;
     enforceAllowed: boolean;
     activeGuardrailIds: string[];
     dynamicRoute?: import("./dynamic-routes").DynamicRoutePolicy | null;

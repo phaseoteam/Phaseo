@@ -908,6 +908,10 @@ struct EndpointCatalogueResponse {
 };
 
 struct ErrorFailureSampleItem {
+	std::optional<std::string> normalized_error_action;
+	std::optional<std::string> normalized_error_code;
+	std::optional<std::string> normalized_error_help_url;
+	std::optional<std::string> normalized_error_message;
 	std::optional<std::string> provider;
 	std::optional<bool> retryable;
 	std::optional<int> status;
@@ -941,16 +945,21 @@ struct ErrorProviderFailureDiagnostics {
 };
 
 struct ErrorResponse {
+	std::string action;
 	std::optional<int> attempt_count;
+	std::any category;
 	std::string description;
 	std::vector<std::map<std::string, std::any>> details;
+	std::string docs_url;
 	std::any error;
+	std::string error_code;
 	std::any error_origin;
 	std::any error_type;
 	std::vector<std::string> failed_providers;
 	std::vector<int> failed_statuses;
 	std::vector<std::map<std::string, std::any>> failure_sample;
 	std::string generation_id;
+	std::string help_url;
 	std::string message;
 	std::vector<std::string> missing_pricing_providers;
 	std::optional<bool> ok;
@@ -960,8 +969,12 @@ struct ErrorResponse {
 	std::string provider_payment_required_provider;
 	std::string provider_payment_required_support_notice;
 	std::string reason;
+	std::string request_id;
+	std::optional<int> retry_after_seconds;
+	std::optional<bool> retryable;
 	std::map<std::string, std::any> routing_diagnostics;
 	std::optional<int> status_code;
+	std::string support_url;
 	std::map<std::string, std::any> upstream_error;
 };
 

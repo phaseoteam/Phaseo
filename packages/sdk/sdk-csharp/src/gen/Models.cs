@@ -2203,6 +2203,18 @@ public sealed class EndpointCatalogueResponse
 
 public sealed class ErrorFailureSampleItem
 {
+	[JsonPropertyName("normalized_error_action")]
+	public string? NormalizedErrorAction { get; set; }
+
+	[JsonPropertyName("normalized_error_code")]
+	public string? NormalizedErrorCode { get; set; }
+
+	[JsonPropertyName("normalized_error_help_url")]
+	public string? NormalizedErrorHelpUrl { get; set; }
+
+	[JsonPropertyName("normalized_error_message")]
+	public string? NormalizedErrorMessage { get; set; }
+
 	[JsonPropertyName("provider")]
 	public string? Provider { get; set; }
 
@@ -2282,8 +2294,14 @@ public sealed class ErrorProviderFailureDiagnostics
 
 public sealed class ErrorResponse
 {
+	[JsonPropertyName("action")]
+	public string? Action { get; set; }
+
 	[JsonPropertyName("attempt_count")]
 	public long? AttemptCount { get; set; }
+
+	[JsonPropertyName("category")]
+	public string? Category { get; set; }
 
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }
@@ -2291,8 +2309,14 @@ public sealed class ErrorResponse
 	[JsonPropertyName("details")]
 	public List<Dictionary<string, object>>? Details { get; set; }
 
+	[JsonPropertyName("docs_url")]
+	public string? DocsUrl { get; set; }
+
 	[JsonPropertyName("error")]
 	public object Error { get; set; }
+
+	[JsonPropertyName("error_code")]
+	public string? ErrorCode { get; set; }
 
 	[JsonPropertyName("error_origin")]
 	public string? ErrorOrigin { get; set; }
@@ -2311,6 +2335,9 @@ public sealed class ErrorResponse
 
 	[JsonPropertyName("generation_id")]
 	public string? GenerationId { get; set; }
+
+	[JsonPropertyName("help_url")]
+	public string? HelpUrl { get; set; }
 
 	[JsonPropertyName("message")]
 	public string? Message { get; set; }
@@ -2339,11 +2366,23 @@ public sealed class ErrorResponse
 	[JsonPropertyName("reason")]
 	public string? Reason { get; set; }
 
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
+	[JsonPropertyName("retry_after_seconds")]
+	public long? RetryAfterSeconds { get; set; }
+
+	[JsonPropertyName("retryable")]
+	public bool? Retryable { get; set; }
+
 	[JsonPropertyName("routing_diagnostics")]
 	public Dictionary<string, object>? RoutingDiagnostics { get; set; }
 
 	[JsonPropertyName("status_code")]
 	public long? StatusCode { get; set; }
+
+	[JsonPropertyName("support_url")]
+	public string? SupportUrl { get; set; }
 
 	[JsonPropertyName("upstream_error")]
 	public Dictionary<string, object>? UpstreamError { get; set; }

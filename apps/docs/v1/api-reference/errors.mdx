@@ -1,197 +1,216 @@
 ---
 title: "Errors and Debugging"
-description: "Understand Phaseo error responses and fix common request, provider, and routing issues faster."
+description: "Understand Phaseo error responses and choose the right recovery path for request, routing, provider, and gateway failures."
 icon: "bug"
 ---
 
-Use this page to understand what A Phaseo error means and what to do next.
+Text API errors use the envelope expected by the request protocol: OpenAI error objects for Responses and Chat Completions, and Anthropic's `type: "error"` envelope for Messages. Phaseo diagnostic fields remain alongside that envelope for retries, routing details, and support correlation.
 
-Every error response follows the same JSON format, so your app can handle failures consistently across models and providers.
-
-## Example error response
+## OpenAI Responses and Chat Completions
 
 ```json
 {
+  "request_id": "G-abc123",
   "generation_id": "G-abc123",
-  "status_code": 502,
-  "error": "upstream_error",
+  "status_code": 503,
+  "error_code": "provider_service_unavailable",
+  "category": "provider_unavailable",
+  "error": {
+    "message": "The upstream provider is temporarily unavailable.",
+    "type": "service_unavailable_error",
+    "param": null,
+    "code": "provider_service_unavailable"
+  },
+  "message": "The upstream provider is temporarily unavailable.",
+  "description": "All configured provider candidates failed.",
   "error_type": "system",
   "error_origin": "upstream",
-  "reason": "all_candidates_failed",
-  "description": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+  "retryable": true,
+  "action": "Retry after a short delay or choose another provider. Contact support with the request ID if it continues.",
+  "help_url": "https://phaseo.app/docs/v1/api-reference/errors",
+  "docs_url": "https://phaseo.app/docs/v1/api-reference/errors",
+  "support_url": "https://phaseo.tawk.help/",
+  "reason": "provider_service_unavailable",
   "attempt_count": 1,
-  "failed_providers": ["google-ai-studio"],
-  "failed_statuses": [403],
-  "provider_failure_diagnostics": {
-    "category": "provider_access_missing",
-    "hint": "The provider account appears not to have access to this model or feature yet. Verify account entitlements and provider-side access.",
-    "provider": "google-ai-studio"
-  },
+  "failed_providers": ["novita"],
+  "failed_statuses": [503],
   "upstream_error": {
-    "code": "PERMISSION_DENIED",
-    "message": "The caller does not have permission.",
-    "description": null,
-    "param": null
+    "code": "SERVICE_NOT_AVAILABLE",
+    "message": "The provider service is temporarily unavailable."
   },
-  "failure_sample": [
+  "retry_after_seconds": 15
+}
+```
+
+## Anthropic Messages
+
+```json
+{
+  "type": "error",
+  "error": {
+    "type": "rate_limit_error",
+    "message": "The upstream provider is rate limiting this request."
+  },
+  "request_id": "G-abc123",
+  "error_code": "provider_capacity_exhausted",
+  "category": "rate_limit",
+  "status_code": 429,
+  "error_type": "system",
+  "error_origin": "upstream",
+  "retryable": true,
+  "retry_after_seconds": 10,
+  "upstream_error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "You have exceeded the request rate limit.",
+    "description": "current limit 30 requests per minute"
+  }
+}
+```
+
+Anthropic Messages responses also return the correlation ID in the `request-id` response header.
+
+`generation_id` is retained as a backwards-compatible alias. Use `request_id` in new integrations, but accept either field when reading older responses.
+
+## Fields to use in client code
+
+| Field | Meaning |
+| --- | --- |
+| `error` | Protocol-standard error object. OpenAI responses include `message`, `type`, `param`, and `code`; Anthropic Messages include `type` and `message`. |
+| `error_code` | Stable Phaseo machine-readable code, such as `provider_request_rejected` or `provider_capacity_exhausted`. |
+| `category` | Broad failure category on inference gateway errors: authentication, model, unsupported feature, invalid request, rate limit, billing, provider availability, or internal failure. |
+| `error.code` | On OpenAI endpoints, the same stable Phaseo code as `error_code`. |
+| `error.type` | Protocol error category such as `invalid_request_error`, `rate_limit_error`, or `server_error`/`api_error`. |
+| `message` | Short, user-safe summary suitable for a log or UI. |
+| `description` | More detailed explanation of the failure. |
+| `status_code` | The HTTP status returned by the Gateway. |
+| `error_type` | `user` when the request or credentials need a change, or `system` when Phaseo or a provider needs attention. |
+| `error_origin` | The main source of the failure: `user`, `gateway`, or `upstream`. |
+| `retryable` | Whether retrying without changing the request may succeed. This is a hint, not permission to retry forever. |
+| `action` | The recommended next step. Display this when you need to guide a user. |
+| `help_url` | A relevant model, key, billing, or documentation page when one is available. |
+| `request_id` | Stable correlation ID for logs, Request Logs, and support conversations. |
+| `docs_url` | The current error contract and recovery guidance. |
+| `support_url` | The Phaseo Help Center. |
+| `retry_after_seconds` | Normalized delay when the response includes a usable `Retry-After` header. |
+
+The response may also include `details`, `reason`, `routing_diagnostics`, `provider_failure_diagnostics`, `failed_providers`, `failed_statuses`, `attempt_count`, `upstream_error`, and `failure_sample`. Treat those fields as diagnostic context. Do not build application behavior around provider-specific text.
+
+## Choose the right recovery path
+
+| Status or code | What it usually means | What to do |
+| --- | --- | --- |
+| `400` `invalid_json` or `validation_error` | The body or one of its fields is invalid. | Read `details`, correct the request, and send it again. |
+| `400` `provider_request_rejected` | A provider rejected request parameters or a feature for the selected route. | Read the bounded `failure_sample`; correct the request or select a compatible model/provider. Do not retry unchanged. |
+| `400` `provider_feature_unsupported` | The provider reports that this model does not support a requested feature. | Review the model page in `help_url` and remove the feature or choose another model. |
+| `400` `unsupported_model_or_endpoint` | The model is not available for the requested endpoint or capability. | Check the model page and endpoint reference, then choose a supported combination. |
+| `400` `byok_credentials_required` | The selected BYOK route does not have the required provider credentials. | Check the workspace BYOK configuration or select a managed Phaseo route. |
+| `401` `unauthorised` | The API key is missing, invalid, or not being sent as a bearer token. | Check the key and the `Authorization` header. Never put the key in browser code. |
+| `402` `insufficient_funds` | Your workspace needs more credits. | Add credits using `help_url`. |
+| `402` `pricing_not_configured` | The gateway cannot price the selected model route. | Choose another model or contact support with `request_id`. |
+| `403` `guardrail_blocked` or `model_region_unavailable` | A policy, workspace, provider, or region restriction applies. | Read `action` and the diagnostic fields, then change the request or configuration. |
+| `404` `not_found` | The endpoint or referenced resource was not found. | Check the URL, workspace, model ID, and resource identifier. |
+| `409` `not_ready` | A resource or route is temporarily unavailable. | Wait briefly and retry if `retryable` is true. |
+| `429` `key_limit_exceeded` or `provider_capacity_exhausted` | A key, route, or provider is temporarily at its limit. | Respect `Retry-After` and use bounded exponential backoff. |
+| `500` `gateway_error` or `pipeline_execution_error` | Phaseo could not complete the request internally. | Retry when `retryable` is true. If it persists, contact support with `request_id`. |
+| `502` `upstream_error` or `provider_payment_required` | A provider route failed or its billing/access needs attention. | Read provider diagnostics. Retry only when `retryable` is true. |
+| `503` `provider_service_unavailable` | The selected provider reports that its service is unavailable. | Retry with bounded backoff or select another provider. |
+
+Use `error_code` or OpenAI's `error.code` for the specific Phaseo failure, `category` for broad handling, and `error.type` for the protocol's standard category. The provider's original code and message remain under `upstream_error` when available. Always consider `status_code`, `retryable`, and `action` together.
+
+## Provider error normalization
+
+Provider code names vary. Every executor passes upstream HTTP failures through the shared normalizer, which maps common status codes and error-code aliases to stable gateway categories. Provider-specific mappings live beside that provider's executor; Novita mappings are listed below. The original provider code and message remain in `upstream_error` and `failure_sample` for diagnosis.
+
+| Novita upstream error | Gateway response | OpenAI `error.type` | Anthropic `error.type` | Retryable |
+| --- | --- | --- | --- | --- |
+| `NOT_ENOUGH_BALANCE` (403) | `502` `provider_payment_required` | `server_error` | `api_error` | No |
+| `INVALID_REQUEST_BODY` (400) | `400` `provider_request_rejected` | `invalid_request_error` | `invalid_request_error` | No |
+| `INVALID_REQUEST_BODY` with a structured output support message (400) | `400` `provider_feature_unsupported` | `invalid_request_error` | `invalid_request_error` | No |
+| `RATE_LIMIT_EXCEEDED` (429) | `429` `provider_capacity_exhausted` | `rate_limit_error` | `rate_limit_error` | Yes |
+| `TOKEN_LIMIT_EXCEEDED` (429) | `429` `provider_capacity_exhausted` | `rate_limit_error` | `rate_limit_error` | Yes |
+| `SERVICE_NOT_AVAILABLE` (503) | `503` `provider_service_unavailable` | `service_unavailable_error` | `overloaded_error` | Yes |
+
+When a provider supplies `Retry-After`, the Gateway forwards it and exposes the parsed delay as `retry_after_seconds`.
+
+For the Novita structured output rejection, the response says “Structured outputs are not supported by this model” and links to the model page in `action` and `help_url`. The original Novita `reason` and `message` remain in `upstream_error`.
+
+## Retry safely
+
+Use bounded exponential backoff with jitter. Honor the `Retry-After` header when it is present. Do not retry validation, authentication, permission, billing, or unsupported-model failures without changing the cause.
+
+For `500`-series errors, repeat an operation only when doing so is safe. An ambiguous submission may already have created a job or incurred a charge; retrieve an accepted job instead of submitting it again.
+
+```js
+async function requestWithBackoff(makeRequest, maxAttempts = 3) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const response = await makeRequest();
+    if (response.ok) return response;
+
+    const payload = await response.json().catch(() => ({}));
+    const retryable = payload.retryable === true;
+    if (!retryable || attempt === maxAttempts - 1) return { response, payload };
+
+    const retryAfterSeconds = Number(payload.retry_after_seconds);
+    const serverDelayMs = Number.isFinite(retryAfterSeconds) ? retryAfterSeconds * 1000 : 0;
+    const backoffMs = Math.min(10_000, 500 * 2 ** attempt);
+    const jitterMs = Math.floor(Math.random() * 250);
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.max(serverDelayMs, backoffMs) + jitterMs),
+    );
+  }
+}
+```
+
+For a `429` response, `Retry-After` may be a number of seconds or an HTTP date. Use `retry_after_seconds` when you want to avoid parsing the header yourself.
+
+## Provider and routing diagnostics
+
+When routing reaches a provider, Phaseo may include safe summaries of the attempts:
+
+- `provider_failure_diagnostics.category` and `provider_failure_diagnostics.hint` explain common credential, access, region, rate-limit, and provider-service failures.
+- `failed_providers`, `failed_statuses`, and `attempt_count` show how failover progressed.
+- `upstream_error` and `failure_sample` contain bounded, provider-safe summaries of the failure.
+- `failure_sample[].normalized_error_code` records the shared category assigned to an individual provider attempt; `failure_sample[].upstream_error_code` retains the provider's original code.
+- `provider_candidate_diagnostics`, `provider_enablement`, and `routing_diagnostics` explain why a model or endpoint was filtered out.
+
+These fields are intended for troubleshooting. Phaseo redacts sensitive request content from diagnostics, but you should still avoid writing full error payloads to shared logs without reviewing them.
+
+## Validation details
+
+Validation errors can include a `details` array:
+
+```json
+{
+  "error_code": "validation_error",
+  "status_code": 400,
+  "error": {
+    "message": "temperature must be less than or equal to 1",
+    "type": "invalid_request_error",
+    "param": "temperature",
+    "code": "validation_error"
+  },
+  "details": [
     {
-      "provider": "google-ai-studio",
-      "type": "upstream_non_2xx",
-      "status": 403,
-      "upstream_error_code": "PERMISSION_DENIED",
-      "upstream_error_message": "The caller does not have permission.",
-      "upstream_error_description": null,
-      "upstream_error_param": null,
-      "upstream_payload_preview": "{\"error\":{\"status\":\"PERMISSION_DENIED\"}}",
-      "retryable": false
+      "message": "temperature must be less than or equal to 1",
+      "path": ["temperature"],
+      "keyword": "maximum"
     }
   ]
 }
 ```
 
-## Fields you will always get
+Show the detail message and field path to the developer or user. Do not retry the same payload unchanged.
 
-- `generation_id`: a stable request ID you can share with support.
-- `status_code`: mirrors the HTTP status code.
-- `error`: a machine-readable error code, such as `validation_error`.
-- `error_type`: a high-level class, usually `user` or `system`.
-- `error_origin`: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider.
-- `description`: a plain-language explanation of what happened.
-- `details` (optional): structured validation details when the error is a request-validation problem.
+## Streaming-specific behavior
 
-## Extra fields you may see
+- If the request fails before streaming begins, the Gateway returns the JSON contract described on this page.
+- If a provider fails after streaming starts, the stream can contain an error event instead of a complete response. Treat the response as incomplete.
+- Store `request_id` from the initial response or error event, along with the endpoint and model.
+- Offer a bounded retry only when the error is retryable. Never append a partial streamed answer to a successful response.
 
-Some errors include more detail to help you fix the issue faster:
+## Debug mode
 
-- `reason`: a more specific subreason such as `all_candidates_failed` or `pricing_not_configured`.
-- `provider_candidate_diagnostics` and `provider_enablement`: explain why a model could not be used with the requested endpoint.
-- `routing_diagnostics`: extra detail about how routing or availability checks narrowed the request.
-- `provider_failure_diagnostics`: hints for missing credentials, missing access, region restrictions, rate limits, and similar provider-side failures.
-- `upstream_error` and `failure_sample`: best-effort summaries of the first provider failure when the request reached a provider.
-- `failed_providers`, `failed_statuses`, and `attempt_count`: extra retry and failover context.
-
-## Status class guidance
-
-| Status | Meaning | Recommended action |
-| --- | --- | --- |
-| `400-499` | Request, auth, or permission problem | Fix the request or credentials before retrying. |
-| `429` | Provider or route-level throttling | Retry with backoff and respect `Retry-After`. |
-| `500-599` | Phaseo or upstream provider failure | Retry with jittered backoff and log the request ID. |
-
-## Common error codes
-
-| Type | HTTP Status | Description |
-| --- | --- | --- |
-| `authentication_error` | `401` | Missing or invalid API key. |
-| `authorization_error` | `403` | The key does not have access to this resource. |
-| `not_found_error` | `404` | The endpoint or resource could not be found. |
-| `rate_limit_error` | `429` | Too many requests. Retry after the specified delay. |
-| `validation_error` | `400` | Invalid parameters or request body. |
-| `provider_error` | `502` | The upstream model provider failed to respond correctly. |
-| `server_error` | `500` | An unexpected issue happened inside Phaseo. |
-
-## When a provider fails
-
-If Phaseo reached a provider but the request still failed, you may see:
-
-- `provider_failure_diagnostics.category`
-- `provider_failure_diagnostics.hint`
-- `provider_failure_diagnostics.provider`
-
-Current categories include:
-
-- `credentials_not_configured`
-- `credentials_invalid_or_forbidden`
-- `provider_access_missing`
-- `region_or_project_restriction`
-- `model_unavailable_for_endpoint`
-- `rate_limited`
-- `server_error`
-
-These fields are meant to help you fix the problem without turning on full debug mode.
-
-## When a model or endpoint is not available
-
-For `unsupported_model_or_endpoint` responses, Phaseo may include:
-
-- `provider_candidate_diagnostics`
-- `provider_enablement`
-- `missing_pricing_providers`
-- `routing_diagnostics`
-
-This helps you distinguish between:
-
-- a known model that is not active yet
-- a model that does not support the endpoint you asked for
-- missing pricing data
-- rollout or internal availability restrictions
-
-Common fields:
-
-- `provider_candidate_diagnostics.totalProviders`: how many providers were known for the model before endpoint filtering.
-- `provider_candidate_diagnostics.supportsEndpointCount`: how many of those providers support the requested endpoint.
-- `provider_candidate_diagnostics.candidateCount`: how many providers remained after adapter checks.
-- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: providers dropped because they do not support the endpoint.
-- `provider_candidate_diagnostics.droppedMissingAdapter`: provider/endpoint pairs dropped because there is no gateway adapter for that endpoint yet.
-- `provider_enablement.capability`: the capability gate being enforced, such as `video_generation`.
-- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: providers before and after capability or enablement filtering.
-- `provider_enablement.dropped[].reason`: machine-readable reasons such as `pricing_missing`.
-- `routing_diagnostics.filterStages[].stage`: the routing stage, for example capability, rollout, or routing-status filtering.
-- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: provider counts before and after each stage.
-- `routing_diagnostics.filterStages[].droppedProviders[].reason`: machine-readable reasons such as rollout or routing restrictions.
-
-### Example
-
-```json
-{
-  "generation_id": "G-unsupported123",
-  "status_code": 400,
-  "error": "unsupported_model_or_endpoint",
-  "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
-  "provider_candidate_diagnostics": {
-    "totalProviders": 3,
-    "supportsEndpointCount": 2,
-    "candidateCount": 1,
-    "droppedUnsupportedEndpoint": ["provider-a"],
-    "droppedMissingAdapter": [
-      {
-        "providerId": "provider-b",
-        "endpoint": "responses"
-      }
-    ]
-  },
-  "provider_enablement": {
-    "capability": "responses",
-    "providersBefore": ["provider-b", "provider-c"],
-    "providersAfter": ["provider-c"],
-    "dropped": [
-      {
-        "providerId": "provider-b",
-        "reason": "pricing_missing"
-      }
-    ]
-  },
-  "routing_diagnostics": {
-    "filterStages": [
-      {
-        "stage": "provider_routing_status",
-        "beforeCount": 1,
-        "afterCount": 0,
-        "droppedProviders": [
-          {
-            "providerId": "provider-c",
-            "reason": "provider_status_not_ready"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-## Optional debug mode
-
-Most request schemas support a `debug` object for controlled troubleshooting:
+Some request schemas support a controlled `debug` object:
 
 ```json
 {
@@ -205,35 +224,23 @@ Most request schemas support a `debug` object for controlled troubleshooting:
 }
 ```
 
-Available fields:
+Use debug mode only in development or tightly controlled troubleshooting. Upstream requests and responses can contain sensitive data. Redact them before storing or sharing logs.
 
-- `enabled`
-- `return_upstream_request`
-- `return_upstream_response`
-- `trace`
-- `trace_level` (`summary` or `full`)
+## Contact support with useful context
 
-Use debug mode in development or tightly controlled environments only.
+If the problem continues, open the [Phaseo Help Center](https://phaseo.tawk.help/) and include:
 
-## Retry strategy
 
-- **400-series errors other than 429:** Fix the request, credentials, or access policy before retrying.
-- **429:** Implement exponential backoff and honor the `Retry-After` header.
-- **500-series errors:** Use bounded retries only when repeating the operation is safe. An ambiguous submission may already have created a job or incurred a charge; retrieve an accepted job instead of submitting it again.
+1. `request_id` or `generation_id`.
+2. The UTC time of the request.
+3. The endpoint and model ID.
+4. The HTTP status, `error_code`, `message`, and `action`.
+5. Relevant `details` or provider diagnostics.
+6. A minimal reproduction with secrets, API keys, prompts, and personal data removed.
 
-Set an attempt limit and an overall deadline, and add jitter to backoff delays. See [rate limits](./limits.mdx) for response headers and retry handling.
+Do not send API keys, full authorization headers, raw prompts, provider credentials, or unredacted request logs in a support message.
 
-## Streaming-specific notes
-
-- If the request fails before streaming begins, you get a standard JSON error payload.
-- If it fails mid-stream, treat the partial stream as incomplete and show a retry option.
-- Always capture `generation_id` and endpoint/model metadata in logs.
-
-## Troubleshooting tips
-
-- Check the [Gateway status page](https://status.phaseo.app) for ongoing incidents.
-- Review your request payload against the endpoint docs.
-- Share `generation_id` when contacting support.
+Check the [Gateway status page](https://status.phaseo.app) for ongoing incidents.
 
 ## Related resources
 
@@ -245,12 +252,8 @@ Set an attempt limit and an overall deadline, and add jitter to backoff delays. 
 	>
 		Authenticate with bearer API keys.
 	</Card>
-	<Card
-		title="Limits"
-		icon="gauge"
-		href="./limits.mdx"
-	>
-		Handle provider-driven throttling and retries.
+	<Card title="Limits" icon="gauge" href="./limits.mdx">
+		Plan for throttling and provider-driven limits.
 	</Card>
 	<Card
 		title="Streaming"
@@ -260,11 +263,3 @@ Set an attempt limit and an overall deadline, and add jitter to backoff delays. 
 		Use SSE safely in production flows.
 	</Card>
 </Columns>
-
-<Visibility for="agents">
-If you are implementing error handling as an agent:
-
-- Use repository skills for retry logic, structured logging, and schema-safe error parsing.
-- Treat debug payloads as potentially sensitive and redact before persistent logs.
-- Prefer deterministic retries (bounded attempts + jitter) over unbounded loops.
-</Visibility>

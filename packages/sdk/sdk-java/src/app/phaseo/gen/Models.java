@@ -909,6 +909,10 @@ public final class Models {
 	}
 
 	public static class ErrorFailureSampleItem {
+		public String normalized_error_action;
+		public String normalized_error_code;
+		public String normalized_error_help_url;
+		public String normalized_error_message;
 		public String provider;
 		public Boolean retryable;
 		public Integer status;
@@ -942,16 +946,21 @@ public final class Models {
 	}
 
 	public static class ErrorResponse {
+		public String action;
 		public Integer attempt_count;
+		public Object category;
 		public String description;
 		public java.util.List<Object> details;
+		public String docs_url;
 		public Object error;
+		public String error_code;
 		public Object error_origin;
 		public Object error_type;
 		public java.util.List<String> failed_providers;
 		public java.util.List<Integer> failed_statuses;
 		public java.util.List<Object> failure_sample;
 		public String generation_id;
+		public String help_url;
 		public String message;
 		public java.util.List<String> missing_pricing_providers;
 		public Boolean ok;
@@ -961,8 +970,12 @@ public final class Models {
 		public String provider_payment_required_provider;
 		public String provider_payment_required_support_notice;
 		public String reason;
+		public String request_id;
+		public Integer retry_after_seconds;
+		public Boolean retryable;
 		public Object routing_diagnostics;
 		public Integer status_code;
+		public String support_url;
 		public Object upstream_error;
 	}
 

@@ -11,6 +11,44 @@ beforeAll(() => setupRuntimeFromEnv({ NOVITA_API_KEY: "novita-test" } as any));
 afterAll(teardownTestRuntime);
 
 describe.each(["novita", "novitaai"])("%s text generation contract", (providerId) => {
+	it("classifies Novita's structured output rejection and rate limit inside the executor", async () => {
+		const ir: IRChatRequest = {
+			model: "inclusionai/ling-3.0-flash-fin",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "Answer" }] }],
+			responseFormat: { type: "json_schema", name: "answer", schema: { type: "object" } },
+		};
+		const errors = [
+			{ status: 400, reason: "INVALID_REQUEST_BODY", message: "model features structured outputs not support", code: "provider_feature_unsupported" },
+			{ status: 429, reason: "RATE_LIMIT_EXCEEDED", message: "You have exceeded the request rate limit.", code: "provider_capacity_exhausted" },
+		];
+		for (const error of errors) {
+			const mock = installFetchMock([{
+				match: (url) => url === "https://api.novita.ai/openai/v1/chat/completions",
+				response: new Response(JSON.stringify({ code: error.status, reason: error.reason, message: error.message, metadata: {} }), {
+					status: error.status,
+					headers: { "Content-Type": "application/json" },
+				}),
+			}]);
+			try {
+				const result = await executor({
+					ir, requestId: `req_${providerId}`, workspaceId: "ws_novita", providerId,
+					endpoint: "responses", protocol: "openai.responses", capability: "text.generate",
+					providerModelSlug: ir.model, capabilityParams: null, byokMeta: [],
+					pricingCard: { rules: [] }, meta: {},
+				} as ExecutorExecuteArgs);
+				expect(result.upstream.status).toBe(error.status);
+				expect(result.providerError?.code).toBe(error.code);
+				if (error.status === 400) {
+					expect(result.providerError?.message).toBe("Structured outputs are not supported by this model.");
+					expect(result.providerError?.helpUrl).toBe("https://phaseo.app/models/inclusionai/ling-3.0-flash-fin");
+				}
+			} finally {
+				mock.restore();
+			}
+		}
+	});
+
 	it("maps the IR to Novita Chat and normalizes reasoning and usage back to Responses", async () => {
 		const ir: IRChatRequest = {
 			model: "deepseek/deepseek-v3.1",

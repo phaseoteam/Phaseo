@@ -14142,14 +14142,41 @@ components:
             - type: object
               additionalProperties: true
           example: error_type
+        error_code:
+          type: string
+          description: Stable Phaseo error code on inference gateway responses.
+          example: provider_capacity_exhausted
+        category:
+          type: string
+          description: Broad inference gateway failure category.
+          enum:
+            - authentication
+            - model
+            - unsupported_feature
+            - invalid_request
+            - rate_limit
+            - billing
+            - provider_unavailable
+            - internal
+        help_url:
+          type: string
+          format: uri
+          description: Relevant model, key, billing, or troubleshooting page.
         message:
           type: string
           example: Human-readable error message
         description:
           type: string
           example: Additional error details.
+        request_id:
+          type: string
+          description: >-
+            Stable request correlation ID. Use this value when contacting
+            support.
+          example: G-abc123
         generation_id:
           type: string
+          description: Backwards-compatible alias for request_id.
           example: G-abc123
         status_code:
           type: integer
@@ -14167,6 +14194,24 @@ components:
             - gateway
             - upstream
           example: upstream
+        retryable:
+          type: boolean
+          description: Whether retrying unchanged may succeed.
+        action:
+          type: string
+          description: Recommended next step for the caller.
+        docs_url:
+          type: string
+          format: uri
+          description: Documentation for the inference gateway error contract.
+        support_url:
+          type: string
+          format: uri
+          description: Phaseo Help Center URL.
+        retry_after_seconds:
+          type: integer
+          minimum: 0
+          description: Normalized delay when Retry-After is available.
         reason:
           type: string
           example: all_candidates_failed
@@ -14247,6 +14292,19 @@ components:
           nullable: true
         status:
           type: integer
+          nullable: true
+        normalized_error_code:
+          type: string
+          nullable: true
+        normalized_error_message:
+          type: string
+          nullable: true
+        normalized_error_action:
+          type: string
+          nullable: true
+        normalized_error_help_url:
+          type: string
+          format: uri
           nullable: true
         upstream_error_code:
           type: string
