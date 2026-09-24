@@ -1,7 +1,12 @@
 "use server";
 
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { fetchInternalWebApi } from "@/lib/web-api/client";
+import { fetchInternalProviderApplications, type InternalProviderApplicationCursor } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
+import { fetchInternalWebApi, WebApiError } from "@/lib/web-api/client";
+
+export async function fetchMoreProviderApplicationsAction(cursor: InternalProviderApplicationCursor) {
+	return fetchInternalProviderApplications(cursor);
+}
 
 export async function reviewProviderCatalogModelAction(input: {
 	runId: string;
@@ -37,9 +42,17 @@ export async function promoteProviderRouteCandidateAction(input: { runId: string
 
 export async function reviewProviderApplicationAction(input: { providerSlug: string; decision: "approved" | "paused" | "rejected" | "needs_changes"; reason?: string }) {
 	const context = await getServerAccountContext();
-	return fetchInternalWebApi<{ ok: true; provider: { providerSlug: string; decision: string; activatedRouteIds: string[] } }>(
-		`/api/internal/provider-catalog/providers/${encodeURIComponent(input.providerSlug)}`,
-		context.accessToken,
-		{ method: "PATCH", body: JSON.stringify({ decision: input.decision, reason: input.reason }) },
-	);
+	try {
+		await fetchInternalWebApi<{ ok: true; provider: { providerSlug: string; decision: string; activatedRouteIds: string[] } }>(
+			`/api/internal/provider-catalog/providers/${encodeURIComponent(input.providerSlug)}`,
+			context.accessToken,
+			{ method: "PATCH", body: JSON.stringify({ decision: input.decision, reason: input.reason }) },
+		);
+		return { ok: true } as const;
+	} catch (error) {
+		if (error instanceof WebApiError && error.status === 409) {
+			return { ok: false, error: error.detail ?? "provider_review_conflict" } as const;
+		}
+		throw error;
+	}
 }

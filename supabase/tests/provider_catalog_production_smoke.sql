@@ -23,6 +23,10 @@ begin
     raise exception 'Missing provider catalog tables: %', missing;
   end if;
 
+  if to_regclass('public.provider_onboarding_submissions_latest_idx') is null then
+    raise exception 'Provider review latest-submission index is missing';
+  end if;
+
   if not exists (
     select 1 from pg_attribute
     where attrelid = 'public.workspaces'::regclass
@@ -64,8 +68,18 @@ begin
      or has_function_privilege('anon', 'public.claim_provider_catalog_sync(text,uuid,integer)', 'execute')
      or has_function_privilege('authenticated', 'public.claim_provider_catalog_sync(text,uuid,integer)', 'execute')
      or has_function_privilege('anon', 'public.renew_provider_catalog_sync(text,uuid,integer)', 'execute')
-     or has_function_privilege('authenticated', 'public.renew_provider_catalog_sync(text,uuid,integer)', 'execute') then
+     or has_function_privilege('authenticated', 'public.renew_provider_catalog_sync(text,uuid,integer)', 'execute')
+     or has_function_privilege('anon', 'public.get_latest_provider_onboarding_review_page(timestamptz,uuid,integer)', 'execute')
+     or has_function_privilege('authenticated', 'public.get_latest_provider_onboarding_review_page(timestamptz,uuid,integer)', 'execute')
+     or not has_function_privilege('service_role', 'public.get_latest_provider_onboarding_review_page(timestamptz,uuid,integer)', 'execute') then
     raise exception 'Privileged provider RPC is executable by an application role';
+  end if;
+
+  if position(
+    'distinct on (submission.provider_slug)'
+    in lower(pg_get_functiondef('public.get_latest_provider_onboarding_review_page(timestamptz,uuid,integer)'::regprocedure))
+  ) = 0 then
+    raise exception 'Provider review pagination does not select only the latest submission per provider';
   end if;
 
   if has_function_privilege('anon', 'public.activate_due_provider_catalog_releases()', 'execute')
@@ -97,10 +111,133 @@ begin
   end if;
 
   if position(
+    'provider_review_status'
+    in pg_get_functiondef('public.promote_provider_catalog_candidate(uuid,text)'::regprocedure)
+  ) = 0 then
+    raise exception 'Candidate promotion does not check self-serve provider approval';
+  end if;
+
+  if not exists (
+    select 1 from pg_trigger
+    where tgrelid = 'public.v2_providers'::regclass
+      and tgname = 'enforce_self_serve_provider_review_routing'
+      and not tgisinternal
+  ) then
+    raise exception 'Provider-level routing is not fenced by application approval';
+  end if;
+
+  if position(
+    'review_status is distinct from ''approved'''
+    in pg_get_functiondef('public.enforce_self_serve_provider_approval()'::regprocedure)
+  ) = 0 then
+    raise exception 'Route-level approval guard does not fail closed for missing or unapproved decisions';
+  end if;
+
+  if position(
+    'cardinality(activated_ids) > 0'
+    in pg_get_functiondef('public.set_self_serve_provider_review(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Provider approval can enable routing without an activated route';
+  end if;
+
+  if position(
+    'stealth_route.model_slug = route.model_slug'
+    in pg_get_functiondef('public.set_self_serve_provider_review(text,text,text,uuid)'::regprocedure)
+  ) = 0 or position(
+    'and stealth_route.is_stealth'
+    in pg_get_functiondef('public.set_self_serve_provider_review(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Provider approval can activate a route hidden by another provider’s stealth route';
+  end if;
+
+  if position(
     'release_scheduled'
     in pg_get_functiondef('public.activate_due_provider_catalog_releases()'::regprocedure)
   ) = 0 then
     raise exception 'Scheduled provider release function is missing its release gate';
+  end if;
+
+  if position(
+    'provider_review_status'
+    in pg_get_functiondef('public.activate_due_provider_catalog_releases()'::regprocedure)
+  ) = 0 then
+    raise exception 'Scheduled release does not check self-serve provider approval';
+  end if;
+
+  if position(
+    'pending_webhook_secret_ciphertext'
+    in pg_get_functiondef('public.complete_provider_enrollment(uuid,text,text,jsonb,text,text,text,text,text,jsonb,jsonb,integer,text,text,uuid,text,text,text)'::regprocedure)
+  ) = 0 then
+    raise exception 'Provider enrollment does not stage claim webhook credentials';
+  end if;
+
+  if position(
+    'provider_claim_proof_required'
+    in pg_get_functiondef('public.complete_provider_enrollment(uuid,text,text,jsonb,text,text,text,text,text,jsonb,jsonb,integer,text,text,uuid,text,text,text)'::regprocedure)
+  ) = 0 or position(
+    'else ''pending'' end'
+    in pg_get_functiondef('public.complete_provider_enrollment(uuid,text,text,jsonb,text,text,text,text,text,jsonb,jsonb,integer,text,text,uuid,text,text,text)'::regprocedure)
+  ) = 0 then
+    raise exception 'Verified provider claims do not stage ownership links for review';
+  end if;
+
+  if position(
+    'application_type'
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Provider application review does not handle existing-provider claims';
+  end if;
+
+  if position(
+    'provider_review_status = p_decision'
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Provider application review does not persist decisions for account and catalog gates';
+  end if;
+
+  if position(
+    'pending_webhook_secret_ciphertext'
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Claim approval does not transfer staged webhook credentials';
+  end if;
+
+  if position(
+    '- ''self_serve'''
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Claim approval does not preserve public provider visibility';
+  end if;
+
+  if position(
+    'claim_previously_approved'
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Claim review does not distinguish initial claims from later provider actions';
+  end if;
+
+  if position(
+    'and link.linked_by = latest_submission.submitted_by'
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 or position(
+    'and link.proof_method = ''domain_file'''
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 or position(
+    'and link.status = ''active'''
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 or position(
+    'previous.provider_review_status = ''approved'''
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure
+    )
+  ) > 0 then
+    raise exception 'Claim actions are not scoped to the latest claimant’s previously approved ownership link';
+  end if;
+
+  if position(
+    'status = ''revoked'''
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 then
+    raise exception 'Claim approval does not transfer or revoke the prior ownership link';
   end if;
 
   begin
