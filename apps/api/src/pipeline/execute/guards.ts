@@ -401,7 +401,7 @@ export async function guardAllFailed(
     ctx: PipelineContext,
     timing: PipelineTiming,
     options: { redactUpstreamPayloadPreview?: boolean } = {},
-): Promise<ExecuteGuardResult<never>> {
+): Promise<ExecuteGuardErr> {
     if (timing.internal.adapterMarked && timing.timer.snapshot().adapter_roundtrip_ms === undefined) {
         timing.timer.between("adapter_roundtrip_ms", "adapter_start");
     }
@@ -584,4 +584,3 @@ export async function guardAllFailed(
 
     return { ok: false, response: res };
 }
-
