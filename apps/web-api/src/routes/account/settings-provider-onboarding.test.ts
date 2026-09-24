@@ -6,6 +6,7 @@ const env = {
 	SUPABASE_URL: "https://example.supabase.co",
 	SUPABASE_ANON_KEY: "anon-key",
 	SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+	ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY: "test-encryption-key",
 };
 
 const PROVIDER_USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -15,6 +16,7 @@ describe("provider onboarding account status", () => {
 
 	it("shows review decisions and opens catalog management only after approval", async () => {
 		let providerReviewStatus = "needs_changes";
+		let providerLinkStatus: "pending" | "active" = "pending";
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) {
@@ -33,7 +35,7 @@ describe("provider onboarding account status", () => {
 				}]), { status: 200 });
 			}
 			if (url.includes("/rest/v1/provider_account_links")) {
-				return new Response(JSON.stringify([{ provider_slug: "provider-test", workspace_id: "provider-workspace", role: "owner", status: "active", verified_at: null }]), { status: 200 });
+				return new Response(JSON.stringify([{ provider_slug: "provider-test", workspace_id: "provider-workspace", role: "owner", status: providerLinkStatus, verified_at: null }]), { status: 200 });
 			}
 			if (url.includes("/rest/v1/provider_catalog_events")) return new Response("[]", { status: 200 });
 			if (url.includes("/rest/v1/v2_providers")) {
@@ -69,6 +71,13 @@ describe("provider onboarding account status", () => {
 		await expect(approved.json()).resolves.toMatchObject({
 			submissions: [{ provider_review_status: "approved", provider_review_reason: null }],
 			catalogProviders: [{ provider_review_status: "approved", canManageCatalog: true, operatingStatus: "Active" }],
+		});
+
+		providerReviewStatus = "needs_changes";
+		providerLinkStatus = "active";
+		const incumbent = await readAccount();
+		await expect(incumbent.json()).resolves.toMatchObject({
+			catalogProviders: [{ provider_review_status: "needs_changes", canManageCatalog: true }],
 		});
 	});
 
@@ -151,5 +160,53 @@ describe("provider onboarding account status", () => {
 			p_claim_challenge_id: challengeId,
 		});
 		expect(challengeTokenHash).toMatch(/^[a-f0-9]{64}$/);
+	});
+
+	it("allows an incumbent owner to rotate a secret while keeping an unapproved claimant locked", async () => {
+		let linkStatus: "pending" | "active" = "pending";
+		let sourceUpdates = 0;
+		const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : null;
+			const url = request?.url ?? String(input);
+			const method = request?.method ?? init?.method ?? "GET";
+			const respond = (value: unknown, status = 200) => {
+				const singular = request?.headers.get("accept")?.includes("application/vnd.pgrst.object+json") ?? false;
+				const payload = singular && Array.isArray(value) ? value[0] ?? null : value;
+				return new Response(JSON.stringify(payload), { status, headers: { "content-type": "application/json" } });
+			};
+
+			if (url.includes("/auth/v1/user")) return respond({ id: PROVIDER_USER_ID, email: "owner@provider.test", user_metadata: {} });
+			if (url.includes("/rest/v1/workspace_members")) return respond([{ workspace_id: "provider-workspace", role: "owner" }]);
+			if (url.includes("/rest/v1/workspaces")) return respond([]);
+			if (url.includes("/rest/v1/provider_account_links")) return respond([{
+				provider_slug: "provider-test", workspace_id: "provider-workspace", role: "owner", status: linkStatus,
+			}]);
+			if (url.includes("/rest/v1/provider_onboarding_submissions")) return respond([{
+				application_type: "claim", provider_review_status: "awaiting_approval",
+			}]);
+			if (url.includes("/rest/v1/v2_providers")) return respond([{ metadata: { website_url: "https://provider.test" } }]);
+			if (url.includes("/rest/v1/provider_catalog_sources") && String(method).toUpperCase() === "PATCH") {
+				sourceUpdates += 1;
+				return new Response(null, { status: 204 });
+			}
+			if (url.includes("/rest/v1/provider_catalog_sources")) return respond([{ provider_slug: "provider-test" }]);
+			return respond([]);
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const rotate = () => app.request("https://phaseo.app/api/account/settings/provider-onboarding/webhook/rotate", {
+			method: "POST",
+			headers: { authorization: "Bearer provider-session", "content-type": "application/json" },
+			body: JSON.stringify({ providerSlug: "provider-test" }),
+		}, env);
+
+		const claimantResponse = await rotate();
+		expect(claimantResponse.status).toBe(409);
+		expect(sourceUpdates).toBe(0);
+
+		linkStatus = "active";
+		const incumbentResponse = await rotate();
+		expect(incumbentResponse.status).toBe(200);
+		expect(sourceUpdates).toBe(1);
 	});
 });

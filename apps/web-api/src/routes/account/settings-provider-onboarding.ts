@@ -16,6 +16,7 @@ import {
 	generateProviderCatalogWebhookSecret,
 	syncProviderCatalog,
 } from "./provider-catalog-sync";
+import { isProviderAccessBlockedByReview } from "./provider-review-access";
 
 const providerSlugSchema = z.string().trim().toLowerCase().min(2).max(64).regex(/^[a-z0-9][a-z0-9._-]*$/);
 const MAX_PROVIDER_SOURCES_PER_USER = 5;
@@ -421,8 +422,13 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 			canManageCatalog: isAdmin || (() => {
 				const selfServe = providers.data?.find((row: any) => row.provider_slug === provider.provider_slug)?.metadata?.self_serve;
 				const application = latestCatalogApplicationByProvider.get(String(provider.provider_slug));
-				if (application) return application.provider_review_status === "approved";
-				return !selfServe || selfServe.provider_review_status === "approved";
+				const providerLinks = (links.data ?? []).filter((link: any) => String(link.provider_slug) === String(provider.provider_slug));
+				const currentLink = providerLinks.find((link: any) => link.status === "active") ?? providerLinks[0];
+				return !isProviderAccessBlockedByReview({
+					application,
+					fallbackReviewStatus: typeof selfServe?.provider_review_status === "string" ? selfServe.provider_review_status : null,
+					linkStatus: currentLink?.status ?? null,
+				});
 			})(),
 			operatingStatus: (() => {
 				const state = providers.data?.find((row: any) => row.provider_slug === provider.provider_slug);
@@ -687,16 +693,19 @@ accountSettingsProviderOnboardingRouter.post("/provider-onboarding/webhook/rotat
 	if (!providerSlugSchema.safeParse(providerSlug).success) return responseError(c, "Enter a valid provider slug.");
 	const client = getDataClient(c.env);
 	const workspaceIds = await manageableWorkspaceIds(client, user.id).catch(() => []);
-	const link = await client.from("provider_account_links").select("provider_slug,workspace_id,role,status").eq("provider_slug", providerSlug).in("workspace_id", workspaceIds.length ? workspaceIds : ["00000000-0000-0000-0000-000000000000"]).in("status", ["pending", "active"]).in("role", ["owner", "admin"]).maybeSingle();
+	const link = await client.from("provider_account_links").select("provider_slug,workspace_id,role,status").eq("provider_slug", providerSlug).in("workspace_id", workspaceIds.length ? workspaceIds : ["00000000-0000-0000-0000-000000000000"]).in("status", ["pending", "active"]).in("role", ["owner", "admin"]).order("status", { ascending: true }).limit(1).maybeSingle();
 	if (link.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!link.data) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const [application, provider] = await Promise.all([
-		client.from("provider_onboarding_submissions").select("provider_review_status").eq("provider_slug", providerSlug).order("created_at", { ascending: false }).limit(1),
+		client.from("provider_onboarding_submissions").select("application_type,provider_review_status").eq("provider_slug", providerSlug).order("created_at", { ascending: false }).limit(1),
 		client.from("v2_providers").select("metadata").eq("provider_slug", providerSlug).maybeSingle(),
 	]);
 	if (application.error || provider.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const reviewStatus = application.data?.[0]?.provider_review_status ?? provider.data?.metadata?.self_serve?.provider_review_status;
-	if (reviewStatus && reviewStatus !== "approved") {
+	if (isProviderAccessBlockedByReview({
+		application: application.data?.[0],
+		fallbackReviewStatus: provider.data?.metadata?.self_serve?.provider_review_status,
+		linkStatus: link.data.status,
+	})) {
 		return responseError(c, "provider_application_not_approved", 409);
 	}
 	const source = await client.from("provider_catalog_sources").select("provider_slug").eq("provider_slug", providerSlug).maybeSingle();

@@ -10,12 +10,13 @@ import {
 	type ProviderCatalogPreview,
 } from "./provider-catalog";
 import { syncProviderCatalog } from "./provider-catalog-sync";
+import { isProviderAccessBlockedByReview } from "./provider-review-access";
 
 const providerSlugSchema = z.string().trim().toLowerCase().min(2).max(64).regex(/^[a-z0-9][a-z0-9._-]*$/);
 const MAX_MANAGED_CATALOG_BYTES = 5 * 1024 * 1024;
 const EMPTY_WORKSPACE_ID = "00000000-0000-0000-0000-000000000000";
 
-type CatalogAccess = { isAdmin: boolean; workspaceId: string | null };
+type CatalogAccess = { isAdmin: boolean; workspaceId: string | null; linkStatus: string | null };
 
 function errorResponse(c: any, error: string, status: 400 | 401 | 403 | 404 | 409 | 413 | 422 | 503) {
 	return c.json({ ok: false, error }, status, PRIVATE_NO_STORE_HEADERS);
@@ -69,7 +70,7 @@ async function workspaceIds(client: any, userId: string): Promise<string[]> {
 async function providerAccess(client: any, userId: string, providerSlug: string): Promise<CatalogAccess | null> {
 	const role = await client.from("users").select("role").eq("user_id", userId).maybeSingle();
 	if (role.error) throw new Error("user_role_unavailable");
-	if (String(role.data?.role ?? "").toLowerCase() === "admin") return { isAdmin: true, workspaceId: null };
+	if (String(role.data?.role ?? "").toLowerCase() === "admin") return { isAdmin: true, workspaceId: null, linkStatus: null };
 	const ids = await workspaceIds(client, userId);
 	const link = await client.from("provider_account_links")
 		.select("workspace_id,role,status")
@@ -77,9 +78,11 @@ async function providerAccess(client: any, userId: string, providerSlug: string)
 		.in("workspace_id", ids.length ? ids : [EMPTY_WORKSPACE_ID])
 		.in("status", ["pending", "active"])
 		.in("role", ["owner", "admin", "editor"])
+		.order("status", { ascending: true })
+		.limit(1)
 		.maybeSingle();
 	if (link.error) throw new Error("provider_link_unavailable");
-	return link.data ? { isAdmin: false, workspaceId: String(link.data.workspace_id) } : null;
+	return link.data ? { isAdmin: false, workspaceId: String(link.data.workspace_id), linkStatus: String(link.data.status) } : null;
 }
 
 function pricingDocument(value: unknown): Record<string, unknown>[] {
@@ -225,13 +228,15 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 		if (!access.isAdmin) {
 			const [provider, application] = await Promise.all([
 				client.from("v2_providers").select("metadata").eq("provider_slug", parsedSlug.data).maybeSingle(),
-				client.from("provider_onboarding_submissions").select("provider_review_status").eq("provider_slug", parsedSlug.data).order("created_at", { ascending: false }).limit(1),
+				client.from("provider_onboarding_submissions").select("application_type,provider_review_status").eq("provider_slug", parsedSlug.data).order("created_at", { ascending: false }).limit(1),
 			]);
 			if (provider.error) throw provider.error;
 			if (application.error) throw application.error;
-			const selfServe = provider.data?.metadata?.self_serve;
-			const reviewStatus = application.data?.[0]?.provider_review_status ?? selfServe?.provider_review_status;
-			if (reviewStatus && reviewStatus !== "approved") {
+			if (isProviderAccessBlockedByReview({
+				application: application.data?.[0],
+				fallbackReviewStatus: provider.data?.metadata?.self_serve?.provider_review_status,
+				linkStatus: access.linkStatus,
+			})) {
 				return errorResponse(c, "provider_application_not_approved", 409);
 			}
 		}

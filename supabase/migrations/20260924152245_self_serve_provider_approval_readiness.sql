@@ -993,10 +993,12 @@ begin
   end if;
   select exists (
     select 1
-    from public.provider_onboarding_submissions previous
-    where previous.provider_slug = p_provider_slug
-      and previous.application_type = 'claim'
-      and previous.provider_review_status = 'approved'
+    from public.provider_account_links link
+    where link.provider_slug = p_provider_slug
+      and link.linked_by = latest_submission.submitted_by
+      and link.role = 'owner'
+      and link.proof_method = 'domain_file'
+      and link.status = 'active'
   ) into claim_previously_approved;
 
   perform 1 from public.v2_providers where provider_slug = p_provider_slug for update;

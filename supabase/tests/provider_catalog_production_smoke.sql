@@ -193,6 +193,23 @@ begin
   end if;
 
   if position(
+    'and link.linked_by = latest_submission.submitted_by'
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 or position(
+    'and link.proof_method = ''domain_file'''
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 or position(
+    'and link.status = ''active'''
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
+  ) = 0 or position(
+    'previous.provider_review_status = ''approved'''
+    in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure
+    )
+  ) > 0 then
+    raise exception 'Claim actions are not scoped to the latest claimant’s previously approved ownership link';
+  end if;
+
+  if position(
     'status = ''revoked'''
     in pg_get_functiondef('public.review_provider_application(text,text,text,uuid)'::regprocedure)
   ) = 0 then
