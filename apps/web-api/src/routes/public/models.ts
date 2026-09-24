@@ -816,6 +816,7 @@ function v2ModelPageShape(
 	aliases: string[],
 	identity: Record<string, unknown> = {},
 	variants: ModelVariantSummary[] = [],
+	modelLinks: Array<Record<string, unknown>> = [],
 ) {
 	const inputTypes = Array.isArray(row.gateway_input_modalities) ? row.gateway_input_modalities : [];
 	const outputTypes = Array.isArray(row.gateway_output_modalities) ? row.gateway_output_modalities : [];
@@ -844,7 +845,7 @@ function v2ModelPageShape(
 		family_id: identity.family_slug ?? null,
 		updated_at: identity.updated_at ?? null,
 		organisation: { name: identity.lab_name ?? row.organisation_name ?? row.organisation_id, country_code: identity.lab_country_code ?? "" },
-		model_links: [],
+		model_links: modelLinks,
 		model_family: null,
 		model_details: modelDetails,
 		aliases,
@@ -1087,10 +1088,15 @@ publicModelsRouter.get("/:modelId", async (c) => {
 		const v2Overview = await fetchTargetedModelOverview(c.env, modelId);
 		if (v2Overview?.model_id) {
 			const canonicalModelId = String(v2Overview.model_id);
-			const [identityResult, aliasesResult, variantsResult] = await Promise.allSettled([
+			const [identityResult, aliasesResult, variantsResult, modelLinksResult] = await Promise.allSettled([
 				client.rpc("get_v2_model_identity", { p_model_slug: canonicalModelId }),
 				client.rpc("get_v2_model_aliases", { p_model_slug: canonicalModelId }),
 				fetchModelVariants(c.env, canonicalModelId),
+				client.from("v2_model_links")
+					.select("link_kind,title,url")
+					.eq("model_slug", canonicalModelId)
+					.order("link_kind", { ascending: true })
+					.order("title", { ascending: true }),
 			]);
 			const identity = identityResult.status === "fulfilled" && !identityResult.value.error
 				? (identityResult.value.data as Record<string, unknown> | null)
@@ -1101,6 +1107,14 @@ publicModelsRouter.get("/:modelId", async (c) => {
 				.filter(Boolean)
 				: [];
 			const variants = variantsResult.status === "fulfilled" ? variantsResult.value : [];
+			const modelLinks = modelLinksResult.status === "fulfilled" && !modelLinksResult.value.error
+				? (modelLinksResult.value.data ?? []).map((link) => ({
+					platform: link.link_kind,
+					kind: link.link_kind,
+					title: link.title,
+					url: link.url,
+				}))
+				: [];
 			if (identityResult.status === "rejected" || identityResult.value?.error) {
 				console.error("[web-api/models] optional overview enrichment failed", {
 					modelId,
@@ -1122,7 +1136,14 @@ publicModelsRouter.get("/:modelId", async (c) => {
 					error: variantsResult.reason,
 				});
 			}
-			return withPublicCache(c.json({ model: v2ModelPageShape(v2Overview, aliases, identity ?? {}, variants) }), sectionPolicy("overview", modelId));
+			if (modelLinksResult.status === "rejected" || modelLinksResult.value?.error) {
+				console.error("[web-api/models] optional overview enrichment failed", {
+					modelId,
+					enrichment: "model_links",
+					error: modelLinksResult.status === "rejected" ? modelLinksResult.reason : modelLinksResult.value.error,
+				});
+			}
+			return withPublicCache(c.json({ model: v2ModelPageShape(v2Overview, aliases, identity ?? {}, variants, modelLinks) }), sectionPolicy("overview", modelId));
 		}
 		return notFound(c);
 	} catch (error) {
