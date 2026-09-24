@@ -20,6 +20,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 50;
+const WORKSPACE_ROW_HEIGHT = 40;
+const WORKSPACE_ROW_GAP = 4;
+const WORKSPACE_LIST_PADDING = 16;
+const WORKSPACE_SEARCH_HEADER_SPACE = 32;
 
 export type WorkspaceOption = { id: string; name: string };
 
@@ -116,7 +120,11 @@ export function WorkspaceCombobox({
 	const isIconTrigger = triggerVariant === "icon";
 	const showWorkspaceResults = !isSearching || (!isLoading && !isSearchingError);
 	const scrollAreaHeight = showWorkspaceResults && listedWorkspaces.length > 0
-		? listedWorkspaces.length * 36 + 40 + (isSearching && searchQuery.isFetchingNextPage ? 32 : 0)
+		? listedWorkspaces.length * WORKSPACE_ROW_HEIGHT
+			+ Math.max(0, listedWorkspaces.length - 1) * WORKSPACE_ROW_GAP
+			+ WORKSPACE_LIST_PADDING
+			+ (isSearching ? WORKSPACE_SEARCH_HEADER_SPACE : 0)
+			+ (isSearching && searchQuery.isFetchingNextPage ? 32 : 0)
 		: 72;
 	function handleOpenChange(nextOpen: boolean) {
 		setOpen(nextOpen);
@@ -168,10 +176,11 @@ export function WorkspaceCombobox({
 				align={align}
 				side="bottom"
 				sideOffset={6}
-				className="w-80 max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-lg p-0"
+				className="w-80 max-w-[calc(100vw-1rem)] gap-0 overflow-hidden rounded-lg p-0"
 			>
 				<Command shouldFilter={false} className="h-auto w-full rounded-none bg-transparent p-0">
 					<CommandInput
+						wrapperClassName="p-2 pb-0"
 						value={search}
 						onValueChange={setSearch}
 						placeholder="Search all workspaces"
@@ -202,7 +211,7 @@ export function WorkspaceCombobox({
 								<CommandEmpty>No workspaces available.</CommandEmpty>
 							) : null}
 							{(!isSearching || (!isDebouncing && !isLoading && !isSearchingError)) && listedWorkspaces.length > 0 ? (
-								<CommandGroup heading={isSearching ? "Search results" : undefined} className="p-0">
+								<CommandGroup heading={isSearching ? "Search results" : undefined} className="flex flex-col gap-1 p-2">
 									{listedWorkspaces.map((workspace) => {
 										const isActive = workspace.id === activeWorkspaceId;
 										return (
@@ -210,7 +219,7 @@ export function WorkspaceCombobox({
 												key={workspace.id}
 												value={`${workspace.name} ${workspace.id}`}
 												data-checked={isActive}
-												className="min-h-9 w-full cursor-pointer rounded-md"
+												className="min-h-10 w-full cursor-pointer rounded-md px-3 py-2"
 												onSelect={() => void selectWorkspace(workspace)}
 											>
 												<span className="min-w-0 flex-1 truncate">{workspace.name}</span>
@@ -228,7 +237,7 @@ export function WorkspaceCombobox({
 				<Link
 					href="/settings/workspaces/settings"
 					prefetch={false}
-					className="flex min-h-10 items-center gap-2 border-t px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					className="flex min-h-11 shrink-0 items-center gap-2 border-t px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
 					<Users className="size-4" aria-hidden="true" />
 					Manage Workspaces
