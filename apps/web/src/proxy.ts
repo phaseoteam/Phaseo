@@ -6,6 +6,18 @@ import { updateSession } from "@/utils/supabase/middleware";
 
 const handleI18nRouting = createMiddleware(routing);
 const LOCALIZED_AUTH_ROUTE_ROOTS = new Set(["sign-in", "sign-up", "error"]);
+const SESSION_MIDDLEWARE_PAGE_ROOTS = [
+	"/blog",
+	"/settings",
+	"/apps",
+	"/gateway",
+	"/onboarding",
+	"/internal",
+	"/chat",
+];
+// Ignore common static assets without excluding dotted model identifiers such as gpt-4.1.
+const STATIC_ASSET_PATH_SUFFIX =
+	/\.(?:avif|bmp|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|mp4|ogg|otf|pdf|png|svg|ttf|txt|wasm|webmanifest|webp|woff2?|xml|zip)$/i;
 
 const RETIRED_BLOG_SLUGS = new Set([
 	"security-notice-key-rotation-vercel-2026-04-19",
@@ -54,19 +66,14 @@ function isRouteHandlerPath(pathname: string): boolean {
 		pathname === "/docs" ||
 		pathname.startsWith("/docs/") ||
 		pathname.startsWith("/ingest/") ||
-		/\/[^/]*\.[^/]+$/.test(pathname)
+		STATIC_ASSET_PATH_SUFFIX.test(pathname)
 	);
 }
 
 function needsSessionMiddleware(pathname: string): boolean {
 	const pagePath = withoutLocalePrefix(pathname);
-	return (
-		pagePath === "/settings" ||
-		pagePath.startsWith("/settings/") ||
-		pagePath === "/internal" ||
-		pagePath.startsWith("/internal/") ||
-		pagePath === "/onboarding" ||
-		pagePath.startsWith("/onboarding/")
+	return SESSION_MIDDLEWARE_PAGE_ROOTS.some(
+		(root) => pagePath === root || pagePath.startsWith(`${root}/`),
 	);
 }
 
@@ -150,7 +157,7 @@ export async function proxy(request: NextRequest) {
 		return NextResponse.rewrite(rewriteUrl);
 	}
 
-	if (request.nextUrl.pathname.startsWith("/blog/")) {
+	if (withoutLocalePrefix(request.nextUrl.pathname).startsWith("/blog/")) {
 		if (isRetiredBlogPath(request.nextUrl.pathname)) {
 			return new NextResponse(null, { status: 404 });
 		}
@@ -190,6 +197,9 @@ export const config = {
 			source: "/",
 			has: [{ type: "header", key: "accept", value: ".*text/markdown.*" }],
 		},
-		"/((?!api/|_next/|\\.well-known/|og/|.*\\..*).*)",
+		"/api/account/:path*",
+		"/api/internal/:path*",
+		"/api/chat/:path*",
+		"/((?!api/|_next/|\\.well-known/|og/|.*\\.(?:avif|bmp|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|mp4|ogg|otf|pdf|png|svg|ttf|txt|wasm|webmanifest|webp|woff2?|xml|zip)$).*)",
 	],
 };
