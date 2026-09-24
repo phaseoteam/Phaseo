@@ -1,3 +1,4 @@
+-- phaseo:allow-production-history-backfill reason: Track a migration already applied in production but absent from main so db push can reconcile its version.
 -- Additive read contracts. No customer rows, wallet state, policies or existing
 -- RPC signatures are changed. Apply before enabling the runtime-snapshot reader.
 create or replace function public.gateway_fetch_workspace_runtime(p_workspace_id uuid)
