@@ -3,22 +3,23 @@
 import * as React from "react";
 import { Check, ChevronLeft, ChevronRight, CircleAlert, Clock3, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import { promoteProviderRouteCandidateAction, recordProviderRouteProbeAction, reviewProviderApplicationAction, reviewProviderCatalogModelAction } from "@/app/(dashboard)/settings/internal/provider-review/actions";
+import { fetchMoreProviderApplicationsAction, promoteProviderRouteCandidateAction, recordProviderRouteProbeAction, reviewProviderApplicationAction, reviewProviderCatalogModelAction } from "@/app/(dashboard)/settings/internal/provider-review/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import type { InternalProviderApplication, InternalProviderCatalogReview } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
+import type { InternalProviderApplication, InternalProviderApplicationsPage, InternalProviderCatalogReview } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
 
-type Props = { initialApplications: InternalProviderApplication[]; initialReviews: InternalProviderCatalogReview[] };
+type Props = { initialApplications: InternalProviderApplicationsPage; initialReviews: InternalProviderCatalogReview[] };
 type QueueTab = "providers" | "catalog";
 type ProviderDecision = "approved" | "paused" | "rejected" | "needs_changes";
 type ProviderReasonTarget = { providerSlug: string; decision: Exclude<ProviderDecision, "approved"> };
 type ApprovalBlocker = NonNullable<InternalProviderApplication["route_blockers"]>[number];
 
 const REVIEW_PAGE_SIZE = 20;
+const APPLICATION_PAGE_SIZE = 20;
 const approvalBlockerLabels: Record<ApprovalBlocker, string> = {
 	endpoint: "Endpoint",
 	adapter: "Adapter",
@@ -88,13 +89,16 @@ function QueuePagination({ page, pageSize, total, onPageChange, noun }: {
 
 export default function ProviderReviewClient({ initialApplications, initialReviews }: Props) {
 	const [activeQueue, setActiveQueue] = React.useState<QueueTab>("providers");
-	const [applications, setApplications] = React.useState(initialApplications);
+	const [applications, setApplications] = React.useState(initialApplications.providers);
+	const [nextApplicationCursor, setNextApplicationCursor] = React.useState(initialApplications.nextCursor);
+	const [loadingMoreApplications, setLoadingMoreApplications] = React.useState(false);
 	const [reviews, setReviews] = React.useState(initialReviews);
 	const [reasons, setReasons] = React.useState<Record<string, string>>({});
 	const [saving, setSaving] = React.useState<string | null>(null);
 	const [providerReasonTarget, setProviderReasonTarget] = React.useState<ProviderReasonTarget | null>(null);
 	const [applicationQuery, setApplicationQuery] = React.useState("");
 	const [showAllApplications, setShowAllApplications] = React.useState(false);
+	const [applicationPage, setApplicationPage] = React.useState(0);
 	const [reviewQuery, setReviewQuery] = React.useState("");
 	const [showAllClaims, setShowAllClaims] = React.useState(false);
 	const [reviewPage, setReviewPage] = React.useState(0);
@@ -105,6 +109,7 @@ export default function ProviderReviewClient({ initialApplications, initialRevie
 		const query = applicationQuery.trim().toLowerCase();
 		return !query || `${provider.name} ${provider.provider_slug} ${provider.contact_email ?? ""}`.toLowerCase().includes(query);
 	});
+	const visibleApplications = filteredApplications.slice(applicationPage * APPLICATION_PAGE_SIZE, (applicationPage + 1) * APPLICATION_PAGE_SIZE);
 	const reviewRows = reviews.flatMap((review) => review.models.map((model) => ({ review, model })));
 	const pendingClaimCount = reviewRows.filter(({ model }) => model.decision === "pending").length;
 	const filteredReviewRows = reviewRows.filter(({ review, model }) => {
@@ -114,6 +119,28 @@ export default function ProviderReviewClient({ initialApplications, initialRevie
 	});
 	const pageCount = Math.max(1, Math.ceil(filteredReviewRows.length / REVIEW_PAGE_SIZE));
 	const visibleReviewRows = filteredReviewRows.slice(reviewPage * REVIEW_PAGE_SIZE, (reviewPage + 1) * REVIEW_PAGE_SIZE);
+	const displayedApplicationCount = (count: number) => `${count}${nextApplicationCursor ? "+" : ""}`;
+
+	async function loadMoreApplications() {
+		if (!nextApplicationCursor || loadingMoreApplications) return;
+		setLoadingMoreApplications(true);
+		try {
+			const page = await fetchMoreProviderApplicationsAction(nextApplicationCursor);
+			setApplications((current) => {
+				const bySlug = new Map(current.map((provider) => [provider.provider_slug, provider]));
+				for (const provider of page.providers) {
+					const existing = bySlug.get(provider.provider_slug);
+					if (!existing || (!existing.submitted_at && provider.submitted_at)) bySlug.set(provider.provider_slug, provider);
+				}
+				return [...bySlug.values()];
+			});
+			setNextApplicationCursor(page.nextCursor);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : "Could not load more provider applications");
+		} finally {
+			setLoadingMoreApplications(false);
+		}
+	}
 
 	async function decideProvider(providerSlug: string, decision: ProviderDecision) {
 		const key = `provider:${providerSlug}`;
@@ -202,7 +229,7 @@ export default function ProviderReviewClient({ initialApplications, initialRevie
 
 		<Tabs value={activeQueue} onValueChange={(value) => setActiveQueue(value as QueueTab)} className="w-full">
 			<TabsList className="h-11 w-full sm:w-fit">
-				<TabsTrigger value="providers" className="gap-2 px-3">Provider applications <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">{openApplications.length}</span></TabsTrigger>
+					<TabsTrigger value="providers" className="gap-2 px-3">Provider applications <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">{displayedApplicationCount(openApplications.length)}</span></TabsTrigger>
 				<TabsTrigger value="catalog" className="gap-2 px-3">Model claims <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">{pendingClaimCount}</span></TabsTrigger>
 			</TabsList>
 
@@ -210,15 +237,15 @@ export default function ProviderReviewClient({ initialApplications, initialRevie
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 					<div><h2 className="text-base font-semibold">Provider applications</h2><p className="mt-1 text-sm text-muted-foreground">Review provider identity and setup before approval.</p></div>
 					<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-						<div className="relative sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input type="search" value={applicationQuery} onChange={(event) => setApplicationQuery(event.target.value)} placeholder="Search providers" aria-label="Search providers" className="pl-9" /></div>
+						<div className="relative sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input type="search" value={applicationQuery} onChange={(event) => { setApplicationQuery(event.target.value); setApplicationPage(0); }} placeholder="Search loaded providers" aria-label="Search loaded providers" className="pl-9" /></div>
 						<div className="flex items-center rounded-lg border border-border p-1">
-							<Button type="button" size="sm" variant={showAllApplications ? "ghost" : "secondary"} onClick={() => setShowAllApplications(false)}>Open ({openApplications.length})</Button>
-							<Button type="button" size="sm" variant={showAllApplications ? "secondary" : "ghost"} onClick={() => setShowAllApplications(true)}>All ({applications.length})</Button>
+							<Button type="button" size="sm" variant={showAllApplications ? "ghost" : "secondary"} onClick={() => { setShowAllApplications(false); setApplicationPage(0); }}>Open ({displayedApplicationCount(openApplications.length)})</Button>
+							<Button type="button" size="sm" variant={showAllApplications ? "secondary" : "ghost"} onClick={() => { setShowAllApplications(true); setApplicationPage(0); }}>All ({displayedApplicationCount(applications.length)})</Button>
 						</div>
 					</div>
 				</div>
 
-				{filteredApplications.length ? <div className="space-y-3">{filteredApplications.map((provider) => {
+				{filteredApplications.length ? <div className="space-y-3">{visibleApplications.map((provider) => {
 					const key = `provider:${provider.provider_slug}`;
 					const blockers = provider.route_blockers ?? [];
 					const canApprove = Boolean(provider.contact_email);
@@ -261,7 +288,10 @@ export default function ProviderReviewClient({ initialApplications, initialRevie
 							</div> : null}
 						</CardContent>
 					</Card>;
-				})}</div> : <div className="rounded-xl border border-dashed border-border/80 px-6 py-12 text-center"><p className="font-medium">No provider applications found</p><p className="mt-1 text-sm text-muted-foreground">Try a different search or switch to all applications.</p></div>}
+				})}
+					<QueuePagination page={applicationPage} pageSize={APPLICATION_PAGE_SIZE} total={filteredApplications.length} onPageChange={setApplicationPage} noun="provider applications" />
+				</div> : <div className="rounded-xl border border-dashed border-border/80 px-6 py-12 text-center"><p className="font-medium">No provider applications found</p><p className="mt-1 text-sm text-muted-foreground">Try a different search or switch to all applications.</p></div>}
+				{nextApplicationCursor ? <div className="flex flex-col items-center gap-2 border-t border-border/70 pt-4"><Button type="button" variant="outline" onClick={() => void loadMoreApplications()} disabled={loadingMoreApplications}>{loadingMoreApplications ? "Loading applications…" : "Load more applications"}</Button><p className="text-xs text-muted-foreground">Search and counts include loaded applications only.</p></div> : null}
 			</TabsContent>
 
 			<TabsContent value="catalog" className="mt-4 space-y-4">

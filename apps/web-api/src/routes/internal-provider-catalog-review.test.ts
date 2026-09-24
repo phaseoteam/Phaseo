@@ -39,7 +39,7 @@ describe("provider application review API", () => {
 				}]), { status: 200 });
 			}
 			if (url.includes("/rest/v1/provider_catalog_route_candidates")) return new Response("[]", { status: 200 });
-			if (url.includes("/rest/v1/provider_onboarding_submissions")) {
+			if (url.includes("/rest/v1/rpc/get_latest_provider_onboarding_review_page")) {
 				return new Response(JSON.stringify([{
 					provider_slug: "new-provider", submitted_by: CONTACT_ID, provider_name: "New Provider",
 					website_url: "https://provider.test", catalog_url: null, catalog_mode: "managed",
@@ -47,6 +47,7 @@ describe("provider application review API", () => {
 					provider_review_reason: null, created_at: "2026-09-24T00:00:00Z",
 				}]), { status: 200 });
 			}
+			if (url.includes("/rest/v1/provider_onboarding_submissions")) return new Response(JSON.stringify([{ submitted_by: CONTACT_ID }]), { status: 200 });
 			if (url.includes(`/auth/v1/admin/users/${CONTACT_ID}`)) {
 				return new Response(JSON.stringify({ id: CONTACT_ID, email: "owner@provider.test" }), { status: 200 });
 			}
@@ -107,7 +108,7 @@ describe("provider application review API", () => {
 					created_at: "2026-09-20T00:00:00Z", updated_at: "2026-09-20T00:00:00Z",
 				}]), { status: 200 });
 			}
-			if (url.includes("/rest/v1/provider_onboarding_submissions")) {
+			if (url.includes("/rest/v1/rpc/get_latest_provider_onboarding_review_page")) {
 				return new Response(JSON.stringify([{
 					provider_slug: "legacy-provider", submitted_by: CONTACT_ID,
 					provider_name: "Proposed Provider Name", website_url: "https://provider.test",
@@ -152,59 +153,59 @@ describe("provider application review API", () => {
 		});
 	});
 
-	it("loads provider claims from submission history beyond the first page", async () => {
-		const olderClaim = {
-			id: "claim-submission", provider_slug: "older-claim", submitted_by: CONTACT_ID,
-			provider_name: "Older Claim", website_url: "https://older-claim.test", catalog_url: null,
-			catalog_mode: "managed", application_type: "claim", model_count: 0,
-			provider_review_status: "awaiting_approval", provider_review_reason: null,
-			created_at: "2026-09-01T00:00:00Z", submitted_at: "2026-09-01T00:00:00Z",
-		};
-		const recentSubmissions = Array.from({ length: 500 }, (_, index) => ({
-			id: `recent-${index}`, provider_slug: `recent-${index}`, submitted_by: null,
-			provider_name: `Recent ${index}`, website_url: "https://recent.test", catalog_url: null,
+	it("loads latest provider applications in bounded cursor pages", async () => {
+		const submissions = Array.from({ length: 101 }, (_, index) => ({
+			id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+			provider_slug: `provider-${index}`, submitted_by: null,
+			provider_name: `Provider ${index}`, website_url: "https://provider.test", catalog_url: null,
 			catalog_mode: "managed", application_type: "new", model_count: 0,
-			provider_review_status: "rejected", provider_review_reason: "Closed",
-			created_at: `2026-09-${String(20 - Math.floor(index / 50)).padStart(2, "0")}T00:00:00Z`,
+			provider_review_status: "awaiting_approval", provider_review_reason: null,
+			created_at: new Date(Date.UTC(2026, 8, 24, 0, 0, 101 - index)).toISOString(),
+			submitted_at: new Date(Date.UTC(2026, 8, 24, 0, 0, 101 - index)).toISOString(),
 		}));
-		const submissionRanges: string[] = [];
-		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+		let rpcBody: Record<string, unknown> | null = null;
+		let selfServeQueryCount = 0;
+		const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const request = input instanceof Request ? input : null;
 			const url = request?.url ?? String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: ADMIN_ID, email: "admin@phaseo.app", user_metadata: {} }), { status: 200 });
 			if (url.includes("/rest/v1/users")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
-			if (url.includes("/rest/v1/provider_onboarding_submissions")) {
-				const range = request?.headers.get("range") ?? "0-499";
-				submissionRanges.push(range);
-				return new Response(JSON.stringify(submissionRanges.length === 1 ? recentSubmissions : [olderClaim]), { status: 200 });
+			if (url.includes("/rest/v1/rpc/get_latest_provider_onboarding_review_page")) {
+				rpcBody = JSON.parse(String(request ? await request.clone().text() : init?.body ?? "{}")) as Record<string, unknown>;
+				return new Response(JSON.stringify(submissions), { status: 200 });
 			}
 			if (url.includes("/rest/v1/v2_providers")) {
-				if (new URL(url).searchParams.has("metadata")) return new Response("[]", { status: 200 });
-				return new Response(JSON.stringify([{
-					provider_slug: "older-claim", name: "Older Claim", status: "active",
+				if (new URL(url).searchParams.has("metadata")) {
+					selfServeQueryCount += 1;
+					return new Response("[]", { status: 200 });
+				}
+				return new Response(JSON.stringify(submissions.slice(0, 100).map((submission) => ({
+					provider_slug: submission.provider_slug, name: submission.provider_name, status: "active",
 					routable: true, routing_enabled: true, base_url: "https://api.older-claim.test",
 					metadata: { website_url: "https://older-claim.test" },
 					created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z",
-				}]), { status: 200 });
+				}))), { status: 200 });
 			}
 			if (url.includes("/rest/v1/provider_catalog_route_candidates") || url.includes("/rest/v1/provider_catalog_sources") || url.includes("/rest/v1/provider_account_links")) return new Response("[]", { status: 200 });
-			if (url.includes(`/auth/v1/admin/users/${CONTACT_ID}`)) return new Response(JSON.stringify({ id: CONTACT_ID, email: "owner@provider.test" }), { status: 200 });
 			return new Response("[]", { status: 200 });
 		});
 		vi.stubGlobal("fetch", fetchMock);
 
-		const response = await app.request("https://phaseo.app/api/internal/provider-catalog/providers", {
+		const response = await app.request("https://phaseo.app/api/internal/provider-catalog/providers?beforeCreatedAt=2026-09-23T00%3A00%3A00Z&beforeId=00000000-0000-4000-8000-000000000001", {
 			headers: { authorization: "Bearer admin-session" },
 		}, env);
 
 		expect(response.status).toBe(200);
-		await expect(response.json()).resolves.toMatchObject({
-			providers: [expect.objectContaining({
-				provider_slug: "older-claim",
-				application_type: "claim",
-				review_status: "awaiting_approval",
-			})],
+		const result = await response.json() as { providers: Array<{ provider_slug: string }>; nextCursor: { createdAt: string; id: string } | null };
+		expect(result.providers).toHaveLength(100);
+		expect(result.providers[0]?.provider_slug).toBe("provider-0");
+		expect(result.nextCursor).toEqual({ createdAt: submissions[99]?.created_at, id: submissions[99]?.id });
+		expect(rpcBody).toEqual({
+			p_before_created_at: "2026-09-23T00:00:00Z",
+			p_before_id: "00000000-0000-4000-8000-000000000001",
+			p_limit: 101,
 		});
-		expect(submissionRanges).toHaveLength(2);
+		expect(selfServeQueryCount).toBe(0);
+		expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/rest/v1/provider_onboarding_submissions"))).toBe(false);
 	});
 });

@@ -1,7 +1,12 @@
 "use server";
 
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchInternalProviderApplications, type InternalProviderApplicationCursor } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
 import { fetchInternalWebApi, WebApiError } from "@/lib/web-api/client";
+
+export async function fetchMoreProviderApplicationsAction(cursor: InternalProviderApplicationCursor) {
+	return fetchInternalProviderApplications(cursor);
+}
 
 export async function reviewProviderCatalogModelAction(input: {
 	runId: string;

@@ -62,6 +62,12 @@ export type InternalProviderApplication = {
 	updated_at: string;
 };
 
+export type InternalProviderApplicationCursor = { createdAt: string; id: string };
+export type InternalProviderApplicationsPage = {
+	providers: InternalProviderApplication[];
+	nextCursor: InternalProviderApplicationCursor | null;
+};
+
 export async function fetchInternalProviderCatalogReviews(): Promise<InternalProviderCatalogReview[]> {
 	const context = await getServerAccountContext();
 	const payload = await fetchInternalWebApi<{ reviews: InternalProviderCatalogReview[] }>(
@@ -71,11 +77,13 @@ export async function fetchInternalProviderCatalogReviews(): Promise<InternalPro
 	return payload.reviews;
 }
 
-export async function fetchInternalProviderApplications(): Promise<InternalProviderApplication[]> {
+export async function fetchInternalProviderApplications(cursor?: InternalProviderApplicationCursor): Promise<InternalProviderApplicationsPage> {
 	const context = await getServerAccountContext();
-	const payload = await fetchInternalWebApi<{ providers: InternalProviderApplication[] }>(
-		"/api/internal/provider-catalog/providers",
+	const query = cursor
+		? `?beforeCreatedAt=${encodeURIComponent(cursor.createdAt)}&beforeId=${encodeURIComponent(cursor.id)}`
+		: "";
+	return fetchInternalWebApi<InternalProviderApplicationsPage>(
+		`/api/internal/provider-catalog/providers${query}`,
 		context.accessToken,
 	);
-	return payload.providers;
 }

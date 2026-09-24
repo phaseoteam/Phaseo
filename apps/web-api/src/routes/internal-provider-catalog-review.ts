@@ -12,10 +12,15 @@ const decisionSchema = z.object({
 	reason: z.string().trim().max(1_000).optional(),
 });
 const probeSchema = z.object({ passed: z.boolean(), summary: z.record(z.string(), z.unknown()).default({}) });
+const providerApplicationCursorSchema = z.object({
+	createdAt: z.string().refine((value) => Number.isFinite(Date.parse(value))),
+	id: z.string().uuid(),
+});
 const providerDecisionSchema = z.object({
 	decision: z.enum(["approved", "paused", "rejected", "needs_changes"]),
 	reason: z.string().trim().max(1_000).optional(),
 });
+const PROVIDER_APPLICATION_PAGE_SIZE = 100;
 
 async function adminUser(c: any) {
 	const user = await requireUser(c.req.raw, c.env);
@@ -39,20 +44,22 @@ function decodedModelSlug(value: string): string {
 	try { return decodeURIComponent(value); } catch { return value; }
 }
 
-async function readProviderSubmissions(client: any) {
-	const pageSize = 500;
-	const submissions: any[] = [];
-	for (let offset = 0; ; offset += pageSize) {
-		const page = await client.from("provider_onboarding_submissions")
-			.select("id,provider_slug,submitted_by,provider_name,website_url,catalog_url,catalog_mode,application_type,model_count,validation_summary,submitted_at,created_at,provider_review_status,provider_review_reason")
-			.order("created_at", { ascending: false })
-			.order("id", { ascending: false })
-			.range(offset, offset + pageSize - 1);
-		if (page.error) return { data: null, error: page.error };
-		const rows = page.data ?? [];
-		submissions.push(...rows);
-		if (rows.length < pageSize) return { data: submissions, error: null };
-	}
+async function readLatestProviderSubmissions(client: any, cursor: z.infer<typeof providerApplicationCursorSchema> | null) {
+	const page = await client.rpc("get_latest_provider_onboarding_review_page", {
+		p_before_created_at: cursor?.createdAt ?? null,
+		p_before_id: cursor?.id ?? null,
+		p_limit: PROVIDER_APPLICATION_PAGE_SIZE + 1,
+	});
+	if (page.error) return { data: null, nextCursor: null, error: page.error };
+	const rows = page.data ?? [];
+	const hasMore = rows.length > PROVIDER_APPLICATION_PAGE_SIZE;
+	const submissions = rows.slice(0, PROVIDER_APPLICATION_PAGE_SIZE);
+	const lastSubmission = submissions.at(-1);
+	return {
+		data: submissions,
+		nextCursor: hasMore && lastSubmission ? { createdAt: lastSubmission.created_at, id: lastSubmission.id } : null,
+		error: null,
+	};
 }
 
 function aggregateReviewStatus(decisions: string[]): string {
@@ -95,13 +102,21 @@ export const internalProviderCatalogReviewRouter = new Hono<{ Bindings: Env }>()
 internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c) => {
 	const user = await adminUser(c);
 	if (!user) return c.json({ error: "unauthorized" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const beforeCreatedAt = c.req.query("beforeCreatedAt");
+	const beforeId = c.req.query("beforeId");
+	if (Boolean(beforeCreatedAt) !== Boolean(beforeId)) return c.json({ error: "invalid_provider_cursor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const parsedCursor = beforeCreatedAt && beforeId
+		? providerApplicationCursorSchema.safeParse({ createdAt: beforeCreatedAt, id: beforeId })
+		: null;
+	if (parsedCursor && !parsedCursor.success) return c.json({ error: "invalid_provider_cursor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const cursor = parsedCursor?.success ? parsedCursor.data : null;
 	const client = getDataClient(c.env);
 	const [selfServeResult, submissionsResult] = await Promise.all([
-		client.from("v2_providers")
-		.select("provider_slug,name,status,routable,routing_enabled,base_url,metadata,created_at,updated_at")
-		.contains("metadata", { self_serve: {} })
-		.order("created_at", { ascending: false }).limit(100),
-		readProviderSubmissions(client),
+		cursor ? Promise.resolve({ data: [], error: null }) : client.from("v2_providers")
+			.select("provider_slug,name,status,routable,routing_enabled,base_url,metadata,created_at,updated_at")
+			.contains("metadata", { self_serve: {} })
+			.order("created_at", { ascending: false }).limit(100),
+		readLatestProviderSubmissions(client, cursor),
 	]);
 	if (selfServeResult.error || submissionsResult.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const latestSubmissionByProvider = new Map<string, any>();
@@ -179,7 +194,7 @@ internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c)
 			updated_at: provider.updated_at,
 		};
 	});
-	return c.json({ providers }, 200, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ providers, nextCursor: submissionsResult.nextCursor }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 internalProviderCatalogReviewRouter.patch("/provider-catalog/providers/:providerSlug", async (c) => {

@@ -23,6 +23,10 @@ begin
     raise exception 'Missing provider catalog tables: %', missing;
   end if;
 
+  if to_regclass('public.provider_onboarding_submissions_latest_idx') is null then
+    raise exception 'Provider review latest-submission index is missing';
+  end if;
+
   if not exists (
     select 1 from pg_attribute
     where attrelid = 'public.workspaces'::regclass
@@ -64,8 +68,18 @@ begin
      or has_function_privilege('anon', 'public.claim_provider_catalog_sync(text,uuid,integer)', 'execute')
      or has_function_privilege('authenticated', 'public.claim_provider_catalog_sync(text,uuid,integer)', 'execute')
      or has_function_privilege('anon', 'public.renew_provider_catalog_sync(text,uuid,integer)', 'execute')
-     or has_function_privilege('authenticated', 'public.renew_provider_catalog_sync(text,uuid,integer)', 'execute') then
+     or has_function_privilege('authenticated', 'public.renew_provider_catalog_sync(text,uuid,integer)', 'execute')
+     or has_function_privilege('anon', 'public.get_latest_provider_onboarding_review_page(timestamptz,uuid,integer)', 'execute')
+     or has_function_privilege('authenticated', 'public.get_latest_provider_onboarding_review_page(timestamptz,uuid,integer)', 'execute')
+     or not has_function_privilege('service_role', 'public.get_latest_provider_onboarding_review_page(timestamptz,uuid,integer)', 'execute') then
     raise exception 'Privileged provider RPC is executable by an application role';
+  end if;
+
+  if position(
+    'distinct on (submission.provider_slug)'
+    in lower(pg_get_functiondef('public.get_latest_provider_onboarding_review_page(timestamptz,uuid,integer)'::regprocedure))
+  ) = 0 then
+    raise exception 'Provider review pagination does not select only the latest submission per provider';
   end if;
 
   if has_function_privilege('anon', 'public.activate_due_provider_catalog_releases()', 'execute')

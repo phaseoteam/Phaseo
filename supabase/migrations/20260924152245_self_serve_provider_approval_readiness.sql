@@ -86,6 +86,66 @@ where coalesce(provider.metadata, '{}'::jsonb) ? 'self_serve'
 
 create index if not exists provider_onboarding_submissions_review_queue_idx
   on public.provider_onboarding_submissions (provider_review_status, created_at desc);
+create index if not exists provider_onboarding_submissions_latest_idx
+  on public.provider_onboarding_submissions (provider_slug, created_at desc, id desc);
+
+create or replace function public.get_latest_provider_onboarding_review_page(
+  p_before_created_at timestamptz default null,
+  p_before_id uuid default null,
+  p_limit integer default 101
+)
+returns table (
+  id uuid,
+  provider_slug text,
+  submitted_by uuid,
+  provider_name text,
+  website_url text,
+  catalog_url text,
+  catalog_mode text,
+  application_type text,
+  model_count integer,
+  validation_summary jsonb,
+  submitted_at timestamptz,
+  created_at timestamptz,
+  provider_review_status text,
+  provider_review_reason text
+)
+language sql
+set search_path = pg_catalog, public
+as $$
+  with latest_submissions as (
+    select distinct on (submission.provider_slug)
+      submission.id,
+      submission.provider_slug,
+      submission.submitted_by,
+      submission.provider_name,
+      submission.website_url,
+      submission.catalog_url,
+      submission.catalog_mode,
+      submission.application_type,
+      submission.model_count,
+      submission.validation_summary,
+      submission.submitted_at,
+      submission.created_at,
+      submission.provider_review_status,
+      submission.provider_review_reason
+    from public.provider_onboarding_submissions submission
+    order by submission.provider_slug, submission.created_at desc, submission.id desc
+  )
+  select latest.*
+  from latest_submissions latest
+  where (
+      p_before_created_at is null and p_before_id is null
+    ) or (
+      p_before_created_at is not null and p_before_id is not null
+      and (latest.created_at, latest.id) < (p_before_created_at, p_before_id)
+    )
+  order by latest.created_at desc, latest.id desc
+  limit least(greatest(coalesce(p_limit, 101), 1), 101)
+$$;
+
+revoke all on function public.get_latest_provider_onboarding_review_page(timestamptz, uuid, integer) from public, anon, authenticated;
+grant execute on function public.get_latest_provider_onboarding_review_page(timestamptz, uuid, integer) to service_role;
 
 create or replace function public.enforce_self_serve_provider_approval()
 returns trigger
