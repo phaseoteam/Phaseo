@@ -62,14 +62,24 @@ describe("provider catalog onboarding", () => {
 	it("fetches and hashes a valid JSON catalog", async () => {
 		const result = await fetchAndValidateProviderCatalog(
 			"https://acme.example/models.json",
-			async () => new Response(JSON.stringify({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"] }] }), {
-				status: 200,
-				headers: { "content-type": "application/json" },
-			}),
+			async (_url, init) => {
+				expect(init?.redirect).toBe("manual");
+				return new Response(JSON.stringify({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"] }] }), {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				});
+			},
 		);
 
 		expect(result.sha256).toMatch(/^[a-f0-9]{64}$/);
 		expect(result.preview.valid).toBe(true);
+	});
+
+	it("rejects a redirect instead of fetching its destination", async () => {
+		await expect(fetchAndValidateProviderCatalog("https://acme.example/models.json", async (_url, init) => {
+			expect(init?.redirect).toBe("manual");
+			return new Response(null, { status: 302, headers: { location: "https://other.example/models.json" } });
+		})).rejects.toThrow("Catalog URL must not redirect.");
 	});
 
 	it("normalizes provider route lifecycle fields", () => {
