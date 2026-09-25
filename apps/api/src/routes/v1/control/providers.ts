@@ -7,8 +7,9 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
-import { json, withRuntime, cacheHeaders, cacheResponse } from "@/routes/utils";
+import { json, withRuntime } from "@/routes/utils";
 import { requireCapability } from "./route-helpers";
+import { sharedDiscoveryCache } from "./shared-discovery-cache";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
@@ -52,54 +53,46 @@ async function handleProviders(req: Request) {
     const offset = parseOffsetParam(url.searchParams.get("offset"));
 
     try {
-        const supabase = getSupabaseAdmin();
+        return await sharedDiscoveryCache.response(`providers:${limit}:${offset}`, async () => {
+            const supabase = getSupabaseAdmin();
 
-        // Get total count
-        const { count, error: countError } = await supabase
-            .from("v2_providers")
-            .select("*", { count: "exact", head: true });
+            // Get total count
+            const { count, error: countError } = await supabase
+                .from("v2_providers")
+                .select("*", { count: "exact", head: true });
 
-        if (countError) {
-            throw new Error(countError.message || "Failed to count providers");
-        }
+            if (countError) {
+                throw new Error(countError.message || "Failed to count providers");
+            }
 
-        // Get paginated data
-        const { data: providers, error: dataError } = await supabase
-            .from("v2_providers")
-            .select("api_provider_id:provider_slug, api_provider_name:name, metadata, country_code, subdivision_code")
-            .order("name", { ascending: true })
-            .range(offset, offset + limit - 1);
+            // Get paginated data
+            const { data: providers, error: dataError } = await supabase
+                .from("v2_providers")
+                .select("api_provider_id:provider_slug, api_provider_name:name, metadata, country_code, subdivision_code")
+                .order("name", { ascending: true })
+                .range(offset, offset + limit - 1);
 
-        if (dataError) {
-            throw new Error(dataError.message || "Failed to load providers");
-        }
+            if (dataError) {
+                throw new Error(dataError.message || "Failed to load providers");
+            }
 
-        const mapped: Provider[] = (providers ?? []).map((provider) => ({
-            api_provider_id: provider.api_provider_id,
-            api_provider_name: provider.api_provider_name ?? null,
-            description: typeof provider.metadata?.description === "string" ? provider.metadata.description : null,
-            link: typeof provider.metadata?.link === "string" ? provider.metadata.link : null,
-            country_code: provider.country_code ?? null,
-            subdivision_code: provider.subdivision_code ?? null,
-        }));
+            const mapped: Provider[] = (providers ?? []).map((provider) => ({
+                api_provider_id: provider.api_provider_id,
+                api_provider_name: provider.api_provider_name ?? null,
+                description: typeof provider.metadata?.description === "string" ? provider.metadata.description : null,
+                link: typeof provider.metadata?.link === "string" ? provider.metadata.link : null,
+                country_code: provider.country_code ?? null,
+                subdivision_code: provider.subdivision_code ?? null,
+            }));
 
-        const cacheOptions = {
-            scope: `providers:${auth.value.workspaceId}`,
-            ttlSeconds: 300,
-            staleSeconds: 600,
-        };
-        const response = json(
-            {
-                ok: true,
-                limit,
-                offset,
-                total: count ?? 0,
-                providers: mapped,
-            },
-            200,
-            cacheHeaders(cacheOptions)
-        );
-        return cacheResponse(req, response, cacheOptions);
+            return { body: {
+                    ok: true,
+                    limit,
+                    offset,
+                    total: count ?? 0,
+                    providers: mapped,
+                } };
+        });
     } catch (error: any) {
         return json(
             { ok: false, error: "failed", message: String(error?.message ?? error) },
@@ -112,5 +105,3 @@ async function handleProviders(req: Request) {
 export const providersRoutes = new Hono<Env>();
 
 providersRoutes.get("/", withRuntime(handleProviders));
-
-
