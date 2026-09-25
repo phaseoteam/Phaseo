@@ -1666,6 +1666,8 @@ class ErrorResponse
 	/** @var int|null */
 	public $attempt_count;
 	/** @var string|null */
+	public $code;
+	/** @var string|null */
 	public $description;
 	/** @var array|null */
 	public $details;
@@ -1711,6 +1713,8 @@ class ErrorResponse
 	public $retryable;
 	/** @var array<string, mixed>|null */
 	public $routing_diagnostics;
+	/** @var int|null */
+	public $status;
 	/** @var int|null */
 	public $status_code;
 	/** @var string|null */

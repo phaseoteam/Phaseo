@@ -1346,12 +1346,18 @@ module Phaseo
     # @!attribute [rw] provider
     #   @return [String, nil]
     ErrorProviderFailureDiagnostics = Struct.new(:category, :hint, :provider, keyword_init: true)
+    # @!attribute [rw] action
+    #   @return [String, nil]
     # @!attribute [rw] attempt_count
     #   @return [Integer, nil]
+    # @!attribute [rw] code
+    #   @return [String, nil]
     # @!attribute [rw] description
     #   @return [String, nil]
     # @!attribute [rw] details
     #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] docs_url
+    #   @return [String, nil]
     # @!attribute [rw] error
     #   @return [String, Hash{String => Object}]
     # @!attribute [rw] error_origin
@@ -1384,13 +1390,23 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] reason
     #   @return [String, nil]
+    # @!attribute [rw] request_id
+    #   @return [String, nil]
+    # @!attribute [rw] retry_after_seconds
+    #   @return [Integer, nil]
+    # @!attribute [rw] retryable
+    #   @return [Boolean, nil]
     # @!attribute [rw] routing_diagnostics
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] status
+    #   @return [Integer, nil]
     # @!attribute [rw] status_code
     #   @return [Integer, nil]
+    # @!attribute [rw] support_url
+    #   @return [String, nil]
     # @!attribute [rw] upstream_error
     #   @return [Hash{String => Object}, nil]
-    ErrorResponse = Struct.new(:action, :attempt_count, :description, :details, :docs_url, :error, :error_origin, :error_type, :failed_providers, :failed_statuses, :failure_sample, :generation_id, :message, :missing_pricing_providers, :ok, :provider_candidate_diagnostics, :provider_enablement, :provider_failure_diagnostics, :provider_payment_required_provider, :provider_payment_required_support_notice, :reason, :request_id, :retry_after_seconds, :retryable, :routing_diagnostics, :status_code, :support_url, :upstream_error, keyword_init: true)
+    ErrorResponse = Struct.new(:action, :attempt_count, :code, :description, :details, :docs_url, :error, :error_origin, :error_type, :failed_providers, :failed_statuses, :failure_sample, :generation_id, :message, :missing_pricing_providers, :ok, :provider_candidate_diagnostics, :provider_enablement, :provider_failure_diagnostics, :provider_payment_required_provider, :provider_payment_required_support_notice, :reason, :request_id, :retry_after_seconds, :retryable, :routing_diagnostics, :status, :status_code, :support_url, :upstream_error, keyword_init: true)
     # @!attribute [rw] filterStages
     #   @return [Array<Hash{String => Object}>, nil]
     ErrorRoutingDiagnostics = Struct.new(:filterStages, keyword_init: true)

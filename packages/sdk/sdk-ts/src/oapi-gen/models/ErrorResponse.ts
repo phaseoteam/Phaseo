@@ -1,19 +1,19 @@
 export interface ErrorResponse {
-	attempt_count?: number;
-	action?: string;
-	code?: string;
-	description?: string;
+  action?: string;
+  attempt_count?: number;
+  code?: string;
+  description?: string;
   details?: {
     [key: string]: unknown;
   }[];
+  docs_url?: string;
   error:
     | string
     | {
         [key: string]: unknown;
       };
-	error_origin?: "user" | "gateway" | "upstream";
-	error_type?: "user" | "system";
-	docs_url?: string;
+  error_origin?: "user" | "gateway" | "upstream";
+  error_type?: "user" | "system";
   failed_providers?: string[];
   failed_statuses?: number[];
   failure_sample?: {
@@ -29,12 +29,7 @@ export interface ErrorResponse {
     [key: string]: unknown;
   }[];
   generation_id?: string;
-	message?: string;
-	retry_after_seconds?: number;
-	retryable?: boolean;
-	request_id?: string;
-	status?: number;
-	support_url?: string;
+  message?: string;
   missing_pricing_providers?: string[];
   ok?: boolean;
   provider_candidate_diagnostics?: {
@@ -75,6 +70,9 @@ export interface ErrorResponse {
   provider_payment_required_provider?: string;
   provider_payment_required_support_notice?: string;
   reason?: string;
+  request_id?: string;
+  retry_after_seconds?: number;
+  retryable?: boolean;
   routing_diagnostics?: {
     filterStages?: {
       afterCount?: number;
@@ -89,7 +87,9 @@ export interface ErrorResponse {
     }[];
     [key: string]: unknown;
   };
+  status?: number;
   status_code?: number;
+  support_url?: string;
   upstream_error?: {
     code?: string | null;
     description?: string | null;

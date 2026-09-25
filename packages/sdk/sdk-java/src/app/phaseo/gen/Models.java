@@ -944,6 +944,7 @@ public final class Models {
 	public static class ErrorResponse {
 		public String action;
 		public Integer attempt_count;
+		public String code;
 		public String description;
 		public java.util.List<Object> details;
 		public String docs_url;
@@ -967,6 +968,7 @@ public final class Models {
 		public Integer retry_after_seconds;
 		public Boolean retryable;
 		public Object routing_diagnostics;
+		public Integer status;
 		public Integer status_code;
 		public String support_url;
 		public Object upstream_error;

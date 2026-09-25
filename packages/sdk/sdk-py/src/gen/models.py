@@ -864,6 +864,7 @@ class ErrorResponse(TypedDict):
 	retry_after_seconds: NotRequired[int]
 	retryable: NotRequired[bool]
 	routing_diagnostics: NotRequired[ErrorRoutingDiagnostics]
+	status: NotRequired[int]
 	status_code: NotRequired[int]
 	support_url: NotRequired[str]
 	upstream_error: NotRequired[ErrorUpstreamError]

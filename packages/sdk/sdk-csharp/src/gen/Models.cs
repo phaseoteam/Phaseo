@@ -2288,6 +2288,9 @@ public sealed class ErrorResponse
 	[JsonPropertyName("attempt_count")]
 	public long? AttemptCount { get; set; }
 
+	[JsonPropertyName("code")]
+	public string? Code { get; set; }
+
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }
 
@@ -2356,6 +2359,9 @@ public sealed class ErrorResponse
 
 	[JsonPropertyName("routing_diagnostics")]
 	public Dictionary<string, object>? RoutingDiagnostics { get; set; }
+
+	[JsonPropertyName("status")]
+	public long? Status { get; set; }
 
 	[JsonPropertyName("status_code")]
 	public long? StatusCode { get; set; }

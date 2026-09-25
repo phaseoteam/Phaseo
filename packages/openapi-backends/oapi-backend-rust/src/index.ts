@@ -81,7 +81,6 @@ function renderClient(): string {
 		"\tpub status: u16,",
 		"\tpub headers: HashMap<String, String>,",
 		"\tpub body: String,",
-		"\tpub headers: HashMap<String, String>,",
 		"}",
 		"",
 		"impl Response {",

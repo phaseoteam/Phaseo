@@ -167,10 +167,18 @@ class Client
 		if ($stream === false) throw new \RuntimeException("Unable to open streaming response from {$url}");
 		try {
 			$metadata = stream_get_meta_data($stream);
-			$statusLine = $metadata["wrapper_data"][0] ?? "";
+			$wrapperData = $metadata["wrapper_data"] ?? [];
+			$statusLine = is_array($wrapperData) ? ($wrapperData[0] ?? "") : "";
+			$responseHeaders = [];
+			if (is_array($wrapperData)) {
+				foreach ($wrapperData as $headerLine) {
+					$parts = explode(":", (string) $headerLine, 2);
+					if (count($parts) === 2) $responseHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+				}
+			}
 			if (preg_match('/\s(\d{3})\s/', (string) $statusLine, $match) && ((int) $match[1]) >= 400) {
 				$raw = stream_get_contents($stream);
-				throw new RequestException((int) $match[1], $raw === false ? "" : $raw);
+				throw new RequestException((int) $match[1], $raw === false ? "" : $raw, $responseHeaders);
 			}
 			while (($line = fgets($stream)) !== false) yield rtrim($line, "\r\n");
 		} finally { fclose($stream); }

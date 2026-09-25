@@ -11,8 +11,8 @@ pub mod workflows;
 
 pub use parameter_support::{check_parameter_support, ParameterSupportOptions};
 pub use phaseo::{
-    Phaseo, PhaseoError, PhaseoResponse, RequestEvent, RequestHook, RequestOptions, ResponseEvent,
-    ResponseHook, RetryEvent, RetryHook,
+    Phaseo, PhaseoError, PhaseoErrorDiagnostics, PhaseoResponse, RequestEvent, RequestHook,
+    RequestOptions, ResponseEvent, ResponseHook, RetryEvent, RetryHook,
 };
 
 pub mod client {

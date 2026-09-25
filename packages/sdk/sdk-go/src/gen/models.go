@@ -1639,6 +1639,7 @@ type ErrorResponse struct {
 	RetryAfterSeconds *int `json:"retry_after_seconds,omitempty"`
 	Retryable *bool `json:"retryable,omitempty"`
 	RoutingDiagnostics *map[string]interface{} `json:"routing_diagnostics,omitempty"`
+	Status *int `json:"status,omitempty"`
 	StatusCode *int `json:"status_code,omitempty"`
 	SupportUrl *string `json:"support_url,omitempty"`
 	UpstreamError *map[string]interface{} `json:"upstream_error,omitempty"`

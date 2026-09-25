@@ -35,6 +35,11 @@ function buildContext(overrides?: Partial<PipelineContext>): PipelineContext {
 }
 
 describe("after timing helpers", () => {
+	it("leaves routing unknown when an early error has no request metadata", () => {
+		expect(buildResponseTimeline({ requestId: "early-error" } as PipelineContext))
+			.toEqual({ version: 1, routing_ms: null });
+	});
+
 	it("records the dispatch boundary for deduplicating retry preparation", () => {
 		const ctx = buildContext();
 		ctx.meta.startedAtMs = 1000;

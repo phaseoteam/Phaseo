@@ -27,6 +27,15 @@ pub struct PhaseoError {
     pub headers: Box<HashMap<String, String>>,
     pub body: Option<Box<Value>>,
     pub code: Option<Box<str>>,
+    pub request_id: Option<Box<str>>,
+    pub trace_url: Option<Box<str>>,
+    pub retry_after: Option<Box<str>>,
+    /// Extended diagnostics are boxed together to keep every Result small.
+    pub diagnostics: Box<PhaseoErrorDiagnostics>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PhaseoErrorDiagnostics {
     pub generation_id: Option<Box<str>>,
     pub error_type: Option<Box<str>>,
     pub error_origin: Option<Box<str>>,
@@ -36,9 +45,20 @@ pub struct PhaseoError {
     pub support_url: Option<Box<str>>,
     pub retry_after_seconds: Option<u64>,
     pub details: Option<Box<Value>>,
-    pub request_id: Option<Box<str>>,
-    pub trace_url: Option<Box<str>>,
-    pub retry_after: Option<Box<str>>,
+}
+
+impl std::ops::Deref for PhaseoError {
+    type Target = PhaseoErrorDiagnostics;
+
+    fn deref(&self) -> &Self::Target {
+        &self.diagnostics
+    }
+}
+
+impl std::ops::DerefMut for PhaseoError {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.diagnostics
+    }
 }
 
 impl PhaseoError {
@@ -49,15 +69,7 @@ impl PhaseoError {
             headers: Box::new(HashMap::new()),
             body: None,
             code: None,
-            generation_id: None,
-            error_type: None,
-            error_origin: None,
-            retryable: None,
-            action: None,
-            docs_url: None,
-            support_url: None,
-            retry_after_seconds: None,
-            details: None,
+            diagnostics: Box::default(),
             request_id: None,
             trace_url: None,
             retry_after: None,
@@ -469,15 +481,7 @@ fn parse_response(
                 headers: Box::new(headers.clone()),
                 body: None,
                 code: None,
-                generation_id: None,
-                error_type: None,
-                error_origin: None,
-                retryable: None,
-                action: None,
-                docs_url: None,
-                support_url: None,
-                retry_after_seconds: None,
-                details: None,
+                diagnostics: Box::default(),
                 request_id: request_id.clone().map(String::into_boxed_str),
                 trace_url: trace_url.clone().map(String::into_boxed_str),
                 retry_after: headers
@@ -521,34 +525,36 @@ fn parse_response(
                 message,
                 status: Some(status),
                 code,
-                generation_id: body
-                    .get("generation_id")
-                    .and_then(Value::as_str)
-                    .map(Into::into),
-                error_type: body
-                    .get("error_type")
-                    .and_then(Value::as_str)
-                    .map(Into::into),
-                error_origin: body
-                    .get("error_origin")
-                    .and_then(Value::as_str)
-                    .map(Into::into),
-                retryable: body.get("retryable").and_then(Value::as_bool),
-                action: body.get("action").and_then(Value::as_str).map(Into::into),
-                docs_url: body.get("docs_url").and_then(Value::as_str).map(Into::into),
-                support_url: body
-                    .get("support_url")
-                    .and_then(Value::as_str)
-                    .map(Into::into),
-                retry_after_seconds: body
-                    .get("retry_after_seconds")
-                    .and_then(Value::as_u64)
-                    .or_else(|| {
-                        headers
-                            .get("retry-after")
-                            .and_then(|value| value.parse::<u64>().ok())
-                    }),
-                details: body.get("details").cloned().map(Box::new),
+                diagnostics: Box::new(PhaseoErrorDiagnostics {
+                    generation_id: body
+                        .get("generation_id")
+                        .and_then(Value::as_str)
+                        .map(Into::into),
+                    error_type: body
+                        .get("error_type")
+                        .and_then(Value::as_str)
+                        .map(Into::into),
+                    error_origin: body
+                        .get("error_origin")
+                        .and_then(Value::as_str)
+                        .map(Into::into),
+                    retryable: body.get("retryable").and_then(Value::as_bool),
+                    action: body.get("action").and_then(Value::as_str).map(Into::into),
+                    docs_url: body.get("docs_url").and_then(Value::as_str).map(Into::into),
+                    support_url: body
+                        .get("support_url")
+                        .and_then(Value::as_str)
+                        .map(Into::into),
+                    retry_after_seconds: body
+                        .get("retry_after_seconds")
+                        .and_then(Value::as_u64)
+                        .or_else(|| {
+                            headers
+                                .get("retry-after")
+                                .and_then(|value| value.parse::<u64>().ok())
+                        }),
+                    details: body.get("details").cloned().map(Box::new),
+                }),
                 request_id: request_id.map(String::into_boxed_str),
                 trace_url: trace_url.map(String::into_boxed_str),
                 retry_after: headers
@@ -564,15 +570,7 @@ fn parse_response(
             headers: Box::new(HashMap::new()),
             body: None,
             code: None,
-            generation_id: None,
-            error_type: None,
-            error_origin: None,
-            retryable: None,
-            action: None,
-            docs_url: None,
-            support_url: None,
-            retry_after_seconds: None,
-            details: None,
+            diagnostics: Box::default(),
             request_id: None,
             trace_url: None,
             retry_after: None,
@@ -614,6 +612,24 @@ mod tests {
     use std::net::TcpListener;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Mutex;
+
+    #[test]
+    fn error_diagnostics_preserve_field_access_without_large_results() {
+        assert!(std::mem::size_of::<PhaseoError>() <= 128);
+        let response = ureq::Response::new(429, "Too Many Requests", r#"{"error":"rate_limited","request_id":"req-test","generation_id":"generation-test","retryable":true,"retry_after_seconds":12,"support_url":"https://phaseo.tawk.help/","details":{"limit":3}}"#).unwrap();
+        let mut error = parse_response(Err(ureq::Error::Status(429, response))).unwrap_err();
+        assert_eq!(error.request_id.as_deref(), Some("req-test"));
+        assert_eq!(error.generation_id.as_deref(), Some("generation-test"));
+        assert_eq!(error.retryable, Some(true));
+        assert_eq!(error.retry_after_seconds, Some(12));
+        assert_eq!(
+            error.support_url.as_deref(),
+            Some("https://phaseo.tawk.help/")
+        );
+        assert_eq!(error.details.as_deref().unwrap()["limit"], 3);
+        error.retryable = Some(false);
+        assert_eq!(error.diagnostics.retryable, Some(false));
+    }
 
     #[test]
     fn rejects_insecure_remote_base_urls() {

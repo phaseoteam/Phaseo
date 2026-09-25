@@ -74,6 +74,16 @@ function renderModel(model: IRModel, modelTypes: ModelTypeResolver): string {
 	if (model.schema.kind === "object") {
 		const required = new Set(model.schema.required);
 		const fields = Object.keys(model.schema.properties).sort((a, b) => a.localeCompare(b));
+		if (fields.some((field) => !isPythonClassFieldIdentifier(field))) {
+			const lines: string[] = [`${model.name} = TypedDict(${JSON.stringify(model.name)}, {`];
+			for (const field of fields) {
+				const value = pyType(model.schema.properties[field], modelTypes, model.name, true);
+				const annotation = required.has(field) ? value : `NotRequired[${value}]`;
+				lines.push(`\t${JSON.stringify(field)}: ${annotation},`);
+			}
+			lines.push("})");
+			return lines.join("\n");
+		}
 		const lines: string[] = [`class ${model.name}(TypedDict):`];
 		if (fields.length === 0) {
 			lines.push("\tpass");
@@ -98,10 +108,11 @@ function renderClient(): string {
 		"from __future__ import annotations",
 		"",
 		"import json",
-		"import urllib.parse",
 		"import urllib.error",
+		"import urllib.parse",
 		"import urllib.request",
 		"from typing import Any, Dict, Optional",
+		"",
 		"from phaseo.errors import PhaseoAPIError",
 		"",
 		"",
@@ -130,6 +141,8 @@ function renderClient(): string {
 		"\t\ttry:",
 		"\t\t\twith urllib.request.urlopen(req) as resp:",
 		"\t\t\t\traw = resp.read().decode(\"utf-8\")",
+		"\t\t\t\tif resp.headers.get_content_type() == \"application/x-ndjson\":",
+		"\t\t\t\t\treturn raw",
 		"\t\texcept urllib.error.HTTPError as error:",
 		"\t\t\traise PhaseoAPIError.from_urllib(error) from error",
 		"\t\tif not raw:",
@@ -216,6 +229,11 @@ type ModelTypeResolver = (schema: IRSchema, excludeModelName?: string) => string
 function createModelTypeResolver(models: IRModel[]): ModelTypeResolver {
 	const namesBySchema = new Map<string, string[]>();
 	const modelSchemas = new Map(models.map((model) => [model.name, model.schema]));
+	const deprecatedCompatibilityModels = new Set(
+		models
+			.filter((model) => model.doc?.startsWith("Deprecated compatibility alias."))
+			.map((model) => model.name),
+	);
 	for (const model of models) {
 		if (model.schema.kind !== "object") continue;
 		const signature = schemaSignature(model.schema, modelSchemas);
@@ -230,10 +248,14 @@ function createModelTypeResolver(models: IRModel[]): ModelTypeResolver {
 			(name) => name !== excludeModelName
 		);
 		if (candidates.length === 1) return candidates[0];
+		const canonicalCandidates = candidates.filter(
+			(name) => !deprecatedCompatibilityModels.has(name),
+		);
+		if (canonicalCandidates.length === 1) return canonicalCandidates[0];
 		if (!excludeModelName || candidates.length === 0) return undefined;
 
 		const contextTokens = modelNameTokens(excludeModelName);
-		const ranked = candidates
+		const ranked = (canonicalCandidates.length > 0 ? canonicalCandidates : candidates)
 			.map((name) => ({
 				name,
 				score: Array.from(modelNameTokens(name)).filter((token) => contextTokens.has(token)).length
@@ -375,8 +397,19 @@ function isModelLifecycleObject(schema: IRSchema): boolean {
 }
 
 function sanitizeIdentifier(name: string): string {
-	if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
-		return name;
-	}
-	return name.replace(/[^A-Za-z0-9_]/g, "_");
+	const sanitized = /^[A-Za-z_][A-Za-z0-9_]*$/.test(name)
+		? name
+		: name.replace(/[^A-Za-z0-9_]/g, "_");
+	return PYTHON_KEYWORDS.has(sanitized) ? `${sanitized}_` : sanitized;
+}
+
+const PYTHON_KEYWORDS = new Set([
+	"False", "None", "True", "and", "as", "assert", "async", "await", "break", "class",
+	"continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global",
+	"if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return",
+	"try", "while", "with", "yield"
+]);
+
+function isPythonClassFieldIdentifier(name: string): boolean {
+	return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) && !PYTHON_KEYWORDS.has(name);
 }

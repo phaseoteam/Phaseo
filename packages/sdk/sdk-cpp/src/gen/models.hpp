@@ -943,6 +943,7 @@ struct ErrorProviderFailureDiagnostics {
 struct ErrorResponse {
 	std::string action;
 	std::optional<int> attempt_count;
+	std::string code;
 	std::string description;
 	std::vector<std::map<std::string, std::any>> details;
 	std::string docs_url;
@@ -966,6 +967,7 @@ struct ErrorResponse {
 	std::optional<int> retry_after_seconds;
 	std::optional<bool> retryable;
 	std::map<std::string, std::any> routing_diagnostics;
+	std::optional<int> status;
 	std::optional<int> status_code;
 	std::string support_url;
 	std::map<std::string, std::any> upstream_error;

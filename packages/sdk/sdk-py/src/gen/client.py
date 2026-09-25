@@ -34,6 +34,8 @@ class Client:
 		try:
 			with urllib.request.urlopen(req) as resp:
 				raw = resp.read().decode("utf-8")
+				if resp.headers.get_content_type() == "application/x-ndjson":
+					return raw
 		except urllib.error.HTTPError as error:
 			raise PhaseoAPIError.from_urllib(error) from error
 		if not raw:

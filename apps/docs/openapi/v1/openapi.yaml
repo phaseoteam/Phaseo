@@ -14142,15 +14142,30 @@ components:
             - type: object
               additionalProperties: true
           example: error_type
+        code:
+          type: string
+          description: Machine-readable gateway or provider error code.
+          example: upstream_error
         message:
           type: string
           example: Human-readable error message
         description:
           type: string
           example: Additional error details.
+        request_id:
+          type: string
+          description: >-
+            Stable request correlation ID. Use this value when contacting
+            support.
+          example: G-abc123
         generation_id:
           type: string
+          description: Backwards-compatible alias for request_id.
           example: G-abc123
+        status:
+          type: integer
+          description: HTTP response status, also exposed as status_code.
+          example: 502
         status_code:
           type: integer
           example: 502
@@ -14167,6 +14182,31 @@ components:
             - gateway
             - upstream
           example: upstream
+        retryable:
+          type: boolean
+          description: >-
+            Whether retrying the request may succeed without changing the
+            request.
+          example: true
+        action:
+          type: string
+          description: Recommended next step for the caller.
+          example: Retry with bounded exponential backoff and respect Retry-After.
+        docs_url:
+          type: string
+          format: uri
+          description: Documentation for this error contract and recovery guidance.
+          example: https://phaseo.app/docs/v1/api-reference/errors
+        support_url:
+          type: string
+          format: uri
+          description: Phaseo Help Center for troubleshooting and support requests.
+          example: https://phaseo.tawk.help/
+        retry_after_seconds:
+          type: integer
+          minimum: 0
+          description: Normalized retry delay when the response includes Retry-After.
+          example: 15
         reason:
           type: string
           example: all_candidates_failed

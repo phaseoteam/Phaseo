@@ -611,6 +611,9 @@ jobs:
             - name: Validate shared SDK core contract
               run: pnpm run validate:sdk-contract
 
+            - name: Test SDK generator compatibility
+              run: pnpm run oapi:build && pnpm --filter @phaseo/oapi-backend-ts test
+
             - name: Build SDKs
               run: pnpm run validate:packages
 

@@ -968,6 +968,7 @@ pub struct ErrorResponse {
 	pub retry_after_seconds: Option<i64>,
 	pub retryable: Option<bool>,
 	pub routing_diagnostics: Option<HashMap<String, String>>,
+	pub status: Option<i64>,
 	pub status_code: Option<i64>,
 	pub support_url: Option<String>,
 	pub upstream_error: Option<HashMap<String, String>>,
