@@ -7616,7 +7616,7 @@ export type ListModelsParams = {
 };
 
 /**
- * Returns shared non-hidden gateway models. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
+ * Returns shared non-hidden gateway models without requiring an API key. Anonymous requests only return currently gateway-routable models. Authenticated requests preserve the same response contract and may use availability=all to include non-routable availability records.
  */
 export async function listModels(
   client: Client,
