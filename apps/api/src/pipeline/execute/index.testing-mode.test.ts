@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Timer } from "../telemetry/timer";
 import { doRequestWithIR } from "./index";
 
@@ -90,6 +90,7 @@ function createTiming() {
 }
 
 describe("doRequestWithIR pricing behavior in testing mode", () => {
+	afterEach(() => vi.restoreAllMocks());
 	beforeEach(() => {
 		vi.clearAllMocks();
 		guardPricingFoundMock.mockResolvedValue({ ok: true });
@@ -141,6 +142,31 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
         expect(executor).toHaveBeenCalledOnce();
         expect(executor.mock.calls[0][0].ir.stream).toBe(expected);
         expect(request.stream).toBe(requested);
+    });
+
+    it.each([true, false])("only falls back on explicit zero usage before output: %s", async (zeroUsage) => {
+        const candidates = ["poolside", "openai"].map(providerId => ({ providerId,
+            pricingCard: { rules: [{ meter: "input_tokens", price_per_unit: "0", currency: "USD" }], currency: "USD" },
+            byokMeta: [], providerModelSlug: "fixture-model", capabilityParams: {} }));
+        guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+        rankProvidersMock.mockResolvedValue(candidates.map(candidate => ({ candidate, health: {} })));
+        const failure = { error: { type: "api_error" }, usage: { input_tokens: zeroUsage ? 0 : 1, output_tokens: 0, total_tokens: zeroUsage ? 0 : 1 } };
+        vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(null));
+        const executor = vi.fn(async (args: any) => ({ kind: "stream",
+            stream: new Response(`data: ${JSON.stringify(args.providerId === "poolside" ? failure : { choices: [{ delta: { content: "winner" } }] })}\n\n`).body,
+            upstream: await args.upstreamTiming.fetch("https://provider.test/generate"), bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" }));
+        resolveProviderExecutorMock.mockReturnValue(executor);
+        const ctx = createCtx({ capability: "text.generate", endpoint: "chat.completions", testingMode: true });
+        const result: any = await doRequestWithIR(ctx,
+            { model: "fixture-model", stream: true, messages: [{ role: "user", content: [{ type: "text", text: "test" }] }] } as any,
+            createTiming());
+        expect(executor).toHaveBeenCalledTimes(zeroUsage ? 2 : 1);
+        expect(await new Response(result.result.stream).text()).toContain(zeroUsage ? "winner" : "api_error");
+        if (zeroUsage) {
+            expect(ctx.attemptErrors).toEqual([expect.objectContaining({ type: "precommit_stream_failure", accounting: "explicit_zero_usage" })]);
+            expect(onCallEndMock).toHaveBeenCalledOnce();
+            expect(onCallEndMock.mock.calls[0][1]).toMatchObject({ ok: false, tokens_in: 0, tokens_out: 0 });
+        }
     });
 
     it("reevaluates buffered parity on fallback instead of inheriting the failed attempt's mode", async () => {
